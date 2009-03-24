@@ -78,7 +78,7 @@
             </goals>
             <configuration>
               <descriptors>
-                <descriptor>site-component.xml</descriptor>
+<!-- <descriptor>site-component.xml</descriptor>-->
                 <descriptor>config.xml</descriptor>
               </descriptors>
             </configuration>

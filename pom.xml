@@ -100,7 +100,6 @@
     <!-- commented out because of missing servlet specific annotations
     <module>jetty-test-annotation-webapp</module>
     -->
-    <module>jetty-assembly-descriptor</module>
     <module>jetty-util</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
