@@ -120,7 +120,7 @@
     <module>jetty-rewrite</module>
     <module>jetty-servlet-tester</module>
     <module>jetty-start</module>
-    <module>jetty-assembly</module>
+    <module>jetty-distribution</module>
     <module>jetty-test-webapp</module>
   </modules>
   <repositories>

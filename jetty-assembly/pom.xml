@@ -5,7 +5,7 @@
     <artifactId>jetty-project</artifactId>
     <version>7.0.0.incubation0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-assembly</artifactId>
+  <artifactId>jetty-distribution</artifactId>
   <name>Jetty :: Distribution Assemblies</name>
   <packaging>pom</packaging>
   <properties>
