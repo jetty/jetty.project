@@ -314,7 +314,7 @@ public class ServletHandler extends AbstractHandler
         final String old_path_info=base_request.getPathInfo();
         UserIdentity scoped_identity = null;
 
-        DispatcherType type = request.getDispatcherType();
+        DispatcherType type = base_request.getDispatcherType();
         Object request_listeners=null;
         ServletRequestEvent request_event=null;
         ServletHolder servlet_holder=null;
@@ -470,8 +470,8 @@ public class ServletHandler extends AbstractHandler
             // TODO httpResponse.getHttpConnection().forceClose();
             if (!response.isCommitted())
             {
-                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
-                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,th);
+                request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
+                request.setAttribute(Dispatcher.ERROR_EXCEPTION,th);
                 if (th instanceof UnavailableException)
                 {
                     UnavailableException ue = (UnavailableException)th;
@@ -496,8 +496,8 @@ public class ServletHandler extends AbstractHandler
             // TODO httpResponse.getHttpConnection().forceClose();
             if (!response.isCommitted())
             {
-                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,e.getClass());
-                request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,e);
+                request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE,e.getClass());
+                request.setAttribute(Dispatcher.ERROR_EXCEPTION,e);
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,e.getMessage());
             }
             else

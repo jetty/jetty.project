@@ -70,14 +70,14 @@ public class ErrorPageErrorHandler extends ErrorHandler
         if (_errorPages!=null)
         {
             String error_page= null;
-            Class exClass= (Class)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE);
+            Class exClass= (Class)request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE);
             
             if (ServletException.class.equals(exClass))
             {
                 error_page= (String)_errorPages.get(exClass.getName());
                 if (error_page == null)
                 {
-                    Throwable th= (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+                    Throwable th= (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
                     while (th instanceof ServletException)
                         th= ((ServletException)th).getRootCause();
                     if (th != null)
@@ -94,7 +94,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
             if (error_page == null)
             {
                 // look for an exact code match
-                Integer code=(Integer)request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+                Integer code=(Integer)request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
                 if (code!=null)
                 {
                     error_page= (String)_errorPages.get(TypeUtil.toString(code.intValue()));
