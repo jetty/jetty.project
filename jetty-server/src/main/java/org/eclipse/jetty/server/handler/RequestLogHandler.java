@@ -20,6 +20,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
@@ -47,7 +48,8 @@ public class RequestLogHandler extends HandlerWrapper
             throws IOException, ServletException
     {
         super.handle(target, request, response);
-        if (DispatcherType.REQUEST.equals(request.getDispatcherType()) && _requestLog!=null)
+        Request base_request=(request instanceof Request)?(Request)request:HttpConnection.getCurrentConnection().getRequest();
+        if (DispatcherType.REQUEST.equals(base_request.getDispatcherType()) && _requestLog!=null)
             _requestLog.log((Request)request, (Response)response);
     }
 

@@ -49,6 +49,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
@@ -341,11 +342,11 @@ public class Request implements HttpServletRequest
         if (DispatcherType.ASYNC.equals(_dispatcherType))
         {
             // TODO handle forwards(path!)
-            if (name.equals(Dispatcher.__FORWARD_PATH_INFO))    return getPathInfo();
-            if (name.equals(Dispatcher.__FORWARD_REQUEST_URI))  return getRequestURI();
-            if (name.equals(Dispatcher.__FORWARD_SERVLET_PATH)) return getServletPath();
-            if (name.equals(Dispatcher.__FORWARD_CONTEXT_PATH)) return getContextPath();
-            if (name.equals(Dispatcher.__FORWARD_QUERY_STRING)) return getQueryString();
+            if (name.equals(Dispatcher.FORWARD_PATH_INFO))    return getPathInfo();
+            if (name.equals(Dispatcher.FORWARD_REQUEST_URI))  return getRequestURI();
+            if (name.equals(Dispatcher.FORWARD_SERVLET_PATH)) return getServletPath();
+            if (name.equals(Dispatcher.FORWARD_CONTEXT_PATH)) return getContextPath();
+            if (name.equals(Dispatcher.FORWARD_QUERY_STRING)) return getQueryString();
         }
         
         if (_attributes==null)
@@ -1165,7 +1166,7 @@ public class Request implements HttpServletRequest
         if (_session == null && _sessionManager!=null && create )
         {
             _session=_sessionManager.newHttpSession(this);
-            Cookie cookie=_sessionManager.getSessionCookie(_session,getContextPath(),isSecure());
+            HttpCookie cookie=_sessionManager.getSessionCookie(_session,getContextPath(),isSecure());
             if (cookie!=null)
                 _connection.getResponse().addCookie(cookie);
         }

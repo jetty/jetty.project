@@ -41,21 +41,31 @@ import org.eclipse.jetty.util.UrlEncoded;
  */
 public class Dispatcher implements RequestDispatcher
 {
+    /*
+    public static final String FORWARD_REQUEST_URI = "javax.servlet.forward.request_uri";
+    public static final String FORWARD_CONTEXT_PATH = "javax.servlet.forward.context_path";
+    public static final String FORWARD_PATH_INFO = "javax.servlet.forward.path_info";
+    public static final String FORWARD_SERVLET_PATH = "javax.servlet.forward.servlet_path";
+    public static final String FORWARD_QUERY_STRING = "javax.servlet.forward.query_string";
+    public static final String INCLUDE_REQUEST_URI = "javax.servlet.include.request_uri";
+    public static final String INCLUDE_CONTEXT_PATH = "javax.servlet.include.context_path";
+    public static final String INCLUDE_PATH_INFO = "javax.servlet.include.path_info";
+    public static final String INCLUDE_SERVLET_PATH = "javax.servlet.include.servlet_path";
+    public static final String INCLUDE_QUERY_STRING = "javax.servlet.include.query_string";
+
+    public static final String ERROR_EXCEPTION = "javax.servlet.error.exception";
+    public static final String ERROR_EXCEPTION_TYPE = "javax.servlet.error.exception_type";
+    public static final String ERROR_MESSAGE = "javax.servlet.error.message";
+    public static final String ERROR_REQUEST_URI = "javax.servlet.error.request_uri";
+    public static final String ERROR_SERVLET_NAME = "javax.servlet.error.servlet_name";
+    public static final String ERROR_STATUS_CODE = "javax.servlet.error.status_code";
+    */
+
     /** Dispatch include attribute names */
     public final static String __INCLUDE_PREFIX="javax.servlet.include.";
-    public final static String __INCLUDE_REQUEST_URI= INCLUDE_REQUEST_URI;
-    public final static String __INCLUDE_CONTEXT_PATH= INCLUDE_CONTEXT_PATH;
-    public final static String __INCLUDE_SERVLET_PATH= INCLUDE_SERVLET_PATH;
-    public final static String __INCLUDE_PATH_INFO= INCLUDE_PATH_INFO;
-    public final static String __INCLUDE_QUERY_STRING= INCLUDE_QUERY_STRING;
 
     /** Dispatch include attribute names */
     public final static String __FORWARD_PREFIX="javax.servlet.forward.";
-    public final static String __FORWARD_REQUEST_URI= FORWARD_REQUEST_URI;
-    public final static String __FORWARD_CONTEXT_PATH= FORWARD_CONTEXT_PATH;
-    public final static String __FORWARD_SERVLET_PATH= FORWARD_SERVLET_PATH;
-    public final static String __FORWARD_PATH_INFO= FORWARD_PATH_INFO;
-    public final static String __FORWARD_QUERY_STRING= FORWARD_QUERY_STRING;
 
     /** JSP attributes */
     public final static String __JSP_FILE="org.apache.catalina.jsp_file";
@@ -293,13 +303,13 @@ public class Dispatcher implements RequestDispatcher
                 //original value. Otherwise, this is the first forward and we need to establish the values.
                 //Note: the established value on the original request for pathInfo and
                 //for queryString is allowed to be null, but cannot be null for the other values.
-                if ((String)old_attr.getAttribute(__FORWARD_REQUEST_URI) != null)
+                if ((String)old_attr.getAttribute(FORWARD_REQUEST_URI) != null)
                 {
-                    attr._pathInfo=(String)old_attr.getAttribute(__FORWARD_PATH_INFO);
-                    attr._query=(String)old_attr.getAttribute(__FORWARD_QUERY_STRING);
-                    attr._requestURI=(String)old_attr.getAttribute(__FORWARD_REQUEST_URI);
-                    attr._contextPath=(String)old_attr.getAttribute(__FORWARD_CONTEXT_PATH);
-                    attr._servletPath=(String)old_attr.getAttribute(__FORWARD_SERVLET_PATH);
+                    attr._pathInfo=(String)old_attr.getAttribute(FORWARD_PATH_INFO);
+                    attr._query=(String)old_attr.getAttribute(FORWARD_QUERY_STRING);
+                    attr._requestURI=(String)old_attr.getAttribute(FORWARD_REQUEST_URI);
+                    attr._contextPath=(String)old_attr.getAttribute(FORWARD_CONTEXT_PATH);
+                    attr._servletPath=(String)old_attr.getAttribute(FORWARD_SERVLET_PATH);
                 }
                 else
                 {
@@ -368,15 +378,15 @@ public class Dispatcher implements RequestDispatcher
         {
             if (Dispatcher.this._named==null)
             {
-                if (key.equals(__FORWARD_PATH_INFO))    
+                if (key.equals(FORWARD_PATH_INFO))    
                     return _pathInfo;
-                if (key.equals(__FORWARD_REQUEST_URI))  
+                if (key.equals(FORWARD_REQUEST_URI))  
                     return _requestURI;
-                if (key.equals(__FORWARD_SERVLET_PATH)) 
+                if (key.equals(FORWARD_SERVLET_PATH)) 
                     return _servletPath;
-                if (key.equals(__FORWARD_CONTEXT_PATH)) 
+                if (key.equals(FORWARD_CONTEXT_PATH)) 
                     return _contextPath;
-                if (key.equals(__FORWARD_QUERY_STRING)) 
+                if (key.equals(FORWARD_QUERY_STRING)) 
                     return _query;
             }
             
@@ -402,16 +412,16 @@ public class Dispatcher implements RequestDispatcher
             if (_named==null)
             {
                 if (_pathInfo!=null)
-                    set.add(__FORWARD_PATH_INFO);
+                    set.add(FORWARD_PATH_INFO);
                 else
-                    set.remove(__FORWARD_PATH_INFO);
-                set.add(__FORWARD_REQUEST_URI);
-                set.add(__FORWARD_SERVLET_PATH);
-                set.add(__FORWARD_CONTEXT_PATH);
+                    set.remove(FORWARD_PATH_INFO);
+                set.add(FORWARD_REQUEST_URI);
+                set.add(FORWARD_SERVLET_PATH);
+                set.add(FORWARD_CONTEXT_PATH);
                 if (_query!=null)
-                    set.add(__FORWARD_QUERY_STRING);
+                    set.add(FORWARD_QUERY_STRING);
                 else
-                    set.remove(__FORWARD_QUERY_STRING);
+                    set.remove(FORWARD_QUERY_STRING);
             }
 
             return Collections.enumeration(set);
@@ -422,15 +432,15 @@ public class Dispatcher implements RequestDispatcher
         {
             if (_named==null && key.startsWith("javax.servlet."))
             {
-                if (key.equals(__FORWARD_PATH_INFO))         
+                if (key.equals(FORWARD_PATH_INFO))         
                     _pathInfo=(String)value;
-                else if (key.equals(__FORWARD_REQUEST_URI))  
+                else if (key.equals(FORWARD_REQUEST_URI))  
                     _requestURI=(String)value;
-                else if (key.equals(__FORWARD_SERVLET_PATH)) 
+                else if (key.equals(FORWARD_SERVLET_PATH)) 
                     _servletPath=(String)value;
-                else if (key.equals(__FORWARD_CONTEXT_PATH)) 
+                else if (key.equals(FORWARD_CONTEXT_PATH)) 
                     _contextPath=(String)value;
-                else if (key.equals(__FORWARD_QUERY_STRING)) 
+                else if (key.equals(FORWARD_QUERY_STRING)) 
                     _query=(String)value;
                 
                 else if (value==null)
@@ -486,11 +496,11 @@ public class Dispatcher implements RequestDispatcher
         {
             if (Dispatcher.this._named==null)
             {
-                if (key.equals(__INCLUDE_PATH_INFO))    return _pathInfo;
-                if (key.equals(__INCLUDE_SERVLET_PATH)) return _servletPath;
-                if (key.equals(__INCLUDE_CONTEXT_PATH)) return _contextPath;
-                if (key.equals(__INCLUDE_QUERY_STRING)) return _query;
-                if (key.equals(__INCLUDE_REQUEST_URI))  return _requestURI;
+                if (key.equals(INCLUDE_PATH_INFO))    return _pathInfo;
+                if (key.equals(INCLUDE_SERVLET_PATH)) return _servletPath;
+                if (key.equals(INCLUDE_CONTEXT_PATH)) return _contextPath;
+                if (key.equals(INCLUDE_QUERY_STRING)) return _query;
+                if (key.equals(INCLUDE_REQUEST_URI))  return _requestURI;
             }
             else if (key.startsWith(__INCLUDE_PREFIX)) 
                     return null;
@@ -514,16 +524,16 @@ public class Dispatcher implements RequestDispatcher
             if (_named==null)
             {
                 if (_pathInfo!=null)
-                    set.add(__INCLUDE_PATH_INFO);
+                    set.add(INCLUDE_PATH_INFO);
                 else
-                    set.remove(__INCLUDE_PATH_INFO);
-                set.add(__INCLUDE_REQUEST_URI);
-                set.add(__INCLUDE_SERVLET_PATH);
-                set.add(__INCLUDE_CONTEXT_PATH);
+                    set.remove(INCLUDE_PATH_INFO);
+                set.add(INCLUDE_REQUEST_URI);
+                set.add(INCLUDE_SERVLET_PATH);
+                set.add(INCLUDE_CONTEXT_PATH);
                 if (_query!=null)
-                    set.add(__INCLUDE_QUERY_STRING);
+                    set.add(INCLUDE_QUERY_STRING);
                 else
-                    set.remove(__INCLUDE_QUERY_STRING);
+                    set.remove(INCLUDE_QUERY_STRING);
             }
             
             return Collections.enumeration(set);
@@ -534,11 +544,11 @@ public class Dispatcher implements RequestDispatcher
         {
             if (_named==null && key.startsWith("javax.servlet."))
             {
-                if (key.equals(__INCLUDE_PATH_INFO))         _pathInfo=(String)value;
-                else if (key.equals(__INCLUDE_REQUEST_URI))  _requestURI=(String)value;
-                else if (key.equals(__INCLUDE_SERVLET_PATH)) _servletPath=(String)value;
-                else if (key.equals(__INCLUDE_CONTEXT_PATH)) _contextPath=(String)value;
-                else if (key.equals(__INCLUDE_QUERY_STRING)) _query=(String)value;
+                if (key.equals(INCLUDE_PATH_INFO))         _pathInfo=(String)value;
+                else if (key.equals(INCLUDE_REQUEST_URI))  _requestURI=(String)value;
+                else if (key.equals(INCLUDE_SERVLET_PATH)) _servletPath=(String)value;
+                else if (key.equals(INCLUDE_CONTEXT_PATH)) _contextPath=(String)value;
+                else if (key.equals(INCLUDE_QUERY_STRING)) _query=(String)value;
                 else if (value==null)
                     _attr.removeAttribute(key);
                 else

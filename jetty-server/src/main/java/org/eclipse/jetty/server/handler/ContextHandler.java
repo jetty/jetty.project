@@ -675,10 +675,10 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
     public void handle(String target, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {   
-        Request baseRequest=(request instanceof Request)?(Request)request:HttpConnection.getCurrentConnection().getRequest();
-        DispatcherType dispatch=request.getDispatcherType();
+        Request base_request=(request instanceof Request)?(Request)request:HttpConnection.getCurrentConnection().getRequest();
+        DispatcherType dispatch=base_request.getDispatcherType();
         
-        if( !isStarted() || _shutdown || (DispatcherType.REQUEST.equals(dispatch) && baseRequest.isHandled()))
+        if( !isStarted() || _shutdown || (DispatcherType.REQUEST.equals(dispatch) && base_request.isHandled()))
             return;
 
         // Check the vhosts
@@ -719,7 +719,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
             if (_contextPath.length()==target.length() && _contextPath.length()>1 &&!_allowNullPathInfo)
             {
                 // context request must end with /
-                baseRequest.setHandled(true);
+                base_request.setHandled(true);
                 if (request.getQueryString()!=null)
                     response.sendRedirect(URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH)+"?"+request.getQueryString());
                 else 
@@ -733,7 +733,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
             return;
         }
         
-        doHandle(target,baseRequest,request,response);
+        doHandle(target,base_request,request,response);
     }        
         
     
@@ -753,7 +753,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
         Thread current_thread=null;
         String pathInfo=null;
 
-        DispatcherType dispatch=request.getDispatcherType();
+        DispatcherType dispatch=baseRequest.getDispatcherType();
         
         old_context=baseRequest.getContext();
         

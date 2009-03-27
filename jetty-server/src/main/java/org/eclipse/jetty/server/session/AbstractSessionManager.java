@@ -34,6 +34,7 @@ import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
@@ -97,7 +98,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
-    public Cookie access(HttpSession session,boolean secure)
+    public HttpCookie access(HttpSession session,boolean secure)
     {
         long now=System.currentTimeMillis();
 
@@ -111,7 +112,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             )
            )
         {
-            Cookie cookie=getSessionCookie(session,_context.getContextPath(),secure);
+            HttpCookie cookie=getSessionCookie(session,_context.getContextPath(),secure);
             s.cookieSet();
             s.setIdChanged(false);
             return cookie;
@@ -308,24 +309,20 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
-    public Cookie getSessionCookie(HttpSession session, String contextPath, boolean requestIsSecure)
+    public HttpCookie getSessionCookie(HttpSession session, String contextPath, boolean requestIsSecure)
     {
         if (isUsingCookies())
         {
             String id = getNodeId(session);
-            Cookie cookie=new Cookie(_sessionCookie,id);
-	    cookie.setHttpOnly(getHttpOnly());
-
-            cookie.setPath((contextPath==null||contextPath.length()==0)?"/":contextPath);
-            cookie.setMaxAge(getMaxCookieAge());
-            cookie.setSecure(requestIsSecure&&getSecureCookies());
-
-            // set up the overrides
-            if (_sessionDomain!=null)
-                cookie.setDomain(_sessionDomain);
-            if (_sessionPath!=null)
-                cookie.setPath(_sessionPath);
-
+            HttpCookie cookie=new HttpCookie(
+                    _sessionCookie,
+                    id,
+                    _sessionDomain,
+                    (contextPath==null||contextPath.length()==0)?"/":contextPath,
+                    getMaxCookieAge(),
+                    getHttpOnly(),
+                    requestIsSecure&&getSecureCookies());      
+                    
             return cookie;
         }
         return null;

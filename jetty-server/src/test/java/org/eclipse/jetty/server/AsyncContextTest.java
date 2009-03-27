@@ -191,7 +191,7 @@ public class AsyncContextTest extends TestCase
         {
             final Request base_request = (request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
             
-            if (DispatcherType.REQUEST.equals(request.getDispatcherType()))
+            if (DispatcherType.REQUEST.equals(base_request.getDispatcherType()))
             {
                 if (_read>0)
                 {
@@ -207,9 +207,9 @@ public class AsyncContextTest extends TestCase
                 }
 
                 if (_suspendFor>0)
-                    request.setAsyncTimeout(_suspendFor);
-                request.addAsyncListener(__asyncListener);
-                final AsyncContext asyncContext = request.startAsync();
+                    base_request.setAsyncTimeout(_suspendFor);
+                base_request.addAsyncListener(__asyncListener);
+                final AsyncContext asyncContext = base_request.startAsync();
                 
                 if (_completeAfter>0)
                 {
@@ -287,7 +287,7 @@ public class AsyncContextTest extends TestCase
         public void onTimeout(AsyncEvent event) throws IOException
         {
             event.getRequest().setAttribute("TIMEOUT",Boolean.TRUE);
-            event.getRequest().getAsyncContext().dispatch();
+            ((Request)event.getRequest()).getAsyncContext().dispatch();
         }
         
     };

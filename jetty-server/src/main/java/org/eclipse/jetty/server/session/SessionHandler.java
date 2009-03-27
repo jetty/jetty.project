@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RetryRequest;
@@ -162,9 +163,9 @@ public class SessionHandler extends HandlerWrapper
                 {
                     if(session!=old_session)
                     {
-                        Cookie cookie = _sessionManager.access(session,request.isSecure());
+                        HttpCookie cookie = _sessionManager.access(session,request.isSecure());
                         if (cookie!=null ) // Handle changed ID or max-age refresh
-                            response.addCookie(cookie);
+                            base_request.getResponse().addCookie(cookie);
                     }
                 }
                 else
@@ -214,7 +215,7 @@ public class SessionHandler extends HandlerWrapper
     {
         Request base_request = (request instanceof Request) ? (Request)request:HttpConnection.getCurrentConnection().getRequest();
         String requested_session_id=request.getRequestedSessionId();
-        if (!DispatcherType.REQUEST.equals(request.getDispatcherType()) || requested_session_id!=null)
+        if (!DispatcherType.REQUEST.equals(base_request.getDispatcherType()) || requested_session_id!=null)
         {
             return;
         }

@@ -138,7 +138,7 @@ public class StatisticsHandler extends HandlerWrapper implements CompleteHandler
                     _requestsActiveDurationMax=duration;
 
                 
-                if(request.isAsyncStarted())
+                if(base_request.isAsyncStarted())
                 {
                     Object list = base_request.getAttribute(COMPLETE_HANDLER_ATTR);
                     base_request.setAttribute(COMPLETE_HANDLER_ATTR, LazyList.add(list, this));

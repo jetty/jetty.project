@@ -208,7 +208,7 @@ public class StatisticsHandlerTest extends TestCase
 
         public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (!request.isAsyncStarted())
+            if (!((Request)request).isAsyncStarted())
             {
                 try
                 {
@@ -241,10 +241,10 @@ public class StatisticsHandlerTest extends TestCase
 
         public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (!request.isAsyncStarted())
+            if (!((Request)request).isAsyncStarted())
             {
-                request.setAsyncTimeout(_suspendFor);
-                request.startAsync();
+                ((Request)request).setAsyncTimeout(_suspendFor);
+                ((Request)request).startAsync();
             }
         }
 
@@ -254,10 +254,10 @@ public class StatisticsHandlerTest extends TestCase
     {
         public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (!request.isAsyncStarted())
+            if (!((Request)request).isAsyncStarted())
             {
-                request.setAsyncTimeout(100000);
-                request.startAsync().dispatch();
+                ((Request)request).setAsyncTimeout(100000);
+                ((Request)request).startAsync().dispatch();
             }
         }
 
@@ -274,7 +274,7 @@ public class StatisticsHandlerTest extends TestCase
 
         public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (!request.isAsyncStarted())
+            if (!((Request)request).isAsyncStarted())
             {
                 try
                 {
@@ -309,8 +309,8 @@ public class StatisticsHandlerTest extends TestCase
 
             if (i < _suspendFor.length)
             {
-                request.setAsyncTimeout(_suspendFor[i]);
-                request.startAsync();
+                ((Request)request).setAsyncTimeout(_suspendFor[i]);
+                ((Request)request).startAsync();
                 request.setAttribute("i",i + 1);
                 return;
             }
@@ -346,7 +346,7 @@ public class StatisticsHandlerTest extends TestCase
         {
             final Request base_request=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
             
-            if(!request.isAsyncStarted())
+            if(!base_request.isAsyncStarted())
             {
                 try
                 {
@@ -355,8 +355,9 @@ public class StatisticsHandlerTest extends TestCase
                 {
                 }
                 
-                request.setAsyncTimeout(_completeDuration*10);
-                request.startAsync();
+                base_request.setAsyncTimeout(_completeDuration*10);
+                
+                base_request.startAsync();
                 
                 (new Thread() {
                     public void run()
@@ -364,7 +365,7 @@ public class StatisticsHandlerTest extends TestCase
                         try
                         {
                             Thread.sleep(_completeDuration);
-                            request.getAsyncContext().complete();
+                            base_request.getAsyncContext().complete();
                             
                             synchronized(_lock)
                             {

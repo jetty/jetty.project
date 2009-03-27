@@ -107,12 +107,12 @@ public class Invoker extends HttpServlet
     {
         // Get the requested path and info
         boolean included=false;
-        String servlet_path=(String)request.getAttribute(Dispatcher.__INCLUDE_SERVLET_PATH);
+        String servlet_path=(String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
         if (servlet_path==null)
             servlet_path=request.getServletPath();
         else
             included=true;
-        String path_info = (String)request.getAttribute(Dispatcher.__INCLUDE_PATH_INFO);
+        String path_info = (String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
         if (path_info==null)
             path_info=request.getPathInfo();
         
@@ -273,11 +273,11 @@ public class Invoker extends HttpServlet
         {
             if (_included)
             {
-                if (name.equals(Dispatcher.__INCLUDE_REQUEST_URI))
+                if (name.equals(Dispatcher.INCLUDE_REQUEST_URI))
                     return URIUtil.addPaths(URIUtil.addPaths(getContextPath(),_servletPath),_pathInfo);
-                if (name.equals(Dispatcher.__INCLUDE_PATH_INFO))
+                if (name.equals(Dispatcher.INCLUDE_PATH_INFO))
                     return _pathInfo;
-                if (name.equals(Dispatcher.__INCLUDE_SERVLET_PATH))
+                if (name.equals(Dispatcher.INCLUDE_SERVLET_PATH))
                     return _servletPath;
             }
             return super.getAttribute(name);

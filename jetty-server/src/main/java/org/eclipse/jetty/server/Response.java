@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.Generator;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeaderValues;
@@ -125,6 +126,15 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#addCookie(javax.servlet.http.Cookie)
      */
+    public void addCookie(HttpCookie cookie)
+    {
+        _connection.getResponseFields().addSetCookie(cookie);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /*
+     * @see javax.servlet.http.HttpServletResponse#addCookie(javax.servlet.http.Cookie)
+     */
     public void addCookie(Cookie cookie)
     {
         _connection.getResponseFields().addSetCookie(cookie.getName(),
@@ -134,7 +144,7 @@ public class Response implements HttpServletResponse
                 cookie.getMaxAge(),
                 cookie.getComment(),
                 cookie.getSecure(),
-                cookie.isHttpOnly(),
+                false,//cookie.isHttpOnly(),
                 cookie.getVersion());
     }
 
@@ -286,10 +296,10 @@ public class Response implements HttpServletResponse
             if (error_handler!=null)
             {
                 // TODO - probably should reset these after the request?
-                request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(code));
-                request.setAttribute(RequestDispatcher.ERROR_MESSAGE, message);
-                request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
-                request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME,request.getServletName());
+                request.setAttribute(Dispatcher.ERROR_STATUS_CODE,new Integer(code));
+                request.setAttribute(Dispatcher.ERROR_MESSAGE, message);
+                request.setAttribute(Dispatcher.ERROR_REQUEST_URI, request.getRequestURI());
+                request.setAttribute(Dispatcher.ERROR_SERVLET_NAME,request.getServletName());
 
                 error_handler.handle(null,_connection.getRequest(),this);
             }

@@ -15,10 +15,10 @@ package org.eclipse.jetty.server;
 
 import java.util.EventListener;
 
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 
@@ -177,7 +177,7 @@ public interface SessionManager extends LifeCycle
      *         {@link Cookie cookie object} that should be set on the client in order to link future HTTP requests
      *         with the <code>session</code>. If cookies are not in use, this method returns <code>null</code>.
      */
-    public Cookie getSessionCookie(HttpSession session, String contextPath, boolean requestIsSecure);
+    public HttpCookie getSessionCookie(HttpSession session, String contextPath, boolean requestIsSecure);
 
     /* ------------------------------------------------------------ */
     /**
@@ -235,7 +235,7 @@ public interface SessionManager extends LifeCycle
      *         the session or to refresh a session cookie that may expire.
      * @see #complete(HttpSession)
      */
-    public Cookie access(HttpSession session, boolean secure);
+    public HttpCookie access(HttpSession session, boolean secure);
 
     /* ------------------------------------------------------------ */
     /**

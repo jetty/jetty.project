@@ -338,8 +338,8 @@ public class ServletHandler extends AbstractHandler
 
                 if (DispatcherType.INCLUDE.equals(type))
                 {
-                    base_request.setAttribute(Dispatcher.__INCLUDE_SERVLET_PATH,servlet_path);
-                    base_request.setAttribute(Dispatcher.__INCLUDE_PATH_INFO, path_info);
+                    base_request.setAttribute(Dispatcher.INCLUDE_SERVLET_PATH,servlet_path);
+                    base_request.setAttribute(Dispatcher.INCLUDE_PATH_INFO, path_info);
                 }
                 else
                 {

@@ -153,16 +153,16 @@ public class DispatcherTest extends TestCase
     {
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            assertEquals( "/context/ForwardServlet", request.getAttribute(Dispatcher.__FORWARD_REQUEST_URI));
-            assertEquals( "/context", request.getAttribute(Dispatcher.__FORWARD_CONTEXT_PATH) );
-            assertEquals( "/ForwardServlet", request.getAttribute(Dispatcher.__FORWARD_SERVLET_PATH));
-            assertEquals( null, request.getAttribute(Dispatcher.__FORWARD_PATH_INFO));
-            assertEquals( "do=assertforward&do=more&test=1", request.getAttribute(Dispatcher.__FORWARD_QUERY_STRING) );
+            assertEquals( "/context/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_REQUEST_URI));
+            assertEquals( "/context", request.getAttribute(Dispatcher.FORWARD_CONTEXT_PATH) );
+            assertEquals( "/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_SERVLET_PATH));
+            assertEquals( null, request.getAttribute(Dispatcher.FORWARD_PATH_INFO));
+            assertEquals( "do=assertforward&do=more&test=1", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING) );
 
             
             List expectedAttributeNames = Arrays.asList(new String[] {
-                Dispatcher.__FORWARD_REQUEST_URI, Dispatcher.__FORWARD_CONTEXT_PATH, 
-                Dispatcher.__FORWARD_SERVLET_PATH, Dispatcher.__FORWARD_QUERY_STRING
+                Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, 
+                Dispatcher.FORWARD_SERVLET_PATH, Dispatcher.FORWARD_QUERY_STRING
             });
             List requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
@@ -185,15 +185,15 @@ public class DispatcherTest extends TestCase
     {
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            assertEquals( "/context/AssertIncludeServlet", request.getAttribute(Dispatcher.__INCLUDE_REQUEST_URI));
-            assertEquals( "/context", request.getAttribute(Dispatcher.__INCLUDE_CONTEXT_PATH) );
-            assertEquals( "/AssertIncludeServlet", request.getAttribute(Dispatcher.__INCLUDE_SERVLET_PATH));
-            assertEquals( null, request.getAttribute(Dispatcher.__INCLUDE_PATH_INFO));
-            assertEquals( "do=end&do=the", request.getAttribute(Dispatcher.__INCLUDE_QUERY_STRING));    
+            assertEquals( "/context/AssertIncludeServlet", request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI));
+            assertEquals( "/context", request.getAttribute(Dispatcher.INCLUDE_CONTEXT_PATH) );
+            assertEquals( "/AssertIncludeServlet", request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH));
+            assertEquals( null, request.getAttribute(Dispatcher.INCLUDE_PATH_INFO));
+            assertEquals( "do=end&do=the", request.getAttribute(Dispatcher.INCLUDE_QUERY_STRING));    
             
             List expectedAttributeNames = Arrays.asList(new String[] {
-                Dispatcher.__INCLUDE_REQUEST_URI, Dispatcher.__INCLUDE_CONTEXT_PATH, 
-                Dispatcher.__INCLUDE_SERVLET_PATH, Dispatcher.__INCLUDE_QUERY_STRING
+                Dispatcher.INCLUDE_REQUEST_URI, Dispatcher.INCLUDE_CONTEXT_PATH, 
+                Dispatcher.INCLUDE_SERVLET_PATH, Dispatcher.INCLUDE_QUERY_STRING
             });
             List requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
@@ -219,24 +219,24 @@ public class DispatcherTest extends TestCase
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException 
         {
             // include doesn't hide forward
-            assertEquals( "/context/ForwardServlet/forwardpath", request.getAttribute(Dispatcher.__FORWARD_REQUEST_URI));
-            assertEquals( "/context", request.getAttribute(Dispatcher.__FORWARD_CONTEXT_PATH) );
-            assertEquals( "/ForwardServlet", request.getAttribute(Dispatcher.__FORWARD_SERVLET_PATH));
-            assertEquals( "/forwardpath", request.getAttribute(Dispatcher.__FORWARD_PATH_INFO));
-            assertEquals( "do=include", request.getAttribute(Dispatcher.__FORWARD_QUERY_STRING) );
+            assertEquals( "/context/ForwardServlet/forwardpath", request.getAttribute(Dispatcher.FORWARD_REQUEST_URI));
+            assertEquals( "/context", request.getAttribute(Dispatcher.FORWARD_CONTEXT_PATH) );
+            assertEquals( "/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_SERVLET_PATH));
+            assertEquals( "/forwardpath", request.getAttribute(Dispatcher.FORWARD_PATH_INFO));
+            assertEquals( "do=include", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING) );
             
-            assertEquals( "/context/AssertForwardIncludeServlet/assertpath", request.getAttribute(Dispatcher.__INCLUDE_REQUEST_URI));
-            assertEquals( "/context", request.getAttribute(Dispatcher.__INCLUDE_CONTEXT_PATH) );
-            assertEquals( "/AssertForwardIncludeServlet", request.getAttribute(Dispatcher.__INCLUDE_SERVLET_PATH));
-            assertEquals( "/assertpath", request.getAttribute(Dispatcher.__INCLUDE_PATH_INFO));
-            assertEquals( "do=end", request.getAttribute(Dispatcher.__INCLUDE_QUERY_STRING));    
+            assertEquals( "/context/AssertForwardIncludeServlet/assertpath", request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI));
+            assertEquals( "/context", request.getAttribute(Dispatcher.INCLUDE_CONTEXT_PATH) );
+            assertEquals( "/AssertForwardIncludeServlet", request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH));
+            assertEquals( "/assertpath", request.getAttribute(Dispatcher.INCLUDE_PATH_INFO));
+            assertEquals( "do=end", request.getAttribute(Dispatcher.INCLUDE_QUERY_STRING));    
             
             
             List expectedAttributeNames = Arrays.asList(new String[] {
-                Dispatcher.__FORWARD_REQUEST_URI, Dispatcher.__FORWARD_CONTEXT_PATH, Dispatcher.__FORWARD_SERVLET_PATH, 
-                Dispatcher.__FORWARD_PATH_INFO, Dispatcher.__FORWARD_QUERY_STRING,
-                Dispatcher.__INCLUDE_REQUEST_URI, Dispatcher.__INCLUDE_CONTEXT_PATH, Dispatcher.__INCLUDE_SERVLET_PATH, 
-                Dispatcher.__INCLUDE_PATH_INFO, Dispatcher.__INCLUDE_QUERY_STRING
+                Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, Dispatcher.FORWARD_SERVLET_PATH, 
+                Dispatcher.FORWARD_PATH_INFO, Dispatcher.FORWARD_QUERY_STRING,
+                Dispatcher.INCLUDE_REQUEST_URI, Dispatcher.INCLUDE_CONTEXT_PATH, Dispatcher.INCLUDE_SERVLET_PATH, 
+                Dispatcher.INCLUDE_PATH_INFO, Dispatcher.INCLUDE_QUERY_STRING
             });
             List requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));            
@@ -259,22 +259,22 @@ public class DispatcherTest extends TestCase
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException 
         {
             // forward hides include
-            assertEquals( null, request.getAttribute(Dispatcher.__INCLUDE_REQUEST_URI));
-            assertEquals( null, request.getAttribute(Dispatcher.__INCLUDE_CONTEXT_PATH) );
-            assertEquals( null, request.getAttribute(Dispatcher.__INCLUDE_SERVLET_PATH));
-            assertEquals( null, request.getAttribute(Dispatcher.__INCLUDE_PATH_INFO));
-            assertEquals( null, request.getAttribute(Dispatcher.__INCLUDE_QUERY_STRING));    
+            assertEquals( null, request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI));
+            assertEquals( null, request.getAttribute(Dispatcher.INCLUDE_CONTEXT_PATH) );
+            assertEquals( null, request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH));
+            assertEquals( null, request.getAttribute(Dispatcher.INCLUDE_PATH_INFO));
+            assertEquals( null, request.getAttribute(Dispatcher.INCLUDE_QUERY_STRING));    
 
-            assertEquals( "/context/IncludeServlet/includepath", request.getAttribute(Dispatcher.__FORWARD_REQUEST_URI));
-            assertEquals( "/context", request.getAttribute(Dispatcher.__FORWARD_CONTEXT_PATH) );
-            assertEquals( "/IncludeServlet", request.getAttribute(Dispatcher.__FORWARD_SERVLET_PATH));
-            assertEquals( "/includepath", request.getAttribute(Dispatcher.__FORWARD_PATH_INFO));
-            assertEquals( "do=forward", request.getAttribute(Dispatcher.__FORWARD_QUERY_STRING) );
+            assertEquals( "/context/IncludeServlet/includepath", request.getAttribute(Dispatcher.FORWARD_REQUEST_URI));
+            assertEquals( "/context", request.getAttribute(Dispatcher.FORWARD_CONTEXT_PATH) );
+            assertEquals( "/IncludeServlet", request.getAttribute(Dispatcher.FORWARD_SERVLET_PATH));
+            assertEquals( "/includepath", request.getAttribute(Dispatcher.FORWARD_PATH_INFO));
+            assertEquals( "do=forward", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING) );
             
             
             List expectedAttributeNames = Arrays.asList(new String[] {
-                Dispatcher.__FORWARD_REQUEST_URI, Dispatcher.__FORWARD_CONTEXT_PATH, Dispatcher.__FORWARD_SERVLET_PATH, 
-                Dispatcher.__FORWARD_PATH_INFO, Dispatcher.__FORWARD_QUERY_STRING,
+                Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, Dispatcher.FORWARD_SERVLET_PATH, 
+                Dispatcher.FORWARD_PATH_INFO, Dispatcher.FORWARD_QUERY_STRING,
             });
             List requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
