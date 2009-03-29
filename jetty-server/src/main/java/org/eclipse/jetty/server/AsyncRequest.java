@@ -71,6 +71,7 @@ public class AsyncRequest implements AsyncContext, Continuation
     private boolean _resumed;
     private boolean _expired;
     private boolean _keepWrappers;
+    private boolean _continuation;
     private long _timeoutMs;
     private AsyncEventState _event;
 
@@ -204,6 +205,7 @@ public class AsyncRequest implements AsyncContext, Continuation
     {
         synchronized (this)
         {
+            _continuation=false;
             _keepWrappers=false;
             
             switch(_state)
@@ -424,9 +426,10 @@ public class AsyncRequest implements AsyncContext, Continuation
             {
                 case __SUSPENDING:
                 case __SUSPENDED:
-                    if (false) // TODO 
+                    if (_continuation) 
                         dispatch();
                     else
+                        // TODO maybe error dispatch?
                         complete();
                 default:
                     return;
@@ -757,7 +760,7 @@ public class AsyncRequest implements AsyncContext, Continuation
      */
     public void suspend()
     {
-        // TODO simplify?
+        _continuation=true;
         AsyncRequest.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),_connection.getResponse());       
     }
 
