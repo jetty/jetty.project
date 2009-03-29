@@ -32,6 +32,10 @@ import java.util.Locale;
 import java.util.Map;
 
 import javax.security.auth.login.LoginException;
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
+import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletInputStream;
@@ -129,7 +133,6 @@ public class Request implements HttpServletRequest
     protected HttpConnection _connection;
     private ContextHandler.Context _context;
     private String _contextPath;
-    private Continuation _continuation;
     private CookieCutter _cookies;
     private boolean _cookiesExtracted=false;
     private DispatcherType _dispatcherType;
@@ -179,9 +182,28 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public void addAsyncListener(ContinuationListener listener)
+    public void addAsyncListener(AsyncListener listener)
     {
-        _async.addContinuationListener((ContinuationListener)listener);
+        _async.addAsyncListener(listener);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void addAsyncListener(final AsyncListener listener, ServletRequest servletRequest, ServletResponse servletResponse)
+    {
+        final AsyncEvent event = new AsyncEvent(servletRequest,servletResponse);
+        
+        _async.addAsyncListener(new AsyncListener()
+        {
+            public void onComplete(AsyncEvent ev) throws IOException
+            {
+                listener.onComplete(event);
+            }
+
+            public void onTimeout(AsyncEvent ev) throws IOException
+            {
+                listener.onComplete(event);
+            }
+        });
     }
 
     /* ------------------------------------------------------------ */
@@ -419,16 +441,6 @@ public class Request implements HttpServletRequest
     {
         return _contextPath;
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated
-     */
-    public Continuation getContinuation()
-    {
-        return _continuation;
-    }
-
 
     /* ------------------------------------------------------------ */
     /* 
@@ -1527,12 +1539,6 @@ public class Request implements HttpServletRequest
     {
         _contextPath = contextPath;
     }
-    
-    /* ------------------------------------------------------------ */
-    void setContinuation(Continuation cont)
-    {
-        _continuation=cont;
-    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -1792,6 +1798,36 @@ public class Request implements HttpServletRequest
     {
         return (_handled?"[":"(")+getMethod()+" "+_uri+(_handled?"]@":")@")+hashCode()+" "+super.toString();
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see javax.servlet.http.HttpServletRequest#login(javax.servlet.http.HttpServletResponse)
+     */
+    public boolean login(HttpServletResponse response) throws IOException, LoginException
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see javax.servlet.http.HttpServletRequest#login(java.lang.String, java.lang.String)
+     */
+    public void login(String username, String password) throws LoginException
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see javax.servlet.http.HttpServletRequest#logout()
+     */
+    public void logout() throws LoginException
+    {
+        // TODO Auto-generated method stub
+        
+    }    
     
 }
 

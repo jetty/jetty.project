@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.server;
 
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -82,6 +85,12 @@ public class AsyncRequest implements AsyncContext, Continuation
     protected void setConnection(final HttpConnection connection)
     {
         _connection=connection;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void addAsyncListener(AsyncListener listener)
+    {
+        _listeners=LazyList.add(_listeners,listener);
     }
 
     /* ------------------------------------------------------------ */
@@ -396,8 +405,11 @@ public class AsyncRequest implements AsyncContext, Continuation
             {
                 try
                 {
-                    ContinuationListener listener=((ContinuationListener)LazyList.get(_listeners,i));
-                    listener.onTimeout(_event);
+                    Object listener=LazyList.get(_listeners,i);
+                    if (listener instanceof ContinuationListener)
+                        ((ContinuationListener)listener).onTimeout(_event);
+                    else
+                        ((AsyncListener)listener).onTimeout(_event);
                 }
                 catch(Exception e)
                 {
@@ -492,7 +504,11 @@ public class AsyncRequest implements AsyncContext, Continuation
             {
                 try
                 {
-                    ((ContinuationListener)LazyList.get(_listeners,i)).onComplete(_event);
+                    Object listener=LazyList.get(_listeners,i);
+                    if (listener instanceof ContinuationListener)
+                        ((ContinuationListener)listener).onComplete(_event);
+                    else
+                        ((AsyncListener)listener).onComplete(_event);
                 }
                 catch(Exception e)
                 {
@@ -747,11 +763,9 @@ public class AsyncRequest implements AsyncContext, Continuation
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public class AsyncEventState implements ContinuationEvent
+    public class AsyncEventState extends AsyncEvent implements ContinuationEvent
     {
         private final ServletContext _suspendedContext;
-        private final ServletRequest _request;
-        private final ServletResponse _response;
         
         ServletContext _dispatchContext;
         
@@ -766,9 +780,8 @@ public class AsyncRequest implements AsyncContext, Continuation
         
         public AsyncEventState(ServletContext context, ServletRequest request, ServletResponse response)
         {
+            super(request,response);
             _suspendedContext=context;
-            _request=request;
-            _response=response;
         }
         
         public ServletContext getSuspendedContext()
@@ -784,16 +797,6 @@ public class AsyncRequest implements AsyncContext, Continuation
         public ServletContext getServletContext()
         {
             return _dispatchContext==null?_suspendedContext:_dispatchContext;
-        }
-
-        public ServletRequest getRequest()
-        {
-            return _request;
-        }
-
-        public ServletResponse getResponse()
-        {
-            return _response;
         }
         
         public String getPath()

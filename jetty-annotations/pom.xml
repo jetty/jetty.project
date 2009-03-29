@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.0.0.incubation0-SNAPSHOT</version>
+    <version>8.0.0.incubation0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-annotations</artifactId>
@@ -49,6 +49,11 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>servlet-annotation-spec</artifactId>
+      <version>3.0.pre0</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
