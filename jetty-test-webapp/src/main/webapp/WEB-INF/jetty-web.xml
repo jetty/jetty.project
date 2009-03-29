@@ -1,0 +1,14 @@
+<?xml version="1.0"  encoding="ISO-8859-1"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<!--
+This is the jetty specific web application configuration file.  When starting
+a Web Application, the WEB-INF/web-jetty.xml file is looked for and if found, treated
+as a org.eclipse.jetty.server.server.xml.XmlConfiguration file and is applied to the
+org.eclipse.jetty.servlet.WebApplicationContext objet
+-->
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Call class="org.eclipse.jetty.util.log.Log" name="debug"><Arg>executing jetty-web.xml</Arg></Call>
+  <!-- <Set name="contextPath">/mycontext</Set> -->
+</Configure>

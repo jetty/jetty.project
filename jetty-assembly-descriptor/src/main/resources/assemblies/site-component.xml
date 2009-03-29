@@ -1,0 +1,14 @@
+<assembly>
+  <id>site-component</id>
+  <formats>
+    <format>jar</format>
+  </formats>
+  <fileSets>
+    <fileSet>
+      <directory>${basedir}</directory>
+      <includes>
+        <include>src/main/resources/org/eclipse/**</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>
