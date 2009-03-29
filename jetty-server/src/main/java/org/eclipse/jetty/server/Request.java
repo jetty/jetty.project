@@ -129,7 +129,6 @@ public class Request implements HttpServletRequest
     protected HttpConnection _connection;
     private ContextHandler.Context _context;
     private String _contextPath;
-    private Continuation _continuation;
     private CookieCutter _cookies;
     private boolean _cookiesExtracted=false;
     private DispatcherType _dispatcherType;
@@ -179,7 +178,7 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public void addAsyncListener(ContinuationListener listener)
+    public void addContinuationListener(ContinuationListener listener)
     {
         _async.addContinuationListener((ContinuationListener)listener);
     }
@@ -419,16 +418,6 @@ public class Request implements HttpServletRequest
     {
         return _contextPath;
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated
-     */
-    public Continuation getContinuation()
-    {
-        return _continuation;
-    }
-
 
     /* ------------------------------------------------------------ */
     /* 
@@ -1526,12 +1515,6 @@ public class Request implements HttpServletRequest
     public void setContextPath(String contextPath)
     {
         _contextPath = contextPath;
-    }
-    
-    /* ------------------------------------------------------------ */
-    void setContinuation(Continuation cont)
-    {
-        _continuation=cont;
     }
 
     /* ------------------------------------------------------------ */

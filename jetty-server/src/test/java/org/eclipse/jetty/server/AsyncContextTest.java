@@ -206,7 +206,7 @@ public class AsyncContextTest extends TestCase
 
                 if (_suspendFor>0)
                     base_request.setAsyncTimeout(_suspendFor);
-                base_request.addAsyncListener(__asyncListener);
+                base_request.addEventListener(__asyncListener);
                 final AsyncContext asyncContext = base_request.startAsync();
                 
                 if (_completeAfter>0)
