@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -76,7 +77,7 @@ public abstract class SessionTestServer extends Server
                 pathInfo = pathInfo.substring(8);
                 String cpath = pathInfo.substring(0, pathInfo.indexOf('/', 1));
                 pathInfo = pathInfo.substring(cpath.length());
-                ServletContext context = request.getServletContext().getContext(cpath);
+                ServletContext context = ((Request)request).getServletContext().getContext(cpath);
                 RequestDispatcher dispatcher = context.getRequestDispatcher(pathInfo);          
                 dispatcher.forward(request, response);
             }

@@ -15,11 +15,11 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;

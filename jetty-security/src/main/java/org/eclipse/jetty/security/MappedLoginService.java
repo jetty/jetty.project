@@ -164,7 +164,7 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
      * @param roles
      * @return UserIdentity
      */
-    protected synchronized UserIdentity putUser(String userName, Credential credential, String[] roles)
+    public synchronized UserIdentity putUser(String userName, Credential credential, String[] roles)
     {
         Principal userPrincipal = new KnownUser(userName,credential);
         Subject subject = new Subject();

@@ -29,6 +29,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.util.ArrayQueue;
 
 /**
@@ -77,7 +79,7 @@ public class QoSFilter implements Filter
     long _waitMs;
     long _suspendMs;
     Semaphore _passes;
-    Queue<ServletRequest>[] _queue;
+    Queue<Continuation>[] _queue;
     String _suspended="QoSFilter@"+this.hashCode();
     
     public void init(FilterConfig filterConfig) 
@@ -89,7 +91,7 @@ public class QoSFilter implements Filter
             max_priority=Integer.parseInt(filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM));
         _queue=new Queue[max_priority+1];
         for (int p=0;p<_queue.length;p++)
-            _queue[p]=new ArrayQueue<ServletRequest>();
+            _queue[p]=new ArrayQueue<Continuation>();
         
         int passes=__DEFAULT_PASSES;
         if (filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM)!=null)
@@ -123,12 +125,13 @@ public class QoSFilter implements Filter
                 else
                 {
                     request.setAttribute(_suspended,Boolean.TRUE);
+                    Continuation continuation = ContinuationSupport.getContinuation(request);
                     if (_suspendMs>0)
-                        request.setAsyncTimeout(_suspendMs);
-                    request.startAsync();
+                        continuation.setTimeout(_suspendMs);
+                    continuation.suspend();
                     
                     int priority = getPriority(request);
-                    _queue[priority].add(request);
+                    _queue[priority].add(continuation);
                     return;
                 }
             }
@@ -182,10 +185,10 @@ public class QoSFilter implements Filter
             {
                 for (int p=_queue.length;p-->0;)
                 {
-                    ServletRequest r=_queue[p].poll();
-                    if (r!=null)
+                    Continuation continutaion=_queue[p].poll();
+                    if (continutaion!=null)
                     {
-                        r.getAsyncContext().dispatch();
+                        continutaion.resume();
                         break;
                     }
                 }

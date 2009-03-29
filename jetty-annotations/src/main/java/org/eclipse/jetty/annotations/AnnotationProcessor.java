@@ -16,7 +16,6 @@ package org.eclipse.jetty.annotations;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,29 +28,14 @@ import javax.annotation.security.RunAs;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
-import javax.servlet.DispatcherType;
-import javax.servlet.http.annotation.InitParam;
-import javax.servlet.http.annotation.jaxrs.DELETE;
-import javax.servlet.http.annotation.jaxrs.GET;
-import javax.servlet.http.annotation.jaxrs.HEAD;
-import javax.servlet.http.annotation.jaxrs.POST;
-import javax.servlet.http.annotation.jaxrs.PUT;
 
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.plus.annotation.PojoContextListener;
-import org.eclipse.jetty.plus.annotation.PojoFilter;
-import org.eclipse.jetty.plus.annotation.PojoServlet;
 import org.eclipse.jetty.plus.annotation.PostConstructCallback;
 import org.eclipse.jetty.plus.annotation.PreDestroyCallback;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.IntrospectionUtil;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -111,112 +95,11 @@ public class AnnotationProcessor
     public void processServlets ()
     throws Exception
     {
-        //@Servlet(urlMappings=String[], description=String, icon=String, loadOnStartup=int, name=String, initParams=InitParams[])
-        for (Class clazz:_finder.getClassesForAnnotation(javax.servlet.http.annotation.Servlet.class))
-        {
-            javax.servlet.http.annotation.Servlet annotation = (javax.servlet.http.annotation.Servlet)clazz.getAnnotation(javax.servlet.http.annotation.Servlet.class);
-            PojoServlet servlet = new PojoServlet(getPojoInstanceFor(clazz));
-            
-            List<Method> methods = _finder.getMethodsForAnnotation(GET.class);
-            if (methods.size() > 1)
-                throw new IllegalStateException ("More than one GET annotation on "+clazz.getName());           
-            else if (methods.size() == 1)
-                servlet.setGetMethodName(methods.get(0).getName());
-           
-            methods = _finder.getMethodsForAnnotation(POST.class);
-            if (methods.size() > 1)
-                throw new IllegalStateException ("More than one POST annotation on "+clazz.getName());
-            else if (methods.size() == 1)
-                servlet.setPostMethodName(methods.get(0).getName());
-            
-            methods = _finder.getMethodsForAnnotation(PUT.class);
-            if (methods.size() > 1)
-                throw new IllegalStateException ("More than one PUT annotation on "+clazz.getName());
-            else if (methods.size() == 1)
-                servlet.setPutMethodName(methods.get(0).getName());
-            
-            methods = _finder.getMethodsForAnnotation(DELETE.class);
-            if (methods.size() > 1)
-                throw new IllegalStateException ("More than one DELETE annotation on "+clazz.getName());
-            else if (methods.size() == 1)
-                servlet.setDeleteMethodName(methods.get(0).getName());
-            
-            methods = _finder.getMethodsForAnnotation(HEAD.class);
-            if (methods.size() > 1)
-                throw new IllegalStateException ("More than one HEAD annotation on "+clazz.getName());
-            else if (methods.size() == 1)
-                servlet.setHeadMethodName(methods.get(0).getName());
-            
-            ServletHolder holder = new ServletHolder(servlet);
-            holder.setName((annotation.name().equals("")?clazz.getName():annotation.name()));
-            holder.setInitOrder(annotation.loadOnStartup());
-            LazyList.add(_servlets, holder);
-            
-            for (InitParam ip:annotation.initParams())
-            {
-                holder.setInitParameter(ip.name(), ip.value());
-            }
-            
-            if (annotation.urlMappings().length > 0)
-            {
-                ArrayList paths = new ArrayList();
-                ServletMapping mapping = new ServletMapping();
-                mapping.setServletName(holder.getName());
-                for (String s:annotation.urlMappings())
-                {    
-                    paths.add(normalizePattern(s)); 
-                }
-                mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
-                LazyList.add(_servletMappings,mapping);
-            }
-        } 
     }
     
     public void processFilters ()
     throws Exception
-    {
-        //@ServletFilter(description=String, filterName=String, displayName=String, icon=String,initParams=InitParam[], filterMapping=FilterMapping)
-        for (Class clazz:_finder.getClassesForAnnotation(javax.servlet.http.annotation.ServletFilter.class))
-        {
-            javax.servlet.http.annotation.ServletFilter annotation = (javax.servlet.http.annotation.ServletFilter)clazz.getAnnotation(javax.servlet.http.annotation.ServletFilter.class);
-            PojoFilter filter = new PojoFilter(getPojoInstanceFor(clazz));
-
-            FilterHolder holder = new FilterHolder(filter);
-            holder.setName((annotation.filterName().equals("")?clazz.getName():annotation.filterName()));
-            holder.setDisplayName(annotation.displayName());
-            LazyList.add(_filters, holder);
-            
-            for (InitParam ip:annotation.initParams())
-            {
-                holder.setInitParameter(ip.name(), ip.value());
-            }
-            
-            if (annotation.filterMapping() != null)
-            {
-                FilterMapping mapping = new FilterMapping();
-                mapping.setFilterName(holder.getName());
-                ArrayList paths = new ArrayList();
-                for (String s:annotation.filterMapping().urlPattern())
-                {
-                    paths.add(normalizePattern(s));
-                }
-                mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
-                ArrayList names = new ArrayList();
-                for (String s:annotation.filterMapping().servletNames())
-                {
-                    names.add(s);
-                }
-                mapping.setServletNames((String[])names.toArray(new String[names.size()]));
-                
-                int dispatcher=FilterMapping.DEFAULT;                
-                for (DispatcherType d:annotation.filterMapping().dispatcherTypes())
-                {
-                   dispatcher = dispatcher|FilterMapping.dispatch(d);            
-                }
-                mapping.setDispatches(dispatcher);
-                LazyList.add(_filterMappings,mapping);
-            }
-        }        
+    {   
     }
     
 
@@ -224,12 +107,6 @@ public class AnnotationProcessor
     public void processListeners ()
     throws Exception
     {
-        //@ServletContextListener(description=String)
-        for (Class clazz:_finder.getClassesForAnnotation(javax.servlet.http.annotation.ServletContextListener.class))
-        { 
-            PojoContextListener listener = new PojoContextListener(getPojoInstanceFor(clazz));
-            LazyList.add(_listeners, listener);
-        }
     }
     
     

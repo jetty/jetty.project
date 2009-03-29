@@ -23,8 +23,6 @@ import java.lang.reflect.Field;
 import java.util.Enumeration;
 import java.util.Locale;
 
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -39,10 +37,10 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.ajax.Continuation;
-import org.eclipse.jetty.util.ajax.ContinuationSupport;
 
 
 
@@ -73,7 +71,7 @@ public class Dump extends HttpServlet
     }
 
     /* ------------------------------------------------------------ */
-    public void doGet(final HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
         if(request.getPathInfo()!=null && request.getPathInfo().toLowerCase().indexOf("script")!=-1)
         {
@@ -131,19 +129,20 @@ public class Dump extends HttpServlet
                     {
                         e.printStackTrace();
                     }
-                    Continuation continuation = ContinuationSupport.getContinuation(request, null);
+                    Continuation continuation = ContinuationSupport.getContinuation(request);
                     continuation.resume();
                 }
                 
             }).start();
         }
         
-        if (request.getParameter("continue")!=null)
+        if (request.getParameter("suspend")!=null)
         {
             try
             {
-                Continuation continuation = ContinuationSupport.getContinuation(request, null);
-                continuation.suspend(Long.parseLong(request.getParameter("continue")));
+                Continuation continuation = ContinuationSupport.getContinuation(request);
+                continuation.setTimeout(Long.parseLong(request.getParameter("suspend")));
+                continuation.suspend();
             }
             catch(Exception e)
             {
@@ -151,84 +150,37 @@ public class Dump extends HttpServlet
             }
         }
 
-        if (request.getAttribute("ASYNC")==null)
+        if (request.getParameter("complete")!=null)
         {
-            request.setAttribute("ASYNC",Boolean.TRUE);
-
-            if (request.getParameter("dispatch")!=null)
+            final long complete=Long.parseLong(request.getParameter("complete"));
+            new Thread(new Runnable()
             {
-                final long resume=Long.parseLong(request.getParameter("dispatch"));
-                final String path=request.getParameter("dispatchPath");
-                new Thread(new Runnable()
+                public void run()
                 {
-                    public void run()
+                    try
                     {
-                        try
-                        {
-                            Thread.sleep(resume);
-                        }
-                        catch (InterruptedException e)
-                        {
-                            e.printStackTrace();
-                        }
-                        if (path!=null)
-                            request.getAsyncContext().dispatch(path);
-                        else
-                            request.getAsyncContext().dispatch();
-                            
+                        Thread.sleep(complete);
                     }
-
-                }).start();
-            }
-
-            if (request.getParameter("complete")!=null)
-            {
-                final long complete=Long.parseLong(request.getParameter("complete"));
-                new Thread(new Runnable()
-                {
-                    public void run()
+                    catch (InterruptedException e)
                     {
-                        try
-                        {
-                            Thread.sleep(complete);
-                        }
-                        catch (InterruptedException e)
-                        {
-                            e.printStackTrace();
-                        }
-                        try
-                        {
-                            HttpServletResponse response = (HttpServletResponse) request.getAsyncContext().getResponse();
-                            response.setContentType("text/html");
-                            response.getOutputStream().println("<h1>COMPLETED</h1>"); 
-                            request.getAsyncContext().complete();
-                        }
-                        catch (IOException e)
-                        {
-                            e.printStackTrace();
-                        }
+                        e.printStackTrace();
                     }
-
-                }).start();
-            }
-
-            if (request.getParameter("async")!=null)
-            {
-                final long async=Long.parseLong(request.getParameter("async"));
-                request.addAsyncListener(new AsyncListener(){
-                    public void onComplete(AsyncEvent event) throws IOException
+                    try
                     {
+                        response.setContentType("text/html");
+                        response.getOutputStream().println("<h1>COMPLETED</h1>"); 
+                        Continuation continuation = ContinuationSupport.getContinuation(request);
+                        continuation.complete();
                     }
-                    public void onTimeout(AsyncEvent event) throws IOException
+                    catch (IOException e)
                     {
-                        event.getRequest().getAsyncContext().dispatch();
+                        e.printStackTrace();
                     }
-                });
-                request.setAsyncTimeout(async);
-                request.startAsync();
-                return;
-            }
+                }
+
+            }).start();
         }
+        
             
         request.setAttribute("Dump", this);
         getServletContext().setAttribute("Dump",this);
@@ -442,10 +394,6 @@ public class Dump extends HttpServlet
             pout.write("<h1>Dump Servlet</h1>\n");
             pout.write("<table width=\"95%\">");
             pout.write("<tr>\n");
-            pout.write("<th align=\"right\">getDispatcherTYpe:&nbsp;</th>");
-            pout.write("<td>" + request.getDispatcherType()+"</td>");
-            pout.write("</tr><tr>\n");
-            pout.write("<tr>\n");
             pout.write("<th align=\"right\">getMethod:&nbsp;</th>");
             pout.write("<td>" + notag(request.getMethod())+"</td>");
             pout.write("</tr><tr>\n");
@@ -475,13 +423,6 @@ public class Dump extends HttpServlet
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getQueryString:&nbsp;</th>");
             pout.write("<td>"+notag(request.getQueryString())+"</td>");
-            pout.write("</tr><tr>\n");
-
-            pout.write("<th align=\"right\">isAsyncSupported:&nbsp;</th>");
-            pout.write("<td>"+request.isAsyncSupported()+"</td>");
-            pout.write("</tr><tr>\n");
-            pout.write("<th align=\"right\">isAsyncStarted:&nbsp;</th>");
-            pout.write("<td>"+request.isAsyncStarted()+"</td>");
             pout.write("</tr><tr>\n");
             
             pout.write("<th align=\"right\">getProtocol:&nbsp;</th>");
@@ -772,22 +713,12 @@ public class Dump extends HttpServlet
             pout.write("resource: <input type=\"text\" name=\"resource\" /><br/>\n");
             pout.write("<input type=\"submit\" name=\"Action\" value=\"getResource\">");
             pout.write("</form>\n");
-            
-
         }
         catch (Exception e)
         {
             getServletContext().log("dump", e);
         }
-
         
-        if (request.getParameter("stream")!=null)
-        {
-            pout.flush();
-            Continuation continuation = ContinuationSupport.getContinuation(request, null);
-            continuation.suspend(Long.parseLong(request.getParameter("stream")));
-        }
-
         String lines= request.getParameter("lines");
         if (lines!=null)
         {

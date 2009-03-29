@@ -11,25 +11,21 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.util.ajax;
+package org.eclipse.jetty.continuation;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.ServletRequest;
 
 /* ------------------------------------------------------------ */
 /** ContinuationSupport.
- * Conveniance class to avoid classloading visibility issues.
  * 
- *
  */
 public class ContinuationSupport
 {
-    public static Continuation getContinuation(HttpServletRequest request, Object mutex)
+    public static Continuation getContinuation(ServletRequest request)
     {
-        Continuation continuation = (Continuation) request.getAttribute("org.eclipse.jetty.ajax.Continuation");
+        Continuation continuation = (Continuation) request.getAttribute(Continuation.ATTRIBUTE);
         if (continuation==null)
-            continuation=new WaitingContinuation(mutex);
-        else 
-            continuation.setMutex(mutex);
+            throw new IllegalStateException("!Jetty && !ContinuationFilter installed");
         return continuation;
     }
 }

@@ -13,10 +13,6 @@
 
 package com.acme;
 
-import java.util.EnumSet;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.FilterRegistration;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
@@ -64,13 +60,16 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
     {
     	ServletContext context=sce.getServletContext();
     	
-    	FilterRegistration registration=context.addFilter("TestFilter",TestFilter.class.getName());
+    	/* TODO  for servlet 3.0
+    	 * FilterRegistration registration=context.addFilter("TestFilter",TestFilter.class.getName());
+    	
     	
     	registration.setAsyncSupported(true);
     	registration.addMappingForUrlPatterns(
     	        EnumSet.of(DispatcherType.ERROR,DispatcherType.ASYNC,DispatcherType.FORWARD,DispatcherType.INCLUDE,DispatcherType.REQUEST),
     	        true, 
     	        new String[]{"/dump/*","/dispatch/*","*.dump"});
+    	        */
     }
 
     public void contextDestroyed(ServletContextEvent sce)

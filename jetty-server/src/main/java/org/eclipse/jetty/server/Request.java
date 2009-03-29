@@ -32,10 +32,6 @@ import java.util.Locale;
 import java.util.Map;
 
 import javax.security.auth.login.LoginException;
-import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
-import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletInputStream;
@@ -49,6 +45,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.continuation.ContinuationEvent;
+import org.eclipse.jetty.continuation.ContinuationListener;
+import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
@@ -72,7 +71,6 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.ajax.Continuation;
 import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
@@ -181,28 +179,9 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public void addAsyncListener(AsyncListener listener)
+    public void addAsyncListener(ContinuationListener listener)
     {
-        _async._listeners=LazyList.add(_async._listeners,listener);
-    }
-    
-    /* ------------------------------------------------------------ */
-    public void addAsyncListener(final AsyncListener listener, ServletRequest servletRequest, ServletResponse servletResponse)
-    {
-        final AsyncEvent event = new AsyncEvent(servletRequest,servletResponse);
-        
-        _async._listeners=LazyList.add(_async._listeners,new AsyncListener()
-        {
-            public void onComplete(AsyncEvent ev) throws IOException
-            {
-                listener.onComplete(event);
-            }
-
-            public void onTimeout(AsyncEvent ev) throws IOException
-            {
-                listener.onComplete(event);
-            }
-        });
+        _async.addContinuationListener((ContinuationListener)listener);
     }
 
     /* ------------------------------------------------------------ */
@@ -210,6 +189,9 @@ public class Request implements HttpServletRequest
     {
         if (listener instanceof ServletRequestAttributeListener)
             _requestAttributeListeners= LazyList.add(_requestAttributeListeners, listener);
+        if (listener instanceof ContinuationListener)
+            _async.addContinuationListener((ContinuationListener)listener);
+            
     }
 
     /* ------------------------------------------------------------ */
@@ -336,18 +318,8 @@ public class Request implements HttpServletRequest
      */
     public Object getAttribute(String name)
     {
-        if ("org.eclipse.jetty.util.ajax.Continuation".equals(name))
-            return getContinuation(true);
-        
-        if (DispatcherType.ASYNC.equals(_dispatcherType))
-        {
-            // TODO handle forwards(path!)
-            if (name.equals(Dispatcher.FORWARD_PATH_INFO))    return getPathInfo();
-            if (name.equals(Dispatcher.FORWARD_REQUEST_URI))  return getRequestURI();
-            if (name.equals(Dispatcher.FORWARD_SERVLET_PATH)) return getServletPath();
-            if (name.equals(Dispatcher.FORWARD_CONTEXT_PATH)) return getContextPath();
-            if (name.equals(Dispatcher.FORWARD_QUERY_STRING)) return getQueryString();
-        }
+        if (Continuation.ATTRIBUTE.equals(name))
+            return _async;
         
         if (_attributes==null)
             return null;
@@ -362,6 +334,7 @@ public class Request implements HttpServletRequest
     {
         if (_attributes==null)
             return Collections.enumeration(Collections.EMPTY_LIST);
+        
         return AttributesMap.getAttributeNamesCopy(_attributes);
     }
     
@@ -453,17 +426,6 @@ public class Request implements HttpServletRequest
      */
     public Continuation getContinuation()
     {
-        return _continuation;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated
-     */
-    public Continuation getContinuation(boolean create)
-    {
-        if (_continuation==null && create)
-            _continuation=new Servlet3Continuation(this); 
         return _continuation;
     }
 
@@ -1355,8 +1317,6 @@ public class Request implements HttpServletRequest
         if (_savedNewSessions!=null)
             _savedNewSessions.clear();
         _savedNewSessions=null;
-        if (_continuation!=null && _continuation.isPending())
-            _continuation.reset();
     }
     
     /* ------------------------------------------------------------ */
@@ -1832,36 +1792,6 @@ public class Request implements HttpServletRequest
     {
         return (_handled?"[":"(")+getMethod()+" "+_uri+(_handled?"]@":")@")+hashCode()+" "+super.toString();
     }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @see javax.servlet.http.HttpServletRequest#login(javax.servlet.http.HttpServletResponse)
-     */
-    public boolean login(HttpServletResponse response) throws IOException, LoginException
-    {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see javax.servlet.http.HttpServletRequest#login(java.lang.String, java.lang.String)
-     */
-    public void login(String username, String password) throws LoginException
-    {
-        // TODO Auto-generated method stub
-        
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see javax.servlet.http.HttpServletRequest#logout()
-     */
-    public void logout() throws LoginException
-    {
-        // TODO Auto-generated method stub
-        
-    }    
     
 }
 

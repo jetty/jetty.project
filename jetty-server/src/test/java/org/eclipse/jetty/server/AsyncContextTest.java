@@ -16,16 +16,14 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InputStream;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
 
+import org.eclipse.jetty.continuation.ContinuationEvent;
+import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 
 public class AsyncContextTest extends TestCase
@@ -277,14 +275,14 @@ public class AsyncContextTest extends TestCase
     }
     
     
-    private static AsyncListener __asyncListener = 
-        new AsyncListener()
+    private static ContinuationListener __asyncListener = 
+        new ContinuationListener()
     {
-        public void onComplete(AsyncEvent event) throws IOException
+        public void onComplete(ContinuationEvent event) throws IOException
         {
         }
 
-        public void onTimeout(AsyncEvent event) throws IOException
+        public void onTimeout(ContinuationEvent event) throws IOException
         {
             event.getRequest().setAttribute("TIMEOUT",Boolean.TRUE);
             ((Request)event.getRequest()).getAsyncContext().dispatch();

@@ -15,11 +15,10 @@ package org.eclipse.jetty.servlet;
 
 import java.util.EnumSet;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
-import javax.servlet.FilterRegistration;
 
+import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.util.log.Log;
 
 /* --------------------------------------------------------------------- */
@@ -132,49 +131,6 @@ public class FilterHolder extends Holder
         return getName();
     }
     
-
-    public FilterRegistration getRegistration()
-    {
-        return new Registration();
-    }
-    
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    protected class Registration extends HolderRegistration implements FilterRegistration
-    {
-        /* ------------------------------------------------------------ */
-        public boolean addMappingForServletNames(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... servletNames)
-        {
-            illegalStateIfContextStarted();
-            FilterMapping mapping = new FilterMapping();
-            mapping.setFilterHolder(FilterHolder.this);
-            mapping.setServletNames(servletNames);
-            mapping.setDispatcherTypes(dispatcherTypes);
-            if (isMatchAfter)
-                _servletHandler.addFilterMapping(mapping);
-            else
-                _servletHandler.prependFilterMapping(mapping);
-
-            return true;
-        }
-
-        public boolean addMappingForUrlPatterns(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... urlPatterns)
-        {
-            illegalStateIfContextStarted();
-            FilterMapping mapping = new FilterMapping();
-            mapping.setFilterHolder(FilterHolder.this);
-            mapping.setPathSpecs(urlPatterns);
-            mapping.setDispatcherTypes(dispatcherTypes);
-            if (isMatchAfter)
-                _servletHandler.addFilterMapping(mapping);
-            else
-                _servletHandler.prependFilterMapping(mapping);
-            return true;
-        }
-
-    }
-
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

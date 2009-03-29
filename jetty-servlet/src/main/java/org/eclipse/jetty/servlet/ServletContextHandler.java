@@ -15,23 +15,19 @@ package org.eclipse.jetty.servlet;
 
 import java.util.EnumSet;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
-import javax.servlet.FilterRegistration;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletRegistration;
-import javax.servlet.SessionTrackingMode;
 
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.util.log.Log;
 
 
 /* ------------------------------------------------------------ */
@@ -350,150 +346,6 @@ public class ServletContextHandler extends ContextHandler
             ServletHolder holder= handler.newServletHolder();
             holder.setName(servletName);
             handler.addServlet(holder);
-        }
-        
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#addFilter(java.lang.String, java.lang.Class)
-         */
-        public FilterRegistration addFilter(String filterName, Class<? extends Filter> filterClass)
-        {
-            if (isStarted())
-                throw new IllegalStateException();
-
-            final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final FilterHolder holder= handler.newFilterHolder();
-            holder.setName(filterName);
-            holder.setHeldClass(filterClass);
-            handler.addFilter(holder);
-            return holder.getRegistration();
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#addFilter(java.lang.String, java.lang.String)
-         */
-        public FilterRegistration addFilter(String filterName, String className)
-        {
-            if (isStarted())
-                throw new IllegalStateException();
-
-            final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final FilterHolder holder= handler.newFilterHolder();
-            holder.setName(filterName);
-            holder.setClassName(className);
-            handler.addFilter(holder);
-            return holder.getRegistration();
-        }
-
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#addFilter(java.lang.String, javax.servlet.Filter)
-         */
-        public FilterRegistration addFilter(String filterName, Filter filter)
-        {
-            if (isStarted())
-                throw new IllegalStateException();
-
-            final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final FilterHolder holder= handler.newFilterHolder();
-            holder.setName(filterName);
-            holder.setFilter(filter);
-            handler.addFilter(holder);
-            return holder.getRegistration();
-        }
-        
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#addServlet(java.lang.String, java.lang.Class)
-         */
-        public ServletRegistration addServlet(String servletName, Class<? extends Servlet> servletClass)
-        {
-            if (!isStarting())
-                throw new IllegalStateException();
-
-            final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final ServletHolder holder= handler.newServletHolder();
-            holder.setName(servletName);
-            holder.setHeldClass(servletClass);
-            handler.addServlet(holder);
-            return holder.getRegistration();
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#addServlet(java.lang.String, java.lang.String)
-         */
-        public ServletRegistration addServlet(String servletName, String className)
-        {
-            if (!isStarting())
-                throw new IllegalStateException();
-
-            final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final ServletHolder holder= handler.newServletHolder();
-            holder.setName(servletName);
-            holder.setClassName(className);
-            handler.addServlet(holder);
-            return holder.getRegistration();
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#addServlet(java.lang.String, javax.servlet.Servlet)
-         */
-        public ServletRegistration addServlet(String servletName, Servlet servlet)
-        {
-            if (!isStarting())
-                throw new IllegalStateException();
-
-            final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final ServletHolder holder= handler.newServletHolder();
-            holder.setName(servletName);
-            holder.setServlet(servlet);
-            handler.addServlet(holder);
-            return holder.getRegistration();
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#findFilterRegistration(java.lang.String)
-         */
-        public FilterRegistration findFilterRegistration(String filterName)
-        {
-            final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final FilterHolder holder=handler.getFilter(filterName);
-            return (holder==null)?null:holder.getRegistration();
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#findServletRegistration(java.lang.String)
-         */
-        public ServletRegistration findServletRegistration(String servletName)
-        {
-            final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final ServletHolder holder=handler.getServlet(servletName);
-            return (holder==null)?null:holder.getRegistration();
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#getDefaultSessionTrackingModes()
-         */
-        public EnumSet<SessionTrackingMode> getDefaultSessionTrackingModes()
-        {
-            return SessionHandler.DEFAULT_TRACKING;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#getEffectiveSessionTrackingModes()
-         */
-        public EnumSet<SessionTrackingMode> getEffectiveSessionTrackingModes()
-        {
-            Log.warn("Not Implemented");
-            return null;
         }
         
 

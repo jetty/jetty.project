@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.servlets;
 
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.Socket;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.Enumeration;
 import java.util.HashSet;
 
@@ -33,7 +32,18 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
 
 
 
@@ -44,9 +54,9 @@ import org.eclipse.jetty.util.IO;
  */
 public class ProxyServlet implements Servlet
 {
-    private int _tunnelTimeoutMs=300000;
-    
-    protected final HashSet _DontProxyHeaders = new HashSet();
+    HttpClient _client;
+
+    protected HashSet<String> _DontProxyHeaders = new HashSet<String>();
     {
         _DontProxyHeaders.add("proxy-connection");
         _DontProxyHeaders.add("connection");
@@ -58,10 +68,10 @@ public class ProxyServlet implements Servlet
         _DontProxyHeaders.add("proxy-authenticate");
         _DontProxyHeaders.add("upgrade");
     }
-    
+
     private ServletConfig config;
     private ServletContext context;
-    
+
     /* (non-Javadoc)
      * @see javax.servlet.Servlet#init(javax.servlet.ServletConfig)
      */
@@ -69,6 +79,18 @@ public class ProxyServlet implements Servlet
     {
         this.config=config;
         this.context=config.getServletContext();
+
+        _client=new HttpClient();
+        //_client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
+        _client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        try
+        {
+            _client.start();
+        }
+        catch (Exception e)
+        {
+            throw new ServletException(e);
+        }
     }
 
     /* (non-Javadoc)
@@ -85,161 +107,175 @@ public class ProxyServlet implements Servlet
     public void service(ServletRequest req, ServletResponse res) throws ServletException,
             IOException
     {
-        HttpServletRequest request = (HttpServletRequest)req;
-        HttpServletResponse response = (HttpServletResponse)res;
+        final HttpServletRequest request = (HttpServletRequest)req;
+        final HttpServletResponse response = (HttpServletResponse)res;
         if ("CONNECT".equalsIgnoreCase(request.getMethod()))
         {
             handleConnect(request,response);
         }
         else
         {
-            String uri=request.getRequestURI();
-            if (request.getQueryString()!=null)
-                uri+="?"+request.getQueryString();
-            URL url = new URL(request.getScheme(),
-                    		  request.getServerName(),
-                    		  request.getServerPort(),
-                    		  uri);
+            final InputStream in=request.getInputStream();
+            final OutputStream out=response.getOutputStream();
+
+            final Continuation continuation = ContinuationSupport.getContinuation(request);
             
-            context.log("URL="+url);
-
-            URLConnection connection = url.openConnection();
-            connection.setAllowUserInteraction(false);
-            
-            // Set method
-            HttpURLConnection http = null;
-            if (connection instanceof HttpURLConnection)
+            if (!continuation.isInitial())
+                response.sendError(HttpServletResponse.SC_GATEWAY_TIMEOUT); // Need better test that isInitial
+            else
             {
-                http = (HttpURLConnection)connection;
-                http.setRequestMethod(request.getMethod());
-                http.setInstanceFollowRedirects(false);
-            }
+                String uri=request.getRequestURI();
+                if (request.getQueryString()!=null)
+                    uri+="?"+request.getQueryString();
 
-            // check connection header
-            String connectionHdr = request.getHeader("Connection");
-            if (connectionHdr!=null)
-            {
-                connectionHdr=connectionHdr.toLowerCase();
-                if (connectionHdr.equals("keep-alive")||
-                    connectionHdr.equals("close"))
-                    connectionHdr=null;
-            }
-            
-            // copy headers
-            boolean xForwardedFor=false;
-            boolean hasContent=false;
-            Enumeration enm = request.getHeaderNames();
-            while (enm.hasMoreElements())
-            {
-                // TODO could be better than this!
-                String hdr=(String)enm.nextElement();
-                String lhdr=hdr.toLowerCase();
+		HttpURI url=proxyHttpURI(request.getScheme(),
+		                         request.getServerName(),
+		                         request.getServerPort(),
+		                         uri);
+		if (url==null)
+		{
+		    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+		    return;
+		}
 
-                if (_DontProxyHeaders.contains(lhdr))
-                    continue;
-                if (connectionHdr!=null && connectionHdr.indexOf(lhdr)>=0)
-                    continue;
 
-                if ("content-type".equals(lhdr))
-                    hasContent=true;
-
-                Enumeration vals = request.getHeaders(hdr);
-                while (vals.hasMoreElements())
+                HttpExchange exchange = new HttpExchange()
                 {
-                    String val = (String)vals.nextElement();
-                    if (val!=null)
+                    protected void onRequestCommitted() throws IOException
                     {
-                        connection.addRequestProperty(hdr,val);
-                        context.log("req "+hdr+": "+val);
-                        xForwardedFor|="X-Forwarded-For".equalsIgnoreCase(hdr);
+                    }
+
+                    protected void onRequestComplete() throws IOException
+                    {
+                    }
+
+                    protected void onResponseComplete() throws IOException
+                    {
+                        continuation.complete();
+                    }
+
+                    protected void onResponseContent(Buffer content) throws IOException
+                    {
+                        content.writeTo(out);
+                    }
+
+                    protected void onResponseHeaderComplete() throws IOException
+                    {
+                    }
+
+                    protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+                    {
+                        if (reason!=null && reason.length()>0)
+                            response.setStatus(status,reason.toString());
+                        else
+                            response.setStatus(status);
+                    }
+
+                    protected void onResponseHeader(Buffer name, Buffer value) throws IOException
+                    {
+                        String s = name.toString().toLowerCase();
+                        if (!_DontProxyHeaders.contains(s))
+                            response.addHeader(name.toString(),value.toString());
+                    }
+
+                    protected void onConnectionFailed(Throwable ex)
+                    {
+                        onException(ex);
+                    }
+
+                    protected void onException(Throwable ex)
+                    {
+                        if (ex instanceof EofException)
+                        {
+                            Log.ignore(ex);
+                            return;
+                        }
+                        Log.warn(ex.toString());
+                        Log.debug(ex);
+                        if (!response.isCommitted())
+                            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                        continuation.complete();
+                    }
+
+                    protected void onExpire()
+                    {
+                        if (!response.isCommitted())
+                            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                        continuation.complete();
+                    }
+
+                };
+
+                exchange.setScheme(HttpSchemes.HTTPS.equals(request.getScheme())?HttpSchemes.HTTPS_BUFFER:HttpSchemes.HTTP_BUFFER);
+                exchange.setMethod(request.getMethod());
+		exchange.setURL(url.toString());
+                exchange.setVersion(request.getProtocol());
+
+                if (Log.isDebugEnabled())
+                    Log.debug("PROXY TO "+url);
+
+                // check connection header
+                String connectionHdr = request.getHeader("Connection");
+                if (connectionHdr!=null)
+                {
+                    connectionHdr=connectionHdr.toLowerCase();
+                    if (connectionHdr.indexOf("keep-alive")<0  &&
+                            connectionHdr.indexOf("close")<0)
+                        connectionHdr=null;
+                }
+
+                // copy headers
+                boolean xForwardedFor=false;
+                boolean hasContent=false;
+                long contentLength=-1;
+                Enumeration<?> enm = request.getHeaderNames();
+                while (enm.hasMoreElements())
+                {
+                    // TODO could be better than this!
+                    String hdr=(String)enm.nextElement();
+                    String lhdr=hdr.toLowerCase();
+
+                    if (_DontProxyHeaders.contains(lhdr))
+                        continue;
+                    if (connectionHdr!=null && connectionHdr.indexOf(lhdr)>=0)
+                        continue;
+
+                    if ("content-type".equals(lhdr))
+                        hasContent=true;
+                    if ("content-length".equals(lhdr))
+                    {
+                        contentLength=request.getContentLength();
+                        exchange.setRequestHeader(HttpHeaders.CONTENT_LENGTH,TypeUtil.toString(contentLength));
+                        if (contentLength>0)
+                            hasContent=true;
+                    }
+
+                    Enumeration<?> vals = request.getHeaders(hdr);
+                    while (vals.hasMoreElements())
+                    {
+                        String val = (String)vals.nextElement();
+                        if (val!=null)
+                        {
+                            exchange.setRequestHeader(lhdr,val);
+                            xForwardedFor|="X-Forwarded-For".equalsIgnoreCase(hdr);
+                        }
                     }
                 }
-            }
 
-            // Proxy headers
-            connection.setRequestProperty("Via","1.1 (jetty)");
-            if (!xForwardedFor)
-                connection.addRequestProperty("X-Forwarded-For",
-                                              request.getRemoteAddr());
+                // Proxy headers
+                exchange.setRequestHeader("Via","1.1 (jetty)");
+                if (!xForwardedFor)
+                    exchange.addRequestHeader("X-Forwarded-For",
+                            request.getRemoteAddr());
 
-            // a little bit of cache control
-            String cache_control = request.getHeader("Cache-Control");
-            if (cache_control!=null &&
-                (cache_control.indexOf("no-cache")>=0 ||
-                 cache_control.indexOf("no-store")>=0))
-                connection.setUseCaches(false);
-
-            // customize Connection
-            
-            try
-            {    
-                connection.setDoInput(true);
-                
-                // do input thang!
-                InputStream in=request.getInputStream();
                 if (hasContent)
-                {
-                    connection.setDoOutput(true);
-                    IO.copy(in,connection.getOutputStream());
-                }
-                
-                // Connect                
-                connection.connect();    
-            }
-            catch (Exception e)
-            {
-                context.log("proxy",e);
-            }
-            
-            InputStream proxy_in = null;
+                    exchange.setRequestContentSource(in);
 
-            // handler status codes etc.
-            int code=500;
-            if (http!=null)
-            {
-                proxy_in = http.getErrorStream();
-                
-                code=http.getResponseCode();
-                response.setStatus(code, http.getResponseMessage());
-                context.log("response = "+http.getResponseCode());
-            }
-            
-            if (proxy_in==null)
-            {
-                try {proxy_in=connection.getInputStream();}
-                catch (Exception e)
-                {
-                    context.log("stream",e);
-                    proxy_in = http.getErrorStream();
-                }
-            }
-            
-            // clear response defaults.
-            response.setHeader("Date",null);
-            response.setHeader("Server",null);
-            
-            // set response headers
-            int h=0;
-            String hdr=connection.getHeaderFieldKey(h);
-            String val=connection.getHeaderField(h);
-            while(hdr!=null || val!=null)
-            {
-                String lhdr = hdr!=null?hdr.toLowerCase():null;
-                if (hdr!=null && val!=null && !_DontProxyHeaders.contains(lhdr))
-                    response.addHeader(hdr,val);
+                continuation.suspend(); 
+                continuation.keepWrappers();
+                _client.send(exchange);
 
-                context.log("res "+hdr+": "+val);
-                
-                h++;
-                hdr=connection.getHeaderFieldKey(h);
-                val=connection.getHeaderField(h);
             }
-            response.addHeader("Via","1.1 (jetty)");
-
-            // Handle
-            if (proxy_in!=null)
-                IO.copy(proxy_in,response.getOutputStream());
-            
         }
     }
 
@@ -250,12 +286,12 @@ public class ProxyServlet implements Servlet
         throws IOException
     {
         String uri = request.getRequestURI();
-        
+
         context.log("CONNECT: "+uri);
-        
+
         String port = "";
         String host = "";
-        
+
         int c = uri.indexOf(':');
         if (c>=0)
         {
@@ -265,11 +301,11 @@ public class ProxyServlet implements Servlet
                 host = host.substring(host.indexOf('/')+1);
         }
 
-        
-       
+        // TODO - make this async!
+
 
         InetSocketAddress inetAddress = new InetSocketAddress (host, Integer.parseInt(port));
-        
+
         //if (isForbidden(HttpMessage.__SSL_SCHEME,addrPort.getHost(),addrPort.getPort(),false))
         //{
         //    sendForbid(request,response,uri);
@@ -278,15 +314,14 @@ public class ProxyServlet implements Servlet
         {
             InputStream in=request.getInputStream();
             OutputStream out=response.getOutputStream();
-            
+
             Socket socket = new Socket(inetAddress.getAddress(),inetAddress.getPort());
             context.log("Socket: "+socket);
-            
+
             response.setStatus(200);
             response.setHeader("Connection","close");
             response.flushBuffer();
-            
-            
+            // TODO prevent real close!
 
             context.log("out<-in");
             IO.copyThread(socket.getInputStream(),out);
@@ -294,10 +329,15 @@ public class ProxyServlet implements Servlet
             IO.copy(in,socket.getOutputStream());
         }
     }
-    
-    
-    
-    
+
+    /* ------------------------------------------------------------ */
+    protected HttpURI proxyHttpURI(String scheme, String serverName, int serverPort, String uri)
+        throws MalformedURLException
+    {
+        return new HttpURI(scheme+"://"+serverName+":"+serverPort+uri);
+    }
+
+
     /* (non-Javadoc)
      * @see javax.servlet.Servlet#getServletInfo()
      */
@@ -313,4 +353,5 @@ public class ProxyServlet implements Servlet
     {
 
     }
+
 }

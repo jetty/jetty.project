@@ -22,7 +22,6 @@ import java.util.Stack;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.SingleThreadModel;
@@ -554,34 +553,6 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
         
     }
 
-    /* -------------------------------------------------------- */
-    /* -------------------------------------------------------- */
-    /* -------------------------------------------------------- */
-    protected class Registration extends HolderRegistration implements ServletRegistration
-    {
-        public boolean addMapping(String... urlPatterns)
-        {
-            illegalStateIfContextStarted();
-            ServletMapping mapping = new ServletMapping();
-            mapping.setServletName(ServletHolder.this.getName());
-            mapping.setPathSpecs(urlPatterns);
-            _servletHandler.addServletMapping(mapping);
-            return true;
-        }
-        
-        public boolean setLoadOnStartup(int loadOnStartup)
-        {
-            illegalStateIfContextStarted();
-            ServletHolder.this.setInitOrder(loadOnStartup);
-            return false;
-        }
-    }
-    
-    public ServletRegistration getRegistration()
-    {
-        return new Registration();
-    }
-    
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */

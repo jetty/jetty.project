@@ -18,22 +18,13 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import javax.annotation.security.RunAs;
-import javax.servlet.DispatcherType;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.servlet.http.annotation.FilterMapping;
-import javax.servlet.http.annotation.InitParam;
-import javax.servlet.http.annotation.Servlet;
-import javax.servlet.http.annotation.ServletFilter;
-import javax.servlet.http.annotation.jaxrs.GET;
-import javax.servlet.http.annotation.jaxrs.POST;
 
 
-@Servlet(urlMappings = { "/foo/*", "/bah/*" }, name="CServlet", initParams={@InitParam(name="x", value="y")})
-@ServletFilter(filterName="CFilter", filterMapping=@FilterMapping(dispatcherTypes={DispatcherType.REQUEST}, urlPattern = {"/*"}), initParams={@InitParam(name="a", value="99")})
 @RunAs("admin")
 public class ClassC
 {
@@ -52,8 +43,6 @@ public class ClassC
         
     }
     
-    @GET()
-    @POST()
     public void anything (HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException
     {

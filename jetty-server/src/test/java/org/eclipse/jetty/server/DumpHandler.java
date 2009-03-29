@@ -26,12 +26,12 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.ajax.Continuation;
-import org.eclipse.jetty.util.ajax.ContinuationSupport;
 import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
@@ -68,8 +68,9 @@ public class DumpHandler extends AbstractHandler
         
         if (request.getParameter("continue")!=null)
         {
-            Continuation continuation = ContinuationSupport.getContinuation(request, null);
-            continuation.suspend(Long.parseLong(request.getParameter("continue")));
+            Continuation continuation = ContinuationSupport.getContinuation(request);
+            continuation.setTimeout(Long.parseLong(request.getParameter("continue")));
+            continuation.suspend();
         }
         
         base_request.setHandled(true);

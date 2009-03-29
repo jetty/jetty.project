@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.server;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
+import org.eclipse.jetty.continuation.ContinuationEvent;
+import org.eclipse.jetty.continuation.ContinuationListener;
+import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -31,10 +31,8 @@ import org.eclipse.jetty.util.thread.Timeout;
 /* ------------------------------------------------------------ */
 /** Asyncrhonous Request.
  * 
- * 
- *
  */
-public class AsyncRequest implements AsyncContext
+public class AsyncRequest implements AsyncContext, Continuation
 {
     // STATES:
     private static final int __IDLE=0;         // Idle request
@@ -62,11 +60,14 @@ public class AsyncRequest implements AsyncContext
 
     /* ------------------------------------------------------------ */
     protected HttpConnection _connection;
-    protected Object _listeners;
+    private Object _listeners;
 
     /* ------------------------------------------------------------ */
     private int _state;
     private boolean _initial;
+    private boolean _resumed;
+    private boolean _expired;
+    private boolean _keepWrappers;
     private long _timeoutMs;
     private AsyncEventState _event;
 
@@ -76,19 +77,17 @@ public class AsyncRequest implements AsyncContext
         _state=__IDLE;
         _initial=true;
     }
-    
-    /* ------------------------------------------------------------ */
-    protected AsyncRequest(final HttpConnection connection)
-    {
-        this();
-        if (connection!=null)
-            setConnection(connection);
-    }
 
     /* ------------------------------------------------------------ */
     protected void setConnection(final HttpConnection connection)
     {
         _connection=connection;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void addContinuationListener(ContinuationListener listener)
+    {
+        _listeners=LazyList.add(_listeners,listener);
     }
 
     /* ------------------------------------------------------------ */
@@ -109,6 +108,24 @@ public class AsyncRequest implements AsyncContext
         return _event;
     } 
    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#keepWrappers()
+     */
+    public void keepWrappers()
+    {
+        _keepWrappers=true;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#wrappersKept()
+     */
+    public boolean wrappersKept()
+    {
+        return _keepWrappers;
+    }
+
     /* ------------------------------------------------------------ */
     /* (non-Javadoc)
      * @see javax.servlet.ServletRequest#isInitial()
@@ -178,6 +195,8 @@ public class AsyncRequest implements AsyncContext
     {
         synchronized (this)
         {
+            _keepWrappers=false;
+            
             switch(_state)
             {
                 case __DISPATCHED:
@@ -220,7 +239,16 @@ public class AsyncRequest implements AsyncContext
     {
         synchronized (this)
         {
-            _event=new AsyncEventState(context,request,response);
+            _resumed=false;
+            _expired=false;
+            
+            if (_event==null || request!=_event.getRequest() || response != _event.getResponse() || context != _event.getServletContext())  
+                _event=new AsyncEventState(context,request,response);
+            else
+            {
+                _event._dispatchContext=null;
+                _event._path=null;
+            }
             
             switch(_state)
             {
@@ -322,11 +350,13 @@ public class AsyncRequest implements AsyncContext
                     
                 case __SUSPENDING:
                     _state=__REDISPATCHING;
+                    _resumed=true;
                     return;
 
                 case __SUSPENDED:
                     dispatch=true;
                     _state=__UNSUSPENDING;
+                    _resumed=true;
                     break;
                     
                 case __UNSUSPENDING:
@@ -357,6 +387,7 @@ public class AsyncRequest implements AsyncContext
                 default:
                     return;
             }
+            _expired=true;
         }
         
         if (_listeners!=null)
@@ -365,7 +396,7 @@ public class AsyncRequest implements AsyncContext
             {
                 try
                 {
-                    AsyncListener listener=((AsyncListener)LazyList.get(_listeners,i));
+                    ContinuationListener listener=((ContinuationListener)LazyList.get(_listeners,i));
                     listener.onTimeout(_event);
                 }
                 catch(Exception e)
@@ -461,7 +492,7 @@ public class AsyncRequest implements AsyncContext
             {
                 try
                 {
-                    ((AsyncListener)LazyList.get(_listeners,i)).onComplete(_event);
+                    ((ContinuationListener)LazyList.get(_listeners,i)).onComplete(_event);
                 }
                 catch(Exception e)
                 {
@@ -485,8 +516,10 @@ public class AsyncRequest implements AsyncContext
                     _state=__IDLE;
             }
             _initial = true;
+            _resumed=false;
+            _expired=false;
+            _keepWrappers=false;
             cancelTimeout();
-            _event=null;
             _timeoutMs=60000L; // TODO configure
             _listeners=null;
         }
@@ -500,7 +533,6 @@ public class AsyncRequest implements AsyncContext
             _state=__COMPLETE;
             _initial = false;
             cancelTimeout();
-            _event=null;
             _listeners=null;
         }
     }
@@ -558,8 +590,12 @@ public class AsyncRequest implements AsyncContext
                 this.notifyAll();
             }
         }
-        else if (_event!=null)
-            _connection.cancelTimeout(_event._timeout);
+        else 
+        {
+            final AsyncEventState event=_event;
+            if (event!=null)
+                _connection.cancelTimeout(event._timeout);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -662,27 +698,77 @@ public class AsyncRequest implements AsyncContext
             return ((Context)_event.getServletContext()).getContextHandler();
         return null;
     }
-    
+
+
     /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    public class AsyncEventState extends AsyncEvent
+    /**
+     * @see Continuation#isResumed()
+     */
+    public boolean isResumed()
     {
-        final Timeout.Task _timeout;
-        final ServletContext _suspendedContext;
+        return _resumed;
+    }
+    /* ------------------------------------------------------------ */
+    /**
+     * @see Continuation#isExpired()
+     */
+    public boolean isExpired()
+    {
+        return _expired;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see Continuation#resume()
+     */
+    public void resume()
+    {
+        dispatch();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see Continuation#suspend(long)
+     */
+    public void setTimeout(long timeoutMs)
+    {
+        setAsyncTimeout(timeoutMs);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see Continuation#suspend()
+     */
+    public void suspend()
+    {
+        // TODO simplify?
+        AsyncRequest.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),_connection.getResponse());       
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    public class AsyncEventState implements ContinuationEvent
+    {
+        private final ServletContext _suspendedContext;
+        private final ServletRequest _request;
+        private final ServletResponse _response;
+        
         ServletContext _dispatchContext;
+        
         String _path;
+        final Timeout.Task _timeout = new Timeout.Task()
+        {
+            public void expired()
+            {
+                AsyncRequest.this.expired();
+            }
+        };
         
         public AsyncEventState(ServletContext context, ServletRequest request, ServletResponse response)
         {
-            super(request,response);
             _suspendedContext=context;
-            _timeout= new Timeout.Task()
-            {
-                public void expired()
-                {
-                    AsyncRequest.this.expired();
-                }
-            };
+            _request=request;
+            _response=response;
         }
         
         public ServletContext getSuspendedContext()
@@ -698,6 +784,16 @@ public class AsyncRequest implements AsyncContext
         public ServletContext getServletContext()
         {
             return _dispatchContext==null?_suspendedContext:_dispatchContext;
+        }
+
+        public ServletRequest getRequest()
+        {
+            return _request;
+        }
+
+        public ServletResponse getResponse()
+        {
+            return _response;
         }
         
         public String getPath()

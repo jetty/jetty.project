@@ -17,15 +17,14 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.EventListener;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
-import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RetryRequest;
@@ -42,8 +41,6 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class SessionHandler extends HandlerWrapper
 {
-    public final static EnumSet<SessionTrackingMode> DEFAULT_TRACKING = EnumSet.of(SessionTrackingMode.COOKIE,SessionTrackingMode.URL);
-    
     /* -------------------------------------------------------------- */
     private SessionManager _sessionManager;
 

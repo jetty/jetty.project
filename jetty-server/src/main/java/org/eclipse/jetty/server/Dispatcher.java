@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -41,7 +40,6 @@ import org.eclipse.jetty.util.UrlEncoded;
  */
 public class Dispatcher implements RequestDispatcher
 {
-    /*
     public static final String FORWARD_REQUEST_URI = "javax.servlet.forward.request_uri";
     public static final String FORWARD_CONTEXT_PATH = "javax.servlet.forward.context_path";
     public static final String FORWARD_PATH_INFO = "javax.servlet.forward.path_info";
@@ -59,7 +57,6 @@ public class Dispatcher implements RequestDispatcher
     public static final String ERROR_REQUEST_URI = "javax.servlet.error.request_uri";
     public static final String ERROR_SERVLET_NAME = "javax.servlet.error.servlet_name";
     public static final String ERROR_STATUS_CODE = "javax.servlet.error.status_code";
-    */
 
     /** Dispatch include attribute names */
     public final static String __INCLUDE_PREFIX="javax.servlet.include.";

@@ -21,8 +21,6 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.zip.GZIPOutputStream;
 
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -33,6 +31,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationEvent;
+import org.eclipse.jetty.continuation.ContinuationListener;
+import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -132,16 +134,17 @@ public class GzipFilter extends UserAgentFilter
             }
             finally
             {
-                if (request.isAsyncStarted() && !req.getAsyncContext().hasOriginalRequestAndResponse())   
+                Continuation continuation = ContinuationSupport.getContinuation(request);
+                if (continuation.isSuspended() && continuation.wrappersKept())   
                 {
-                    request.addAsyncListener(new AsyncListener()
+                    continuation.addContinuationListener(new ContinuationListener()
                     {
-                        public void onComplete(AsyncEvent event) throws IOException
+                        public void onComplete(ContinuationEvent event) throws IOException
                         {
                             wrappedResponse.finish();
                         }
 
-                        public void onTimeout(AsyncEvent event) throws IOException
+                        public void onTimeout(ContinuationEvent event) throws IOException
                         {}
                     });
                 }

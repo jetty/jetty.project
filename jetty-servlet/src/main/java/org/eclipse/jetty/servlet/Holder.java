@@ -33,14 +33,14 @@ import org.eclipse.jetty.util.log.Log;
 /** 
  * 
  */
-public class Holder extends AbstractLifeCycle implements Serializable
+public class Holder extends AbstractLifeCycle
 {
-    protected transient Class _class;
+    protected transient Class<?> _class;
     protected String _className;
     protected String _displayName;
     protected Map _initParams;
     protected boolean _extInstance;
-    protected boolean _asyncSupported;
+    protected boolean _asyncSupported=true;
     protected AttributesMap _initAttributes;
 
     /* ---------------------------------------------------------------- */
@@ -296,80 +296,6 @@ public class Holder extends AbstractLifeCycle implements Serializable
                 return Holder.this._initAttributes.keySet();
             return Collections.emptySet();    
         }
-        
-    }
-
-    /* -------------------------------------------------------- */
-    /* -------------------------------------------------------- */
-    /* -------------------------------------------------------- */
-    protected class HolderRegistration
-    {
-        public boolean setAsyncSupported(boolean isAsyncSupported)
-        {
-            illegalStateIfContextStarted();
-            Holder.this.setAsyncSupported(isAsyncSupported);
-            return true;
-        }
-
-        public boolean setDescription(String description)
-        {
-            return true;
-        }
-
-        public boolean setInitParameter(String name, String value)
-        {
-            illegalStateIfContextStarted();
-            if (Holder.this.getInitParameter(name)!=null)
-                return false;
-            Holder.this.setInitParameter(name,value);
-            return true;
-        }
-
-        public boolean setInitParameters(Map<String, String> initParameters)
-        {
-            illegalStateIfContextStarted();
-            for (String name : initParameters.keySet())
-                if (Holder.this.getInitParameter(name)!=null)
-                    return false;
-            Holder.this.setInitParameters(initParameters);
-            return true;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletRegistration#setInitAttribute(java.lang.String, java.lang.Object)
-         */
-        public boolean setInitAttribute(String name, Object value)
-        {
-            illegalStateIfContextStarted();
-            if (_initAttributes==null)
-                _initAttributes=new AttributesMap();
-            else if (_initAttributes.getAttribute(name)!=null)
-                return false;
-            _initAttributes.setAttribute(name,value);
-            return true;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletRegistration#setInitAttributes(java.util.Map)
-         */
-        public boolean setInitAttributes(Map<String, Object> initAttributes)
-        {
-            illegalStateIfContextStarted();
-            if (_initAttributes==null)
-                _initAttributes=new AttributesMap();
-            else
-            {
-                for (String name : initAttributes.keySet())
-                    if (_initAttributes.getAttribute(name)!=null)
-                        return false;
-            }
-            for (String name : initAttributes.keySet())
-                _initAttributes.setAttribute(name,initAttributes.get(name));
-            
-            return true;
-        };
     }
 }
 

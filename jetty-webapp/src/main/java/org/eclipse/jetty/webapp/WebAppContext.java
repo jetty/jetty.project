@@ -65,6 +65,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class WebAppContext extends ServletContextHandler
 {   
+    public static final String TEMPDIR = "javax.servlet.context.tempdir";
     public final static String WEB_DEFAULTS_XML="org/eclipse/jetty/webapp/webdefault.xml";
     public final static String ERROR_PAGE="org.eclipse.jetty.server.error_page";
     
@@ -94,16 +95,16 @@ public class WebAppContext extends ServletContextHandler
             "org.w3c.", 
             "org.apache.commons.logging.", 
             "org.apache.log4j.",
-            "org.eclipse.jetty.servlet.", // webapp cannot change default servlets
-            "org.eclipse.util.ajax.",     // webapp cannot change continuation classes
-            "org.eclipse.naming."         // webapp cannot change naming classes
+            "org.eclipse.jetty.servlet.",      // webapp cannot change default servlets
+            "org.eclipse.jetty.continuation.", // webapp cannot change continuation classes
+            "org.eclipse.jetty.naming."        // webapp cannot change naming classes
             };
     private String[] _serverClasses = {
-            "-org.eclipse.naming.",       // don't hide naming classes
-            "-org.eclipse.util.ajax.",    // don't hide continuation classes
-            "-org.eclipse.jetty.plus.jaas.", //don't hide jaas modules
-            "org.eclipse.",               // hide rest of eclipse classes
-            "org.slf4j."                  // hide slf4j
+            "-org.eclipse.jetty.naming.",       // don't hide naming classes
+            "-org.eclipse.jetty.continuation.", // don't hide continuation classes
+            "-org.eclipse.jetty.plus.jaas.",    // don't hide jaas modules
+            "org.eclipse.jetty.",               // hide rest of jetty classes
+            "org.slf4j."                        // hide slf4j
             }; 
     private File _tmpDir;
     private boolean _isExistingTmpDir;
@@ -602,7 +603,7 @@ public class WebAppContext extends ServletContextHandler
         //
         // I'm afraid that this is very much black magic.
         // but if you can think of better....
-        Object t = getAttribute(ServletContext.TEMPDIR);
+        Object t = getAttribute(TEMPDIR);
 
         if (t!=null && (t instanceof File))
         {
@@ -620,7 +621,7 @@ public class WebAppContext extends ServletContextHandler
                 if (_tmpDir.isDirectory() && _tmpDir.canWrite())
                 {
                     if(Log.isDebugEnabled())Log.debug("Converted to File "+_tmpDir+" for "+this);
-                    setAttribute(ServletContext.TEMPDIR,_tmpDir);
+                    setAttribute(TEMPDIR,_tmpDir);
                     return _tmpDir;
                 }
             }
@@ -715,7 +716,7 @@ public class WebAppContext extends ServletContextHandler
             }
         }
 
-        setAttribute(ServletContext.TEMPDIR,_tmpDir);
+        setAttribute(TEMPDIR,_tmpDir);
         return _tmpDir;
     }
     
@@ -1134,7 +1135,7 @@ public class WebAppContext extends ServletContextHandler
             throw new IllegalArgumentException("Bad temp directory: "+dir);
 
         _tmpDir=dir;
-        setAttribute(ServletContext.TEMPDIR,_tmpDir);
+        setAttribute(TEMPDIR,_tmpDir);
     }
     
     /* ------------------------------------------------------------ */
@@ -1203,8 +1204,8 @@ public class WebAppContext extends ServletContextHandler
                             && work.isDirectory()
                             && work.getFile() != null
                             && work.getFile().canWrite()
-                            && getAttribute(ServletContext.TEMPDIR) == null)
-                setAttribute(ServletContext.TEMPDIR, work.getFile());
+                            && getAttribute(TEMPDIR) == null)
+                setAttribute(TEMPDIR, work.getFile());
         }
         
         // Configure webapp

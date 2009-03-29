@@ -118,10 +118,10 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.mortbay.jetty</groupId>
-      <artifactId>jsp-api-2.1-glassfish</artifactId>
-      <version>9.1.02.B04.p0</version>
-      <scope>provided</scope>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

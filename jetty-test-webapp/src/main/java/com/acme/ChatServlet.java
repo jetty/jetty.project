@@ -19,13 +19,13 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationSupport;
 
 
 
@@ -34,22 +34,12 @@ import javax.servlet.http.HttpServletResponse;
 // Some code is duplicated for clarity.
 public class ChatServlet extends HttpServlet
 {
-    AsyncListener _asyncListener = new AsyncListener()
-    {
-        public void onComplete(AsyncEvent event) throws IOException
-        {}
-
-        public void onTimeout(AsyncEvent event) throws IOException
-        {
-            event.getRequest().getAsyncContext().dispatch();
-        }
-    };
     
     // inner class to hold message queue for each chat room member
     class Member
     {
         String _name;
-        AsyncContext _asyncContext;
+        Continuation _continuation;
         Queue<String> _queue = new LinkedList<String>();
     }
 
@@ -105,43 +95,50 @@ public class ChatServlet extends HttpServlet
             return;
         }
 
-        if (member._queue.size()>0)
+        synchronized(member)
         {
-            // Send one chat message
-            response.setContentType("text/json;charset=utf-8");
-            StringBuilder buf=new StringBuilder();
-            
-            buf.append("{\"action\":\"poll\",");
-            buf.append("\"from\":\"");
-            buf.append(member._queue.poll());
-            buf.append("\",");
-
-            String message = member._queue.poll();
-            int quote=message.indexOf('"');
-            while (quote>=0)
+            if (member._queue.size()>0)
             {
-                message=message.substring(0,quote)+'\\'+message.substring(quote);
-                quote=message.indexOf('"',quote+2);
+                // Send one chat message
+                response.setContentType("text/json;charset=utf-8");
+                StringBuilder buf=new StringBuilder();
+
+                buf.append("{\"action\":\"poll\",");
+                buf.append("\"from\":\"");
+                buf.append(member._queue.poll());
+                buf.append("\",");
+
+                String message = member._queue.poll();
+                int quote=message.indexOf('"');
+                while (quote>=0)
+                {
+                    message=message.substring(0,quote)+'\\'+message.substring(quote);
+                    quote=message.indexOf('"',quote+2);
+                }
+                buf.append("\"chat\":\"");
+                buf.append(message);
+                buf.append("\"}");
+                byte[] bytes = buf.toString().getBytes("utf-8");
+                response.setContentLength(bytes.length);
+                response.getOutputStream().write(bytes);
             }
-            buf.append("\"chat\":\"");
-            buf.append(message);
-            buf.append("\"}");
-            byte[] bytes = buf.toString().getBytes("utf-8");
-            response.setContentLength(bytes.length);
-            response.getOutputStream().write(bytes);
-        }
-        else if (request.isAsyncStarted()) 
-        {
-            // Timeout so send empty response
-            response.setContentType("text/json;charset=utf-8");
-            PrintWriter out=response.getWriter();
-            out.print("{action:\"poll\"}");
-        }
-        else
-        {        
-            // No chat in queue, so suspend and wait for timeout or chat
-            request.addAsyncListener(_asyncListener);
-            member._asyncContext=request.startAsync();
+            else 
+            {
+                Continuation continuation = ContinuationSupport.getContinuation(request);
+                if (continuation.isInitial()) 
+                {
+                    // No chat in queue, so suspend and wait for timeout or chat
+                    continuation.suspend();
+                    member._continuation=continuation;
+                }
+                else
+                {
+                    // Timeout so send empty response
+                    response.setContentType("text/json;charset=utf-8");
+                    PrintWriter out=response.getWriter();
+                    out.print("{action:\"poll\"}");
+                }
+            }
         }
     }
 
@@ -152,14 +149,17 @@ public class ChatServlet extends HttpServlet
         // Post chat to all members
         for (Member m:room.values())
         {
-            m._queue.add(username); // from
-            m._queue.add(message);  // chat
-
-            // wakeup member if polling
-            if (m._asyncContext!=null)
+            synchronized (m)
             {
-                m._asyncContext.dispatch();
-                m._asyncContext=null;
+                m._queue.add(username); // from
+                m._queue.add(message);  // chat
+
+                // wakeup member if polling
+                if (m._continuation!=null)
+                {
+                    m._continuation.resume();
+                    m._continuation=null;
+                }
             }
         }
 

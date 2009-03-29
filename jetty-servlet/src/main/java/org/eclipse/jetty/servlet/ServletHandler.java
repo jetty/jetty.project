@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.RequestDispatcher;
@@ -42,6 +41,7 @@ import org.eclipse.jetty.io.HttpException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RetryRequest;

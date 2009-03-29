@@ -72,8 +72,15 @@ public class XmlConfiguration
         {
             URL configURL = Loader.getResource(XmlConfiguration.class, "org/eclipse/jetty/xml/configure_6_0.dtd", true);
             __parser.redirectEntity("configure.dtd", configURL);
+            __parser.redirectEntity("configure_1_0.dtd", configURL);
+            __parser.redirectEntity("configure_1_1.dtd", configURL);
+            __parser.redirectEntity("configure_1_2.dtd", configURL);
             __parser.redirectEntity("configure_1_3.dtd", configURL);
+            __parser.redirectEntity("configure_6_0.dtd", configURL);
+            
+            __parser.redirectEntity("http://jetty.mortbay.org/configure.dtd", configURL);
             __parser.redirectEntity("http://jetty.eclipse.org/configure.dtd", configURL);
+            
             __parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", configURL);
             __parser.redirectEntity("http://jetty.eclipse.org/configure_1_3.dtd", configURL);
             __parser.redirectEntity("-//Mort Bay Consulting//DTD Configure 1.3//EN", configURL);

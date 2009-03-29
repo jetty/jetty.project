@@ -271,7 +271,7 @@ public class Timeout
         boolean _expired=false;
 
         /* ------------------------------------------------------------ */
-        public Task()
+        protected Task()
         {
             _next=_prev=this;
         }
@@ -372,7 +372,7 @@ public class Timeout
          * the {@link #isExpired()} state to true.
          * @see #expired() For an unsynchronized callback.
          */
-        public void expire(){}
+        protected void expire(){}
 
         /* ------------------------------------------------------------ */
         /** Expire task.
@@ -380,7 +380,7 @@ public class Timeout
          * outside of any synchronization scope and may be delayed. 
          * 
          */
-        public void expired(){}
+        protected void expired(){}
 
     }
 

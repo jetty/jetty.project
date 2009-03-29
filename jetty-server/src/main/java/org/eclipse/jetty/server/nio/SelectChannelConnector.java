@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  * This connector is best used when there are a many connections that have idle periods.
  * </p>
  * <p>
- * When used with {@link org.eclipse.jetty.util.ajax.Continuation}, threadless waits are supported. When
+ * When used with {@link org.eclipse.jetty.continuation.Continuation}, threadless waits are supported. When
  * a filter or servlet calls getEvent on a Continuation, a {@link org.eclipse.jetty.server.RetryRequest}
  * runtime exception is thrown to allow the thread to exit the current request handling. Jetty will
  * catch this exception and will not send a response to the client. Instead the thread is released

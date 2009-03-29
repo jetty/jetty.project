@@ -5,9 +5,9 @@
     <version>7.0.0.incubation0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-annotations</artifactId>
-  <name>Jetty :: Servlet Annotations</name>
-  <description>Annotation support for deploying servlets in jetty.</description>
+  <artifactId>jetty-continuation</artifactId>
+  <name>Jetty :: Continuation</name>
+  <description>Asynchronous API</description>
   <build>
     <plugins>
       <plugin>
@@ -22,25 +22,50 @@
             </goals>
             <configuration>
               <instructions>
+                <Bundle-SymbolicName>org.eclipse.jetty.continuation</Bundle-SymbolicName>
                 <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
                 <Bundle-DocURL>http://jetty.eclipse.org</Bundle-DocURL>
-                <Import-Package>!org.eclipse.jetty.annotations.*,*</Import-Package>
+                <Import-Package></Import-Package>
               </instructions>
             </configuration>
            </execution>
         </executions>
       </plugin>
       <plugin>
-        <!--
-        Required for OSGI
-        -->
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>artifact-jar</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>test-jar</id>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
           <archive>               
             <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
+      </plugin>
+      <!-- always include sources since jetty-xbean makes use of them -->
+       <plugin>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-source-plugin</artifactId>
+         <executions>
+           <execution>
+             <id>attach-sources</id>
+             <goals>
+               <goal>jar</goal>
+             </goals>
+           </execution>
+         </executions>
       </plugin>
     </plugins>
   </build>
@@ -51,30 +76,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jndi</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-plus</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-webapp</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-annotation_1.0_spec</artifactId>
-      <version>1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>asm</groupId>
-      <artifactId>asm-commons</artifactId>
-      <version>3.1</version>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>servlet-api</artifactId>
     </dependency>
   </dependencies>
 </project>

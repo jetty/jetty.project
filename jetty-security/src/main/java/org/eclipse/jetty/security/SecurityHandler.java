@@ -260,7 +260,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         List<LoginService> list = getServer().getBeans(LoginService.class);
         
         for (LoginService service : list)
-            if (service.getName().equals(getRealmName()))
+            if (service.getName()!=null && service.getName().equals(getRealmName()))
                 return service;
         if (list.size()>0)
             return list.get(0);

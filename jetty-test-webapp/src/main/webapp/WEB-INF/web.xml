@@ -151,17 +151,6 @@
   </servlet-mapping>
   
   <servlet>
-    <servlet-name>JspSnoop</servlet-name>
-    <jsp-file>/snoop.jsp</jsp-file>
-    <load-on-startup>1</load-on-startup>
-  </servlet>
-  
-  <servlet-mapping>
-    <servlet-name>JspSnoop</servlet-name>
-    <url-pattern>/jspsnoop/*</url-pattern>
-  </servlet-mapping>
-   
-  <servlet>
     <servlet-name>CGI</servlet-name>
     <servlet-class>org.eclipse.jetty.servlets.CGI</servlet-class>
     <load-on-startup>1</load-on-startup>
@@ -186,12 +175,7 @@
   
   <error-page>
     <error-code>404</error-code>
-    <location>/jspsnoop/ERROR/404</location>
-  </error-page>
-  
-  <error-page>
-    <exception-type>java.io.IOException</exception-type>
-    <location>/jspsnoop/IOException</location>
+    <location>/error404.html</location>
   </error-page>
 
   <security-constraint>
@@ -266,26 +250,6 @@
        <form-error-page>/logonError.html?param=test</form-error-page>
     </form-login-config>
   </login-config>
-
-  <jsp-config>
-    <taglib>
-      <taglib-uri>
-        http://www.acme.com/taglib
-      </taglib-uri>
-      <taglib-location>
-        /WEB-INF/acme-taglib.tld
-      </taglib-location>
-    </taglib>
-
-    <taglib>
-      <taglib-uri>
-        http://www.acme.com/taglib2
-      </taglib-uri>
-      <taglib-location>
-        /WEB-INF/acme-taglib2.tld
-      </taglib-location>
-    </taglib>
-  </jsp-config>
   
   <session-config>
     <session-timeout>5</session-timeout>
