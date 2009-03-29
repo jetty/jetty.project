@@ -1401,7 +1401,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
          */
         public int getMajorVersion()
         {
-            return 3;
+            return 2;
         }
 
         /* ------------------------------------------------------------ */
@@ -1424,7 +1424,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
          */
         public int getMinorVersion()
         {
-            return 0;
+            return 5;
         }
 
         /* ------------------------------------------------------------ */
