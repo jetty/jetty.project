@@ -170,7 +170,7 @@ public class ContextHandlerCollection extends HandlerCollection
 	Request base_request = HttpConnection.getCurrentConnection().getRequest();
 	
 	AsyncRequest async = base_request.getAsyncRequest();
-	if (async!=null)
+	if (async.isAsync())
 	{
 	    ContextHandler context=async.getContextHandler();
 	    if (context!=null)

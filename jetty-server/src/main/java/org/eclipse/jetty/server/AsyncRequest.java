@@ -412,10 +412,9 @@ public class AsyncRequest implements AsyncContext, Continuation
             {
                 case __SUSPENDING:
                 case __SUSPENDED:
-                    if (false) // TODO 
-                        dispatch();
-                    else
-                        complete();
+                    dispatch();
+                    return;
+                    
                 default:
                     return;
             }
