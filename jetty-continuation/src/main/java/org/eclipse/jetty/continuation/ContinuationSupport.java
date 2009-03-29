@@ -25,6 +25,7 @@ public class ContinuationSupport
     {
         Continuation continuation = (Continuation) request.getAttribute(Continuation.ATTRIBUTE);
         if (continuation==null)
+            // TODO implement a Servlet3Continuation
             throw new IllegalStateException("!Jetty && !ContinuationFilter installed");
         return continuation;
     }

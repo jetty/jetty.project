@@ -13,19 +13,18 @@ import javax.servlet.ServletResponse;
 
 public class ContinuationFilter implements Filter
 {
-    final boolean _jetty=true;
-    ServletContext _context;
+    private boolean _faux;
+    private ServletContext _context;
 
     public void init(FilterConfig filterConfig) throws ServletException
     {
         _context = filterConfig.getServletContext();
+        _faux=_context.getMajorVersion()<3 && !"org.eclipse.jetty.servlet".equals(filterConfig.getClass().getPackage().getName());
     }
 
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
-        if (_jetty)
-            chain.doFilter(request,response);
-        else
+        if (_faux)
         {
             final FauxContinuation fc = new FauxContinuation();
             request.setAttribute(Continuation.ATTRIBUTE,fc);
@@ -51,6 +50,8 @@ public class ContinuationFilter implements Filter
                 }
             }
         }
+        else
+            chain.doFilter(request,response);
     }
     
     public void destroy()
