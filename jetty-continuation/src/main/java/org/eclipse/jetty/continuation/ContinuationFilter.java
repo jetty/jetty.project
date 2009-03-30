@@ -13,8 +13,8 @@ import javax.servlet.ServletResponse;
 
 public class ContinuationFilter implements Filter
 {
-    boolean _faux;
-    ServletContext _context;
+    private boolean _faux;
+    private ServletContext _context;
 
     public void init(FilterConfig filterConfig) throws ServletException
     {
