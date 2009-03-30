@@ -19,15 +19,21 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 
+
+/* ------------------------------------------------------------ */
+/**
+ * A {@link ContextHandler} provides a common environment for
+ * multiple Handlers, such as: URI context path, class loader,
+ * static resource base.
+ *
+ * Typically a ContextHandler is used only when multiple contexts
+ * are likely.
+ */
 public class OneContext
 {
     public static void main(String[] args)

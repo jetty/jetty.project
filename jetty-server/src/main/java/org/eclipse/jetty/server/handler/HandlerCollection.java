@@ -27,12 +27,11 @@ import org.eclipse.jetty.util.MultiException;
 /* ------------------------------------------------------------ */
 /** A collection of handlers.  
  * <p>
- * For derived HandlerCollections, the order or manner of calling
- * the contained handlers is not defined. The default implementations
- * calls all handlers in list order, regardless of 
- * the response status or exceptions.
+ * The default implementations  calls all handlers in list order, 
+ * regardless of the response status or exceptions. Derived implementation
+ * may alter the order or the conditions of calling the contained 
+ * handlers.
  * <p>
- *  
  * 
  * @org.apache.xbean.XBean
  */
