@@ -8,7 +8,7 @@
   </parent>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>7.0.0.incubation0-SNAPSHOT</version>
+  <version>7.0.0.M0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <packaging>pom</packaging>
 
