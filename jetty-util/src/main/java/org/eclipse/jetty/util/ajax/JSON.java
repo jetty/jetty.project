@@ -62,7 +62,7 @@ import org.eclipse.jetty.util.log.Log;
  * The class {@link JSON.Literal} may be used to hold pre-gnerated JSON object. 
  * <p>
  * The interface {@link Convertor} may be implemented to provide static convertors for objects that may be registered 
- * with {@link #registerConvertor(Class, org.eclipse.util.ajax.JSON.Convertor)}. These convertors are looked up by class, interface and
+ * with {@link #registerConvertor(Class, org.eclipse.jetty.util.ajax.JSON.Convertor)}. These convertors are looked up by class, interface and
  * super class by {@link #getConvertor(Class)}.
  * </p>
  * 
@@ -1323,7 +1323,7 @@ public class JSON
     /** Static JSON Convertor.
      * <p>
      * may be implemented to provide static convertors for objects that may be registered 
-     * with {@link JSON#registerConvertor(Class, org.eclipse.util.ajax.JSON.Convertor). 
+     * with {@link JSON#registerConvertor(Class, org.eclipse.jetty.util.ajax.JSON.Convertor). 
      * These convertors are looked up by class, interface and
      * super class by {@link JSON#getConvertor(Class)}.   Convertors should be used when the
      * classes to be converted cannot implement {@link Convertible} or {@link Generator}.

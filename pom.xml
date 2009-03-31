@@ -117,8 +117,9 @@
     <module>jetty-rewrite</module>
     <module>jetty-servlet-tester</module>
     <module>jetty-start</module>
-    <module>jetty-distribution</module>
+    <module>jetty-embedded-examples</module>
     <module>jetty-test-webapp</module>
+    <module>jetty-distribution</module>
   </modules>
   <repositories>
     <repository>

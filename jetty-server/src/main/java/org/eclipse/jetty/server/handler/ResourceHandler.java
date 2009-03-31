@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -249,11 +250,14 @@ public class ResourceHandler extends AbstractHandler
                 response.sendRedirect(URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH));
                 return;
             }
-            resource=getWelcome(resource);
-
-            if (resource==null || !resource.exists() || resource.isDirectory())
+            
+            Resource welcome=getWelcome(resource);
+            if (welcome!=null && welcome.exists())
+                resource=welcome;
+            else
             {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                doDirectory(request,response,resource);
+                base_request.setHandled(true);
                 return;
             }
         }
@@ -265,7 +269,7 @@ public class ResourceHandler extends AbstractHandler
             long if_modified=request.getDateHeader(HttpHeaders.IF_MODIFIED_SINCE);
             if (if_modified>0 && last_modified/1000<=if_modified/1000)
             {
-                response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                response.setStatus(HttpStatus.NOT_MODIFIED_304);
                 return;
             }
         }
@@ -297,6 +301,13 @@ public class ResourceHandler extends AbstractHandler
         }
     }
 
+    /* ------------------------------------------------------------ */
+    protected void doDirectory(HttpServletRequest request,HttpServletResponse response, Resource resource)
+        throws IOException
+    {
+        response.sendError(HttpStatus.FORBIDDEN_403);
+    }
+    
     /* ------------------------------------------------------------ */
     /** Set the response headers.
      * This method is called to set the response headers such as content type and content length.

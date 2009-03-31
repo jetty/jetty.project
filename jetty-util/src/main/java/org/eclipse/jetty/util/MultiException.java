@@ -136,9 +136,9 @@ public class MultiException extends Exception
     public String toString()
     {
         if (LazyList.size(nested)>0)
-            return "org.eclipse.util.MultiException"+
+            return MultiException.class.getSimpleName()+
                 LazyList.getList(nested);
-        return "org.eclipse.util.MultiException[]";
+        return MultiException.class.getSimpleName()+"[]";
     }
 
     /* ------------------------------------------------------------ */
