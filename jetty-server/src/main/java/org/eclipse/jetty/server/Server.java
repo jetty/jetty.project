@@ -634,35 +634,28 @@ public class Server extends HandlerWrapper implements Attributes
         }
     }
 
-    
-    
-
     /* ------------------------------------------------------------ */
-    /**
+    /** Append a handler.
+     * If the handler is null, set it as the passed handler.
+     * If the handler is a HandlerWrapper, append it to the handler
+     * If the handler is a HandlerCollection, add it to the handler
+     * else throw an {@link IllegalStateException}
+     * 
+     * @param handler
      */
-    public void addHandler(Handler handler)
+    public void appendHandler(Handler handler)
     {
-        if (getHandler() == null) 
+        Handler old = getHandler();
+        if (old==null)
             setHandler(handler);
-        else if (getHandler() instanceof HandlerCollection)
-            ((HandlerCollection)getHandler()).addHandler(handler);
+        else if (old instanceof HandlerWrapper)
+            ((HandlerWrapper)old).appendHandler(handler);
+        else if (old instanceof HandlerCollection)
+            ((HandlerCollection)old).addHandler(handler);
         else
-        {
-            HandlerCollection collection=new HandlerCollection();
-            collection.setHandlers(new Handler[]{getHandler(),handler});
-            setHandler(collection);
-        }
+            throw new IllegalStateException();
     }
     
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    public void removeHandler(Handler handler)
-    {
-        if (getHandler() instanceof HandlerCollection)
-            ((HandlerCollection)getHandler()).removeHandler(handler);
-    }
-
     /* ------------------------------------------------------------ */
     /**
      */

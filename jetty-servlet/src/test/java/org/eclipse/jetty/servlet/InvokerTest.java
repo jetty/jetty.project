@@ -45,7 +45,7 @@ public class InvokerTest extends TestCase
         
         _server.setSendServerVersion(false);
         _server.addConnector(_connector);
-        _server.addHandler(_context);
+        _server.setHandler(_context);
         
         _context.setContextPath("/");
         

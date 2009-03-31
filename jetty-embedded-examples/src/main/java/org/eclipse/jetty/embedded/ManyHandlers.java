@@ -90,7 +90,7 @@ public class ManyHandlers
         HandlerList list = new HandlerList();
         
         // link them all together
-        wrapper.addHandler(hello);
+        wrapper.setHandler(hello);
         list.setHandlers(new Handler[]{param,wrapper,dft});
         handlers.setHandlers(new Handler[]{list,log});
         

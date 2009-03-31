@@ -60,7 +60,7 @@ public class ServletTester
         {
             _server.setSendServerVersion(false);
             _server.addConnector(_connector);
-            _server.addHandler(_context);
+            _server.setHandler(_context);
         }
         catch (Error e)
         {

@@ -171,7 +171,10 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
     {
         this();
         setContextPath(contextPath);
-        parent.addHandler(this);
+        if (parent instanceof HandlerWrapper)
+            ((HandlerWrapper)parent).appendHandler(this);
+        else if (parent instanceof HandlerCollection)
+            ((HandlerCollection)parent).addHandler(this);
     }
 
     /* ------------------------------------------------------------ */

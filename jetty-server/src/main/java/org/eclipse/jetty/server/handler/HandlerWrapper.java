@@ -86,36 +86,27 @@ public class HandlerWrapper extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
-    /** Add a handler.
-     * This implementation of addHandler calls setHandler with the 
-     * passed handler.  If this HandlerWrapper had a previous wrapped
-     * handler, then it is passed to a call to addHandler on the passed
-     * handler.  Thus this call can add a handler in a chain of 
-     * wrapped handlers.
+    /** Append a handler.
+     * If the handler is null, set it as the passed handler.
+     * If the handler is a HandlerWrapper, append it to the handler
+     * If the handler is a HandlerCollection, add it to the handler
+     * else throw an {@link IllegalStateException}
      * 
      * @param handler
      */
-    public void addHandler(Handler handler)
+    public void appendHandler(Handler handler)
     {
         Handler old = getHandler();
-        if (old!=null && !(handler instanceof HandlerContainer))
-            throw new IllegalArgumentException("Cannot add");
-        setHandler(handler);
-        if (old!=null)
-            ((HandlerContainer)handler).addHandler(old);
-    }
-    
-    
-    public void removeHandler (Handler handler)
-    {
-        Handler old = getHandler();
-        if (old!=null && (old instanceof HandlerContainer))
-            ((HandlerContainer)old).removeHandler(handler);
-        else if (old!=null && handler==old)
-            setHandler(null);
+        if (old==null)
+            setHandler(handler);
+        else if (old instanceof HandlerWrapper)
+            ((HandlerWrapper)old).appendHandler(handler);
+        else if (old instanceof HandlerCollection)
+            ((HandlerCollection)old).addHandler(handler);
         else
-            throw new IllegalStateException("Cannot remove");
+            throw new IllegalStateException();
     }
+    
     
     
     /* ------------------------------------------------------------ */
