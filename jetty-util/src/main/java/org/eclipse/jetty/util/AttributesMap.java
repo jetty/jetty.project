@@ -43,7 +43,7 @@ public class AttributesMap implements Attributes
     
     /* ------------------------------------------------------------ */
     /* 
-     * @see org.eclipse.util.Attributes#removeAttribute(java.lang.String)
+     * @see org.eclipse.jetty.util.Attributes#removeAttribute(java.lang.String)
      */
     public void removeAttribute(String name)
     {
@@ -52,7 +52,7 @@ public class AttributesMap implements Attributes
 
     /* ------------------------------------------------------------ */
     /* 
-     * @see org.eclipse.util.Attributes#setAttribute(java.lang.String, java.lang.Object)
+     * @see org.eclipse.jetty.util.Attributes#setAttribute(java.lang.String, java.lang.Object)
      */
     public void setAttribute(String name, Object attribute)
     {
@@ -64,7 +64,7 @@ public class AttributesMap implements Attributes
 
     /* ------------------------------------------------------------ */
     /* 
-     * @see org.eclipse.util.Attributes#getAttribute(java.lang.String)
+     * @see org.eclipse.jetty.util.Attributes#getAttribute(java.lang.String)
      */
     public Object getAttribute(String name)
     {
@@ -73,7 +73,7 @@ public class AttributesMap implements Attributes
 
     /* ------------------------------------------------------------ */
     /* 
-     * @see org.eclipse.util.Attributes#getAttributeNames()
+     * @see org.eclipse.jetty.util.Attributes#getAttributeNames()
      */
     public Enumeration getAttributeNames()
     {
@@ -82,7 +82,7 @@ public class AttributesMap implements Attributes
 
     /* ------------------------------------------------------------ */
     /* 
-     * @see org.eclipse.util.Attributes#getAttributeNames()
+     * @see org.eclipse.jetty.util.Attributes#getAttributeNames()
      */
     public static Enumeration getAttributeNamesCopy(Attributes attrs)
     {
@@ -97,7 +97,7 @@ public class AttributesMap implements Attributes
 
     /* ------------------------------------------------------------ */
     /* 
-     * @see org.eclipse.util.Attributes#clear()
+     * @see org.eclipse.jetty.util.Attributes#clear()
      */
     public void clearAttributes()
     {

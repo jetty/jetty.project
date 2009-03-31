@@ -24,7 +24,7 @@ import java.io.UnsupportedEncodingException;
  * communications ability, but it does assist with query string
  * formatting.
  * <P>UTF-8 encoding is used by default for % encoded characters. This
- * may be overridden with the org.eclipse.util.URI.charset system property.
+ * may be overridden with the org.eclipse.jetty.util.URI.charset system property.
  * @see UrlEncoded
  * 
  */
@@ -38,7 +38,7 @@ public class URIUtil
     public static final String HTTPS_COLON="https:";
 
     // Use UTF-8 as per http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
-    public static final String __CHARSET=System.getProperty("org.eclipse.util.URI.charset",StringUtil.__UTF8);
+    public static final String __CHARSET=System.getProperty("org.eclipse.jetty.util.URI.charset",StringUtil.__UTF8);
     
     private URIUtil()
     {}

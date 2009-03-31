@@ -46,7 +46,7 @@ public class DateCacheTest extends junit.framework.TestCase
     /* ------------------------------------------------------------ */
     public void testDateCache() throws Exception
     {
-        //@WAS: Test t = new Test("org.eclipse.util.DateCache");
+        //@WAS: Test t = new Test("org.eclipse.jetty.util.DateCache");
         //                            012345678901234567890123456789
         DateCache dc = new DateCache("EEE, dd MMM yyyy HH:mm:ss zzz ZZZ",
                                      Locale.US);

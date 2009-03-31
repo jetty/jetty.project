@@ -161,12 +161,12 @@ public class TypeUtil
     
     /* ------------------------------------------------------------ */
     private static int intCacheSize=
-        Integer.getInteger("org.eclipse.util.TypeUtil.IntegerCacheSize",600).intValue();
+        Integer.getInteger("org.eclipse.jetty.util.TypeUtil.IntegerCacheSize",600).intValue();
     private static Integer[] integerCache = new Integer[intCacheSize];
     private static String[] integerStrCache = new String[intCacheSize];
     private static Integer minusOne = new Integer(-1);
     private static int longCacheSize=
-        Integer.getInteger("org.eclipse.util.TypeUtil.LongCacheSize",64).intValue();
+        Integer.getInteger("org.eclipse.jetty.util.TypeUtil.LongCacheSize",64).intValue();
     private static Long[] longCache = new Long[longCacheSize];
     private static Long minusOneL = new Long(-1);
     
