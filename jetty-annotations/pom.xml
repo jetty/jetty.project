@@ -25,6 +25,7 @@
                 <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
                 <Bundle-DocURL>http://jetty.eclipse.org</Bundle-DocURL>
                 <Import-Package>!org.eclipse.jetty.annotations.*,*</Import-Package>
+                <!-- <Export-Package>org.eclipse.jetty.annotations.*</Export-Package> -->
               </instructions>
             </configuration>
            </execution>

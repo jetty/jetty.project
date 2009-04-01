@@ -23,7 +23,8 @@
             <configuration>
               <instructions>
                 <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
-                <Export-Package>org.eclipse.jetty.util</Export-Package>
+                <Export-Package>org.eclipse.jetty.util.*</Export-Package>
+                <Private-Package></Private-Package>
                 <Import-Package>org.slf4j;resolution:=optional,*</Import-Package>
                 <Bundle-DocURL>http://jetty.eclipse.org</Bundle-DocURL>
               </instructions>

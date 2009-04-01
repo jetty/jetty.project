@@ -25,7 +25,7 @@
                 <Bundle-SymbolicName>org.eclipse.jetty.server</Bundle-SymbolicName>
                 <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
                 <Bundle-DocURL>http://jetty.eclipse.org</Bundle-DocURL>
-                <Import-Package>!org.eclipse.jetty.*,!org.eclipse.xml.*,!org.eclipse.resource.*,!org.eclipse.io.*,!org.eclipse.servlet.jetty.*,javax.servlet.resources;resolution:=optional,javax.servlet.jsp;resolution:=optional,org.apache.jasper.servlet;resolution:=optional,org.eclipse.jetty.handler.management;resolution:=optional,*</Import-Package>
+                <!-- <Import-Package>!org.eclipse.jetty.*,!org.eclipse.xml.*,!org.eclipse.resource.*,!org.eclipse.io.*,!org.eclipse.servlet.jetty.*,javax.servlet.resources;resolution:=optional,javax.servlet.jsp;resolution:=optional,org.apache.jasper.servlet;resolution:=optional,org.eclipse.jetty.handler.management;resolution:=optional,*</Import-Package> -->
               </instructions>
             </configuration>
            </execution>

@@ -22,7 +22,7 @@
             <configuration>
               <instructions>
                 <Bundle-RequiredExecutionEnvironment>J2SE-1.4</Bundle-RequiredExecutionEnvironment>                
-                <Export-Package>org.eclipse.jetty.client;version=${project.version}</Export-Package>
+                <Export-Package>!org.eclipse.jetty.client.webdav,org.eclipse.jetty.client.*</Export-Package>
                 <Bundle-DocURL>http://jetty.eclipse.org</Bundle-DocURL>
               </instructions>
             </configuration>
