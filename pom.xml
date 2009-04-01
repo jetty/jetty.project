@@ -73,11 +73,13 @@
         <version>2.0.0</version>
         <extensions>true</extensions>
         <configuration>
+          
           <instructions>
             <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
             <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
             <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
             <Bundle-Copyright>Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+            <_versionpolicy>[$(version;==;$(@)),8.0)</_versionpolicy>
           </instructions>
         </configuration>
        </plugin>
