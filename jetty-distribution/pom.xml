@@ -318,9 +318,9 @@
                   <outputDirectory>${assembly.directory}/lib</outputDirectory>
                 </artifactItem>  
                  <artifactItem>
-                  <groupId>org.mortbay.jetty</groupId>
+                  <groupId>javax.servlet</groupId>
                   <artifactId>servlet-api</artifactId>
-                  <version>${servlet-api-version}</version>
+                  <version>2.5</version>
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
