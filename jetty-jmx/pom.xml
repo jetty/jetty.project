@@ -13,21 +13,13 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>1.4.2</version>
+        <version>${felix.bundle.version}</version>
         <extensions>true</extensions>
         <executions>
           <execution>
             <goals>
               <goal>manifest</goal>
             </goals>
-            <configuration>
-              <instructions>
-                <Bundle-SymbolicName>org.eclipse.jetty.jmx</Bundle-SymbolicName>
-                <Bundle-DocURL>http://jetty.eclipse.org</Bundle-DocURL>
-                <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
-                <Import-Package>!org.eclipse.component.management.*,!org.eclipse.jetty.deployer.management.*,!org.eclipse.jetty.nio.management.*,!org.eclipse.log.management.*,!org.eclipse.jetty.jmx.*,!org.eclipse.thread.management.*,!org.eclipse.jetty.jmx.handler.*,!org.eclipse.jetty.jmx.*,!org.eclipse.jetty.jmx.servlet.*,!org.eclipse.jetty.jmx.webapp.*,*</Import-Package>
-              </instructions>
-            </configuration>
            </execution>
         </executions>
       </plugin>

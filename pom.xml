@@ -10,23 +10,26 @@
   <artifactId>jetty-project</artifactId>
   <version>7.0.0.M0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
+  <url>${jetty.url}</url>
   <packaging>pom</packaging>
 
   <properties>
+    <jetty.url>http://www.eclipse.org/jetty</jetty.url>
+    <felix.bundle.version>2.0.0</felix.bundle.version>
     <activation-version>1.1</activation-version>
     <ant-version>1.6.5</ant-version>
     <jta-spec-version>1.1.1</jta-spec-version>
     <junit-version>3.8.2</junit-version>
     <mail-version>1.4</mail-version>
-    <slf4j-version>[1.4,1.6)</slf4j-version>
+    <slf4j-version>1.5.6</slf4j-version>
     <eclipse-compiler-version>3.1.1</eclipse-compiler-version>
     <glassfish-version-tag>9.1.02.B04.p0</glassfish-version-tag>
     <cometd-version>1.0.beta4</cometd-version>
   </properties>
   <scm>
-    <connection>scm:svn:https://svn.codehaus.org/jetty/jetty/trunk</connection>
-    <developerConnection>scm:svn:https://svn.codehaus.org/jetty/jetty/trunk</developerConnection>
-    <url>scm:svn:https://svn.codehaus.org/jetty/jetty/trunk</url>
+    <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk</connection>
+    <developerConnection>scm:svn:svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk</developerConnection>
+    <url>http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk</url>
   </scm>
   <build>
     <defaultGoal>install</defaultGoal>
@@ -42,55 +45,41 @@
       <plugin>
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
-          <tagBase>https://svn.codehaus.org/jetty/jetty/tags</tagBase>
+          <tagBase>svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags</tagBase>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <mode>development</mode>
-              <url>${pom.url}</url>
-              <implementation-version>${pom.version}</implementation-version>
-              <package>org.eclipse</package>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-      <!--
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-remote-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>process</goal>
-            </goals>
-            <configuration>
-              <resourceBundles>
-                <resourceBundle>org.eclipse.jetty:jetty-build-resources:1.0.1</resourceBundle>
-              </resourceBundles>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      -->
     </plugins>
     <pluginManagement>
       <plugins>
        <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.4.2</version>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Eclipse-Status>Incubation</Eclipse-Status>
+            </manifestEntries>
+          </archive>
+        </configuration>
+       </plugin>
+       <plugin>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-surefire-plugin</artifactId>
+         <version>2.4.2</version>
        </plugin>
        <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>1.4.2</version>
+        <version>2.0.0</version>
         <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
+            <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
+            <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
+            <Bundle-Copyright>Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+          </instructions>
+        </configuration>
        </plugin>
        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -132,47 +121,6 @@
     <module>jetty-test-webapp</module>
     <module>jetty-distribution</module>
   </modules>
-  <repositories>
-    <repository>
-      <id>codehaus.org</id>
-      <name>Jetty Snapshot Repository</name>
-      <layout>default</layout>
-      <url>http://snapshots.repository.codehaus.org</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-   </repository>
-    <repository>
-      <id>apache.plugin.snapshot</id>
-      <name>Apache Snapshot Repository</name>
-      <layout>default</layout>
-      <url>http://people.apache.org/repo/m2-snapshot-repository</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-   </repository>
- 
-  </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <id>apache.plugin.snapshot</id>
-      <name>Apache Plugin Snapshot Repository</name>
-      <layout>default</layout>
-      <url>http://people.apache.org/repo/m2-snapshot-repository</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-   </pluginRepository>
-  </pluginRepositories>
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -237,3 +185,4 @@
     </plugins>
   </reporting>
 </project>
+

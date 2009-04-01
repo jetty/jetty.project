@@ -13,21 +13,13 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>1.4.2</version>
+        <version>${felix.bundle.version}</version>
         <extensions>true</extensions>
         <executions>
           <execution>
             <goals>
               <goal>manifest</goal>
             </goals>
-            <configuration>
-              <instructions>
-                <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
-                <Bundle-DocURL>http://jetty.eclipse.org</Bundle-DocURL>
-                <Import-Package>!org.eclipse.jetty.annotations.*,*</Import-Package>
-                <!-- <Export-Package>org.eclipse.jetty.annotations.*</Export-Package> -->
-              </instructions>
-            </configuration>
            </execution>
         </executions>
       </plugin>

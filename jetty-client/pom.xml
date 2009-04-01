@@ -7,25 +7,19 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-client</artifactId>
   <name>Jetty :: Asynchronous HTTP Client</name>
+  <url>{$jetty.url}</url>
   <build>
     <plugins>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>1.4.2</version>
+        <version>${felix.bundle.version}</version>
         <extensions>true</extensions>
         <executions>
           <execution>
             <goals>
               <goal>manifest</goal>
             </goals>
-            <configuration>
-              <instructions>
-                <Bundle-RequiredExecutionEnvironment>J2SE-1.4</Bundle-RequiredExecutionEnvironment>                
-                <Export-Package>!org.eclipse.jetty.client.webdav,org.eclipse.jetty.client.*</Export-Package>
-                <Bundle-DocURL>http://jetty.eclipse.org</Bundle-DocURL>
-              </instructions>
-            </configuration>
            </execution>
         </executions>
       </plugin>
