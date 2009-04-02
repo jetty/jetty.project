@@ -9,10 +9,35 @@
   <name>Jetty :: Webapp Application Support</name>
   <description>Jetty web application support</description>
   <build>
+    <resources>
+      <resource><directory>src/main/resources</directory></resource>
+      <resource><directory>target/generated-resources</directory></resource>
+    </resources>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <copy failonerror="true"
+                  file="${basedir}/src/main/config/etc/webdefault.xml"
+                  toFile="${project.build.directory}/generated-resources/org/eclipse/jetty/webapp/webdefault.xml" />
+              </tasks>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins
+        </groupId>
+        <artifactId>maven-assembly-plugin
+        </artifactId>
         <executions>
           <execution>
             <phase>package</phase>
@@ -30,7 +55,8 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>${felix.bundle.version}</version>
+        <version>${felix.bundle.version}
+        </version>
         <extensions>true</extensions>
         <executions>
           <execution>
@@ -44,28 +70,32 @@
         <!--
         Required for OSGI
         -->
-        <groupId>org.apache.maven.plugins</groupId>
+        <groupId>org.apache.maven.plugins
+        </groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
-          <archive>               
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          <archive>
+            <manifestFile>
+              ${project.build.outputDirectory}/META-INF/MANIFEST.MF
+            </manifestFile>
           </archive>
         </configuration>
       </plugin>
       <!-- always include sources since jetty-xbean makes use of them -->
-       <plugin>
-         <groupId>org.apache.maven.plugins</groupId>
-         <artifactId>maven-source-plugin</artifactId>
-         <executions>
-           <execution>
-             <id>attach-sources</id>
-             <goals>
-               <goal>jar</goal>
-             </goals>
-           </execution>
-         </executions>
+      <plugin>
+        <groupId>org.apache.maven.plugins
+        </groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
-     </plugins>
+    </plugins>
   </build>
   <dependencies>
     <dependency>
