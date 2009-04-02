@@ -227,7 +227,7 @@ public class Main
             if (_showVersions || invoked_class==null)
             {
                 System.err.println("OPTIONS: "+_options);
-                System.exit(0);
+	        usage();
             }
         }
 
