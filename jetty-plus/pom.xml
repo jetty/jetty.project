@@ -10,6 +10,8 @@
   <description>Jetty JavaEE style services</description>
   <build>
     <plugins>
+<!-- 
+  COMMENTED OUT UNTIL CORRECT CONFIG IS FOUND FOR Export uses clauses
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
@@ -20,13 +22,16 @@
             <goals>
               <goal>manifest</goal>
             </goals>
+            <configuration>
+              <instructions>
+               <_versionpolicy> </_versionpolicy>
+               <Import-Package>javax.servlet.*;version="[2.5,3.0)",javax.transaction.*;version="[1.1,1.2)",*</Import-Package>
+              </instructions>
+            </configuration>
           </execution>
         </executions>
       </plugin>
       <plugin>
-        <!--
-        Required for OSGI
-        -->
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
@@ -35,6 +40,7 @@
           </archive>
         </configuration>
       </plugin>
+-->
       <!-- always include sources since jetty-xbean makes use of them -->
       <plugin>
          <groupId>org.apache.maven.plugins</groupId>
