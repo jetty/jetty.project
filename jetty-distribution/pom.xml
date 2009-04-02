@@ -383,24 +383,63 @@
                   <groupId>ant</groupId>
                   <artifactId>ant</artifactId>
                   <version>${ant-version}</version>
+                  <outputDirectory>${assembly.directory}/lib/jsp-2.1</outputDirectory>
                 </artifactItem>
                <artifactItem>
                   <groupId>org.eclipse.jdt</groupId>
                   <artifactId>core</artifactId>
                   <version>${eclipse-compiler-version}</version>
+                  <outputDirectory>${assembly.directory}/lib/jsp-2.1</outputDirectory>
                 </artifactItem>
                <artifactItem>
                   <groupId>org.mortbay.jetty</groupId>
                   <artifactId>jsp-api-2.1-glassfish</artifactId>
                   <version>${jsp-2-1-version}</version>
+                  <outputDirectory>${assembly.directory}/lib/jsp-2.1</outputDirectory>
                 </artifactItem>
                <artifactItem>
                   <groupId>org.mortbay.jetty</groupId>
                   <artifactId>jsp-2.1-glassfish</artifactId>
                   <version>${jsp-2-1-version}</version>
+                  <outputDirectory>${assembly.directory}/lib/jsp-2.1</outputDirectory>
                 </artifactItem>
+               <artifactItem>
+                  <groupId>javax.mail</groupId>
+                  <artifactId>mail</artifactId>
+                  <version>${mail-version}</version>
+                  <outputDirectory>${assembly.directory}/lib/jetty-jndi</outputDirectory>
+               </artifactItem>
+               <artifactItem>
+                  <groupId>javax.activation</groupId>
+                  <artifactId>activation</artifactId>
+                  <version>${activation-version}</version>
+                  <outputDirectory>${assembly.directory}/lib/jetty-jndi</outputDirectory>
+               </artifactItem>
+               <artifactItem>
+                  <groupId>org.apache.geronimo.specs</groupId>
+                  <artifactId>geronimo-annotation_1.0_spec</artifactId>
+                  <version>1.0</version>
+                  <outputDirectory>${assembly.directory}/lib/jetty-annotations</outputDirectory>
+              </artifactItem>
+              <artifactItem>
+                  <groupId>asm</groupId>
+                  <artifactId>asm-commons</artifactId>
+                  <version>3.1</version>
+                  <outputDirectory>${assembly.directory}/lib/jetty-annotations</outputDirectory>
+              </artifactItem>
+              <artifactItem>
+                  <groupId>asm</groupId>
+                  <artifactId>asm</artifactId>
+                  <version>3.1</version>
+                  <outputDirectory>${assembly.directory}/lib/jetty-annotations</outputDirectory>
+              </artifactItem>
+              <artifactItem>
+                  <groupId>asm</groupId>
+                  <artifactId>asm-tree</artifactId>
+                  <version>3.1</version>
+                  <outputDirectory>${assembly.directory}/lib/jetty-annotations</outputDirectory>
+              </artifactItem>
               </artifactItems>
-              <outputDirectory>${assembly.directory}/lib/jsp-2.1</outputDirectory>
             </configuration>
           </execution>
           </executions>
