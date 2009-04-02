@@ -182,9 +182,13 @@ public class Main
         }
         catch (NoClassDefFoundError e)
         {
+            if (_debug)
+                System.err.println(e);
         }
         catch (ClassNotFoundException e)
-        {
+        {            
+            if (_debug)
+                System.err.println(e);
         }
         ClassLoader loader=_classpath.getClassLoader();
         try
@@ -194,9 +198,13 @@ public class Main
         }
         catch (NoClassDefFoundError e)
         {
+            if (_debug)
+                System.err.println(e);
         }
         catch (ClassNotFoundException e)
         {
+            if (_debug)
+                System.err.println(e);
         }
         return false;
     }
