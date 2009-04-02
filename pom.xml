@@ -58,6 +58,8 @@
           <archive>
             <manifestEntries>
               <Eclipse-Status>Incubation</Eclipse-Status>
+              <Implementation-Version>${project.version}</Implementation-Version>
+              <Implementation-Vendor>Eclipse.org - Jetty</Implementation-Vendor>
             </manifestEntries>
           </archive>
         </configuration>
