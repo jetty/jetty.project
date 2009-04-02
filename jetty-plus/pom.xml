@@ -12,6 +12,7 @@
     <plugins>
 <!-- 
   COMMENTED OUT UNTIL CORRECT CONFIG IS FOUND FOR Export uses clauses
+-->
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
@@ -40,7 +41,6 @@
           </archive>
         </configuration>
       </plugin>
--->
       <!-- always include sources since jetty-xbean makes use of them -->
       <plugin>
          <groupId>org.apache.maven.plugins</groupId>
