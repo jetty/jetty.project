@@ -12,7 +12,6 @@
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
-
   <properties>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <felix.bundle.version>2.0.0</felix.bundle.version>
@@ -60,6 +59,7 @@
               <Eclipse-Status>Incubation</Eclipse-Status>
               <Implementation-Version>${project.version}</Implementation-Version>
               <Implementation-Vendor>Eclipse.org - Jetty</Implementation-Vendor>
+              <url>${jetty.url}</url>
             </manifestEntries>
           </archive>
         </configuration>
