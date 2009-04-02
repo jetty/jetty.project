@@ -25,19 +25,19 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /* ------------------------------------------------------------ */
-/** A <code>HandlerWrapper</code> acts as a {@link Handler} but delegates the {@link Handler#handle handle} method and
- * {@link LifeCycle life cycle} events to a delegate. This is primarily used to implement the <i>Decorator</i> pattern.
+/** A <code>HandlerContainer</code> that allows a hot swap
+ * of a wrapped handler.
  * 
  */
-public class HandlerWrapper extends AbstractHandlerContainer
+public class HotSwapHandler extends AbstractHandlerContainer
 {
-    private Handler _handler;
+    private volatile Handler _handler;
 
     /* ------------------------------------------------------------ */
     /**
      * 
      */
-    public HandlerWrapper()
+    public HotSwapHandler()
     {
     }
 
@@ -56,20 +56,41 @@ public class HandlerWrapper extends AbstractHandlerContainer
      */
     public void setHandler(Handler handler)
     {
-        if (isStarted())
-            throw new IllegalStateException(STARTED);
-        
-        Handler old_handler = _handler;
-
-        if (getServer()!=null)
-            getServer().getContainer().update(this, old_handler, handler, "handler");
-
-        if (handler!=null)
+        try
         {
-            handler.setServer(getServer());
-        }
+            if (isRunning())
+                throw new IllegalStateException(RUNNING);
 
-        _handler = handler;
+            Handler old_handler = _handler;
+
+            if (getServer()!=null)
+                getServer().getContainer().update(this, old_handler, handler, "handler");
+
+            if (handler!=null)
+            {
+                handler.setServer(getServer());
+                if (isStarted())
+                    handler.start();
+            }
+
+            _handler = handler;
+            
+            if (isStarted())
+                old_handler.stop();
+
+        }
+        catch(Error e)
+        {
+            throw e;
+        }
+        catch(RuntimeException e)
+        {
+            throw e;
+        }
+        catch(Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -110,8 +131,8 @@ public class HandlerWrapper extends AbstractHandlerContainer
     /* ------------------------------------------------------------ */
     public void setServer(Server server)
     {
-        if (isStarted())
-            throw new IllegalStateException(STARTED);
+        if (isRunning())
+            throw new IllegalStateException(RUNNING);
             
         Server old_server=getServer();
         

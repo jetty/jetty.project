@@ -65,7 +65,6 @@ public class HttpConnectionTest extends TestCase
     /* --------------------------------------------------------------- */
     public void testFragmentedChunk()
     {        
-        
         String response=null;
         try
         {
@@ -97,8 +96,6 @@ public class HttpConnectionTest extends TestCase
             offset = checkContains(response,offset,"HTTP/1.1 200");
             offset = checkContains(response,offset,"/R2");
             offset = checkContains(response,offset,"ABCDE");
-            
-            
         }
         catch(Exception e)
         {
@@ -127,7 +124,6 @@ public class HttpConnectionTest extends TestCase
     /* --------------------------------------------------------------- */
     public void testAutoFlush() throws Exception
     {        
-        
         String response=null;
             int offset=0;
             
@@ -286,7 +282,9 @@ public class HttpConnectionTest extends TestCase
             offset = checkContains(response,offset,"*");
             
             // to prevent the DumpHandler from picking this up and returning 200 OK
+            server.stop();
             server.setHandler(null);
+            server.start();
             offset=0; connector.reopen();
             response=connector.getResponses("GET * HTTP/1.1\n"+
                                            "Host: localhost\n"+
