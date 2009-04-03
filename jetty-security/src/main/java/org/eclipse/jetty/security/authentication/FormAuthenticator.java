@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.security.DefaultAuthentication;
@@ -169,7 +170,6 @@ public class FormAuthenticator extends LoginAuthenticator
                 }
                 else
                 {
-//                    response.setContentLength(0); //????
                     RequestDispatcher dispatcher = request.getRequestDispatcher(_formErrorPage);
                     dispatcher.forward(request, response);
                 }
@@ -194,6 +194,8 @@ public class FormAuthenticator extends LoginAuthenticator
                                           + request.getServerPort()
                                           + URIUtil.addPaths(request.getContextPath(), uri));
             RequestDispatcher dispatcher = request.getRequestDispatcher(_formLoginPage);
+            response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
+            response.setDateHeader(HttpHeaders.EXPIRES,1);
             dispatcher.forward(request, response);
             return DefaultAuthentication.SEND_CONTINUE_RESULTS;
         }

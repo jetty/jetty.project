@@ -249,8 +249,11 @@ public class ConstraintTest extends TestCase
 
         _connector.reopen();
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
-//        assertTrue(response.startsWith("HTTP/1.1 302 "));
-//        assertTrue(response.indexOf("testLoginPage") > 0);
+        assertTrue(response.indexOf("Cache-Control: no-cache") > 0);
+        assertTrue(response.indexOf("Expires") > 0);
+        assertTrue(response.indexOf("URI=/ctx/testLoginPage") > 0);
+
+        System.err.println(response);
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
         _connector.reopen();
@@ -536,7 +539,11 @@ public class ConstraintTest extends TestCase
         {
             ((Request) request).setHandled(true);
             if (request.getAuthType()==null || "user".equals(request.getRemoteUser()) || request.isUserInRole("user"))
+            {
                 response.setStatus(200);
+                response.setContentType("text/plain; charset=UTF-8");
+                response.getWriter().println("URI="+request.getRequestURI());
+            }
             else
                 response.sendError(500);
         }
