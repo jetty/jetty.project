@@ -287,6 +287,12 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
         {
             return true;
         }
+
+        /* -------------------------------------------------------- */
+        public String toString()
+        {
+            return _name;
+        }
     }
 }
 

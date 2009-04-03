@@ -40,6 +40,7 @@ public class FormAuthenticator extends LoginAuthenticator
 {
     public final static String __FORM_LOGIN_PAGE="org.eclipse.jetty.security.form_login_page";
     public final static String __FORM_ERROR_PAGE="org.eclipse.jetty.security.form_error_page";
+    public final static String __FORM_DISPATCH="org.eclipse.jetty.security.dispatch";
     public final static String __J_URI = "org.eclipse.jetty.util.URI";
     public final static String __J_AUTHENTICATED = "org.eclipse.jetty.server.Auth";
     public final static String __J_SECURITY_CHECK = "/j_security_check";
@@ -49,6 +50,7 @@ public class FormAuthenticator extends LoginAuthenticator
     private String _formErrorPath;
     private String _formLoginPage;
     private String _formLoginPath;
+    private boolean _dispatch;
 
     public FormAuthenticator()
     {
@@ -77,9 +79,9 @@ public class FormAuthenticator extends LoginAuthenticator
         String error=configuration.getInitParameter(FormAuthenticator.__FORM_ERROR_PAGE);
         if (error!=null)
             setErrorPage(error);
+        String dispatch=configuration.getInitParameter(FormAuthenticator.__FORM_DISPATCH);
+        _dispatch=dispatch!=null && Boolean.getBoolean(dispatch);
     }
-
-
 
     public String getAuthMethod()
     {
@@ -168,13 +170,18 @@ public class FormAuthenticator extends LoginAuthenticator
                     if (response != null) 
                         response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 }
-                else
+                else if (_dispatch)
                 {
                     RequestDispatcher dispatcher = request.getRequestDispatcher(_formErrorPage);
                     response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
                     response.setDateHeader(HttpHeaders.EXPIRES,1);
                     dispatcher.forward(request, response);
                 }
+                else
+                {
+                    response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formErrorPage));
+                }
+                
                 // TODO is this correct response if isMandatory false??? Can
                 // that occur?
                 return DefaultAuthentication.SEND_FAILURE_RESULTS;
@@ -195,10 +202,19 @@ public class FormAuthenticator extends LoginAuthenticator
                                           + ":"
                                           + request.getServerPort()
                                           + URIUtil.addPaths(request.getContextPath(), uri));
-            RequestDispatcher dispatcher = request.getRequestDispatcher(_formLoginPage);
-            response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
-            response.setDateHeader(HttpHeaders.EXPIRES,1);
-            dispatcher.forward(request, response);
+            
+            if (_dispatch)
+            {
+                RequestDispatcher dispatcher = request.getRequestDispatcher(_formLoginPage);
+                response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
+                response.setDateHeader(HttpHeaders.EXPIRES,1);
+                dispatcher.forward(request, response);
+            }
+            else
+            {
+                response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formLoginPage));
+            }
+            
             return DefaultAuthentication.SEND_CONTINUE_RESULTS;
         }
         catch (IOException e)

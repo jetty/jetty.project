@@ -249,9 +249,13 @@ public class ConstraintTest extends TestCase
 
         _connector.reopen();
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.indexOf(" 302 Found") > 0);
+        assertTrue(response.indexOf("/ctx/testLoginPage") > 0);
+        /* if dispatch
         assertTrue(response.indexOf("Cache-Control: no-cache") > 0);
         assertTrue(response.indexOf("Expires") > 0);
         assertTrue(response.indexOf("URI=/ctx/testLoginPage") > 0);
+        */
 
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
@@ -262,10 +266,8 @@ public class ConstraintTest extends TestCase
                 "Content-Length: 31\r\n" +
                 "\r\n" +
                 "j_username=user&j_password=wrong\r\n");
-        //TODO we are forwarded to the error page now.  Is there any way to verify the contents?
-        assertTrue(response.startsWith("HTTP/1.1 200 "));
-//        assertTrue(response.indexOf("Location") > 0);
-//        assertTrue(response.indexOf("testErrorPage") > 0);
+          assertTrue(response.indexOf("Location") > 0);
+          assertTrue(response.indexOf("testErrorPage") > 0);
 
 
         _connector.reopen();
@@ -386,8 +388,9 @@ public class ConstraintTest extends TestCase
 
         _connector.reopen();
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
-//        assertTrue(response.startsWith("HTTP/1.1 302 "));
-//        assertTrue(response.indexOf("testLoginPage") > 0);
+        assertTrue(response.indexOf(" 302 Found") > 0);
+        assertTrue(response.indexOf("/ctx/testLoginPage") > 0);
+        
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
         _connector.reopen();
@@ -397,10 +400,8 @@ public class ConstraintTest extends TestCase
                 "Content-Length: 31\r\n" +
                 "\r\n" +
                 "j_username=user&j_password=wrong\r\n");
-        //TODO we are forwarded to the error page now.  Is there any way to verify the contents?
-        assertTrue(response.startsWith("HTTP/1.1 200 "));
-//        assertTrue(response.indexOf("Location") > 0);
-//        assertTrue(response.indexOf("testErrorPage") > 0);
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf("testErrorPage") > 0);
 
 
         _connector.reopen();
