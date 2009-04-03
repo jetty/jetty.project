@@ -171,6 +171,8 @@ public class FormAuthenticator extends LoginAuthenticator
                 else
                 {
                     RequestDispatcher dispatcher = request.getRequestDispatcher(_formErrorPage);
+                    response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
+                    response.setDateHeader(HttpHeaders.EXPIRES,1);
                     dispatcher.forward(request, response);
                 }
                 // TODO is this correct response if isMandatory false??? Can

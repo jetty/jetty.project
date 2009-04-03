@@ -253,7 +253,6 @@ public class ConstraintTest extends TestCase
         assertTrue(response.indexOf("Expires") > 0);
         assertTrue(response.indexOf("URI=/ctx/testLoginPage") > 0);
 
-        System.err.println(response);
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
         _connector.reopen();
