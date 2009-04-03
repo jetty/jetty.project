@@ -12,7 +12,6 @@
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
-
   <properties>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <felix.bundle.version>2.0.0</felix.bundle.version>
@@ -58,6 +57,9 @@
           <archive>
             <manifestEntries>
               <Eclipse-Status>Incubation</Eclipse-Status>
+              <Implementation-Version>${project.version}</Implementation-Version>
+              <Implementation-Vendor>Eclipse.org - Jetty</Implementation-Vendor>
+              <url>${jetty.url}</url>
             </manifestEntries>
           </archive>
         </configuration>
@@ -73,11 +75,13 @@
         <version>2.0.0</version>
         <extensions>true</extensions>
         <configuration>
+          
           <instructions>
             <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
             <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
             <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
             <Bundle-Copyright>Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+            <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
           </instructions>
         </configuration>
        </plugin>

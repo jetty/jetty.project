@@ -635,56 +635,6 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /** Append a handler.
-     * If the handler is null, set it as the passed handler.
-     * If the handler is a HandlerWrapper, append it to the handler
-     * If the handler is a HandlerCollection, add it to the handler
-     * else throw an {@link IllegalStateException}
-     * 
-     * @param handler
-     */
-    public void appendHandler(Handler handler)
-    {
-        Handler old = getHandler();
-        if (old==null)
-            setHandler(handler);
-        else if (old instanceof HandlerWrapper)
-            ((HandlerWrapper)old).appendHandler(handler);
-        else if (old instanceof HandlerCollection)
-            ((HandlerCollection)old).addHandler(handler);
-        else
-            throw new IllegalStateException();
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    public Handler[] getHandlers()
-    {
-        if (getHandler() instanceof HandlerCollection)
-            return ((HandlerCollection)getHandler()).getHandlers();
-        
-        return null;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    public void setHandlers(Handler[] handlers)
-    {
-        HandlerCollection collection;
-        if (getHandler() instanceof HandlerCollection)
-            collection=(HandlerCollection)getHandler();
-        else
-        {
-            collection=new HandlerCollection();
-            setHandler(collection);
-        }
-            
-        collection.setHandlers(handlers);
-    }
-
-    /* ------------------------------------------------------------ */
     /* 
      * @see org.eclipse.util.AttributesMap#clearAttributes()
      */

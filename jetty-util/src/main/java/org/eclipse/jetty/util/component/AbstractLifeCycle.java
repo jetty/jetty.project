@@ -23,9 +23,16 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class AbstractLifeCycle implements LifeCycle
 {
+    public static final String STOPPED="STOPPED";
+    public static final String FAILED="FAILED";
+    public static final String STARTING="STARTING";
+    public static final String STARTED="STARTED";
+    public static final String STOPPING="STOPPING";
+    public static final String RUNNING="RUNNING";
+    
     private final Object _lock = new Object();
-    private final int FAILED = -1, STOPPED = 0, STARTING = 1, STARTED = 2, STOPPING = 3;
-    private volatile int _state = STOPPED;
+    private final int __FAILED = -1, __STOPPED = 0, __STARTING = 1, __STARTED = 2, __STOPPING = 3;
+    private volatile int _state = __STOPPED;
     protected LifeCycle.Listener[] _listeners;
 
     protected void doStart() throws Exception
@@ -42,22 +49,22 @@ public abstract class AbstractLifeCycle implements LifeCycle
         {
             try
             {
-                if (_state == STARTED || _state == STARTING)
+                if (_state == __STARTED || _state == __STARTING)
                     return;
                 setStarting();
                 doStart();
-                Log.debug("started {}",this);
+                Log.debug(STARTED+" {}",this);
                 setStarted();
             }
             catch (Exception e)
             {
-                Log.warn("failed " + this,e);
+                Log.warn(FAILED+" " + this,e);
                 setFailed(e);
                 throw e;
             }
             catch (Error e)
             {
-                Log.warn("failed " + this,e);
+                Log.warn(FAILED+" " + this,e);
                 setFailed(e);
                 throw e;
             }
@@ -70,22 +77,22 @@ public abstract class AbstractLifeCycle implements LifeCycle
         {
             try
             {
-                if (_state == STOPPING || _state == STOPPED)
+                if (_state == __STOPPING || _state == __STOPPED)
                     return;
                 setStopping();
                 doStop();
-                Log.debug("stopped {}",this);
+                Log.debug(STOPPED+" {}",this);
                 setStopped();
             }
             catch (Exception e)
             {
-                Log.warn("failed " + this,e);
+                Log.warn(FAILED+" " + this,e);
                 setFailed(e);
                 throw e;
             }
             catch (Error e)
             {
-                Log.warn("failed " + this,e);
+                Log.warn(FAILED+" " + this,e);
                 setFailed(e);
                 throw e;
             }
@@ -94,32 +101,32 @@ public abstract class AbstractLifeCycle implements LifeCycle
 
     public boolean isRunning()
     {
-        return _state == STARTED || _state == STARTING;
+        return _state == __STARTED || _state == __STARTING;
     }
 
     public boolean isStarted()
     {
-        return _state == STARTED;
+        return _state == __STARTED;
     }
 
     public boolean isStarting()
     {
-        return _state == STARTING;
+        return _state == __STARTING;
     }
 
     public boolean isStopping()
     {
-        return _state == STOPPING;
+        return _state == __STOPPING;
     }
 
     public boolean isStopped()
     {
-        return _state == STOPPED;
+        return _state == __STOPPED;
     }
 
     public boolean isFailed()
     {
-        return _state == FAILED;
+        return _state == __FAILED;
     }
 
     public void addLifeCycleListener(LifeCycle.Listener listener)
@@ -131,10 +138,23 @@ public abstract class AbstractLifeCycle implements LifeCycle
     {
         LazyList.removeFromArray(_listeners,listener);
     }
+    
+    public String getState()
+    {
+        switch(_state)
+        {
+            case __FAILED: return FAILED;
+            case __STARTING: return STARTING;
+            case __STARTED: return STARTED;
+            case __STOPPING: return STOPPING;
+            case __STOPPED: return STOPPED;
+        }
+        return null;
+    }
 
     private void setStarted()
     {
-        _state = STARTED;
+        _state = __STARTED;
         if (_listeners != null)
         {
             for (int i = 0; i < _listeners.length; i++)
@@ -146,7 +166,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
 
     private void setStarting()
     {
-        _state = STARTING;
+        _state = __STARTING;
         if (_listeners != null)
         {
             for (int i = 0; i < _listeners.length; i++)
@@ -158,7 +178,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
 
     private void setStopping()
     {
-        _state = STOPPING;
+        _state = __STOPPING;
         if (_listeners != null)
         {
             for (int i = 0; i < _listeners.length; i++)
@@ -170,7 +190,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
 
     private void setStopped()
     {
-        _state = STOPPED;
+        _state = __STOPPED;
         if (_listeners != null)
         {
             for (int i = 0; i < _listeners.length; i++)
@@ -182,7 +202,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
 
     private void setFailed(Throwable error)
     {
-        _state = FAILED;
+        _state = __FAILED;
         if (_listeners != null)
         {
             for (int i = 0; i < _listeners.length; i++)
@@ -192,4 +212,5 @@ public abstract class AbstractLifeCycle implements LifeCycle
         }
     }
 
+    
 }

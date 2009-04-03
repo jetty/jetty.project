@@ -1,0 +1,17 @@
+
+The Jetty @ eclipse project is based on the Jetty project at codehaus
+
+  http://jetty.codehaus.org
+
+Ongoing development is now under the eclipse foundation
+
+  http://www.eclipse.org/jetty/
+
+The Jetty project is in incubation at the eclipse foundation
+
+  http://wiki.eclipse.org/Development_Resources/Process_Guidelines/What_is_Incubation
+
+The Jetty project is in the parallel IP review process
+
+  http://wiki.eclipse.org/Development_Resources/HOWTO/Parallel_IP_Process
+

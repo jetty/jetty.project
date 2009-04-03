@@ -182,9 +182,13 @@ public class Main
         }
         catch (NoClassDefFoundError e)
         {
+            if (_debug)
+                System.err.println(e);
         }
         catch (ClassNotFoundException e)
-        {
+        {            
+            if (_debug)
+                System.err.println(e);
         }
         ClassLoader loader=_classpath.getClassLoader();
         try
@@ -194,9 +198,13 @@ public class Main
         }
         catch (NoClassDefFoundError e)
         {
+            if (_debug)
+                System.err.println(e);
         }
         catch (ClassNotFoundException e)
         {
+            if (_debug)
+                System.err.println(e);
         }
         return false;
     }
@@ -227,7 +235,7 @@ public class Main
             if (_showVersions || invoked_class==null)
             {
                 System.err.println("OPTIONS: "+_options);
-                System.exit(0);
+	        usage();
             }
         }
 

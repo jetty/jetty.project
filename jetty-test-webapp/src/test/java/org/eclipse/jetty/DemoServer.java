@@ -13,7 +13,7 @@ public class DemoServer
         Server server = new Server(8080);
         
         WebAppContext context = new WebAppContext();
-        context.setWar("./target/jetty-test-webapp-7.0.0.M0-SNAPSHOT"); // TODO YUCK!
+        context.setWar("./target/jetty-test-webapp-7.0.0.M1-SNAPSHOT"); // TODO YUCK!
         context.setDefaultsDescriptor("../jetty-webapp/src/main/config/etc/webdefault.xml");
         server.setHandler(context);
         

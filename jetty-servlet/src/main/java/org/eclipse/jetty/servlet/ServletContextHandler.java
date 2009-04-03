@@ -109,7 +109,7 @@ public class ServletContextHandler extends ContextHandler
             setContextPath(contextPath);
 
         if (parent instanceof HandlerWrapper)
-            ((HandlerWrapper)parent).appendHandler(this);
+            ((HandlerWrapper)parent).setHandler(this);
         else if (parent instanceof HandlerCollection)
             ((HandlerCollection)parent).addHandler(this);
     }    

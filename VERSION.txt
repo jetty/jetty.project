@@ -1,4 +1,4 @@
-jetty-7.0.0.incubator0-SNAPSHOT
+jetty-7.0.0.M0-SNAPSHOT
  + JETTY-496 Support inetd/xinetd through use of System.inheritedChannel()
  + JETTY-540 Merged 3.0 Public Review changes
  + JETTY-567 Delay in initial TLS Handshake With FireFox 3 beta5 and SslSelectChannelConnector
@@ -82,6 +82,7 @@ jetty-7.0.0.incubator0-SNAPSHOT
  + JETTY-953 SSL keystore file input stream is not being closed directly
  + JETTY-956 SslSelectChannelConnector - password should be the default value of keyPassword if not specified
  + moved to org.eclipse packages
+ + simplified HandlerContainer API
 
 jetty-6.1.15 4 March 2009
  + JETTY-931 Fix issue with jetty-rewrite.xml

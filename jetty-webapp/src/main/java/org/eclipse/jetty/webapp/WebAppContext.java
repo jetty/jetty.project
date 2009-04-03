@@ -100,7 +100,7 @@ public class WebAppContext extends ServletContextHandler
             "org.eclipse.jetty.naming."        // webapp cannot change naming classes
             };
     private String[] _serverClasses = {
-            "-org.eclipse.jetty.naming.",       // don't hide naming classes
+            "-org.eclipse.jetty.jndi.",       // don't hide naming classes
             "-org.eclipse.jetty.continuation.", // don't hide continuation classes
             "-org.eclipse.jetty.plus.jaas.",    // don't hide jaas modules
             "org.eclipse.jetty.",               // hide rest of jetty classes

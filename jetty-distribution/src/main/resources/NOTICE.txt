@@ -1,0 +1,21 @@
+==============================================================
+ Jetty Web Container 
+ Copyright 1995-2009 Mort Bay Consulting Pty Ltd
+==============================================================
+
+The Jetty Web Container is Copyright Mort Bay Consulting Pty Ltd
+unless otherwise noted. It is dual licensed under the apache 2.0
+license and eclipse 1.0 license. Jetty may be distributed under
+either license.
+
+The javax.servlet package used was sourced from the Apache
+Software Foundation and is distributed under the apache 2.0
+license.
+
+The UnixCrypt.java code implements the one way cryptography used by
+Unix systems for simple password protection.  Copyright 1996 Aki Yoshida,
+modified April 2001  by Iris Van den Broeke, Daniel Deville.
+Permission to use, copy, modify and distribute UnixCrypt 
+for non-commercial or commercial purposes and without fee is
+granted provided that the copyright notice appears in all copies.
+
