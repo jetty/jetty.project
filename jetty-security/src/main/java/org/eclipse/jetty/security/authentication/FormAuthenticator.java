@@ -14,13 +14,20 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpHeaders;
@@ -34,7 +41,17 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 
 /**
- * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
+ * FORM Authenticator.
+ * 
+ * The form authenticator redirects unauthenticated requests to a log page
+ * which should use a form to gather username/password from the user and send them
+ * to the /j_security_check URI within the context.  FormAuthentication is intended
+ * to be used together with the {@link SessionCachingAuthenticator} so that the
+ * auth results may be associated with the session.
+ *  
+ * This authenticator implements form authentication using dispatchers unless 
+ * the {@link #__FORM_DISPATCH} init parameters is set to false.
+ * 
  */
 public class FormAuthenticator extends LoginAuthenticator
 {
@@ -80,14 +97,16 @@ public class FormAuthenticator extends LoginAuthenticator
         if (error!=null)
             setErrorPage(error);
         String dispatch=configuration.getInitParameter(FormAuthenticator.__FORM_DISPATCH);
-        _dispatch=dispatch!=null && Boolean.getBoolean(dispatch);
+        _dispatch=dispatch==null || Boolean.getBoolean(dispatch);
     }
 
+    /* ------------------------------------------------------------ */
     public String getAuthMethod()
     {
         return Constraint.__FORM_AUTH;
     }
 
+    /* ------------------------------------------------------------ */
     private void setLoginPage(String path)
     {
         if (!path.startsWith("/"))
@@ -124,6 +143,7 @@ public class FormAuthenticator extends LoginAuthenticator
         }
     }
 
+    /* ------------------------------------------------------------ */
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
         HttpServletRequest request = (HttpServletRequest)req;
@@ -175,7 +195,7 @@ public class FormAuthenticator extends LoginAuthenticator
                     RequestDispatcher dispatcher = request.getRequestDispatcher(_formErrorPage);
                     response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
                     response.setDateHeader(HttpHeaders.EXPIRES,1);
-                    dispatcher.forward(request, response);
+                    dispatcher.forward(new FormRequest(request), new FormResponse(response));
                 }
                 else
                 {
@@ -208,7 +228,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 RequestDispatcher dispatcher = request.getRequestDispatcher(_formLoginPage);
                 response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
                 response.setDateHeader(HttpHeaders.EXPIRES,1);
-                dispatcher.forward(request, response);
+                dispatcher.forward(new FormRequest(request), new FormResponse(response));
             }
             else
             {
@@ -227,13 +247,105 @@ public class FormAuthenticator extends LoginAuthenticator
         }
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isLoginOrErrorPage(String pathInContext)
     {
         return pathInContext != null && (pathInContext.equals(_formErrorPath) || pathInContext.equals(_formLoginPath));
     }
 
+    /* ------------------------------------------------------------ */
     public Authentication.Status secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
     {
         return Authentication.Status.SUCCESS;
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    protected static class FormRequest extends HttpServletRequestWrapper
+    {
+        public FormRequest(HttpServletRequest request)
+        {
+            super(request);
+        }
+
+        @Override
+        public long getDateHeader(String name)
+        {
+            if (name.toLowerCase().startsWith("if-"))
+                return -1;
+            return super.getDateHeader(name);
+        }
+        
+        @Override
+        public String getHeader(String name)
+        {
+            if (name.toLowerCase().startsWith("if-"))
+                return null;
+            return super.getHeader(name);
+        }
+
+        @Override
+        public Enumeration getHeaderNames()
+        {
+            return Collections.enumeration(Collections.list(super.getHeaderNames()));
+        }
+
+        @Override
+        public Enumeration getHeaders(String name)
+        {
+            if (name.toLowerCase().startsWith("if-"))
+                return Collections.enumeration(Collections.EMPTY_LIST);
+            return super.getHeaders(name);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    protected static class FormResponse extends HttpServletResponseWrapper
+    {
+        public FormResponse(HttpServletResponse response)
+        {
+            super(response);
+        }
+
+        @Override
+        public void addDateHeader(String name, long date)
+        {
+            if (notIgnored(name))
+                super.addDateHeader(name,date);
+        }
+
+        @Override
+        public void addHeader(String name, String value)
+        {
+            if (notIgnored(name))
+                super.addHeader(name,value);
+        }
+
+        @Override
+        public void setDateHeader(String name, long date)
+        {
+            if (notIgnored(name))
+                super.setDateHeader(name,date);
+        }
+        
+        @Override
+        public void setHeader(String name, String value)
+        {
+            if (notIgnored(name))
+                super.setHeader(name,value);
+        }
+        
+        private boolean notIgnored(String name)
+        {
+            if (HttpHeaders.CACHE_CONTROL.equalsIgnoreCase(name) ||
+                HttpHeaders.PRAGMA.equalsIgnoreCase(name) ||
+                HttpHeaders.ETAG.equalsIgnoreCase(name) ||
+                HttpHeaders.EXPIRES.equalsIgnoreCase(name) ||
+                HttpHeaders.LAST_MODIFIED.equalsIgnoreCase(name) ||
+                HttpHeaders.AGE.equalsIgnoreCase(name))
+                return false;
+            return true;
+        }
     }
 }

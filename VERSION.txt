@@ -1,4 +1,7 @@
-jetty-7.0.0.M0-SNAPSHOT
+jetty-7.0.0.M1-SNAPSHOT
+ + 271258 FORM Authentication dispatch handling avoids caching
+
+jetty-7.0.0.M0
  + JETTY-496 Support inetd/xinetd through use of System.inheritedChannel()
  + JETTY-540 Merged 3.0 Public Review changes
  + JETTY-567 Delay in initial TLS Handshake With FireFox 3 beta5 and SslSelectChannelConnector
