@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -296,6 +297,61 @@ public class HttpFields
      * Get enumeration of header _names. Returns an enumeration of strings representing the header
      * _names for this request.
      */
+    public Iterable<String> getIterableFieldNames()
+    {
+        final int revision=_revision;
+        
+
+        return new Iterable<String>()
+        {
+            public Iterator<String> iterator()
+            {
+
+                return new Iterator<String>()
+                {
+                    int i = 0;
+                    Field field = null;
+
+                    public boolean hasNext()
+                    {
+                        if (field != null) return true;
+                        while (i < _fields.size())
+                        {
+                            Field f = (Field) _fields.get(i++);
+                            if (f != null && f._prev == null && f._revision == revision)
+                            {
+                                field = f;
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+
+                    public String next()
+                    {
+                        if (field != null || hasNext())
+                        {
+                            String n = BufferUtil.to8859_1_String(field._name);
+                            field = null;
+                            return n;
+                        }
+                        throw new NoSuchElementException();
+                    }
+                    
+                    public void remove()
+                    {
+                        throw new UnsupportedOperationException();
+                    }
+                };
+            }
+        };
+    }
+    
+    /* -------------------------------------------------------------- */
+    /**
+     * Get enumeration of header _names. Returns an enumeration of strings representing the header
+     * _names for this request.
+     */
     public Enumeration<String> getFieldNames()
     {
         final int revision=_revision;
@@ -422,6 +478,57 @@ public class HttpFields
         return null;
     }
 
+
+    /* -------------------------------------------------------------- */
+    /**
+     * Get multi headers
+     * 
+     * @return Enumeration of the values, or null if no such header.
+     * @param name the case-insensitive field name
+     */
+    public Iterable<String> getIterableValues(String name)
+    {
+        final Field field = getField(name);
+        if (field == null) 
+            return null;
+        final int revision=_revision;
+
+        return new Iterable<String>()
+        {
+            public Iterator<String> iterator()
+            {
+                return new Iterator<String>()
+                {
+                    Field f=field;
+
+                    public boolean hasNext()
+                    {
+                        while (f != null && f._revision != revision)
+                            f = f._next;
+                        return f != null;
+                    }
+
+                    public String next()
+                    {
+                        if (f == null) throw new NoSuchElementException();
+                        Field n = f;
+                        do
+                            f = f._next;
+                        while (f != null && f._revision != revision);
+                        return n.getValue();
+                    }
+
+                    public void remove()
+                    {
+                        throw new UnsupportedOperationException();
+                    }
+                    
+                };
+            }
+            
+        };
+    }
+    
     /* -------------------------------------------------------------- */
     /**
      * Get multi headers
@@ -1459,5 +1566,4 @@ public class HttpFields
             return ("[" + (_prev == null ? "" : "<-") + getName() + "="+_revision+"=" + _value + (_next == null ? "" : "->") + "]");
         }
     }
-
 }

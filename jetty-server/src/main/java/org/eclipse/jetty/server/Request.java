@@ -38,6 +38,7 @@ import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestAttributeEvent;
@@ -1803,7 +1804,7 @@ public class Request implements HttpServletRequest
     /**
      * @see javax.servlet.http.HttpServletRequest#login(javax.servlet.http.HttpServletResponse)
      */
-    public boolean login(HttpServletResponse response) throws IOException, LoginException
+    public boolean login(HttpServletResponse response) throws IOException, ServletException
     {
         // TODO Auto-generated method stub
         return false;
@@ -1813,7 +1814,7 @@ public class Request implements HttpServletRequest
     /**
      * @see javax.servlet.http.HttpServletRequest#login(java.lang.String, java.lang.String)
      */
-    public void login(String username, String password) throws LoginException
+    public void login(String username, String password) throws ServletException
     {
         // TODO Auto-generated method stub
         
@@ -1823,7 +1824,7 @@ public class Request implements HttpServletRequest
     /**
      * @see javax.servlet.http.HttpServletRequest#logout()
      */
-    public void logout() throws LoginException
+    public void logout() throws ServletException
     {
         // TODO Auto-generated method stub
         

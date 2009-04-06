@@ -20,6 +20,7 @@ import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 
@@ -98,14 +99,15 @@ public class ResponseTest extends TestCase
         response.setContentType("foo2/bar2");
         assertEquals("foo2/bar2;charset=ISO-8859-1",response.getContentType());
         response.setHeader("name","foo");
-        Enumeration en=response.getHeaders("name");
-        assertEquals("foo",en.nextElement());
-        assertFalse(en.hasMoreElements());
+
+        Iterator<String> en = response.getHeaders("name").iterator();
+        assertEquals("foo",en.next());
+        assertFalse(en.hasNext());
         response.addHeader("name","bar");
-        en=response.getHeaders("name");
-        assertEquals("foo",en.nextElement());
-        assertEquals("bar",en.nextElement());
-        assertFalse(en.hasMoreElements());
+        en=response.getHeaders("name").iterator();
+        assertEquals("foo",en.next());
+        assertEquals("bar",en.next());
+        assertFalse(en.hasNext());
         
         response.recycle();
         

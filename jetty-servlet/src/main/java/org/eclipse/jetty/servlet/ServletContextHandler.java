@@ -21,6 +21,7 @@ import javax.servlet.FilterRegistration;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
 import javax.servlet.SessionTrackingMode;
 
@@ -483,23 +484,23 @@ public class ServletContextHandler extends ContextHandler
 
         /* ------------------------------------------------------------ */
         /**
-         * @see javax.servlet.ServletContext#getDefaultSessionTrackingModes()
+         * @see javax.servlet.ServletContext#createFilter(java.lang.Class)
          */
-        public EnumSet<SessionTrackingMode> getDefaultSessionTrackingModes()
+        public <T extends Filter> T createFilter(Class<T> c) throws ServletException
         {
-            return SessionHandler.DEFAULT_TRACKING;
+            // TODO Not implemented
+            return null;
         }
 
         /* ------------------------------------------------------------ */
         /**
-         * @see javax.servlet.ServletContext#getEffectiveSessionTrackingModes()
+         * @see javax.servlet.ServletContext#createServlet(java.lang.Class)
          */
-        public EnumSet<SessionTrackingMode> getEffectiveSessionTrackingModes()
+        public <T extends Servlet> T createServlet(Class<T> c) throws ServletException
         {
-            Log.warn("Not Implemented");
+            // TODO Not implemented
             return null;
         }
-        
 
 
     }

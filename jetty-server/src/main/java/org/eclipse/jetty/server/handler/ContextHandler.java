@@ -1900,6 +1900,26 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
             
         }
 
+        /* ------------------------------------------------------------ */
+        /**
+         * @see javax.servlet.ServletContext#createFilter(java.lang.Class)
+         */
+        public <T extends Filter> T createFilter(Class<T> c) throws ServletException
+        {
+            Log.warn("Use servlet Context");
+            return null;
+        }
+
+        /* ------------------------------------------------------------ */
+        /**
+         * @see javax.servlet.ServletContext#createServlet(java.lang.Class)
+         */
+        public <T extends Servlet> T createServlet(Class<T> c) throws ServletException
+        {
+            Log.warn("Use servlet Context");
+            return null;
+        }
+
         
     }
 

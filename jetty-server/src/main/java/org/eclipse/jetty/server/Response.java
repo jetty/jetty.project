@@ -485,6 +485,14 @@ public class Response implements HttpServletResponse
         }
     }
 
+
+    /* ------------------------------------------------------------ */
+    public Iterable<String> getHeaderNames()
+    {
+        final HttpFields fields=_connection.getResponseFields();
+        return fields.getIterableFieldNames();
+    }
+    
     /* ------------------------------------------------------------ */
     /*
      */
@@ -496,12 +504,13 @@ public class Response implements HttpServletResponse
     /* ------------------------------------------------------------ */
     /*
      */
-    public Enumeration getHeaders(String name)
+    public Iterable<String> getHeaders(String name)
     {
-        Enumeration e = _connection.getResponseFields().getValues(name);
-        if (e==null)
-            return Collections.enumeration(Collections.EMPTY_LIST);
-        return e;
+        final HttpFields fields=_connection.getResponseFields();
+        Iterable<String> i = fields.getIterableValues(name);
+        if (i==null)
+            return Collections.EMPTY_LIST;
+        return i;
     }
 
     /* ------------------------------------------------------------ */

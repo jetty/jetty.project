@@ -1,6 +1,7 @@
 jetty-8.0.0.M0-SNAPSHOT
  + merged jetty-7-to-jetty-8-base-20090406-1
  + merged jetty-7-to-jetty-8-base-20090406-2
+ + Updated servlet 3.0 spec 20090406
 
 jetty-7.0.0.M1-SNAPSHOT
  + 271258 FORM Authentication dispatch handling avoids caching
