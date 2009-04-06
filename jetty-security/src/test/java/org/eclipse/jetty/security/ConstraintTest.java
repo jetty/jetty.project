@@ -32,6 +32,7 @@ import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.security.authentication.SessionCachingAuthenticator;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -249,13 +250,11 @@ public class ConstraintTest extends TestCase
 
         _connector.reopen();
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
-        assertTrue(response.indexOf(" 302 Found") > 0);
-        assertTrue(response.indexOf("/ctx/testLoginPage") > 0);
-        /* if dispatch
+        // assertTrue(response.indexOf(" 302 Found") > 0);
+        // assertTrue(response.indexOf("/ctx/testLoginPage") > 0);
         assertTrue(response.indexOf("Cache-Control: no-cache") > 0);
         assertTrue(response.indexOf("Expires") > 0);
         assertTrue(response.indexOf("URI=/ctx/testLoginPage") > 0);
-        */
 
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
@@ -265,9 +264,9 @@ public class ConstraintTest extends TestCase
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
                 "Content-Length: 31\r\n" +
                 "\r\n" +
-                "j_username=user&j_password=wrong\r\n");
-          assertTrue(response.indexOf("Location") > 0);
-          assertTrue(response.indexOf("testErrorPage") > 0);
+        "j_username=user&j_password=wrong\r\n");
+        //assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf("testErrorPage") > 0);
 
 
         _connector.reopen();
@@ -388,8 +387,11 @@ public class ConstraintTest extends TestCase
 
         _connector.reopen();
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
-        assertTrue(response.indexOf(" 302 Found") > 0);
-        assertTrue(response.indexOf("/ctx/testLoginPage") > 0);
+        // assertTrue(response.indexOf(" 302 Found") > 0);
+        // assertTrue(response.indexOf("/ctx/testLoginPage") > 0);
+        assertTrue(response.indexOf("Cache-Control: no-cache") > 0);
+        assertTrue(response.indexOf("Expires") > 0);
+        assertTrue(response.indexOf("URI=/ctx/testLoginPage") > 0);
         
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
@@ -400,7 +402,7 @@ public class ConstraintTest extends TestCase
                 "Content-Length: 31\r\n" +
                 "\r\n" +
                 "j_username=user&j_password=wrong\r\n");
-        assertTrue(response.indexOf("Location") > 0);
+        // assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("testErrorPage") > 0);
 
 
@@ -537,7 +539,8 @@ public class ConstraintTest extends TestCase
     {
         public void handle(String target, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
         {
-            ((Request) request).setHandled(true);
+            Request base_request=(request instanceof Request)?(Request)request:HttpConnection.getCurrentConnection().getRequest();
+            base_request.setHandled(true);
             if (request.getAuthType()==null || "user".equals(request.getRemoteUser()) || request.isUserInRole("user"))
             {
                 response.setStatus(200);
