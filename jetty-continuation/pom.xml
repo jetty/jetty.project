@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>8.0.0.incubation0-SNAPSHOT</version>
+    <version>8.0.0.M0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-continuation</artifactId>
@@ -13,7 +13,7 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>1.4.2</version>
+        <version>${felix.bundle.version}</version>
         <extensions>true</extensions>
         <executions>
           <execution>
@@ -22,10 +22,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Bundle-SymbolicName>org.eclipse.jetty.continuation</Bundle-SymbolicName>
-                <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
-                <Bundle-DocURL>http://jetty.eclipse.org</Bundle-DocURL>
-                <Import-Package></Import-Package>
+                <Import-Package>javax.servlet.*;version="[2.5,3.0)",*</Import-Package>
               </instructions>
             </configuration>
            </execution>

@@ -181,13 +181,17 @@ public class StatisticsHandlerTest extends TestCase
 
     public synchronized void process(HandlerWrapper customHandler) throws Exception
     {
+        _statsHandler.stop();
         _statsHandler.setHandler(customHandler);
-
+        _statsHandler.start();
+        
         String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Length: 6\r\n" + "\r\n" + "test\r\n";
 
         _connector.reopen();
         _connector.getResponses(request);
+        _statsHandler.stop();
         _statsHandler.setHandler(null);
+        _statsHandler.start();
 
     }
 

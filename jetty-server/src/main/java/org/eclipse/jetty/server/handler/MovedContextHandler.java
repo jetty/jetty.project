@@ -43,7 +43,7 @@ public class MovedContextHandler extends ContextHandler
     public MovedContextHandler()
     {
         _redirector=new Redirector();
-        addHandler(_redirector);
+        setHandler(_redirector);
         setAllowNullPathInfo(true);
     }
     
@@ -52,7 +52,7 @@ public class MovedContextHandler extends ContextHandler
         super(parent,contextPath);
         _newContextURL=newContextURL;
         _redirector=new Redirector();
-        addHandler(_redirector);
+        setHandler(_redirector);
     }
 
     public boolean isDiscardPathInfo()

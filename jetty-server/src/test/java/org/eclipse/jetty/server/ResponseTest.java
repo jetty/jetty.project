@@ -363,7 +363,7 @@ public class ResponseTest extends TestCase
             SocketConnector socketConnector = new SocketConnector();
             socketConnector.setPort(0);
             server.addConnector(socketConnector);
-            server.addHandler(new AbstractHandler() 
+            server.setHandler(new AbstractHandler() 
             {
                 public void handle(String string, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException 
                 {

@@ -30,6 +30,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.log.Log;
 
@@ -110,8 +112,10 @@ public class ServletContextHandler extends ContextHandler
         if (contextPath!=null)
             setContextPath(contextPath);
 
-        if (parent!=null)
-            parent.addHandler(this);
+        if (parent instanceof HandlerWrapper)
+            ((HandlerWrapper)parent).setHandler(this);
+        else if (parent instanceof HandlerCollection)
+            ((HandlerCollection)parent).addHandler(this);
     }    
 
     

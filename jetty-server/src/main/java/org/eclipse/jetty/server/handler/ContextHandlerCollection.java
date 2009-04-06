@@ -44,8 +44,13 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class ContextHandlerCollection extends HandlerCollection
 { 
-    private PathMap _contextMap;
-    private Class _contextClass = ContextHandler.class;
+    private volatile PathMap _contextMap;
+    private Class<? extends ContextHandler> _contextClass = ContextHandler.class;
+    
+    public ContextHandlerCollection()
+    {
+        super(true);
+    }
     
     /* ------------------------------------------------------------ */
     /**

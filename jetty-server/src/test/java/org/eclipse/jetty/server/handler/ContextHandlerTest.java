@@ -155,7 +155,7 @@ public class ContextHandlerTest extends TestCase
         IsHandledHandler handler = new IsHandledHandler();
         context.setHandler(handler);
 
-        server.addHandler(context);
+        server.setHandler(context);
 
         try
         {

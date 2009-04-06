@@ -19,6 +19,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
@@ -42,7 +43,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class WebAppDeployer extends AbstractLifeCycle
 {
-    private HandlerContainer _contexts;
+    private HandlerCollection _contexts;
     private String _webAppDir;
     private String _defaultsDescriptor;
     private String[] _configurationClasses;
@@ -66,7 +67,7 @@ public class WebAppDeployer extends AbstractLifeCycle
         return _contexts;
     }
 
-    public void setContexts(HandlerContainer contexts)
+    public void setContexts(HandlerCollection contexts)
     {
         _contexts=contexts;
     }

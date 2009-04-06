@@ -37,12 +37,19 @@ import org.eclipse.jetty.util.MultiException;
  */
 public class HandlerCollection extends AbstractHandlerContainer
 {
-    private Handler[] _handlers;
+    private final boolean _mutableWhenRunning;
+    private volatile Handler[] _handlers;
 
     /* ------------------------------------------------------------ */
     public HandlerCollection()
     {
-        super();
+        _mutableWhenRunning=false;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public HandlerCollection(boolean mutableWhenRunning)
+    {
+        _mutableWhenRunning=mutableWhenRunning;
     }
 
     /* ------------------------------------------------------------ */
@@ -61,6 +68,9 @@ public class HandlerCollection extends AbstractHandlerContainer
      */
     public void setHandlers(Handler[] handlers)
     {
+        if (!_mutableWhenRunning && isStarted())
+            throw new IllegalStateException(STARTED);
+        
         Handler [] old_handlers = _handlers==null?null:(Handler[])_handlers.clone();
         
         if (getServer()!=null)
@@ -74,9 +84,10 @@ public class HandlerCollection extends AbstractHandlerContainer
                 handlers[i].setServer(server);
         }
 
-        // quasi atomic.... so don't go doing this under load on a SMP system.
+        // handlers is volatile
         _handlers = handlers;
 
+        // stop old handlers
         for (int i=0;old_handlers!=null && i<old_handlers.length;i++)
         {
             if (old_handlers[i]!=null)
@@ -174,6 +185,9 @@ public class HandlerCollection extends AbstractHandlerContainer
     /* ------------------------------------------------------------ */
     public void setServer(Server server)
     {
+        if (isStarted())
+            throw new IllegalStateException(STARTED);
+        
         Server old_server=getServer();
         
         super.setServer(server);

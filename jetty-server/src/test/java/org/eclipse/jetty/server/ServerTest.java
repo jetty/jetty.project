@@ -34,7 +34,7 @@ public class ServerTest extends TestCase
         DefaultHandler handler=new DefaultHandler();
         try
         {
-            server.addHandler(handler);
+            server.setHandler(handler);
         }
         catch (Exception e)
         {

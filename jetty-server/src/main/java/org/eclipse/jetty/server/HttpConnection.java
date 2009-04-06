@@ -955,7 +955,7 @@ public class HttpConnection implements Connection
             if (_closed)
                 return;
             
-            if (!isIncluding() && !_generator.isCommitted())
+            if (!isIncluding() && !super._generator.isCommitted())
                 commitResponse(HttpGenerator.LAST);
             else
                 flushResponse();
@@ -970,7 +970,7 @@ public class HttpConnection implements Connection
          */
         public void flush() throws IOException
         {
-            if (!_generator.isCommitted())
+            if (!super._generator.isCommitted())
                 commitResponse(HttpGenerator.MORE);
             super.flush();
         }
@@ -990,7 +990,7 @@ public class HttpConnection implements Connection
         /* ------------------------------------------------------------ */
         public void sendResponse(Buffer response) throws IOException
         {
-            ((HttpGenerator)_generator).sendResponse(response);
+            ((HttpGenerator)super._generator).sendResponse(response);
         }
         
         /* ------------------------------------------------------------ */
@@ -1001,7 +1001,8 @@ public class HttpConnection implements Connection
             if (_closed)
                 throw new IOException("Closed");
             
-            if (_generator.getContentWritten() > 0) throw new IllegalStateException("!empty");
+            if (super._generator.getContentWritten() > 0) 
+                throw new IllegalStateException("!empty");
 
             if (content instanceof HttpContent)
             {
@@ -1058,7 +1059,7 @@ public class HttpConnection implements Connection
             
             if (content instanceof Buffer)
             {
-                _generator.addContent((Buffer) content, HttpGenerator.LAST);
+                super._generator.addContent((Buffer) content, HttpGenerator.LAST);
                 commitResponse(HttpGenerator.LAST);
             }
             else if (content instanceof InputStream)
@@ -1067,21 +1068,21 @@ public class HttpConnection implements Connection
                 
                 try
                 {
-                    int max = _generator.prepareUncheckedAddContent();
-                    Buffer buffer = _generator.getUncheckedBuffer();
+                    int max = super._generator.prepareUncheckedAddContent();
+                    Buffer buffer = super._generator.getUncheckedBuffer();
 
                     int len=buffer.readFrom(in,max);
 
                     while (len>=0)
                     {
-                        _generator.completeUncheckedAddContent();
+                        super._generator.completeUncheckedAddContent();
                         _out.flush();
 
-                        max = _generator.prepareUncheckedAddContent();
-                        buffer = _generator.getUncheckedBuffer();
+                        max = super._generator.prepareUncheckedAddContent();
+                        buffer = super._generator.getUncheckedBuffer();
                         len=buffer.readFrom(in,max);
                     }
-                    _generator.completeUncheckedAddContent();
+                    super._generator.completeUncheckedAddContent();
                     _out.flush();   
                 }
                 finally

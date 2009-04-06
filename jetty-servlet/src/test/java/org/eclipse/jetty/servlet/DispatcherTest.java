@@ -45,7 +45,7 @@ public class DispatcherTest extends TestCase
         _connector = new LocalConnector();
         _context = new ServletContextHandler();
         _context.setContextPath("/context");
-        _server.addHandler(_context);
+        _server.setHandler(_context);
         _server.addConnector( _connector );
 
         _server.start();

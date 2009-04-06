@@ -57,7 +57,7 @@ public class StatisticsServlet extends HttpServlet
         {
             Log.info("Installing Statistics Handler");
             _statsHandler = new StatisticsHandler();
-            _server.addHandler(_statsHandler);
+            _server.setHandler(_statsHandler);
         }
 
 

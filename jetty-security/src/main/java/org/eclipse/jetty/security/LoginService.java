@@ -15,8 +15,14 @@ package org.eclipse.jetty.security;
 
 import org.eclipse.jetty.server.UserIdentity;
 
+
+/* ------------------------------------------------------------ */
 /**
- * @version $Rev: 4734 $ $Date: 2009-03-07 18:46:18 +0100 (Sat, 07 Mar 2009) $
+ * Login Service Interface.
+ * <p>
+ * The Login service provides an abstract mechanism for an {@link Authenticator}
+ * to check credentials and to create a {@link UserIdentity} using the 
+ * set {@link IdentityService}.
  */
 public interface LoginService
 {

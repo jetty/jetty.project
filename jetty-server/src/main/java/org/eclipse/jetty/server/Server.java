@@ -635,63 +635,6 @@ public class Server extends HandlerWrapper implements Attributes
         }
     }
 
-    
-    
-
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    public void addHandler(Handler handler)
-    {
-        if (getHandler() == null) 
-            setHandler(handler);
-        else if (getHandler() instanceof HandlerCollection)
-            ((HandlerCollection)getHandler()).addHandler(handler);
-        else
-        {
-            HandlerCollection collection=new HandlerCollection();
-            collection.setHandlers(new Handler[]{getHandler(),handler});
-            setHandler(collection);
-        }
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    public void removeHandler(Handler handler)
-    {
-        if (getHandler() instanceof HandlerCollection)
-            ((HandlerCollection)getHandler()).removeHandler(handler);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    public Handler[] getHandlers()
-    {
-        if (getHandler() instanceof HandlerCollection)
-            return ((HandlerCollection)getHandler()).getHandlers();
-        
-        return null;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    public void setHandlers(Handler[] handlers)
-    {
-        HandlerCollection collection;
-        if (getHandler() instanceof HandlerCollection)
-            collection=(HandlerCollection)getHandler();
-        else
-        {
-            collection=new HandlerCollection();
-            setHandler(collection);
-        }
-            
-        collection.setHandlers(handlers);
-    }
-
     /* ------------------------------------------------------------ */
     /* 
      * @see org.eclipse.util.AttributesMap#clearAttributes()

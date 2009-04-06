@@ -2,30 +2,29 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>8.0.0.incubation0-SNAPSHOT</version>
+    <version>8.0.0.M0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-server</artifactId>
   <name>Jetty :: Server Core</name>
   <description>The core jetty server artifact.</description>
+  <url>${jetty.url}</url>
   <build>
     <plugins>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>1.4.2</version>
+        <version>${felix.bundle.version}</version>
         <extensions>true</extensions>
         <executions>
           <execution>
+            <id>generate-manifest</id>
             <goals>
               <goal>manifest</goal>
             </goals>
             <configuration>
               <instructions>
-                <Bundle-SymbolicName>org.eclipse.jetty.server</Bundle-SymbolicName>
-                <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
-                <Bundle-DocURL>http://jetty.eclipse.org</Bundle-DocURL>
-                <Import-Package>!org.eclipse.jetty.*,!org.eclipse.xml.*,!org.eclipse.resource.*,!org.eclipse.io.*,!org.eclipse.servlet.jetty.*,javax.servlet.resources;resolution:=optional,javax.servlet.jsp;resolution:=optional,org.apache.jasper.servlet;resolution:=optional,org.eclipse.jetty.handler.management;resolution:=optional,*</Import-Package>
+                <Import-Package>javax.servlet.*;version="[2.5,3.0)",*</Import-Package>
               </instructions>
             </configuration>
            </execution>

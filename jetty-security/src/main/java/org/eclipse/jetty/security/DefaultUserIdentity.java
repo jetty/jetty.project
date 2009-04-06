@@ -67,5 +67,9 @@ public class DefaultUserIdentity implements UserIdentity
         return false;
     }
 
+    public String toString()
+    {
+        return DefaultUserIdentity.class.getSimpleName()+"('"+_userPrincipal+"')";
+    }
     
 }
