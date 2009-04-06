@@ -11,7 +11,7 @@
   <properties>
     <assembly.directory>target/assembly-prep</assembly.directory>
     <slf4j-version>1.5.6</slf4j-version>
-    <jsp-2-1-version>9.1.02.B04.p0</jsp-2-1-version>
+    <jsp-2-1-version>9.1.1.B60.25.p0</jsp-2-1-version>
   </properties>
    <build>
     <plugins>
