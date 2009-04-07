@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class AbstractHandler extends AbstractLifeCycle implements Handler
 {
-    protected String _string;
     private Server _server;
     
     /* ------------------------------------------------------------ */
@@ -59,12 +58,17 @@ public abstract class AbstractHandler extends AbstractLifeCycle implements Handl
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        if (_string==null)
+        StringBuilder b=new StringBuilder();
+        String s=super.toString();
+        b.append(s,s.lastIndexOf('.')+1,s.length());
+        ContextHandler.Context ctx = ContextHandler.getCurrentContext();
+        if (ctx!=null && ctx.getContextPath()!=null && !(this instanceof ContextHandler))
         {
-            _string=super.toString();
-            _string=_string.substring(_string.lastIndexOf('.')+1);
+            b.append('@');
+            b.append(ctx.getContextPath());
+            
         }
-        return _string;
+        return b.toString();
     }
 
     /* ------------------------------------------------------------ */

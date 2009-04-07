@@ -32,7 +32,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     public AbstractHandlerContainer()
     {
     }
-
+    
     /* ------------------------------------------------------------ */
     public Handler[] getChildHandlers()
     {
@@ -83,6 +83,33 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         
         return list;
     }
+
+    /* ------------------------------------------------------------ */
+    public String dump()
+    {
+        StringBuilder b = new StringBuilder();
+        dump(b,this,0);
+        return b.toString();
+    }
     
-    
+
+    /* ------------------------------------------------------------ */
+    protected void dump(StringBuilder b,Handler handler,int indent)
+    {
+        for (int i=0;i<indent;i++)
+            b.append("| ");
+        if (handler==null)
+            b.append("NULL");
+        else
+        {
+            b.append(handler.toString());
+            b.append(handler.isStarted()?" started":" STOPPED");
+            b.append('\n');
+
+            indent++;
+            if (handler instanceof HandlerContainer)
+                for (Handler h : ((HandlerContainer)handler).getHandlers())
+                    dump(b,h,indent);
+        }
+    }
 }

@@ -1195,7 +1195,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
     public String toString()
     {
         
-        return this.getClass().getName()+"@"+Integer.toHexString(hashCode())+"{"+getContextPath()+","+getBaseResource()+"}";
+        return super.toString()+"@"+Integer.toHexString(hashCode())+getContextPath()+","+getBaseResource();
     }
 
     /* ------------------------------------------------------------ */

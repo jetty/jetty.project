@@ -22,15 +22,15 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
  */
 public abstract class AbstractBuffers extends AbstractLifeCycle implements Buffers
 {
-    private int _headerBufferSize=4*1024;
+    private int _headerBufferSize=6*1024;
     private int _requestBufferSize=8*1024;
-    private int _responseBufferSize=24*1024;
+    private int _responseBufferSize=12*1024;
 
     final static private int __HEADER=0;
     final static private int __REQUEST=1;
     final static private int __RESPONSE=2;
     final static private int __OTHER=3;
-    final private int[] _pool={2,1,1,2};
+    final private int[] _pool={2,1,1,1};
 
     private final ThreadLocal _buffers=new ThreadLocal()
     {
@@ -44,8 +44,6 @@ public abstract class AbstractBuffers extends AbstractLifeCycle implements Buffe
     {
         super();
     }
-
-
 
     public Buffer getBuffer(final int size )
     {

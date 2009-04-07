@@ -826,7 +826,7 @@ public class WebAppContext extends ServletContextHandler
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return this.getClass().getName()+"@"+Integer.toHexString(hashCode())+"{"+getContextPath()+","+(_war==null?getResourceBase():_war)+"}";
+        return super.toString()+(_war==null?"":(","+_war));
     }
     
     /* ------------------------------------------------------------ */

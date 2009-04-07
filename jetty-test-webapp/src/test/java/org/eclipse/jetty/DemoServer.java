@@ -23,6 +23,9 @@ public class DemoServer
         server.addBean(login);
         
         server.start();
+        
+        System.err.println(server.dump());
+        
         server.join();
     }
 }

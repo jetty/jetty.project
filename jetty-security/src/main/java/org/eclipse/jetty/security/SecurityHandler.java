@@ -300,7 +300,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             if (_identityService==null)
                 _identityService=findIdentityService();
             
-            if (_identityService==null)
+            if (_identityService==null && _realmName!=null)
                 _identityService=new DefaultIdentityService();
         }
         
@@ -315,23 +315,27 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         if (!_loginServiceShared && _loginService instanceof LifeCycle)
             ((LifeCycle)_loginService).start();        
         
-        if (_authenticator==null && _authenticatorFactory!=null)
+        if (_authenticator==null && _authenticatorFactory!=null && _identityService!=null)
         {
             _authenticator=_authenticatorFactory.getAuthenticator(getServer(),ContextHandler.getCurrentContext(),this);
             if (_authenticator!=null)
                 _authMethod=_authenticator.getAuthMethod();
         }
 
-        if (_authenticator==null)
+        if (_authenticator==null) 
         {
-            Log.warn("No ServerAuthentication for "+this);
-            throw new IllegalStateException("No ServerAuthentication");
+            if (_realmName!=null)
+            {
+                Log.warn("No ServerAuthentication for "+this);
+                throw new IllegalStateException("No ServerAuthentication");
+            }
         }
-        
-        _authenticator.setConfiguration(this);
-        if (_authenticator instanceof LifeCycle)
-            ((LifeCycle)_authenticator).start();
-        
+        else
+        {
+            _authenticator.setConfiguration(this);
+            if (_authenticator instanceof LifeCycle)
+                ((LifeCycle)_authenticator).start();
+        }
         
         super.doStart();
     }
@@ -384,7 +388,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         if (handler==null)
             return;
         
-        if (checkSecurity(base_request))
+        if (_authenticator!=null && checkSecurity(base_request))
         {
             Object constraintInfo = prepareConstraintInfo(pathInContext, base_request);
             

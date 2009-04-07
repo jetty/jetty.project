@@ -14,6 +14,7 @@
 package org.eclipse.jetty.security;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -90,14 +91,44 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * spec section 13.7.1 Note that much of the logic is in the RoleInfo class.
      * 
      * @param constraintMappings
+     *            The contraintMappings to set, from which the set of known roles
+     *            is determined.
+     */
+    public void setConstraintMappings(ConstraintMapping[] constraintMappings)
+    {
+        setConstraintMappings(constraintMappings,null);
+    }
+        
+    /* ------------------------------------------------------------ */
+    /**
+     * Process the constraints following the combining rules in Servlet 3.0 EA
+     * spec section 13.7.1 Note that much of the logic is in the RoleInfo class.
+     * 
+     * @param constraintMappings
      *            The contraintMappings to set.
-     * @param roles
+     * @param roles The known roles (or null to determine them from the mappings)
      */
     public void setConstraintMappings(ConstraintMapping[] constraintMappings, Set<String> roles)
     {
         if (isStarted())
             throw new IllegalStateException("Started");
         _constraintMappings = constraintMappings;
+        
+        if (roles==null)
+        {
+            roles = new HashSet<String>();
+            for (ConstraintMapping cm : constraintMappings)
+            {
+                String[] cmr = cm.getConstraint().getRoles();
+                if (cmr!=null)
+                {
+                    for (String r : cmr)
+                        if (!"*".equals(r))
+                            roles.add(r);
+                }
+            }
+        }
+        
         this._roles = roles;
 
     }
@@ -110,7 +141,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     protected void doStart() throws Exception
     {
         _constraintMap.clear();
-        if (_constraintMappings != null)
+        if (_constraintMappings!=null)
         {
             for (ConstraintMapping mapping : _constraintMappings)
             {

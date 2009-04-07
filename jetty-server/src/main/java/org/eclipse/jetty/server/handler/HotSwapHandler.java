@@ -52,6 +52,15 @@ public class HotSwapHandler extends AbstractHandlerContainer
     
     /* ------------------------------------------------------------ */
     /**
+     * @return Returns the handlers.
+     */
+    public Handler[] getHandlers()
+    {
+        return new Handler[] {_handler};
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
      * @param handler Set the {@link Handler} which should be wrapped.
      */
     public void setHandler(Handler handler)
