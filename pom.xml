@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>8</version>
+    <version>9-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
@@ -74,12 +74,13 @@
         <artifactId>maven-bundle-plugin</artifactId>
         <version>2.0.0</version>
         <extensions>true</extensions>
-        <configuration>
-          
+        <configuration>        
           <instructions>
             <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
             <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
             <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
+            <Bundle-Localization>plugin</Bundle-Localization>
+            <Bundle-Classpath>.</Bundle-Classpath>
             <Bundle-Copyright>Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
             <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
           </instructions>
@@ -179,14 +180,32 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-  <reporting>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-project-info-reports-plugin</artifactId>
-        <version>2.0</version>
-      </plugin>
-    </plugins>
-  </reporting>
+  <profiles>
+    <profile>
+      <id>aggregate-site</id>
+      <build>
+        <plugins>
+          <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-jxr-plugin</artifactId>
+              <configuration>
+                <aggregate>true</aggregate>
+              </configuration>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <configuration>
+                <excludePackageNames>com.acme</excludePackageNames>
+                <links>
+                  <link>http://java.sun.com/j2se/1.5.0/docs/api</link>
+                  <link>http://java.sun.com/javaee/5/docs/api</link>
+                  <link>http://junit.sourceforge.net/javadoc/</link>
+                </links>
+              </configuration>
+            </plugin>
+          </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
-
