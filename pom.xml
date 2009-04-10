@@ -180,6 +180,12 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+  <!-- 
+    Usage:
+    configure settings.xml for jetty.eclipse.website server entry
+    > mvn -Paggregate-site javadoc:aggregate jxr:jxr
+    > mvn -N site:deploy
+   -->
   <profiles>
     <profile>
       <id>aggregate-site</id>
