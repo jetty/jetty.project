@@ -15,6 +15,7 @@ package org.eclipse.jetty.io.nio;
 
 import java.io.IOException;
 import java.nio.channels.CancelledKeyException;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -410,7 +411,8 @@ public abstract class SelectorManager extends AbstractLifeCycle
                     // Look for JVM bug  http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6403933
                     if (selected==0  && (now-before)<wait/2)
                     {
-                        if (_jvmBug++>5) 
+                        _jvmBug++;
+                        if (_jvmBug>4) 
                         {
                             // Probably JVM BUG!    
                             for (SelectionKey key: selector.keys())
@@ -420,6 +422,27 @@ public abstract class SelectorManager extends AbstractLifeCycle
                             }
                             selector.selectNow();
                         } 
+                        else if (_jvmBug>8)
+                        {
+                            // BLOODY SUN!!!  Try refreshing the entire selector.
+                            synchronized (this)
+                            {
+                                System.err.println("SUN BUG WORKAROUND!!!!");
+                                final Selector new_selector = Selector.open();
+                                
+                                for (SelectionKey key : _selector.keys())
+                                {
+                                    final SocketChannel channel = (SocketChannel)key.channel();
+                                    final Object attachment = key.attachment();
+                                    
+                                    key.cancel();
+                                    
+                                    addChange(channel,attachment);
+                                }
+                                _selector.close();
+                                _selector=new_selector;
+                            }
+                        }
                     }
                     else
                         _jvmBug=0;
