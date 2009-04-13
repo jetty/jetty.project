@@ -100,13 +100,14 @@ public interface UserIdentity
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public interface UnauthticatedUserIdentity extends UserIdentity
+    public interface UnauthenticatedUserIdentity extends UserIdentity
     {
-        UserIdentity login(ServletRequest request, ServletResponse response);
-        UserIdentity login(String username, String password);
     };
-    
-    public static final UserIdentity UNAUTHENTICATED_IDENTITY = new UserIdentity()
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    public static final UserIdentity UNAUTHENTICATED_IDENTITY = new UnauthenticatedUserIdentity()
     {
         public Subject getSubject()
         {

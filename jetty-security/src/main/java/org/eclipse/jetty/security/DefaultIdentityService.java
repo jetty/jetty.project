@@ -32,7 +32,7 @@ import org.eclipse.jetty.server.UserIdentity.Scope;
  * implementation. All other operations are effectively noops.
  *
  */
-public class DefaultIdentityService implements IdentityService<UserIdentity, RoleRunAsToken>
+public class DefaultIdentityService implements IdentityService
 {
     public DefaultIdentityService()
     {
@@ -55,12 +55,12 @@ public class DefaultIdentityService implements IdentityService<UserIdentity, Rol
     {
     }
 
-    public RoleRunAsToken associateRunAs(RunAsToken token)
+    public Object associateRunAs(UserIdentity user, RunAsToken token)
     {
-        return null;
+        return token;
     }
 
-    public void disassociateRunAs(RoleRunAsToken lastToken)
+    public void disassociateRunAs(Object lastToken)
     {
     }
     
@@ -69,7 +69,7 @@ public class DefaultIdentityService implements IdentityService<UserIdentity, Rol
         return new RoleRunAsToken(runAsName);
     }
 
-    public UserIdentity newSystemUserIdentity()
+    public UserIdentity getSystemUserIdentity()
     {
         return null;
     }

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.security;
 
+import org.eclipse.jetty.security.authentication.DelegateAuthenticator;
+import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.UserIdentity;
 
 
@@ -22,19 +24,19 @@ import org.eclipse.jetty.server.UserIdentity;
 public class DefaultAuthentication implements Authentication
 {
     private final Authentication.Status _authStatus;
-    private final String _authMethod;
+    private final Authenticator _authenticator;
     private final UserIdentity _userIdentity;
 
-    public DefaultAuthentication(Authentication.Status authStatus, String authMethod, UserIdentity userIdentity)
+    public DefaultAuthentication(Authentication.Status authStatus, Authenticator authenticator, UserIdentity userIdentity)
     {
         _authStatus = authStatus;
-        _authMethod = authMethod;
+        _authenticator = authenticator;
         _userIdentity=userIdentity;
     }
 
     public String getAuthMethod()
     {
-        return _authMethod;
+        return _authenticator.getAuthMethod();
     }
     
     public Authentication.Status getAuthStatus()
@@ -52,8 +54,27 @@ public class DefaultAuthentication implements Authentication
         return _authStatus.isSuccess();
     }
     
+    public void logout() 
+    {    
+        Authenticator authenticator = _authenticator;
+        while (true)
+        {
+            if (authenticator instanceof LoginAuthenticator)
+            {
+                ((LoginAuthenticator)authenticator).getLoginService().logout(this.getUserIdentity());
+                break;
+            }
+            else if (authenticator instanceof DelegateAuthenticator)
+            {
+                authenticator=((DelegateAuthenticator)authenticator).getDelegate();
+            }
+            else
+                break;
+        }
+    }
+    
     public String toString()
     {
-        return "{Auth,"+_authMethod+","+_authStatus+","+","+_userIdentity+"}";
+        return "{Auth,"+getAuthMethod()+","+_authStatus+","+","+_userIdentity+"}";
     }
 }

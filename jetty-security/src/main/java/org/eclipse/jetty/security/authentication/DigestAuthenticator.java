@@ -124,9 +124,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                     UserIdentity user = _loginService.login(digest.username,digest);
                     if (user!=null)
                     {
-                        if (user instanceof DefaultUserIdentity)
-                            return ((DefaultUserIdentity)user).SUCCESSFUL_BASIC;
-                        return new DefaultAuthentication(Authentication.Status.SUCCESS,Constraint.__DIGEST_AUTH,user);
+                        return new DefaultAuthentication(Authentication.Status.SUCCESS,this,user);
                     }
                 }
                 else if (n == 0) stale = true;

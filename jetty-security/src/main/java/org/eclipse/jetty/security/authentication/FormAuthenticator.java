@@ -180,7 +180,7 @@ public class FormAuthenticator extends LoginAuthenticator
                     session.removeAttribute(__J_URI); // Remove popped return URI.
                     response.setContentLength(0);   
                     response.sendRedirect(response.encodeRedirectURL(nuri));
-                    return new DefaultAuthentication(Authentication.Status.SEND_SUCCESS,Constraint.__FORM_AUTH,user);
+                    return new DefaultAuthentication(Authentication.Status.SEND_SUCCESS,this,user);
                 }
                 
                 // not authenticated

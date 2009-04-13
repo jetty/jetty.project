@@ -27,6 +27,7 @@ import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.security.DefaultAuthentication;
 import org.eclipse.jetty.security.DefaultUserIdentity;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.security.Authentication.Status;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -34,7 +35,7 @@ import org.eclipse.jetty.util.StringUtil;
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
 public class BasicAuthenticator extends LoginAuthenticator 
-{
+{   
     /* ------------------------------------------------------------ */
     /**
      * @param loginService
@@ -75,9 +76,7 @@ public class BasicAuthenticator extends LoginAuthenticator
                 UserIdentity user = _loginService.login(username,password);
                 if (user!=null)
                 {
-                    if (user instanceof DefaultUserIdentity)
-                        return ((DefaultUserIdentity)user).SUCCESSFUL_BASIC;
-                    return new DefaultAuthentication(Authentication.Status.SUCCESS,Constraint.__BASIC_AUTH,user);
+                    return new DefaultAuthentication(Authentication.Status.SUCCESS,this,user);
                 }
             }
 

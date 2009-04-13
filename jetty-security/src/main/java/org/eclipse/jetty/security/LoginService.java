@@ -28,7 +28,8 @@ public interface LoginService
 {
     String getName();
     UserIdentity login(String username,Object credentials);
+    void logout(UserIdentity user);
     
-    IdentityService<UserIdentity,?> getIdentityService();
-    void setIdentityService(IdentityService<UserIdentity,?> service);
+    IdentityService getIdentityService();
+    void setIdentityService(IdentityService service);
 }

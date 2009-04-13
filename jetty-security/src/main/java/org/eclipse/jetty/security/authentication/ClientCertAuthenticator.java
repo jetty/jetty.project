@@ -76,7 +76,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
 
             UserIdentity user = _loginService.login(username,credential);
             if (user!=null)
-                return new DefaultAuthentication(Authentication.Status.SUCCESS,Constraint.__CERT_AUTH2,user);
+                return new DefaultAuthentication(Authentication.Status.SUCCESS,this,user);
 
             if (!mandatory) 
             { 

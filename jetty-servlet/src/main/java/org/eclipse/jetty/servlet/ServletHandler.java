@@ -84,7 +84,7 @@ public class ServletHandler extends AbstractHandler
     private boolean _filterChainsCached=true;
     private int _maxFilterChainsCacheSize=1000;
     private boolean _startWithUnavailable=true;
-    private IdentityService<UserIdentity,?> _identityService;
+    private IdentityService _identityService;
     
     private ServletHolder[] _servlets;
     private ServletMapping[] _servletMappings;
@@ -140,7 +140,7 @@ public class ServletHandler extends AbstractHandler
         {
             SecurityHandler security_handler = (SecurityHandler)_contextHandler.getChildHandlerByClass(SecurityHandler.class);
             if (security_handler!=null)
-                _identityService=(IdentityService<UserIdentity,?>)security_handler.getIdentityService();
+                _identityService=security_handler.getIdentityService();
         }
         
         updateNameMappings();

@@ -38,6 +38,7 @@ public interface Authentication
     
     boolean isSuccess();
     
+    void logout();
     
     public static final Authentication SUCCESS_UNAUTH_RESULTS = new Authentication()
     {
@@ -45,6 +46,7 @@ public interface Authentication
         public Status getAuthStatus() {return Authentication.Status.SUCCESS;}
         public UserIdentity getUserIdentity() {return UserIdentity.UNAUTHENTICATED_IDENTITY;}
         public boolean isSuccess() {return true;}
+        public void logout() {}
     };
     
     public static final Authentication SEND_CONTINUE_RESULTS = new Authentication()
@@ -53,6 +55,7 @@ public interface Authentication
         public Status getAuthStatus() {return Authentication.Status.SEND_CONTINUE;}
         public UserIdentity getUserIdentity() {return UserIdentity.UNAUTHENTICATED_IDENTITY;}
         public boolean isSuccess() {return false;}
+        public void logout() {}
     };
     
     public static final Authentication SEND_FAILURE_RESULTS = new Authentication()
@@ -61,6 +64,7 @@ public interface Authentication
         public Status getAuthStatus() {return Authentication.Status.SEND_FAILURE;}
         public UserIdentity getUserIdentity() {return UserIdentity.UNAUTHENTICATED_IDENTITY;}
         public boolean isSuccess() {return false;}
+        public void logout() {}
     };
     
 }

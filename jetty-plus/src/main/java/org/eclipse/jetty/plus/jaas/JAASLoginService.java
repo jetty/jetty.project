@@ -125,6 +125,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     }
 
 
+    /* ------------------------------------------------------------ */
     /**
      * Set the name to use to index into the config
      * file of LoginModules.
@@ -137,11 +138,13 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     }
 
 
+    /* ------------------------------------------------------------ */
     public void setCallbackHandlerClass (String classname)
     {
         _callbackHandlerClass = classname;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public void setRoleClassNames (String[] classnames)
     {
         ArrayList<String> tmp = new ArrayList<String>();
@@ -154,6 +157,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         _roleClassNames = tmp.toArray(new String[tmp.size()]);
     }
 
+    /* ------------------------------------------------------------ */
     public String[] getRoleClassNames()
     {
         return _roleClassNames;
@@ -225,6 +229,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         return null;
     }
 
+    /* ------------------------------------------------------------ */
     private String getUserName(CallbackHandler callbackHandler) throws IOException, UnsupportedCallbackException
     {
         NameCallback nameCallback = new NameCallback("foo");
@@ -232,14 +237,10 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         return nameCallback.getName();
     }
 
-    public void logout(Subject subject) throws ServerAuthException
+    /* ------------------------------------------------------------ */
+    public void logout(UserIdentity user)
     {
-//        loginCallback.clearPassword();
-        Set<JAASUserPrincipal> userPrincipals = subject.getPrincipals(JAASUserPrincipal.class);
-        if (userPrincipals.size() != 1)
-        {
-            throw new ServerAuthException("logout implausible, wrong number of user principals: " + userPrincipals);
-        }
+        Set<JAASUserPrincipal> userPrincipals = user.getSubject().getPrincipals(JAASUserPrincipal.class);
         LoginContext loginContext = userPrincipals.iterator().next().getLoginContext();
         try
         {
@@ -247,11 +248,12 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         }
         catch (LoginException e)
         {
-            throw new ServerAuthException("Failed to log out: "+e.getMessage());
+            Log.warn(e);
         }
     }
 
 
+    /* ------------------------------------------------------------ */
     private String[] getGroups (Subject subject)
     {
         //get all the roles of the various types

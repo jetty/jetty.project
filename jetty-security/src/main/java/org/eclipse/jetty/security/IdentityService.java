@@ -24,7 +24,7 @@ import org.eclipse.jetty.server.UserIdentity;
  * Associates UserIdentities from with threads and UserIdentity.Contexts.
  * 
  */
-public interface IdentityService <SCOPED extends UserIdentity, RUNAS>
+public interface IdentityService
 {
 
     /* ------------------------------------------------------------ */
@@ -48,24 +48,23 @@ public interface IdentityService <SCOPED extends UserIdentity, RUNAS>
      * @param context The new scope.
      * @return A scoped {@link UserIdentity}.
      */
-    SCOPED associate(UserIdentity user, UserIdentity.Scope context);
+    UserIdentity associate(UserIdentity user, UserIdentity.Scope context);
     
     /* ------------------------------------------------------------ */
     /**
      * Disassociate the current UserIdentity and reinstate the 
      * previousUser identity.
-     * TODO this might not be necessary.  Both existing implementations are no-ops
-     * @param scoped SCOPED returned from previous associate call
+     * @param scoped UserIdentity returned from previous associate call
      */
-    void disassociate(SCOPED scoped);
+    void disassociate(UserIdentity scoped);
     
     /* ------------------------------------------------------------ */
     /**
-     * Associate a runas Token with the current thread.
+     * Associate a runas Token with the current user and thread.
      * @param token The runAsToken to associate.
      * @return The previous runAsToken or null.
      */
-    RUNAS associateRunAs(RunAsToken token);
+    Object associateRunAs(UserIdentity user, RunAsToken token);
     
     /* ------------------------------------------------------------ */
     /**
@@ -73,7 +72,7 @@ public interface IdentityService <SCOPED extends UserIdentity, RUNAS>
      * and reassociate the previous token.
      * @param token RUNAS returned from previous associateRunAs call
      */
-    void disassociateRunAs(RUNAS token);
+    void disassociateRunAs(Object token);
 
     /* ------------------------------------------------------------ */
     /**
@@ -95,5 +94,6 @@ public interface IdentityService <SCOPED extends UserIdentity, RUNAS>
      */
     RunAsToken newRunAsToken(String runAsName);
 
-    UserIdentity newSystemUserIdentity();
+    /* ------------------------------------------------------------ */
+    UserIdentity getSystemUserIdentity();
 }

@@ -44,10 +44,12 @@ public class XCPSCachingAuthenticator extends DelegateAuthenticator
     {
 
         Authentication serverAuthResult = _xcps.fetch((HttpServletRequest)request);
-        if (serverAuthResult != null) return serverAuthResult;
+        if (serverAuthResult != null) 
+            return serverAuthResult;
 
         serverAuthResult = _delegate.validateRequest(request, response, manditory);
-        if (serverAuthResult != null) _xcps.store(serverAuthResult, (HttpServletResponse)response);
+        if (serverAuthResult != null) 
+            _xcps.store(serverAuthResult, (HttpServletResponse)response);
 
         return serverAuthResult;
     }

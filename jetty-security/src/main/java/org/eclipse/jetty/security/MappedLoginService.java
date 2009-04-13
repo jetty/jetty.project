@@ -202,6 +202,12 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
     }
 
     /* ------------------------------------------------------------ */
+    public void logout(UserIdentity user)
+    {
+        // TODO maybe clear cache?
+    }
+    
+    /* ------------------------------------------------------------ */
     protected abstract UserIdentity loadUser(String username);
     
     /* ------------------------------------------------------------ */

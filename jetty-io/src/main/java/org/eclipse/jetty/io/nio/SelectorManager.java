@@ -282,19 +282,13 @@ public abstract class SelectorManager extends AbstractLifeCycle
             synchronized (_changes)
             {
                 _changes[_change].add(point);
-                if (point instanceof SocketChannel)
-                    _changes[_change].add(null);
             }
         }
         
         /* ------------------------------------------------------------ */
         public void addChange(SocketChannel channel, Object att)
         {   
-            synchronized (_changes)
-            {
-                _changes[_change].add(channel);
-                _changes[_change].add(att);
-            }
+            addChange(new AttachedSocketChannel(channel,att));
         }
         
         /* ------------------------------------------------------------ */
@@ -325,7 +319,8 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 
 
                 // Make any key changes required
-                for (int i = 0; i < changes.size(); i++)
+                final int size=changes.size();
+                for (int i = 0; i < size; i++)
                 {
                     try
                     {
@@ -340,11 +335,12 @@ public abstract class SelectorManager extends AbstractLifeCycle
                         {
                             dispatch((Runnable)o);
                         }
-                        else if (o instanceof SocketChannel)
+                        else if (o instanceof AttachedSocketChannel)
                         {
                             // finish accepting/connecting this connection
-                            SocketChannel channel=(SocketChannel)o;
-                            Object att = changes.get(++i);
+                            final AttachedSocketChannel asc = (AttachedSocketChannel)o;
+                            final SocketChannel channel=asc._channel;
+                            final Object att = asc._attachment;
 
                             if (channel.isConnected())
                             {
@@ -436,8 +432,10 @@ public abstract class SelectorManager extends AbstractLifeCycle
                                     final Object attachment = key.attachment();
                                     
                                     key.cancel();
-                                    
-                                    addChange(channel,attachment);
+                                    if (attachment==null)
+                                        addChange(channel);
+                                    else
+                                        addChange(attachment);
                                 }
                                 _selector.close();
                                 _selector=new_selector;
@@ -677,5 +675,21 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 _selector=null;
             }
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    private static class AttachedSocketChannel
+    {
+        final SocketChannel _channel;
+        final Object _attachment;
+        
+        public AttachedSocketChannel(SocketChannel channel, Object attachment)
+        {
+            super();
+            _channel = channel;
+            _attachment = attachment;
+        }
+
+        
     }
 }

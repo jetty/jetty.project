@@ -66,6 +66,12 @@ public class LazyAuthentication implements Authentication
     {
         return getDelegate().isSuccess();
     }
+
+    public void logout() 
+    {
+        if (_delegate!=null)
+            _delegate.logout();
+    }
     
     // for cleaning in secureResponse
     public UserIdentity getUserIdentity()

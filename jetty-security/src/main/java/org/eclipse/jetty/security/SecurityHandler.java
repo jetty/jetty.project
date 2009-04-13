@@ -54,7 +54,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private final Map<String,String> _initParameters=new HashMap<String,String>();
     private LoginService _loginService;
     private boolean _loginServiceShared;
-    private IdentityService<UserIdentity,?> _identityService;
+    private IdentityService _identityService;
 
     /* ------------------------------------------------------------ */
     protected SecurityHandler()
@@ -65,7 +65,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /** Get the identityService.
      * @return the identityService
      */
-    public IdentityService<UserIdentity,?> getIdentityService()
+    public IdentityService getIdentityService()
     {
         return _identityService;
     }
@@ -74,7 +74,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /** Set the identityService.
      * @param identityService the identityService to set
      */
-    public void setIdentityService(IdentityService<UserIdentity,?> identityService)
+    public void setIdentityService(IdentityService identityService)
     {
         if (isStarted())
             throw new IllegalStateException("Started");
@@ -268,7 +268,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     }
     
     /* ------------------------------------------------------------ */
-    protected IdentityService<UserIdentity,?> findIdentityService()
+    protected IdentityService findIdentityService()
     {
         List<IdentityService> services = getServer().getBeans(IdentityService.class);
         if (services!=null && services.size()>0)

@@ -16,9 +16,6 @@ package org.eclipse.jetty.security;
 import java.security.Principal;
 
 import javax.security.auth.Subject;
-
-import org.eclipse.jetty.http.security.Constraint;
-import org.eclipse.jetty.security.Authentication.Status;
 import org.eclipse.jetty.server.UserIdentity;
 
 
@@ -29,10 +26,6 @@ import org.eclipse.jetty.server.UserIdentity;
  */
 public class DefaultUserIdentity implements UserIdentity
 {
-    /* Cache successful authentications for BASIC and DIGEST to avoid creation on every request */
-    public final Authentication SUCCESSFUL_BASIC = new DefaultAuthentication(Status.SUCCESS,Constraint.__BASIC_AUTH,this);
-    public final Authentication SUCCESSFUL_DIGEST = new DefaultAuthentication(Status.SUCCESS,Constraint.__BASIC_AUTH,this);
-    
     private final Subject _subject;
     private final Principal _userPrincipal;
     private final String[] _roles;
