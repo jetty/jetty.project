@@ -353,7 +353,22 @@ public abstract class SelectorManager extends AbstractLifeCycle
                             {
                                 channel.register(selector,SelectionKey.OP_CONNECT,att);
                             }
+                        }
+                        else if (o instanceof SocketChannel)
+                        {
+                            final SocketChannel channel=(SocketChannel)o;
 
+                            if (channel.isConnected())
+                            {
+                                SelectionKey key = channel.register(selector,SelectionKey.OP_READ,null);
+                                SelectChannelEndPoint endpoint = newEndPoint(channel,this,key);
+                                key.attach(endpoint);
+                                endpoint.schedule();
+                            }
+                            else
+                            {
+                                channel.register(selector,SelectionKey.OP_CONNECT,null);
+                            }
                         }
                         else if (o instanceof ServerSocketChannel)
                         {
