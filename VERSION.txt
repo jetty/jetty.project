@@ -1,5 +1,6 @@
 jetty-7.0.0.M1-SNAPSHOT
  + 271258 FORM Authentication dispatch handling avoids caching
+ + Initial support for LoginService.logout
 
 jetty-7.0.0.M0
  + JETTY-496 Support inetd/xinetd through use of System.inheritedChannel()
