@@ -715,6 +715,17 @@ public class HttpConnection implements Connection
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.Connection#isSuspended()
+     */
+    public boolean isSuspended()
+    {
+        return _request.getAsyncRequest().isSuspended();
+    }
+
+
+
+    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private class RequestHandler extends HttpParser.EventHandler

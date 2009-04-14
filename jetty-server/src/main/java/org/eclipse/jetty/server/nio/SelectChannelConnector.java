@@ -296,15 +296,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     /* ------------------------------------------------------------ */
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
-        return new SelectChannelEndPoint(channel,selectSet,key)
-        {
-            // TODO remove this hack
-            public boolean isReadyForDispatch()
-            {
-                Request request = ((HttpConnection)getConnection()).getRequest();
-                return super.isReadyForDispatch() && !(request.getAsyncRequest().isSuspended());
-            }
-        };
+        return new SelectChannelEndPoint(channel,selectSet,key);
     }
 
     /* ------------------------------------------------------------------------------- */

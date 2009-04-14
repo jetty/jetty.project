@@ -375,6 +375,15 @@ public class HttpConnection implements Connection
             return _exchange == null;
         }
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.Connection#isSuspended()
+     */
+    public boolean isSuspended()
+    {
+        return false;
+    }
 
     /* ------------------------------------------------------------ */
     public EndPoint getEndPoint()
