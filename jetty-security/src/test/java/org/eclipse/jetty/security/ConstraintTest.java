@@ -94,10 +94,12 @@ public class ConstraintTest extends TestCase
         Constraint constraint2 = new Constraint();
         constraint2.setAuthenticate(true);
         constraint2.setName("admin");
+       
         constraint2.setRoles(new String[]{"administrator"});
         ConstraintMapping mapping2 = new ConstraintMapping();
         mapping2.setPathSpec("/admin/*");
         mapping2.setConstraint(constraint2);
+        mapping2.setMethod("GET");
         
         Constraint constraint3 = new Constraint();
         constraint3.setAuthenticate(false);

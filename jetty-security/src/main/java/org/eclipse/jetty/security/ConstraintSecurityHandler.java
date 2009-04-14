@@ -240,14 +240,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             String httpMethod = request.getMethod();
             RoleInfo roleInfo = mappings.get(httpMethod);
             if (roleInfo == null)
-            {
                 roleInfo = mappings.get(null);
-                if (roleInfo != null)
-                {
-                    return roleInfo;
-                }
-            }
+            return roleInfo;
         }
+       
         return null;
     }
 
