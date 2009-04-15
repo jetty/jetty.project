@@ -266,6 +266,8 @@ public class DigestAuthenticator extends LoginAuthenticator
         /* ------------------------------------------------------------ */
         public boolean check(Object credentials)
         {
+            if (credentials instanceof char[])
+                credentials=new String((char[])credentials);
             String password = (credentials instanceof String) ? (String) credentials : credentials.toString();
 
             try

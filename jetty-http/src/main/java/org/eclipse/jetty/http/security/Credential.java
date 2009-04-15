@@ -132,6 +132,8 @@ public abstract class Credential
             {
                 byte[] digest = null;
 
+                if (credentials instanceof char[])
+                    credentials=new String((char[])credentials);
                 if (credentials instanceof Password || credentials instanceof String)
                 {
                     synchronized (__md5Lock)
