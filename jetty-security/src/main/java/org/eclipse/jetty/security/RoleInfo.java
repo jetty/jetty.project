@@ -29,21 +29,25 @@ public class RoleInfo
 {
     private final static String[] NO_ROLES={};
     private boolean _isAnyRole;
-    private boolean _unchecked;
+    private boolean _checked;
     private boolean _forbidden;
     private UserDataConstraint _userDataConstraint;
 
     private String[] _roles = NO_ROLES;
 
-    public boolean isUnchecked()
+    public RoleInfo()
+    {    
+    }
+    
+    public boolean isChecked()
     {
-        return _unchecked;
+        return _checked;
     }
 
-    public void setUnchecked(boolean unchecked)
+    public void setChecked(boolean checked)
     {
-        this._unchecked = unchecked;
-        if (unchecked)
+        this._checked = checked;
+        if (!checked)
         {
             _forbidden=false;
             _roles=NO_ROLES;
@@ -61,7 +65,7 @@ public class RoleInfo
         this._forbidden = forbidden;
         if (forbidden)
         {
-            _unchecked = false;
+            _checked = true;
             _userDataConstraint = null;
             _isAnyRole=false;
             _roles=NO_ROLES;
@@ -78,7 +82,7 @@ public class RoleInfo
         this._isAnyRole=anyRole;
         if (anyRole)
         {
-            _unchecked = false;
+            _checked = true;
             _roles=NO_ROLES;
         }
     }
@@ -115,8 +119,8 @@ public class RoleInfo
     {
         if (other._forbidden)
             setForbidden(true);
-        else if (other._unchecked) 
-            setUnchecked(true);
+        else if (!other._checked) // TODO is this the right way around???
+            setChecked(true);
         else if (other._isAnyRole)
             setAnyRole(true);
         else if (!_isAnyRole)
@@ -130,6 +134,6 @@ public class RoleInfo
     
     public String toString()
     {
-        return "{RoleInfo"+(_forbidden?",F":"")+(_unchecked?",U":"")+(_isAnyRole?",*":Arrays.asList(_roles).toString())+"}";
+        return "{RoleInfo"+(_forbidden?",F":"")+(_checked?",C":"")+(_isAnyRole?",*":Arrays.asList(_roles).toString())+"}";
     }
 }

@@ -22,49 +22,99 @@ import org.eclipse.jetty.server.UserIdentity;
  */
 public interface Authentication
 {    
-    public enum Status
-    {
-        SEND_FAILURE(false), SEND_SUCCESS(true), SEND_CONTINUE(false), SUCCESS(true);
-        boolean _success;
-        Status(boolean success) {_success=success; }
-        public boolean isSuccess(){ return _success;}
-    }
-    
-    Status getAuthStatus();
-
     String getAuthMethod();
     
     UserIdentity getUserIdentity();
     
     boolean isSuccess();
     
+    boolean isSend();
+    
     void logout();
+
     
-    public static final Authentication SUCCESS_UNAUTH_RESULTS = new Authentication()
+    public static final Authentication FAILED = new Authentication()
     {
-        public String getAuthMethod() {return null;}
-        public Status getAuthStatus() {return Authentication.Status.SUCCESS;}
-        public UserIdentity getUserIdentity() {return UserIdentity.UNAUTHENTICATED_IDENTITY;}
-        public boolean isSuccess() {return true;}
-        public void logout() {}
+        public String getAuthMethod()
+        {
+            return null;
+        }
+
+        public UserIdentity getUserIdentity()
+        {
+            return UserIdentity.UNAUTHENTICATED_IDENTITY;
+        }
+
+        public boolean isSuccess()
+        {
+            return false;
+        }
+
+        public boolean isSend()
+        {
+            return true;
+        }
+
+        public void logout()
+        {
+        }
+        
     };
     
-    public static final Authentication SEND_CONTINUE_RESULTS = new Authentication()
+    public static final Authentication CHALLENGE = new Authentication()
     {
-        public String getAuthMethod() {return null;}
-        public Status getAuthStatus() {return Authentication.Status.SEND_CONTINUE;}
-        public UserIdentity getUserIdentity() {return UserIdentity.UNAUTHENTICATED_IDENTITY;}
-        public boolean isSuccess() {return false;}
-        public void logout() {}
+        public String getAuthMethod()
+        {
+            return null;
+        }
+
+        public UserIdentity getUserIdentity()
+        {
+            return UserIdentity.UNAUTHENTICATED_IDENTITY;
+        }
+
+        public boolean isSuccess()
+        {
+            return false;
+        }
+
+        public boolean isSend()
+        {
+            return true;
+        }
+
+        public void logout()
+        {
+        }
+        
     };
     
-    public static final Authentication SEND_FAILURE_RESULTS = new Authentication()
+    public static final Authentication NOT_CHECKED = new Authentication()
     {
-        public String getAuthMethod() {return null;}
-        public Status getAuthStatus() {return Authentication.Status.SEND_FAILURE;}
-        public UserIdentity getUserIdentity() {return UserIdentity.UNAUTHENTICATED_IDENTITY;}
-        public boolean isSuccess() {return false;}
-        public void logout() {}
+        public String getAuthMethod()
+        {
+            return null;
+        }
+
+        public UserIdentity getUserIdentity()
+        {
+            return UserIdentity.UNAUTHENTICATED_IDENTITY;
+        }
+
+        public boolean isSuccess()
+        {
+            return false;
+        }
+
+        public boolean isSend()
+        {
+            return false;
+        }
+
+        public void logout()
+        {
+        }
+        
     };
     
 }

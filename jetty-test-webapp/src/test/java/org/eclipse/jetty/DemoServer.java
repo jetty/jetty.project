@@ -3,6 +3,7 @@ package org.eclipse.jetty;
 import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class DemoServer
@@ -13,7 +14,7 @@ public class DemoServer
         Server server = new Server(8080);
         
         WebAppContext context = new WebAppContext();
-        context.setWar("./target/jetty-test-webapp-7.0.0.M1-SNAPSHOT"); // TODO YUCK!
+        context.setWar("./target/jetty-test-webapp-"+Server.getVersion()); // TODO YUCK!
         context.setDefaultsDescriptor("../jetty-webapp/src/main/config/etc/webdefault.xml");
         server.setHandler(context);
         

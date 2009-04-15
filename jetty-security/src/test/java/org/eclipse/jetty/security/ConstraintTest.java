@@ -564,7 +564,7 @@ public class ConstraintTest extends TestCase
         public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             UserIdentity old = ((Request) request).getUserIdentity();
-            UserIdentity scoped = _security.getIdentityService().associate(old,
+            UserIdentity scoped = _security.getIdentityService().scope(old,
                     new UserIdentity.Scope()
                     {
 
@@ -585,11 +585,6 @@ public class ConstraintTest extends TestCase
                             return map;
                         }
 
-                        public String getRunAsRole()
-                        {
-                            return null;
-                        }
-
                     });
             ((Request)request).setUserIdentity(scoped);
 
@@ -599,7 +594,7 @@ public class ConstraintTest extends TestCase
             }
             finally
             {
-                _security.getIdentityService().disassociate(scoped);
+                _security.getIdentityService().descope(scoped);
                 ((Request)request).setUserIdentity(old);
             }
         }

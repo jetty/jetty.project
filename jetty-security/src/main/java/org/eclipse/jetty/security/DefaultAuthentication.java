@@ -23,13 +23,11 @@ import org.eclipse.jetty.server.UserIdentity;
  */
 public class DefaultAuthentication implements Authentication
 {
-    private final Authentication.Status _authStatus;
     private final Authenticator _authenticator;
     private final UserIdentity _userIdentity;
 
-    public DefaultAuthentication(Authentication.Status authStatus, Authenticator authenticator, UserIdentity userIdentity)
+    public DefaultAuthentication(Authenticator authenticator, UserIdentity userIdentity)
     {
-        _authStatus = authStatus;
         _authenticator = authenticator;
         _userIdentity=userIdentity;
     }
@@ -37,11 +35,6 @@ public class DefaultAuthentication implements Authentication
     public String getAuthMethod()
     {
         return _authenticator.getAuthMethod();
-    }
-    
-    public Authentication.Status getAuthStatus()
-    {
-        return _authStatus;
     }
 
     public UserIdentity getUserIdentity()
@@ -51,7 +44,12 @@ public class DefaultAuthentication implements Authentication
 
     public boolean isSuccess()
     {
-        return _authStatus.isSuccess();
+        return true;
+    }
+
+    public boolean isSend()
+    {
+        return false;
     }
     
     public void logout() 
@@ -75,6 +73,19 @@ public class DefaultAuthentication implements Authentication
     
     public String toString()
     {
-        return "{Auth,"+getAuthMethod()+","+_authStatus+","+","+_userIdentity+"}";
+        return "{Auth,"+getAuthMethod()+","+_userIdentity+"}";
+    }
+    
+    public static class Send extends DefaultAuthentication
+    {
+        public Send(Authenticator authenticator, UserIdentity userIdentity)
+        {
+            super(authenticator,userIdentity);
+        }
+
+        public boolean isSend()
+        {
+            return true;
+        }
     }
 }

@@ -26,7 +26,8 @@ import org.eclipse.jetty.server.UserIdentity;
  */
 public interface IdentityService
 {
-
+    final static String[] NO_ROLES = new String[]{}; 
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -42,13 +43,13 @@ public interface IdentityService
     
     /* ------------------------------------------------------------ */
     /**
-     * Associate the {@link UserIdentity} and {@link UserIdentity.Scope}
-     * with the current thread.
+     * Scope the {@link UserIdentity} to a {@link UserIdentity.Scope}.
+     * @see IdentityService#descope(UserIdentity)
      * @param user The current user.
      * @param context The new scope.
      * @return A scoped {@link UserIdentity}.
      */
-    UserIdentity associate(UserIdentity user, UserIdentity.Scope context);
+    UserIdentity scope(UserIdentity user, UserIdentity.Scope context);
     
     /* ------------------------------------------------------------ */
     /**
@@ -56,7 +57,7 @@ public interface IdentityService
      * previousUser identity.
      * @param scoped UserIdentity returned from previous associate call
      */
-    void disassociate(UserIdentity scoped);
+    void descope(UserIdentity scoped);
     
     /* ------------------------------------------------------------ */
     /**
@@ -64,7 +65,7 @@ public interface IdentityService
      * @param token The runAsToken to associate.
      * @return The previous runAsToken or null.
      */
-    Object associateRunAs(UserIdentity user, RunAsToken token);
+    Object setRunAs(UserIdentity user, RunAsToken token);
     
     /* ------------------------------------------------------------ */
     /**
@@ -72,7 +73,7 @@ public interface IdentityService
      * and reassociate the previous token.
      * @param token RUNAS returned from previous associateRunAs call
      */
-    void disassociateRunAs(Object token);
+    void unsetRunAs(Object token);
 
     /* ------------------------------------------------------------ */
     /**

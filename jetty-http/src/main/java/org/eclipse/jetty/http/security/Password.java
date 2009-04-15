@@ -98,9 +98,11 @@ public class Password extends Credential
     /* ------------------------------------------------------------ */
     public boolean equals(Object o)
     {
-        if (this == o) return true;
+        if (this == o) 
+            return true;
 
-        if (null == o) return false;
+        if (null == o) 
+            return false;
 
         if (o instanceof Password)
         {
@@ -108,7 +110,8 @@ public class Password extends Credential
             return p._pw == _pw || (null != _pw && _pw.equals(p._pw));
         }
 
-        if (o instanceof String) return o.equals(_pw);
+        if (o instanceof String) 
+            return o.equals(_pw);
 
         return false;
     }

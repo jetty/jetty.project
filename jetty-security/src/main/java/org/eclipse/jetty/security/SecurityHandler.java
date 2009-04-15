@@ -413,7 +413,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 final Authenticator authenticator = _authenticator;
                 Authentication authentication = authenticator.validateRequest(request, response, isAuthMandatory);
 
-                if (authentication.getAuthStatus() == Authentication.Status.SUCCESS)
+                if (authentication!=null && !authentication.isSend())
                 {
                     final UserIdentity user_identity=authentication.getUserIdentity();
                     base_request.setAuthType(authentication.getAuthMethod());

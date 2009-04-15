@@ -49,7 +49,7 @@ public class DelegateAuthenticator implements Authenticator
         return _delegate.validateRequest(request, response, manditory);
     }
 
-    public Authentication.Status secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
     {
         return _delegate.secureResponse(req,res, mandatory, validatedUser);
     }

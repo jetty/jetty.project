@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
@@ -40,17 +41,16 @@ public class ManyServletContexts
         server.setHandler(contexts);
         
         ServletContextHandler root = new ServletContextHandler(contexts,"/",ServletContextHandler.SESSIONS);
-        root.addServlet(new ServletHolder(new HelloServlet("Ciao")), "/*");
+        root.addServlet(new ServletHolder(new HelloServlet("Hello")), "/");
+        root.addServlet(new ServletHolder(new HelloServlet("Ciao")), "/it/*");
+        root.addServlet(new ServletHolder(new HelloServlet("Bonjoir")), "/fr/*");
         
         ServletContextHandler other = new ServletContextHandler(contexts,"/other",ServletContextHandler.SESSIONS);
-        other.addServlet("org.eclipse.jetty.server.example.ManyServletServletContextHandlers$HelloServlet", "/*");
-        
-        StatisticsHandler stats = new StatisticsHandler();
-        contexts.addHandler(stats);
-        ServletContextHandler yetanother =new ServletContextHandler(stats,"/yo",ServletContextHandler.SESSIONS);
-        yetanother.addServlet(new ServletHolder(new HelloServlet("YO!")), "/*");
+        other.addServlet(DefaultServlet.class.getCanonicalName(), "/");
+        other.addServlet(new ServletHolder(new HelloServlet("YO!")), "*.yo");
         
         server.start();
+        System.err.println(server.dump());
         server.join();
     }
 

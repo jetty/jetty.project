@@ -26,7 +26,6 @@ import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.DefaultAuthentication;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.Authentication.Status;
 import org.eclipse.jetty.server.UserIdentity;
 
 /**
@@ -46,26 +45,27 @@ public class SessionCachingAuthenticator extends DelegateAuthenticator
         HttpSession session = ((HttpServletRequest)request).getSession(mandatory);
         // not mandatory and not authenticated
         if (session == null) 
-            return DefaultAuthentication.SUCCESS_UNAUTH_RESULTS;
+            return Authentication.NOT_CHECKED;
 
         Authentication authentication = (Authentication) session.getAttribute(__J_AUTHENTICATED);
         if (authentication != null) 
             return authentication;
 
         authentication = _delegate.validateRequest(request, response, mandatory);
-        if (authentication != null && authentication.getUserIdentity().getSubject() != null)
+        if (authentication!=null && authentication.isSuccess())
         {
-            Authentication next=new FormAuthentication(Authentication.Status.SUCCESS,_delegate,authentication.getUserIdentity());
-            session.setAttribute(__J_AUTHENTICATED, next);
+            Authentication cached=new FormAuthentication(_delegate,authentication.getUserIdentity());
+            session.setAttribute(__J_AUTHENTICATED, cached);
         }
+        
         return authentication;
     }
     
     protected class FormAuthentication extends DefaultAuthentication implements HttpSessionAttributeListener
     {
-        public FormAuthentication(Status authStatus, Authenticator authenticator, UserIdentity userIdentity)
+        public FormAuthentication(Authenticator authenticator, UserIdentity userIdentity)
         {
-            super(authStatus,authenticator,userIdentity);
+            super(authenticator,userIdentity);
         }
 
         public void attributeAdded(HttpSessionBindingEvent event)

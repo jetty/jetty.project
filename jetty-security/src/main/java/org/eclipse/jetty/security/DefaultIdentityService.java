@@ -43,7 +43,7 @@ public class DefaultIdentityService implements IdentityService
      * If there are roles refs present in the scope, then wrap the UserIdentity 
      * with one that uses the role references in the {@link UserIdentity#isUserInRole(String)}
      */
-    public UserIdentity associate(UserIdentity user, Scope scope)
+    public UserIdentity scope(UserIdentity user, Scope scope)
     {
         Map<String,String> roleRefMap=scope.getRoleRefMap();
         if (roleRefMap!=null && roleRefMap.size()>0)
@@ -51,16 +51,16 @@ public class DefaultIdentityService implements IdentityService
         return user;
     }
 
-    public void disassociate(UserIdentity scoped)
+    public void descope(UserIdentity scoped)
     {
     }
 
-    public Object associateRunAs(UserIdentity user, RunAsToken token)
+    public Object setRunAs(UserIdentity user, RunAsToken token)
     {
         return token;
     }
 
-    public void disassociateRunAs(Object lastToken)
+    public void unsetRunAs(Object lastToken)
     {
     }
     
@@ -93,11 +93,6 @@ public class DefaultIdentityService implements IdentityService
         {
             _delegate=user;
             _roleRefMap=roleRefMap;
-        }
-
-        public String[] getRoles()
-        {
-            return _delegate.getRoles();
         }
         
         public Subject getSubject()

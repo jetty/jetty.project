@@ -71,6 +71,7 @@ public class ManyContexts
         server.setHandler(contexts);
         
         server.start();
+        System.err.println(server.dump());
         server.join();
     }
 

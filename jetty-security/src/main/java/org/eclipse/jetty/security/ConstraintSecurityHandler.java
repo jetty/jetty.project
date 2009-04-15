@@ -187,9 +187,9 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                     UserDataConstraint userDataConstraint = UserDataConstraint.get(constraint.getDataConstraint());
                     roleInfo.setUserDataConstraint(userDataConstraint);
 
-                    boolean unchecked = !constraint.getAuthenticate();
-                    roleInfo.setUnchecked(unchecked);
-                    if (!roleInfo.isUnchecked())
+                    boolean checked = constraint.getAuthenticate();
+                    roleInfo.setChecked(checked);
+                    if (roleInfo.isChecked())
                     {
                         if (constraint.isAnyRole())
                         {
@@ -312,7 +312,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         {
             return false;
         }
-        return !((RoleInfo)constraintInfo).isUnchecked();
+        return ((RoleInfo)constraintInfo).isChecked();
     }
 
     protected boolean checkWebResourcePermissions(String pathInContext, Request request, Response response, Object constraintInfo, UserIdentity userIdentity)
@@ -324,7 +324,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
         RoleInfo roleInfo = (RoleInfo)constraintInfo;
 
-        if (roleInfo.isUnchecked())
+        if (!roleInfo.isChecked())
         {
             return true;
         }

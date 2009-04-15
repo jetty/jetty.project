@@ -28,6 +28,7 @@ import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpFields;
@@ -656,21 +657,23 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             }
             else
             {
-                // See if a short direct method can be used?
+                // See if a direct methods can be used?
                 if (out instanceof HttpConnection.Output)
                 {
-                    if (_cacheControl!=null)
+                    if (response instanceof Response)
                     {
-                        if (response instanceof Response)
+                        if (_cacheControl!=null)
                             ((Response)response).getHttpFields().put(HttpHeaders.CACHE_CONTROL_BUFFER,_cacheControl);
-                        else
-                            response.setHeader(HttpHeaders.CACHE_CONTROL,_cacheControl.toString());
+                        ((HttpConnection.Output)out).sendContent(content);
                     }
-                    ((HttpConnection.Output)out).sendContent(content);
+                    else
+                    {
+                        writeHeaders(response,content,content_length);
+                        ((HttpConnection.Output)out).sendContent(content.getBuffer());
+                    }
                 }
                 else
                 {
-                    
                     // Write content normally
                     writeHeaders(response,content,content_length);
                     resource.writeTo(out,0,content_length);

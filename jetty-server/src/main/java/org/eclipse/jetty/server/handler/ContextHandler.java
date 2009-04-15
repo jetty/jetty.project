@@ -125,7 +125,6 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
     private Object _contextListeners;
     private Object _contextAttributeListeners;
     private Object _requestListeners;
-    private Object _asyncListeners;
     private Object _requestAttributeListeners;
     private Set<String> _managedAttributes;
     

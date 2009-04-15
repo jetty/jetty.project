@@ -263,7 +263,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
             try
             {
                 if (_identityService!=null && _runAsToken!=null)
-                    old_run_as=_identityService.associateRunAs(_identityService.getSystemUserIdentity(),_runAsToken);
+                    old_run_as=_identityService.setRunAs(_identityService.getSystemUserIdentity(),_runAsToken);
 
                 destroyInstance(_servlet);
             }
@@ -274,7 +274,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
             finally
             {
                 if (_identityService!=null && _runAsToken!=null)
-                    _identityService.disassociateRunAs(old_run_as);
+                    _identityService.unsetRunAs(old_run_as);
             }
         }
 
@@ -405,7 +405,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
             // Handle run as
             if (_identityService!=null && _runAsToken!=null)
             {
-                old_run_as=_identityService.associateRunAs(_identityService.getSystemUserIdentity(),_runAsToken);
+                old_run_as=_identityService.setRunAs(_identityService.getSystemUserIdentity(),_runAsToken);
             }
 
             _servlet.init(_config);
@@ -435,7 +435,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
         {
             // pop run-as role
             if (_identityService!=null && _runAsToken!=null)
-                _identityService.disassociateRunAs(old_run_as);
+                _identityService.unsetRunAs(old_run_as);
         }
     }
     
@@ -512,7 +512,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
 
             // Handle run as
             if (_identityService!=null && _runAsToken!=null)
-                old_run_as=_identityService.associateRunAs(baseRequest.getUserIdentity(),_runAsToken);
+                old_run_as=_identityService.setRunAs(baseRequest.getUserIdentity(),_runAsToken);
             
             if (!isAsyncSupported())
                 baseRequest.setAsyncSupported(false);
@@ -531,7 +531,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
             
             // pop run-as role
             if (_identityService!=null && _runAsToken!=null)
-                _identityService.disassociateRunAs(old_run_as);
+                _identityService.unsetRunAs(old_run_as);
 
             // Handle error params.
             if (servlet_error)

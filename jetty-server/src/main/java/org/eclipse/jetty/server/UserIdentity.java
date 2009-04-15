@@ -29,8 +29,6 @@ import javax.servlet.ServletResponse;
  */
 public interface UserIdentity
 {
-    final static String[] NO_ROLES = new String[]{}; 
-    
     /* ------------------------------------------------------------ */
     /**
      * @return The user subject
@@ -42,12 +40,6 @@ public interface UserIdentity
      * @return The user principal
      */
     Principal getUserPrincipal();
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The users roles
-     */
-    String[] getRoles();
 
     /* ------------------------------------------------------------ */
     /** Check if the user is in a role.
@@ -85,12 +77,6 @@ public interface UserIdentity
         
         /* ------------------------------------------------------------ */
         /**
-         * @return The name of a runAs entity. Typically this is a runAs role applied to a servlet.
-         */
-        String getRunAsRole();
-        
-        /* ------------------------------------------------------------ */
-        /**
          * @return A map of role reference names that converts from names used by application code
          * to names used by the context deployment.
          */
@@ -117,11 +103,6 @@ public interface UserIdentity
         public Principal getUserPrincipal()
         {
             return null;
-        }
-        
-        public String[] getRoles()
-        {
-            return NO_ROLES;
         }
         
         public boolean isUserInRole(String role)

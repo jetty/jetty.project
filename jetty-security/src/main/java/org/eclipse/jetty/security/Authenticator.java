@@ -33,7 +33,7 @@ public interface Authenticator
     String getAuthMethod();
     
     Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException;
-    Authentication.Status secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, Authentication validatedUser) throws ServerAuthException;
+    boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, Authentication validatedUser) throws ServerAuthException;
     
     interface Configuration
     {

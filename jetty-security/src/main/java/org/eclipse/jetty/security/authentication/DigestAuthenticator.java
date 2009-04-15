@@ -55,9 +55,9 @@ public class DigestAuthenticator extends LoginAuthenticator
         return Constraint.__DIGEST_AUTH;
     }
     
-    public Authentication.Status secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
     {
-        return Authentication.Status.SUCCESS;
+        return true;
     }
 
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
@@ -124,25 +124,29 @@ public class DigestAuthenticator extends LoginAuthenticator
                     UserIdentity user = _loginService.login(digest.username,digest);
                     if (user!=null)
                     {
-                        return new DefaultAuthentication(Authentication.Status.SUCCESS,this,user);
+                        return new DefaultAuthentication(this,user);
                     }
                 }
                 else if (n == 0) stale = true;
 
             }
 
-            if (!mandatory) { return DefaultAuthentication.SUCCESS_UNAUTH_RESULTS; }
+            if (!mandatory) 
+                return Authentication.NOT_CHECKED;
+
             String domain = request.getContextPath();
-            if (domain == null) domain = "/";
+            if (domain == null) 
+                domain = "/";
             response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Digest realm=\"" + _loginService.getName()
-                                                             + "\", domain=\""
-                                                             + domain
-                                                             + "\", nonce=\""
-                                                             + newNonce((Request)request)
-                                                             + "\", algorithm=MD5, qop=\"auth\""
-                                                             + (_useStale ? (" stale=" + stale) : ""));
+                    + "\", domain=\""
+                    + domain
+                    + "\", nonce=\""
+                    + newNonce((Request)request)
+                    + "\", algorithm=MD5, qop=\"auth\""
+                    + (_useStale ? (" stale=" + stale) : ""));
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            return DefaultAuthentication.SEND_CONTINUE_RESULTS;
+
+            return Authentication.CHALLENGE;
         }
         catch (IOException e)
         {

@@ -274,7 +274,11 @@ public class FilterMapping
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return "(F="+_filterName+","+(_pathSpecs==null?"[]":Arrays.asList(_pathSpecs).toString())+","+(_servletNames==null?"[]":Arrays.asList(_servletNames).toString())+","+_dispatches+")"; 
+        return 
+        (_pathSpecs==null?"[]":Arrays.asList(_pathSpecs).toString())+"/"+
+        (_servletNames==null?"[]":Arrays.asList(_servletNames).toString())+"=="+
+        _dispatches+"=>"+
+        _filterName; 
     }
 
 }

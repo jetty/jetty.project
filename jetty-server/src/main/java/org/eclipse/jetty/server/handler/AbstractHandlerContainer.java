@@ -22,8 +22,6 @@ import org.eclipse.jetty.util.LazyList;
 /* ------------------------------------------------------------ */
 /** Abstract Handler Container.
  * This is the base class for handlers that may contain other handlers.
- *  
- * 
  *
  */
 public abstract class AbstractHandlerContainer extends AbstractHandler implements HandlerContainer
@@ -83,33 +81,28 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         
         return list;
     }
-
-    /* ------------------------------------------------------------ */
-    public String dump()
-    {
-        StringBuilder b = new StringBuilder();
-        dump(b,this,0);
-        return b.toString();
-    }
     
-
     /* ------------------------------------------------------------ */
-    protected void dump(StringBuilder b,Handler handler,int indent)
+    protected void dump(StringBuilder b,String indent)
     {
-        for (int i=0;i<indent;i++)
-            b.append("| ");
-        if (handler==null)
-            b.append("NULL");
-        else
-        {
-            b.append(handler.toString());
-            b.append(handler.isStarted()?" started":" STOPPED");
-            b.append('\n');
+        super.dump(b,indent);
 
-            indent++;
-            if (handler instanceof HandlerContainer)
-                for (Handler h : ((HandlerContainer)handler).getHandlers())
-                    dump(b,h,indent);
+        Handler[] handlers = getHandlers();
+        if (handlers!=null)
+        {   
+            int last=handlers.length-1;
+            for (int h=0;h<=last;h++)
+            {
+                b.append(indent);
+                b.append(" +-");
+                if (handlers[h] instanceof AbstractHandler)
+                    ((AbstractHandler)handlers[h]).dump(b,indent+((h==last)?"   ":" | "));
+                else
+                {
+                    b.append(handlers[h]);
+                    b.append("\n");
+                }
+            }
         }
     }
 }

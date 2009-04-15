@@ -150,7 +150,7 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
             subject.getPrincipals().add(userPrincipal);
             subject.getPrivateCredentials().add(credential);
             subject.setReadOnly();
-            identity=_identityService.newUserIdentity(subject,userPrincipal,UserIdentity.NO_ROLES);
+            identity=_identityService.newUserIdentity(subject,userPrincipal,IdentityService.NO_ROLES);
         }
         
         _users.put(userName,identity);

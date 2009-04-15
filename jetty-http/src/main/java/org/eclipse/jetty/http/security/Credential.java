@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http.security;
 
+import java.lang.reflect.Array;
 import java.security.MessageDigest;
 
 import org.eclipse.jetty.util.StringUtil;
@@ -82,7 +83,10 @@ public abstract class Credential
 
         public boolean check(Object credentials)
         {
-            if (!(credentials instanceof String) && !(credentials instanceof Password)) Log.warn("Can't check " + credentials.getClass() + " against CRYPT");
+            if (credentials instanceof char[])
+                credentials=new String((char[])credentials);
+            if (!(credentials instanceof String) && !(credentials instanceof Password)) 
+                Log.warn("Can't check " + credentials.getClass() + " against CRYPT");
 
             String passwd = credentials.toString();
             return _cooked.equals(UnixCrypt.crypt(passwd, _cooked));

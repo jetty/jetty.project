@@ -13,32 +13,39 @@
 
 package org.eclipse.jetty.security;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Locale;
+
 import javax.security.auth.Subject;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.UserIdentity;
-
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
 public class LazyAuthentication implements Authentication
 {
-    private static final Subject unauthenticatedSubject = new Subject();
-
-    private final Authenticator _serverAuthentication;
-    private final ServletRequest _request;
-    private final ServletResponse _response;
+    protected final Authenticator _authenticator;
+    protected final ServletRequest _request;
+    protected final ServletResponse _response;
 
     private Authentication _delegate;
 
-    public LazyAuthentication(Authenticator serverAuthentication, ServletRequest request, ServletResponse response)
+    public LazyAuthentication(Authenticator authenticator, ServletRequest request, ServletResponse response)
     {
-        if (serverAuthentication == null) throw new NullPointerException("No ServerAuthentication");
-        this._serverAuthentication = serverAuthentication;
-        this._request=request;
-        this._response=response;   
+        if (authenticator == null)
+            throw new NullPointerException("No Authenticator");
+        this._authenticator = authenticator;
+        this._request = request;
+        this._response = response;
     }
 
     private Authentication getDelegate()
@@ -47,19 +54,17 @@ public class LazyAuthentication implements Authentication
         {
             try
             {
-                _delegate = _serverAuthentication.validateRequest(_request, _response, false);
+                _delegate = _authenticator.validateRequest(_request,__nullResponse,false);
+                if (_delegate.isSend())
+                    _delegate=Authentication.NOT_CHECKED;
             }
             catch (ServerAuthException e)
             {
-                _delegate = DefaultAuthentication.SEND_FAILURE_RESULTS;
+                Log.debug(e);
+                _delegate = Authentication.FAILED;
             }
         }
         return _delegate;
-    }
-
-    public Authentication.Status getAuthStatus()
-    {
-        return getDelegate().getAuthStatus();
     }
 
     public boolean isSuccess()
@@ -67,16 +72,14 @@ public class LazyAuthentication implements Authentication
         return getDelegate().isSuccess();
     }
 
-    public void logout() 
+    public boolean isSend()
     {
-        if (_delegate!=null)
-            _delegate.logout();
+        return false;
     }
-    
-    // for cleaning in secureResponse
+
     public UserIdentity getUserIdentity()
     {
-        return _delegate == null ? UserIdentity.UNAUTHENTICATED_IDENTITY: _delegate.getUserIdentity();
+        return getDelegate().getUserIdentity();
     }
 
     public String getAuthMethod()
@@ -84,8 +87,173 @@ public class LazyAuthentication implements Authentication
         return getDelegate().getAuthMethod();
     }
 
+    public void logout()
+    {
+        if (_delegate != null)
+            _delegate.logout();
+    }
+
     public String toString()
     {
-        return "{Lazy,"+_delegate+"}";
+        return "{Lazy," + _delegate + "}";
     }
+
+    private static HttpServletResponse __nullResponse = new HttpServletResponse()
+    {
+        public void addCookie(Cookie cookie)
+        {
+        }
+
+        public void addDateHeader(String name, long date)
+        {
+        }
+
+        public void addHeader(String name, String value)
+        {
+        }
+
+        public void addIntHeader(String name, int value)
+        {
+        }
+
+        public boolean containsHeader(String name)
+        {
+            return false;
+        }
+
+        public String encodeRedirectURL(String url)
+        {
+            return null;
+        }
+
+        public String encodeRedirectUrl(String url)
+        {
+            return null;
+        }
+
+        public String encodeURL(String url)
+        {
+            return null;
+        }
+
+        public String encodeUrl(String url)
+        {
+            return null;
+        }
+
+        public void sendError(int sc) throws IOException
+        {
+        }
+
+        public void sendError(int sc, String msg) throws IOException
+        {
+        }
+
+        public void sendRedirect(String location) throws IOException
+        {
+        }
+
+        public void setDateHeader(String name, long date)
+        {
+        }
+
+        public void setHeader(String name, String value)
+        {
+        }
+
+        public void setIntHeader(String name, int value)
+        {
+        }
+
+        public void setStatus(int sc)
+        {
+        }
+
+        public void setStatus(int sc, String sm)
+        {
+        }
+
+        public void flushBuffer() throws IOException
+        {
+        }
+
+        public int getBufferSize()
+        {
+            return 1024;
+        }
+
+        public String getCharacterEncoding()
+        {
+            return null;
+        }
+
+        public String getContentType()
+        {
+            return null;
+        }
+
+        public Locale getLocale()
+        {
+            return null;
+        }
+
+        public ServletOutputStream getOutputStream() throws IOException
+        {
+            return __nullOut;
+        }
+
+        public PrintWriter getWriter() throws IOException
+        {
+            return IO.getNullPrintWriter();
+        }
+
+        public boolean isCommitted()
+        {
+            return true;
+        }
+
+        public void reset()
+        {
+        }
+
+        public void resetBuffer()
+        {
+        }
+
+        public void setBufferSize(int size)
+        {
+        }
+
+        public void setCharacterEncoding(String charset)
+        {
+        }
+
+        public void setContentLength(int len)
+        {
+        }
+
+        public void setContentType(String type)
+        {
+        }
+
+        public void setLocale(Locale loc)
+        {
+        }
+
+    };
+
+    private static ServletOutputStream __nullOut = new ServletOutputStream()
+    {
+        public void write(int b) throws IOException
+        {
+        }
+
+        public void print(String s) throws IOException
+        {
+        }
+
+        public void println(String s) throws IOException
+        {
+        }
+    };
 }

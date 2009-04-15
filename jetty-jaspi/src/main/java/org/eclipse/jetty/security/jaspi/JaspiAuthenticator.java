@@ -87,10 +87,11 @@ public class JaspiAuthenticator implements Authenticator
     }
 
     // most likely validatedUser is not needed here.
-    public Authentication.Status secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
     {
         JaspiMessageInfo info = (JaspiMessageInfo)req.getAttribute("org.eclipse.jetty.security.jaspi.info");
-        if (info==null)info = new JaspiMessageInfo((HttpServletRequest)req,(HttpServletResponse)res,mandatory);
+        if (info==null)
+            info = new JaspiMessageInfo((HttpServletRequest)req,(HttpServletResponse)res,mandatory);
         return secureResponse(info,validatedUser);
     }
     
@@ -108,10 +109,20 @@ public class JaspiAuthenticator implements Authenticator
             GroupPrincipalCallback groupPrincipalCallback = _callbackHandler.getThreadGroupPrincipalCallback();
             String[] groups = groupPrincipalCallback == null?null:groupPrincipalCallback.getGroups();
             
+
+            if (authStatus == AuthStatus.SEND_CONTINUE)
+                return Authentication.CHALLENGE;
+            if (authStatus == AuthStatus.SEND_FAILURE)
+                return Authentication.FAILED;
+            
             Set<UserIdentity> ids = clientSubject.getPrivateCredentials(UserIdentity.class);
             if (ids.size()>0)
-                return new DefaultAuthentication(toServerAuthStatus(authStatus),authMethod,ids.iterator().next());
-            return Authentication.SEND_FAILURE_RESULTS;
+            {
+                if (authStatus == AuthStatus.SEND_SUCCESS)
+                    return new DefaultAuthentication.Send(this,ids.iterator().next());
+                return new DefaultAuthentication(this,ids.iterator().next());
+            }
+            return Authentication.FAILED;
         }
         catch (AuthException e)
         {
@@ -119,31 +130,19 @@ public class JaspiAuthenticator implements Authenticator
         }
     }
 
-    public Authentication.Status secureResponse(JaspiMessageInfo messageInfo, Authentication validatedUser) throws ServerAuthException
+    public boolean secureResponse(JaspiMessageInfo messageInfo, Authentication validatedUser) throws ServerAuthException
     {
         try
         {
             ServerAuthContext authContext = _authConfig.getAuthContext(_authContextId,_serviceSubject,_authProperties);
             authContext.cleanSubject(messageInfo,validatedUser.getUserIdentity().getSubject());
-            return toServerAuthStatus(authContext.secureResponse(messageInfo,_serviceSubject));
+            AuthStatus status = authContext.secureResponse(messageInfo,_serviceSubject);
+            return (AuthStatus.SUCCESS.equals(status));
         }
         catch (AuthException e)
         {
             throw new ServerAuthException(e);
         }
-    }
-    
-    Authentication.Status toServerAuthStatus(AuthStatus authStatus) throws ServerAuthException
-    {
-        if (authStatus == AuthStatus.SEND_CONTINUE)
-            return Authentication.Status.SEND_CONTINUE;
-        if (authStatus == AuthStatus.SEND_FAILURE)
-            return Authentication.Status.SEND_FAILURE;
-        if (authStatus == AuthStatus.SEND_SUCCESS)
-            return Authentication.Status.SEND_SUCCESS;
-        if (authStatus == AuthStatus.SUCCESS)
-            return Authentication.Status.SUCCESS;
-        throw new ServerAuthException("Invalid server status: " + authStatus);
     }
 
 }

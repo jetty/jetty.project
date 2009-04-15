@@ -37,11 +37,6 @@ public class DefaultUserIdentity implements UserIdentity
         _roles=roles;
     }
 
-    public String[] getRoles()
-    {
-        return _roles;
-    }
-
     public Subject getSubject()
     {
         return _subject;

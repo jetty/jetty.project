@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,6 +43,8 @@ import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.DispatcherType;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RetryRequest;
@@ -383,7 +386,7 @@ public class ServletHandler extends AbstractHandler
                 if (_identityService!=null)
                 {
                     old_identity=base_request.getUserIdentity();
-                    scoped_identity=_identityService.associate(old_identity,servlet_holder);
+                    scoped_identity=_identityService.scope(old_identity,servlet_holder);
                     base_request.setUserIdentity(scoped_identity);
                 }
 
@@ -516,7 +519,7 @@ public class ServletHandler extends AbstractHandler
 
             if (scoped_identity!=null)
             {
-                _identityService.disassociate(scoped_identity);
+                _identityService.descope(scoped_identity);
                 base_request.setUserIdentity(old_identity);
             }
             base_request.setServletName(old_servlet_name);
@@ -1367,4 +1370,50 @@ public class ServletHandler extends AbstractHandler
     {
         return filter;
     }
+    
+
+    
+    /* ------------------------------------------------------------ */
+    protected void dump(StringBuilder b,String indent)
+    {
+        super.dump(b,indent);
+
+        if (getFilterMappings()!=null)
+        {
+            for (FilterMapping f : getFilterMappings())
+            {
+                b.append(indent);
+                b.append(" +-");
+                b.append(f);
+                b.append('\n');
+            }
+        }
+        HashSet<String> servlets = new HashSet<String>();
+        if (getServletMappings()!=null)
+        {
+            for (ServletMapping m : getServletMappings())
+            {
+                servlets.add(m.getServletName());
+                b.append(indent);
+                b.append(" +-");
+                b.append(m);
+                b.append('\n');
+            }
+        }
+
+        if (getServlets()!=null)
+        {
+            for (ServletHolder h : getServlets())
+            {
+                if (servlets.contains(h.getName()))
+                    continue;
+                b.append(indent);
+                b.append(" +-[]==>");
+                b.append(h.getName());
+                b.append('\n');
+            }
+        }
+
+    }
+    
 }

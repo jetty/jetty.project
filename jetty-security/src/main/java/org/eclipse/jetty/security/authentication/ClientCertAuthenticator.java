@@ -62,9 +62,8 @@ public class ClientCertAuthenticator extends LoginAuthenticator
             // Need certificates.
             if (certs == null || certs.length == 0 || certs[0] == null)
             {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                                   "A client certificate is required for accessing this web application but the server's listener is not configured for mutual authentication (or the client did not provide a certificate).");
-                return DefaultAuthentication.SEND_FAILURE_RESULTS;
+                response.sendError(HttpServletResponse.SC_FORBIDDEN,"!certificate");
+                return Authentication.FAILED;
             }
             
             Principal principal = certs[0].getSubjectDN();
@@ -76,14 +75,12 @@ public class ClientCertAuthenticator extends LoginAuthenticator
 
             UserIdentity user = _loginService.login(username,credential);
             if (user!=null)
-                return new DefaultAuthentication(Authentication.Status.SUCCESS,this,user);
+                return new DefaultAuthentication(this,user);
 
             if (!mandatory) 
-            { 
-                return DefaultAuthentication.SUCCESS_UNAUTH_RESULTS; 
-            }
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "The provided client certificate does not correspond to a trusted user.");
-            return DefaultAuthentication.SEND_FAILURE_RESULTS;
+                return Authentication.NOT_CHECKED;
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return Authentication.FAILED;
         }
         catch (IOException e)
         {
@@ -91,8 +88,8 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         }
     }
 
-    public Authentication.Status secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
     {
-        return Authentication.Status.SUCCESS;
+        return true;
     }
 }

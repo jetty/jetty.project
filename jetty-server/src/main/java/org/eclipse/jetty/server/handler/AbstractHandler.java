@@ -98,4 +98,21 @@ public abstract class AbstractHandler extends AbstractLifeCycle implements Handl
             _server.getContainer().removeBean(this);
     }
 
+
+    /* ------------------------------------------------------------ */
+    public String dump()
+    {
+        StringBuilder b = new StringBuilder();
+        dump(b,"");
+        return b.toString();
+    }    
+
+    /* ------------------------------------------------------------ */
+    protected void dump(StringBuilder b,String indent)
+    {
+        b.append(toString());
+        b.append(isStarted()?" started":" STOPPED");
+        b.append('\n');
+    }
+
 }
