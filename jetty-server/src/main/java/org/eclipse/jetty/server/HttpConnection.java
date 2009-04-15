@@ -133,7 +133,8 @@ public class HttpConnection implements Connection
         _generator.setSendServerVersion(server.getSendServerVersion());
         _server = server;
     }
-    
+
+    /* ------------------------------------------------------------ */
     protected HttpConnection(Connector connector, EndPoint endpoint, Server server,
             Parser parser, Generator generator, Request request)
     {
