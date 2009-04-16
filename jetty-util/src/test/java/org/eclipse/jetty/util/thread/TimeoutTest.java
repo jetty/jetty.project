@@ -17,6 +17,8 @@ import junit.framework.TestCase;
 
 public class TimeoutTest extends TestCase
 {
+	private boolean _stress=Boolean.getBoolean("STRESS");
+	
     Object lock = new Object();
     Timeout timeout = new Timeout(null);
     Timeout.Task[] tasks;
@@ -130,6 +132,11 @@ public class TimeoutTest extends TestCase
     /* ------------------------------------------------------------ */
     public void testStress() throws Exception
     {
+    	if ( !_stress )
+    	{
+    		return;
+    	}
+    	
         final int LOOP=500;
         final boolean[] running = {true};
         final int[] count = {0,0,0};
