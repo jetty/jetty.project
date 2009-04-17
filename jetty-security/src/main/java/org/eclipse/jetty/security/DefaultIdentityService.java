@@ -19,7 +19,6 @@ import java.util.Map;
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.UserIdentity.Scope;
 
 
 /* ------------------------------------------------------------ */
@@ -43,15 +42,7 @@ public class DefaultIdentityService implements IdentityService
      * If there are roles refs present in the scope, then wrap the UserIdentity 
      * with one that uses the role references in the {@link UserIdentity#isUserInRole(String)}
      */
-    public UserIdentity scope(UserIdentity user, Scope scope)
-    {
-        Map<String,String> roleRefMap=scope.getRoleRefMap();
-        if (roleRefMap!=null && roleRefMap.size()>0)
-            return new RoleRefUserIdentity(user,roleRefMap);
-        return user;
-    }
-
-    public void descope(UserIdentity scoped)
+    public void associate(UserIdentity user)
     {
     }
 
@@ -79,36 +70,4 @@ public class DefaultIdentityService implements IdentityService
         return new DefaultUserIdentity(subject,userPrincipal,roles);
     }
     
-    /* ------------------------------------------------------------ */
-    /**
-     * Wrapper UserIdentity used to apply RoleRef map.
-     *
-     */
-    public static class RoleRefUserIdentity implements UserIdentity
-    {
-        final private UserIdentity _delegate;
-        final private Map<String,String> _roleRefMap;
-
-        public RoleRefUserIdentity(final UserIdentity user, final Map<String, String> roleRefMap)
-        {
-            _delegate=user;
-            _roleRefMap=roleRefMap;
-        }
-        
-        public Subject getSubject()
-        {
-            return _delegate.getSubject();
-        }
-
-        public Principal getUserPrincipal()
-        {
-            return _delegate.getUserPrincipal();
-        }
-
-        public boolean isUserInRole(String role)
-        {
-            String link=_roleRefMap.get(role);
-            return _delegate.isUserInRole(link==null?role:link);
-        }
-    }
 }

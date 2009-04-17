@@ -16,9 +16,10 @@ package org.eclipse.jetty.security.authentication;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
-import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.server.Authentication;
+import org.eclipse.jetty.server.Authentication.User;
 
 public class DelegateAuthenticator implements Authenticator
 {
@@ -49,7 +50,7 @@ public class DelegateAuthenticator implements Authenticator
         return _delegate.validateRequest(request, response, manditory);
     }
 
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return _delegate.secureResponse(req,res, mandatory, validatedUser);
     }

@@ -23,11 +23,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
-import org.eclipse.jetty.security.Authentication;
-import org.eclipse.jetty.security.DefaultAuthentication;
+import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.DefaultUserIdentity;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -74,15 +75,16 @@ public class BasicAuthenticator extends LoginAuthenticator
                 
                 UserIdentity user = _loginService.login(username,password);
                 if (user!=null)
-                    return new DefaultAuthentication(this,user);
+                    return new UserAuthentication(this,user);
             }
 
-            if (!mandatory) 
-                return Authentication.NOT_CHECKED;
-
-            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "basic realm=\"" + _loginService.getName() + '"');
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            return Authentication.CHALLENGE;
+            if (mandatory) 
+            {
+                response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "basic realm=\"" + _loginService.getName() + '"');
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                return Authentication.CHALLENGE;
+            }
+            return credentials==null?Authentication.NOT_CHECKED:Authentication.UNAUTHENTICATED;
         }
         catch (IOException e)
         {
@@ -91,7 +93,7 @@ public class BasicAuthenticator extends LoginAuthenticator
     }
 
     // TODO most likely validatedUser is not needed here ??
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;
     }

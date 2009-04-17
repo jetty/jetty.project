@@ -29,12 +29,14 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.DefaultAuthentication;
-import org.eclipse.jetty.security.LazyAuthentication;
+import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.security.authentication.DeferredAuthenticator;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.server.Authentication.User;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
@@ -79,7 +81,7 @@ public class JaspiAuthenticator implements Authenticator
     public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
     {
         if (_allowLazyAuthentication && !mandatory)
-            return new LazyAuthentication(this,request,response);
+            return new DeferredAuthenticator.DeferredAuthentication(this,request,response);
         
         JaspiMessageInfo info = new JaspiMessageInfo((HttpServletRequest)request,(HttpServletResponse)response,mandatory);
         request.setAttribute("org.eclipse.jetty.security.jaspi.info",info);
@@ -87,7 +89,7 @@ public class JaspiAuthenticator implements Authenticator
     }
 
     // most likely validatedUser is not needed here.
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         JaspiMessageInfo info = (JaspiMessageInfo)req.getAttribute("org.eclipse.jetty.security.jaspi.info");
         if (info==null)
@@ -113,16 +115,16 @@ public class JaspiAuthenticator implements Authenticator
             if (authStatus == AuthStatus.SEND_CONTINUE)
                 return Authentication.CHALLENGE;
             if (authStatus == AuthStatus.SEND_FAILURE)
-                return Authentication.FAILED;
+                return Authentication.FAILURE;
             
             Set<UserIdentity> ids = clientSubject.getPrivateCredentials(UserIdentity.class);
             if (ids.size()>0)
             {
                 if (authStatus == AuthStatus.SEND_SUCCESS)
-                    return new DefaultAuthentication.Send(this,ids.iterator().next());
-                return new DefaultAuthentication(this,ids.iterator().next());
+                    return new FormAuthenticator.FormAuthentication(this,ids.iterator().next());
+                return new UserAuthentication(this,ids.iterator().next());
             }
-            return Authentication.FAILED;
+            return Authentication.FAILURE;
         }
         catch (AuthException e)
         {
@@ -135,7 +137,7 @@ public class JaspiAuthenticator implements Authenticator
         try
         {
             ServerAuthContext authContext = _authConfig.getAuthContext(_authContextId,_serviceSubject,_authProperties);
-            authContext.cleanSubject(messageInfo,validatedUser.getUserIdentity().getSubject());
+            // TODO authContext.cleanSubject(messageInfo,validatedUser.getUserIdentity().getSubject());
             AuthStatus status = authContext.secureResponse(messageInfo,_serviceSubject);
             return (AuthStatus.SUCCESS.equals(status));
         }

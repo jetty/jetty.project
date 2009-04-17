@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.security.authentication.DeferredAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.security.authentication.SessionCachingAuthenticator;
 import org.eclipse.jetty.server.Connector;
@@ -216,9 +217,9 @@ public class ConstraintTest extends TestCase
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
                 "Authorization: " + B64Code.encode("user:password") + "\r\n" +
                 "\r\n");
-
+        
         assertTrue(response.startsWith("HTTP/1.1 403 "));
-        assertTrue(response.indexOf("User not in required role") > 0);
+        assertTrue(response.indexOf("!role") > 0);
 
         _connector.reopen();
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
@@ -226,7 +227,6 @@ public class ConstraintTest extends TestCase
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         
-
         _connector.reopen();
         response = _connector.getResponses("GET /ctx/admin/relax/info HTTP/1.0\r\n\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
@@ -293,7 +293,7 @@ public class ConstraintTest extends TestCase
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 403"));
-        assertTrue(response.indexOf("User not in required role") > 0);
+        assertTrue(response.indexOf("!role") > 0);
         
     }
 
@@ -355,7 +355,7 @@ public class ConstraintTest extends TestCase
                 "\r\n");
 
         assertTrue(response.startsWith("HTTP/1.1 403 "));
-        assertTrue(response.indexOf("User not in required role") > 0);
+        assertTrue(response.indexOf("!role") > 0);
 
         _connector.reopen();
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
@@ -424,14 +424,14 @@ public class ConstraintTest extends TestCase
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 403"));
-        assertTrue(response.indexOf("User not in required role") > 0);
+        assertTrue(response.indexOf("!role") > 0);
         
         _connector.reopen();
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 403"));
-        assertTrue(response.indexOf("User not in required role") > 0);
+        assertTrue(response.indexOf("!role") > 0);
         
         
         
@@ -465,7 +465,7 @@ public class ConstraintTest extends TestCase
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 403"));
-        assertTrue(response.indexOf("User not in required role") > 0);
+        assertTrue(response.indexOf("!role") > 0);
         
 
         
@@ -537,6 +537,37 @@ public class ConstraintTest extends TestCase
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
     }
 
+
+    public void testDeferredBasic()
+            throws Exception
+    {
+        _security.setAuthenticator(new DeferredAuthenticator(new BasicAuthenticator()));
+        _security.setStrict(false);
+        _server.start();
+
+        String response;
+        _connector.reopen();
+        
+        response = _connector.getResponses("GET /ctx/noauth/info HTTP/1.0\r\n"+
+            "\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK")); 
+        assertTrue(response.indexOf("user=null") > 0);
+        
+        _connector.reopen();
+        response = _connector.getResponses("GET /ctx/noauth/info HTTP/1.0\r\n"+
+                "Authorization: " + B64Code.encode("admin:wrong") + "\r\n" +
+            "\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK")); 
+        assertTrue(response.indexOf("user=null") > 0);
+        
+        _connector.reopen();
+        response = _connector.getResponses("GET /ctx/noauth/info HTTP/1.0\r\n"+
+                "Authorization: " + B64Code.encode("admin:password") + "\r\n" +
+            "\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK")); 
+        assertTrue(response.indexOf("user=admin") > 0);
+    }
+    
     class RequestHandler extends AbstractHandler
     {
         public void handle(String target, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
@@ -548,6 +579,8 @@ public class ConstraintTest extends TestCase
                 response.setStatus(200);
                 response.setContentType("text/plain; charset=UTF-8");
                 response.getWriter().println("URI="+request.getRequestURI());
+                String user = request.getRemoteUser();
+                response.getWriter().println("user="+user);
             }
             else
                 response.sendError(500);
@@ -563,30 +596,29 @@ public class ConstraintTest extends TestCase
         @Override
         public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            UserIdentity old = ((Request) request).getUserIdentity();
-            UserIdentity scoped = _security.getIdentityService().scope(old,
-                    new UserIdentity.Scope()
-                    {
+            UserIdentity.Scope old = ((Request) request).getUserIdentityScope();
+            
+            UserIdentity.Scope scope = new UserIdentity.Scope()
+            {
+                public String getContextPath()
+                {
+                    return "/";
+                }
 
-                        public String getContextPath()
-                        {
-                            return "/";
-                        }
+                public String getName()
+                {
+                    return "someServlet";
+                }
 
-                        public String getName()
-                        {
-                            return "someServlet";
-                        }
-
-                        public Map<String, String> getRoleRefMap()
-                        {
-                            Map<String, String> map = new HashMap<String, String>();
-                            map.put("untranslated", "user");
-                            return map;
-                        }
-
-                    });
-            ((Request)request).setUserIdentity(scoped);
+                public Map<String, String> getRoleRefMap()
+                {
+                    Map<String, String> map = new HashMap<String, String>();
+                    map.put("untranslated", "user");
+                    return map;
+                }
+            };
+            
+            ((Request)request).setUserIdentityScope(scope);
 
             try
             {
@@ -594,8 +626,7 @@ public class ConstraintTest extends TestCase
             }
             finally
             {
-                _security.getIdentityService().descope(scoped);
-                ((Request)request).setUserIdentity(old);
+                ((Request)request).setUserIdentityScope(old);
             }
         }
     }

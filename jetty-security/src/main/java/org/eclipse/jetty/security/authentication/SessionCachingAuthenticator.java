@@ -22,10 +22,10 @@ import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
-import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.DefaultAuthentication;
+import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
 
 /**
@@ -52,18 +52,18 @@ public class SessionCachingAuthenticator extends DelegateAuthenticator
             return authentication;
 
         authentication = _delegate.validateRequest(request, response, mandatory);
-        if (authentication!=null && authentication.isSuccess())
+        if (authentication instanceof Authentication.User)
         {
-            Authentication cached=new FormAuthentication(_delegate,authentication.getUserIdentity());
+            Authentication cached=new SessionAuthentication(_delegate,((Authentication.User)authentication).getUserIdentity());
             session.setAttribute(__J_AUTHENTICATED, cached);
         }
         
         return authentication;
     }
     
-    protected class FormAuthentication extends DefaultAuthentication implements HttpSessionAttributeListener
+    protected class SessionAuthentication extends UserAuthentication implements HttpSessionAttributeListener
     {
-        public FormAuthentication(Authenticator authenticator, UserIdentity userIdentity)
+        public SessionAuthentication(Authenticator authenticator, UserIdentity userIdentity)
         {
             super(authenticator,userIdentity);
         }
@@ -80,6 +80,11 @@ public class SessionCachingAuthenticator extends DelegateAuthenticator
         public void attributeReplaced(HttpSessionBindingEvent arg0)
         {
             logout();
+        }
+        
+        public String toString()
+        {
+            return "Session"+super.toString();
         }
         
     }

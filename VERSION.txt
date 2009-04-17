@@ -3,7 +3,8 @@ jetty-7.0.0.M1-SNAPSHOT
  + Initial support for LoginService.logout
  + Removed HTTPConnection specifics from connection dispatching
  + JETTY-695 Handler dump
- + Reworked lazy authentication
+ + Reworked authentication for deferred authentication
+ 
 
 jetty-7.0.0.M0
  + JETTY-496 Support inetd/xinetd through use of System.inheritedChannel()

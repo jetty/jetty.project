@@ -322,7 +322,7 @@ public class ServletHandler extends AbstractHandler
         ServletRequestEvent request_event=null;
         ServletHolder servlet_holder=null;
         FilterChain chain=null;
-        UserIdentity old_identity=null;
+        UserIdentity.Scope old_scope=null;
 
         // find the servlet
         if (target.startsWith("/"))
@@ -382,13 +382,8 @@ public class ServletHandler extends AbstractHandler
             }
             else
             {
-                base_request.setServletName(servlet_holder.getName());
-                if (_identityService!=null)
-                {
-                    old_identity=base_request.getUserIdentity();
-                    scoped_identity=_identityService.scope(old_identity,servlet_holder);
-                    base_request.setUserIdentity(scoped_identity);
-                }
+                old_scope=base_request.getUserIdentityScope();
+                base_request.setUserIdentityScope(servlet_holder);
 
                 // Handle context listeners
                 request_listeners = base_request.takeRequestListeners();
@@ -517,12 +512,8 @@ public class ServletHandler extends AbstractHandler
                 }
             }
 
-            if (scoped_identity!=null)
-            {
-                _identityService.descope(scoped_identity);
-                base_request.setUserIdentity(old_identity);
-            }
-            base_request.setServletName(old_servlet_name);
+            if (old_scope!=null)
+                base_request.setUserIdentityScope(old_scope);
 
             if (!(DispatcherType.INCLUDE.equals(type)))
             {

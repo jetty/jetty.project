@@ -21,7 +21,7 @@ import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.ClientCertAuthenticator;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.security.authentication.LazyAuthenticator;
+import org.eclipse.jetty.security.authentication.DeferredAuthenticator;
 import org.eclipse.jetty.security.authentication.SessionCachingAuthenticator;
 import org.eclipse.jetty.server.Server;
 
@@ -34,7 +34,7 @@ import org.eclipse.jetty.server.Server;
  * <li>{@link FormAuthenticator}</li>
  * <li>{@link ClientCertAuthenticator}</li>
  * </ul>
- * If {@link Configuration#isLazy()} is true, the Authenticator is wrapped with a {@link LazyAuthenticator}
+ * If {@link Configuration#isLazy()} is true, the Authenticator is wrapped with a {@link DeferredAuthenticator}
  * instance. The FormAuthenticator is always wrapped in a {@link SessionCachingAuthenticator}.
  * <p>
  * If a {@link LoginService} has not been set on this factory, then
@@ -61,7 +61,7 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
             authenticator=new ClientCertAuthenticator();
         
         if (configuration.isLazy() && authenticator!=null)
-            authenticator=new LazyAuthenticator(authenticator);
+            authenticator=new DeferredAuthenticator(authenticator);
         
         return authenticator;
     }

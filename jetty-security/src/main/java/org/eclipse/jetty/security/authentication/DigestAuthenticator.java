@@ -25,12 +25,13 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.http.security.Credential;
-import org.eclipse.jetty.security.Authentication;
-import org.eclipse.jetty.security.DefaultAuthentication;
+import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.DefaultUserIdentity;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -55,7 +56,7 @@ public class DigestAuthenticator extends LoginAuthenticator
         return Constraint.__DIGEST_AUTH;
     }
     
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;
     }
@@ -123,30 +124,31 @@ public class DigestAuthenticator extends LoginAuthenticator
                 {
                     UserIdentity user = _loginService.login(digest.username,digest);
                     if (user!=null)
-                    {
-                        return new DefaultAuthentication(this,user);
-                    }
+                        return new UserAuthentication(this,user);
                 }
-                else if (n == 0) stale = true;
+                else if (n == 0) 
+                    stale = true;
 
             }
 
-            if (!mandatory) 
-                return Authentication.NOT_CHECKED;
+            if (mandatory)
+            {
+                String domain = request.getContextPath();
+                if (domain == null) 
+                    domain = "/";
+                response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Digest realm=\"" + _loginService.getName()
+                        + "\", domain=\""
+                        + domain
+                        + "\", nonce=\""
+                        + newNonce((Request)request)
+                        + "\", algorithm=MD5, qop=\"auth\""
+                        + (_useStale ? (" stale=" + stale) : ""));
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 
-            String domain = request.getContextPath();
-            if (domain == null) 
-                domain = "/";
-            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Digest realm=\"" + _loginService.getName()
-                    + "\", domain=\""
-                    + domain
-                    + "\", nonce=\""
-                    + newNonce((Request)request)
-                    + "\", algorithm=MD5, qop=\"auth\""
-                    + (_useStale ? (" stale=" + stale) : ""));
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                return Authentication.CHALLENGE;
+            }
 
-            return Authentication.CHALLENGE;
+            return credentials==null?Authentication.NOT_CHECKED:Authentication.UNAUTHENTICATED;
         }
         catch (IOException e)
         {

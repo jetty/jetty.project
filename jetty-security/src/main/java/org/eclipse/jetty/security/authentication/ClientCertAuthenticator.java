@@ -15,6 +15,7 @@ package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
 import java.security.Principal;
+import java.security.cert.X509Certificate;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -23,10 +24,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
-import org.eclipse.jetty.security.Authentication;
-import org.eclipse.jetty.security.DefaultAuthentication;
+import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.server.Authentication.User;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
@@ -55,32 +57,37 @@ public class ClientCertAuthenticator extends LoginAuthenticator
     {
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
-        java.security.cert.X509Certificate[] certs = (java.security.cert.X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
+        X509Certificate[] certs = (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
 
         try
         {
             // Need certificates.
-            if (certs == null || certs.length == 0 || certs[0] == null)
+            if (certs != null && certs.length > 0)
             {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN,"!certificate");
-                return Authentication.FAILED;
+                for (X509Certificate cert: certs)
+                {
+                    if (cert==null)
+                        continue;
+                    Principal principal = cert.getSubjectDN();
+                    if (principal == null) principal = cert.getIssuerDN();
+                    final String username = principal == null ? "clientcert" : principal.getName();
+
+                    // TODO no idea if this is correct
+                    final char[] credential = B64Code.encode(cert.getSignature());
+
+                    UserIdentity user = _loginService.login(username,credential);
+                    if (user!=null)
+                        return new UserAuthentication(this,user);
+                }
+            }
+                
+            if (mandatory)
+            {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                return Authentication.FAILURE;
             }
             
-            Principal principal = certs[0].getSubjectDN();
-            if (principal == null) principal = certs[0].getIssuerDN();
-            final String username = principal == null ? "clientcert" : principal.getName();
-            
-            // TODO no idea if this is correct
-            final char[] credential = B64Code.encode(certs[0].getSignature());
-
-            UserIdentity user = _loginService.login(username,credential);
-            if (user!=null)
-                return new DefaultAuthentication(this,user);
-
-            if (!mandatory) 
-                return Authentication.NOT_CHECKED;
-            response.sendError(HttpServletResponse.SC_FORBIDDEN);
-            return Authentication.FAILED;
+            return certs==null?Authentication.NOT_CHECKED:Authentication.UNAUTHENTICATED;
         }
         catch (IOException e)
         {
@@ -88,7 +95,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         }
     }
 
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;
     }

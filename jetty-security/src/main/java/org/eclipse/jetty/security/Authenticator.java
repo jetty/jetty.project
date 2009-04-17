@@ -19,22 +19,68 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Authentication.User;
 
 /**
- * This is like the JASPI ServerAuthContext but is intended to be easier to use
- * and allow lazy auth.
+ * Authenticator Interface
+ * <p>
+ * An Authenticator is responsible for checking requests and sending
+ * response challenges in order to authenticate a request. 
+ * Various types of {@link Authentication} are returned in order to
+ * signal the next step in authentication.
  * 
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
 public interface Authenticator
 {
+    /* ------------------------------------------------------------ */
+    /**
+     * Configure the Authenticator
+     * @param configuration
+     */
     void setConfiguration(Configuration configuration);
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The name of the authentication method
+     */
     String getAuthMethod();
     
+    /* ------------------------------------------------------------ */
+    /** Validate a response
+     * @param request The request
+     * @param response The response
+     * @param mandatory True if authentication is mandatory.
+     * @return An Authentication.  If Authentication is successful, this will be a {@link Authentication.User}. If a response has 
+     * been sent by the Authenticator (which can be done for both successful and unsuccessful authentications), then the result will
+     * implement {@link Authentication.ResponseSent}.  If Authentication is not manditory, then a {@link Authentication.Deferred} 
+     * may be returned.
+     * 
+     * @throws ServerAuthException
+     */
     Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException;
-    boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, Authentication validatedUser) throws ServerAuthException;
     
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param request
+     * @param response
+     * @param mandatory
+     * @param validatedUser
+     * @return
+     * @throws ServerAuthException
+     */
+    boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, User validatedUser) throws ServerAuthException;
+    
+    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /** 
+     * Authenticator Configuration
+     */
     interface Configuration
     {
         String getAuthMethod();
@@ -45,7 +91,13 @@ public interface Authenticator
         LoginService getLoginService();
         IdentityService getIdentityService();
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /** 
+     * Authenticator Facotory
+     */
     interface Factory
     {
         Authenticator getAuthenticator(Server server, ServletContext context, Configuration configuration);

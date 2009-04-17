@@ -32,10 +32,12 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.security.Constraint;
-import org.eclipse.jetty.security.Authentication;
-import org.eclipse.jetty.security.DefaultAuthentication;
+import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -187,7 +189,7 @@ public class FormAuthenticator extends LoginAuthenticator
                     }
                     response.setContentLength(0);   
                     response.sendRedirect(response.encodeRedirectURL(nuri));
-                    return new DefaultAuthentication.Send(this,user);
+                    return new FormAuthentication(this,user);
                 }
                 
                 // not authenticated
@@ -210,41 +212,40 @@ public class FormAuthenticator extends LoginAuthenticator
                     response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formErrorPage));
                 }
                 
-                return Authentication.FAILED;
+                return Authentication.FAILURE;
             }
-            // Check if the session is already authenticated.
-
-            // Don't authenticate authform or errorpage
-            if (!mandatory) 
-                return Authentication.NOT_CHECKED;
-
-            // redirect to login page
-            if (request.getQueryString() != null)
-                uri += "?" + request.getQueryString();
             
-            synchronized (session)
+            if (mandatory) 
             {
-                if (session.getAttribute(__J_URI)==null)
-                    session.setAttribute(__J_URI, request.getScheme() + "://"
-                            + request.getServerName()
-                            + ":"
-                            + request.getServerPort()
-                            + URIUtil.addPaths(request.getContextPath(), uri));
-            }
+                // redirect to login page
+                if (request.getQueryString() != null)
+                    uri += "?" + request.getQueryString();
+                
+                synchronized (session)
+                {
+                    if (session.getAttribute(__J_URI)==null)
+                        session.setAttribute(__J_URI, request.getScheme() + "://"
+                                + request.getServerName()
+                                + ":"
+                                + request.getServerPort()
+                                + URIUtil.addPaths(request.getContextPath(), uri));
+                }
 
-            if (_dispatch)
-            {
-                RequestDispatcher dispatcher = request.getRequestDispatcher(_formLoginPage);
-                response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
-                response.setDateHeader(HttpHeaders.EXPIRES,1);
-                dispatcher.forward(new FormRequest(request), new FormResponse(response));
+                if (_dispatch)
+                {
+                    RequestDispatcher dispatcher = request.getRequestDispatcher(_formLoginPage);
+                    response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
+                    response.setDateHeader(HttpHeaders.EXPIRES,1);
+                    dispatcher.forward(new FormRequest(request), new FormResponse(response));
+                }
+                else
+                {
+                    response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formLoginPage));
+                }
+                return Authentication.CHALLENGE;
             }
-            else
-            {
-                response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formLoginPage));
-            }
-            return Authentication.CHALLENGE;
             
+            return Authentication.UNAUTHENTICATED;            
         }
         catch (IOException e)
         {
@@ -263,7 +264,7 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     /* ------------------------------------------------------------ */
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;
     }
@@ -355,6 +356,19 @@ public class FormAuthenticator extends LoginAuthenticator
                 HttpHeaders.AGE.equalsIgnoreCase(name))
                 return false;
             return true;
+        }
+    }
+    
+    public static class FormAuthentication extends UserAuthentication implements Authentication.ResponseSent
+    {
+        public FormAuthentication(Authenticator authenticator, UserIdentity userIdentity)
+        {
+            super(authenticator,userIdentity);
+        }
+        
+        public String toString()
+        {
+            return "Form"+super.toString();
         }
     }
 }

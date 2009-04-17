@@ -15,18 +15,20 @@ package org.eclipse.jetty.security;
 
 import org.eclipse.jetty.security.authentication.DelegateAuthenticator;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.server.UserIdentity.Scope;
 
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
-public class DefaultAuthentication implements Authentication
+public class UserAuthentication implements Authentication.User
 {
     private final Authenticator _authenticator;
     private final UserIdentity _userIdentity;
 
-    public DefaultAuthentication(Authenticator authenticator, UserIdentity userIdentity)
+    public UserAuthentication(Authenticator authenticator, UserIdentity userIdentity)
     {
         _authenticator = authenticator;
         _userIdentity=userIdentity;
@@ -42,14 +44,12 @@ public class DefaultAuthentication implements Authentication
         return _userIdentity;
     }
 
-    public boolean isSuccess()
+    public boolean isUserInRole(Scope scope, String role)
     {
-        return true;
-    }
-
-    public boolean isSend()
-    {
-        return false;
+        if (scope!=null && scope.getRoleRefMap()!=null)
+            role=scope.getRoleRefMap().get(role);
+            
+        return _userIdentity.isUserInRole(role);
     }
     
     public void logout() 
@@ -74,18 +74,5 @@ public class DefaultAuthentication implements Authentication
     public String toString()
     {
         return "{Auth,"+getAuthMethod()+","+_userIdentity+"}";
-    }
-    
-    public static class Send extends DefaultAuthentication
-    {
-        public Send(Authenticator authenticator, UserIdentity userIdentity)
-        {
-            super(authenticator,userIdentity);
-        }
-
-        public boolean isSend()
-        {
-            return true;
-        }
     }
 }

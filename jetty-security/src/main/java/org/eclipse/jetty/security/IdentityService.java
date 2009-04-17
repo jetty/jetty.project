@@ -29,35 +29,11 @@ public interface IdentityService
     final static String[] NO_ROLES = new String[]{}; 
     
     /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /** A scoped UserIdentity.
-     * 
-     * An interface used to ob
-     *
-     */
-    interface Scoped
-    {
-        UserIdentity getScopedUserIdentity();
-    }
-    
-    /* ------------------------------------------------------------ */
     /**
      * Scope the {@link UserIdentity} to a {@link UserIdentity.Scope}.
-     * @see IdentityService#descope(UserIdentity)
-     * @param user The current user.
-     * @param context The new scope.
-     * @return A scoped {@link UserIdentity}.
+     * @param user The current user or null for no user associated.
      */
-    UserIdentity scope(UserIdentity user, UserIdentity.Scope context);
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Disassociate the current UserIdentity and reinstate the 
-     * previousUser identity.
-     * @param scoped UserIdentity returned from previous associate call
-     */
-    void descope(UserIdentity scoped);
+    void associate(UserIdentity user);
     
     /* ------------------------------------------------------------ */
     /**
