@@ -412,8 +412,11 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             try
             {
                 final Authenticator authenticator = _authenticator;
-                final Authentication authentication = authenticator.validateRequest(request, response, isAuthMandatory);
-            
+                Authentication authentication = base_request.getAuthentication();
+                if (authentication==null || authentication==Authentication.NOT_CHECKED)
+                    authentication=authenticator.validateRequest(request, response, isAuthMandatory);
+           
+                
                 if (authentication instanceof Authentication.ResponseSent)
                 {
                     base_request.setHandled(true);
