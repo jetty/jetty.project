@@ -16,6 +16,7 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
@@ -569,13 +570,26 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
         public Set<String> addMapping(String... urlPatterns)
         {
             illegalStateIfContextStarted();
+            Set<String> clash=null;
+            for (String pattern : urlPatterns)
+            {
+                if (_servletHandler.getServletMapping(pattern)!=null)
+                {
+                    if (clash==null)
+                        clash=new HashSet<String>();
+                    clash.add(pattern);
+                }
+            }
+            
+            if (clash!=null)
+                return clash;
+            
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(ServletHolder.this.getName());
             mapping.setPathSpecs(urlPatterns);
             _servletHandler.addServletMapping(mapping);
             
-            // TODO proper return ???
-            return null;
+            return Collections.emptySet();
             
         }
     }

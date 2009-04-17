@@ -342,7 +342,7 @@ public class Holder extends AbstractLifeCycle implements Serializable
             if (clash!=null)
                 return clash;
             Holder.this.setInitParameters(initParameters);
-            return null;
+            return Collections.emptySet();
         }
 
         /* ------------------------------------------------------------ */

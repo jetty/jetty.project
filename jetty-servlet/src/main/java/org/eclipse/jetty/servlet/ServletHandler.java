@@ -276,6 +276,7 @@ public class ServletHandler extends AbstractHandler
     {
         return _servletContext;
     }
+    
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the servletMappings.
@@ -283,6 +284,30 @@ public class ServletHandler extends AbstractHandler
     public ServletMapping[] getServletMappings()
     {
         return _servletMappings;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the servletMappings.
+     */
+    public ServletMapping getServletMapping(String pattern)
+    {
+        if (_servletMappings!=null)
+        {
+            for (ServletMapping m:_servletMappings)
+            {
+                String[] paths=m.getPathSpecs();
+                if (paths!=null)
+                {
+                    for (String path:paths)
+                    {
+                        if (pattern.equals(path))
+                            return m;
+                    }
+                }
+            }
+        }
+        return null;
     }
         
     /* ------------------------------------------------------------ */
