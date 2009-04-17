@@ -954,7 +954,8 @@ public class HttpConnection implements Connection
     {
         Output()
         {
-            super((AbstractGenerator)HttpConnection.this._generator,_connector.getMaxIdleTime());
+            super((AbstractGenerator)HttpConnection.this._generator,
+                  _connector.isLowResources()?_connector.getLowResourceMaxIdleTime():_connector.getMaxIdleTime());
         }
         
         /* ------------------------------------------------------------ */

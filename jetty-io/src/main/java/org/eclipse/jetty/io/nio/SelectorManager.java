@@ -395,6 +395,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 {
                     _idleTimeout.setNow(now);
                     _timeout.setNow(now);
+                    
                     if (_lowResourcesConnections>0 && selector.keys().size()>_lowResourcesConnections)
                         _idleTimeout.setDuration(_lowResourcesMaxIdleTime);
                     else 

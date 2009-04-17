@@ -987,4 +987,11 @@ public abstract class AbstractConnector extends AbstractBuffers implements Conne
         _reuseAddress=reuseAddress;
     }
 
+    /* ------------------------------------------------------------ */
+    public boolean isLowResources()
+    {
+        if (_threadPool!=null)
+            return _threadPool.isLowOnThreads();
+        return _server.getThreadPool().isLowOnThreads();
+    }
 }
