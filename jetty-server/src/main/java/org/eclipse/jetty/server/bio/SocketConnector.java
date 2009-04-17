@@ -122,10 +122,11 @@ public class SocketConnector extends AbstractConnector
         throws IOException
     {
         Connection connection = (Connection)endpoint;
-        if (connection._sotimeout!=_maxIdleTime)
+        int lrmit = isLowResources()?_lowResourceMaxIdleTime:_maxIdleTime;
+        if (connection._sotimeout!=lrmit)
         {
-            connection._sotimeout=_maxIdleTime;
-            ((Socket)endpoint.getTransport()).setSoTimeout(_maxIdleTime);
+            connection._sotimeout=lrmit;
+            ((Socket)endpoint.getTransport()).setSoTimeout(lrmit);
         }
               
         super.customize(endpoint, request);
@@ -220,7 +221,7 @@ public class SocketConnector extends AbstractConnector
                 {
                     if (_connection.isIdle())
                     {
-                        if (getServer().getThreadPool().isLowOnThreads())
+                        if (isLowResources())
                         {
                             int lrmit = getLowResourceMaxIdleTime();
                             if (lrmit>=0 && _sotimeout!= lrmit)

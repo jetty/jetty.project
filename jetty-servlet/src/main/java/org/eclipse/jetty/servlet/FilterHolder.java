@@ -14,6 +14,7 @@
 package org.eclipse.jetty.servlet;
 
 import java.util.EnumSet;
+import java.util.Set;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -133,7 +134,7 @@ public class FilterHolder extends Holder
     }
     
 
-    public FilterRegistration getRegistration()
+    public FilterRegistration.Dynamic getRegistration()
     {
         return new Registration();
     }
@@ -141,10 +142,10 @@ public class FilterHolder extends Holder
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    protected class Registration extends HolderRegistration implements FilterRegistration
+    protected class Registration extends HolderRegistration implements FilterRegistration.Dynamic
     {
         /* ------------------------------------------------------------ */
-        public boolean addMappingForServletNames(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... servletNames)
+        public void addMappingForServletNames(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... servletNames)
         {
             illegalStateIfContextStarted();
             FilterMapping mapping = new FilterMapping();
@@ -156,10 +157,9 @@ public class FilterHolder extends Holder
             else
                 _servletHandler.prependFilterMapping(mapping);
 
-            return true;
         }
 
-        public boolean addMappingForUrlPatterns(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... urlPatterns)
+        public void addMappingForUrlPatterns(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... urlPatterns)
         {
             illegalStateIfContextStarted();
             FilterMapping mapping = new FilterMapping();
@@ -170,7 +170,6 @@ public class FilterHolder extends Holder
                 _servletHandler.addFilterMapping(mapping);
             else
                 _servletHandler.prependFilterMapping(mapping);
-            return true;
         }
 
     }

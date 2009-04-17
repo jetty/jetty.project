@@ -129,7 +129,6 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
     private Object _contextListeners;
     private Object _contextAttributeListeners;
     private Object _requestListeners;
-    private Object _asyncListeners;
     private Object _requestAttributeListeners;
     private Set<String> _managedAttributes;
     
@@ -1199,7 +1198,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
     public String toString()
     {
         
-        return this.getClass().getName()+"@"+Integer.toHexString(hashCode())+"{"+getContextPath()+","+getBaseResource()+"}";
+        return super.toString()+"@"+Integer.toHexString(hashCode())+getContextPath()+","+getBaseResource();
     }
 
     /* ------------------------------------------------------------ */
@@ -1774,7 +1773,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
         /**
          * @see javax.servlet.ServletContext#addFilter(java.lang.String, java.lang.Class)
          */
-        public FilterRegistration addFilter(String filterName, Class<? extends Filter> filterClass)
+        public FilterRegistration.Dynamic addFilter(String filterName, Class<? extends Filter> filterClass)
         {
             Log.warn("Use servlet Context");
             return null;
@@ -1784,7 +1783,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
         /**
          * @see javax.servlet.ServletContext#addFilter(java.lang.String, java.lang.String)
          */
-        public FilterRegistration addFilter(String filterName, String className)
+        public FilterRegistration.Dynamic addFilter(String filterName, String className)
         {
             Log.warn("Use servlet Context");
             return null;
@@ -1794,7 +1793,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
         /**
          * @see javax.servlet.ServletContext#addServlet(java.lang.String, java.lang.Class)
          */
-        public ServletRegistration addServlet(String servletName, Class<? extends Servlet> servletClass)
+        public ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
         {
             Log.warn("Use servlet Context");
             return null;
@@ -1804,7 +1803,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
         /**
          * @see javax.servlet.ServletContext#addServlet(java.lang.String, java.lang.String)
          */
-        public ServletRegistration addServlet(String servletName, String className)
+        public ServletRegistration.Dynamic addServlet(String servletName, String className)
         {
             Log.warn("Use servlet Context");
             return null;
@@ -1873,7 +1872,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
         /**
          * @see javax.servlet.ServletContext#addFilter(java.lang.String, javax.servlet.Filter)
          */
-        public FilterRegistration addFilter(String filterName, Filter filter)
+        public FilterRegistration.Dynamic addFilter(String filterName, Filter filter)
         {
             Log.warn("Use servlet Context");
             return null;
@@ -1883,7 +1882,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
         /**
          * @see javax.servlet.ServletContext#addServlet(java.lang.String, javax.servlet.Servlet)
          */
-        public ServletRegistration addServlet(String servletName, Servlet servlet)
+        public ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
         {
             Log.warn("Use servlet Context");
             return null;
@@ -1919,8 +1918,5 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
             Log.warn("Use servlet Context");
             return null;
         }
-
-        
     }
-
 }

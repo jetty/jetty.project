@@ -18,10 +18,10 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.CrossContextPsuedoSession;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.server.Authentication;
 
 /**
  * Cross-context psuedo-session caching ServerAuthentication
@@ -44,10 +44,12 @@ public class XCPSCachingAuthenticator extends DelegateAuthenticator
     {
 
         Authentication serverAuthResult = _xcps.fetch((HttpServletRequest)request);
-        if (serverAuthResult != null) return serverAuthResult;
+        if (serverAuthResult != null) 
+            return serverAuthResult;
 
         serverAuthResult = _delegate.validateRequest(request, response, manditory);
-        if (serverAuthResult != null) _xcps.store(serverAuthResult, (HttpServletResponse)response);
+        if (serverAuthResult != null) 
+            _xcps.store(serverAuthResult, (HttpServletResponse)response);
 
         return serverAuthResult;
     }

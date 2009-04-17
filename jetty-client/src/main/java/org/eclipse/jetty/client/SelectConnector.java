@@ -38,6 +38,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     private final HttpClient _httpClient;
     private SSLContext _sslContext;
     private Buffers _sslBuffers;
+    private boolean _blockingConnect;
 
     SelectorManager _selectorManager=new Manager();
 
@@ -49,28 +50,50 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         _httpClient = httpClient;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Get the blockingConnect.
+     * @return the blockingConnect
+     */
+    public boolean isBlockingConnect()
+    {
+        return _blockingConnect;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the blockingConnect.
+     * @param blockingConnect If true, connections are made in blocking mode.
+     */
+    public void setBlockingConnect(boolean blockingConnect)
+    {
+        _blockingConnect = blockingConnect;
+    }
+
+    /* ------------------------------------------------------------ */
     protected void doStart() throws Exception
     {
         _selectorManager.start();
         _httpClient._threadPool.dispatch(this);
     }
 
+    /* ------------------------------------------------------------ */
     protected void doStop() throws Exception
     {
         _selectorManager.stop();
     }
 
+    /* ------------------------------------------------------------ */
     public void startConnection( HttpDestination destination )
         throws IOException
     {
         SocketChannel channel = SocketChannel.open();
         Address address = destination.isProxied() ? destination.getProxy() : destination.getAddress();
-        channel.connect(address.toSocketAddress());
         channel.configureBlocking( false );
+        channel.connect(address.toSocketAddress());
         channel.socket().setSoTimeout( _httpClient._soTimeout );
         _selectorManager.register( channel, destination );
     }
 
+    /* ------------------------------------------------------------ */
     public void run()
     {
         while (_httpClient.isRunning())
@@ -86,6 +109,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         }
     }
 
+    /* ------------------------------------------------------------ */
     class Manager extends SelectorManager
     {
         protected SocketChannel acceptChannel(SelectionKey key) throws IOException
@@ -192,7 +216,5 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             else
                 Log.warn(ex);
         }
-
     }
-
 }

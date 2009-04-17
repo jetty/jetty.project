@@ -160,7 +160,7 @@ public class HashLoginService extends MappedLoginService
 
             if (username != null && username.length() > 0 && credentials != null && credentials.length() > 0)
             {
-                String[] roleArray = UserIdentity.NO_ROLES;
+                String[] roleArray = IdentityService.NO_ROLES;
                 if (roles != null && roles.length() > 0)
                     roleArray = roles.split(",");
                 known.add(username);

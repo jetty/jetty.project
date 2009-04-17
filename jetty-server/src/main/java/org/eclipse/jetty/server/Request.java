@@ -108,8 +108,6 @@ import org.eclipse.jetty.util.log.Log;
  * to avoid reparsing headers and cookies that are likely to be the same for 
  * requests from the same connection.
  * 
- * 
- *
  */
 public class Request implements HttpServletRequest
 {
@@ -128,7 +126,7 @@ public class Request implements HttpServletRequest
     protected final AsyncRequest _async = new AsyncRequest();
     private boolean _asyncSupported=true;
     private Attributes _attributes;
-    private String _authType;
+    private Authentication _authentication;
     private MultiMap<String> _baseParameters;
     private String _characterEncoding;
     protected HttpConnection _connection;
@@ -160,16 +158,15 @@ public class Request implements HttpServletRequest
     private String _requestURI;
     private Map<Object,HttpSession> _savedNewSessions;
     private String _scheme=URIUtil.HTTP;
+    private UserIdentity.Scope _scope;
     private String _serverName;
-    private String _servletName;
     private String _servletPath;
     private HttpSession _session;
     private SessionManager _sessionManager;
     private long _timeStamp;
+
     private Buffer _timeStampBuffer;
     private HttpURI _uri;
-
-    private UserIdentity _userIdentity = UserIdentity.UNAUTHENTICATED_IDENTITY;
     
     /* ------------------------------------------------------------ */
     public Request()
@@ -336,6 +333,12 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
+    public long getAsyncTimeout()
+    {
+        return _async.getAsyncTimeout();
+    }
+    
+    /* ------------------------------------------------------------ */
     /* 
      * @see javax.servlet.ServletRequest#getAttribute(java.lang.String)
      */
@@ -372,14 +375,28 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
+    /** Get the authentication.
+     * @return the authentication
+     */
+    public Authentication getAuthentication()
+    {
+        return _authentication;
+    }
+
+    /* ------------------------------------------------------------ */
     /* 
      * @see javax.servlet.http.HttpServletRequest#getAuthType()
      */
     public String getAuthType()
     {
-        return _authType;
+        if (_authentication instanceof Authentication.Deferred)
+            _authentication = ((Authentication.Deferred)_authentication).authenticate();
+        
+        if (_authentication instanceof Authentication.User)
+            return ((Authentication.User)_authentication).getAuthMethod();
+        return null;
     }
-
+    
     /* ------------------------------------------------------------ */
     /* 
      * @see javax.servlet.ServletRequest#getCharacterEncoding()
@@ -388,7 +405,7 @@ public class Request implements HttpServletRequest
     {
         return _characterEncoding;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the connection.
@@ -397,7 +414,7 @@ public class Request implements HttpServletRequest
     {
         return _connection;
     }
-
+    
     /* ------------------------------------------------------------ */
     /* 
      * @see javax.servlet.ServletRequest#getContentLength()
@@ -406,7 +423,7 @@ public class Request implements HttpServletRequest
     {
         return (int)_connection.getRequestFields().getLongField(HttpHeaders.CONTENT_LENGTH_BUFFER);
     }
-    
+
     public long getContentRead()
     {
         if (_connection==null || _connection.getParser()==null)
@@ -893,7 +910,7 @@ public class Request implements HttpServletRequest
     
         return _context.getRequestDispatcher(path);
     }
-
+    
     /* ------------------------------------------------------------ */
     /* 
      * @see javax.servlet.http.HttpServletRequest#getRequestedSessionId()
@@ -902,7 +919,7 @@ public class Request implements HttpServletRequest
     {
         return _requestedSessionId;
     }
-    
+
     /* ------------------------------------------------------------ */
     /* 
      * @see javax.servlet.http.HttpServletRequest#getRequestURI()
@@ -947,7 +964,7 @@ public class Request implements HttpServletRequest
     {
         return _connection._response;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * Reconstructs the URL the client used to make the request. The returned URL contains a
@@ -977,7 +994,7 @@ public class Request implements HttpServletRequest
         }
         return url;
     }
-    
+
     /* ------------------------------------------------------------ */
     /* 
      * @see javax.servlet.ServletRequest#getScheme()
@@ -1086,7 +1103,9 @@ public class Request implements HttpServletRequest
      */
     public String getServletName()
     {
-        return _servletName;
+        if (_scope!=null)
+            return _scope.getName();
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -1148,6 +1167,7 @@ public class Request implements HttpServletRequest
         
         return _session;
     }
+    
 
     /* ------------------------------------------------------------ */
     /**
@@ -1158,7 +1178,6 @@ public class Request implements HttpServletRequest
         return _sessionManager;
     }
     
-
     /* ------------------------------------------------------------ */
     /**
      * Get Request TimeStamp
@@ -1194,7 +1213,18 @@ public class Request implements HttpServletRequest
     
     public UserIdentity getUserIdentity()
     {
-        return _userIdentity;
+        if (_authentication instanceof Authentication.Deferred)
+            _authentication = ((Authentication.Deferred)_authentication).authenticate();
+        
+        if (_authentication instanceof Authentication.User)
+            return ((Authentication.User)_authentication).getUserIdentity();
+        return null;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public UserIdentity.Scope getUserIdentityScope()
+    {
+        return _scope;
     }
     
     /* ------------------------------------------------------------ */
@@ -1203,7 +1233,15 @@ public class Request implements HttpServletRequest
      */
     public Principal getUserPrincipal()
     {
-        return _userIdentity.getUserPrincipal();
+        if (_authentication instanceof Authentication.Deferred)
+            _authentication = ((Authentication.Deferred)_authentication).authenticate();
+        
+        if (_authentication instanceof Authentication.User)
+        {
+            UserIdentity user = ((Authentication.User)_authentication).getUserIdentity();
+            return user.getUserPrincipal();
+        }
+        return null;
     }
     
     /* ------------------------------------------------------------ */
@@ -1217,7 +1255,7 @@ public class Request implements HttpServletRequest
     {
         return _asyncSupported;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isHandled()
     {
@@ -1232,7 +1270,7 @@ public class Request implements HttpServletRequest
     {
         return _requestedSessionId!=null && _requestedSessionIdFromCookie;
     }
-
+    
     /* ------------------------------------------------------------ */
     /* 
      * @see javax.servlet.http.HttpServletRequest#isRequestedSessionIdFromUrl()
@@ -1279,7 +1317,12 @@ public class Request implements HttpServletRequest
      */
     public boolean isUserInRole(String role)
     {
-        return _userIdentity!=null && _userIdentity.isUserInRole(role);
+        if (_authentication instanceof Authentication.Deferred)
+            _authentication = ((Authentication.Deferred)_authentication).authenticate();
+        
+        if (_authentication instanceof Authentication.User)
+            return ((Authentication.User)_authentication).isUserInRole(_scope,role);
+        return false;
     }
     
     /* ------------------------------------------------------------ */
@@ -1293,7 +1336,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     protected void recycle()
     {
-        _authType=null;
+        _authentication=Authentication.NOT_CHECKED;
     	_async.recycle();
         _asyncSupported=true;
         _handled=false;
@@ -1314,12 +1357,12 @@ public class Request implements HttpServletRequest
         _requestedSessionIdFromCookie=false;
         _session=null;
         _requestURI=null;
+        _scope=null;
         _scheme=URIUtil.HTTP;
         _servletPath=null;
         _timeStamp=0;
         _timeStampBuffer=null;
         _uri=null;
-        _userIdentity=UserIdentity.UNAUTHENTICATED_IDENTITY;
         if (_baseParameters!=null)
             _baseParameters.clear();
         _parameters=null;
@@ -1368,7 +1411,6 @@ public class Request implements HttpServletRequest
     {
         _requestAttributeListeners= LazyList.remove(_requestAttributeListeners, listener);
     }
-    
     /* ------------------------------------------------------------ */
     public void saveNewSession(Object key,HttpSession session)
     {
@@ -1376,17 +1418,18 @@ public class Request implements HttpServletRequest
             _savedNewSessions=new HashMap<Object,HttpSession>();
         _savedNewSessions.put(key,session);
     }
-    
     /* ------------------------------------------------------------ */
     public void setAsyncSupported(boolean supported)
     {
         _asyncSupported=supported;
     }
+    
     /* ------------------------------------------------------------ */
     public void setAsyncTimeout(long timeout)
     {
         _async.setAsyncTimeout(timeout);
     }
+    
     /* ------------------------------------------------------------ */
     /* 
      * Set a request attribute.
@@ -1470,12 +1513,16 @@ public class Request implements HttpServletRequest
     }
     
     /* ------------------------------------------------------------ */
-    public void setAuthType(String authType)
-    {
-        _authType=authType;
-    }
+
     
     /* ------------------------------------------------------------ */
+    /** Set the authentication.
+     * @param authentication the authentication to set
+     */
+    public void setAuthentication(Authentication authentication)
+    {
+        _authentication = authentication;
+    }
 
     /* ------------------------------------------------------------ */
     /* 
@@ -1521,7 +1568,7 @@ public class Request implements HttpServletRequest
         _connection.getRequestFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,contentType);
         
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param context
@@ -1530,7 +1577,7 @@ public class Request implements HttpServletRequest
     {
         _context=context;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * Sets the "context path" for this request
@@ -1551,7 +1598,7 @@ public class Request implements HttpServletRequest
             _cookies=new CookieCutter(this);
         _cookies.setCookies(cookies);
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setDispatcherType(DispatcherType type)
     {
@@ -1563,7 +1610,7 @@ public class Request implements HttpServletRequest
     {
         _handled=h;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param method The method to set.
@@ -1583,7 +1630,7 @@ public class Request implements HttpServletRequest
         if (_paramsExtracted && _parameters==null)
             throw new IllegalStateException();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param pathInfo The pathInfo to set.
@@ -1592,7 +1639,7 @@ public class Request implements HttpServletRequest
     {
         _pathInfo = pathInfo;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param protocol The protocol to set.
@@ -1601,7 +1648,7 @@ public class Request implements HttpServletRequest
     {
         _protocol = protocol;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Set the character encoding used for the query string.
      * This call will effect the return of getQueryString and getParamaters.
@@ -1626,7 +1673,7 @@ public class Request implements HttpServletRequest
     {
         _queryString = queryString;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param addr The address to set.
@@ -1644,7 +1691,7 @@ public class Request implements HttpServletRequest
     {
         _remoteHost = host;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param requestedSessionId The requestedSessionId to set.
@@ -1653,6 +1700,7 @@ public class Request implements HttpServletRequest
     {
         _requestedSessionId = requestedSessionId;
     }
+    
     /* ------------------------------------------------------------ */
     /**
      * @param requestedSessionIdCookie The requestedSessionIdCookie to set.
@@ -1661,7 +1709,6 @@ public class Request implements HttpServletRequest
     {
         _requestedSessionIdFromCookie = requestedSessionIdCookie;
     }
-
     /* ------------------------------------------------------------ */
     /**
      * @param requestListeners {@link LazyList} of {@link ServletRequestListener}s
@@ -1688,7 +1735,7 @@ public class Request implements HttpServletRequest
     {
         _scheme = scheme;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param host The host to set.
@@ -1697,7 +1744,7 @@ public class Request implements HttpServletRequest
     {
         _serverName = host;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param port The port to set.
@@ -1705,15 +1752,6 @@ public class Request implements HttpServletRequest
     public void setServerPort(int port)
     {
         _port = port;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param name The servletName to set.
-     */
-    public void setServletName(String name)
-    {
-        _servletName = name;
     }
 
     /* ------------------------------------------------------------ */
@@ -1757,12 +1795,11 @@ public class Request implements HttpServletRequest
     {
         _uri = uri;
     }
-    
-    public void setUserIdentity(UserIdentity userIdentity)
+
+    /* ------------------------------------------------------------ */
+    public void setUserIdentityScope(UserIdentity.Scope scope)
     {
-        if (userIdentity == null)
-            throw new NullPointerException("No UserIdentity");
-        _userIdentity = userIdentity;
+        _scope=scope;
     }
 
     /* ------------------------------------------------------------ */

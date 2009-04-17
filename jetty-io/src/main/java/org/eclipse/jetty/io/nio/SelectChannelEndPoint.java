@@ -216,7 +216,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /* ------------------------------------------------------------ */
     public boolean isReadyForDispatch()
     {
-        return !_dispatched;
+        synchronized (this)
+        {
+            return !(_dispatched || getConnection().isSuspended());
+        }
     }
     
     /* ------------------------------------------------------------ */

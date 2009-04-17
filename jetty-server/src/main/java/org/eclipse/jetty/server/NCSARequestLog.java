@@ -272,8 +272,12 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
 
             buf.append(addr);
             buf.append(" - ");
-            String user = request.getRemoteUser();
-            buf.append((user == null)?" - ":user);
+            Authentication authentication=request.getAuthentication();
+            if (authentication instanceof Authentication.User)
+                buf.append(((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName());
+            else
+                buf.append(" - ");
+            
             buf.append(" [");
             if (_logDateCache != null)
                 buf.append(_logDateCache.format(request.getTimeStamp()));

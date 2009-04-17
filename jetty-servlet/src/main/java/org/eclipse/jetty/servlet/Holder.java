@@ -17,8 +17,11 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
+import javax.servlet.Registration;
 import javax.servlet.ServletContext;
 import javax.servlet.UnavailableException;
 
@@ -302,18 +305,16 @@ public class Holder extends AbstractLifeCycle implements Serializable
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
-    protected class HolderRegistration
+    protected class HolderRegistration implements Registration
     {
-        public boolean setAsyncSupported(boolean isAsyncSupported)
+        public void setAsyncSupported(boolean isAsyncSupported)
         {
             illegalStateIfContextStarted();
             Holder.this.setAsyncSupported(isAsyncSupported);
-            return true;
         }
 
-        public boolean setDescription(String description)
+        public void setDescription(String description)
         {
-            return true;
         }
 
         public boolean setInitParameter(String name, String value)
@@ -325,14 +326,23 @@ public class Holder extends AbstractLifeCycle implements Serializable
             return true;
         }
 
-        public boolean setInitParameters(Map<String, String> initParameters)
+        public Set<String> setInitParameters(Map<String, String> initParameters)
         {
             illegalStateIfContextStarted();
+            Set<String> clash=null;
             for (String name : initParameters.keySet())
+            {
                 if (Holder.this.getInitParameter(name)!=null)
-                    return false;
+                {
+                    if (clash==null)
+                        clash=new HashSet<String>();
+                    clash.add(name);
+                }
+            }
+            if (clash!=null)
+                return clash;
             Holder.this.setInitParameters(initParameters);
-            return true;
+            return null;
         }
 
         /* ------------------------------------------------------------ */

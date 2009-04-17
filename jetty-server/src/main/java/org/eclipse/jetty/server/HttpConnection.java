@@ -134,7 +134,8 @@ public class HttpConnection implements Connection
         _generator.setSendServerVersion(server.getSendServerVersion());
         _server = server;
     }
-    
+
+    /* ------------------------------------------------------------ */
     protected HttpConnection(Connector connector, EndPoint endpoint, Server server,
             Parser parser, Generator generator, Request request)
     {
@@ -716,6 +717,17 @@ public class HttpConnection implements Connection
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.Connection#isSuspended()
+     */
+    public boolean isSuspended()
+    {
+        return _request.getAsyncRequest().isSuspended();
+    }
+
+
+
+    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private class RequestHandler extends HttpParser.EventHandler
@@ -943,7 +955,8 @@ public class HttpConnection implements Connection
     {
         Output()
         {
-            super((AbstractGenerator)HttpConnection.this._generator,_connector.getMaxIdleTime());
+            super((AbstractGenerator)HttpConnection.this._generator,
+                  _connector.isLowResources()?_connector.getLowResourceMaxIdleTime():_connector.getMaxIdleTime());
         }
         
         /* ------------------------------------------------------------ */

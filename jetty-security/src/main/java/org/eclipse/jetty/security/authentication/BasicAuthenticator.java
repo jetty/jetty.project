@@ -23,18 +23,19 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
-import org.eclipse.jetty.security.Authentication;
-import org.eclipse.jetty.security.DefaultAuthentication;
+import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.DefaultUserIdentity;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
 public class BasicAuthenticator extends LoginAuthenticator 
-{
+{   
     /* ------------------------------------------------------------ */
     /**
      * @param loginService
@@ -74,20 +75,16 @@ public class BasicAuthenticator extends LoginAuthenticator
                 
                 UserIdentity user = _loginService.login(username,password);
                 if (user!=null)
-                {
-                    if (user instanceof DefaultUserIdentity)
-                        return ((DefaultUserIdentity)user).SUCCESSFUL_BASIC;
-                    return new DefaultAuthentication(Authentication.Status.SUCCESS,Constraint.__BASIC_AUTH,user);
-                }
+                    return new UserAuthentication(this,user);
             }
 
-            if (!mandatory) 
+            if (mandatory) 
             {
-                return DefaultAuthentication.SUCCESS_UNAUTH_RESULTS;
+                response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "basic realm=\"" + _loginService.getName() + '"');
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                return Authentication.CHALLENGE;
             }
-            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "basic realm=\"" + _loginService.getName() + '"');
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            return DefaultAuthentication.SEND_CONTINUE_RESULTS;
+            return credentials==null?Authentication.NOT_CHECKED:Authentication.UNAUTHENTICATED;
         }
         catch (IOException e)
         {
@@ -95,12 +92,10 @@ public class BasicAuthenticator extends LoginAuthenticator
         }
     }
 
-    // most likely validatedUser is not needed here.
-
-    // corrct?
-    public Authentication.Status secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
+    // TODO most likely validatedUser is not needed here ??
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
-        return Authentication.Status.SUCCESS;
+        return true;
     }
 
 }

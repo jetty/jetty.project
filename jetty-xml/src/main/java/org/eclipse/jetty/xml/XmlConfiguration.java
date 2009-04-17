@@ -80,19 +80,10 @@ public class XmlConfiguration
             
             __parser.redirectEntity("http://jetty.mortbay.org/configure.dtd", configURL);
             __parser.redirectEntity("http://jetty.eclipse.org/configure.dtd", configURL);
+            __parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd", configURL);
             
             __parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", configURL);
-            __parser.redirectEntity("http://jetty.eclipse.org/configure_1_3.dtd", configURL);
-            __parser.redirectEntity("-//Mort Bay Consulting//DTD Configure 1.3//EN", configURL);
-            __parser.redirectEntity("configure_1_2.dtd", configURL);
-            __parser.redirectEntity("http://jetty.eclipse.org/configure_1_2.dtd", configURL);
-            __parser.redirectEntity("-//Mort Bay Consulting//DTD Configure 1.2//EN", configURL);
-            __parser.redirectEntity("configure_1_1.dtd", configURL);
-            __parser.redirectEntity("http://jetty.eclipse.org/configure_1_1.dtd", configURL);
-            __parser.redirectEntity("-//Mort Bay Consulting//DTD Configure 1.1//EN", configURL);
-            __parser.redirectEntity("configure_1_0.dtd", configURL);
-            __parser.redirectEntity("http://jetty.eclipse.org/configure_1_0.dtd", configURL);
-            __parser.redirectEntity("-//Mort Bay Consulting//DTD Configure 1.0//EN", configURL);
+            __parser.redirectEntity("-//Jetty//Configure//EN", configURL);
         }
         catch (ClassNotFoundException e)
         {

@@ -17,11 +17,16 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionAttributeListener;
+import javax.servlet.http.HttpSessionBindingEvent;
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionListener;
 
-import org.eclipse.jetty.security.Authentication;
 import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.DefaultAuthentication;
+import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.server.Authentication;
+import org.eclipse.jetty.server.UserIdentity;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
@@ -29,7 +34,6 @@ import org.eclipse.jetty.security.ServerAuthException;
 public class SessionCachingAuthenticator extends DelegateAuthenticator
 {
     public final static String __J_AUTHENTICATED = "org.eclipse.jetty.server.Auth";
-
 
     public SessionCachingAuthenticator(Authenticator delegate)
     {
@@ -41,19 +45,47 @@ public class SessionCachingAuthenticator extends DelegateAuthenticator
         HttpSession session = ((HttpServletRequest)request).getSession(mandatory);
         // not mandatory and not authenticated
         if (session == null) 
-            return DefaultAuthentication.SUCCESS_UNAUTH_RESULTS;
+            return Authentication.NOT_CHECKED;
 
         Authentication authentication = (Authentication) session.getAttribute(__J_AUTHENTICATED);
         if (authentication != null) 
             return authentication;
 
         authentication = _delegate.validateRequest(request, response, mandatory);
-        if (authentication != null && authentication.getUserIdentity().getSubject() != null)
+        if (authentication instanceof Authentication.User)
         {
-            Authentication next=new DefaultAuthentication(Authentication.Status.SUCCESS,authentication.getAuthMethod(),authentication.getUserIdentity());
-            session.setAttribute(__J_AUTHENTICATED, next);
+            Authentication cached=new SessionAuthentication(_delegate,((Authentication.User)authentication).getUserIdentity());
+            session.setAttribute(__J_AUTHENTICATED, cached);
         }
+        
         return authentication;
     }
+    
+    protected class SessionAuthentication extends UserAuthentication implements HttpSessionAttributeListener
+    {
+        public SessionAuthentication(Authenticator authenticator, UserIdentity userIdentity)
+        {
+            super(authenticator,userIdentity);
+        }
 
+        public void attributeAdded(HttpSessionBindingEvent event)
+        {
+        }
+
+        public void attributeRemoved(HttpSessionBindingEvent event)
+        {
+            logout();
+        }
+        
+        public void attributeReplaced(HttpSessionBindingEvent arg0)
+        {
+            logout();
+        }
+        
+        public String toString()
+        {
+            return "Session"+super.toString();
+        }
+        
+    }
 }

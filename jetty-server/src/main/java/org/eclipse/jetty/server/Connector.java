@@ -18,6 +18,7 @@ import java.io.IOException;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.ThreadPool;
 
 /** HTTP Connector.
  * Implementations of this interface provide connectors for the HTTP protocol.
@@ -318,5 +319,26 @@ public interface Connector extends LifeCycle, Buffers
      */
     public long getStatsOnMs();
     
-    
+
+    /* ------------------------------------------------------------ */
+    /** Check if low on resources.
+     * For most connectors, low resources is measured by calling 
+     * {@link ThreadPool#isLowOnThreads()} on the connector threadpool
+     * or the server threadpool if there is no connector threadpool.
+     * <p>
+     * For blocking connectors, low resources is used to trigger
+     * usage of {@link #getLowResourceMaxIdleTime()} for the timeout
+     * of an idle connection.
+     * <p>
+     * for non-blocking connectors, the number of connections is
+     * used instead of this method, to select the timeout of an 
+     * idle connection.
+     * <p>
+     * For all connectors, low resources is used to trigger the 
+     * usage of {@link #getLowResourceMaxIdleTime()} for read and 
+     * write operations.
+     * 
+     * @return true if this connector is low on resources.
+     */
+    public boolean isLowResources();
 }

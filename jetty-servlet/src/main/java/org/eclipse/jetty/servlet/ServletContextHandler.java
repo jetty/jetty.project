@@ -361,7 +361,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.ServletContext#addFilter(java.lang.String, java.lang.Class)
          */
-        public FilterRegistration addFilter(String filterName, Class<? extends Filter> filterClass)
+        public FilterRegistration.Dynamic addFilter(String filterName, Class<? extends Filter> filterClass)
         {
             if (isStarted())
                 throw new IllegalStateException();
@@ -378,7 +378,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.ServletContext#addFilter(java.lang.String, java.lang.String)
          */
-        public FilterRegistration addFilter(String filterName, String className)
+        public FilterRegistration.Dynamic addFilter(String filterName, String className)
         {
             if (isStarted())
                 throw new IllegalStateException();
@@ -396,7 +396,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.ServletContext#addFilter(java.lang.String, javax.servlet.Filter)
          */
-        public FilterRegistration addFilter(String filterName, Filter filter)
+        public FilterRegistration.Dynamic addFilter(String filterName, Filter filter)
         {
             if (isStarted())
                 throw new IllegalStateException();
@@ -413,7 +413,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.ServletContext#addServlet(java.lang.String, java.lang.Class)
          */
-        public ServletRegistration addServlet(String servletName, Class<? extends Servlet> servletClass)
+        public ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
         {
             if (!isStarting())
                 throw new IllegalStateException();
@@ -430,7 +430,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.ServletContext#addServlet(java.lang.String, java.lang.String)
          */
-        public ServletRegistration addServlet(String servletName, String className)
+        public ServletRegistration.Dynamic addServlet(String servletName, String className)
         {
             if (!isStarting())
                 throw new IllegalStateException();
@@ -447,7 +447,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.ServletContext#addServlet(java.lang.String, javax.servlet.Servlet)
          */
-        public ServletRegistration addServlet(String servletName, Servlet servlet)
+        public ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
         {
             if (!isStarting())
                 throw new IllegalStateException();

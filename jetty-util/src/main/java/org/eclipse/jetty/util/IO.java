@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -436,6 +437,15 @@ public class IO
     }
     
     /* ------------------------------------------------------------ */
+    /** 
+     * @return An writer to nowhere
+     */
+    public static PrintWriter getNullPrintWriter()
+    {
+        return __nullPrintWriter;
+    }
+    
+    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private static class NullWrite extends Writer                                    
     {
@@ -448,7 +458,7 @@ public class IO
         public void write(String s,int o,int l){}
     }
     private static NullWrite __nullWriter = new NullWrite();
-
+    private static PrintWriter __nullPrintWriter = new PrintWriter(__nullWriter);
 }
 
 

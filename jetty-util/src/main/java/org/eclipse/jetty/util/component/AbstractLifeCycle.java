@@ -58,13 +58,13 @@ public abstract class AbstractLifeCycle implements LifeCycle
             }
             catch (Exception e)
             {
-                Log.warn(FAILED+" " + this,e);
+                Log.debug(FAILED+" " + this,e);
                 setFailed(e);
                 throw e;
             }
             catch (Error e)
             {
-                Log.warn(FAILED+" " + this,e);
+                Log.debug(FAILED+" " + this,e);
                 setFailed(e);
                 throw e;
             }
@@ -86,13 +86,13 @@ public abstract class AbstractLifeCycle implements LifeCycle
             }
             catch (Exception e)
             {
-                Log.warn(FAILED+" " + this,e);
+                Log.debug(FAILED+" " + this,e);
                 setFailed(e);
                 throw e;
             }
             catch (Error e)
             {
-                Log.warn(FAILED+" " + this,e);
+                Log.debug(FAILED+" " + this,e);
                 setFailed(e);
                 throw e;
             }

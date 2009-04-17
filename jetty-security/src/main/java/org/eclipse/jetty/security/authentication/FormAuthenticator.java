@@ -32,10 +32,12 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.security.Constraint;
-import org.eclipse.jetty.security.Authentication;
-import org.eclipse.jetty.security.DefaultAuthentication;
+import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -150,41 +152,49 @@ public class FormAuthenticator extends LoginAuthenticator
         HttpServletResponse response = (HttpServletResponse)res;
         HttpSession session = request.getSession(mandatory);
         String uri = request.getPathInfo();
-        // not mandatory and not authenticated
+        
+        // not mandatory or not authenticated
         if (session == null || isLoginOrErrorPage(uri)) 
         {
-            return DefaultAuthentication.SUCCESS_UNAUTH_RESULTS;
+            return Authentication.NOT_CHECKED;
         }
             
 
         try
         {
             // Handle a request for authentication.
-            // TODO perhaps j_securitycheck can be uri suffix?
-            if (uri.endsWith(__J_SECURITY_CHECK))
+            if (uri==null)
+                uri=URIUtil.SLASH;
+            else if (uri.endsWith(__J_SECURITY_CHECK))
             {
                 final String username = request.getParameter(__J_USERNAME);
-                final char[] password = request.getParameter(__J_PASSWORD).toCharArray();
+                final String password = request.getParameter(__J_PASSWORD);
                 
                 UserIdentity user = _loginService.login(username,password);
                 if (user!=null)
                 {
                     // Redirect to original request
-                    String nuri = (String) session.getAttribute(__J_URI);
+                    String nuri;
+                    synchronized(session)
+                    {
+                        nuri = (String) session.getAttribute(__J_URI);
+                        session.removeAttribute(__J_URI);
+                    }
+                    
                     if (nuri == null || nuri.length() == 0)
                     {
                         nuri = request.getContextPath();
-                        if (nuri.length() == 0) nuri = URIUtil.SLASH;
+                        if (nuri.length() == 0) 
+                            nuri = URIUtil.SLASH;
                     }
-                    // TODO shouldn't we forward to original URI instead?
-                    session.removeAttribute(__J_URI); // Remove popped return URI.
                     response.setContentLength(0);   
                     response.sendRedirect(response.encodeRedirectURL(nuri));
-                    return new DefaultAuthentication(Authentication.Status.SEND_SUCCESS,Constraint.__FORM_AUTH,user);
+                    return new FormAuthentication(this,user);
                 }
                 
                 // not authenticated
-                if (Log.isDebugEnabled()) Log.debug("Form authentication FAILED for " + StringUtil.printable(username));
+                if (Log.isDebugEnabled()) 
+                    Log.debug("Form authentication FAILED for " + StringUtil.printable(username));
                 if (_formErrorPage == null)
                 {
                     if (response != null) 
@@ -202,40 +212,40 @@ public class FormAuthenticator extends LoginAuthenticator
                     response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formErrorPage));
                 }
                 
-                // TODO is this correct response if isMandatory false??? Can
-                // that occur?
-                return DefaultAuthentication.SEND_FAILURE_RESULTS;
-            }
-            // Check if the session is already authenticated.
-
-            // Don't authenticate authform or errorpage
-            if (!mandatory)
-            // TODO verify this is correct action
-                return DefaultAuthentication.SUCCESS_UNAUTH_RESULTS;
-
-            // redirect to login page
-            if (request.getQueryString() != null)
-                uri += "?" + request.getQueryString();
-            //TODO is this safe if the client is sending several requests concurrently in the same session to secured resources?
-            session.setAttribute(__J_URI, request.getScheme() + "://"
-                                          + request.getServerName()
-                                          + ":"
-                                          + request.getServerPort()
-                                          + URIUtil.addPaths(request.getContextPath(), uri));
-            
-            if (_dispatch)
-            {
-                RequestDispatcher dispatcher = request.getRequestDispatcher(_formLoginPage);
-                response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
-                response.setDateHeader(HttpHeaders.EXPIRES,1);
-                dispatcher.forward(new FormRequest(request), new FormResponse(response));
-            }
-            else
-            {
-                response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formLoginPage));
+                return Authentication.FAILURE;
             }
             
-            return DefaultAuthentication.SEND_CONTINUE_RESULTS;
+            if (mandatory) 
+            {
+                // redirect to login page
+                if (request.getQueryString() != null)
+                    uri += "?" + request.getQueryString();
+                
+                synchronized (session)
+                {
+                    if (session.getAttribute(__J_URI)==null)
+                        session.setAttribute(__J_URI, request.getScheme() + "://"
+                                + request.getServerName()
+                                + ":"
+                                + request.getServerPort()
+                                + URIUtil.addPaths(request.getContextPath(), uri));
+                }
+
+                if (_dispatch)
+                {
+                    RequestDispatcher dispatcher = request.getRequestDispatcher(_formLoginPage);
+                    response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
+                    response.setDateHeader(HttpHeaders.EXPIRES,1);
+                    dispatcher.forward(new FormRequest(request), new FormResponse(response));
+                }
+                else
+                {
+                    response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formLoginPage));
+                }
+                return Authentication.CHALLENGE;
+            }
+            
+            return Authentication.UNAUTHENTICATED;            
         }
         catch (IOException e)
         {
@@ -254,9 +264,9 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     /* ------------------------------------------------------------ */
-    public Authentication.Status secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, Authentication validatedUser) throws ServerAuthException
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
-        return Authentication.Status.SUCCESS;
+        return true;
     }
 
     /* ------------------------------------------------------------ */
@@ -346,6 +356,19 @@ public class FormAuthenticator extends LoginAuthenticator
                 HttpHeaders.AGE.equalsIgnoreCase(name))
                 return false;
             return true;
+        }
+    }
+    
+    public static class FormAuthentication extends UserAuthentication implements Authentication.ResponseSent
+    {
+        public FormAuthentication(Authenticator authenticator, UserIdentity userIdentity)
+        {
+            super(authenticator,userIdentity);
+        }
+        
+        public String toString()
+        {
+            return "Form"+super.toString();
         }
     }
 }

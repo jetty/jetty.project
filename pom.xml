@@ -22,7 +22,6 @@
     <mail-version>1.4</mail-version>
     <slf4j-version>1.5.6</slf4j-version>
     <eclipse-compiler-version>3.1.1</eclipse-compiler-version>
-    <glassfish-version-tag>9.1.02.B04.p0</glassfish-version-tag>
     <cometd-version>1.0.beta4</cometd-version>
   </properties>
   <scm>
@@ -74,12 +73,13 @@
         <artifactId>maven-bundle-plugin</artifactId>
         <version>2.0.0</version>
         <extensions>true</extensions>
-        <configuration>
-          
+        <configuration>        
           <instructions>
             <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
             <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
             <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
+            <Bundle-Localization>plugin</Bundle-Localization>
+            <Bundle-Classpath>.</Bundle-Classpath>
             <Bundle-Copyright>Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
             <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
           </instructions>
@@ -109,6 +109,7 @@
     <module>jetty-client</module>
     <module>jetty-xml</module>
     <module>jetty-security</module>
+    <module>jetty-jaspi</module>
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
     <module>jetty-servlets</module>
@@ -179,14 +180,38 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-  <reporting>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-project-info-reports-plugin</artifactId>
-        <version>2.0</version>
-      </plugin>
-    </plugins>
-  </reporting>
+  <!-- 
+    Usage:
+    configure settings.xml for jetty.eclipse.website server entry
+    > mvn -Paggregate-site javadoc:aggregate jxr:jxr
+    > mvn -N site:deploy
+   -->
+  <profiles>
+    <profile>
+      <id>aggregate-site</id>
+      <build>
+        <plugins>
+          <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-jxr-plugin</artifactId>
+              <configuration>
+                <aggregate>true</aggregate>
+              </configuration>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <configuration>
+                <excludePackageNames>com.acme</excludePackageNames>
+                <links>
+                  <link>http://java.sun.com/j2se/1.5.0/docs/api</link>
+                  <link>http://java.sun.com/javaee/5/docs/api</link>
+                  <link>http://junit.sourceforge.net/javadoc/</link>
+                </links>
+              </configuration>
+            </plugin>
+          </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
-

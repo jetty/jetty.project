@@ -24,6 +24,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.security.authentication.DeferredAuthenticator.DeferredAuthentication;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
@@ -54,7 +56,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private final Map<String,String> _initParameters=new HashMap<String,String>();
     private LoginService _loginService;
     private boolean _loginServiceShared;
-    private IdentityService<UserIdentity,?> _identityService;
+    private IdentityService _identityService;
 
     /* ------------------------------------------------------------ */
     protected SecurityHandler()
@@ -65,7 +67,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /** Get the identityService.
      * @return the identityService
      */
-    public IdentityService<UserIdentity,?> getIdentityService()
+    public IdentityService getIdentityService()
     {
         return _identityService;
     }
@@ -74,7 +76,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /** Set the identityService.
      * @param identityService the identityService to set
      */
-    public void setIdentityService(IdentityService<UserIdentity,?> identityService)
+    public void setIdentityService(IdentityService identityService)
     {
         if (isStarted())
             throw new IllegalStateException("Started");
@@ -268,7 +270,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     }
     
     /* ------------------------------------------------------------ */
-    protected IdentityService<UserIdentity,?> findIdentityService()
+    protected IdentityService findIdentityService()
     {
         List<IdentityService> services = getServer().getBeans(IdentityService.class);
         if (services!=null && services.size()>0)
@@ -300,7 +302,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             if (_identityService==null)
                 _identityService=findIdentityService();
             
-            if (_identityService==null)
+            if (_identityService==null && _realmName!=null)
                 _identityService=new DefaultIdentityService();
         }
         
@@ -315,23 +317,27 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         if (!_loginServiceShared && _loginService instanceof LifeCycle)
             ((LifeCycle)_loginService).start();        
         
-        if (_authenticator==null && _authenticatorFactory!=null)
+        if (_authenticator==null && _authenticatorFactory!=null && _identityService!=null)
         {
             _authenticator=_authenticatorFactory.getAuthenticator(getServer(),ContextHandler.getCurrentContext(),this);
             if (_authenticator!=null)
                 _authMethod=_authenticator.getAuthMethod();
         }
 
-        if (_authenticator==null)
+        if (_authenticator==null) 
         {
-            Log.warn("No ServerAuthentication for "+this);
-            throw new IllegalStateException("No ServerAuthentication");
+            if (_realmName!=null)
+            {
+                Log.warn("No ServerAuthentication for "+this);
+                throw new IllegalStateException("No ServerAuthentication");
+            }
         }
-        
-        _authenticator.setConfiguration(this);
-        if (_authenticator instanceof LifeCycle)
-            ((LifeCycle)_authenticator).start();
-        
+        else
+        {
+            _authenticator.setConfiguration(this);
+            if (_authenticator instanceof LifeCycle)
+                ((LifeCycle)_authenticator).start();
+        }
         
         super.doStart();
     }
@@ -384,7 +390,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         if (handler==null)
             return;
         
-        if (checkSecurity(base_request))
+        if (_authenticator!=null && checkSecurity(base_request))
         {
             Object constraintInfo = prepareConstraintInfo(pathInContext, base_request);
             
@@ -403,32 +409,63 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             boolean isAuthMandatory = isAuthMandatory(base_request, base_response, constraintInfo);
 
             // check authentication
-            UserIdentity old_user_identity=base_request.getUserIdentity();
             try
             {
                 final Authenticator authenticator = _authenticator;
-                Authentication authentication = authenticator.validateRequest(request, response, isAuthMandatory);
-
-                if (authentication.getAuthStatus() == Authentication.Status.SUCCESS)
+                Authentication authentication = base_request.getAuthentication();
+                if (authentication==null || authentication==Authentication.NOT_CHECKED)
+                    authentication=authenticator.validateRequest(request, response, isAuthMandatory);
+           
+                
+                if (authentication instanceof Authentication.ResponseSent)
                 {
-                    final UserIdentity user_identity=authentication.getUserIdentity();
-                    base_request.setAuthType(authentication.getAuthMethod());
-                    base_request.setUserIdentity(user_identity);
-
-                    if (isAuthMandatory && !checkWebResourcePermissions(pathInContext, base_request, base_response, constraintInfo, user_identity))
+                    base_request.setHandled(true);
+                }
+                else if (authentication instanceof Authentication.User)
+                {
+                    Authentication.User userAuth = (Authentication.User)authentication;
+                    base_request.setAuthentication(authentication);
+                    _identityService.associate(userAuth.getUserIdentity());  
+                  
+                    boolean authorized=checkWebResourcePermissions(pathInContext, base_request, base_response, constraintInfo, userAuth.getUserIdentity());
+                    if (isAuthMandatory && !authorized)
                     {
-                        response.sendError(Response.SC_FORBIDDEN, "User not in required role");
+                        response.sendError(Response.SC_FORBIDDEN, "!role");
                         base_request.setHandled(true);
                         return;
                     }
                          
                     handler.handle(pathInContext, request, response);
-
-                    authenticator.secureResponse(request, response, isAuthMandatory, authentication);
+                    authenticator.secureResponse(request, response, isAuthMandatory, userAuth);
+                }
+                else if (authentication instanceof Authentication.Deferred)
+                {
+                    DeferredAuthentication lazy= (DeferredAuthentication)authentication;
+                    lazy.setIdentityService(_identityService);
+                    base_request.setAuthentication(authentication);
+                    
+                    try
+                    {
+                        handler.handle(pathInContext, request, response);
+                    }
+                    finally
+                    {
+                        lazy.setIdentityService(null);
+                    }
+                    Authentication auth=base_request.getAuthentication();
+                    if (auth instanceof Authentication.User)
+                    {
+                        Authentication.User userAuth = (Authentication.User)auth;
+                        authenticator.secureResponse(request, response, isAuthMandatory, userAuth);
+                    }
+                    else
+                        authenticator.secureResponse(request, response, isAuthMandatory, null);
                 }
                 else
                 {
-                    base_request.setHandled(true);
+                    base_request.setAuthentication(authentication);
+                    handler.handle(pathInContext, request, response);
+                    authenticator.secureResponse(request, response, isAuthMandatory, null);
                 }
             }
             catch (ServerAuthException e)
@@ -439,7 +476,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             }
             finally
             {
-                base_request.setUserIdentity(old_user_identity);   
+                _identityService.associate(null);  
             }
         }
         else

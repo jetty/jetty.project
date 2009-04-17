@@ -22,8 +22,6 @@ import org.eclipse.jetty.util.LazyList;
 /* ------------------------------------------------------------ */
 /** Abstract Handler Container.
  * This is the base class for handlers that may contain other handlers.
- *  
- * 
  *
  */
 public abstract class AbstractHandlerContainer extends AbstractHandler implements HandlerContainer
@@ -32,7 +30,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     public AbstractHandlerContainer()
     {
     }
-
+    
     /* ------------------------------------------------------------ */
     public Handler[] getChildHandlers()
     {
@@ -84,5 +82,27 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         return list;
     }
     
-    
+    /* ------------------------------------------------------------ */
+    protected void dump(StringBuilder b,String indent)
+    {
+        super.dump(b,indent);
+
+        Handler[] handlers = getHandlers();
+        if (handlers!=null)
+        {   
+            int last=handlers.length-1;
+            for (int h=0;h<=last;h++)
+            {
+                b.append(indent);
+                b.append(" +-");
+                if (handlers[h] instanceof AbstractHandler)
+                    ((AbstractHandler)handlers[h]).dump(b,indent+((h==last)?"   ":" | "));
+                else
+                {
+                    b.append(handlers[h]);
+                    b.append("\n");
+                }
+            }
+        }
+    }
 }

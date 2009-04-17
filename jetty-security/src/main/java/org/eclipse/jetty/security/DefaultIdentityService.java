@@ -19,7 +19,6 @@ import java.util.Map;
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.UserIdentity.Scope;
 
 
 /* ------------------------------------------------------------ */
@@ -32,7 +31,7 @@ import org.eclipse.jetty.server.UserIdentity.Scope;
  * implementation. All other operations are effectively noops.
  *
  */
-public class DefaultIdentityService implements IdentityService<UserIdentity, RoleRunAsToken>
+public class DefaultIdentityService implements IdentityService
 {
     public DefaultIdentityService()
     {
@@ -43,24 +42,16 @@ public class DefaultIdentityService implements IdentityService<UserIdentity, Rol
      * If there are roles refs present in the scope, then wrap the UserIdentity 
      * with one that uses the role references in the {@link UserIdentity#isUserInRole(String)}
      */
-    public UserIdentity associate(UserIdentity user, Scope scope)
-    {
-        Map<String,String> roleRefMap=scope.getRoleRefMap();
-        if (roleRefMap!=null && roleRefMap.size()>0)
-            return new RoleRefUserIdentity(user,roleRefMap);
-        return user;
-    }
-
-    public void disassociate(UserIdentity scoped)
+    public void associate(UserIdentity user)
     {
     }
 
-    public RoleRunAsToken associateRunAs(RunAsToken token)
+    public Object setRunAs(UserIdentity user, RunAsToken token)
     {
-        return null;
+        return token;
     }
 
-    public void disassociateRunAs(RoleRunAsToken lastToken)
+    public void unsetRunAs(Object lastToken)
     {
     }
     
@@ -69,7 +60,7 @@ public class DefaultIdentityService implements IdentityService<UserIdentity, Rol
         return new RoleRunAsToken(runAsName);
     }
 
-    public UserIdentity newSystemUserIdentity()
+    public UserIdentity getSystemUserIdentity()
     {
         return null;
     }
@@ -79,41 +70,4 @@ public class DefaultIdentityService implements IdentityService<UserIdentity, Rol
         return new DefaultUserIdentity(subject,userPrincipal,roles);
     }
     
-    /* ------------------------------------------------------------ */
-    /**
-     * Wrapper UserIdentity used to apply RoleRef map.
-     *
-     */
-    public static class RoleRefUserIdentity implements UserIdentity
-    {
-        final private UserIdentity _delegate;
-        final private Map<String,String> _roleRefMap;
-
-        public RoleRefUserIdentity(final UserIdentity user, final Map<String, String> roleRefMap)
-        {
-            _delegate=user;
-            _roleRefMap=roleRefMap;
-        }
-
-        public String[] getRoles()
-        {
-            return _delegate.getRoles();
-        }
-        
-        public Subject getSubject()
-        {
-            return _delegate.getSubject();
-        }
-
-        public Principal getUserPrincipal()
-        {
-            return _delegate.getUserPrincipal();
-        }
-
-        public boolean isUserInRole(String role)
-        {
-            String link=_roleRefMap.get(role);
-            return _delegate.isUserInRole(link==null?role:link);
-        }
-    }
 }

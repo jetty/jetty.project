@@ -20,4 +20,5 @@ public interface Connection
     void handle() throws IOException;
 
     boolean isIdle();
+    boolean isSuspended();
 }

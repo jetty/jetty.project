@@ -528,15 +528,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector
     /* ------------------------------------------------------------------------------- */
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
-        return new SslSelectChannelEndPoint(this,channel,selectSet,key,createSSLEngine())
-        {
-            // TODO remove this hack
-            public boolean isReadyForDispatch()
-            {
-                Request request = ((HttpConnection)getConnection()).getRequest();
-                return super.isReadyForDispatch() && !(request.getAsyncRequest().isSuspended());
-            }
-        };
+        return new SslSelectChannelEndPoint(this,channel,selectSet,key,createSSLEngine());
     }
 
     /* ------------------------------------------------------------------------------- */

@@ -58,7 +58,7 @@ public class Server extends HandlerWrapper implements Attributes
     private static ShutdownHookThread hookThread = new ShutdownHookThread();
     private static String _version = (Server.class.getPackage()!=null && Server.class.getPackage().getImplementationVersion()!=null)
         ?Server.class.getPackage().getImplementationVersion()
-        :"7.0.x";
+        :"8.0.0.M0-SNAPSHOT";
 
     private ThreadPool _threadPool;
     private Connector[] _connectors;
@@ -237,6 +237,8 @@ public class Server extends HandlerWrapper implements Attributes
                 }
             }
         }
+        if (Log.isDebugEnabled())
+            Log.debug(dump());
         mex.ifExceptionThrow();
     }
 

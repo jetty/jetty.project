@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 import javax.servlet.Servlet;
@@ -264,7 +265,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
             try
             {
                 if (_identityService!=null && _runAsToken!=null)
-                    old_run_as=_identityService.associateRunAs(_runAsToken);
+                    old_run_as=_identityService.setRunAs(_identityService.getSystemUserIdentity(),_runAsToken);
 
                 destroyInstance(_servlet);
             }
@@ -275,7 +276,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
             finally
             {
                 if (_identityService!=null && _runAsToken!=null)
-                    _identityService.disassociateRunAs(old_run_as);
+                    _identityService.unsetRunAs(old_run_as);
             }
         }
 
@@ -406,7 +407,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
             // Handle run as
             if (_identityService!=null && _runAsToken!=null)
             {
-                old_run_as=_identityService.associateRunAs(_runAsToken);
+                old_run_as=_identityService.setRunAs(_identityService.getSystemUserIdentity(),_runAsToken);
             }
 
             _servlet.init(_config);
@@ -436,7 +437,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
         {
             // pop run-as role
             if (_identityService!=null && _runAsToken!=null)
-                _identityService.disassociateRunAs(old_run_as);
+                _identityService.unsetRunAs(old_run_as);
         }
     }
     
@@ -513,7 +514,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
 
             // Handle run as
             if (_identityService!=null && _runAsToken!=null)
-                old_run_as=_identityService.associateRunAs(_runAsToken);
+                old_run_as=_identityService.setRunAs(baseRequest.getUserIdentity(),_runAsToken);
             
             if (!isAsyncSupported())
                 baseRequest.setAsyncSupported(false);
@@ -532,7 +533,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
             
             // pop run-as role
             if (_identityService!=null && _runAsToken!=null)
-                _identityService.disassociateRunAs(old_run_as);
+                _identityService.unsetRunAs(old_run_as);
 
             // Handle error params.
             if (servlet_error)
@@ -557,27 +558,29 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
-    protected class Registration extends HolderRegistration implements ServletRegistration
+    protected class Registration extends HolderRegistration implements ServletRegistration.Dynamic
     {
-        public boolean addMapping(String... urlPatterns)
+        public void setLoadOnStartup(int loadOnStartup)
+        {
+            illegalStateIfContextStarted();
+            ServletHolder.this.setInitOrder(loadOnStartup);
+        }
+
+        public Set<String> addMapping(String... urlPatterns)
         {
             illegalStateIfContextStarted();
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(ServletHolder.this.getName());
             mapping.setPathSpecs(urlPatterns);
             _servletHandler.addServletMapping(mapping);
-            return true;
-        }
-        
-        public boolean setLoadOnStartup(int loadOnStartup)
-        {
-            illegalStateIfContextStarted();
-            ServletHolder.this.setInitOrder(loadOnStartup);
-            return false;
+            
+            // TODO proper return ???
+            return null;
+            
         }
     }
     
-    public ServletRegistration getRegistration()
+    public ServletRegistration.Dynamic getRegistration()
     {
         return new Registration();
     }

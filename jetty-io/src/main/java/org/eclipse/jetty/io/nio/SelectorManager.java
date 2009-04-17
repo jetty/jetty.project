@@ -15,6 +15,7 @@ package org.eclipse.jetty.io.nio;
 
 import java.io.IOException;
 import java.nio.channels.CancelledKeyException;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -281,19 +282,13 @@ public abstract class SelectorManager extends AbstractLifeCycle
             synchronized (_changes)
             {
                 _changes[_change].add(point);
-                if (point instanceof SocketChannel)
-                    _changes[_change].add(null);
             }
         }
         
         /* ------------------------------------------------------------ */
         public void addChange(SocketChannel channel, Object att)
         {   
-            synchronized (_changes)
-            {
-                _changes[_change].add(channel);
-                _changes[_change].add(att);
-            }
+            addChange(new AttachedSocketChannel(channel,att));
         }
         
         /* ------------------------------------------------------------ */
@@ -324,7 +319,8 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 
 
                 // Make any key changes required
-                for (int i = 0; i < changes.size(); i++)
+                final int size=changes.size();
+                for (int i = 0; i < size; i++)
                 {
                     try
                     {
@@ -339,11 +335,12 @@ public abstract class SelectorManager extends AbstractLifeCycle
                         {
                             dispatch((Runnable)o);
                         }
-                        else if (o instanceof SocketChannel)
+                        else if (o instanceof AttachedSocketChannel)
                         {
                             // finish accepting/connecting this connection
-                            SocketChannel channel=(SocketChannel)o;
-                            Object att = changes.get(++i);
+                            final AttachedSocketChannel asc = (AttachedSocketChannel)o;
+                            final SocketChannel channel=asc._channel;
+                            final Object att = asc._attachment;
 
                             if (channel.isConnected())
                             {
@@ -356,7 +353,22 @@ public abstract class SelectorManager extends AbstractLifeCycle
                             {
                                 channel.register(selector,SelectionKey.OP_CONNECT,att);
                             }
+                        }
+                        else if (o instanceof SocketChannel)
+                        {
+                            final SocketChannel channel=(SocketChannel)o;
 
+                            if (channel.isConnected())
+                            {
+                                SelectionKey key = channel.register(selector,SelectionKey.OP_READ,null);
+                                SelectChannelEndPoint endpoint = newEndPoint(channel,this,key);
+                                key.attach(endpoint);
+                                endpoint.schedule();
+                            }
+                            else
+                            {
+                                channel.register(selector,SelectionKey.OP_CONNECT,null);
+                            }
                         }
                         else if (o instanceof ServerSocketChannel)
                         {
@@ -383,6 +395,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 {
                     _idleTimeout.setNow(now);
                     _timeout.setNow(now);
+                    
                     if (_lowResourcesConnections>0 && selector.keys().size()>_lowResourcesConnections)
                         _idleTimeout.setDuration(_lowResourcesMaxIdleTime);
                     else 
@@ -410,7 +423,8 @@ public abstract class SelectorManager extends AbstractLifeCycle
                     // Look for JVM bug  http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6403933
                     if (selected==0  && (now-before)<wait/2)
                     {
-                        if (_jvmBug++>5) 
+                        _jvmBug++;
+                        if (_jvmBug>4) 
                         {
                             // Probably JVM BUG!    
                             for (SelectionKey key: selector.keys())
@@ -420,6 +434,29 @@ public abstract class SelectorManager extends AbstractLifeCycle
                             }
                             selector.selectNow();
                         } 
+                        else if (_jvmBug>8)
+                        {
+                            // BLOODY SUN!!!  Try refreshing the entire selector.
+                            synchronized (this)
+                            {
+                                System.err.println("SUN BUG WORKAROUND!!!!");
+                                final Selector new_selector = Selector.open();
+                                
+                                for (SelectionKey key : _selector.keys())
+                                {
+                                    final SocketChannel channel = (SocketChannel)key.channel();
+                                    final Object attachment = key.attachment();
+                                    
+                                    key.cancel();
+                                    if (attachment==null)
+                                        addChange(channel);
+                                    else
+                                        addChange(attachment);
+                                }
+                                _selector.close();
+                                _selector=new_selector;
+                            }
+                        }
                     }
                     else
                         _jvmBug=0;
@@ -654,5 +691,21 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 _selector=null;
             }
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    private static class AttachedSocketChannel
+    {
+        final SocketChannel _channel;
+        final Object _attachment;
+        
+        public AttachedSocketChannel(SocketChannel channel, Object attachment)
+        {
+            super();
+            _channel = channel;
+            _attachment = attachment;
+        }
+
+        
     }
 }
