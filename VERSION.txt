@@ -4,6 +4,7 @@ jetty-7.0.0.M1-SNAPSHOT
  + Removed HTTPConnection specifics from connection dispatching
  + JETTY-695 Handler dump
  + Reworked authentication for deferred authentication
+ + JETTY-983 DefaultServlet generates accept-ranges for cached/gzip content
  
 
 jetty-7.0.0.M0
