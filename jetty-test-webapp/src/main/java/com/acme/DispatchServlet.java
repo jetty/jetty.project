@@ -27,8 +27,6 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
-import org.eclipse.jetty.util.URIUtil;
-
 
 /* ------------------------------------------------------------ */
 /** Test Servlet RequestDispatcher.
@@ -66,16 +64,22 @@ public class DispatchServlet extends HttpServlet
 
         String prefix=
             sreq.getContextPath() != null ? sreq.getContextPath() + sreq.getServletPath() : sreq.getServletPath();
-
+            
         String info;
-
+        
         if (sreq.getAttribute("javax.servlet.include.servlet_path") != null)
             info= (String)sreq.getAttribute("javax.servlet.include.path_info");
         else
             info= sreq.getPathInfo();
-
+        
         if (info == null)
             info= "NULL";
+
+        if (info.indexOf(sreq.getServletPath()) > 0)
+        {
+            sres.sendError(403,"Nested " + sreq.getServletPath() + " forbidden.");
+            return;
+        }
 
         if (info.startsWith("/includeW/"))
         {
@@ -133,6 +137,7 @@ public class DispatchServlet extends HttpServlet
                 info += "?Dispatch=forward";
             else
                 info += "&Dispatch=forward";
+            
             RequestDispatcher dispatch= getServletContext().getRequestDispatcher(info);
             if (dispatch != null)
             {
@@ -177,7 +182,7 @@ public class DispatchServlet extends HttpServlet
             {
                 sres.setContentType("text/html");
                 PrintWriter pout= sres.getWriter();
-                pout.write("<H1>No dispatcher for: " + cpath + URIUtil.SLASH + info + "</H1><HR>");
+                pout.write("<H1>No dispatcher for: " + cpath + "/" + info + "</H1><HR>");
                 pout.flush();
             }
         }
@@ -185,8 +190,8 @@ public class DispatchServlet extends HttpServlet
         {
             sres.setContentType("text/html");
             info= info.substring(10);
-            if (info.indexOf(URIUtil.SLASH) >= 0)
-                info= info.substring(0, info.indexOf(URIUtil.SLASH));
+            if (info.indexOf("/") >= 0)
+                info= info.substring(0, info.indexOf("/"));
             
             PrintWriter pout;
             if (info.startsWith("/null"))
@@ -212,8 +217,8 @@ public class DispatchServlet extends HttpServlet
         else if (info.startsWith("/forwardN/"))
         {
             info= info.substring(10);
-            if (info.indexOf(URIUtil.SLASH) >= 0)
-                info= info.substring(0, info.indexOf(URIUtil.SLASH));
+            if (info.indexOf("/") >= 0)
+                info= info.substring(0, info.indexOf("/"));
             RequestDispatcher dispatch= getServletContext().getNamedDispatcher(info);
             if (dispatch != null)
                 dispatch.forward(sreq, sres);
