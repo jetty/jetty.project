@@ -5,7 +5,7 @@ jetty-7.0.0.M1-SNAPSHOT
  + JETTY-695 Handler dump
  + Reworked authentication for deferred authentication
  + JETTY-983 DefaultServlet generates accept-ranges for cached/gzip content
- 
+ + 273011 JETTY-980 JETTY-992 Security / Directory Listing XSS present
 
 jetty-7.0.0.M0
  + JETTY-496 Support inetd/xinetd through use of System.inheritedChannel()

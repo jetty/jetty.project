@@ -312,10 +312,8 @@ public class ServletHandler extends AbstractHandler
 
         // Get the base requests
         final Request base_request=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
-        final String old_servlet_name=base_request.getServletName();
         final String old_servlet_path=base_request.getServletPath();
         final String old_path_info=base_request.getPathInfo();
-        UserIdentity scoped_identity = null;
 
         DispatcherType type = base_request.getDispatcherType();
         Object request_listeners=null;

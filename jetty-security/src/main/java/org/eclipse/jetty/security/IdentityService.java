@@ -30,8 +30,11 @@ public interface IdentityService
     
     /* ------------------------------------------------------------ */
     /**
-     * Scope the {@link UserIdentity} to a {@link UserIdentity.Scope}.
-     * @param user The current user or null for no user associated.
+     * Associate a user identity with the current thread.
+     * This is called with as a thread enters the 
+     * {@link SecurityHandler#handle(String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)}
+     * method and then again with a null argument as that call exits.
+     * @param user The current user or null for no user to associated.
      */
     void associate(UserIdentity user);
     

@@ -429,7 +429,7 @@ public abstract class Resource implements Serializable
         Arrays.sort(ls);
         
         String decodedBase = URIUtil.decodePath(base);
-        String title = "Directory: "+decodedBase;
+        String title = "Directory: "+deTag(decodedBase);
 
         StringBuilder buf=new StringBuilder(4096);
         buf.append("<HTML><HEAD><TITLE>");
@@ -440,9 +440,9 @@ public abstract class Resource implements Serializable
         
         if (parent)
         {
-            buf.append("<TR><TD><A HREF=");
-            buf.append(URIUtil.addPaths(base,"../"));
-            buf.append(">Parent Directory</A></TD><TD></TD><TD></TD></TR>\n");
+            buf.append("<TR><TD><A HREF=\"");
+            URIUtil.encodePath(buf,URIUtil.addPaths(base,"../"));
+            buf.append("\">Parent Directory</A></TD><TD></TD><TD></TD></TR>\n");
         }
         
         DateFormat dfmt=DateFormat.getDateTimeInstance(DateFormat.MEDIUM,
@@ -457,9 +457,9 @@ public abstract class Resource implements Serializable
             
             if (item.isDirectory() && !path.endsWith("/"))
                 path=URIUtil.addPaths(path,URIUtil.SLASH);
-            buf.append(path);
+            URIUtil.encodePath(buf,path);
             buf.append("\">");
-            buf.append(StringUtil.replace(StringUtil.replace(ls[i],"<","&lt;"),">","&gt;"));
+            buf.append(deTag(ls[i]));
             buf.append("&nbsp;");
             buf.append("</TD><TD ALIGN=right>");
             buf.append(item.length());
@@ -471,6 +471,10 @@ public abstract class Resource implements Serializable
 	buf.append("</BODY></HTML>\n");
         
         return buf.toString();
+    }
+    
+    private static String deTag(String raw) {
+        return StringUtil.replace( StringUtil.replace(raw,"<","&lt;"), ">", "&gt;");
     }
     
     /* ------------------------------------------------------------ */
