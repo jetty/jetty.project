@@ -12,6 +12,7 @@
 // ========================================================================
 
 package org.eclipse.jetty.util;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -357,6 +358,40 @@ public class IO
         }
     }
 
+    /**
+     * closes a reader, and logs exceptions
+     * 
+     * @param reader the reader to close
+     */
+    public static void close(Reader reader)
+    {
+        try
+        {
+            if (reader != null)
+                reader.close();
+        } catch (IOException e)
+        {
+            Log.ignore(e);
+        }
+    }
+
+    /**
+     * closes a writer, and logs exceptions
+     * 
+     * @param writer the writer to close
+     */
+    public static void close(Writer writer)
+    {
+        try
+        {
+            if (writer != null)
+                writer.close();
+        } catch (IOException e)
+        {
+            Log.ignore(e);
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     public static byte[] readBytes(InputStream in)
         throws IOException
