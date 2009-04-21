@@ -80,6 +80,12 @@ public class DispatchServlet extends HttpServlet
             sres.sendError(403,"Nested " + sreq.getServletPath() + " forbidden.");
             return;
         }
+        
+        if(info.indexOf(getServletName()) > 0)
+        {
+            sres.sendError(403,"Nested " + getServletName() + " forbidden.");
+            return;
+        }
 
         if (info.startsWith("/includeW/"))
         {

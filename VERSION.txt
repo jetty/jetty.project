@@ -8,6 +8,7 @@ jetty-7.0.0.M1-SNAPSHOT
  + 273011 JETTY-980 JETTY-992 Security / Directory Listing XSS present
  + 271536 Add supprot to IO for quietly closing Readers / Writers
  + 273101 Fix DefaultServletTest XSS test case
+ + 273153 Test for Nested references in DispatchServlet
 
 jetty-7.0.0.M0
  + JETTY-496 Support inetd/xinetd through use of System.inheritedChannel()
