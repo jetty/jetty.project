@@ -87,10 +87,15 @@ public class StatisticsServlet extends HttpServlet
             }
         }
 
-        if (req.getParameter("xml") != null && "true".equals(req.getParameter("xml")))
+        String wantXml = req.getParameter("xml");
+        if (wantXml == null)
+          wantXml = req.getParameter("XML");
+
+        if (wantXml != null && "true".equalsIgnoreCase(wantXml))
         {
             sendXmlResponse(resp);
-        } else
+        } 
+        else
         {
             sendTextResponse(resp);
         }
