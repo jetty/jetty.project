@@ -45,7 +45,7 @@ public class DefaultServletTest extends TestCase
 
     public void testListingXSS() throws Exception
     {
-        ServletHolder defholder = context.addServlet(DefaultServlet.class,"/*");
+        ServletHolder defholder = context.addServlet(DefaultServlet.class,"/listing/*");
         defholder.setInitParameter("dirAllowed","true");
         defholder.setInitParameter("redirectWelcome","false");
         defholder.setInitParameter("gzip","false");
@@ -59,15 +59,16 @@ public class DefaultServletTest extends TestCase
         defholder.setInitParameter("resourceBase",resBasePath);
 
         StringBuffer req1 = new StringBuffer();
-        req1.append("GET /context/org/mortbay/resource/;<script>window.alert(\"hi\");</script> HTTP/1.1\n");
+        req1.append("GET /context/listing/;<script>window.alert(\"hi\");</script> HTTP/1.1\n");
         req1.append("Host: localhost\n");
+        req1.append("Connection: close\n");
         req1.append("\n");
 
         String response = connector.getResponses(req1.toString());
 
-        assertResponseContains("org/mortbay/resource/one/",response);
-        assertResponseContains("org/mortbay/resource/two/",response);
-        assertResponseContains("org/mortbay/resource/three/",response);
+        assertResponseContains("listing/one/",response);
+        assertResponseContains("listing/two/",response);
+        assertResponseContains("listing/three/",response);
 
         assertResponseNotContains("<script>",response);
     }
