@@ -109,7 +109,7 @@
     <module>jetty-client</module>
     <module>jetty-xml</module>
     <module>jetty-security</module>
-    <!--module>jetty-jaspi</module-->
+    <module>jetty-jaspi</module>
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
     <module>jetty-servlets</module>
