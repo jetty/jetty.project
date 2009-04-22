@@ -1,14 +1,18 @@
-jetty-7.0.0.M1-SNAPSHOT
+jetty-7.0.0.M2-SNAPSHOT
+
+jetty-7.0.0.M1 22 April 2009
  + 271258 FORM Authentication dispatch handling avoids caching
  + Initial support for LoginService.logout
  + Removed HTTPConnection specifics from connection dispatching
  + JETTY-695 Handler dump
  + Reworked authentication for deferred authentication
+ + Reworked JMX for new layout
  + JETTY-983 DefaultServlet generates accept-ranges for cached/gzip content
  + 273011 JETTY-980 JETTY-992 Security / Directory Listing XSS present
  + 271536 Add supprot to IO for quietly closing Readers / Writers
  + 273101 Fix DefaultServletTest XSS test case
  + 273153 Test for Nested references in DispatchServlet
+
 
 jetty-7.0.0.M0
  + JETTY-496 Support inetd/xinetd through use of System.inheritedChannel()
