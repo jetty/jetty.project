@@ -11,28 +11,35 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.jmx.servlet;
+package org.eclipse.jetty.server.jmx;
 
 import org.eclipse.jetty.jmx.ObjectMBean;
-import org.eclipse.jetty.servlet.Holder;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 
-public class HolderMBean extends ObjectMBean
+/**
+ *
+ */
+public class ServerMBean extends ObjectMBean
 {
-    public HolderMBean(Object managedObject)
+    private final long startupTime;
+    private final Server server;
+
+    public ServerMBean(Object managedObject)
     {
         super(managedObject);
+        startupTime = System.currentTimeMillis();
+        server = (Server)managedObject;
     }
 
-    /* ------------------------------------------------------------ */
-    public String getObjectNameBasis()
+    public Handler[] getContexts()
     {
-        if (_managed!=null && _managed instanceof Holder)
-        {
-            Holder holder = (Holder)_managed;
-            String name = holder.getName();
-            if (name!=null)
-                return name;
-        }
-        return super.getObjectNameBasis();
+        return server.getChildHandlersByClass(ContextHandler.class);
+    }
+
+    public long getStartupTime()
+    {
+        return startupTime;
     }
 }
