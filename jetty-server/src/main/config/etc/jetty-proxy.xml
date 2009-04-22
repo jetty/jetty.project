@@ -47,7 +47,7 @@
     <Set name="handler">
       <New id="Servlets" class="org.eclipse.jetty.servlet.ServletHandler">
         <Call name="addServletWithMapping">
-	  <Arg>org.eclipse.jetty.servlets.AsyncProxyServlet</Arg>
+	  <Arg>org.eclipse.jetty.servlets.ProxyServlet</Arg>
 	  <Arg>/</Arg>
 	</Call>
       </New>

@@ -62,7 +62,7 @@ public class WebAppDeployer extends AbstractLifeCycle
         _configurationClasses=configurationClasses;
     }
 
-    public HandlerContainer getContexts()
+    public HandlerCollection getContexts()
     {
         return _contexts;
     }

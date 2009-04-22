@@ -75,13 +75,17 @@ public class URIUtil
                 char c=path.charAt(i);
                 switch(c)
                 {
-                  case '%':
-                  case '?':
-                  case ';':
-                  case '#':
-                  case ' ':
-                      buf=new StringBuilder(path.length()<<1);
-                      break loop;
+                    case '%':
+                    case '?':
+                    case ';':
+                    case '#':
+                    case '\'':
+                    case '"':
+                    case '<':
+                    case '>':
+                    case ' ':
+                        buf=new StringBuilder(path.length()<<1);
+                        break loop;
                 }
             }
             if (buf==null)
@@ -106,6 +110,18 @@ public class URIUtil
                       continue;
                   case '#':
                       buf.append("%23");
+                      continue;
+                  case '"':
+                      buf.append("%22");
+                      continue;
+                  case '\'':
+                      buf.append("%27");
+                      continue;
+                  case '<':
+                      buf.append("%3C");
+                      continue;
+                  case '>':
+                      buf.append("%3E");
                       continue;
                   case ' ':
                       buf.append("%20");

@@ -89,8 +89,8 @@ public class ObjectMBean implements DynamicMBean
      *
      * Then this method would look for the following classes:
      * <UL>
-     * <LI>com.acme.management.MyClassMBean
-     * <LI>com.acme.util.management.BaseClassMBean
+     * <LI>com.acme.jmx.MyClassMBean
+     * <LI>com.acme.util.jmx.BaseClassMBean
      * <LI>org.eclipse.jetty.jmx.ObjectMBean
      * </UL>
      *
@@ -108,7 +108,7 @@ public class ObjectMBean implements DynamicMBean
             {
                 String pName = oClass.getPackage().getName();
                 String cName = oClass.getName().substring(pName.length() + 1);
-                String mName = pName + ".management." + cName + "MBean";
+                String mName = pName + ".jmx." + cName + "MBean";
                 
 
                 try
@@ -227,7 +227,7 @@ public class ObjectMBean implements DynamicMBean
                         oClass=ObjectMBean.class;
                     String pName = oClass.getPackage().getName();
                     String cName = oClass.getName().substring(pName.length() + 1);
-                    String rName = pName.replace('.', '/') + "/management/" + cName+"-mbean";
+                    String rName = pName.replace('.', '/') + "/jmx/" + cName+"-mbean";
 
                     try
                     {
@@ -585,9 +585,14 @@ public class ObjectMBean implements DynamicMBean
             }
         }
         
-        if (convert && type.isPrimitive() && !type.isArray())
-            throw new IllegalArgumentException("Cannot convert primative " + name);
-
+        if (convert)
+        {
+            if (type==null)
+                throw new IllegalArgumentException("No type for " + name+" on "+_managed.getClass());
+                
+            if (type.isPrimitive() && !type.isArray())
+                throw new IllegalArgumentException("Cannot convert primative " + name);
+        }
 
         if (getter == null && setter == null)
             throw new IllegalArgumentException("No getter or setters found for " + name+ " in "+oClass);

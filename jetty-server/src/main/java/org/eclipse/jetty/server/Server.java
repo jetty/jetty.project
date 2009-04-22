@@ -58,7 +58,7 @@ public class Server extends HandlerWrapper implements Attributes
     private static ShutdownHookThread hookThread = new ShutdownHookThread();
     private static String _version = (Server.class.getPackage()!=null && Server.class.getPackage().getImplementationVersion()!=null)
         ?Server.class.getPackage().getImplementationVersion()
-        :"8.0.0.M0-SNAPSHOT";
+        :"8.0.y.z-SNAPSHOT";
 
     private ThreadPool _threadPool;
     private Connector[] _connectors;

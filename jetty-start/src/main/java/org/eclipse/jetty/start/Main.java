@@ -97,16 +97,13 @@ import java.util.StringTokenizer;
  * </pre>
  * The tag '*' is always appended to the options, so any section with the * tag is always 
  * applied.
- *
- * 
- * 
  * 
  */
 public class Main
 {
     private static final String _version = (Main.class.getPackage()!=null && Main.class.getPackage().getImplementationVersion()!=null)
         ?Main.class.getPackage().getImplementationVersion()
-        :"7.0-SNAPSHOT";
+        :"Unknown";
         
     static boolean _debug=System.getProperty("DEBUG",null)!=null;
     private String _classname=null;
@@ -234,7 +231,9 @@ public class Main
                 System.err.println("  "+elements[i].getAbsolutePath());
             if (_showVersions || invoked_class==null)
             {
-                System.err.println("OPTIONS: "+_options);
+                List opts = new ArrayList(_options);
+                Collections.sort(opts);
+                System.err.println("OPTIONS: "+opts);
 	        usage();
             }
         }
@@ -536,12 +535,10 @@ public class Main
                     if (dir.exists())
                         addJars(dir,done,true);
                     else
-                        if (_debug)
-                            System.err.println("Unsatisfied option:"+unsatisfiedOptions.get(i));
+                        System.err.println("Unsatisfied option:"+unsatisfiedOptions.get(i));
                 }
                 else
-                    if (_debug)
-                        System.err.println("Unsatisfied option:"+unsatisfiedOptions.get(i));
+                    System.err.println("Unsatisfied option:"+unsatisfiedOptions.get(i));
             }
         }
     }

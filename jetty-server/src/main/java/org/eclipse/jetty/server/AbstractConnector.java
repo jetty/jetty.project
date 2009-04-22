@@ -401,8 +401,7 @@ public abstract class AbstractConnector extends AbstractBuffers implements Conne
             request.setServerPort(-1);
             request.getServerName();
         }
-        
-        if (forwardedServer != null)
+        else if (forwardedServer != null)
         {
             // Use provided server name
             request.setServerName(forwardedServer);

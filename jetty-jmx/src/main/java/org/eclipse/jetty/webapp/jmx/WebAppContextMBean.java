@@ -11,9 +11,9 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.jmx.webapp;
+package org.eclipse.jetty.webapp.jmx;
 
-import org.eclipse.jetty.jmx.handler.ContextHandlerMBean;
+import org.eclipse.jetty.server.handler.jmx.ContextHandlerMBean;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class WebAppContextMBean extends ContextHandlerMBean

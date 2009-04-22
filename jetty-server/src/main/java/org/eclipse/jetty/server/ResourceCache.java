@@ -527,6 +527,14 @@ public class ResourceCache extends AbstractLifeCycle implements Serializable
         {
             return _resource.getInputStream();
         }   
+
+        /* ------------------------------------------------------------ */
+        public String toString()
+        {
+            return "{"+_resource+","+_contentType+","+_lastModifiedBytes+"}";
+        }
+        
+        
     }
     
 

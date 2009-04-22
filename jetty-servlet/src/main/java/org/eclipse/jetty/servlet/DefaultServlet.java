@@ -662,8 +662,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 {
                     if (response instanceof Response)
                     {
-                        if (_cacheControl!=null)
-                            ((Response)response).getHttpFields().put(HttpHeaders.CACHE_CONTROL_BUFFER,_cacheControl);
+                        writeOptionHeaders(((Response)response).getHttpFields());
                         ((HttpConnection.Output)out).sendContent(content);
                     }
                     else
@@ -777,7 +776,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     protected void writeHeaders(HttpServletResponse response,HttpContent content,long count)
         throws IOException
     {   
-        if (content.getContentType()!=null)
+        if (content.getContentType()!=null && response.getContentType()==null)
             response.setContentType(content.getContentType().toString());
         
         if (response instanceof Response)
@@ -797,12 +796,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             if (count != -1)
                 r.setLongContentLength(count);
 
-            if (_acceptRanges)
-                fields.put(HttpHeaders.ACCEPT_RANGES_BUFFER,HttpHeaderValues.BYTES_BUFFER);
-
-            if (_cacheControl!=null)
-                fields.put(HttpHeaders.CACHE_CONTROL_BUFFER,_cacheControl);
-            
+            writeOptionHeaders(fields);
         }
         else
         {
@@ -817,13 +811,29 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 else 
                     response.setHeader(HttpHeaders.CONTENT_LENGTH,TypeUtil.toString(count));
             }
-
-            if (_acceptRanges)
-                response.setHeader(HttpHeaders.ACCEPT_RANGES,"bytes");
             
-            if (_cacheControl!=null)
-                response.setHeader(HttpHeaders.CACHE_CONTROL,_cacheControl.toString());
+            writeOptionHeaders(response);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void writeOptionHeaders(HttpFields fields) throws IOException
+    { 
+        if (_acceptRanges)
+            fields.put(HttpHeaders.ACCEPT_RANGES_BUFFER,HttpHeaderValues.BYTES_BUFFER);
+
+        if (_cacheControl!=null)
+            fields.put(HttpHeaders.CACHE_CONTROL_BUFFER,_cacheControl);
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected void writeOptionHeaders(HttpServletResponse response) throws IOException
+    { 
+        if (_acceptRanges)
+            response.setHeader(HttpHeaders.ACCEPT_RANGES,"bytes");
+
+        if (_cacheControl!=null)
+            response.setHeader(HttpHeaders.CACHE_CONTROL,_cacheControl.toString());
     }
 
     /* ------------------------------------------------------------ */
