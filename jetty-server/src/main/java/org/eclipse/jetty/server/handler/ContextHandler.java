@@ -362,7 +362,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
             {
                 Resource resource = newResource(urls[i]);
                 File file=resource.getFile();
-                if (file.exists())
+                if (file!=null && file.exists())
                 {
                     if (classpath.length()>0)
                         classpath.append(File.pathSeparatorChar);
