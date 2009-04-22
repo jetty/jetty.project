@@ -8,8 +8,10 @@ import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class DemoServer
@@ -42,11 +44,16 @@ public class DemoServer
         login.putUser("admin",new Password("password"),new String[]{"user","admin"});
         server.addBean(login);
         
+        // ContextHandlerCollection
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler(contexts);
+        
         // setup webapp
         WebAppContext context = new WebAppContext();
         context.setWar(args[0]); 
         context.setDefaultsDescriptor("../jetty-webapp/src/main/config/etc/webdefault.xml");
-        server.setHandler(context);
+        contexts.addHandler(context);
+        
         
         // start the server
         server.start(); 

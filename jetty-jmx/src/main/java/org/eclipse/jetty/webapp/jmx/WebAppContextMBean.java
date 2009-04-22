@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.webapp.jmx;
 
-import org.eclipse.jetty.handler.jmx.ContextHandlerMBean;
+import org.eclipse.jetty.server.handler.jmx.ContextHandlerMBean;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class WebAppContextMBean extends ContextHandlerMBean

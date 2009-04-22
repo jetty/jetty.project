@@ -11,7 +11,7 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.handler.jmx;
+package org.eclipse.jetty.server.handler.jmx;
 
 import java.util.Enumeration;
 import java.util.HashMap;
