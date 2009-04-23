@@ -129,9 +129,6 @@ public class StreamEndPoint implements EndPoint
     {
         int len=0;
         
-        // TODO  consider copying buffer and trailer into header if there is space.
-        
-        
         if (header!=null)
         {
             int tw=header.length();
