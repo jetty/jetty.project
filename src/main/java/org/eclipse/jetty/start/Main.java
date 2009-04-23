@@ -567,9 +567,13 @@ public class Main
             if (cpcfg==null)
                 cpcfg=new FileInputStream(_config);
             configure(cpcfg,args.length);
-            File file=new File(System.getProperty("jetty.home"));
-            String canonical=file.getCanonicalPath();
-            System.setProperty("jetty.home",canonical);
+            String jetty_home=System.getProperty("jetty.home");
+            if (jetty_home!=null)
+            {
+                File file=new File(jetty_home);
+                String canonical=file.getCanonicalPath();
+                System.setProperty("jetty.home",canonical);
+            }
         }
         catch (Exception e)
         {
