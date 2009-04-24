@@ -355,7 +355,16 @@ public class CGI extends HttpServlet
         finally
         {
             if( os != null )
-            	os.close();
+            {
+                try
+                {
+                    os.close();
+                }
+                catch(Exception e)
+                {
+                    Log.ignore(e);
+                }
+            }
             os = null;
             p.destroy();
             // Log.debug("CGI: terminated!");
