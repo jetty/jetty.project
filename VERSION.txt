@@ -2,6 +2,7 @@ jetty-7.0.0.M2-SNAPSHOT
  + JETTY-941 Linux chkconfig hint
  + JETTY-959 CGI servlet doesn't kill the CGI in case the client disconnects
  + JETTY-996 Make start-stop-daemon optional
+ + 273767 Update to use geronimo annotations spec 1.1.1
 
 jetty-7.0.0.M1 22 April 2009
  + 271258 FORM Authentication dispatch handling avoids caching
