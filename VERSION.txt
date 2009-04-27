@@ -5,6 +5,7 @@ jetty-8.0.0.M0-SNAPSHOT
  + Merged jetty-7-to-jetty-8-base-20090417-1
  + Updated servlet 3.0 spec 20090417
  + Merged jetty-7-to-jetty-8-base-20090422-1
+ + Merged 273767
 
 jetty-7.0.0.M2-SNAPSHOT
 
