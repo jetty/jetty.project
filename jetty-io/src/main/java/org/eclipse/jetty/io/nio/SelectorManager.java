@@ -47,6 +47,8 @@ public abstract class SelectorManager extends AbstractLifeCycle
     private transient SelectSet[] _selectSet;
     private int _selectSets=1;
     private volatile int _set;
+    private boolean _jvmBug0;
+    private boolean _jvmBug1;
     
 
     /* ------------------------------------------------------------ */
@@ -420,34 +422,33 @@ public abstract class SelectorManager extends AbstractLifeCycle
                     _idleTimeout.setNow(now);
                     _timeout.setNow(now);
 
-                    // Look for JVM bug  http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6403933
+                    // Look for JVM bugs
+                    // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6403933
                     if (selected==0  && (now-before)<wait/2)
                     {
                         _jvmBug++;
-                        if (_jvmBug>4) 
+                        if (_jvmBug>16)
                         {
-                            // Probably JVM BUG!    
-                            for (SelectionKey key: selector.keys())
-                            {    
-                                if (key.interestOps()==0 && key.isValid())
-                                    key.cancel();
-                            }
-                            selector.selectNow();
-                        } 
-                        else if (_jvmBug>8)
-                        {
-                            // BLOODY SUN!!!  Try refreshing the entire selector.
                             synchronized (this)
                             {
-                                System.err.println("SUN BUG WORKAROUND!!!!");
-                                final Selector new_selector = Selector.open();
-                                
-                                for (SelectionKey key : _selector.keys())
+                                if (_jvmBug1)
+                                    Log.debug("seeing JVM BUG(s) - recreating selector");
+                                else
                                 {
-                                    final SocketChannel channel = (SocketChannel)key.channel();
-                                    final Object attachment = key.attachment();
+                                    _jvmBug1=true;
+                                    Log.info("seeing JVM BUG(s) - recreating selector");
+                                }
+                                
+                                // BLOODY SUN BUG !!!  Try refreshing the entire selector.
+                                final Selector new_selector = Selector.open();
+                                Iterator iterator = _selector.keys().iterator();
+                                while (iterator.hasNext())
+                                {
+                                    SelectionKey k = (SelectionKey)iterator.next();
+                                    final SelectableChannel channel = k.channel();
+                                    final Object attachment = k.attachment();
                                     
-                                    key.cancel();
+                                    k.cancel();
                                     if (attachment==null)
                                         addChange(channel);
                                     else
@@ -455,8 +456,31 @@ public abstract class SelectorManager extends AbstractLifeCycle
                                 }
                                 _selector.close();
                                 _selector=new_selector;
+                                return;
                             }
                         }
+                        else if (_jvmBug>8)
+                        {
+                            // Cancel keys with 0 interested ops
+                            if (_jvmBug0)
+                                Log.debug("seeing JVM BUG(s) - cancelling interestOps==0");
+                            else
+                            {
+                                _jvmBug0=true;
+                                Log.info("seeing JVM BUG(s) - cancelling interestOps==0");
+                            }
+                            Iterator iter = selector.keys().iterator();
+                            while(iter.hasNext())
+                            {
+                                SelectionKey k = (SelectionKey) iter.next();
+                                if (k.isValid()&&k.interestOps()==0)
+                                {
+                                    k.cancel();
+                                }
+                            }
+                            return;
+                        }
+                        
                     }
                     else
                         _jvmBug=0;
