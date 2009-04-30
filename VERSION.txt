@@ -6,7 +6,29 @@ jetty-7.0.0.M2-SNAPSHOT
  + JETTY-996 Make start-stop-daemon optional
  + 273767 Update to use geronimo annotations spec 1.1.1
  + JETTY-1003 java.lang.IllegalArgumentException: timeout can't be negative
- + JETTY-1004 Canonical path handling includes ? in path segment
+ + JETTY-1004 CERT VU#402580 Canonical path handling includes ? in path segment
+
+jetty-6.1.17 30 April 2009
+ + JETTY-936 Make optional dispatching to welcome files as servlets
+ + JETTY-937 Work around sun JVM selector bugs
+ + JETTY-941 Linux chkconfig hint
+ + JETTY-957 Reduce hardcoded versions
+ + JETTY-980 Security / Directory Listing XSS present
+ + JETTY-982 Make test-jaas-webapp run with jetty:run
+ + JETTY-983 Default Servlet sets accept-ranges for cached/gzipped content
+ + JETTY-988 X-Forwarded-Host has precedence over X-Forwarded-Server
+ + JETTY-989 GzipFilter handles addHeader
+ + JETTY-990 Async HttpClient connect
+ + JETTY-992 URIUtil.encodePath encodes markup characters
+ + JETTY-996 Make start-stop-daemon optional
+ + JETTY-997 Remove jpackage-utils dependency on rpm install
+ + JETTY-980 Fixed ResourceHandler ? handling, and bad URI creation in listings
+ + JETTY-985 Allow listeners to implement both interfaces
+ + JETTY-1000 Avoided needless 1.5 dependency
+ + JETTY-1002 cometd-api to 1.0.beta8
+ + JETTY-1003 java.lang.IllegalArgumentException: timeout can't be negative
+ + JETTY-1004 CERT VU#402580 Canonical path handling includes ? in path segment
+ + JETTY-1006 Resume meta connect on all XD messages
 
 jetty-7.0.0.M1 22 April 2009
  + 271258 FORM Authentication dispatch handling avoids caching
@@ -21,8 +43,23 @@ jetty-7.0.0.M1 22 April 2009
  + 273101 Fix DefaultServletTest XSS test case
  + 273153 Test for Nested references in DispatchServlet
 
+jetty-6.1.16 1 April 2009
+ + JETTY-702 Create "jetty-tasks.xml" for the Ant plugin
+ + JETTY-899 Standardize location for configuration files which go into etc
+ + JETTY-936 Allow dispatch to welcome files that are servlets
+ + JETTY-944 Lazy messages don't prevent long polls waiting
+ + JETTY-946 Redeploys with maven jetty plugin of webapps with overlays don't work
+ + JETTY-947 Exception stops terracotta session scavenger
+ + JETTY-948 ConcurrentModificationException in TerracottaSessionManager scavenger
+ + JETTY-949 Move cometd source to cometd.org project
+ + JETTY-953 SSL keystore file input stream is not being closed directly
+ + JETTY-956 SslSelectChannelConnector - password should be the default value of keyPassword if not specified
+ + JETTY-959 CGI servlet doesn't kill the CGI in case the client disconnects
+ + JETTY-964 Typo in Jetty 6.1.15 Manifest - Bundle-RequiredExcutionEnvironment
+ + JETTY-972 Move cometd code back from cometd.org project (temporarily)
+ + JETTY-973 Deliver same message to a collection of cometd Clients
 
-jetty-7.0.0.M0
+jetty-7.0.0.M0 27 March 2009
  + JETTY-496 Support inetd/xinetd through use of System.inheritedChannel()
  + JETTY-540 Merged 3.0 Public Review changes
  + JETTY-567 Delay in initial TLS Handshake With FireFox 3 beta5 and SslSelectChannelConnector
