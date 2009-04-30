@@ -304,8 +304,8 @@ public class URIUtil
     /** Add two URI path segments.
      * Handles null and empty paths, path and query params (eg ?a=b or
      * ;JSESSIONID=xxx) and avoids duplicate '/'
-     * @param p1 URI path segment 
-     * @param p2 URI path segment
+     * @param p1 URI path segment (should be encoded)
+     * @param p2 URI path segment (should be encoded)
      * @return Legally combined path segments.
      */
     public static String addPaths(String p1, String p2)
@@ -395,8 +395,10 @@ public class URIUtil
             return path;
 
         int end=path.length();
+        
         int queryIdx=path.indexOf('?');
         int start = path.lastIndexOf('/', (queryIdx > 0 ? queryIdx : end));
+        // int start = path.lastIndexOf('/', end);
 
     search:
         while (end>0)

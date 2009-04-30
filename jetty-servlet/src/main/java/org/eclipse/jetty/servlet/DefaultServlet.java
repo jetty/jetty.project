@@ -52,6 +52,7 @@ import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.resource.FileResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
@@ -154,9 +155,13 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         _redirectWelcome=getInitBoolean("redirectWelcome",_redirectWelcome);
         _gzip=getInitBoolean("gzip",_gzip);
         
-        String aliases=_servletContext.getInitParameter("aliases");
-        if (aliases!=null)
-            _contextHandler.setAliases(Boolean.parseBoolean(aliases));
+        if (getInitParameter("aliases")!=null)
+            _contextHandler.setAliases(getInitBoolean("aliases",false));
+        boolean aliases=_contextHandler.isAliases();
+        if (!aliases && !FileResource.getCheckAliases())
+            throw new IllegalStateException("Alias checking disabled");
+        if (aliases)
+            _servletContext.log("Aliases are enabled");
         
         _useFileMappedBuffer=getInitBoolean("useFileMappedBuffer",_useFileMappedBuffer);
         

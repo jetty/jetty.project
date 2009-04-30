@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.resource.FileResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 
@@ -56,6 +57,7 @@ public class ResourceHandler extends AbstractHandler
     String[] _welcomeFiles={"index.html"};
     MimeTypes _mimeTypes = new MimeTypes();
     ByteArrayBuffer _cacheControl;
+    boolean _aliases;
 
     /* ------------------------------------------------------------ */
     public ResourceHandler()
@@ -75,11 +77,40 @@ public class ResourceHandler extends AbstractHandler
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @return True if resource aliases are allowed.
+     */
+    public boolean isAliases()
+    {
+        return _aliases;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set if resource aliases (eg symlink, 8.3 names, case insensitivity) are allowed.
+     * Allowing aliases can significantly increase security vulnerabilities.
+     * If this handler is deployed inside a ContextHandler, then the 
+     * {@link ContextHandler#isAliases()} takes precedent.
+     * @param aliases True if aliases are supported.
+     */
+    public void setAliases(boolean aliases)
+    {
+        _aliases = aliases;
+    }
+
+    /* ------------------------------------------------------------ */
     public void doStart()
     throws Exception
     {
         Context scontext = ContextHandler.getCurrentContext();
         _context = (scontext==null?null:scontext.getContextHandler());
+        
+        if (_context!=null)
+            _aliases=_context.isAliases();
+        
+        if (!_aliases && !FileResource.getCheckAliases())
+            throw new IllegalStateException("Alias checking disabled");
+        
         super.doStart();
     }
 
@@ -239,6 +270,11 @@ public class ResourceHandler extends AbstractHandler
         
         if (resource==null || !resource.exists())
             return;
+        if (!_aliases && resource.getAlias()!=null)
+        {
+            Log.info(resource+" aliased to "+resource.getAlias());
+            return;
+        }
 
         // We are going to server something
         base_request.setHandled(true);
