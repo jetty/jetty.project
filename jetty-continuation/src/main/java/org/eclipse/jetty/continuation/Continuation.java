@@ -203,5 +203,23 @@ public interface Continuation
      * @param listener
      */
     void addContinuationListener(ContinuationListener listener);
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Get the associated servlet request. 
+     * <p>
+     * Not all request methods are valid to be called outside of the
+     * scope of a filter/servlet. Specifically servletPath methods will
+     * not return correct values.  The request attribute methods are suitable
+     * to be called from an asynchronous scope.
+     * @return The associated servlet request
+     */
+    ServletRequest getServletRequest();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The associated servlet response.
+     */
+    ServletResponse getServletResponse();
 
 }

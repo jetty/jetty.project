@@ -745,6 +745,24 @@ public class AsyncRequest implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#getServletRequest()
+     */
+    public ServletRequest getServletRequest()
+    {
+        return _connection.getRequest();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#getServletResponse()
+     */
+    public ServletResponse getServletResponse()
+    {
+        return _connection.getResponse();
+    }
+
+    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     public class AsyncEventState implements ContinuationEvent
     {

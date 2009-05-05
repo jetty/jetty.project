@@ -26,7 +26,7 @@ public class ContinuationFilter implements Filter
     {
         if (_faux)
         {
-            final FauxContinuation fc = new FauxContinuation();
+            final FauxContinuation fc = new FauxContinuation(request,response);
             request.setAttribute(Continuation.ATTRIBUTE,fc);
             boolean complete=false;
       
@@ -69,17 +69,24 @@ public class ContinuationFilter implements Filter
         private static final int __SUSPENDED=5;    // Suspended and parked
         private static final int __UNSUSPENDING=6;
         private static final int __COMPLETE=7;
+
+        private final ServletRequest _request;
+        private final ServletResponse _response;
         
         private int _state=__HANDLING;
         private boolean _initial=true;
         private boolean _resumed=false;
         private boolean _timeout=false;
         private boolean _keepWrappers=false;
-        
         private  long _timeoutMs=30000; // TODO configure
         
         private ArrayList<ContinuationListener> _listeners; 
 
+        FauxContinuation(final ServletRequest request,final ServletResponse response)
+        {
+            _request=request;
+            _response=response;
+        }
         
         /* ------------------------------------------------------------ */
         /**
@@ -255,6 +262,24 @@ public class ContinuationFilter implements Filter
         }
         
 
+
+        /* ------------------------------------------------------------ */
+        /**
+         * @see org.eclipse.jetty.continuation.Continuation#getServletRequest()
+         */
+        public ServletRequest getServletRequest()
+        {
+            return _request;
+        }
+
+        /* ------------------------------------------------------------ */
+        /**
+         * @see org.eclipse.jetty.continuation.Continuation#getServletResponse()
+         */
+        public ServletResponse getServletResponse()
+        {
+            return _response;
+        }
         
         
         void handling()
