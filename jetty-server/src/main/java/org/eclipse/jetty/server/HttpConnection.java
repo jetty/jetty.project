@@ -150,28 +150,6 @@ public class HttpConnection implements Connection
         _generator.setSendServerVersion(server.getSendServerVersion());
         _server = server;
     }
-
-    /* ------------------------------------------------------------ */
-    public void destroy()
-    {
-        synchronized(this)
-        {
-            while(_handling)
-                Thread.yield();
-
-            if (_parser!=null)
-                _parser.reset(true);
-
-            if (_generator!=null)
-                _generator.reset(true);
-
-            if (_requestFields!=null)
-                _requestFields.destroy();
-
-            if (_responseFields!=null)
-                _responseFields.destroy();
-        }
-    }
     
     /* ------------------------------------------------------------ */
     /**

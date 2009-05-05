@@ -190,7 +190,6 @@ public class LocalConnector extends AbstractConnector
                 if (!_keepOpen)
                 {
                     connectionClosed(connection);
-                    connection.destroy();
                     connection=null;
                 }
                 synchronized (this)

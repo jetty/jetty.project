@@ -84,9 +84,8 @@ public class SelectChannelConnector extends AbstractNIOConnector
             return getThreadPool().dispatch(task);
         }
 
-        protected void endPointClosed(SelectChannelEndPoint endpoint)
+        protected void endPointClosed(final SelectChannelEndPoint endpoint)
         {
-            // TODO handle max connections and low resources
             connectionClosed((HttpConnection)endpoint.getConnection());
         }
 
@@ -316,5 +315,12 @@ public class SelectChannelConnector extends AbstractNIOConnector
                 endpoint.getSelectSet().scheduleTimeout(task,timeoutMs);
             }
         };
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    public void dump()
+    {
+        Log.info("channel "+_acceptChannel+(_acceptChannel.isOpen()?" is open":" is closed"));
+        _manager.dump();
     }
 }
