@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public abstract class SelectorManager extends AbstractLifeCycle
 {
+    private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD",32).intValue();
     private long _maxIdleTime;
     private long _lowResourcesConnections;
     private long _lowResourcesMaxIdleTime;
@@ -463,10 +464,10 @@ public abstract class SelectorManager extends AbstractLifeCycle
 
                     // Look for JVM bugs
                     // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6403933
-                    if (selected==0  && (now-before)<(wait/2))
+                    if (selected==0  && (now-before)<(wait/2) && __JVMBUG_THRESHHOLD>0)
                     {
                         _jvmBug++;
-                        if (_jvmBug>64)
+                        if (_jvmBug>(__JVMBUG_THRESHHOLD*2))
                         {
                             synchronized (this)
                             {
@@ -498,7 +499,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
                                 return;
                             }
                         }
-                        else if (_jvmBug>32)
+                        else if (_jvmBug>__JVMBUG_THRESHHOLD)
                         {
                             // Cancel keys with 0 interested ops
                             if (_jvmBug0)
