@@ -204,26 +204,27 @@ public class HttpDestination
     /* ------------------------------------------------------------------------------- */
     public HttpConnection getIdleConnection() throws IOException
     {
-        synchronized (this)
+        long now = System.currentTimeMillis();
+        long idleTimeout=_client.getIdleTimeout();
+        HttpConnection connection = null;
+        while (true)
         {
-            long now = System.currentTimeMillis();
-            long idleTimeout = _client.getIdleTimeout();
-
-            // Find an idle connection
-            while (_idle.size() > 0)
+            synchronized (this)
             {
-                HttpConnection connection = _idle.remove(_idle.size() - 1);
-                long last = connection.getLast();
-                if (connection.getEndPoint().isOpen() && (last == 0 || ((now - last) < idleTimeout)))
-                    return connection;
-                else
-                {
-                    _connections.remove(connection);
-                    connection.getEndPoint().close();
-                }
+                if (_idle.size() > 0)
+                    connection = _idle.remove(_idle.size()-1);
             }
+            
+            if (connection==null)
+                return null;
 
-            return null;
+            long last = connection.getLast();
+            if (connection.getEndPoint().isOpen() && (last==0 || ((now-last)<idleTimeout)) )
+                return connection;
+
+            _connections.remove(connection);
+            connection.getEndPoint().close();
+            connection=null;
         }
     }
 
