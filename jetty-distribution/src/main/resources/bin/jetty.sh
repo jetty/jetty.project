@@ -83,6 +83,8 @@
 # JETTY_USER
 #   if set, then used as a username to run the server as
 #
+# Set to 0 if you do not want to use start-stop-daemon (especially on SUSE boxes)
+START_STOP_DAEMON=1
 
 usage()
 {
@@ -659,5 +661,6 @@ case "$ACTION" in
 esac
 
 exit 0
+
 
 
