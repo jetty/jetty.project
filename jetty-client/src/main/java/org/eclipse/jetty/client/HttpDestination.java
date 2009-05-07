@@ -35,13 +35,13 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class HttpDestination
 {
-    private ByteArrayBuffer _hostHeader;
+    private final ByteArrayBuffer _hostHeader;
     private final Address _address;
     private final LinkedList<HttpConnection> _connections = new LinkedList<HttpConnection>();
     private final ArrayList<HttpConnection> _idle = new ArrayList<HttpConnection>();
     private final HttpClient _client;
     private final boolean _ssl;
-    private int _maxConnections;
+    private final int _maxConnections;
     private int _pendingConnections = 0;
     private ArrayBlockingQueue<Object> _newQueue = new ArrayBlockingQueue<Object>(10, true);
     private int _newConnection = 0;
@@ -50,14 +50,15 @@ public class HttpDestination
     private PathMap _authorizations;
     private List<HttpCookie> _cookies;
 
+    /* ------------------------------------------------------------ */
     public void dump() throws IOException
     {
         synchronized (this)
         {
-            System.err.println(this);
-            System.err.println("connections=" + _connections.size());
-            System.err.println("idle=" + _idle.size());
-            System.err.println("pending=" + _pendingConnections);
+            Log.info(this.toString());
+            Log.info("connections=" + _connections.size());
+            Log.info("idle=" + _idle.size());
+            Log.info("pending=" + _pendingConnections);
             for (HttpConnection c : _connections)
             {
                 if (!c.isIdle())
@@ -70,9 +71,9 @@ public class HttpDestination
     private LinkedList<HttpExchange> _queue = new LinkedList<HttpExchange>();
 
     /* ------------------------------------------------------------ */
-    HttpDestination(HttpClient pool, Address address, boolean ssl, int maxConnections)
+    HttpDestination(HttpClient client, Address address, boolean ssl, int maxConnections)
     {
-        _client = pool;
+        _client = client;
         _address = address;
         _ssl = ssl;
         _maxConnections = maxConnections;
@@ -211,6 +212,12 @@ public class HttpDestination
         {
             synchronized (this)
             {
+                if (connection!=null)
+                {
+                    _connections.remove(connection);
+                    connection.getEndPoint().close();
+                    connection=null;
+                }
                 if (_idle.size() > 0)
                     connection = _idle.remove(_idle.size()-1);
             }
@@ -222,9 +229,6 @@ public class HttpDestination
             if (connection.getEndPoint().isOpen() && (last==0 || ((now-last)<idleTimeout)) )
                 return connection;
 
-            _connections.remove(connection);
-            connection.getEndPoint().close();
-            connection=null;
         }
     }
 
@@ -455,12 +459,16 @@ public class HttpDestination
                 ((Authorization)auth).setCredentials(ex);
         }
 
-        synchronized (this)
+        HttpConnection connection = getIdleConnection();
+        if (connection != null)
         {
-            //System.out.println( "Sending: " + ex.toString() );
+            boolean sent = connection.send(ex);
+            if (!sent) connection = null;
+        }
 
-            HttpConnection connection = null;
-            if (_queue.size() > 0 || (connection = getIdleConnection()) == null || !connection.send(ex))
+        if (connection == null)
+        {
+            synchronized (this)
             {
                 _queue.add(ex);
                 if (_connections.size() + _pendingConnections < _maxConnections)
