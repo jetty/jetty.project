@@ -84,7 +84,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
             if (mandatory)
             {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN);
-                return Authentication.FAILURE;
+                return Authentication.SEND_FAILURE;
             }
             
             return certs==null?Authentication.NOT_CHECKED:Authentication.UNAUTHENTICATED;

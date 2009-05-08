@@ -29,7 +29,7 @@ import javax.servlet.ServletResponse;
 public interface Authentication
 {
 
-    
+
     /* ------------------------------------------------------------ */
     /** A successful Authentication with User information.
      */
@@ -99,6 +99,10 @@ public interface Authentication
     { 
     }
 
+    public interface SendSuccess extends ResponseSent
+    {
+    }
+
     /* ------------------------------------------------------------ */
     /** Unauthenticated state.
      * <p> 
@@ -120,12 +124,13 @@ public interface Authentication
      * <p>
      * This convenience instance is for when an authentication challenge has been sent.
      */
-    public final static Authentication CHALLENGE = new Authentication.Challenge(){public String toString(){return "CHALLENGE";}};
+    public final static Authentication SEND_CONTINUE = new Authentication.Challenge(){public String toString(){return "CHALLENGE";}};
 
     /* ------------------------------------------------------------ */
     /** Authentication failure sent.
      * <p>
      * This convenience instance is for when an authentication failure has been sent.
      */
-    public final static Authentication FAILURE = new Authentication.Failure(){public String toString(){return "FAILURE";}};
+    public final static Authentication SEND_FAILURE = new Authentication.Failure(){public String toString(){return "FAILURE";}};
+    public final static Authentication SEND_SUCCESS = new SendSuccess(){public String toString(){return "SEND_SUCCESS";}};
 }

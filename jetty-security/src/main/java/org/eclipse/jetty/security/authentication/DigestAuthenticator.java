@@ -26,7 +26,6 @@ import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.http.security.Credential;
 import org.eclipse.jetty.security.UserAuthentication;
-import org.eclipse.jetty.security.DefaultUserIdentity;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Request;
@@ -145,7 +144,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                         + (_useStale ? (" stale=" + stale) : ""));
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 
-                return Authentication.CHALLENGE;
+                return Authentication.SEND_CONTINUE;
             }
 
             return credentials==null?Authentication.NOT_CHECKED:Authentication.UNAUTHENTICATED;

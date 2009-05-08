@@ -14,11 +14,8 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.List;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -212,7 +209,7 @@ public class FormAuthenticator extends LoginAuthenticator
                     response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formErrorPage));
                 }
                 
-                return Authentication.FAILURE;
+                return Authentication.SEND_FAILURE;
             }
             
             if (mandatory) 
@@ -242,7 +239,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 {
                     response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formLoginPage));
                 }
-                return Authentication.CHALLENGE;
+                return Authentication.SEND_CONTINUE;
             }
             
             return Authentication.UNAUTHENTICATED;            

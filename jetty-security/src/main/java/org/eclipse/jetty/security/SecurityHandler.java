@@ -319,12 +319,12 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         
         if (_authenticator==null && _authenticatorFactory!=null && _identityService!=null)
         {
-            _authenticator=_authenticatorFactory.getAuthenticator(getServer(),ContextHandler.getCurrentContext(),this);
+            _authenticator=_authenticatorFactory.getAuthenticator(getServer(),ContextHandler.getCurrentContext(),this, _identityService, _loginService);
             if (_authenticator!=null)
                 _authMethod=_authenticator.getAuthMethod();
         }
 
-        if (_authenticator==null) 
+        if (_authenticator==null)
         {
             if (_realmName!=null)
             {
@@ -338,7 +338,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             if (_authenticator instanceof LifeCycle)
                 ((LifeCycle)_authenticator).start();
         }
-        
+
         super.doStart();
     }
 
@@ -415,8 +415,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 Authentication authentication = base_request.getAuthentication();
                 if (authentication==null || authentication==Authentication.NOT_CHECKED)
                     authentication=authenticator.validateRequest(request, response, isAuthMandatory);
-           
-                
+
+
                 if (authentication instanceof Authentication.ResponseSent)
                 {
                     base_request.setHandled(true);
@@ -425,14 +425,17 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 {
                     Authentication.User userAuth = (Authentication.User)authentication;
                     base_request.setAuthentication(authentication);
-                    _identityService.associate(userAuth.getUserIdentity());  
-                  
-                    boolean authorized=checkWebResourcePermissions(pathInContext, base_request, base_response, constraintInfo, userAuth.getUserIdentity());
-                    if (isAuthMandatory && !authorized)
+                    _identityService.associate(userAuth.getUserIdentity());
+
+                    if (isAuthMandatory)
                     {
-                        response.sendError(Response.SC_FORBIDDEN, "!role");
-                        base_request.setHandled(true);
-                        return;
+                        boolean authorized=checkWebResourcePermissions(pathInContext, base_request, base_response, constraintInfo, userAuth.getUserIdentity());
+                        if (!authorized)
+                        {
+                            response.sendError(Response.SC_FORBIDDEN, "!role");
+                            base_request.setHandled(true);
+                            return;
+                        }
                     }
                          
                     handler.handle(pathInContext, request, response);
@@ -443,7 +446,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     DeferredAuthentication lazy= (DeferredAuthentication)authentication;
                     lazy.setIdentityService(_identityService);
                     base_request.setAuthentication(authentication);
-                    
+
                     try
                     {
                         handler.handle(pathInContext, request, response);
@@ -476,7 +479,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             }
             finally
             {
-                _identityService.associate(null);  
+                _identityService.associate(null);
             }
         }
         else

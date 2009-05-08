@@ -24,7 +24,6 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.security.UserAuthentication;
-import org.eclipse.jetty.security.DefaultUserIdentity;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
@@ -82,7 +81,7 @@ public class BasicAuthenticator extends LoginAuthenticator
             {
                 response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "basic realm=\"" + _loginService.getName() + '"');
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-                return Authentication.CHALLENGE;
+                return Authentication.SEND_CONTINUE;
             }
             return credentials==null?Authentication.NOT_CHECKED:Authentication.UNAUTHENTICATED;
         }

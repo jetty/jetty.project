@@ -100,6 +100,6 @@ public interface Authenticator
      */
     interface Factory
     {
-        Authenticator getAuthenticator(Server server, ServletContext context, Configuration configuration);
+        Authenticator getAuthenticator(Server server, ServletContext context, Configuration configuration, IdentityService identityService, LoginService loginService);
     }
 }
