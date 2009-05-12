@@ -80,18 +80,17 @@ public class StatisticsHandler extends HandlerWrapper implements CompleteHandler
 
 
     /* ------------------------------------------------------------ */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        final Request base_request=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
-        final Response base_response=(response instanceof Response)?((Response)response):HttpConnection.getCurrentConnection().getResponse();
+        final Response base_response=baseRequest.getResponse();
         
-        long timestamp0=base_request.getTimeStamp();
+        long timestamp0=baseRequest.getTimeStamp();
         long timestamp1=timestamp0;
         try
         {
             synchronized(this)
             {
-                AsyncRequest asyncContextState=base_request.getAsyncRequest();
+                AsyncRequest asyncContextState=baseRequest.getAsyncRequest();
 
                 if(asyncContextState==null)
                 {
@@ -118,7 +117,7 @@ public class StatisticsHandler extends HandlerWrapper implements CompleteHandler
                     _requestsActiveMax=_requestsActive;
             }
             
-            super.handle(target, request, response);
+            super.handle(target, baseRequest, request, response);
         }
         finally
         {
@@ -138,10 +137,10 @@ public class StatisticsHandler extends HandlerWrapper implements CompleteHandler
                     _requestsActiveDurationMax=duration;
 
                 
-                if(base_request.isAsyncStarted())
+                if(baseRequest.isAsyncStarted())
                 {
-                    Object list = base_request.getAttribute(COMPLETE_HANDLER_ATTR);
-                    base_request.setAttribute(COMPLETE_HANDLER_ATTR, LazyList.add(list, this));
+                    Object list = baseRequest.getAttribute(COMPLETE_HANDLER_ATTR);
+                    baseRequest.setAttribute(COMPLETE_HANDLER_ATTR, LazyList.add(list, this));
                 }
                 else
                 {

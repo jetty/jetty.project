@@ -81,7 +81,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * 
  *
  */
-public class ContextHandler extends HandlerWrapper implements Attributes, Server.Graceful, CompleteHandler
+public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful, CompleteHandler
 {
     private static ThreadLocal<Context> __context=new ThreadLocal<Context>();
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.servlet.ManagedAttributes";
@@ -116,7 +116,6 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
     private Set<String> _connectors;
     private EventListener[] _eventListeners;
     private Logger _logger;
-    private boolean _shutdown;
     private boolean _allowNullPathInfo;
     private int _maxFormContentSize=Integer.getInteger("org.eclipse.jetty.server.Request.maxFormContentSize",200000).intValue();
     private boolean _compactPath=false;
@@ -127,6 +126,13 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
     private Object _requestListeners;
     private Object _requestAttributeListeners;
     private Set<String> _managedAttributes;
+
+    private boolean _shutdown=false;
+    private boolean _available=true;  
+    private volatile int _availability;  // 0=STOPPED, 1=AVAILABLE, 2=SHUTDOWN, 3=UNAVAILABLE
+    
+    private final static int __STOPPED=0,__AVAILABLE=1,__SHUTDOWN=2,__UNAVAILABLE=3;
+    
     
     /* ------------------------------------------------------------ */
     /**
@@ -496,7 +502,32 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
      */
     public void setShutdown(boolean shutdown)
     {
-        _shutdown = shutdown;
+        synchronized(this)
+        {
+            _shutdown = shutdown;
+            _availability=isRunning()?(_shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE):__STOPPED;
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return false if this context is unavailable (sends 503)
+     */
+    public boolean isAvailable()
+    {
+        return _available;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set Available status.
+     */
+    public void setAvailable(boolean available)
+    {
+        synchronized(this)
+        {
+            _available = available;
+            _availability=isRunning()?(_shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE):__STOPPED;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -517,6 +548,8 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
      */
     protected void doStart() throws Exception
     {
+        _availability=__STOPPED;
+        
         if (_contextPath==null)
             throw new IllegalStateException("Null contextPath");
         
@@ -547,10 +580,12 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
             if (_errorHandler==null)
                 setErrorHandler(new ErrorHandler());
             
+            
             // defers the calling of super.doStart()
             startContext();
             
-           
+
+            _availability=_shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE;
         }
         finally
         {
@@ -561,6 +596,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
             {
                 current_thread.setContextClassLoader(old_classloader);
             }
+            
         }
     }
 
@@ -616,6 +652,8 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
      */
     protected void doStop() throws Exception
     {
+        _availability=__STOPPED;
+        
         ClassLoader old_classloader=null;
         Thread current_thread=null;
 
@@ -670,19 +708,28 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
     /* 
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response)
+    public boolean checkContext(final String target, final Request baseRequest, final HttpServletResponse response)
             throws IOException, ServletException
     {   
-        Request base_request=(request instanceof Request)?(Request)request:HttpConnection.getCurrentConnection().getRequest();
-        DispatcherType dispatch=base_request.getDispatcherType();
+        DispatcherType dispatch=baseRequest.getDispatcherType();
         
-        if( !isStarted() || _shutdown || (DispatcherType.REQUEST.equals(dispatch) && base_request.isHandled()))
-            return;
-
+        switch(_availability)
+        {
+            case __STOPPED:
+            case __SHUTDOWN:
+                return false;
+            case __UNAVAILABLE:
+                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                return false;
+            default:
+                if((DispatcherType.REQUEST.equals(dispatch) && baseRequest.isHandled()))
+                    return false;
+        }
+        
         // Check the vhosts
         if (_vhosts!=null && _vhosts.length>0)
         {
-            String vhost = normalizeHostname( request.getServerName());
+            String vhost = normalizeHostname( baseRequest.getServerName());
 
             boolean match=false;
             
@@ -698,7 +745,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
                     match=contextVhost.equalsIgnoreCase(vhost);
             }
             if (!match)
-                return;
+                return false;
         }
         
         // Check the connector
@@ -706,43 +753,41 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
         {
             String connector=HttpConnection.getCurrentConnection().getConnector().getName();
             if (connector==null || !_connectors.contains(connector))
-                return;
+                return false;
         }
                 
-        if (_compactPath)
-            target=URIUtil.compactPath(target);
             
         if (target.startsWith(_contextPath))
         {
             if (_contextPath.length()==target.length() && _contextPath.length()>1 &&!_allowNullPathInfo)
             {
                 // context request must end with /
-                base_request.setHandled(true);
-                if (request.getQueryString()!=null)
-                    response.sendRedirect(URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH)+"?"+request.getQueryString());
+                baseRequest.setHandled(true);
+                if (baseRequest.getQueryString()!=null)
+                    response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH)+"?"+baseRequest.getQueryString());
                 else 
-                    response.sendRedirect(URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH));
-                return;
+                    response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH));
+                return false;
             }
         }
         else
         {
             // Not for this context!
-            return;
+            return false;
         }
         
-        doHandle(target,base_request,request,response);
+        return true;
     }        
         
-    
+
+
     /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+    /**
+     * @see org.eclipse.jetty.server.handler.ScopedHandler#doScope(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException
-    {   
-        boolean new_context=false;
+    @Override
+    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    { 
         Context old_context=null;
         String old_context_path=null;
         String old_servlet_path=null;
@@ -754,15 +799,18 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
         DispatcherType dispatch=baseRequest.getDispatcherType();
         
         old_context=baseRequest.getContext();
-        
+  
         // Are we already in this context?
         if (old_context!=_scontext)
         {
-            new_context=true;
-            
             // check the target.
             if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
             {
+                if (_compactPath)
+                    target=URIUtil.compactPath(target);
+                if (!checkContext(target,baseRequest,response))
+                    return;
+                
                 if (target.length()>_contextPath.length())
                 {
                     if (_contextPath.length()>1)
@@ -779,6 +827,14 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
                     target=URIUtil.SLASH;
                     pathInfo=null;
                 }
+            }
+
+            // Set the classloader
+            if (_classLoader!=null)
+            {
+                current_thread=Thread.currentThread();
+                old_classloader=current_thread.getContextClassLoader();
+                current_thread.setContextClassLoader(_classLoader);
             }
         }
         
@@ -799,56 +855,8 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(pathInfo);
             }
-
-            ServletRequestEvent event=null;
-            if (new_context)
-            {
-                // Set the classloader
-                if (_classLoader!=null)
-                {
-                    current_thread=Thread.currentThread();
-                    old_classloader=current_thread.getContextClassLoader();
-                    current_thread.setContextClassLoader(_classLoader);
-                }
-                
-                // Handle the REALLY SILLY request events!
-                baseRequest.setRequestListeners(_requestListeners);
-                if (_requestAttributeListeners!=null)
-                {
-                    final int s=LazyList.size(_requestAttributeListeners);
-                    for(int i=0;i<s;i++)
-                        baseRequest.addEventListener(((EventListener)LazyList.get(_requestAttributeListeners,i)));
-                }
-            }
             
-            // Handle the request
-            try
-            {
-                if (DispatcherType.REQUEST.equals(dispatch) && isProtectedTarget(target))
-                    throw new HttpException(HttpServletResponse.SC_NOT_FOUND);
-                
-                Handler handler = getHandler();
-                if (handler!=null)
-                    handler.handle(target, request, response);
-            }
-            catch(HttpException e)
-            {
-                Log.debug(e);
-                response.sendError(e.getStatus(), e.getReason());
-            }
-            finally
-            {
-                // Handle more REALLY SILLY request events!
-                if (new_context)
-                {
-                    baseRequest.takeRequestListeners();
-                    if (_requestAttributeListeners!=null)
-                    {
-                        for(int i=LazyList.size(_requestAttributeListeners);i-->0;)
-                            baseRequest.removeEventListener(((EventListener)LazyList.get(_requestAttributeListeners,i)));
-                    }
-                }
-            }
+            nextScope(target,baseRequest,request,response);
         }
         finally
         {
@@ -867,7 +875,69 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
                 baseRequest.setPathInfo(old_path_info); 
             }
         }
-    }    
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.handler.ScopedHandler#doHandle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+     */
+    @Override
+    public void doHandle(String target,Request baseRequest,HttpServletRequest request,HttpServletResponse response) throws IOException, ServletException
+    {
+        final DispatcherType dispatch=baseRequest.getDispatcherType();
+        final boolean new_context=baseRequest.takeNewContext();
+        try
+        {
+            if (new_context)
+            {
+                // Handle the REALLY SILLY request events!
+                if (_requestAttributeListeners!=null)
+                {
+                    final int s=LazyList.size(_requestAttributeListeners);
+                    for(int i=0;i<s;i++)
+                        baseRequest.addEventListener(((EventListener)LazyList.get(_requestAttributeListeners,i)));
+                }
+
+                if (_requestListeners!=null)
+                {
+                    final int s=LazyList.size(_requestListeners);
+                    final ServletRequestEvent sre = new ServletRequestEvent(_scontext,request);
+                    for(int i=0;i<s;i++)
+                        ((ServletRequestListener)LazyList.get(_requestListeners,i)).requestInitialized(sre);
+                }
+            }
+            
+            if (DispatcherType.REQUEST.equals(dispatch) && isProtectedTarget(target))
+                throw new HttpException(HttpServletResponse.SC_NOT_FOUND);
+            
+            nextHandle(target,baseRequest,request,response);
+        }
+        catch(HttpException e)
+        {
+            Log.debug(e);
+            response.sendError(e.getStatus(), e.getReason());
+        }
+        finally
+        {
+            // Handle more REALLY SILLY request events!
+            if (new_context)
+            {
+                if (_requestListeners!=null)
+                {
+                    final int s=LazyList.size(_requestListeners);
+                    final ServletRequestEvent sre = new ServletRequestEvent(_scontext,request);
+                    for(int i=0;i<s;i++)
+                        ((ServletRequestListener)LazyList.get(_requestListeners,i)).requestInitialized(sre);
+                }
+                
+                if (_requestAttributeListeners!=null)
+                {
+                    for(int i=LazyList.size(_requestAttributeListeners);i-->0;)
+                        baseRequest.removeEventListener(((EventListener)LazyList.get(_requestAttributeListeners,i)));
+                }
+            }
+        }
+    }
     
     /* ------------------------------------------------------------ */
     /* Handle a runnable in this context
@@ -899,7 +969,7 @@ public class ContextHandler extends HandlerWrapper implements Attributes, Server
 
     /* ------------------------------------------------------------ */
     /** Check the target.
-     * Called by {@link #handle(String, HttpServletRequest, HttpServletResponse)} when a
+     * Called by {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)} when a
      * target within a context is determined.  If the target is protected, 404 is returned.
      * The default implementation always returns false.
      * @see org.eclipse.jetty.webapp.WebAppContext#isProtectedTarget(String)

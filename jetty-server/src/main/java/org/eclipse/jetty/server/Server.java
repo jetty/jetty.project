@@ -312,17 +312,17 @@ public class Server extends HandlerWrapper implements Attributes
     public void handle(HttpConnection connection) throws IOException, ServletException
     {
         final String target=connection.getRequest().getPathInfo();
-        final HttpServletRequest request=connection.getRequest();
-        final HttpServletResponse response=connection.getResponse();
+        final Request request=connection.getRequest();
+        final Response response=connection.getResponse();
         
         if (Log.isDebugEnabled())
         {
             Log.debug("REQUEST "+target+" on "+connection);
-            handle(target, request, response);
+            handle(target, request, request, response);
             Log.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus());
         }
         else
-            handle(target, request, response);
+            handle(target, request, request, response);
     }
     
     /* ------------------------------------------------------------ */
@@ -336,36 +336,36 @@ public class Server extends HandlerWrapper implements Attributes
         final AsyncRequest async = connection.getRequest().getAsyncRequest();
         final AsyncRequest.AsyncEventState state = async.getAsyncEventState();
 
-        final Request base_request=connection.getRequest();
+        final Request baseRequest=connection.getRequest();
         final String path=state.getPath();
         if (path!=null)
         {
             // this is a dispatch with a path
-            base_request.setAttribute(AsyncContext.ASYNC_REQUEST_URI,base_request.getRequestURI());
-            base_request.setAttribute(AsyncContext.ASYNC_QUERY_STRING,base_request.getQueryString());
+            baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI,baseRequest.getRequestURI());
+            baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING,baseRequest.getQueryString());
             
-            base_request.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,state.getSuspendedContext().getContextPath());
+            baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,state.getSuspendedContext().getContextPath());
 
             final String contextPath=state.getServletContext().getContextPath();
             HttpURI uri = new HttpURI(URIUtil.addPaths(contextPath,path));
-            base_request.setUri(uri);
-            base_request.setRequestURI(null);
-            base_request.setPathInfo(base_request.getRequestURI());
-            base_request.setQueryString(uri.getQuery());            
+            baseRequest.setUri(uri);
+            baseRequest.setRequestURI(null);
+            baseRequest.setPathInfo(baseRequest.getRequestURI());
+            baseRequest.setQueryString(uri.getQuery());            
         }
         
-        final String target=base_request.getPathInfo();
+        final String target=baseRequest.getPathInfo();
         final HttpServletRequest request=(HttpServletRequest)async.getRequest();
         final HttpServletResponse response=(HttpServletResponse)async.getResponse();
 
         if (Log.isDebugEnabled())
         {
             Log.debug("REQUEST "+target+" on "+connection);
-            handle(target, request, response);
+            handle(target, baseRequest, request, response);
             Log.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus());
         }
         else
-            handle(target, request, response);
+            handle(target, baseRequest, request, response);
     }
     
     

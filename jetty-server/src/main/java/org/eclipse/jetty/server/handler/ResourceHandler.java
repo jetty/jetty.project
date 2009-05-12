@@ -252,10 +252,9 @@ public class ResourceHandler extends AbstractHandler
     /* 
      * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        Request base_request = request instanceof Request?(Request)request:HttpConnection.getCurrentConnection().getRequest();
-        if (base_request.isHandled())
+        if (baseRequest.isHandled())
             return;
         
         boolean skipContentBody = false;
@@ -277,7 +276,7 @@ public class ResourceHandler extends AbstractHandler
         }
 
         // We are going to server something
-        base_request.setHandled(true);
+        baseRequest.setHandled(true);
         
         if (resource.isDirectory())
         {
@@ -293,7 +292,7 @@ public class ResourceHandler extends AbstractHandler
             else
             {
                 doDirectory(request,response,resource);
-                base_request.setHandled(true);
+                baseRequest.setHandled(true);
                 return;
             }
         }

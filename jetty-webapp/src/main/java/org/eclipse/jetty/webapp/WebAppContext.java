@@ -112,9 +112,8 @@ public class WebAppContext extends ServletContextHandler
     private String _extraClasspath;
     private Throwable _unavailableException;
     
-    private transient Map _resourceAliases;
-    private transient boolean _ownClassLoader=false;
-    private transient boolean _unavailable;
+    private Map _resourceAliases;
+    private boolean _ownClassLoader=false;
 
     public static ContextHandler getCurrentWebAppContext()
     {
@@ -287,21 +286,6 @@ public class WebAppContext extends ServletContextHandler
     
 
     /* ------------------------------------------------------------ */
-    /** 
-     * @see org.eclipse.jetty.server.server.handler.ContextHandler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response)
-    throws IOException, ServletException
-    {   
-        if (_unavailable)
-        {
-            response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-        }
-        else
-            super.handle(target, request, response);
-    }
-
-    /* ------------------------------------------------------------ */
     /* 
      * @see org.eclipse.thread.AbstractLifeCycle#doStart()
      */
@@ -357,7 +341,7 @@ public class WebAppContext extends ServletContextHandler
             //start up of the webapp context failed, make sure it is not started
             Log.warn("Failed startup of context "+this, e);
             _unavailableException=e;
-            _unavailable = true;
+            setAvailable(false);
         }
     }
 
@@ -412,8 +396,8 @@ public class WebAppContext extends ServletContextHandler
         {
             if (_ownClassLoader)
                 setClassLoader(null);
-            
-            _unavailable = false;
+
+            setAvailable(true);
             _unavailableException=null;
         }
     }

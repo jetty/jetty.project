@@ -130,46 +130,45 @@ public class SessionHandler extends HandlerWrapper
     /*
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response)
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {
         setRequestedId(request);
 
-        Request base_request = (request instanceof Request) ? (Request)request:HttpConnection.getCurrentConnection().getRequest();
         SessionManager old_session_manager=null;
         HttpSession old_session=null;
 
         try
         {
-            old_session_manager = base_request.getSessionManager();
-            old_session = base_request.getSession(false);
+            old_session_manager = baseRequest.getSessionManager();
+            old_session = baseRequest.getSession(false);
 
             if (old_session_manager != _sessionManager)
             {
                 // new session context
-                base_request.setSessionManager(_sessionManager);
-                base_request.setSession(null);
+                baseRequest.setSessionManager(_sessionManager);
+                baseRequest.setSession(null);
             }
 
             // access any existing session
             HttpSession session=null;
             if (_sessionManager!=null)
             {
-                session=base_request.getSession(false);
+                session=baseRequest.getSession(false);
                 if (session!=null)
                 {
                     if(session!=old_session)
                     {
                         HttpCookie cookie = _sessionManager.access(session,request.isSecure());
                         if (cookie!=null ) // Handle changed ID or max-age refresh
-                            base_request.getResponse().addCookie(cookie);
+                            baseRequest.getResponse().addCookie(cookie);
                     }
                 }
                 else
                 {
-                    session=base_request.recoverNewSession(_sessionManager);
+                    session=baseRequest.recoverNewSession(_sessionManager);
                     if (session!=null)
-                        base_request.setSession(session);
+                        baseRequest.setSession(session);
                 }
             }
 
@@ -179,13 +178,13 @@ public class SessionHandler extends HandlerWrapper
                 Log.debug("session="+session);
             }
 
-            getHandler().handle(target, request, response);
+            getHandler().handle(target, baseRequest, request, response);
         }
         catch (RetryRequest r)
         {
-            HttpSession session=base_request.getSession(false);
+            HttpSession session=baseRequest.getSession(false);
             if (session!=null && session.isNew())
-                base_request.saveNewSession(_sessionManager,session);
+                baseRequest.saveNewSession(_sessionManager,session);
             throw r;
         }
         finally
@@ -197,8 +196,8 @@ public class SessionHandler extends HandlerWrapper
                 //leaving context, free up the session
                 if (session!=null)
                     _sessionManager.complete(session);
-                base_request.setSessionManager(old_session_manager);
-                base_request.setSession(old_session);
+                baseRequest.setSessionManager(old_session_manager);
+                baseRequest.setSession(old_session);
             }
         }
     }
@@ -210,9 +209,9 @@ public class SessionHandler extends HandlerWrapper
      */
     protected void setRequestedId(HttpServletRequest request)
     {
-        Request base_request = (request instanceof Request) ? (Request)request:HttpConnection.getCurrentConnection().getRequest();
+        Request baseRequest = (request instanceof Request) ? (Request)request:HttpConnection.getCurrentConnection().getRequest();
         String requested_session_id=request.getRequestedSessionId();
-        if (!DispatcherType.REQUEST.equals(base_request.getDispatcherType()) || requested_session_id!=null)
+        if (!DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()) || requested_session_id!=null)
         {
             return;
         }
@@ -266,8 +265,8 @@ public class SessionHandler extends HandlerWrapper
             }
         }
 
-        base_request.setRequestedSessionId(requested_session_id);
-        base_request.setRequestedSessionIdFromCookie(requested_session_id!=null && requested_session_id_from_cookie);
+        baseRequest.setRequestedSessionId(requested_session_id);
+        baseRequest.setRequestedSessionIdFromCookie(requested_session_id!=null && requested_session_id_from_cookie);
     }
 
     /* ------------------------------------------------------------ */

@@ -55,7 +55,7 @@ public class OneContext
     
     public static class HelloHandler extends AbstractHandler
     {
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType("text/html");

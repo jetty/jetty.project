@@ -336,13 +336,12 @@ public class HttpExchangeTest extends TestCase
         newServer();
         _server.setHandler(new AbstractHandler()
         {
-            public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 int i=0;
                 try
                 {
-                    Request base_request=(request instanceof Request)?(Request)request:HttpConnection.getCurrentConnection().getRequest();
-                    base_request.setHandled(true);
+                    baseRequest.setHandled(true);
                     response.setStatus(200);
                     _count.incrementAndGet();
                     

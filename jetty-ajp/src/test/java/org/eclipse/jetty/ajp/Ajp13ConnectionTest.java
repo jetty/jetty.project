@@ -299,10 +299,9 @@ public class Ajp13ConnectionTest extends TestCase
     
     public static class Handler extends AbstractHandler
     {
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            Request base_request=(request instanceof Request) ? (Request) request : HttpConnection.getCurrentConnection().getRequest();
-            base_request.setHandled(true);
+            baseRequest.setHandled(true);
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType("text/plain");
             response.getWriter().println("success");

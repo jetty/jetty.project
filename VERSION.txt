@@ -9,6 +9,7 @@ jetty-7.0.0.M2-SNAPSHOT
  + JETTY-1004 CERT VU#402580 Canonical path handling includes ? in path segment
  + JETTY-1014 Enable start-stop-daemon by default on jetty.sh (START_STOP_DAEMON=1)
  + JETTY-1015 Reduce BayeuxClient and HttpClient lock contention 
+ + 275396 Added ScopedHandler to set servlet scope before security handler
 
 jetty-6.1.17 30 April 2009
  + JETTY-936 Make optional dispatching to welcome files as servlets

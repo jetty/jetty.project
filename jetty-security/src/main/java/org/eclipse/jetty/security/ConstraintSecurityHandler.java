@@ -306,7 +306,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
     }
 
-    protected boolean isAuthMandatory(Request base_request, Response base_response, Object constraintInfo)
+    protected boolean isAuthMandatory(Request baseRequest, Response base_response, Object constraintInfo)
     {
         if (constraintInfo == null)
         {

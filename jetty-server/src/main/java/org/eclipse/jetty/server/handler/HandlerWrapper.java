@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 
@@ -31,7 +32,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
  */
 public class HandlerWrapper extends AbstractHandlerContainer
 {
-    private Handler _handler;
+    protected Handler _handler;
 
     /* ------------------------------------------------------------ */
     /**
@@ -107,11 +108,11 @@ public class HandlerWrapper extends AbstractHandlerContainer
     /* 
      * @see org.eclipse.jetty.server.server.EventHandler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (_handler!=null && isStarted())
         {
-            _handler.handle(target,request, response);
+            _handler.handle(target,baseRequest, request, response);
         }
     }
     

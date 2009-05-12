@@ -126,6 +126,7 @@ public class Request implements HttpServletRequest
     private String _characterEncoding;
     protected HttpConnection _connection;
     private ContextHandler.Context _context;
+    private boolean _newContext;
     private String _contextPath;
     private CookieCutter _cookies;
     private boolean _cookiesExtracted=false;
@@ -149,7 +150,6 @@ public class Request implements HttpServletRequest
     private Object _requestAttributeListeners;
     private String _requestedSessionId;
     private boolean _requestedSessionIdFromCookie=false;
-    private Object _requestListeners;
     private String _requestURI;
     private Map<Object,HttpSession> _savedNewSessions;
     private String _scheme=URIUtil.HTTP;
@@ -1545,7 +1545,19 @@ public class Request implements HttpServletRequest
      */
     public void setContext(Context context)
     {
+        _newContext=_context!=context;
         _context=context;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if this is the first call of takeNewContext() since the last {@link #setContext(Context)} call.
+     */
+    public boolean takeNewContext()
+    {
+        boolean nc=_newContext;
+        _newContext=false;
+        return nc;
     }
     
     /* ------------------------------------------------------------ */
@@ -1679,14 +1691,6 @@ public class Request implements HttpServletRequest
     {
         _requestedSessionIdFromCookie = requestedSessionIdCookie;
     }
-    /* ------------------------------------------------------------ */
-    /**
-     * @param requestListeners {@link LazyList} of {@link ServletRequestListener}s
-     */
-    public void setRequestListeners(Object requestListeners)
-    {
-        _requestListeners=requestListeners;
-    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -1788,17 +1792,6 @@ public class Request implements HttpServletRequest
             throw new IllegalStateException("!asyncSupported");
         _async.suspend(_context,servletRequest,servletResponse);
         return _async;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return {@link LazyList} of {@link ServletRequestListener}s
-     */
-    public Object takeRequestListeners()
-    {
-        final Object listeners=_requestListeners;
-        _requestListeners=null;
-        return listeners;
     }
 
     /* ------------------------------------------------------------ */

@@ -72,10 +72,10 @@ public class ManyHandlers
         Handler param=new ParamHandler();
         HandlerWrapper wrapper = new HandlerWrapper()
         {
-            public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 request.setAttribute("welcome","Hello");
-                super.handle(target,request,response);
+                super.handle(target,baseRequest,request, response);
             }
         };
         Handler hello=new HelloHandler();
@@ -103,7 +103,7 @@ public class ManyHandlers
     
     public static class ParamHandler extends AbstractHandler
     {
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             Map params = request.getParameterMap();
             if (params.size()>0)
@@ -117,7 +117,7 @@ public class ManyHandlers
     
     public static class HelloHandler extends AbstractHandler
     {
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);

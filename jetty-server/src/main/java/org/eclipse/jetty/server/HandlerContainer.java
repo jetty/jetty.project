@@ -24,8 +24,29 @@ import org.eclipse.jetty.util.component.LifeCycle;
  */
 public interface HandlerContainer extends LifeCycle
 {
+    /* ------------------------------------------------------------ */
+    /**
+     * @return array of handlers directly contained by this handler.
+     */
     public Handler[] getHandlers();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return array of all handlers contained by this handler and it's children
+     */
     public Handler[] getChildHandlers();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param byclass
+     * @return array of all handlers contained by this handler and it's children of the passed type.
+     */
     public Handler[] getChildHandlersByClass(Class<?> byclass);
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param byclass
+     * @return first handler of all handlers contained by this handler and it's children of the passed type.
+     */
     public Handler getChildHandlerByClass(Class<?> byclass);
 }

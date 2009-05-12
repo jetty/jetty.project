@@ -84,7 +84,7 @@ public class ManyContexts
             _welcome=welcome;
         }
         
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             ((Request)request).setHandled(true);
             response.setStatus(HttpServletResponse.SC_OK);

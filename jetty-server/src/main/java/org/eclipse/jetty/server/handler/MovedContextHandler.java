@@ -97,13 +97,11 @@ public class MovedContextHandler extends ContextHandler
     
     private class Redirector extends AbstractHandler
     {
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (_newContextURL==null)
                 return;
-            
-            Request base_request=(request instanceof Request)?(Request)request:HttpConnection.getCurrentConnection().getRequest();
-            
+                        
             String url = _newContextURL;
             if (!_discardPathInfo && request.getPathInfo()!=null)
                 url=URIUtil.addPaths(url, request.getPathInfo());
@@ -116,7 +114,7 @@ public class MovedContextHandler extends ContextHandler
             if (!_discardPathInfo && request.getPathInfo()!=null)
                 path=URIUtil.addPaths(path, request.getPathInfo());
             
-            StringBuilder location = URIUtil.hasScheme(path)?new StringBuilder():base_request.getRootURL();
+            StringBuilder location = URIUtil.hasScheme(path)?new StringBuilder():baseRequest.getRootURL();
 
             location.append(path);
             if (!_discardQuery && request.getQueryString()!=null)
@@ -132,7 +130,7 @@ public class MovedContextHandler extends ContextHandler
             
             response.setStatus(_permanent?HttpServletResponse.SC_MOVED_PERMANENTLY:HttpServletResponse.SC_FOUND);
             response.setContentLength(0);
-            base_request.setHandled(true);
+            baseRequest.setHandled(true);
         }
         
     }

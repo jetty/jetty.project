@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -44,7 +45,7 @@ public class ErrorHandler extends AbstractHandler
     /* 
      * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         HttpConnection connection = HttpConnection.getCurrentConnection();
         connection.getRequest().setHandled(true);

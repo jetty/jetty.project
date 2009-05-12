@@ -302,7 +302,7 @@ public class Response implements HttpServletResponse
                 request.setAttribute(Dispatcher.ERROR_REQUEST_URI, request.getRequestURI());
                 request.setAttribute(Dispatcher.ERROR_SERVLET_NAME,request.getServletName());
 
-                error_handler.handle(null,_connection.getRequest(),this);
+                error_handler.handle(null,_connection.getRequest(),_connection.getRequest(),this );
             }
             else
             {

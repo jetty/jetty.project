@@ -126,20 +126,20 @@ public class Dispatcher implements RequestDispatcher
      */
     public void include(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
-        Request base_request=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
+        Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
         request.removeAttribute(__JSP_FILE); // TODO remove when glassfish 1044 is fixed
         
         // TODO - allow stream or writer????
         
-        DispatcherType old_type = base_request.getDispatcherType();
-        Attributes old_attr=base_request.getAttributes();
-        MultiMap old_params=base_request.getParameters();
+        DispatcherType old_type = baseRequest.getDispatcherType();
+        Attributes old_attr=baseRequest.getAttributes();
+        MultiMap old_params=baseRequest.getParameters();
         try
         {
-            base_request.setDispatcherType(DispatcherType.INCLUDE);
-            base_request.getConnection().include();
+            baseRequest.setDispatcherType(DispatcherType.INCLUDE);
+            baseRequest.getConnection().include();
             if (_named!=null)
-                _contextHandler.doHandle(_named, base_request,(HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(_named,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
             else 
             {
                 String query=_dQuery;
@@ -163,7 +163,7 @@ public class Dispatcher implements RequestDispatcher
                         }
                         
                     }
-                    base_request.setParameters(parameters);
+                    baseRequest.setParameters(parameters);
                 }
                 
                 IncludeAttributes attr = new IncludeAttributes(old_attr); 
@@ -174,17 +174,17 @@ public class Dispatcher implements RequestDispatcher
                 attr._pathInfo=_path;
                 attr._query=query;
                 
-                base_request.setAttributes(attr);
+                baseRequest.setAttributes(attr);
                 
-                _contextHandler.doHandle(_named==null?_path:_named, base_request,(HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(_named==null?_path:_named,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
             }
         }
         finally
         {
-            base_request.setAttributes(old_attr);
-            base_request.getConnection().included();
-            base_request.setParameters(old_params);
-            base_request.setDispatcherType(old_type);
+            baseRequest.setAttributes(old_attr);
+            baseRequest.getConnection().included();
+            baseRequest.setParameters(old_params);
+            baseRequest.setDispatcherType(old_type);
         }
     }
 
@@ -195,26 +195,26 @@ public class Dispatcher implements RequestDispatcher
      */
     protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch) throws ServletException, IOException
     {
-        Request base_request=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
-        Response base_response=(Response)base_request.getResponse();
+        Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
+        Response base_response=(Response)baseRequest.getResponse();
         base_response.fwdReset();
         request.removeAttribute(__JSP_FILE); // TODO remove when glassfish 1044 is fixed
         
-        String old_uri=base_request.getRequestURI();
-        String old_context_path=base_request.getContextPath();
-        String old_servlet_path=base_request.getServletPath();
-        String old_path_info=base_request.getPathInfo();
-        String old_query=base_request.getQueryString();
-        Attributes old_attr=base_request.getAttributes();
-        MultiMap old_params=base_request.getParameters();
-        DispatcherType old_type=base_request.getDispatcherType();
+        String old_uri=baseRequest.getRequestURI();
+        String old_context_path=baseRequest.getContextPath();
+        String old_servlet_path=baseRequest.getServletPath();
+        String old_path_info=baseRequest.getPathInfo();
+        String old_query=baseRequest.getQueryString();
+        Attributes old_attr=baseRequest.getAttributes();
+        MultiMap old_params=baseRequest.getParameters();
+        DispatcherType old_type=baseRequest.getDispatcherType();
         
         try
         {
-            base_request.setDispatcherType(dispatch);
+            baseRequest.setDispatcherType(dispatch);
             
             if (_named!=null)
-                _contextHandler.doHandle(_named, base_request,(HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(_named,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
             else 
             {
                 String query=_dQuery;
@@ -228,8 +228,8 @@ public class Dispatcher implements RequestDispatcher
 
                     if( old_params == null )
                     {
-                        base_request.getParameterNames();    // force parameters to be evaluated
-                        old_params = base_request.getParameters();
+                        baseRequest.getParameterNames();    // force parameters to be evaluated
+                        old_params = baseRequest.getParameters();
                     }
                     
                     if (old_params!=null && old_params.size()>0)
@@ -290,8 +290,8 @@ public class Dispatcher implements RequestDispatcher
                         }
                    }
 
-                    base_request.setParameters(parameters);
-                    base_request.setQueryString(query);
+                    baseRequest.setParameters(parameters);
+                    baseRequest.setQueryString(query);
                 }
                 
                 ForwardAttributes attr = new ForwardAttributes(old_attr); 
@@ -319,14 +319,14 @@ public class Dispatcher implements RequestDispatcher
    
               
                 
-                base_request.setRequestURI(_uri);
-                base_request.setContextPath(_contextHandler.getContextPath());
-                base_request.setAttributes(attr);
-                base_request.setQueryString(query);
+                baseRequest.setRequestURI(_uri);
+                baseRequest.setContextPath(_contextHandler.getContextPath());
+                baseRequest.setAttributes(attr);
+                baseRequest.setQueryString(query);
                 
-                _contextHandler.doHandle(_path, base_request,(HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(_path,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
                 
-                if (base_request.getConnection().getResponse().isWriting())
+                if (baseRequest.getConnection().getResponse().isWriting())
                 {
                     try {response.getWriter().close();}
                     catch(IllegalStateException e) { response.getOutputStream().close(); }
@@ -340,14 +340,14 @@ public class Dispatcher implements RequestDispatcher
         }
         finally
         {
-            base_request.setRequestURI(old_uri);
-            base_request.setContextPath(old_context_path);
-            base_request.setServletPath(old_servlet_path);
-            base_request.setPathInfo(old_path_info);
-            base_request.setAttributes(old_attr);
-            base_request.setParameters(old_params);
-            base_request.setQueryString(old_query);
-            base_request.setDispatcherType(old_type);
+            baseRequest.setRequestURI(old_uri);
+            baseRequest.setContextPath(old_context_path);
+            baseRequest.setServletPath(old_servlet_path);
+            baseRequest.setPathInfo(old_path_info);
+            baseRequest.setAttributes(old_attr);
+            baseRequest.setParameters(old_params);
+            baseRequest.setQueryString(old_query);
+            baseRequest.setDispatcherType(old_type);
         }
     }
 

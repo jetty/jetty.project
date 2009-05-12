@@ -211,12 +211,12 @@ public class QoSFilter implements Filter
      */
     protected int getPriority(ServletRequest request)
     {
-        HttpServletRequest base_request = (HttpServletRequest)request;
-        if (base_request.getUserPrincipal() != null )
+        HttpServletRequest baseRequest = (HttpServletRequest)request;
+        if (baseRequest.getUserPrincipal() != null )
             return 2;
         else 
         {
-            HttpSession session = base_request.getSession(false);
+            HttpSession session = baseRequest.getSession(false);
             if (session!=null && !session.isNew()) 
                 return 1;
             else

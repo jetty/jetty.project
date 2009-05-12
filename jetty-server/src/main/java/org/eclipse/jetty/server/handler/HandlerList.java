@@ -35,18 +35,17 @@ public class HandlerList extends HandlerCollection
     /* 
      * @see org.eclipse.jetty.server.server.EventHandler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response) 
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) 
         throws IOException, ServletException
     {
         Handler[] handlers = getHandlers();
         
         if (handlers!=null && isStarted())
         {
-            Request base_request = HttpConnection.getCurrentConnection().getRequest();
             for (int i=0;i<handlers.length;i++)
             {
-                handlers[i].handle(target,request, response);
-                if ( base_request.isHandled())
+                handlers[i].handle(target,baseRequest, request, response);
+                if ( baseRequest.isHandled())
                     return;
             }
         }

@@ -226,10 +226,8 @@ public class AsyncStressTest extends TestCase
             _timer=new Timer();
         }
         
-        public void handle(String target, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
-            final Request base_request = (request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
-
             int read_before=0;
             long sleep_for=-1;
             long suspend_for=-1;
@@ -247,7 +245,7 @@ public class AsyncStressTest extends TestCase
             if (request.getParameter("complete")!=null)
                 complete_after=Integer.parseInt(request.getParameter("complete"));
             
-            if (DispatcherType.REQUEST.equals(base_request.getDispatcherType()))
+            if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
             {
                 if (read_before>0)
                 {
@@ -265,9 +263,9 @@ public class AsyncStressTest extends TestCase
                 if (suspend_for>=0)
                 {
                     if (suspend_for>0)
-                        base_request.setAsyncTimeout(suspend_for);
-                    base_request.addEventListener(__asyncListener);
-                    base_request.startAsync();
+                        baseRequest.setAsyncTimeout(suspend_for);
+                    baseRequest.addEventListener(__asyncListener);
+                    baseRequest.startAsync();
                 }
                 else if (sleep_for>=0)
                 {
@@ -281,18 +279,18 @@ public class AsyncStressTest extends TestCase
                     }
                     response.setStatus(200);
                     response.getOutputStream().print("SLEPT");
-                    base_request.setHandled(true);
+                    baseRequest.setHandled(true);
                     return;
                 }
                 else
                 {
                     response.setStatus(200);
                     response.getOutputStream().print("NORMAL");
-                    base_request.setHandled(true);
+                    baseRequest.setHandled(true);
                     return;
                 }
                 
-                final AsyncContext asyncContext = base_request.getAsyncContext();
+                final AsyncContext asyncContext = baseRequest.getAsyncContext();
                 
                 
                 if (complete_after>0)
@@ -305,7 +303,7 @@ public class AsyncStressTest extends TestCase
                             {
                                 response.setStatus(200);
                                 response.getOutputStream().print("COMPLETED");
-                                base_request.setHandled(true);
+                                baseRequest.setHandled(true);
                                 asyncContext.complete();
                             }
                             catch(Exception e)
@@ -323,7 +321,7 @@ public class AsyncStressTest extends TestCase
                 {
                     response.setStatus(200);
                     response.getOutputStream().print("COMPLETED");
-                    base_request.setHandled(true);
+                    baseRequest.setHandled(true);
                     asyncContext.complete();
                 }
                 
@@ -350,13 +348,13 @@ public class AsyncStressTest extends TestCase
             {
                 response.setStatus(200);
                 response.getOutputStream().print("TIMEOUT");
-                base_request.setHandled(true);
+                baseRequest.setHandled(true);
             }
             else
             {
                 response.setStatus(200);
                 response.getOutputStream().print("RESUMED");
-                base_request.setHandled(true);
+                baseRequest.setHandled(true);
             }
         }
     }

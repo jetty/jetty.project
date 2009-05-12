@@ -570,10 +570,9 @@ public class ConstraintTest extends TestCase
     
     class RequestHandler extends AbstractHandler
     {
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
         {
-            Request base_request=(request instanceof Request)?(Request)request:HttpConnection.getCurrentConnection().getRequest();
-            base_request.setHandled(true);
+            baseRequest.setHandled(true);
             if (request.getAuthType()==null || "user".equals(request.getRemoteUser()) || request.isUserInRole("user"))
             {
                 response.setStatus(200);
@@ -591,10 +590,10 @@ public class ConstraintTest extends TestCase
     {
         /* ------------------------------------------------------------ */
         /**
-         * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+         * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
          */
         @Override
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             UserIdentity.Scope old = ((Request) request).getUserIdentityScope();
             
@@ -622,7 +621,7 @@ public class ConstraintTest extends TestCase
 
             try
             {
-                super.handle(target,request,response);
+                super.handle(target,baseRequest,request, response);
             }
             finally
             {
@@ -633,7 +632,7 @@ public class ConstraintTest extends TestCase
     
     class RoleCheckHandler extends AbstractHandler
     {
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
         {
             ((Request) request).setHandled(true);
             if (request.getAuthType()==null || "user".equals(request.getRemoteUser()) || request.isUserInRole("untranslated"))

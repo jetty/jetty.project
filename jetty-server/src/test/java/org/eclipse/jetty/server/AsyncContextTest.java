@@ -185,11 +185,9 @@ public class AsyncContextTest extends TestCase
 
 
 
-        public void handle(String target, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
-        {
-            final Request base_request = (request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
-            
-            if (DispatcherType.REQUEST.equals(base_request.getDispatcherType()))
+        public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
+        {            
+            if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
             {
                 if (_read>0)
                 {
@@ -205,9 +203,9 @@ public class AsyncContextTest extends TestCase
                 }
 
                 if (_suspendFor>0)
-                    base_request.setAsyncTimeout(_suspendFor);
-                base_request.addEventListener(__asyncListener);
-                final AsyncContext asyncContext = base_request.startAsync();
+                    baseRequest.setAsyncTimeout(_suspendFor);
+                baseRequest.addEventListener(__asyncListener);
+                final AsyncContext asyncContext = baseRequest.startAsync();
                 
                 if (_completeAfter>0)
                 {
@@ -219,7 +217,7 @@ public class AsyncContextTest extends TestCase
                                 Thread.sleep(_completeAfter);
                                 response.getOutputStream().print("COMPLETED");
                                 response.setStatus(200);
-                                base_request.setHandled(true);
+                                baseRequest.setHandled(true);
                                 asyncContext.complete();
                             }
                             catch(Exception e)
@@ -233,7 +231,7 @@ public class AsyncContextTest extends TestCase
                 {
                     response.getOutputStream().print("COMPLETED");
                     response.setStatus(200);
-                    base_request.setHandled(true);
+                    baseRequest.setHandled(true);
                     asyncContext.complete();
                 }
                 
@@ -263,13 +261,13 @@ public class AsyncContextTest extends TestCase
             {
                 response.setStatus(200);
                 response.getOutputStream().print("TIMEOUT");
-                base_request.setHandled(true);
+                baseRequest.setHandled(true);
             }
             else
             {
                 response.setStatus(200);
                 response.getOutputStream().print("RESUMED");
-                base_request.setHandled(true);
+                baseRequest.setHandled(true);
             }
         }
     }

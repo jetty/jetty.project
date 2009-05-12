@@ -44,12 +44,11 @@ public class RequestLogHandler extends HandlerWrapper
     /* 
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response)
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {
-        super.handle(target, request, response);
-        Request base_request=(request instanceof Request)?(Request)request:HttpConnection.getCurrentConnection().getRequest();
-        if (DispatcherType.REQUEST.equals(base_request.getDispatcherType()) && _requestLog!=null)
+        super.handle(target, baseRequest, request, response);
+        if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()) && _requestLog!=null)
             _requestLog.log((Request)request, (Response)response);
     }
 
