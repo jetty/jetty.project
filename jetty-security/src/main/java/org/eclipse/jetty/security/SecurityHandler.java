@@ -415,6 +415,11 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 if (authentication==null || authentication==Authentication.NOT_CHECKED)
                     authentication=authenticator.validateRequest(request, response, isAuthMandatory);
 
+                if (authentication instanceof Authentication.Wrapped)
+                {
+                    request=((Authentication.Wrapped)authentication).getHttpServletRequest();
+                    response=((Authentication.Wrapped)authentication).getHttpServletResponse();
+                }
 
                 if (authentication instanceof Authentication.ResponseSent)
                 {

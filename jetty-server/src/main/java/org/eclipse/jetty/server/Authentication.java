@@ -15,6 +15,8 @@ package org.eclipse.jetty.server;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 
 /* ------------------------------------------------------------ */
@@ -41,6 +43,15 @@ public interface Authentication
         void logout(); 
     }
     
+    /* ------------------------------------------------------------ */
+    /** A wrapped authentication with methods provide the
+     * wrapped request/response for use by the application
+     */
+    public interface Wrapped extends Authentication
+    {
+        HttpServletRequest getHttpServletRequest();
+        HttpServletResponse getHttpServletResponse();
+    }
     
     /* ------------------------------------------------------------ */
     /** A deferred authentication with methods to progress 
