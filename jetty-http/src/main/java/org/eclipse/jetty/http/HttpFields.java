@@ -125,7 +125,6 @@ public class HttpFields
          */
         public void formatCookieDate(StringBuilder buf, long date)
         {
-            buf.setLength(0);
             gc.setTimeInMillis(date);
             
             int day_of_week = gc.get(Calendar.DAY_OF_WEEK);
