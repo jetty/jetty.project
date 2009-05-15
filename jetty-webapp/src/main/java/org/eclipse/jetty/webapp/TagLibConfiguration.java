@@ -187,9 +187,16 @@ public class TagLibConfiguration implements Configuration
         Pattern containerPattern = (tmp==null?null:Pattern.compile(tmp));
 
         TagLibJarScanner tldScanner = new TagLibJarScanner();
-        tldScanner.setTldSet(tlds);
-        tldScanner.scan(webInfPattern, Thread.currentThread().getContextClassLoader(), true, false);
-        tldScanner.scan(containerPattern, Thread.currentThread().getContextClassLoader().getParent(), false, true);
+        try
+        {
+            tldScanner.setTldSet(tlds);
+            tldScanner.scan(webInfPattern, Thread.currentThread().getContextClassLoader(), true, false);
+            tldScanner.scan(containerPattern, Thread.currentThread().getContextClassLoader().getParent(), false, true);
+        }
+        catch (Exception e)
+        {
+            Log.warn(e);
+        }
         
         
         // Create a TLD parser

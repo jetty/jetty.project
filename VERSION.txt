@@ -9,6 +9,7 @@ jetty-7.0.0.M2-SNAPSHOT
  + JETTY-1004 CERT VU#402580 Canonical path handling includes ? in path segment
  + JETTY-1014 Enable start-stop-daemon by default on jetty.sh (START_STOP_DAEMON=1)
  + JETTY-1015 Reduce BayeuxClient and HttpClient lock contention 
+ + JETTY-1020 ZipException in org.mortbay.jetty.webapp.TagLibConfiguration prevents all contexts from being loaded
  + 275396 Added ScopedHandler to set servlet scope before security handler
  + 275396 Added Authentication.Wrapped to allow JSAPI wrapping
 
