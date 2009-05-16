@@ -30,3 +30,33 @@ version:
 
   mvn install
 
+
+
+RUNNING JETTY
+=============
+
+The run directory is either the top-level of a binary release
+or jetty-distribution/target/assembly-prep directory when built from
+source.
+
+To run with the default options:
+
+  java -jar start.jar
+
+To run with specific configuration file(s)
+
+  java -jar start.jar etc/jetty.xml
+
+To see the available options
+
+  java -jar start.jar --info
+
+To run with JSP support
+
+  java -DOPTIONS=Server,deploy,jsp -jar start.jar
+
+To run with JMX support
+
+  java -DOPTIONS=Server,deploy,jmx -jar start.jar etc/jetty-jmx.xml etc/jetty.xml
+
+
