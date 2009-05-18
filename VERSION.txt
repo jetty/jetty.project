@@ -14,6 +14,23 @@ jetty-7.0.0.M2-SNAPSHOT
  + 275396 Added ScopedHandler to set servlet scope before security handler
  + 275396 Added Authentication.Wrapped to allow JSAPI wrapping
 
+jetty-6.1.18 16 May 2009
+ + JETTY-937 Improved work around sun JVM selector bugs
+ + JETTY-1004 CERT VU#402580 Canonical path handling includes ? in path segment
+ + JETTY-1008 ContinuationBayeux destroy is called
+ + JETTY-1013 MySql Error with JDBCUserRealm
+ + JETTY-1014 Enable start-stop-daemon by default on jetty.sh (START_STOP_DAEMON=1)
+ + JETTY-1015 Reduce BayeuxClient and HttpClient lock contention
+ + JETTY-1017 HttpDestination has too coarse locking
+ + JETTY-1018 Denial of Service Filter
+ + JETTY-1020 ZipException in org.mortbay.jetty.webapp.TagLibConfiguration prevents all contexts from being loaded
+ + JETTY-1022 Removed several 1.5isms
+
+Jetty-5.1.15 - 18 May 2009
+ + JETTY-418 synchronized load class
+ + JETTY-1004 CERT VU402580 Canonical path handling includes ? in path segment
+ + Fixes for CERT438616-CERT237888-CERT21284
+
 jetty-6.1.17 30 April 2009
  + JETTY-936 Make optional dispatching to welcome files as servlets
  + JETTY-937 Work around sun JVM selector bugs
