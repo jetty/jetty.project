@@ -1,4 +1,5 @@
-jetty-7.0.0.M2-SNAPSHOT
+jetty-7.0.0.M3-SNAPSHOT
+ + fixed race with expired async listeners
 
 jetty-7.0.0.M2 18 May 2009
  + JETTY-937 Work around Sun JVM bugs
@@ -64,7 +65,7 @@ jetty-7.0.0.M1 22 April 2009
  + Reworked JMX for new layout
  + JETTY-983 DefaultServlet generates accept-ranges for cached/gzip content
  + 273011 JETTY-980 JETTY-992 Security / Directory Listing XSS present
- + 271536 Add supprot to IO for quietly closing Readers / Writers
+ + 271536 Add support to IO for quietly closing Readers / Writers
  + 273101 Fix DefaultServletTest XSS test case
  + 273153 Test for Nested references in DispatchServlet
 

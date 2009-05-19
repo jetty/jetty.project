@@ -70,42 +70,66 @@ public class AsyncRequest implements AsyncContext, Continuation
     private boolean _keepWrappers;
     private long _timeoutMs;
     private AsyncEventState _event;
+    
+//    private StringBuilder _history = new StringBuilder();
 
     /* ------------------------------------------------------------ */
     protected AsyncRequest()
     {
         _state=__IDLE;
         _initial=true;
+//        _history.append(super.toString());
+//        _history.append('\n');
     }
 
     /* ------------------------------------------------------------ */
     protected void setConnection(final HttpConnection connection)
     {
-        _connection=connection;
+        synchronized(this)
+        {
+            _connection=connection;
+//            _history.append(connection.toString());
+//            _history.append('\n');
+        }
     }
 
     /* ------------------------------------------------------------ */
     public void addContinuationListener(ContinuationListener listener)
     {
-        _listeners=LazyList.add(_listeners,listener);
+        synchronized(this)
+        {
+            _listeners=LazyList.add(_listeners,listener);
+//            _history.append('L');
+        }
     }
 
     /* ------------------------------------------------------------ */
     public void setAsyncTimeout(long ms)
     {
-        _timeoutMs=ms;
+        synchronized(this)
+        {
+            _timeoutMs=ms;
+//            _history.append('T');
+//            _history.append(ms);
+        }
     } 
 
     /* ------------------------------------------------------------ */
     public long getAsyncTimeout()
     {
-        return _timeoutMs;
+        synchronized(this)
+        {
+            return _timeoutMs;
+        }
     } 
 
     /* ------------------------------------------------------------ */
     public AsyncEventState getAsyncEventState()
     {
-        return _event;
+        synchronized(this)
+        {
+            return _event;
+        }
     } 
    
     /* ------------------------------------------------------------ */
@@ -114,7 +138,11 @@ public class AsyncRequest implements AsyncContext, Continuation
      */
     public void keepWrappers()
     {
-        _keepWrappers=true;
+        synchronized(this)
+        {
+//            _history.append('W');
+            _keepWrappers=true;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -123,7 +151,10 @@ public class AsyncRequest implements AsyncContext, Continuation
      */
     public boolean wrappersKept()
     {
-        return _keepWrappers;
+        synchronized(this)
+        {
+            return _keepWrappers;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -163,7 +194,10 @@ public class AsyncRequest implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return getStatusString();
+        synchronized (this)
+        {
+            return super.toString()+"@"+getStatusString();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -183,7 +217,9 @@ public class AsyncRequest implements AsyncContext, Continuation
                                             (_state==__UNCOMPLETED)?"UNCOMPLETED":
                                                 (_state==__COMPLETE)?"COMPLETE":
                                                     ("UNKNOWN?"+_state))+
-            (_initial?",initial":"");
+            (_initial?",initial":"")+
+            (_resumed?",resumed":"")+
+            (_expired?",expired":"");
         }
     }
 
@@ -195,6 +231,9 @@ public class AsyncRequest implements AsyncContext, Continuation
     {
         synchronized (this)
         {
+//            _history.append('H');
+//            _history.append(_connection.getRequest().getUri().toString());
+//            _history.append(':');
             _keepWrappers=false;
             
             switch(_state)
@@ -218,7 +257,8 @@ public class AsyncRequest implements AsyncContext, Continuation
                     return false;
 
                 case __SUSPENDED:
-                    cancelTimeout();
+                    return false;
+                    
                 case __UNSUSPENDING:
                     _state=__REDISPATCHED;
                     return true;
@@ -239,6 +279,7 @@ public class AsyncRequest implements AsyncContext, Continuation
     {
         synchronized (this)
         {
+//            _history.append('S');
             _resumed=false;
             _expired=false;
             
@@ -288,6 +329,7 @@ public class AsyncRequest implements AsyncContext, Continuation
     {
         synchronized (this)
         {
+//            _history.append('U');
             switch(_state)
             {
                 case __REDISPATCHED:
@@ -337,6 +379,7 @@ public class AsyncRequest implements AsyncContext, Continuation
         boolean dispatch=false;
         synchronized (this)
         {
+//            _history.append('D');
             switch(_state)
             {
                 case __REDISPATCHED:
@@ -354,7 +397,7 @@ public class AsyncRequest implements AsyncContext, Continuation
                     return;
 
                 case __SUSPENDED:
-                    dispatch=true;
+                    dispatch=!_expired;
                     _state=__UNSUSPENDING;
                     _resumed=true;
                     break;
@@ -377,12 +420,15 @@ public class AsyncRequest implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     protected void expired()
     {
+        Object listeners=null;
         synchronized (this)
         {
+//            _history.append('E');
             switch(_state)
             {
                 case __SUSPENDING:
                 case __SUSPENDED:
+                    listeners=_listeners;
                     break;
                 default:
                     return;
@@ -390,13 +436,18 @@ public class AsyncRequest implements AsyncContext, Continuation
             _expired=true;
         }
         
-        if (_listeners!=null)
+        if (listeners!=null)
         {
-            for(int i=0;i<LazyList.size(_listeners);i++)
+            for(int i=0;i<LazyList.size(listeners);i++)
             {
                 try
                 {
-                    ContinuationListener listener=((ContinuationListener)LazyList.get(_listeners,i));
+//                    synchronized (this)
+//                    {
+//                        _history.append('l');
+//                        _history.append(i);
+//                    }
+                    ContinuationListener listener=((ContinuationListener)LazyList.get(listeners,i));
                     listener.onTimeout(_event);
                 }
                 catch(Exception e)
@@ -408,17 +459,16 @@ public class AsyncRequest implements AsyncContext, Continuation
         
         synchronized (this)
         {
+//            _history.append('e');
             switch(_state)
             {
                 case __SUSPENDING:
                 case __SUSPENDED:
                     dispatch();
-                    return;
-                    
-                default:
-                    return;
             }
         }
+
+        scheduleDispatch();
     }
     
     /* ------------------------------------------------------------ */
@@ -431,6 +481,7 @@ public class AsyncRequest implements AsyncContext, Continuation
         boolean dispatch=false;
         synchronized (this)
         {
+//            _history.append('C');
             switch(_state)
             {
                 case __IDLE:
@@ -450,7 +501,7 @@ public class AsyncRequest implements AsyncContext, Continuation
                     
                 case __SUSPENDED:
                     _state=__COMPLETING;
-                    dispatch=true;
+                    dispatch=!_expired;
                     break;
                     
                 default:
@@ -472,12 +523,15 @@ public class AsyncRequest implements AsyncContext, Continuation
      */
     protected void doComplete()
     {
+        Object listeners=null;
         synchronized (this)
         {
+//            _history.append("c");
             switch(_state)
             {
                 case __UNCOMPLETED:
                     _state=__COMPLETE;
+                    listeners=_listeners;
                     break;
                     
                 default:
@@ -485,13 +539,18 @@ public class AsyncRequest implements AsyncContext, Continuation
             }
         }
 
-        if (_listeners!=null)
+        if (listeners!=null)
         {
-            for(int i=0;i<LazyList.size(_listeners);i++)
+            for(int i=0;i<LazyList.size(listeners);i++)
             {
                 try
                 {
-                    ((ContinuationListener)LazyList.get(_listeners,i)).onComplete(_event);
+//                    synchronized (this)
+//                    {
+//                        _history.append('l');
+//                        _history.append(i);
+//                    }
+                    ((ContinuationListener)LazyList.get(listeners,i)).onComplete(_event);
                 }
                 catch(Exception e)
                 {
@@ -506,6 +565,7 @@ public class AsyncRequest implements AsyncContext, Continuation
     {
         synchronized (this)
         {
+//            _history.append("r\n");
             switch(_state)
             {
                 case __DISPATCHED:
@@ -529,6 +589,7 @@ public class AsyncRequest implements AsyncContext, Continuation
     {
         synchronized (this)
         {
+//            _history.append("X");
             _state=__COMPLETE;
             _initial = false;
             cancelTimeout();
@@ -600,35 +661,47 @@ public class AsyncRequest implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     public boolean isCompleting()
     {
-        return _state==__COMPLETING;
+        synchronized (this)
+        {
+            return _state==__COMPLETING;
+        }
     }
     
     /* ------------------------------------------------------------ */
     boolean isUncompleted()
     {
-        return _state==__UNCOMPLETED;
+        synchronized (this)
+        {
+            return _state==__UNCOMPLETED;
+        }
     } 
     
     /* ------------------------------------------------------------ */
     public boolean isComplete()
     {
-        return _state==__COMPLETE;
+        synchronized (this)
+        {
+            return _state==__COMPLETE;
+        }
     }
 
 
     /* ------------------------------------------------------------ */
     public boolean isAsyncStarted()
     {
-        switch(_state)
+        synchronized (this)
         {
-            case __SUSPENDING:
-            case __REDISPATCHING:
-            case __UNSUSPENDING:
-            case __SUSPENDED:
-                return true;
-                
-            default:
-            return false;
+            switch(_state)
+            {
+                case __SUSPENDING:
+                case __REDISPATCHING:
+                case __UNSUSPENDING:
+                case __SUSPENDED:
+                    return true;
+
+                default:
+                    return false;
+            }
         }
     }
 
@@ -636,14 +709,17 @@ public class AsyncRequest implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     public boolean isAsync()
     {
-        switch(_state)
+        synchronized (this)
         {
-            case __IDLE:
-            case __DISPATCHED:
-                return false;
-                
-            default:
-            return true;
+            switch(_state)
+            {
+                case __IDLE:
+                case __DISPATCHED:
+                    return false;
+
+                default:
+                    return true;
+            }
         }
     }
 
@@ -681,20 +757,26 @@ public class AsyncRequest implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     public void start(Runnable run)
     {
-        ((Context)_event.getServletContext()).getContextHandler().handle(run);
+        final AsyncEventState event=_event;
+        if (event!=null)
+            ((Context)event.getServletContext()).getContextHandler().handle(run);
     }
 
     /* ------------------------------------------------------------ */
     public boolean hasOriginalRequestAndResponse()
     {
-        return (_event!=null && _event.getRequest()==_connection._request && _event.getResponse()==_connection._response);
+        synchronized (this)
+        {
+            return (_event!=null && _event.getRequest()==_connection._request && _event.getResponse()==_connection._response);
+        }
     }
 
     /* ------------------------------------------------------------ */
     public ContextHandler getContextHandler()
     {
-        if (_event!=null)
-            return ((Context)_event.getServletContext()).getContextHandler();
+        final AsyncEventState event=_event;
+        if (event!=null)
+            return ((Context)event.getServletContext()).getContextHandler();
         return null;
     }
 
@@ -705,7 +787,10 @@ public class AsyncRequest implements AsyncContext, Continuation
      */
     public boolean isResumed()
     {
-        return _resumed;
+        synchronized (this)
+        {
+            return _resumed;
+        }
     }
     /* ------------------------------------------------------------ */
     /**
@@ -713,7 +798,10 @@ public class AsyncRequest implements AsyncContext, Continuation
      */
     public boolean isExpired()
     {
-        return _expired;
+        synchronized (this)
+        {
+            return _expired;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -817,5 +905,14 @@ public class AsyncRequest implements AsyncContext, Continuation
         {
             return _path;
         }   
+    }
+    
+    public String getHistory()
+    {
+//        synchronized (this)
+//        {
+//            return _history.toString();
+//        }
+        return null;
     }
 }

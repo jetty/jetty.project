@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CyclicBarrier;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -71,150 +72,102 @@ public class AsyncStressTest extends TestCase
         _server.stop();
     }
 
-    final static String[][] __tests = 
+    final static String[][] __paths = 
     {
         {"/path","NORMAL"},
-        {"/path?sleep=<TIMEOUT>","SLEPT"},
-        {"/path?suspend=<TIMEOUT>","TIMEOUT"},
-        {"/path?suspend=1000&resume=<TIMEOUT>","RESUMED"},
-        {"/path?suspend=1000&complete=<TIMEOUT>","COMPLETED"},
+        {"/path/info","NORMAL"},
+        {"/path?sleep=<PERIOD>","SLEPT"},
+        {"/path?suspend=<PERIOD>","TIMEOUT"},
+        {"/path?suspend=60000&resume=<PERIOD>","RESUMED"},
+        {"/path?suspend=60000&complete=<PERIOD>","COMPLETED"},
     };
     
-    
-    public void doPaths(String name) throws Exception
+    public void doConnections(int connections,final int loops) throws Throwable
     {
-        for (int i=0;i<__tests.length;i++)
+        Socket[] socket = new Socket[connections];
+        int [][] path = new int[connections][loops];
+        for (int i=0;i<connections;i++)
         {
-            int timeout = _random.nextInt(200)+1;
-            String uri=__tests[i][0].replace("<TIMEOUT>",Integer.toString(timeout));
-            
-            long start=System.currentTimeMillis();
-            Socket socket = new Socket(_addr,_port);
-            socket.setSoTimeout(30000);
-            String request = "GET "+uri+" HTTP/1.0\r\n\r\n";
-            socket.getOutputStream().write(request.getBytes());
-            socket.getOutputStream().flush();
-            String response = IO.toString(socket.getInputStream());
-            socket.close();
-            long end=System.currentTimeMillis();
-            
-            response=response.substring(response.indexOf("\r\n\r\n")+4);
-            
-            String test=name+"-"+i+" "+uri+" "+__tests[i][1];
-            assertEquals(test,__tests[i][1],response);
-            if (!response.equals("NORMAL"))
+            socket[i] = new Socket(_addr,_port);
+            socket[i].setSoTimeout(30000);
+            if (i%80==0)
+                System.err.println();
+            System.err.print('+');
+        }
+        System.err.println();
+        Log.info("Bound "+connections);
+
+        for (int l=0;l<loops;l++)
+        {
+            for (int i=0;i<connections;i++)
             {
-                long duration=end-start;
-                assertTrue(test+" "+duration,duration+50>=timeout);
+                int p=path[i][l]=_random.nextInt(__paths.length);
+
+                int period = _random.nextInt(490)+10;
+                String uri=__paths[p][0].replace("<PERIOD>",Integer.toString(period));
+
+                long start=System.currentTimeMillis();
+                String request = 
+                    "GET "+uri+" HTTP/1.1\r\n"+
+                    "Host: localhost\r\n"+
+                    "start: "+start+"\r\n"+
+                    "result: "+__paths[p][1]+"\r\n"+
+                    ((l+1<loops)?"":"Connection: close\r\n")+
+                    "\r\n";
+                socket[i].getOutputStream().write(request.getBytes("UTF-8"));
+                socket[i].getOutputStream().flush();
             }
-            
-        }
-    }
-    
-    public void doLoops(int thread, String name, int loops) throws Exception
-    {
-        try
-        {
-            for (int i=0;i<loops;i++)
-            {
-                _loops[thread]=i;
-                doPaths(name+"-"+i);
-                Thread.sleep(10+_random.nextInt(10)*_random.nextInt(10));
-            }
-            _loops[thread]=loops;
-        }
-        catch(Exception e)
-        {
-            System.err.println(e);
-            _connector.dump();
-            _loops[thread]=-_loops[thread];
-            throw e;
-        }
-    }
-    
-    public void doThreads(int threads,final int loops) throws Throwable
-    {
-        final Throwable[] throwable=new Throwable[threads];
-        final Thread[] thread=new Thread[threads];
-        for (int i=0;i<threads;i++)
-        {
-            final int id=i;
-            final String name = "T"+i;
-            thread[i]=new Thread()
-            {
-                public void run() 
-                { 
-                    try
-                    {
-                        doLoops(id,name,loops); 
-                    }
-                    catch(Throwable th)
-                    {
-                        th.printStackTrace();
-                        throwable[id]=th;
-                    }
-                    finally
-                    {
-                    }
-                }
-            };
+            if (l%80==0)
+                System.err.println();
+            System.err.print('.');
+            Thread.sleep(_random.nextInt(590)+10);
         }
 
-        _loops=new int[threads];
-        for (int i=0;i<threads;i++)
-            thread[i].start();
+        System.err.println();
+        Log.info("Sent "+(loops*__paths.length)+" requests");
         
-        while(true)
+        String[] results=new String[connections];
+        for (int i=0;i<connections;i++)
         {
-            Thread.sleep(1000L);
-            int finished=0;
-            int errors=0;
-            int min=loops;
-            int max=0;
-            int total=0;
-            for (int i=0;i<threads;i++)
-            {
-                int l=_loops[i];
-                if (l<0)
-                {
-                    errors++;
-                    total-=l;
-                }
-                else
-                {
-                    if (l<min)
-                        min=l;
-                    if (l>max)
-                        max=l;
-                    total+=l;
-                    if (l==loops)
-                        finished++;  
-                }     
-            }
-            
-            Log.info("min/ave/max/target="+min+"/"+(total/threads)+"/"+max+"/"+loops+" errors/finished/loops="+errors+"/"+finished+"/"+threads+" idle/threads="+(_threads.getIdleThreads()+_connector.getAcceptors())+"/"+_threads.getThreads());
-            if ((finished+errors)==threads)
-                break;
+            results[i]=IO.toString(socket[i].getInputStream(),"UTF-8");
+            if (i%80==0)
+                System.err.println();
+            System.err.print('-');
         }
-        
-        for (int i=0;i<threads;i++)
-            thread[i].join();
-        
-        for (int i=0;i<threads;i++)
-            if (throwable[i]!=null)
-                throw throwable[i];
+        System.err.println();
+
+        Log.info("Read "+connections+" connections");
+
+        for (int i=0;i<connections;i++)
+        {       
+            int offset=0;
+            String result=results[i];
+            for (int l=0;l<loops;l++)
+            {
+                String expect = __paths[path[i][l]][1];
+                expect=expect+" "+expect;
+                
+                offset=result.indexOf("200 OK",offset)+6;
+                offset=result.indexOf("\r\n\r\n",offset)+4;
+                int end=result.indexOf("\n",offset);
+                String r=result.substring(offset,end).trim();
+                assertEquals(i+","+l,expect,r);
+                offset=end;
+            }
+        }
     }
 
     public void testAsync() throws Throwable
     {
         if (_stress)
         {
-            System.err.println("STRESS! "+STRESS_THREADS);
-            doThreads(STRESS_THREADS,200);
+            System.err.println("STRESS!");
+            doConnections(1600,240);
         }
         else
-            doThreads(100,10);
-        Thread.sleep(1000);
+        {
+            doConnections(160,80);
+        }
     }
     
     private static class SuspendHandler extends HandlerWrapper
@@ -233,6 +186,8 @@ public class AsyncStressTest extends TestCase
             long suspend_for=-1;
             long resume_after=-1;
             long complete_after=-1;
+            
+            final String uri=baseRequest.getUri().toString();
             
             if (request.getParameter("read")!=null)
                 read_before=Integer.parseInt(request.getParameter("read"));
@@ -265,7 +220,67 @@ public class AsyncStressTest extends TestCase
                     if (suspend_for>0)
                         baseRequest.setAsyncTimeout(suspend_for);
                     baseRequest.addEventListener(__asyncListener);
-                    baseRequest.startAsync();
+                    final AsyncContext asyncContext = baseRequest.startAsync();
+                    
+                    
+                    if (complete_after>0)
+                    {
+                        TimerTask complete = new TimerTask()
+                        {
+                            public void run()
+                            {
+                                try
+                                {
+                                    response.setStatus(200);
+                                    response.getOutputStream().println("COMPLETED " + request.getHeader("result"));
+                                    baseRequest.setHandled(true);
+                                    asyncContext.complete();
+                                }
+                                catch(Exception e)
+                                {
+                                    Request br=(Request)asyncContext.getRequest();
+                                    System.err.println("\n"+e.toString());
+                                    System.err.println(baseRequest+"=="+br);
+                                    System.err.println(uri+"=="+br.getUri());
+                                    System.err.println(asyncContext+"=="+br.getAsyncRequest());
+                                    
+                                    System.err.println(((AsyncRequest)asyncContext).getHistory());
+                                    Log.warn(e);
+                                    System.exit(1);
+                                }
+                            }
+                        };
+                        synchronized (_timer)
+                        {
+                            _timer.schedule(complete,complete_after);
+                        }
+                    }
+                    else if (complete_after==0)
+                    {
+                        response.setStatus(200);
+                        response.getOutputStream().println("COMPLETED "+request.getHeader("result"));
+                        baseRequest.setHandled(true);
+                        asyncContext.complete();
+                    }
+                    else if (resume_after>0)
+                    {
+                        TimerTask resume = new TimerTask()
+                        {
+                            public void run()
+                            {
+                                asyncContext.dispatch();
+                            }
+                        };
+                        synchronized (_timer)
+                        {
+                            _timer.schedule(resume,resume_after);
+                        }
+                    }
+                    else if (resume_after==0)
+                    {
+                        asyncContext.dispatch();
+                    }
+                    
                 }
                 else if (sleep_for>=0)
                 {
@@ -278,82 +293,28 @@ public class AsyncStressTest extends TestCase
                         e.printStackTrace();
                     }
                     response.setStatus(200);
-                    response.getOutputStream().print("SLEPT");
+                    response.getOutputStream().println("SLEPT "+request.getHeader("result"));
                     baseRequest.setHandled(true);
                     return;
                 }
                 else
                 {
                     response.setStatus(200);
-                    response.getOutputStream().print("NORMAL");
+                    response.getOutputStream().println("NORMAL "+request.getHeader("result"));
                     baseRequest.setHandled(true);
                     return;
-                }
-                
-                final AsyncContext asyncContext = baseRequest.getAsyncContext();
-                
-                
-                if (complete_after>0)
-                {
-                    TimerTask complete = new TimerTask()
-                    {
-                        public void run()
-                        {
-                            try
-                            {
-                                response.setStatus(200);
-                                response.getOutputStream().print("COMPLETED");
-                                baseRequest.setHandled(true);
-                                asyncContext.complete();
-                            }
-                            catch(Exception e)
-                            {
-                                e.printStackTrace();
-                            }
-                        }
-                    };
-                    synchronized (_timer)
-                    {
-                        _timer.schedule(complete,complete_after);
-                    }
-                }
-                else if (complete_after==0)
-                {
-                    response.setStatus(200);
-                    response.getOutputStream().print("COMPLETED");
-                    baseRequest.setHandled(true);
-                    asyncContext.complete();
-                }
-                
-                if (resume_after>0)
-                {
-                    TimerTask resume = new TimerTask()
-                    {
-                        public void run()
-                        {
-                            asyncContext.dispatch();
-                        }
-                    };
-                    synchronized (_timer)
-                    {
-                        _timer.schedule(resume,resume_after);
-                    }
-                }
-                else if (resume_after==0)
-                {
-                    asyncContext.dispatch();
                 }
             }
             else if (request.getAttribute("TIMEOUT")!=null)
             {
                 response.setStatus(200);
-                response.getOutputStream().print("TIMEOUT");
+                response.getOutputStream().println("TIMEOUT "+request.getHeader("result"));
                 baseRequest.setHandled(true);
             }
             else
             {
                 response.setStatus(200);
-                response.getOutputStream().print("RESUMED");
+                response.getOutputStream().println("RESUMED "+request.getHeader("result"));
                 baseRequest.setHandled(true);
             }
         }
