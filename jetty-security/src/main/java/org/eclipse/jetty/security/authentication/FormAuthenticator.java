@@ -215,17 +215,15 @@ public class FormAuthenticator extends LoginAuthenticator
             if (mandatory) 
             {
                 // redirect to login page
-                if (request.getQueryString() != null)
-                    uri += "?" + request.getQueryString();
-                
                 synchronized (session)
                 {
                     if (session.getAttribute(__J_URI)==null)
-                        session.setAttribute(__J_URI, request.getScheme() + "://"
-                                + request.getServerName()
-                                + ":"
-                                + request.getServerPort()
-                                + URIUtil.addPaths(request.getContextPath(), uri));
+                    {
+                        StringBuffer buf = request.getRequestURL();
+                        if (request.getQueryString() != null)
+                            buf.append("?").append(request.getQueryString());
+                        session.setAttribute(__J_URI, buf.toString());
+                    }
                 }
 
                 if (_dispatch)
