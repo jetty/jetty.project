@@ -119,7 +119,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     private boolean _allowNullPathInfo;
     private int _maxFormContentSize=Integer.getInteger("org.eclipse.jetty.server.Request.maxFormContentSize",200000).intValue();
     private boolean _compactPath=false;
-    private boolean _aliases=true;
+    private boolean _aliases=false;
 
     private Object _contextListeners;
     private Object _contextAttributeListeners;
@@ -1154,7 +1154,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
     /* ------------------------------------------------------------ */
     /**
-     * @return True if alias checking is performed on resources.
+     * @return True if aliases are allowed
      */
     public boolean isAliases()
     {
@@ -1163,7 +1163,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
     /* ------------------------------------------------------------ */
     /**
-     * @param aliases  alias checking performed on resources.
+     * @param aliases  aliases are allowed
      */
     public void setAliases(boolean aliases)
     {
@@ -1325,7 +1325,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             path=URIUtil.canonicalPath(path);
             Resource resource=_baseResource.addPath(path);
             
-            if (_aliases && resource.getAlias()!=null)
+            if (!_aliases && resource.getAlias()!=null)
             {
                 if (resource.exists())
                     Log.warn("Aliased resource: "+resource+"~="+resource.getAlias());

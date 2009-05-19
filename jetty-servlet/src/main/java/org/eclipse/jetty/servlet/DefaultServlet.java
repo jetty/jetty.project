@@ -157,6 +157,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         
         if (getInitParameter("aliases")!=null)
             _contextHandler.setAliases(getInitBoolean("aliases",false));
+        
         boolean aliases=_contextHandler.isAliases();
         if (!aliases && !FileResource.getCheckAliases())
             throw new IllegalStateException("Alias checking disabled");
