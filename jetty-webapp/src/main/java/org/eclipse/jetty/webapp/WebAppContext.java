@@ -376,7 +376,7 @@ public class WebAppContext extends ServletContextHandler
             _configurations=null;
             
             // restore security handler
-            if (_securityHandler.getHandler()==null)
+            if (_securityHandler != null && _securityHandler.getHandler()==null)
             {
                 _sessionHandler.setHandler(_securityHandler);
                 _securityHandler.setHandler(_servletHandler);
