@@ -717,9 +717,10 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 SelectionKey key = (SelectionKey)iter.next();
                 if (key==null)
                     continue;
-                EndPoint endpoint = (EndPoint)key.attachment();
-                if (endpoint!=null)
+                Object att=key.attachment();
+                if (att instanceof EndPoint)
                 {
+                    EndPoint endpoint = (EndPoint)att;
                     try
                     {
                         endpoint.close();

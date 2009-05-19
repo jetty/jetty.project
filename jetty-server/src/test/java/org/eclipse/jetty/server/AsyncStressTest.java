@@ -119,7 +119,7 @@ public class AsyncStressTest extends TestCase
             {
                 _loops[thread]=i;
                 doPaths(name+"-"+i);
-                Thread.sleep(_random.nextInt(100));
+                Thread.sleep(10+_random.nextInt(10)*_random.nextInt(10));
             }
             _loops[thread]=loops;
         }
