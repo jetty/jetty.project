@@ -141,7 +141,7 @@ public class AnnotationProcessor
     {
         for (Class clazz:_finder.getClassesForAnnotation(RunAs.class))
         {
-            if (!javax.servlet.Servlet.class.isAssignableFrom(clazz) && !(_pojoInstances.containsKey(clazz)))
+            if (!javax.servlet.Servlet.class.isAssignableFrom(clazz))
             {
                 Log.debug("Ignoring runAs notation on on-servlet class "+clazz.getName());
                 continue;
@@ -611,8 +611,7 @@ public class AnnotationProcessor
                 javax.servlet.ServletRequestListener.class.isAssignableFrom(c) ||
                 javax.servlet.ServletRequestAttributeListener.class.isAssignableFrom(c) ||
                 javax.servlet.http.HttpSessionListener.class.isAssignableFrom(c) ||
-                javax.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c) || 
-                (_pojoInstances.get(c) != null))
+                javax.servlet.http.HttpSessionAttributeListener.class.isAssignableFrom(c))
 
                 isServlet=true;
         
@@ -620,26 +619,7 @@ public class AnnotationProcessor
     }
     
    
-    /**
-     * Get an already-created instance of a pojo, or create one
-     * otherwise.
-     * @param clazz
-     * @return
-     * @throws InstantiationException
-     * @throws IllegalAccessException
-     */
-    private Object getPojoInstanceFor (Class clazz) 
-    throws InstantiationException, IllegalAccessException
-    {
-        Object instance = _pojoInstances.get(clazz);
-        if (instance == null)
-        {
-            instance = clazz.newInstance();
-            _pojoInstances.put(clazz, instance);
-        }
-        return instance;
-    }
-
+   
     private static boolean isEnvEntryType (Class type)
     {
         boolean result = false;

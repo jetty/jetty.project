@@ -42,6 +42,9 @@
   <!-- =========================================================== -->
   <Array id="plusConfig" type="java.lang.String">
     <Item>org.eclipse.jetty.webapp.WebInfConfiguration</Item>
+    <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
+    <Item>org.eclipse.jetty.webapp.MetaInfConfiguration</Item>
+    <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
     <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
     <Item>org.eclipse.jetty.plus.webapp.Configuration</Item>
     <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>

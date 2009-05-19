@@ -26,6 +26,7 @@ import org.eclipse.jetty.plus.jndi.NamingEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.webapp.WebAppContext;
 
 
 /**
@@ -50,7 +51,7 @@ public class Configuration extends AbstractConfiguration
      * @param value
      * @throws Exception
      */
-    public void bindEnvEntry(String name, Object value) throws Exception
+    public void bindEnvEntry(WebAppContext context, String name, Object value) throws Exception
     {    
         InitialContext ic = null;
         boolean bound = false;
@@ -90,10 +91,10 @@ public class Configuration extends AbstractConfiguration
      * @param name
      * @throws Exception
      */
-    public void bindResourceRef(String name, Class typeClass)
+    public void bindResourceRef(WebAppContext context, String name, Class typeClass)
     throws Exception
     {
-        bindEntry(name, typeClass);
+        bindEntry(context, name, typeClass);
     }
 
     /** 
@@ -101,20 +102,20 @@ public class Configuration extends AbstractConfiguration
      * @param name
      * @throws Exception
      */
-    public void bindResourceEnvRef(String name, Class typeClass)
+    public void bindResourceEnvRef(WebAppContext context, String name, Class typeClass)
     throws Exception
     {
-        bindEntry(name, typeClass);
+        bindEntry(context, name, typeClass);
     }
     
     
-    public void bindMessageDestinationRef(String name, Class typeClass)
+    public void bindMessageDestinationRef(WebAppContext context, String name, Class typeClass)
     throws Exception
     {
-        bindEntry(name, typeClass);
+        bindEntry(context, name, typeClass);
     }
     
-    public void bindUserTransaction ()
+    public void bindUserTransaction (WebAppContext context)
     throws Exception
     {
         try
@@ -127,38 +128,38 @@ public class Configuration extends AbstractConfiguration
         }
     }
     
-    public void configureClassLoader ()
+    public void preConfigure (WebAppContext context)
     throws Exception
     {      
-        super.configureClassLoader();
+        super.preConfigure(context);
     }
 
+  
+
+    public void configure (WebAppContext context)
+    throws Exception
+    {
+        super.configure (context);
+    }
     
-    public void configureDefaults ()
+    public void postConfigure (WebAppContext context)
     throws Exception
     {
-        super.configureDefaults();
-    }
-
-
-    public void configureWebApp ()
-    throws Exception
-    {
-        super.configureWebApp();
-        //lock this webapp's java:comp namespace as per J2EE spec
+      //lock this webapp's java:comp namespace as per J2EE spec
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(getWebAppContext().getClassLoader());
+        Thread.currentThread().setContextClassLoader(context.getClassLoader());
         lockCompEnv();
         Thread.currentThread().setContextClassLoader(oldLoader);
     }
     
-    public void deconfigureWebApp() throws Exception
+    public void deconfigure (WebAppContext context) throws Exception
     {
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(getWebAppContext().getClassLoader());
+        Thread.currentThread().setContextClassLoader(context.getClassLoader());
         unlockCompEnv();
+        _key = null;
         Thread.currentThread().setContextClassLoader(oldLoader);
-        super.deconfigureWebApp();
+        super.deconfigure (context);
     }
     
     protected void lockCompEnv ()
@@ -185,7 +186,7 @@ public class Configuration extends AbstractConfiguration
     /** 
      * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#parseAnnotations()
      */
-    public void parseAnnotations() throws Exception
+    public void parseAnnotations(WebAppContext context) throws Exception
     {
         //see org.eclipse.jetty.annotations.Configuration instead
     }
@@ -205,7 +206,7 @@ public class Configuration extends AbstractConfiguration
      * @param typeClass 
      * @throws Exception
      */
-    private void bindEntry (String name, Class typeClass)
+    private void bindEntry (WebAppContext context, String name, Class typeClass)
     throws Exception
     {
         String nameInEnvironment = name;
@@ -213,7 +214,7 @@ public class Configuration extends AbstractConfiguration
         
         //check if the name in web.xml has been mapped to something else
         //check a context-specific naming environment first
-        Object scope = getWebAppContext();
+        Object scope = context;
         NamingEntry ne = NamingEntryUtil.lookupNamingEntry(scope, name);
     
         if (ne!=null && (ne instanceof Link))
@@ -221,33 +222,38 @@ public class Configuration extends AbstractConfiguration
             //if we found a mapping, get out name it is mapped to in the environment
             nameInEnvironment = (String)((Link)ne).getObjectToBind();
             Link l = (Link)ne;
+            System.err.println("Link, with nameInEnvironment="+nameInEnvironment);
         }
 
         //try finding that mapped name in the webapp's environment first
-        scope = getWebAppContext();
+        System.err.println("Trying to find "+nameInEnvironment+" in webapp scope");
+        scope = context;
         bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
         
         if (bound)
             return;
-
+        
+        System.err.println("Trying to find "+nameInEnvironment+" in server scope");
         //try the server's environment
-        scope = getWebAppContext().getServer();
+        scope = context.getServer();
         bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
         if (bound)
             return;
 
+        System.err.println("Trying to find "+nameInEnvironment+" in jvm scope");
         //try the jvm environment
         bound = NamingEntryUtil.bindToENC(null, name, nameInEnvironment);
         if (bound)
             return;
 
 
+        System.err.println("Didn't find "+nameInEnvironment+" anywhere - looking for "+typeClass.getName()+"/default in server or jvm scope");
         //There is no matching resource so try a default name.
         //The default name syntax is: the [res-type]/default
         //eg       javax.sql.DataSource/default
         nameInEnvironment = typeClass.getName()+"/default";
         //First try the server scope
-        NamingEntry defaultNE = NamingEntryUtil.lookupNamingEntry(getWebAppContext().getServer(), nameInEnvironment);
+        NamingEntry defaultNE = NamingEntryUtil.lookupNamingEntry(context.getServer(), nameInEnvironment);
         if (defaultNE==null)
             defaultNE = NamingEntryUtil.lookupNamingEntry(null, nameInEnvironment);
         

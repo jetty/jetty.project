@@ -14,13 +14,17 @@
 package org.eclipse.jetty.annotations;
 
 import java.util.EventListener;
+import java.util.List;
 
+import org.eclipse.jetty.plus.servlet.ServletHandler;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * Configuration
@@ -42,7 +46,7 @@ public class Configuration extends org.eclipse.jetty.plus.webapp.Configuration
     /** 
      * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#parseAnnotations()
      */
-    public void parseAnnotations() throws Exception
+    public void parseAnnotations(final WebAppContext context) throws Exception
     {
         /*
          * TODO Need to also take account of hidden classes on system classpath that should never
@@ -67,20 +71,20 @@ public class Configuration extends org.eclipse.jetty.plus.webapp.Configuration
 
         //if no pattern for the container path is defined, then by default scan NOTHING
         Log.debug("Scanning system jars");
-        finder.find(getWebAppContext().getClassLoader().getParent(), true, getWebAppContext().getInitParameter(__container_pattern), false, 
+        finder.find(context.getClassLoader().getParent(), true, context.getInitParameter(__container_pattern), false, 
                 new ClassNameResolver ()
                 {
                     public boolean isExcluded (String name)
                     {
-                        if (getWebAppContext().isSystemClass(name)) return false;
-                        if (getWebAppContext().isServerClass(name)) return true;
+                        if (context.isSystemClass(name)) return false;
+                        if (context.isServerClass(name)) return true;
                         return false;
                     }
 
                     public boolean shouldOverride (String name)
                     { 
                         //looking at system classpath
-                        if (getWebAppContext().isParentLoaderPriority())
+                        if (context.isParentLoaderPriority())
                             return true;
                         return false;
                     }
@@ -88,58 +92,67 @@ public class Configuration extends org.eclipse.jetty.plus.webapp.Configuration
 
         Log.debug("Scanning WEB-INF/lib jars");
         //if no pattern for web-inf/lib is defined, then by default scan everything in it
-        finder.find (getWebAppContext().getClassLoader(), false, getWebAppContext().getInitParameter(__web_inf_pattern), true,
+        finder.find (context.getClassLoader(), false, context.getInitParameter(__web_inf_pattern), true,
                 new ClassNameResolver()
                 {
                     public boolean isExcluded (String name)
                     {    
-                        if (getWebAppContext().isSystemClass(name)) return true;
-                        if (getWebAppContext().isServerClass(name)) return false;
+                        if (context.isSystemClass(name)) return true;
+                        if (context.isServerClass(name)) return false;
                         return false;
                     }
 
                     public boolean shouldOverride (String name)
                     {
                         //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
-                        if (getWebAppContext().isParentLoaderPriority())
+                        if (context.isParentLoaderPriority())
                             return false;
                         return true;
                     }
                 });       
         
         Log.debug("Scanning classes in WEB-INF/classes");
-        finder.find(_context.getWebInf().addPath("classes/"), 
+        finder.find(context.getWebInf().addPath("classes/"), 
                 new ClassNameResolver()
                 {
                     public boolean isExcluded (String name)
                     {
-                        if (getWebAppContext().isSystemClass(name)) return true;
-                        if (getWebAppContext().isServerClass(name)) return false;
+                        if (context.isSystemClass(name)) return true;
+                        if (context.isServerClass(name)) return false;
                         return false;
                     }
 
                     public boolean shouldOverride (String name)
                     {
                         //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
-                        if (getWebAppContext().isParentLoaderPriority())
+                        if (context.isParentLoaderPriority())
                             return false;
                         return true;
                     }
                 });
         
-        AnnotationProcessor processor = new AnnotationProcessor(getWebAppContext(), finder, _runAsCollection, _injections, _callbacks, 
-                LazyList.getList(_servlets), LazyList.getList(_filters), LazyList.getList(_listeners), 
-                LazyList.getList(_servletMappings), LazyList.getList(_filterMappings));
+        ServletHandler servletHandler = (ServletHandler)context.getServletHandler();
+        List filters = LazyList.array2List(servletHandler.getFilters());
+        List filterMappings = LazyList.array2List(servletHandler.getFilterMappings());
+        List servlets = LazyList.array2List(servletHandler.getServlets());
+        List servletMappings = LazyList.array2List(servletHandler.getServletMappings());
+        List listeners = LazyList.array2List(context.getEventListeners());
+        
+        AnnotationProcessor processor = new AnnotationProcessor(context, finder, _runAsCollection, _injections, _callbacks, 
+                servlets, filters,listeners, 
+                servletMappings, filterMappings);
         processor.process();
-        _servlets = processor.getServlets();
-        _filters = processor.getFilters();
-        _servletMappings = processor.getServletMappings();
-        _filterMappings = processor.getFilterMappings();
-        _listeners = processor.getListeners();
-        _servletHandler.setFilters((FilterHolder[])LazyList.toArray(_filters,FilterHolder.class));
-        _servletHandler.setFilterMappings((FilterMapping[])LazyList.toArray(_filterMappings,FilterMapping.class));
-        _servletHandler.setServlets((ServletHolder[])LazyList.toArray(_servlets,ServletHolder.class));
-        _servletHandler.setServletMappings((ServletMapping[])LazyList.toArray(_servletMappings,ServletMapping.class));
-        getWebAppContext().setEventListeners((EventListener[])LazyList.toArray(_listeners,EventListener.class));
+        
+        servlets = processor.getServlets();
+        filters = processor.getFilters();
+        servletMappings = processor.getServletMappings();
+        filterMappings = processor.getFilterMappings();
+        listeners = processor.getListeners();
+        
+        servletHandler.setFilters((FilterHolder[])LazyList.toArray(filters,FilterHolder.class));
+        servletHandler.setFilterMappings((FilterMapping[])LazyList.toArray(filterMappings,FilterMapping.class));
+        servletHandler.setServlets((ServletHolder[])LazyList.toArray(servlets,ServletHolder.class));
+        servletHandler.setServletMappings((ServletMapping[])LazyList.toArray(servletMappings,ServletMapping.class));
+        context.setEventListeners((EventListener[])LazyList.toArray(listeners,EventListener.class));
     }
 }

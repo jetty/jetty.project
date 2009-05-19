@@ -14,9 +14,11 @@
 package org.eclipse.jetty.webapp;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.regex.Pattern;
@@ -50,14 +52,24 @@ public class TagLibConfiguration implements Configuration
 {
     public static final String __web_inf_pattern = "org.eclipse.jetty.webapp.WebInfIncludeTLDJarPattern";
     public static final String __container_pattern = "org.eclipse.jetty.server.webapp.ContainerIncludeTLDJarPattern";
-    WebAppContext _context;
-
+    
 
     
 
-     public class TagLibJarScanner extends JarScanner
+     /**
+     * TagLibJarScanner
+     *
+     * Scan jars for META-INF/*.tlds
+     */
+    public class TagLibJarScanner extends JarScanner
      {
          Set _tlds;
+         WebAppContext _context;
+         
+         public TagLibJarScanner (WebAppContext context)
+         {
+             _context = context;
+         }
          
          public void setTldSet (Set tlds)
          {
@@ -88,52 +100,164 @@ public class TagLibConfiguration implements Configuration
          }
      }
 
-     /* ------------------------------------------------------------ */
-     public void setWebAppContext(WebAppContext context)
-     {
-         _context=context;
-     }
-     
-     /* ------------------------------------------------------------ */
-     public WebAppContext getWebAppContext()
-     {
-         return _context;
-     }
-     
-
-    /* ------------------------------------------------------------ */
-    public void configureClassLoader() throws Exception
-    {
-    }
-
-    /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.servlet.WebAppContext.Configuration#configureDefaults()
-     */
-    public void configureDefaults() throws Exception
-    {
-    }
- 
     
-    /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.servlet.WebAppContext.Configuration#configureWebApp()
-     */
-    public void configureWebApp() throws Exception
-    {   
-        
-        Set tlds = new HashSet();
+    public class TldProcessor
+    {
+        public static final String __taglib_processor = "org.eclipse.jetty.tagLibProcessor";
+        XmlParser _parser;
+        WebAppContext _context;
+        List<XmlParser.Node> _roots = new ArrayList<XmlParser.Node>();
         
         
-        // Find tld's from web.xml
-        // When the XMLConfigurator (or other configurator) parsed the web.xml,
-        // It should have created aliases for all TLDs.  So search resources aliases
-        // for aliases ending in tld
-        if (_context.getResourceAliases()!=null && 
-            _context.getBaseResource()!=null && 
-            _context.getBaseResource().exists())
+        public TldProcessor (WebAppContext context)
+        throws Exception
         {
-            Iterator iter=_context.getResourceAliases().values().iterator();
+            _context = context;
+            createParser();
+        }
+        
+        private void createParser ()
+        throws Exception
+        {
+            // Create a TLD parser
+            _parser = new XmlParser(false);
+            
+            URL taglib11=null;
+            URL taglib12=null;
+            URL taglib20=null;
+            URL taglib21=null;
+
+            try
+            {
+                Class jsp_page = Loader.loadClass(WebXmlConfiguration.class,"javax.servlet.jsp.JspPage");
+                taglib11=jsp_page.getResource("javax/servlet/jsp/resources/web-jsptaglibrary_1_1.dtd");
+                taglib12=jsp_page.getResource("javax/servlet/jsp/resources/web-jsptaglibrary_1_2.dtd");
+                taglib20=jsp_page.getResource("javax/servlet/jsp/resources/web-jsptaglibrary_2_0.xsd");
+                taglib21=jsp_page.getResource("javax/servlet/jsp/resources/web-jsptaglibrary_2_1.xsd");
+            }
+            catch(Exception e)
+            {
+                Log.ignore(e);
+            }
+            finally
+            {
+                if(taglib11==null)
+                    taglib11=Loader.getResource(Servlet.class,"javax/servlet/jsp/resources/web-jsptaglibrary_1_1.dtd",true);
+                if(taglib12==null)
+                    taglib12=Loader.getResource(Servlet.class,"javax/servlet/jsp/resources/web-jsptaglibrary_1_2.dtd",true);
+                if(taglib20==null)
+                    taglib20=Loader.getResource(Servlet.class,"javax/servlet/jsp/resources/web-jsptaglibrary_2_0.xsd",true);
+                if(taglib21==null)
+                    taglib21=Loader.getResource(Servlet.class,"javax/servlet/jsp/resources/web-jsptaglibrary_2_1.xsd",true);
+            }
+            
+
+            if(taglib11!=null)
+            {
+                _parser.redirectEntity("web-jsptaglib_1_1.dtd",taglib11);
+                _parser.redirectEntity("web-jsptaglibrary_1_1.dtd",taglib11);
+            }
+            if(taglib12!=null)
+            {
+                _parser.redirectEntity("web-jsptaglib_1_2.dtd",taglib12);
+                _parser.redirectEntity("web-jsptaglibrary_1_2.dtd",taglib12);
+            }
+            if(taglib20!=null)
+            {
+                _parser.redirectEntity("web-jsptaglib_2_0.xsd",taglib20);
+                _parser.redirectEntity("web-jsptaglibrary_2_0.xsd",taglib20);
+            }
+            if(taglib21!=null)
+            {
+                _parser.redirectEntity("web-jsptaglib_2_1.xsd",taglib21);
+                _parser.redirectEntity("web-jsptaglibrary_2_1.xsd",taglib21);
+            }
+            
+            _parser.setXpath("/taglib/listener/listener-class");
+        }
+        
+        
+        public XmlParser.Node parse (Resource tld)
+        throws Exception
+        {
+            XmlParser.Node root;
+            try
+            {
+                //xerces on apple appears to sometimes close the zip file instead
+                //of the inputstream, so try opening the input stream, but if
+                //that doesn't work, fallback to opening a new url
+                root = _parser.parse(tld.getInputStream());
+            }
+            catch (Exception e)
+            {
+                root = _parser.parse(tld.getURL().toString());
+            }
+
+            if (root==null)
+            {
+                Log.warn("No TLD root in {}",tld);
+            }
+            else
+                _roots.add(root);
+            
+            return root;
+        }
+        
+        public void processRoots ()
+        {
+            for (XmlParser.Node root: _roots)
+                process(root);
+        }
+        
+        public void process (XmlParser.Node root)
+        {     
+            for (int i=0;i<root.size();i++)
+            {
+                Object o=root.get(i);
+                if (o instanceof XmlParser.Node)
+                {
+                    XmlParser.Node node = (XmlParser.Node)o;
+                    if ("listener".equals(node.getTag()))
+                    {
+                        String className=node.getString("listener-class",false,true);
+                        if (Log.isDebugEnabled()) Log.debug("listener="+className);
+                        
+                        try
+                        {
+                            Class listenerClass = _context.loadClass(className);
+                            EventListener l = (EventListener)listenerClass.newInstance();
+                            _context.addEventListener(l);
+                        }
+                        catch(Exception e)
+                        {
+                            Log.warn("Could not instantiate listener "+className+": "+e);
+                            Log.debug(e);
+                        }
+                        catch(Error e)
+                        {
+                            Log.warn("Could not instantiate listener "+className+": "+e);
+                            Log.debug(e);
+                        }
+                    }
+                }
+            }
+        }
+        
+    }
+
+
+    public void preConfigure(WebAppContext context) throws Exception
+    {
+        Set tlds = new HashSet();
+
+        // Find tld's from web.xml
+        // When web.xml was processed, it should have created aliases for all TLDs.  So search resources aliases
+        // for aliases ending in tld
+        if (context.getResourceAliases()!=null && 
+                context.getBaseResource()!=null && 
+                context.getBaseResource().exists())
+        {
+            Iterator iter=context.getResourceAliases().values().iterator();
             while(iter.hasNext())
             {
                 String location = (String)iter.next();
@@ -141,14 +265,14 @@ public class TagLibConfiguration implements Configuration
                 {
                     if (!location.startsWith("/"))
                         location="/WEB-INF/"+location;
-                    Resource l=_context.getBaseResource().addPath(location);
+                    Resource l=context.getBaseResource().addPath(location);
                     tlds.add(l);
                 }
             }
         }
         
         // Look for any tlds in WEB-INF directly.
-        Resource web_inf = _context.getWebInf();
+        Resource web_inf = context.getWebInf();
         if (web_inf!=null)
         {
             String[] contents = web_inf.list();
@@ -156,12 +280,13 @@ public class TagLibConfiguration implements Configuration
             {
                 if (contents[i]!=null && contents[i].toLowerCase().endsWith(".tld"))
                 {
-                    Resource l=_context.getWebInf().addPath(contents[i]);
+                    Resource l=context.getWebInf().addPath(contents[i]);
                     tlds.add(l);
                 }
                 
             }
         }
+        
         
         // Look for tlds in any jars
         //Use an opt-in style:
@@ -181,81 +306,33 @@ public class TagLibConfiguration implements Configuration
         //    else
         //       examine only files matching pattern
         //
-        String tmp = _context.getInitParameter(__web_inf_pattern);
+        String tmp = context.getInitParameter(__web_inf_pattern);
         Pattern webInfPattern = (tmp==null?null:Pattern.compile(tmp));
-        tmp = _context.getInitParameter(__container_pattern);
+        tmp = context.getInitParameter(__container_pattern);
         Pattern containerPattern = (tmp==null?null:Pattern.compile(tmp));
 
-        TagLibJarScanner tldScanner = new TagLibJarScanner();
+        List<URL> tldJars = (List<URL>)context.getAttribute(MetaInfConfiguration.__tldJars);
+        
+        TagLibJarScanner tldScanner = new TagLibJarScanner(context);
         try
         {
             tldScanner.setTldSet(tlds);
-            tldScanner.scan(webInfPattern, Thread.currentThread().getContextClassLoader(), true, false);
+            //scan the jars we know have META-INF/tld files
+            if (tldJars != null)
+                tldScanner.scan(webInfPattern, tldJars.toArray(new URL[tldJars.size()]), true);
+            
+            //scan the parent loader for tld files
             tldScanner.scan(containerPattern, Thread.currentThread().getContextClassLoader().getParent(), false, true);
         }
         catch (Exception e)
         {
             Log.warn(e);
         }
-        
-        
-        // Create a TLD parser
-        XmlParser parser = new XmlParser(false);
-        
-        URL taglib11=null;
-        URL taglib12=null;
-        URL taglib20=null;
-        URL taglib21=null;
-
-        try
-        {
-            Class jsp_page = Loader.loadClass(WebXmlConfiguration.class,"javax.servlet.jsp.JspPage");
-            taglib11=jsp_page.getResource("javax/servlet/jsp/resources/web-jsptaglibrary_1_1.dtd");
-            taglib12=jsp_page.getResource("javax/servlet/jsp/resources/web-jsptaglibrary_1_2.dtd");
-            taglib20=jsp_page.getResource("javax/servlet/jsp/resources/web-jsptaglibrary_2_0.xsd");
-            taglib21=jsp_page.getResource("javax/servlet/jsp/resources/web-jsptaglibrary_2_1.xsd");
-        }
-        catch(Exception e)
-        {
-            Log.ignore(e);
-        }
-        finally
-        {
-            if(taglib11==null)
-                taglib11=Loader.getResource(Servlet.class,"javax/servlet/jsp/resources/web-jsptaglibrary_1_1.dtd",true);
-            if(taglib12==null)
-                taglib12=Loader.getResource(Servlet.class,"javax/servlet/jsp/resources/web-jsptaglibrary_1_2.dtd",true);
-            if(taglib20==null)
-                taglib20=Loader.getResource(Servlet.class,"javax/servlet/jsp/resources/web-jsptaglibrary_2_0.xsd",true);
-            if(taglib21==null)
-                taglib21=Loader.getResource(Servlet.class,"javax/servlet/jsp/resources/web-jsptaglibrary_2_1.xsd",true);
-        }
-        
-
-        if(taglib11!=null)
-        {
-            parser.redirectEntity("web-jsptaglib_1_1.dtd",taglib11);
-            parser.redirectEntity("web-jsptaglibrary_1_1.dtd",taglib11);
-        }
-        if(taglib12!=null)
-        {
-            parser.redirectEntity("web-jsptaglib_1_2.dtd",taglib12);
-            parser.redirectEntity("web-jsptaglibrary_1_2.dtd",taglib12);
-        }
-        if(taglib20!=null)
-        {
-            parser.redirectEntity("web-jsptaglib_2_0.xsd",taglib20);
-            parser.redirectEntity("web-jsptaglibrary_2_0.xsd",taglib20);
-        }
-        if(taglib21!=null)
-        {
-            parser.redirectEntity("web-jsptaglib_2_1.xsd",taglib21);
-            parser.redirectEntity("web-jsptaglibrary_2_1.xsd",taglib21);
-        }
-        
-        parser.setXpath("/taglib/listener/listener-class");
-        
-        // Parse all the discovered TLDs
+  
+        // Create a processor for the tlds and save it
+        TldProcessor processor = new TldProcessor (context);
+        context.setAttribute(TldProcessor.__taglib_processor, processor);
+        // Parse the tlds into memory
         Iterator iter = tlds.iterator();
         while (iter.hasNext())
         {
@@ -263,57 +340,7 @@ public class TagLibConfiguration implements Configuration
             {
                 Resource tld = (Resource)iter.next();
                 if (Log.isDebugEnabled()) Log.debug("TLD="+tld);
-                
-                XmlParser.Node root;
-                
-                try
-                {
-                    //xerces on apple appears to sometimes close the zip file instead
-                    //of the inputstream, so try opening the input stream, but if
-                    //that doesn't work, fallback to opening a new url
-                    root = parser.parse(tld.getInputStream());
-                }
-                catch (Exception e)
-                {
-                    root = parser.parse(tld.getURL().toString());
-                }
-
-		if (root==null)
-		{
-		    Log.warn("No TLD root in {}",tld);
-		    continue;
-		}
-                
-                for (int i=0;i<root.size();i++)
-                {
-                    Object o=root.get(i);
-                    if (o instanceof XmlParser.Node)
-                    {
-                        XmlParser.Node node = (XmlParser.Node)o;
-                        if ("listener".equals(node.getTag()))
-                        {
-                            String className=node.getString("listener-class",false,true);
-                            if (Log.isDebugEnabled()) Log.debug("listener="+className);
-                            
-                            try
-                            {
-                                Class listenerClass=getWebAppContext().loadClass(className);
-                                EventListener l=(EventListener)listenerClass.newInstance();
-                                _context.addEventListener(l);
-                            }
-                            catch(Exception e)
-                            {
-                                Log.warn("Could not instantiate listener "+className+": "+e);
-                                Log.debug(e);
-                            }
-                            catch(Error e)
-                            {
-                                Log.warn("Could not instantiate listener "+className+": "+e);
-                                Log.debug(e);
-                            }
-                        }
-                    }
-                }
+                processor.parse(tld);
             }
             catch(Exception e)
             {
@@ -321,11 +348,31 @@ public class TagLibConfiguration implements Configuration
             }
         }
     }
+    
 
+    public void configure (WebAppContext context) throws Exception
+    {         
+        TldProcessor processor = (TldProcessor)context.getAttribute(TldProcessor.__taglib_processor); 
+        if (processor == null)
+        {
+            Log.warn("No TldProcessor configured, skipping tld processing");
+            return;
+        }
 
-    public void deconfigureWebApp() throws Exception
-    {
+        //Create listeners from the parsed tld trees
+        processor.processRoots();
     }
 
+    public void postConfigure(WebAppContext context) throws Exception
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+        // TODO Auto-generated method stub
+        
+    }
 
 }

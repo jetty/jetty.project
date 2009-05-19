@@ -73,6 +73,8 @@ public class WebAppContext extends ServletContextHandler
     { 
         "org.eclipse.jetty.webapp.WebInfConfiguration", 
         "org.eclipse.jetty.webapp.WebXmlConfiguration", 
+        "org.eclipse.jetty.webapp.MetaInfConfiguration",
+        "org.eclipse.jetty.webapp.FragmentConfiguration",
         "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
         "org.eclipse.jetty.webapp.TagLibConfiguration" 
     } ;
@@ -107,7 +109,6 @@ public class WebAppContext extends ServletContextHandler
             "org.slf4j."                        // hide slf4j
             }; 
     private File _tmpDir;
-    private boolean _isExistingTmpDir;
     private String _war;
     private String _extraClasspath;
     private Throwable _unavailableException;
@@ -296,9 +297,7 @@ public class WebAppContext extends ServletContextHandler
             // Setup configurations 
             loadConfigurations();
 
-            for (int i=0;i<_configurations.length;i++)
-                _configurations[i].setWebAppContext(this);
-
+            
             // Configure classloader
             _ownClassLoader=false;
             if (getClassLoader()==null)
@@ -319,19 +318,17 @@ public class WebAppContext extends ServletContextHandler
                     loader=loader.getParent();
                 }
             }
-
+            
+            // Prepare for configuration
             for (int i=0;i<_configurations.length;i++)
-                _configurations[i].configureClassLoader();
-
-            getTempDirectory();
-            if (_tmpDir!=null && !_isExistingTmpDir && !isTempWorkDirectory())
-            {
-                File sentinel = new File(_tmpDir, ".active");
-                if(!sentinel.exists())
-                    sentinel.mkdir();
-            }
-
+                _configurations[i].preConfigure(this);
+            
             super.doStart();
+            
+            // Clean up after configuration
+            for (int i=0;i<_configurations.length;i++)
+                _configurations[i].postConfigure(this);
+
 
             if (isLogUrlOnStart()) 
                 dumpUrl();
@@ -373,9 +370,9 @@ public class WebAppContext extends ServletContextHandler
 
         try
         {
-            // Configure classloader
             for (int i=_configurations.length;i-->0;)
-                _configurations[i].deconfigureWebApp();
+                _configurations[i].deconfigure(this);
+            
             _configurations=null;
             
             // restore security handler
@@ -383,13 +380,6 @@ public class WebAppContext extends ServletContextHandler
             {
                 _sessionHandler.setHandler(_securityHandler);
                 _securityHandler.setHandler(_servletHandler);
-            }
-            
-            // delete temp directory if we had to create it or if it isn't called work
-            if (_tmpDir!=null && !_isExistingTmpDir && !isTempWorkDirectory()) //_tmpDir!=null && !"work".equals(_tmpDir.getName()))
-            {
-                IO.delete(_tmpDir);
-                _tmpDir=null;
             }
         }
         finally
@@ -540,186 +530,7 @@ public class WebAppContext extends ServletContextHandler
     }
 
     
-    /* ------------------------------------------------------------ */
-    /**
-     * Get a temporary directory in which to unpack the war etc etc.
-     * The algorithm for determining this is to check these alternatives
-     * in the order shown:
-     * 
-     * <p>A. Try to use an explicit directory specifically for this webapp:</p>
-     * <ol>
-     * <li>
-     * Iff an explicit directory is set for this webapp, use it. Do NOT set
-     * delete on exit.
-     * </li>
-     * <li>
-     * Iff javax.servlet.context.tempdir context attribute is set for
-     * this webapp && exists && writeable, then use it. Do NOT set delete on exit.
-     * </li>
-     * </ol>
-     * 
-     * <p>B. Create a directory based on global settings. The new directory 
-     * will be called "Jetty_"+host+"_"+port+"__"+context+"_"+virtualhost
-     * Work out where to create this directory:
-     * <ol>
-     * <li>
-     * Iff $(jetty.home)/work exists create the directory there. Do NOT
-     * set delete on exit. Do NOT delete contents if dir already exists.
-     * </li>
-     * <li>
-     * Iff WEB-INF/work exists create the directory there. Do NOT set
-     * delete on exit. Do NOT delete contents if dir already exists.
-     * </li>
-     * <li>
-     * Else create dir in $(java.io.tmpdir). Set delete on exit. Delete
-     * contents if dir already exists.
-     * </li>
-     * </ol>
-     * 
-     * @return
-     */
-    public File getTempDirectory()
-    {
-        if (_tmpDir!=null && _tmpDir.isDirectory() && _tmpDir.canWrite())
-            return _tmpDir;
-
-        // Initialize temporary directory
-        //
-        // I'm afraid that this is very much black magic.
-        // but if you can think of better....
-        Object t = getAttribute(TEMPDIR);
-
-        if (t!=null && (t instanceof File))
-        {
-            _tmpDir=(File)t;
-            if (_tmpDir.isDirectory() && _tmpDir.canWrite())
-                return _tmpDir;
-        }
-
-        if (t!=null && (t instanceof String))
-        {
-            try
-            {
-                _tmpDir=new File((String)t);
-
-                if (_tmpDir.isDirectory() && _tmpDir.canWrite())
-                {
-                    if(Log.isDebugEnabled())Log.debug("Converted to File "+_tmpDir+" for "+this);
-                    setAttribute(TEMPDIR,_tmpDir);
-                    return _tmpDir;
-                }
-            }
-            catch(Exception e)
-            {
-                Log.warn(Log.EXCEPTION,e);
-            }
-        }
-
-        // No tempdir so look for a work directory to use as tempDir base
-        File work=null;
-        try
-        {
-            File w=new File(System.getProperty("jetty.home"),"work");
-            if (w.exists() && w.canWrite() && w.isDirectory())
-                work=w;
-            else if (getBaseResource()!=null)
-            {
-                Resource web_inf = getWebInf();
-                if (web_inf !=null && web_inf.exists())
-                {
-                    w=new File(web_inf.getFile(),"work");
-                    if (w.exists() && w.canWrite() && w.isDirectory())
-                        work=w;
-                }
-            }
-        }
-        catch(Exception e)
-        {
-            Log.ignore(e);
-        }
-
-        // No tempdir set so make one!
-        try
-        {
-           
-           String temp = getCanonicalNameForWebAppTmpDir();
-            
-            if (work!=null)
-                _tmpDir=new File(work,temp);
-            else
-            {
-                _tmpDir=new File(System.getProperty("java.io.tmpdir"),temp);
-                
-                if (_tmpDir.exists())
-                {
-                    if(Log.isDebugEnabled())Log.debug("Delete existing temp dir "+_tmpDir+" for "+this);
-                    if (!IO.delete(_tmpDir))
-                    {
-                        if(Log.isDebugEnabled())Log.debug("Failed to delete temp dir "+_tmpDir);
-                    }
-                
-                    if (_tmpDir.exists())
-                    {
-                        String old=_tmpDir.toString();
-                        _tmpDir=File.createTempFile(temp+"_","");
-                        if (_tmpDir.exists())
-                            _tmpDir.delete();
-                        Log.warn("Can't reuse "+old+", using "+_tmpDir);
-                    }
-                }
-            }
-
-            if (!_tmpDir.exists())
-                _tmpDir.mkdir();
-            
-            //if not in a dir called "work" then we want to delete it on jvm exit
-            if (!isTempWorkDirectory())
-                _tmpDir.deleteOnExit();
-            if(Log.isDebugEnabled())Log.debug("Created temp dir "+_tmpDir+" for "+this);
-        }
-        catch(Exception e)
-        {
-            _tmpDir=null;
-            Log.ignore(e);
-        }
-
-        if (_tmpDir==null)
-        {
-            try{
-                // that didn't work, so try something simpler (ish)
-                _tmpDir=File.createTempFile("JettyContext","");
-                if (_tmpDir.exists())
-                    _tmpDir.delete();
-                _tmpDir.mkdir();
-                _tmpDir.deleteOnExit();
-                if(Log.isDebugEnabled())Log.debug("Created temp dir "+_tmpDir+" for "+this);
-            }
-            catch(IOException e)
-            {
-                Log.warn("tmpdir",e); System.exit(1);
-            }
-        }
-
-        setAttribute(TEMPDIR,_tmpDir);
-        return _tmpDir;
-    }
     
-    /**
-     * Check if the _tmpDir itself is called "work", or if the _tmpDir
-     * is in a directory called "work".
-     * @return
-     */
-    public boolean isTempWorkDirectory ()
-    {
-        if (_tmpDir == null)
-            return false;
-        if (_tmpDir.getName().equalsIgnoreCase("work"))
-            return true;
-        File t = _tmpDir.getParentFile();
-        if (t == null)
-            return false;
-        return (t.getName().equalsIgnoreCase("work"));
-    }
     
     /* ------------------------------------------------------------ */
     /**
@@ -735,7 +546,8 @@ public class WebAppContext extends ServletContextHandler
     /* ------------------------------------------------------------ */
     public Resource getWebInf() throws IOException
     {
-        resolveWebApp();
+        if (super.getBaseResource() == null)
+            return null;
 
         // Iw there a WEB-INF directory?
         Resource web_inf= super.getBaseResource().addPath("WEB-INF/");
@@ -813,104 +625,8 @@ public class WebAppContext extends ServletContextHandler
         return super.toString()+(_war==null?"":(","+_war));
     }
     
-    /* ------------------------------------------------------------ */
-    /** Resolve Web App directory
-     * If the BaseResource has not been set, use the war resource to
-     * derive a webapp resource (expanding WAR if required).
-     */
-    protected void resolveWebApp() throws IOException
-    {
-        Resource web_app = super.getBaseResource();
-        if (web_app == null)
-        {
-            if (_war==null || _war.length()==0)
-                _war=getResourceBase();
-            
-            // Set dir or WAR
-            web_app= newResource(_war);
-
-            // Accept aliases for WAR files
-            if (web_app.getAlias() != null)
-            {
-                Log.debug(web_app + " anti-aliased to " + web_app.getAlias());
-                web_app= newResource(web_app.getAlias());
-            }
-
-            if (Log.isDebugEnabled())
-                Log.debug("Try webapp=" + web_app + ", exists=" + web_app.exists() + ", directory=" + web_app.isDirectory());
-
-            // Is the WAR usable directly?
-            if (web_app.exists() && !web_app.isDirectory() && !web_app.toString().startsWith("jar:"))
-            {
-                // No - then lets see if it can be turned into a jar URL.
-                Resource jarWebApp= newResource("jar:" + web_app + "!/");
-                if (jarWebApp.exists() && jarWebApp.isDirectory())
-                {
-                    web_app= jarWebApp;
-                }
-            }
-
-            // If we should extract or the URL is still not usable
-            if (web_app.exists()  && (
-               (_copyDir && web_app.getFile()!= null && web_app.getFile().isDirectory()) 
-               ||
-               (_extractWAR && web_app.getFile()!= null && !web_app.getFile().isDirectory())
-               ||
-               (_extractWAR && web_app.getFile() == null)
-               ||
-               !web_app.isDirectory()
-               ))
-            {
-                // Then extract it if necessary.
-                File extractedWebAppDir= new File(getTempDirectory(), "webapp");
-                
-                if (web_app.getFile()!=null && web_app.getFile().isDirectory())
-                {
-                    // Copy directory
-                    Log.info("Copy " + web_app.getFile() + " to " + extractedWebAppDir);
-                    IO.copyDir(web_app.getFile(),extractedWebAppDir);
-                }
-                else
-                {
-                    if (!extractedWebAppDir.exists())
-                    {
-                        //it hasn't been extracted before so extract it
-                        extractedWebAppDir.mkdir();
-                        Log.info("Extract " + _war + " to " + extractedWebAppDir);
-                        JarResource.extract(web_app, extractedWebAppDir, false);
-                    }
-                    else
-                    {
-                        //only extract if the war file is newer
-                        if (web_app.lastModified() > extractedWebAppDir.lastModified())
-                        {
-                            extractedWebAppDir.delete();
-                            extractedWebAppDir.mkdir();
-                            Log.info("Extract " + _war + " to " + extractedWebAppDir);
-                            JarResource.extract(web_app, extractedWebAppDir, false);
-                        }
-                    }
-                }
-                
-                web_app= Resource.newResource(extractedWebAppDir.getCanonicalPath());
-
-            }
-
-            // Now do we have something usable?
-            if (!web_app.exists() || !web_app.isDirectory())
-            {
-                Log.warn("Web application not found " + _war);
-                throw new java.io.FileNotFoundException(_war);
-            }
-
-            if (Log.isDebugEnabled())
-                Log.debug("webapp=" + web_app);
-
-            // ResourcePath
-            super.setBaseResource(web_app);
-        }
-    }
-    
+   
+       
 
     /* ------------------------------------------------------------ */
     /**
@@ -1112,14 +828,17 @@ public class WebAppContext extends ServletContextHandler
             dir.mkdir();
             dir.deleteOnExit();
         }
-        else if (dir != null)
-            _isExistingTmpDir = true;
 
         if (dir!=null && ( !dir.exists() || !dir.isDirectory() || !dir.canWrite()))
             throw new IllegalArgumentException("Bad temp directory: "+dir);
 
         _tmpDir=dir;
         setAttribute(TEMPDIR,_tmpDir);
+    }
+    
+    public File getTempDirectory ()
+    {
+        return _tmpDir;
     }
     
     /* ------------------------------------------------------------ */
@@ -1175,120 +894,14 @@ public class WebAppContext extends ServletContextHandler
     protected void startContext()
         throws Exception
     {
-        // Configure defaults
-        for (int i=0;i<_configurations.length;i++)
-            _configurations[i].configureDefaults();
-        
-        // Is there a WEB-INF work directory
-        Resource web_inf=getWebInf();
-        if (web_inf!=null)
-        {
-            Resource work= web_inf.addPath("work");
-            if (work.exists()
-                            && work.isDirectory()
-                            && work.getFile() != null
-                            && work.getFile().canWrite()
-                            && getAttribute(TEMPDIR) == null)
-                setAttribute(TEMPDIR, work.getFile());
-        }
+ 
         
         // Configure webapp
         for (int i=0;i<_configurations.length;i++)
-            _configurations[i].configureWebApp();
+            _configurations[i].configure(this);
 
         
         super.startContext();
     }
-    
-    /**
-     * Create a canonical name for a webapp tmp directory.
-     * The form of the name is:
-     *  "Jetty_"+host+"_"+port+"__"+resourceBase+"_"+context+"_"+virtualhost+base36 hashcode of whole string
-     *  
-     *  host and port uniquely identify the server
-     *  context and virtual host uniquely identify the webapp
-     * @return
-     */
-    private String getCanonicalNameForWebAppTmpDir ()
-    {
-        StringBuffer canonicalName = new StringBuffer();
-        canonicalName.append("Jetty");
-       
-        //get the host and the port from the first connector 
-        Connector[] connectors = getServer().getConnectors();
-        
-        
-        //Get the host
-        canonicalName.append("_");
-        String host = (connectors==null||connectors[0]==null?"":connectors[0].getHost());
-        if (host == null)
-            host = "0.0.0.0";
-        canonicalName.append(host.replace('.', '_'));
-        
-        //Get the port
-        canonicalName.append("_");
-        //try getting the real port being listened on
-        int port = (connectors==null||connectors[0]==null?0:connectors[0].getLocalPort());
-        //if not available (eg no connectors or connector not started), 
-        //try getting one that was configured.
-        if (port < 0)
-            port = connectors[0].getPort();
-        canonicalName.append(port);
 
-       
-        //Resource  base
-        canonicalName.append("_");
-        try
-        {
-            Resource resource = super.getBaseResource();
-            if (resource == null)
-            {
-                if (_war==null || _war.length()==0)
-                    resource=newResource(getResourceBase());
-                
-                // Set dir or WAR
-                resource= newResource(_war);
-            }
-                
-            String tmp = URIUtil.decodePath(resource.getURL().getPath());
-            if (tmp.endsWith("/"))
-                tmp = tmp.substring(0, tmp.length()-1);
-            if (tmp.endsWith("!"))
-                tmp = tmp.substring(0, tmp.length() -1);
-            //get just the last part which is the filename
-            int i = tmp.lastIndexOf("/");
-            canonicalName.append(tmp.substring(i+1, tmp.length()));
-        }
-        catch (Exception e)
-        {
-            Log.warn("Can't generate resourceBase as part of webapp tmp dir name", e);
-        }
-            
-        //Context name
-        canonicalName.append("_");
-        String contextPath = getContextPath();
-        contextPath=contextPath.replace('/','_');
-        contextPath=contextPath.replace('\\','_');
-        canonicalName.append(contextPath);
-        
-        //Virtual host (if there is one)
-        canonicalName.append("_");
-        String[] vhosts = getVirtualHosts();
-        canonicalName.append((vhosts==null||vhosts[0]==null?"":vhosts[0]));
-        
-        //base36 hash of the whole string for uniqueness
-        String hash = Integer.toString(canonicalName.toString().hashCode(),36);
-        canonicalName.append("_");
-        canonicalName.append(hash);
-        
-        // sanitize
-        for (int i=0;i<canonicalName.length();i++)
-        {
-            char c=canonicalName.charAt(i);
-            if (!Character.isJavaIdentifierPart(c))
-                canonicalName.setCharAt(i,'.');
-        }        
-        
-        return canonicalName.toString();
-    }
 }
