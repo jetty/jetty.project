@@ -47,6 +47,23 @@
           <tagBase>svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags</tagBase>
         </configuration>
       </plugin>
+       <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-remote-resources-plugin</artifactId>
+          <executions>
+            <execution>
+              <phase>generate-resources</phase>
+              <goals>
+                <goal>process</goal>
+              </goals>
+              <configuration>
+                <resourceBundles>
+                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0-SNAPSHOT</resourceBundle>
+                </resourceBundles>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
     </plugins>
     <pluginManagement>
       <plugins>
@@ -97,7 +114,7 @@
               <version>1.0</version>
             </dependency>
           </dependencies>
-        </plugin>
+       </plugin>
       </plugins>
     </pluginManagement>
   </build>
