@@ -119,6 +119,7 @@
     </pluginManagement>
   </build>
   <modules>
+    <!--module>jetty-jaspi</module-->
     <module>jetty-util</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
@@ -127,7 +128,6 @@
     <module>jetty-client</module>
     <module>jetty-xml</module>
     <module>jetty-security</module>
-    <!--module>jetty-jaspi</module-->
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
     <module>jetty-servlets</module>
@@ -143,6 +143,7 @@
     <module>jetty-embedded-examples</module>
     <module>jetty-test-webapp</module>
     <module>jetty-distribution</module>
+    <module>jetty-servers</module>
   </modules>
   <dependencyManagement>
     <dependencies>
