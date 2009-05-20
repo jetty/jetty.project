@@ -115,6 +115,7 @@ public class WebAppContext extends ServletContextHandler
     
     private Map _resourceAliases;
     private boolean _ownClassLoader=false;
+    private boolean _configurationDiscovered=false;
 
     public static ContextHandler getCurrentWebAppContext()
     {
@@ -190,13 +191,6 @@ public class WebAppContext extends ServletContextHandler
     {
         return _unavailableException;
     }
-    
-
-    /* ------------------------------------------------------------ */
-//    public SecurityHandler getConstraintsSecurityHandler()
-//    {
-//        return (ConstraintsSecurityHandler)getSecurityHandler();
-//    }
 
     
     /* ------------------------------------------------------------ */
@@ -285,6 +279,31 @@ public class WebAppContext extends ServletContextHandler
         return resource;
     }
     
+
+    /* ------------------------------------------------------------ */
+    /** Is the context Automatically configured.
+     * 
+     * @return true if configuration discovery.
+     */
+    public boolean isConfigurationDiscovered()
+    {
+        return _configurationDiscovered;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the configuration discovery mode.
+     * If configuration discovery is set to true, then the JSR315
+     * servlet 3.0 discovered configuration features are enabled.
+     * These are:<ul>
+     * <li>Web Fragments</li>
+     * <li>META-INF/resource directories</li>
+     * </ul>
+     * @param servlet3autoConfig the servlet3autoConfig to set
+     */
+    public void setConfigurationDiscovered(boolean discovered)
+    {
+        _configurationDiscovered = discovered;
+    }
 
     /* ------------------------------------------------------------ */
     /* 

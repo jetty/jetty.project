@@ -25,13 +25,18 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * FragmentConfiguration
- *
+ * 
+ * This configuration supports some Servlet 3.0 features in jetty-7. 
+ * 
  * Process web-fragments in jars
  */
 public class FragmentConfiguration implements Configuration
 {
     public void preConfigure(WebAppContext context) throws Exception
     {
+        if (!context.isConfigurationDiscovered())
+            return;
+        
         WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.__web_processor); 
         if (processor == null)
         {
@@ -48,6 +53,8 @@ public class FragmentConfiguration implements Configuration
     
     public void configure(WebAppContext context) throws Exception
     {
+        if (!context.isConfigurationDiscovered())
+            return;
         //TODO for jetty-8/servletspec3 the fragments will not be separately processed here, but
         //will be done by webXmlConfiguration when it processes the effective merged web.xml
         WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.__web_processor); 
@@ -83,7 +90,7 @@ public class FragmentConfiguration implements Configuration
         String tmp = (String) context.getInitParameter("org.eclipse.jetty.webapp.WebXmlFragmentPattern");
         Pattern webFragPattern = (tmp == null ? null : Pattern.compile(tmp));
 
-        List<URL> urls = (List<URL>)context.getAttribute(MetaInfConfiguration.__webFragJars);
+        List<URL> urls = (List<URL>)context.getAttribute(MetaInfConfiguration.JARS_WITH_FRAGMENTS);
         
         JarScanner fragScanner = new JarScanner()
         {

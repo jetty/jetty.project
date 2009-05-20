@@ -34,16 +34,12 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class MetaInfConfiguration implements Configuration
 {
-
-    public static final String __tldJars = "org.eclipse.jetty.tlds";
-    public static final String __webFragJars = "org.eclipse.jetty.webFragments";
-    public static final String __metaResourceJars = "org.eclipse.jetty.metaResources";
-    
-    
+    public static final String JARS_WITH_TLDS = "org.eclipse.jetty.tlds";
+    public static final String JARS_WITH_FRAGMENTS = "org.eclipse.jetty.webFragments";
+    public static final String JARS_WITH_RESOURCES = WebInfConfiguration.RESOURCE_URLS;
 
     public void preConfigure(final WebAppContext context) throws Exception
     {
-        
         //Find all jars in WEB-INF
         Resource web_inf = context.getWebInf();
         Resource web_inf_lib = web_inf.addPath("/lib");
@@ -72,32 +68,13 @@ public class MetaInfConfiguration implements Configuration
             }
         }
         
-        final List<URL> tldJars = new ArrayList<URL>();
-        final List<URL> webFragJars = new ArrayList<URL>();
-        final List<URL> metaResourceJars = new ArrayList<URL>();
-        
         JarScanner fragScanner = new JarScanner()
         {
             public void processEntry(URL jarUrl, JarEntry entry)
             {
                 try
                 {
-                    String name = entry.getName().toLowerCase();
-                    if (name.startsWith("meta-inf"))
-                    {
-                        if (name.equals("meta-inf/web-fragment.xml"))
-                        {
-                            addJar(jarUrl, webFragJars);                       
-                        }
-                        else if (name.endsWith(".tld"))
-                        {
-                            addJar(jarUrl, tldJars);
-                        }
-                        else if (name.equals("meta-inf/resources"))
-                        {
-                            addJar(jarUrl, metaResourceJars);
-                        }
-                    }   
+                    MetaInfConfiguration.this.processEntry(context,jarUrl,entry);
                 }
                 catch (Exception e)
                 {
@@ -106,10 +83,6 @@ public class MetaInfConfiguration implements Configuration
             }
         };
         fragScanner.scan(null, urls.toArray(new URL[urls.size()]), true);
-        
-        context.setAttribute(__tldJars, tldJars);
-        context.setAttribute(__webFragJars, webFragJars);
-        context.setAttribute(__metaResourceJars, metaResourceJars);
     }
     
     
@@ -131,10 +104,34 @@ public class MetaInfConfiguration implements Configuration
 
     }
 
-    public void addJar (URL jarUrl, List<URL> list)
+    public void addJar (WebAppContext context, String attribute,  URL jar)
     {
-        if (!list.contains(jarUrl))
-            list.add(jarUrl);
+        List<URL> list = (List<URL>)context.getAttribute(attribute);
+        if (list==null)
+        {
+            list=new ArrayList<URL>();
+            context.setAttribute(attribute,list);
+        }
+        if (!list.contains(jar))
+            list.add(jar);
+    }
+    
+    
+    protected void processEntry(WebAppContext context, URL jarUrl, JarEntry entry)
+    {
+        String name = entry.getName().toLowerCase();
+        if (name.equals("meta-inf/web-fragment.xml") && context.isConfigurationDiscovered())
+        {
+            addJar(context,JARS_WITH_FRAGMENTS,jarUrl);     
+        }
+        else if (name.endsWith(".tld"))
+        {
+            addJar(context,JARS_WITH_TLDS,jarUrl);
+        }
+        else if (name.equals("meta-inf/resources") && context.isConfigurationDiscovered())
+        {
+            addJar(context,JARS_WITH_RESOURCES,jarUrl);
+        }
     }
 
 }

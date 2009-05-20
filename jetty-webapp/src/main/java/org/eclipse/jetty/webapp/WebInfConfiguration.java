@@ -2,6 +2,8 @@ package org.eclipse.jetty.webapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.util.List;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.IO;
@@ -9,10 +11,17 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 
 public class WebInfConfiguration implements Configuration
 {
     public static final String TEMPDIR_CREATED = "org.eclipse.jetty.tmpdirCreated";
+    
+    /**
+     * If set, to a list of URLs, these resources are added to the context
+     * resource base as a resource collection. 
+     */
+    public static final String RESOURCE_URLS = "org.eclipse.jetty.resources";
     
     public void preConfigure(WebAppContext context) throws Exception
     {
@@ -59,6 +68,19 @@ public class WebInfConfiguration implements Configuration
             Resource lib= web_inf.addPath("lib/");
             if (lib.exists() || lib.isDirectory())
                 ((WebAppClassLoader)context.getClassLoader()).addJars(lib);
+        }
+        
+        // Look for extra resource
+        List<URL> urls = (List<URL>)context.getAttribute(RESOURCE_URLS);
+        if (urls!=null)
+        {
+            Resource[] resources=new Resource[urls.size()+1];
+            int i=0;
+            resources[i++]=context.getBaseResource();
+            for (URL url : urls)
+                resources[i++]=Resource.newResource(url);
+            ResourceCollection collection=new ResourceCollection(resources);
+            context.setBaseResource(collection);
         }
     }
 

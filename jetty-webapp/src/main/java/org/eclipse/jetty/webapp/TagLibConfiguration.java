@@ -311,7 +311,7 @@ public class TagLibConfiguration implements Configuration
         tmp = context.getInitParameter(__container_pattern);
         Pattern containerPattern = (tmp==null?null:Pattern.compile(tmp));
 
-        List<URL> tldJars = (List<URL>)context.getAttribute(MetaInfConfiguration.__tldJars);
+        List<URL> tldJars = (List<URL>)context.getAttribute(MetaInfConfiguration.JARS_WITH_TLDS);
         
         TagLibJarScanner tldScanner = new TagLibJarScanner(context);
         try
