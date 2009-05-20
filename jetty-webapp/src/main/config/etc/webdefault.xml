@@ -81,6 +81,10 @@
   <!--   dirAllowed       If true, directory listings are returned if no    -->
   <!--                    welcome file is found. Else 403 Forbidden.        -->
   <!--                                                                      -->
+  <!--   welcomeServlets  If true, attempt to dispatch to welcome files     -->
+  <!--                    that are servlets, if no matching static          -->
+  <!--                    resources can be found.                           -->
+  <!--                                                                      -->
   <!--   redirectWelcome  If true, redirect welcome file requests           -->
   <!--                    else use request dispatcher forwards              -->
   <!--                                                                      -->
@@ -129,6 +133,10 @@
       <param-name>dirAllowed</param-name>
       <param-value>true</param-value>
     </init-param>
+    <init-param>
+      <param-name>welcomeServlets</param-name>
+ 	    <param-value>false</param-value>
+ 	  </init-param>
     <init-param>
       <param-name>redirectWelcome</param-name>
       <param-value>false</param-value>

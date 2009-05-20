@@ -1,5 +1,6 @@
 jetty-7.0.0.M3-SNAPSHOT
  + fixed race with expired async listeners
+ + 274251 Allow dispatch to welcome files that are servlets (configurable)
 
 jetty-7.0.0.M2 18 May 2009
  + JETTY-937 Work around Sun JVM bugs
