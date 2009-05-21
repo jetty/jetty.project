@@ -5,7 +5,7 @@
 # To get the service to restart correctly on reboot, uncomment below (3 lines):
 # ========================
 # chkconfig: 3 99 99
-# description: Jetty 6 webserver
+# description: Jetty 7 webserver
 # processname: jetty
 # ========================
 
@@ -136,8 +136,8 @@ NO_START=0
 ##################################################
 # See if there's a default configuration file
 ##################################################
-if [ -f /etc/default/jetty6 ] ; then 
-  . /etc/default/jetty6
+if [ -f /etc/default/jetty7 ] ; then 
+  . /etc/default/jetty7
 elif [ -f /etc/default/jetty ] ; then 
   . /etc/default/jetty
 fi
@@ -198,13 +198,13 @@ if [ "$JETTY_HOME" = "" ] ; then
         /home                    \
         "
   JETTY_DIR_NAMES="              \
-        jetty-6                  \
-        jetty6                   \
-        jetty-6.*                \
+        jetty-7                  \
+        jetty7                   \
+        jetty-7.*                \
         jetty                    \
-        Jetty-6                  \
-        Jetty6                   \
-        Jetty-6.*                \
+        Jetty-7                  \
+        Jetty7                   \
+        Jetty-7.*                \
         Jetty                    \
         "
         
