@@ -500,7 +500,7 @@ case "$ACTION" in
         echo -n "Starting Jetty: "
 
         if [ "$NO_START" = "1" ]; then 
-	  echo "Not starting jetty - NO_START=1 in /etc/default/jetty6";
+	  echo "Not starting jetty - NO_START=1 in /etc/default/jetty7";
           exit 0;
 	fi
 
