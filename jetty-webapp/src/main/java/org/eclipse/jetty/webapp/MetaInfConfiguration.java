@@ -38,36 +38,13 @@ public class MetaInfConfiguration implements Configuration
     public static final String JARS_WITH_FRAGMENTS = "org.eclipse.jetty.webFragments";
     public static final String JARS_WITH_RESOURCES = WebInfConfiguration.RESOURCE_URLS;
 
+    
+    
     public void preConfigure(final WebAppContext context) throws Exception
     {
         //Find all jars in WEB-INF
-        Resource web_inf = context.getWebInf();
-        Resource web_inf_lib = web_inf.addPath("/lib");
-        List<URL> urls = new ArrayList<URL>();
-        
-        if (web_inf_lib.exists() && web_inf_lib.isDirectory())
-        {
-            String[] files=web_inf_lib.list();
-            for (int f=0;files!=null && f<files.length;f++)
-            {
-                try 
-                {
-                    Resource file = web_inf_lib.addPath(files[f]);
-                    String fnlc = file.getName().toLowerCase();
-                    int dot = fnlc.lastIndexOf('.');
-                    String extension = (dot < 0 ? null : fnlc.substring(dot));
-                    if (extension != null && (extension.equals(".jar") || extension.equals(".zip")))
-                    {
-                        urls.add(file.getURL());
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.warn(Log.EXCEPTION,ex);
-                }
-            }
-        }
-        
+        List<URL> urls = findJars(context);
+      
         JarScanner fragScanner = new JarScanner()
         {
             public void processEntry(URL jarUrl, JarEntry entry)
@@ -133,5 +110,44 @@ public class MetaInfConfiguration implements Configuration
             addJar(context,JARS_WITH_RESOURCES,jarUrl);
         }
     }
-
+    
+    /**
+     * Look for jars in WEB-INF/lib
+     * @param context
+     * @return
+     * @throws Exception
+     */
+    protected List<URL> findJars (WebAppContext context) 
+    throws Exception
+    {
+        List<URL> urls = new ArrayList<URL>();
+        
+        Resource web_inf = context.getWebInf();
+        Resource web_inf_lib = web_inf.addPath("/lib");
+       
+        
+        if (web_inf_lib.exists() && web_inf_lib.isDirectory())
+        {
+            String[] files=web_inf_lib.list();
+            for (int f=0;files!=null && f<files.length;f++)
+            {
+                try 
+                {
+                    Resource file = web_inf_lib.addPath(files[f]);
+                    String fnlc = file.getName().toLowerCase();
+                    int dot = fnlc.lastIndexOf('.');
+                    String extension = (dot < 0 ? null : fnlc.substring(dot));
+                    if (extension != null && (extension.equals(".jar") || extension.equals(".zip")))
+                    {
+                        urls.add(file.getURL());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.warn(Log.EXCEPTION,ex);
+                }
+            }
+        }
+        return urls;
+    }
 }
