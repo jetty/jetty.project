@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -115,8 +116,9 @@ public class Main
     
     private boolean _showVersions=false;
     private List<String> _xml=new ArrayList<String>();
+    private Set<String> _activeOptions = new HashSet<String>();
     private Set<String> _options = new HashSet<String>();
-    
+    private Set<String> _policies = new HashSet<String>();     
     
     /*
     private String _config=System.getProperty("START","org/eclipse/jetty/start/start.config");
@@ -359,10 +361,9 @@ public class Main
         }
 
         List<String> section=null;
-        List<String> options=null;
         String o=getProperty("OPTIONS","default");
-        options=Arrays.asList((o.toString()+",*").split("[ ,]")); 
-        List<String> unsatisfied_options = new ArrayList<String>(options);
+        _activeOptions.addAll(Arrays.asList((o.toString()+",*").split("[ ,]")));
+        List<String> unsatisfied_options = new ArrayList<String>( _activeOptions );
         
         // Handle line by line
         String line=null;
@@ -382,7 +383,7 @@ public class Main
                 _options.addAll(section);
             }
             
-            if (section!=null && Collections.disjoint(section,options))
+            if (section!=null && Collections.disjoint(section,_activeOptions))
                 continue;
             if (section!=null)
                 unsatisfied_options.removeAll(section);
@@ -566,6 +567,17 @@ public class Main
                         _classpath.addClasspath(cn);
                     }                  
                 }
+                else if (subject.toLowerCase().endsWith(".policy"))
+                {
+                    //policy file to parse
+                    String cn=expand(subject.substring(0,subject.length()-5));
+                    if (cn!=null&&cn.length()>0)
+                    {
+                        if (DEBUG)
+                            System.err.println("  POLICY="+cn);
+                        _policies.add(cn);
+                    }                  
+                }
                 else
                 {
                     // single JAR file
@@ -669,9 +681,17 @@ public class Main
         // re-eval the policy now that env is set
         try
         {
-            Policy policy=Policy.getPolicy();
-            if (policy!=null)
-                policy.refresh();
+        	if ( _activeOptions.contains("policy") )
+        	{
+        		Policy.setPolicy( new CustomPolicy( _policies ) );
+        		System.setSecurityManager( new SecurityManager() );
+        	}
+        	else
+        	{
+        		Policy policy=Policy.getPolicy();
+        		if (policy!=null)
+        			policy.refresh();
+        	}
         }
         catch (Exception e)
         {
