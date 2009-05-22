@@ -338,7 +338,7 @@ public class StressTest extends TestCase
             doThreads(200,100,false);
         }
         else
-            doThreads(100,25,false);
+            doThreads(50,15,false);
     }
     
     
@@ -351,7 +351,7 @@ public class StressTest extends TestCase
             doThreads(200,400,true);
         }
         else
-            doThreads(100,100,true);
+            doThreads(50,50,true);
     }
     
     private class SuspendHandler extends HandlerWrapper
