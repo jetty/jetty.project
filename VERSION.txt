@@ -3,6 +3,7 @@ jetty-7.0.0.M3-SNAPSHOT
  + refactored configuration mechanism
  + added WebAppContext.setConfigurationDiscovered for servlet 3.0 features
  + 274251 Allow dispatch to welcome files that are servlets (configurable)
+ + 277403 Cleanup system property usage.
 
 jetty-7.0.0.M2 18 May 2009
  + JETTY-937 Work around Sun JVM bugs

@@ -529,7 +529,7 @@ public class Server extends HandlerWrapper implements Attributes
          */
         private void createShutdownHook()
         {
-            if (!Boolean.getBoolean("JETTY_NO_SHUTDOWN_HOOK") && !hooked)
+            if (!hooked)
             {
                 try
                 {
@@ -552,7 +552,8 @@ public class Server extends HandlerWrapper implements Attributes
          */
         public boolean add(Server server)
         {
-            createShutdownHook();
+            if (server.getStopAtShutdown())
+                createShutdownHook();
             return this.servers.add(server);
         }
 
@@ -565,20 +566,10 @@ public class Server extends HandlerWrapper implements Attributes
         }
 
         /**
-         * Append all Servers from Collection
-         */
-        public boolean addAll(Collection c)
-        {
-            createShutdownHook();
-            return this.servers.addAll(c);
-        }
-
-        /**
          * Clear list of Servers.
          */
         public void clear()
         {
-            createShutdownHook();
             this.servers.clear();
         }
 
@@ -592,15 +583,6 @@ public class Server extends HandlerWrapper implements Attributes
         }
 
         /**
-         * Remove all Servers in Collection from list.
-         */
-        public boolean removeAll(Collection c)
-        {
-            createShutdownHook();
-            return this.servers.removeAll(c);
-        }
-
-        /**
          * Stop all Servers in list.
          */
         public void run()
@@ -611,7 +593,7 @@ public class Server extends HandlerWrapper implements Attributes
             while (it.hasNext())
             {
                 Server svr = (Server) it.next();
-                if (svr == null)
+                if (svr == null || !svr.getStopAtShutdown())
                     continue;
                 try
                 {

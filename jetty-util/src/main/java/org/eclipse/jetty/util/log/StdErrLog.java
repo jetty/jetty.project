@@ -19,13 +19,14 @@ import org.eclipse.jetty.util.DateCache;
 /** StdErr Logging.
  * This implementation of the Logging facade sends all logs to StdErr with minimal formatting.
  * 
- * If the system property DEBUG is set, then debug logs are printed if stderr is being used.
+ * If the system property org.eclipse.jetty.util.log.DEBUG is set, 
+ * then debug logs are printed if stderr is being used.
  * 
  */
 public class StdErrLog implements Logger
 {    
     private static DateCache _dateCache;
-    private static boolean _debug = System.getProperty("DEBUG",null)!=null;
+    private static boolean _debug = System.getProperty("org.eclipse.jetty.util.log.DEBUG",null)!=null;
     private String _name;
     private boolean _hideStacks=false;
     
