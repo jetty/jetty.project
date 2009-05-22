@@ -1,0 +1,107 @@
+// basic policy file for jetty
+
+// TODO update with greg's latest property changes and set better reasonable defaults for various jetty codeBases
+
+grant codeBase "file:${jetty.home}${/}-" {
+        permission java.io.FilePermission "${jetty.home}${/}-", "read";
+        
+        permission java.io.FilePermission "${jetty.home}${/}logs${/}-", "read, write";
+        
+        permission java.lang.RuntimePermission "createClassLoader";
+        permission java.lang.RuntimePermission "setContextClassLoader";
+        
+        permission java.security.SecurityPermission "getPolicy";
+        permission java.lang.RuntimePermission "accessDeclaredMembers";
+       
+        // makes everything work as a crutch to work on startup 
+        permission java.security.AllPermission;
+};
+
+// default permissions granted to all domains
+
+grant { 
+        // Allows any thread to stop itself using the java.lang.Thread.stop()
+        // method that takes no argument.
+        // Note that this permission is granted by default only to remain
+        // backwards compatible.
+        // It is strongly recommended that you either remove this permission
+        // from this policy file or further restrict it to code sources
+        // that you specify, because Thread.stop() is potentially unsafe.
+        // See "http://java.sun.com/notes" for more information.
+        permission java.lang.RuntimePermission "stopThread";
+
+        // allows anyone to listen on un-privileged ports
+        permission java.net.SocketPermission "localhost:1024-", "listen";
+
+        // "standard" properties that can be read by anyone
+
+        permission java.util.PropertyPermission "java.version", "read";
+        permission java.util.PropertyPermission "java.vendor", "read";
+        permission java.util.PropertyPermission "java.vendor.url", "read";
+        permission java.util.PropertyPermission "java.class.version", "read";
+        permission java.util.PropertyPermission "os.name", "read";
+        permission java.util.PropertyPermission "os.version", "read";
+        permission java.util.PropertyPermission "os.arch", "read";
+        permission java.util.PropertyPermission "file.separator", "read";
+        permission java.util.PropertyPermission "path.separator", "read";
+        permission java.util.PropertyPermission "line.separator", "read";
+        
+        permission java.util.PropertyPermission "java.specification.version", "read";
+        permission java.util.PropertyPermission "java.specification.vendor", "read";
+        permission java.util.PropertyPermission "java.specification.name", "read";
+
+        permission java.util.PropertyPermission "java.vm.specification.version", "read";
+        permission java.util.PropertyPermission "java.vm.specification.vendor", "read";
+        permission java.util.PropertyPermission "java.vm.specification.name", "read";
+        permission java.util.PropertyPermission "java.vm.version", "read";
+        permission java.util.PropertyPermission "java.vm.vendor", "read";
+        permission java.util.PropertyPermission "java.vm.name", "read";
+        
+        // jetty specific properties
+        permission java.util.PropertyPermission "DEBUG", "read";
+        permission java.util.PropertyPermission "START", "read";
+        permission java.util.PropertyPermission "VERBOSE", "read";
+        permission java.util.PropertyPermission "STOP.PORT", "read";
+        permission java.util.PropertyPermission "STOP.KEY", "read";
+        permission java.util.PropertyPermission "IGNORED", "read";      
+        permission java.util.PropertyPermission "CLASSPATH", "read";
+        permission java.util.PropertyPermission "OPTIONS", "read";
+        permission java.util.PropertyPermission "JETTY_NO_SHUTDOWN_HOOK", "read";
+        permission java.util.PropertyPermission "ISO_8859_1", "read";
+        permission java.util.PropertyPermission "jetty.home", "read, write";
+        
+        permission java.util.PropertyPermission "user.home", "read";
+        
+        permission java.util.PropertyPermission "jetty.class.path", "read, write";
+        permission java.util.PropertyPermission "java.class.path", "read, write";
+        
+        permission java.util.PropertyPermission "repository", "read, write";
+        
+        permission java.util.PropertyPermission "jetty.lib", "read";
+        permission java.util.PropertyPermission "jetty.server", "read";
+        permission java.util.PropertyPermission "jetty.host", "read";
+        permission java.util.PropertyPermission "jetty.port", "read";
+        permission java.util.PropertyPermission "start.class", "read";
+        
+        permission java.util.PropertyPermission "main.class", "read";
+        
+		permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";
+		
+		permission java.util.PropertyPermission "org.eclipse.jetty.util.URI.charset", "read";
+		
+		permission java.util.PropertyPermission "org.eclipse.jetty.util.FileResource.checkAliases", "read";
+		
+		permission java.util.PropertyPermission "org.eclipse.jetty.xml.XmlParser.Validating", "read";
+		
+		permission java.util.PropertyPermission "org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD", "read, write";
+ 
+        permission java.util.PropertyPermission "org.eclipse.jetty.util.TypeUtil.IntegerCacheSize", "read, write";
+ 
+        permission java.util.PropertyPermission "org.eclipse.jetty.util.TypeUtil.LongCacheSize", "read";
+ 
+        // provides access to webapps
+        permission java.io.FilePermission "${jetty.home}${/}webapps${/}-", "read"; // Ought to go up a specific codebase
+        
+};
+
+
