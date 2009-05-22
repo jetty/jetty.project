@@ -142,6 +142,7 @@
     <module>jetty-start</module>
     <module>jetty-embedded-examples</module>
     <module>jetty-test-webapp</module>
+    <module>jetty-integrations</module>
     <module>jetty-distribution</module>
   </modules>
   <dependencyManagement>
