@@ -35,7 +35,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *
  *
  */
-public class Configuration extends org.eclipse.jetty.plus.webapp.Configuration
+public class AnnotationConfiguration extends org.eclipse.jetty.plus.webapp.Configuration
 {
     public static final String __web_inf_pattern = "org.eclipse.jetty.server.webapp.WebInfIncludeAnnotationJarPattern";
     public static final String __container_pattern = "org.eclipse.jetty.server.webapp.ContainerIncludeAnnotationJarPattern";
