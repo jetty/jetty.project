@@ -40,11 +40,6 @@ public class Configuration extends AbstractConfiguration
     private Integer _key;
     
     
-    public Configuration () throws ClassNotFoundException
-    {
-        super();
-    }
-    
     /** 
      * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#bindEnvEntry(java.lang.String, java.lang.String)
      * @param name
@@ -67,6 +62,8 @@ public class Configuration extends AbstractConfiguration
                 EnvEntry ee = (EnvEntry)ne;
                 bound = ee.isOverrideWebXml();
             }
+            
+            System.err.println("Checked for envEntry already bound for "+name+" and got: "+ne+", bound="+bound);
         }
         catch (NameNotFoundException e)
         {
@@ -78,6 +75,7 @@ public class Configuration extends AbstractConfiguration
             //either nothing was bound or the value from web.xml should override
             Context envCtx = (Context)ic.lookup("java:comp/env");
             NamingUtil.bind(envCtx, name, value);
+            System.err.println("Bound "+name+"to "+value+" for java:comp/env");
         }
     }
 

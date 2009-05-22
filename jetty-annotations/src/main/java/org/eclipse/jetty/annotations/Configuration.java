@@ -16,6 +16,9 @@ package org.eclipse.jetty.annotations;
 import java.util.EventListener;
 import java.util.List;
 
+import org.eclipse.jetty.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
+import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.plus.servlet.ServletHandler;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -24,6 +27,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -38,11 +42,6 @@ public class Configuration extends org.eclipse.jetty.plus.webapp.Configuration
                                                       
     
     
-    public Configuration () throws ClassNotFoundException
-    {
-        super();
-    }
-
     /** 
      * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#parseAnnotations()
      */
@@ -65,13 +64,36 @@ public class Configuration extends org.eclipse.jetty.plus.webapp.Configuration
          * webappcontext parentloaderpriority to work out which one contributes the
          * annotation.
          */
-       
-       
         AnnotationFinder finder = new AnnotationFinder();
 
+        //TODO change for servlet spec 3
+        parseContainerPath (context, finder);
+        parseWebInfLib (context, finder);
+        parseWebInfClasses (context, finder);
+
+        AnnotationProcessor processor = new AnnotationProcessor(context, finder);
+        processor.process();
+        
+        List servlets = processor.getServlets();
+        List filters = processor.getFilters();
+        List servletMappings = processor.getServletMappings();
+        List filterMappings = processor.getFilterMappings();
+        List listeners = processor.getListeners();
+        
+        ServletHandler servletHandler = (ServletHandler)context.getServletHandler();
+        servletHandler.setFilters((FilterHolder[])LazyList.toArray(filters,FilterHolder.class));
+        servletHandler.setFilterMappings((FilterMapping[])LazyList.toArray(filterMappings,FilterMapping.class));
+        servletHandler.setServlets((ServletHolder[])LazyList.toArray(servlets,ServletHolder.class));
+        servletHandler.setServletMappings((ServletMapping[])LazyList.toArray(servletMappings,ServletMapping.class));
+        context.setEventListeners((EventListener[])LazyList.toArray(listeners,EventListener.class));
+    }
+    
+    public void parseContainerPath (final WebAppContext context, final AnnotationFinder finder)
+    throws Exception
+    {
         //if no pattern for the container path is defined, then by default scan NOTHING
-        Log.debug("Scanning system jars");
-        finder.find(context.getClassLoader().getParent(), true, context.getInitParameter(__container_pattern), false, 
+        Log.debug("Scanning container jars");
+        parseAnnotationsFromJars(context, finder, context.getClassLoader().getParent(), context.getInitParameter(__container_pattern),true,  false, 
                 new ClassNameResolver ()
                 {
                     public boolean isExcluded (String name)
@@ -89,10 +111,15 @@ public class Configuration extends org.eclipse.jetty.plus.webapp.Configuration
                         return false;
                     }
                 });
-
+    }
+    
+    
+    public void parseWebInfLib (final WebAppContext context, final AnnotationFinder finder)
+    throws Exception
+    {
         Log.debug("Scanning WEB-INF/lib jars");
         //if no pattern for web-inf/lib is defined, then by default scan everything in it
-        finder.find (context.getClassLoader(), false, context.getInitParameter(__web_inf_pattern), true,
+        parseAnnotationsFromJars (context, finder, context.getClassLoader(), context.getInitParameter(__web_inf_pattern), false, true,
                 new ClassNameResolver()
                 {
                     public boolean isExcluded (String name)
@@ -109,10 +136,15 @@ public class Configuration extends org.eclipse.jetty.plus.webapp.Configuration
                             return false;
                         return true;
                     }
-                });       
-        
+                });  
+                
+    }
+     
+    public void parseWebInfClasses (final WebAppContext context, final AnnotationFinder finder)
+    throws Exception
+    {
         Log.debug("Scanning classes in WEB-INF/classes");
-        finder.find(context.getWebInf().addPath("classes/"), 
+        parseAnnotationsFromDir (context, finder, context.getWebInf().addPath("classes/"), 
                 new ClassNameResolver()
                 {
                     public boolean isExcluded (String name)
@@ -130,29 +162,19 @@ public class Configuration extends org.eclipse.jetty.plus.webapp.Configuration
                         return true;
                     }
                 });
-        
-        ServletHandler servletHandler = (ServletHandler)context.getServletHandler();
-        List filters = LazyList.array2List(servletHandler.getFilters());
-        List filterMappings = LazyList.array2List(servletHandler.getFilterMappings());
-        List servlets = LazyList.array2List(servletHandler.getServlets());
-        List servletMappings = LazyList.array2List(servletHandler.getServletMappings());
-        List listeners = LazyList.array2List(context.getEventListeners());
-        
-        AnnotationProcessor processor = new AnnotationProcessor(context, finder, _runAsCollection, _injections, _callbacks, 
-                servlets, filters,listeners, 
-                servletMappings, filterMappings);
-        processor.process();
-        
-        servlets = processor.getServlets();
-        filters = processor.getFilters();
-        servletMappings = processor.getServletMappings();
-        filterMappings = processor.getFilterMappings();
-        listeners = processor.getListeners();
-        
-        servletHandler.setFilters((FilterHolder[])LazyList.toArray(filters,FilterHolder.class));
-        servletHandler.setFilterMappings((FilterMapping[])LazyList.toArray(filterMappings,FilterMapping.class));
-        servletHandler.setServlets((ServletHolder[])LazyList.toArray(servlets,ServletHolder.class));
-        servletHandler.setServletMappings((ServletMapping[])LazyList.toArray(servletMappings,ServletMapping.class));
-        context.setEventListeners((EventListener[])LazyList.toArray(listeners,EventListener.class));
+    }
+    
+    
+
+    public void parseAnnotationsFromJars (final WebAppContext context, final AnnotationFinder finder, final ClassLoader classloader, final String pattern, boolean visitParents, boolean isNullInclusive, ClassNameResolver resolver)
+    throws Exception
+    {
+        finder.find (classloader, visitParents, pattern, isNullInclusive,resolver);
+    }
+    
+    public void parseAnnotationsFromDir (final WebAppContext context, final AnnotationFinder finder, final Resource dir, ClassNameResolver resolver)
+    throws Exception
+    {
+        finder.find(dir, resolver);   
     }
 }

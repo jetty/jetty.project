@@ -46,11 +46,6 @@ import org.eclipse.jetty.xml.XmlParser;
  */
 public abstract class AbstractConfiguration implements Configuration
 {
-    protected LifeCycleCallbackCollection _callbacks = new LifeCycleCallbackCollection();
-    protected InjectionCollection _injections = new InjectionCollection();
-    protected RunAsCollection _runAsCollection = new RunAsCollection();
-    protected SecurityHandler _securityHandler;
-    
     public abstract void bindEnvEntry (WebAppContext context, String name, Object value) throws Exception;
     
     public abstract void bindResourceRef (WebAppContext context, String name, Class type) throws Exception;
@@ -292,12 +287,13 @@ public abstract class AbstractConfiguration implements Configuration
                 return;
             }
             
+            LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
             try
             {
                 Class clazz = _context.loadClass(className);
                 LifeCycleCallback callback = new PostConstructCallback();
                 callback.setTarget(clazz, methodName);
-                _callbacks.add(callback);
+                callbacks.add(callback);
             }
             catch (ClassNotFoundException e)
             {
@@ -324,13 +320,13 @@ public abstract class AbstractConfiguration implements Configuration
                 Log.warn("No lifecycle-callback-method specified for pre-destroy class "+className);
                 return;
             } 
-            
+            LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
             try
             {
                 Class clazz = _context.loadClass(className);
                 LifeCycleCallback callback = new PreDestroyCallback();
                 callback.setTarget(clazz, methodName);
-                _callbacks.add(callback);
+                callbacks.add(callback);
             }
             catch (ClassNotFoundException e)
             {
@@ -367,6 +363,7 @@ public abstract class AbstractConfiguration implements Configuration
                     continue;
                 }
 
+                InjectionCollection injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
                 // comments in the javaee_5.xsd file specify that the targetName is looked
                 // for first as a java bean property, then if that fails, as a field
                 try
@@ -376,7 +373,7 @@ public abstract class AbstractConfiguration implements Configuration
                     injection.setTargetClass(clazz);
                     injection.setJndiName(jndiName);
                     injection.setTarget(clazz, targetName, valueClass);
-                     _injections.add(injection);
+                     injections.add(injection);
                 }
                 catch (ClassNotFoundException e)
                 {
@@ -386,16 +383,6 @@ public abstract class AbstractConfiguration implements Configuration
         }
     }
     
-    
-    
-    /**
-     * @throws ClassNotFoundException
-     */
-    public AbstractConfiguration() throws ClassNotFoundException
-    {
-        super();
-    }
-
   
     
     public void preConfigure (WebAppContext context)
@@ -403,14 +390,21 @@ public abstract class AbstractConfiguration implements Configuration
     {
       //set up our special ServletHandler to remember injections and lifecycle callbacks
         ServletHandler servletHandler = new ServletHandler();
-        _securityHandler = context.getSecurityHandler();
+        SecurityHandler securityHandler = context.getSecurityHandler();
         org.eclipse.jetty.servlet.ServletHandler existingHandler = context.getServletHandler();       
         servletHandler.setFilterMappings(existingHandler.getFilterMappings());
         servletHandler.setFilters(existingHandler.getFilters());
         servletHandler.setServlets(existingHandler.getServlets());
         servletHandler.setServletMappings(existingHandler.getServletMappings());
         context.setServletHandler(servletHandler);
-        _securityHandler.setHandler(servletHandler);  
+        securityHandler.setHandler(servletHandler);  
+        
+        LifeCycleCallbackCollection callbacks = new LifeCycleCallbackCollection();
+        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, callbacks);
+        InjectionCollection injections = new InjectionCollection();
+        context.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
+        RunAsCollection runAsCollection = new RunAsCollection();
+        context.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);
     }
    
     public void configure (WebAppContext context)
@@ -422,12 +416,6 @@ public abstract class AbstractConfiguration implements Configuration
         if (webXmlProcessor == null)
            throw new IllegalStateException ("No processor for web xml");
 
-        //parse classes for annotations, if necessary
-        if (!webXmlProcessor.isMetaDataComplete())
-        {
-            if (Log.isDebugEnabled()) Log.debug("Processing annotations");
-            parseAnnotations(context);
-        }
         //TODO: When webdefaults.xml, web.xml, fragments and web-override.xml are merged into an effective web.xml this 
         //will change
         PlusWebXmlProcessor plusProcessor = new PlusWebXmlProcessor(context);
@@ -440,11 +428,18 @@ public abstract class AbstractConfiguration implements Configuration
         
         plusProcessor.process(webXmlProcessor.getOverrideWeb());
         
-     
+
+        //parse classes for annotations, if necessary
+        if (!webXmlProcessor.isMetaDataComplete())
+        {
+            if (Log.isDebugEnabled()) Log.debug("Processing annotations");
+            parseAnnotations(context);
+        }
+        
         //configure injections and callbacks to be called by the FilterHolder and ServletHolder
         //when they lazily instantiate the Filter/Servlet.
-        ((ServletHandler)context.getServletHandler()).setInjections(_injections);
-        ((ServletHandler)context.getServletHandler()).setCallbacks(_callbacks);
+        ((ServletHandler)context.getServletHandler()).setInjections((InjectionCollection)context.getAttribute(InjectionCollection.INJECTION_COLLECTION));
+        ((ServletHandler)context.getServletHandler()).setCallbacks((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION));
         
         //do any injects on the listeners that were created and then
         //also callback any postConstruct lifecycle methods
@@ -463,30 +458,45 @@ public abstract class AbstractConfiguration implements Configuration
     protected void injectAndCallPostConstructCallbacks(WebAppContext context)
     throws Exception
     {
+        InjectionCollection injections = (InjectionCollection)context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+        RunAsCollection runAsCollection = (RunAsCollection)context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
+        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
+        SecurityHandler securityHandler = context.getSecurityHandler();
+        
         //look thru the servlets to apply any runAs annotations
         //NOTE: that any run-as in web.xml will already have been applied
-        ServletHolder[] holders = context.getServletHandler().getServlets();
-        for (int i=0;holders!=null && i<holders.length;i++)
+        if (runAsCollection != null)
         {
-            _runAsCollection.setRunAs(holders[i], _securityHandler);
+            ServletHolder[] holders = context.getServletHandler().getServlets();
+            for (int i=0;holders!=null && i<holders.length;i++)
+            {
+                runAsCollection.setRunAs(holders[i], securityHandler);
+            }
         }
 
         EventListener[] listeners = context.getEventListeners();
         for (int i=0;listeners!=null && i<listeners.length;i++)
         {
-            _injections.inject(listeners[i]);
-            _callbacks.callPostConstructCallback(listeners[i]);
+            if (injections != null)
+                injections.inject(listeners[i]);
+            if (callbacks != null)
+                callbacks.callPostConstructCallback(listeners[i]);
         }
     }
     
     
     protected void callPreDestroyCallbacks (WebAppContext context)
     throws Exception
-    {
-        EventListener[] listeners = context.getEventListeners();
-        for (int i=0; listeners!=null && i<listeners.length;i++)
+    {   
+        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
+
+        if (callbacks != null)
         {
-            _callbacks.callPreDestroyCallback(listeners[i]);
+            EventListener[] listeners = context.getEventListeners();
+            for (int i=0; listeners!=null && i<listeners.length;i++)
+            {
+                callbacks.callPreDestroyCallback(listeners[i]);
+            }
         }
     }
    

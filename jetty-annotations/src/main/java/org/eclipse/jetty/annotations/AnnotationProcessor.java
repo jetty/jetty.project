@@ -35,7 +35,9 @@ import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.PostConstructCallback;
 import org.eclipse.jetty.plus.annotation.PreDestroyCallback;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
+import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.IntrospectionUtil;
+import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -58,25 +60,31 @@ public class AnnotationProcessor
     List _listeners;
     List _servletMappings;
     List _filterMappings;
-    Map _pojoInstances = new HashMap();
     WebAppContext _webApp;
     
     private static Class[] __envEntryTypes = 
         new Class[] {String.class, Character.class, Integer.class, Boolean.class, Double.class, Byte.class, Short.class, Long.class, Float.class};
    
-    public AnnotationProcessor(WebAppContext webApp, AnnotationFinder finder, RunAsCollection runAs, InjectionCollection injections, LifeCycleCallbackCollection callbacks,
-            List servlets, List filters, List listeners, List servletMappings, List filterMappings)
+    public AnnotationProcessor(WebAppContext webApp, AnnotationFinder finder)
     {
+        if (webApp == null)
+            throw new IllegalStateException("No WebAppContext");
+        
         _webApp=webApp;
         _finder=finder;
-        _runAs=runAs;
-        _injections=injections;
-        _callbacks=callbacks;
-        _servlets=servlets;
-        _filters=filters;
-        _listeners=listeners;
-        _servletMappings=servletMappings;
-        _filterMappings=filterMappings;
+        ServletHandler servletHandler = _webApp.getServletHandler();
+        _filters = LazyList.array2List(servletHandler.getFilters());
+        _filterMappings = LazyList.array2List(servletHandler.getFilterMappings());
+        _servlets = LazyList.array2List(servletHandler.getServlets());
+        _servletMappings = LazyList.array2List(servletHandler.getServletMappings());
+        _listeners = LazyList.array2List(_webApp.getEventListeners());
+        
+        _runAs = (RunAsCollection)_webApp.getAttribute(RunAsCollection.RUNAS_COLLECTION);
+        _injections = (InjectionCollection)_webApp.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+        _callbacks = (LifeCycleCallbackCollection)_webApp.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
+        
+        if (_runAs == null || _injections == null || _callbacks == null)
+            throw new IllegalStateException("RunAs, Injections or LifeCycleCallbacks is null");
     }
     
     

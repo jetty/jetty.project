@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class InjectionCollection
 {
+    public static final String INJECTION_COLLECTION = "org.eclipse.jetty.injectionCollection";
     private HashMap<Class<?>, List<Injection>> fieldInjectionsMap = new HashMap<Class<?>, List<Injection>>();//map of classname to field injections
     private HashMap<Class<?>, List<Injection>> methodInjectionsMap = new HashMap<Class<?>, List<Injection>>();//map of classname to method injections
     
@@ -126,25 +127,22 @@ public class InjectionCollection
         //looking at it's class hierarchy
         Class<?> clazz = injectable.getClass();
         
-        
-        if (injectable instanceof PojoWrapper)
-        { 
-            injectable = ((PojoWrapper)injectable).getPojo();
-            clazz = injectable.getClass();
-        }
-      
-        
+       
         while (clazz != null)
         {
             //Do field injections
             List<Injection> injections = getFieldInjections(clazz);
             for (Injection i : injections)
+            {
                 i.inject(injectable);
+            }
 
             //Do method injections
             injections = getMethodInjections(clazz);
             for (Injection i : injections)
+            {
                 i.inject(injectable);
+            }
             
             clazz = clazz.getSuperclass();
         }

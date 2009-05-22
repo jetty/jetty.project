@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class LifeCycleCallbackCollection
 {
+    public static final String LIFECYCLE_CALLBACK_COLLECTION = "org.eclipse.jetty.lifecyleCallbackCollection";
     private HashMap postConstructCallbacksMap = new HashMap();
     private HashMap preDestroyCallbacksMap = new HashMap();
     
@@ -75,13 +76,6 @@ public class LifeCycleCallbackCollection
             return null;
         
         Class clazz = o.getClass();
-        
-        if (o instanceof PojoWrapper)
-        {
-            o = ((PojoWrapper)o).getPojo();
-            clazz = o.getClass();
-        }
-    
         return (List)preDestroyCallbacksMap.get(clazz);
     }
     
@@ -91,13 +85,6 @@ public class LifeCycleCallbackCollection
             return null;
         
         Class clazz = o.getClass();
-        
-        if (o instanceof PojoWrapper)
-        {
-            o = ((PojoWrapper)o).getPojo();
-            clazz = o.getClass();
-        }
-    
         return (List)postConstructCallbacksMap.get(clazz);
     }
     
@@ -114,12 +101,6 @@ public class LifeCycleCallbackCollection
             return;
         
         Class clazz = o.getClass();
-        
-        if (o instanceof PojoWrapper)
-        {
-            o = ((PojoWrapper)o).getPojo();
-            clazz = o.getClass();
-        }
         List callbacks = (List)postConstructCallbacksMap.get(clazz);
         
         if (callbacks == null)
@@ -142,13 +123,6 @@ public class LifeCycleCallbackCollection
             return;
         
         Class clazz = o.getClass();
-        
-        if (o instanceof PojoWrapper)
-        {
-            o = ((PojoWrapper)o).getPojo();
-            clazz = o.getClass();
-        }
-    
         List callbacks = (List)preDestroyCallbacksMap.get(clazz);
         if (callbacks == null)
             return;

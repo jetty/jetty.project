@@ -368,8 +368,6 @@ public class WebInfConfiguration implements Configuration
 
         
             context.setBaseResource(web_app);
-            System.err.println("SetBaseResource in WebInfConfiguration, toString="+context.toString());
-            
             
             if (Log.isDebugEnabled())
                 Log.debug("webapp=" + web_app);
