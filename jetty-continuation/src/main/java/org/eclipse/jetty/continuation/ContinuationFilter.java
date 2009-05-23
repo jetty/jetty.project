@@ -40,13 +40,15 @@ public class ContinuationFilter implements Filter
         _debug=param!=null&&Boolean.parseBoolean(param);
         
         param=filterConfig.getInitParameter("partial");
-        _partial=param!=null&&Boolean.parseBoolean(param) || ContinuationSupport.__jetty6;
+        _partial=param!=null&&Boolean.parseBoolean(param) || (ContinuationSupport.__jetty6&&!jetty);
 
         param=filterConfig.getInitParameter("faux");
         _faux=(param!=null&&Boolean.parseBoolean(param)) || !(jetty || _partial || ContinuationSupport.__servlet3);
         
         if (_debug)
-            _context.log("ContinuationFilter partial="+_partial+
+            _context.log("ContinuationFilter "+
+                    " jetty="+jetty+
+                    " partial="+_partial+
                     " jetty6="+ContinuationSupport.__jetty6+
                     " faux="+_faux+
                     " servlet3="+ContinuationSupport.__servlet3);

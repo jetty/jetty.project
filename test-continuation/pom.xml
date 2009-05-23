@@ -19,7 +19,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId> 
-      <artifactId>jetty-continuation</artifactId>
+      <artifactId>jetty-servlet</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency> 
@@ -29,6 +29,12 @@
         <version>6.1.18</version>
         <type>jar</type>
         <scope>test</scope>
+        <exclusions>
+        	<exclusion>
+        		<artifactId>servlet-api-2.5</artifactId>
+        		<groupId>org.mortbay.jetty</groupId>
+        	</exclusion>
+        </exclusions>
     </dependency>
   </dependencies>
 </project>

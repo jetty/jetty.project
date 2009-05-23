@@ -16,18 +16,17 @@ package org.eclipse.jetty.continuation;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.IO;
+import org.mortbay.jetty.Connector;
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.nio.SelectChannelConnector;
+import org.mortbay.jetty.servlet.Context;
+import org.mortbay.jetty.servlet.FilterHolder;
+import org.mortbay.jetty.servlet.ServletHandler;
+import org.mortbay.jetty.servlet.ServletHolder;
+import org.mortbay.util.IO;
 
 
-
-public class ContinuationTest extends ContinuationBase
+public class Jetty6ContinuationTest extends ContinuationBase
 {
     protected Server _server = new Server();
     protected ServletHandler _servletHandler;
@@ -38,48 +37,29 @@ public class ContinuationTest extends ContinuationBase
     {
         _connector = new SelectChannelConnector();
         _server.setConnectors(new Connector[]{ _connector });
-        ServletContextHandler servletContext = new ServletContextHandler(ServletContextHandler.NO_SECURITY|ServletContextHandler.NO_SESSIONS);
+        Context servletContext = new Context(Context.NO_SECURITY|Context.NO_SESSIONS);
         _server.setHandler(servletContext);
         _servletHandler=servletContext.getServletHandler();
         ServletHolder holder=new ServletHolder(_servlet);
         _servletHandler.addServletWithMapping(holder,"/");
+        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",0);
     }
-
 
     protected void tearDown() throws Exception
     {
         _server.stop();
     }
 
-    public void testNotFaux() throws Exception
+    public void testJetty6() throws Exception
     {
-        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",0);
-        _filter.setInitParameter("debug","true");
-        _filter.setInitParameter("faux","true");
-        _server.start();
-        _port=_connector.getLocalPort();
-        
-        doit("AsyncRequest");
-    }
-
-    public void testNotJetty6() throws Exception
-    {
-        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",0);
         _filter.setInitParameter("debug","true");
         _filter.setInitParameter("faux","false");
         _server.start();
         _port=_connector.getLocalPort();
         
-        doit("AsyncRequest");
+        doit("Jetty6Continuation");
     }
-
-    public void testNoFilter() throws Exception
-    {
-        _server.start();
-        _port=_connector.getLocalPort();
-        
-        doit("AsyncRequest");
-    }
+    
     
     protected String toString(InputStream in) throws IOException
     {

@@ -1,7 +1,6 @@
 
 package org.eclipse.jetty.continuation;
 
-import java.io.IOException;
 import java.util.EventListener;
 
 

@@ -1,5 +1,17 @@
-package org.eclipse.jetty.servlet;
+// ========================================================================
+// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+// The Eclipse Public License is available at 
+// http://www.eclipse.org/legal/epl-v10.html
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
+// You may elect to redistribute this code under either of these licenses. 
+// ========================================================================
 
+package org.eclipse.jetty.continuation;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,63 +24,16 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationFilter;
-import org.eclipse.jetty.continuation.ContinuationListener;
-import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.util.IO;
-
 import junit.framework.TestCase;
 
 
-public class ContinuationTest extends TestCase
+
+public abstract class ContinuationBase extends TestCase
 {
-    protected Server _server = new Server();
-    protected ServletHandler _servletHandler;
-    protected SuspendServlet _servlet;
-    protected SelectChannelConnector _connector;
-    FilterHolder _filter;
-
-    protected void setUp() throws Exception
-    {
-        _connector = new SelectChannelConnector();
-        _server.setConnectors(new Connector[]{ _connector });
-        ServletContextHandler servletContext = new ServletContextHandler(ServletContextHandler.NO_SECURITY|ServletContextHandler.NO_SESSIONS);
-        _server.setHandler(servletContext);
-        _servletHandler=servletContext.getServletHandler();
-        _servlet=new SuspendServlet();
-        ServletHolder holder=new ServletHolder(_servlet);
-        _servletHandler.addServletWithMapping(holder,"/");
-        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",0);
-    }
-
-    protected void tearDown() throws Exception
-    {
-        _server.stop();
-    }
-
-    public void testNotFaux() throws Exception
-    {
-        _filter.setInitParameter("debug","true");
-        _filter.setInitParameter("faux","true");
-        _server.start();
-        
-        doit("AsyncRequest");
-    }
-
-    public void testNotJetty6() throws Exception
-    {
-        _filter.setInitParameter("debug","true");
-        _filter.setInitParameter("faux","false");
-        _server.start();
-        
-        doit("AsyncRequest");
-    }
+    protected SuspendServlet _servlet=new SuspendServlet();
+    protected int _port;
     
-    private void doit(String type) throws Exception
+    protected void doit(String type) throws Exception
     {
         String response;
         
@@ -142,12 +107,16 @@ public class ContinuationTest extends TestCase
             request+="Content-Length: "+content.length()+"\r\n";
         request+="\r\n" + content;
         
-        Socket socket = new Socket("localhost",_connector.getLocalPort());
+        Socket socket = new Socket("localhost",_port);
         socket.getOutputStream().write(request.getBytes("UTF-8"));
         
-        String response = IO.toString(socket.getInputStream());
+        String response = toString(socket.getInputStream());
         return response;
     }
+    
+    
+    protected abstract String toString(InputStream in) throws IOException;
+    
     
     private static class SuspendServlet extends HttpServlet
     {
@@ -168,8 +137,6 @@ public class ContinuationTest extends TestCase
             long suspend_for=-1;
             long resume_after=-1;
             long complete_after=-1;
-            
-            final String uri=request.getRequestURI();
             
             if (request.getParameter("read")!=null)
                 read_before=Integer.parseInt(request.getParameter("read"));
@@ -289,7 +256,9 @@ public class ContinuationTest extends TestCase
         }
     }
     
-    private static ContinuationListener __listener = new ContinuationListener()
+    
+    private static ContinuationListener __listener = 
+        new ContinuationListener()
     {
         public void onComplete(Continuation continuation)
         {
@@ -301,5 +270,6 @@ public class ContinuationTest extends TestCase
             ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","onTimeout");
             continuation.resume();
         }
+        
     };
 }
