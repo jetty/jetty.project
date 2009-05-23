@@ -18,13 +18,9 @@ import java.io.InputStream;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.Date;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.CyclicBarrier;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -32,7 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
 
-import org.eclipse.jetty.continuation.ContinuationEvent;
+import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -51,8 +47,6 @@ public class AsyncStressTest extends TestCase
     protected int[] _loops;
     protected QueuedThreadPool _threads=new QueuedThreadPool();
     protected boolean _stress;
-    
-    private static int STRESS_THREADS=500;
 
     protected void setUp() throws Exception
     {
@@ -324,14 +318,14 @@ public class AsyncStressTest extends TestCase
     private static ContinuationListener __asyncListener = 
         new ContinuationListener()
     {
-        public void onComplete(ContinuationEvent event) throws IOException
+        public void onComplete(Continuation continuation)
         {
         }
 
-        public void onTimeout(ContinuationEvent event) throws IOException
+        public void onTimeout(Continuation continuation)
         {
-            event.getRequest().setAttribute("TIMEOUT",Boolean.TRUE);
-            ((Request)event.getRequest()).getAsyncContext().dispatch();
+            continuation.getServletRequest().setAttribute("TIMEOUT",Boolean.TRUE);
+            continuation.resume();
         }
         
     };

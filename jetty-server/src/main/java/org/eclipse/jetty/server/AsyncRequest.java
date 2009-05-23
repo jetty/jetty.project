@@ -17,7 +17,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
-import org.eclipse.jetty.continuation.ContinuationEvent;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -448,7 +447,7 @@ public class AsyncRequest implements AsyncContext, Continuation
 //                        _history.append(i);
 //                    }
                     ContinuationListener listener=((ContinuationListener)LazyList.get(listeners,i));
-                    listener.onTimeout(_event);
+                    listener.onTimeout(this);
                 }
                 catch(Exception e)
                 {
@@ -550,7 +549,7 @@ public class AsyncRequest implements AsyncContext, Continuation
 //                        _history.append('l');
 //                        _history.append(i);
 //                    }
-                    ((ContinuationListener)LazyList.get(listeners,i)).onComplete(_event);
+                    ((ContinuationListener)LazyList.get(listeners,i)).onComplete(this);
                 }
                 catch(Exception e)
                 {
@@ -852,7 +851,7 @@ public class AsyncRequest implements AsyncContext, Continuation
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public class AsyncEventState implements ContinuationEvent
+    public class AsyncEventState
     {
         private final ServletContext _suspendedContext;
         private final ServletRequest _request;

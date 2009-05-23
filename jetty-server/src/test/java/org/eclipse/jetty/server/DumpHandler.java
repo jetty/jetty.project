@@ -66,7 +66,7 @@ public class DumpHandler extends AbstractHandler
         
         if (request.getParameter("continue")!=null)
         {
-            Continuation continuation = ContinuationSupport.getContinuation(request);
+            Continuation continuation = ContinuationSupport.getContinuation(request,response);
             continuation.setTimeout(Long.parseLong(request.getParameter("continue")));
             continuation.suspend();
         }

@@ -22,7 +22,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
 
-import org.eclipse.jetty.continuation.ContinuationEvent;
+import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 
@@ -276,14 +276,14 @@ public class AsyncContextTest extends TestCase
     private static ContinuationListener __asyncListener = 
         new ContinuationListener()
     {
-        public void onComplete(ContinuationEvent event) throws IOException
+        public void onComplete(Continuation continuation)
         {
         }
 
-        public void onTimeout(ContinuationEvent event) throws IOException
+        public void onTimeout(Continuation continuation)
         {
-            event.getRequest().setAttribute("TIMEOUT",Boolean.TRUE);
-            ((Request)event.getRequest()).getAsyncContext().dispatch();
+            continuation.getServletRequest().setAttribute("TIMEOUT",Boolean.TRUE);
+            continuation.resume();
         }
         
     };

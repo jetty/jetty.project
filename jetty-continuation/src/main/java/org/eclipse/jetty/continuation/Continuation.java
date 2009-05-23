@@ -27,6 +27,14 @@ import javax.servlet.ServletResponse;
  * 
  * A continuation is a mechanism by which a HTTP Request can be suspended and
  * restarted after a timeout or an asynchronous event has occurred.
+ * <p>
+ * Continuations will use the asynchronous APIs if they used by a 
+ * webapp deployed in Jetty or a Servlet 3.0 container.   For other 
+ * containers, the {@link ContinuationFilter} may be used to 
+ * simulate asynchronous features.
+ * </p>
+ * 
+ * @see ContinuationSupport
  * 
  */
 public interface Continuation
@@ -221,5 +229,4 @@ public interface Continuation
      * @return The associated servlet response.
      */
     ServletResponse getServletResponse();
-
 }
