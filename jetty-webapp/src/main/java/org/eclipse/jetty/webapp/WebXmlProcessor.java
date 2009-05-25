@@ -469,7 +469,10 @@ public class WebXmlProcessor
 
         String async=node.getString("async-support",false,true);
         if (async!=null)
-            holder.setAsyncSupported(Boolean.valueOf(async));
+            holder.setAsyncSupported(async.length()==0||Boolean.valueOf(async));
+        
+        String timeout=node.getString("async-timeout",false,true);
+        // TODO set it
     }
 
     /* ------------------------------------------------------------ */
@@ -640,7 +643,10 @@ public class WebXmlProcessor
 
         String async=node.getString("async-support",false,true);
         if (async!=null)
-            holder.setAsyncSupported(Boolean.valueOf(async));
+            holder.setAsyncSupported(async.length()==0||Boolean.valueOf(async));
+
+        String timeout=node.getString("async-timeout",false,true);
+        // TODO set it
     }
 
     /* ------------------------------------------------------------ */

@@ -335,7 +335,7 @@
                  <artifactItem>
                   <groupId>org.mortbay.jetty</groupId>
                   <artifactId>servlet-api</artifactId>
-                  <version>3.0-SNAPSHOT</version>
+                  <version>${servlet-api-version}</version>
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>

@@ -109,7 +109,7 @@ public class WebAppContext extends ServletContextHandler
     
     private Map _resourceAliases;
     private boolean _ownClassLoader=false;
-    private boolean _configurationDiscovered=false;
+    private boolean _configurationDiscovered=true;
 
     public static ContextHandler getCurrentWebAppContext()
     {

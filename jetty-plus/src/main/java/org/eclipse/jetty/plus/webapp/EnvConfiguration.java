@@ -61,17 +61,20 @@ public class EnvConfiguration implements Configuration
      */
     public void preConfigure (WebAppContext context) throws Exception
     {        
-        //create a java:comp/env
-        createEnvContext();
-        if (Log.isDebugEnabled())
-            Log.debug("Created java:comp/env for webapp "+context.getContextPath());
+      
     }
 
     /** 
      * @throws Exception
      */
     public void configure (WebAppContext context) throws Exception
-    {
+    {  
+        //create a java:comp/env - do this here instead of preConfigure because it needs the
+        //webapp classloader set up, which only happens in WebInfConfiguration.configure() step.
+        createEnvContext();
+        if (Log.isDebugEnabled())
+            Log.debug("Created java:comp/env for webapp "+context.getContextPath());
+        
         //check to see if an explicit file has been set, if not,
         //look in WEB-INF/jetty-env.xml
         if (jettyEnvXmlUrl == null)
@@ -189,5 +192,7 @@ public class EnvConfiguration implements Configuration
         Context context = new InitialContext();
         compCtx =  (Context)context.lookup ("java:comp");
         envCtx = compCtx.createSubcontext("env");
+        
+        System.err.println("Created comp/env");
     }
 }

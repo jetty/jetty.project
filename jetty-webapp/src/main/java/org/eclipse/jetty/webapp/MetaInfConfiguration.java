@@ -34,12 +34,10 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class MetaInfConfiguration implements Configuration
 {
-    public static final String JARS_WITH_TLDS = "org.eclipse.jetty.tlds";
-    public static final String JARS_WITH_FRAGMENTS = "org.eclipse.jetty.webFragments";
-    public static final String JARS_WITH_RESOURCES = WebInfConfiguration.RESOURCE_URLS;
+    public static final String METAINF_TLDS = TagLibConfiguration.TLD_RESOURCES;
+    public static final String METAINF_FRAGMENTS = FragmentConfiguration.FRAGMENT_RESOURCES;
+    public static final String METAINF_RESOURCES = WebInfConfiguration.RESOURCE_URLS;
 
-    
-    
     public void preConfigure(final WebAppContext context) throws Exception
     {
         //Find all jars in WEB-INF
@@ -81,12 +79,12 @@ public class MetaInfConfiguration implements Configuration
 
     }
 
-    public void addJar (WebAppContext context, String attribute,  URL jar)
+    public void addResource (WebAppContext context, String attribute, Resource jar)
     {
-        List<URL> list = (List<URL>)context.getAttribute(attribute);
+        List<Resource> list = (List<Resource>)context.getAttribute(attribute);
         if (list==null)
         {
-            list=new ArrayList<URL>();
+            list=new ArrayList<Resource>();
             context.setAttribute(attribute,list);
         }
         if (!list.contains(jar))
@@ -96,18 +94,32 @@ public class MetaInfConfiguration implements Configuration
     
     protected void processEntry(WebAppContext context, URL jarUrl, JarEntry entry)
     {
-        String name = entry.getName().toLowerCase();
-        if (name.equals("meta-inf/web-fragment.xml") && context.isConfigurationDiscovered())
+        String name = entry.getName();
+        if (!name.startsWith("META-INF/"))
+            return;
+
+        try
         {
-            addJar(context,JARS_WITH_FRAGMENTS,jarUrl);     
+            if (name.equals("META-INF/web-fragment.xml") && context.isConfigurationDiscovered())
+            {
+                addResource(context,METAINF_FRAGMENTS,Resource.newResource(jarUrl));     
+            }
+            else if (name.equals("META-INF/resources/") && context.isConfigurationDiscovered())
+            {
+                addResource(context,METAINF_RESOURCES,Resource.newResource("jar:"+jarUrl+"!/META-INF/resources"));
+            }
+            else
+            {
+                String lcname = name.toLowerCase();
+                if (lcname.endsWith(".tld"))
+                {
+                    addResource(context,METAINF_TLDS,Resource.newResource("jar:"+jarUrl+"!/"+name));
+                }
+            }
         }
-        else if (name.endsWith(".tld"))
+        catch(Exception e)
         {
-            addJar(context,JARS_WITH_TLDS,jarUrl);
-        }
-        else if (name.equals("meta-inf/resources") && context.isConfigurationDiscovered())
-        {
-            addJar(context,JARS_WITH_RESOURCES,jarUrl);
+            context.getServletContext().log(jarUrl+"!/"+name,e);
         }
     }
     
