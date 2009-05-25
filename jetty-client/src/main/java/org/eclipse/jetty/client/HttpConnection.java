@@ -61,10 +61,10 @@ public class HttpConnection implements Connection
 
     public void dump() throws IOException
     {
-        System.err.println("endp=" + _endp + " " + _endp.isBufferingInput() + " " + _endp.isBufferingOutput());
-        System.err.println("generator=" + _generator);
-        System.err.println("parser=" + _parser.getState() + " " + _parser.isMoreInBuffer());
-        System.err.println("exchange=" + _exchange);
+        Log.info("endp=" + _endp + " " + _endp.isBufferingInput() + " " + _endp.isBufferingOutput());
+        Log.info("generator=" + _generator);
+        Log.info("parser=" + _parser.getState() + " " + _parser.isMoreInBuffer());
+        Log.info("exchange=" + _exchange);
         if (_endp instanceof SslSelectChannelEndPoint)
             ((SslSelectChannelEndPoint)_endp).dump();
     }
@@ -296,6 +296,7 @@ public class HttpConnection implements Connection
                     }
                 }
                 failed = true;
+                Log.warn("IOE on "+_exchange);
                 throw e;
             }
             finally

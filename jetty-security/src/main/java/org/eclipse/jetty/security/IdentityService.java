@@ -17,6 +17,7 @@ import java.security.Principal;
 
 import javax.security.auth.Subject;
 
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 
 /* ------------------------------------------------------------ */
@@ -32,7 +33,7 @@ public interface IdentityService
     /**
      * Associate a user identity with the current thread.
      * This is called with as a thread enters the 
-     * {@link SecurityHandler#handle(String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)}
+     * {@link SecurityHandler#handle(String, Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)}
      * method and then again with a null argument as that call exits.
      * @param user The current user or null for no user to associated.
      */

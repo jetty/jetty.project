@@ -576,6 +576,16 @@ public class AnnotationFinder
     }
     
     
+    /**
+     * Find annotations on classes in the supplied classloader. 
+     * Only class files in jar files will be scanned.
+     * @param loader
+     * @param visitParents
+     * @param jarNamePattern
+     * @param nullInclusive
+     * @param resolver
+     * @throws Exception
+     */
     public void find (ClassLoader loader, boolean visitParents, String jarNamePattern, boolean nullInclusive, final ClassNameResolver resolver)
     throws Exception
     {
@@ -618,6 +628,57 @@ public class AnnotationFinder
             pattern = Pattern.compile(jarNamePattern);
         
         scanner.scan(pattern, loader, nullInclusive, visitParents);
+    }
+    
+    
+    /**
+     * Find annotations in classes in classes in the supplied url of jar files.
+     * @param urls
+     * @param visitParents
+     * @param jarNamePattern
+     * @param nullInclusive
+     * @param resolver
+     * @throws Exception
+     */
+    public void find (URL[] urls, boolean visitParents, String jarNamePattern, boolean nullInclusive, final ClassNameResolver resolver)
+    throws Exception
+    {
+        if (urls==null)
+            return;
+        
+        JarScanner scanner = new JarScanner()
+        {
+            public void processEntry(URL jarUrl, JarEntry entry)
+            {   
+                try
+                {
+                    String name = entry.getName();
+                    if (name.toLowerCase().endsWith(".class"))
+                    {
+                        String shortName =  name.replace('/', '.').substring(0,name.length()-6);
+                        if (!resolver.isExcluded(shortName))
+                        {
+                            if ((parsedClasses.get(shortName) == null) || (resolver.shouldOverride(shortName)))
+                            {
+                                parsedClasses.remove(shortName);
+                                Resource clazz = Resource.newResource("jar:"+jarUrl+"!/"+name);                     
+                                scanClass(clazz.getInputStream());
+                            }
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.warn("Problem processing jar entry "+entry, e);
+                }
+            }
+            
+        };
+        Pattern pattern = null;
+        if (jarNamePattern!=null)
+            pattern = Pattern.compile(jarNamePattern);
+        
+        scanner.scan(pattern, urls, nullInclusive);
     }
     
     

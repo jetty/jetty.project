@@ -288,11 +288,10 @@ public class SecurityListenerTest extends TestCase
 
          Handler testHandler = new AbstractHandler()
          {
-             public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
              {
                  // System.out.println("passed authentication!");
-                 Request base_request=(request instanceof Request)?(Request)request:HttpConnection.getCurrentConnection().getRequest();
-                 base_request.setHandled(true);
+                 baseRequest.setHandled(true);
                  response.setStatus(200);
                  if (request.getServerName().equals("jetty.eclipse.org"))
                  {

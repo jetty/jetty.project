@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
@@ -111,7 +112,7 @@ public class HandlerCollection extends AbstractHandlerContainer
     /* 
      * @see org.eclipse.jetty.server.server.EventHandler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response) 
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) 
         throws IOException, ServletException
     {
         if (_handlers!=null && isStarted())
@@ -122,7 +123,7 @@ public class HandlerCollection extends AbstractHandlerContainer
             {
                 try
                 {
-                    _handlers[i].handle(target,request, response);
+                    _handlers[i].handle(target,baseRequest, request, response);
                 }
                 catch(IOException e)
                 {

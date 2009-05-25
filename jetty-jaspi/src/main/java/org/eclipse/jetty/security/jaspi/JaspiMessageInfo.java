@@ -105,8 +105,8 @@ public class JaspiMessageInfo implements MessageInfo
 
         public boolean containsKey(Object key)
         {
-            if (MANDATORY_KEY.equals(key)) return true;
-            if (AUTH_METHOD_KEY.equals(key)) return true;
+            if (MANDATORY_KEY.equals(key)) return isMandatory;
+            if (AUTH_METHOD_KEY.equals(key)) return authMethod != null;
             return delegate != null && delegate.containsKey(key);
         }
 
@@ -204,11 +204,13 @@ public class JaspiMessageInfo implements MessageInfo
             return delegate;
         }
 
-        boolean isAuthMandatory() {
+        boolean isAuthMandatory()
+        {
             return isMandatory;
         }
 
-        String getAuthMethod() {
+        String getAuthMethod()
+        {
             return authMethod;
         }
     }

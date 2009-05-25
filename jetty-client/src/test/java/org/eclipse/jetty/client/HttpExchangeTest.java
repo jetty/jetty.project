@@ -74,16 +74,23 @@ public class HttpExchangeTest extends TestCase
 
     public void testPerf() throws Exception
     {
-        sender(1,false);
-        sender(1,true);
-        sender(10,false);
-        sender(10,true);
-        sender(100,false);
-        sender(100,true);
         if (_stress)
         {
-            sender(1000,false);
-            sender(1000,true);
+            sender(1,false);
+            sender(1,true);
+            sender(100,false);
+            sender(100,true);
+            sender(10000,false);
+            sender(10000,true);
+        }
+        else
+        {
+            sender(1,false);
+            sender(1,true);
+            sender(10,false);
+            sender(10,true);
+            sender(20,false);
+            sender(20,true);
         }
     }
 
@@ -329,13 +336,12 @@ public class HttpExchangeTest extends TestCase
         newServer();
         _server.setHandler(new AbstractHandler()
         {
-            public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 int i=0;
                 try
                 {
-                    Request base_request=(request instanceof Request)?(Request)request:HttpConnection.getCurrentConnection().getRequest();
-                    base_request.setHandled(true);
+                    baseRequest.setHandled(true);
                     response.setStatus(200);
                     _count.incrementAndGet();
                     

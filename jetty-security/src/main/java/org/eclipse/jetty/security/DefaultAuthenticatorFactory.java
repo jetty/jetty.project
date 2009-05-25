@@ -46,7 +46,7 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
 {
     LoginService _loginService;
     
-    public Authenticator getAuthenticator(Server server, ServletContext context, Configuration configuration)
+    public Authenticator getAuthenticator(Server server, ServletContext context, Configuration configuration, IdentityService identityService, LoginService loginService)
     {
         String auth=configuration.getAuthMethod();
         Authenticator authenticator=null;

@@ -324,6 +324,18 @@ public class PathMap extends HashMap implements Externalizable
         return LazyList.getList(getLazyMatches(path));
     }
 
+    /* --------------------------------------------------------------- */
+    /** Return whether the path matches any entries in the PathMap,
+     * excluding the default entry
+     * @param path Path to match
+     * @return Whether the PathMap contains any entries that match this
+     */
+    public boolean containsMatch(String path)
+    {      
+    	Entry match = getMatch(path);
+    	return match!=null && !match.equals(_default);
+    }
+
     /* --------------------------------------------------------------- */  
     public synchronized Object remove(Object pathSpec)
     {

@@ -97,7 +97,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     // TODO get rid of these dumps
     public void dump()
     {
-        System.err.println(_result);
+        Log.info(""+_result);
         // System.err.println(h.toString());
         // System.err.println("--");
     }

@@ -26,9 +26,15 @@ import org.eclipse.jetty.util.Loader;
  * org.slf4j.Logger class is found on the classpath, the static log methods
  * are directed to a slf4j logger for "org.eclipse.log".   Otherwise the logs
  * are directed to stderr.
+ * <p>
+ * The "org.eclipse.jetty.util.log.class" system property can be used
+ * to select a specific logging implementation.
+ * <p>
+ * If the system property org.eclipse.jetty.util.log.IGNORED is set, 
+ * then ignored exceptions are logged in detail.
  * 
- * If the system property VERBOSE is set, then ignored exceptions are logged in detail.
- * 
+ * @see StdErrLog
+ * @see Slf4jLog
  */
 public class Log 
 {    
@@ -42,7 +48,6 @@ public class Log
     public final static String NOT_IMPLEMENTED= "NOT IMPLEMENTED ";
     
     public static String __logClass;
-    public static boolean __verbose;
     public static boolean __ignored;
     
     static
@@ -52,8 +57,8 @@ public class Log
                 public Boolean run() 
                 { 
                     __logClass = System.getProperty("org.eclipse.jetty.util.log.class","org.eclipse.jetty.util.log.Slf4jLog"); 
-                    __verbose = System.getProperty("VERBOSE",null)!=null; 
-                    __ignored = System.getProperty("IGNORED",null)!=null; return true; 
+                    __ignored = System.getProperty("org.eclipse.jetty.util.log.IGNORED",null)!=null; 
+                    return true; 
                 }
             });
     }
@@ -95,15 +100,16 @@ public class Log
         return __log!=null;
     }
 
-    private static void initStandardLogging(Throwable e) {
+    private static void initStandardLogging(Throwable e) 
+    {
         Class log_class;
+        if(e != null && __ignored)
+            e.printStackTrace();
         if (__log==null)
         {
             log_class= StdErrLog.class;
             __log=new StdErrLog();
             __log.info("Logging to {} via {}",__log,log_class.getName());
-            if(e != null && __verbose)
-                e.printStackTrace();
         }
     }
 
@@ -196,11 +202,6 @@ public class Log
         if (!initialized())
             return;
         if (__ignored)
-        {
-            __log.warn(IGNORED,th);
-            unwind(th);
-        }
-        else if (__verbose)
         {
             __log.warn(IGNORED,th);
             unwind(th);

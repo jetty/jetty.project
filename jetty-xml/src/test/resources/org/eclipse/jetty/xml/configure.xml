@@ -1,5 +1,5 @@
 <?xml version="1.0"  encoding="ISO-8859-1"?> 
-<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure 1.2//EN" "http://jetty.eclipse.org/configure_1_2.dtd">
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure 1.2//EN" "http://www.eclipse.org/jetty/configure_1_2.dtd">
 
 <Configure class="org.eclipse.jetty.xml.TestConfiguration">
 

@@ -32,11 +32,11 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationEvent;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
 /** GZIP Filter
@@ -134,17 +134,24 @@ public class GzipFilter extends UserAgentFilter
             }
             finally
             {
-                Continuation continuation = ContinuationSupport.getContinuation(request);
+                Continuation continuation = ContinuationSupport.getContinuation(request,response);
                 if (continuation.isSuspended() && continuation.wrappersKept())   
                 {
                     continuation.addContinuationListener(new ContinuationListener()
                     {
-                        public void onComplete(ContinuationEvent event) throws IOException
+                        public void onComplete(Continuation continuation)
                         {
-                            wrappedResponse.finish();
+                            try
+                            {
+                                wrappedResponse.finish();
+                            }
+                            catch(IOException e)
+                            {
+                                Log.warn(e);
+                            }
                         }
 
-                        public void onTimeout(ContinuationEvent event) throws IOException
+                        public void onTimeout(Continuation continuation)
                         {}
                     });
                 }

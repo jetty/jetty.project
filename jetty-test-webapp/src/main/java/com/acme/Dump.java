@@ -129,7 +129,7 @@ public class Dump extends HttpServlet
                     {
                         e.printStackTrace();
                     }
-                    Continuation continuation = ContinuationSupport.getContinuation(request);
+                    Continuation continuation = ContinuationSupport.getContinuation(request,response);
                     continuation.resume();
                 }
                 
@@ -140,7 +140,7 @@ public class Dump extends HttpServlet
         {
             try
             {
-                Continuation continuation = ContinuationSupport.getContinuation(request);
+                Continuation continuation = ContinuationSupport.getContinuation(request,response);
                 continuation.setTimeout(Long.parseLong(request.getParameter("suspend")));
                 continuation.suspend();
             }
@@ -169,7 +169,7 @@ public class Dump extends HttpServlet
                     {
                         response.setContentType("text/html");
                         response.getOutputStream().println("<h1>COMPLETED</h1>"); 
-                        Continuation continuation = ContinuationSupport.getContinuation(request);
+                        Continuation continuation = ContinuationSupport.getContinuation(request,response);
                         continuation.complete();
                     }
                     catch (IOException e)

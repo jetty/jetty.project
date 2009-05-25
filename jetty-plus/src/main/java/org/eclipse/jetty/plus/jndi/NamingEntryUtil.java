@@ -239,7 +239,7 @@ public class NamingEntryUtil
         if (scope==null)
             return "";
 
-        String str = scope.toString();
+        String str = scope.getClass().getName()+"@"+scope.hashCode();
         str=str.replace('/', '_').replace(' ', '_');
         return str;
     }

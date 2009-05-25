@@ -1,7 +1,14 @@
 #!/bin/bash  
 #
 # Startup script for jetty under *nix systems (it works under NT/cygwin too).
-#
+
+# To get the service to restart correctly on reboot, uncomment below (3 lines):
+# ========================
+# chkconfig: 3 99 99
+# description: Jetty 7 webserver
+# processname: jetty
+# ========================
+
 # Configuration files
 #
 # /etc/default/jetty
@@ -76,6 +83,8 @@
 # JETTY_USER
 #   if set, then used as a username to run the server as
 #
+# Set to 0 if you do not want to use start-stop-daemon (especially on SUSE boxes)
+START_STOP_DAEMON=1
 
 usage()
 {
@@ -127,8 +136,8 @@ NO_START=0
 ##################################################
 # See if there's a default configuration file
 ##################################################
-if [ -f /etc/default/jetty6 ] ; then 
-  . /etc/default/jetty6
+if [ -f /etc/default/jetty7 ] ; then 
+  . /etc/default/jetty7
 elif [ -f /etc/default/jetty ] ; then 
   . /etc/default/jetty
 fi
@@ -189,13 +198,13 @@ if [ "$JETTY_HOME" = "" ] ; then
         /home                    \
         "
   JETTY_DIR_NAMES="              \
-        jetty-6                  \
-        jetty6                   \
-        jetty-6.*                \
+        jetty-7                  \
+        jetty7                   \
+        jetty-7.*                \
         jetty                    \
-        Jetty-6                  \
-        Jetty6                   \
-        Jetty-6.*                \
+        Jetty-7                  \
+        Jetty7                   \
+        Jetty-7.*                \
         Jetty                    \
         "
         
@@ -491,12 +500,12 @@ case "$ACTION" in
         echo -n "Starting Jetty: "
 
         if [ "$NO_START" = "1" ]; then 
-	  echo "Not starting jetty - NO_START=1 in /etc/default/jetty6";
+	  echo "Not starting jetty - NO_START=1 in /etc/default/jetty7";
           exit 0;
 	fi
 
 
-	if type start-stop-daemon > /dev/null 2>&1 
+	if [ "$START_STOP_DAEMON" = "1" ] && type start-stop-daemon > /dev/null 2>&1
 	then
           [ x$JETTY_USER = x ] && JETTY_USER=$(whoami)
 	  [ $UID = 0 ] && CH_USER="-c $JETTY_USER"
@@ -548,7 +557,7 @@ case "$ACTION" in
 
   stop)
         echo -n "Stopping Jetty: "
-	if type start-stop-daemon > /dev/null 2>&1; then
+	if [ "$START_STOP_DAEMON" = "1" ] && type start-stop-daemon > /dev/null 2>&1; then
 	  start-stop-daemon -K -p $JETTY_PID -d $JETTY_HOME -a $JAVA -s HUP 
 	  sleep 1
 	  if running $JETTY_PID
@@ -652,5 +661,6 @@ case "$ACTION" in
 esac
 
 exit 0
+
 
 

@@ -59,21 +59,19 @@ public class DumpHandler extends AbstractHandler
     /* 
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    {
-        Request base_request = (request instanceof Request) ? (Request)request:HttpConnection.getCurrentConnection().getRequest();
-        
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    {        
         if (!isStarted())
             return;
         
         if (request.getParameter("continue")!=null)
         {
-            Continuation continuation = ContinuationSupport.getContinuation(request);
+            Continuation continuation = ContinuationSupport.getContinuation(request,response);
             continuation.setTimeout(Long.parseLong(request.getParameter("continue")));
             continuation.suspend();
         }
         
-        base_request.setHandled(true);
+        baseRequest.setHandled(true);
         response.setHeader(HttpHeaders.CONTENT_TYPE,MimeTypes.TEXT_HTML);
         
         OutputStream out = response.getOutputStream();

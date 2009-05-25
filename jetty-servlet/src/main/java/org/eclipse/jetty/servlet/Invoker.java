@@ -216,8 +216,8 @@ public class Invoker extends HttpServlet
         
         if (holder!=null)
         {
-            final Request base_request=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
-            holder.handle(base_request,
+            final Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
+            holder.handle(baseRequest,
                     new InvokedRequest(request,included,servlet,servlet_path,path_info),
                           response);
         }

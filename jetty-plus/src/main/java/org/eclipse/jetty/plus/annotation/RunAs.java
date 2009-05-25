@@ -67,8 +67,6 @@ public class RunAs
     public static String getServletClassNameForHolder (ServletHolder holder)
     throws ServletException
     {
-        if (PojoServlet.class.getName().equals(holder.getClassName()))
-            return ((PojoWrapper)holder.getServlet()).getPojo().getClass().getName();
         return holder.getClassName();
     }
 

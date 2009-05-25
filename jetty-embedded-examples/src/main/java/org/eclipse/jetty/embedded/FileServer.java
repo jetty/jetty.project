@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
@@ -47,9 +48,10 @@ public class FileServer
                 response.getWriter().println(listing);
             }
         };
+        resource_handler.setWelcomeFiles(new String[]{"index.html"});
         
         resource_handler.setResourceBase(args.length==2?args[1]:".");
-        
+        Log.info("serving "+resource_handler.getBaseResource());
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[]{resource_handler,new DefaultHandler()});
         server.setHandler(handlers);

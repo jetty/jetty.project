@@ -52,6 +52,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ScopedHandler;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
@@ -74,7 +75,7 @@ import org.eclipse.jetty.util.log.Log;
  * @see org.eclipse.jetty.webapp.WebAppContext
  * 
  */
-public class ServletHandler extends AbstractHandler
+public class ServletHandler extends ScopedHandler
 {
     /* ------------------------------------------------------------ */
     public static final String __DEFAULT_SERVLET="default";
@@ -235,6 +236,16 @@ public class ServletHandler extends AbstractHandler
     }
     
     /* ------------------------------------------------------------ */
+	/** Whether there is a ServletHolder that matches this path
+ 	* @param pathInContext Path within _context.
+ 	* @return whether there is a ServletHolder that matches this path
+ 	*/
+ 	public boolean matchesPath(String pathInContext)
+ 	{
+ 	return _servletPathMap.containsMatch(pathInContext);
+ 	}
+
+ 	/* ------------------------------------------------------------ */
     /**
      * @param uriInContext uri to get dispatcher for
      * @return A {@link RequestDispatcher dispatcher} wrapping the resource at <code>uriInContext</code>,
@@ -324,27 +335,18 @@ public class ServletHandler extends AbstractHandler
     {
         return (ServletHolder)_servletNameMap.get(name);
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
-     */
-    public void handle(String target, HttpServletRequest request,HttpServletResponse response)
-        throws IOException, ServletException
+    @Override
+    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (!isStarted())
-            return;
-
         // Get the base requests
-        final Request base_request=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
-        final String old_servlet_path=base_request.getServletPath();
-        final String old_path_info=base_request.getPathInfo();
+        final String old_servlet_path=baseRequest.getServletPath();
+        final String old_path_info=baseRequest.getPathInfo();
 
-        DispatcherType type = base_request.getDispatcherType();
-        Object request_listeners=null;
-        ServletRequestEvent request_event=null;
+        DispatcherType type = baseRequest.getDispatcherType();
+       
         ServletHolder servlet_holder=null;
-        FilterChain chain=null;
         UserIdentity.Scope old_scope=null;
 
         // find the servlet
@@ -364,38 +366,81 @@ public class ServletHandler extends AbstractHandler
 
                 if (DispatcherType.INCLUDE.equals(type))
                 {
-                    base_request.setAttribute(Dispatcher.INCLUDE_SERVLET_PATH,servlet_path);
-                    base_request.setAttribute(Dispatcher.INCLUDE_PATH_INFO, path_info);
+                    baseRequest.setAttribute(Dispatcher.INCLUDE_SERVLET_PATH,servlet_path);
+                    baseRequest.setAttribute(Dispatcher.INCLUDE_PATH_INFO, path_info);
                 }
                 else
                 {
-                    base_request.setServletPath(servlet_path);
-                    base_request.setPathInfo(path_info);
+                    baseRequest.setServletPath(servlet_path);
+                    baseRequest.setPathInfo(path_info);
                 }
-
-                if (servlet_holder!=null && _filterMappings!=null && _filterMappings.length>0)
-                    chain=getFilterChain(base_request, target, servlet_holder);
             }      
         }
         else
         {
             // look for a servlet by name!
             servlet_holder=(ServletHolder)_servletNameMap.get(target);
+        }
+
+        Log.debug("servlet holder=",servlet_holder);
+
+        try
+        {
+            // Do the filter/handling thang
+            if (servlet_holder!=null)
+            {
+                old_scope=baseRequest.getUserIdentityScope();
+                baseRequest.setUserIdentityScope(servlet_holder);
+
+                nextScope(target,baseRequest,request, response);
+            }
+        }
+        finally
+        {
+            if (old_scope!=null)
+                baseRequest.setUserIdentityScope(old_scope);
+
+            if (!(DispatcherType.INCLUDE.equals(type)))
+            {
+                baseRequest.setServletPath(old_servlet_path);
+                baseRequest.setPathInfo(old_path_info); 
+            }
+        }
+        
+    }
+    
+    /* ------------------------------------------------------------ */
+    /* 
+     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
+     */
+    public void doHandle(String target, Request baseRequest,HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException
+    {
+        DispatcherType type = baseRequest.getDispatcherType();
+        
+        ServletHolder servlet_holder=(ServletHolder) baseRequest.getUserIdentityScope();
+        FilterChain chain=null;
+
+        // find the servlet
+        if (target.startsWith("/"))
+        {
+                if (servlet_holder!=null && _filterMappings!=null && _filterMappings.length>0)
+                    chain=getFilterChain(baseRequest, target, servlet_holder);
+    
+        }
+        else
+        {
             if (servlet_holder!=null)
             {
                 if (_filterMappings!=null && _filterMappings.length>0)
                 {
-                    chain=getFilterChain(base_request, null,servlet_holder);
+                    chain=getFilterChain(baseRequest, null,servlet_holder);
                 }
             }
         }
 
-        if (Log.isDebugEnabled()) 
-        {
-            Log.debug("chain="+chain);
-            Log.debug("servlet holder="+servlet_holder);
-        }
-
+        Log.debug("chain=",chain);
+        
         try
         {
             // Do the filter/handling thang
@@ -405,28 +450,12 @@ public class ServletHandler extends AbstractHandler
             }
             else
             {
-                old_scope=base_request.getUserIdentityScope();
-                base_request.setUserIdentityScope(servlet_holder);
-
-                // Handle context listeners
-                request_listeners = base_request.takeRequestListeners();
-                if (request_listeners!=null)
-                {
-                    request_event = new ServletRequestEvent(getServletContext(),request);
-                    final int s=LazyList.size(request_listeners);
-                    for(int i=0;i<s;i++)
-                    {
-                        final ServletRequestListener listener = (ServletRequestListener)LazyList.get(request_listeners,i);
-                        listener.requestInitialized(request_event);
-                    }
-                }
-
-                base_request.setHandled(true);
+                baseRequest.setHandled(true);
 
                 if (chain!=null)
                     chain.doFilter(request, response);
                 else 
-                    servlet_holder.handle(base_request,request,response);
+                    servlet_holder.handle(baseRequest,request,response);
             }
         }
         catch(RetryRequest e)
@@ -449,7 +478,6 @@ public class ServletHandler extends AbstractHandler
                     throw (ServletException)e;
             }
 
-
             // unwrap cause
             Throwable th=e;
             if (th instanceof UnavailableException)
@@ -467,7 +495,7 @@ public class ServletHandler extends AbstractHandler
             // handle or log exception
             if (th instanceof RetryRequest)
             {
-                base_request.setHandled(false);
+                baseRequest.setHandled(false);
                 throw (RetryRequest)th;  
             }
             else if (th instanceof HttpException)
@@ -523,26 +551,6 @@ public class ServletHandler extends AbstractHandler
             }
             else
                 if(Log.isDebugEnabled())Log.debug("Response already committed for handling ",e);
-        }
-        finally
-        {
-            if (request_listeners!=null)
-            {
-                for(int i=LazyList.size(request_listeners);i-->0;)
-                {
-                    final ServletRequestListener listener = (ServletRequestListener)LazyList.get(request_listeners,i);
-                    listener.requestDestroyed(request_event);
-                }
-            }
-
-            if (old_scope!=null)
-                base_request.setUserIdentityScope(old_scope);
-
-            if (!(DispatcherType.INCLUDE.equals(type)))
-            {
-                base_request.setServletPath(old_servlet_path);
-                base_request.setPathInfo(old_path_info); 
-            }
         }
     }
 
@@ -1198,18 +1206,18 @@ public class ServletHandler extends AbstractHandler
                     filter.doFilter(request, response, _next);
                 else
                 {
-                    final Request base_request=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
-                    final boolean suspendable=base_request.isAsyncSupported();
+                    final Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
+                    final boolean suspendable=baseRequest.isAsyncSupported();
                     if (suspendable)
                     {
                         try
                         {
-                            base_request.setAsyncSupported(false);
+                            baseRequest.setAsyncSupported(false);
                             filter.doFilter(request, response, _next);
                         }
                         finally
                         {
-                            base_request.setAsyncSupported(true);
+                            baseRequest.setAsyncSupported(true);
                         }
                     }
                     else
@@ -1223,8 +1231,8 @@ public class ServletHandler extends AbstractHandler
             {
                 if (Log.isDebugEnabled())
                     Log.debug("call servlet " + _servletHolder);
-                final Request base_request=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
-                _servletHolder.handle(base_request,request, response);
+                final Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
+                _servletHolder.handle(baseRequest,request, response);
             }
             else // Not found
                 notFound((HttpServletRequest)request, (HttpServletResponse)response);
@@ -1429,5 +1437,6 @@ public class ServletHandler extends AbstractHandler
         }
 
     }
+
     
 }

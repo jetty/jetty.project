@@ -67,11 +67,11 @@ public class TestConfiguration extends TestCase
         assertNotNull(NamingEntryUtil.lookupNamingEntry(wac, "zzz/e"));
         
         Configuration config = new Configuration();
-        config.setWebAppContext(wac);
+        
         EnvConfiguration envConfig = new EnvConfiguration();
-        envConfig.setWebAppContext(wac);
-        envConfig.configureDefaults();
-        envConfig.bindEnvEntries();
+        
+        envConfig.preConfigure(wac);
+        envConfig.bindEnvEntries(wac);
         
         String val = (String)ic.lookup("java:comp/env/xxx/a");
         assertEquals("900", val); //webapp naming overrides server
@@ -95,20 +95,20 @@ public class TestConfiguration extends TestCase
         ne = (NamingEntry)ic.lookup("java:comp/env/"+NamingEntry.__contextName+"/zzz/e");
         assertNotNull(ne);
         
-        config.bindEnvEntry("foo", "99");
+        config.bindEnvEntry(wac, "foo", "99");
         assertEquals("99",ic.lookup( "java:comp/env/foo"));
         
-        config.bindEnvEntry("xxx/a", "7");
+        config.bindEnvEntry(wac, "xxx/a", "7");
         assertEquals("900", ic.lookup("java:comp/env/xxx/a")); //webapp overrides web.xml
-        config.bindEnvEntry("yyy/b", "7");
+        config.bindEnvEntry(wac, "yyy/b", "7");
         assertEquals("910", ic.lookup("java:comp/env/yyy/b"));//webapp overrides web.xml
-        config.bindEnvEntry("zzz/c", "7");
+        config.bindEnvEntry(wac,"zzz/c", "7");
         assertEquals("7", ic.lookup("java:comp/env/zzz/c"));//webapp does NOT override web.xml
-        config.bindEnvEntry("zzz/d", "7");
+        config.bindEnvEntry(wac,"zzz/d", "7");
         assertEquals("7", ic.lookup("java:comp/env/zzz/d"));//server does NOT override web.xml
-        config.bindEnvEntry("zzz/e", "7");
+        config.bindEnvEntry(wac,"zzz/e", "7");
         assertEquals("7", ic.lookup("java:comp/env/zzz/e"));//webapp does NOT override web.xml
-        config.bindEnvEntry("zzz/f", "7");
+        config.bindEnvEntry(wac,"zzz/f", "7");
         assertEquals("500", ic.lookup("java:comp/env/zzz/f"));//server overrides web.xml
         
         ((Context)ic.lookup("java:comp")).destroySubcontext("env");

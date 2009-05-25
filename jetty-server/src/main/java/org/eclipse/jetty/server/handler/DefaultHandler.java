@@ -70,14 +70,12 @@ public class DefaultHandler extends AbstractHandler
     /* 
      * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    {      
-        Request base_request = request instanceof Request?(Request)request:HttpConnection.getCurrentConnection().getRequest();
-        
-        if (response.isCommitted() || base_request.isHandled())
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    {              
+        if (response.isCommitted() || baseRequest.isHandled())
             return;
         
-        base_request.setHandled(true);
+        baseRequest.setHandled(true);
         
         String method=request.getMethod();
 

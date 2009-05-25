@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.PathMap;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 
 /* ------------------------------------------------------------ */
@@ -322,7 +323,7 @@ public class RewriteHandler extends HandlerWrapper
     /* (non-Javadoc)
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (isStarted())
         { 
@@ -331,7 +332,7 @@ public class RewriteHandler extends HandlerWrapper
             
             if (!_rules.isHandled())
             {
-                super.handle(target, request, response);
+                super.handle(target, baseRequest, request, response);
             }
         }
     }

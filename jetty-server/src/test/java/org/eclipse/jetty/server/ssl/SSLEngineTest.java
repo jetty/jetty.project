@@ -37,6 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
@@ -246,7 +247,7 @@ public class SSLEngineTest extends TestCase
         // ~ Methods
         // ------------------------------------------------------------
 
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             // System.err.println("HANDLE "+request.getRequestURI());
             String ssl_id = (String)request.getAttribute("javax.servlet.request.ssl_session_id");

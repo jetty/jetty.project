@@ -118,7 +118,7 @@ public class ProxyServlet implements Servlet
             final InputStream in=request.getInputStream();
             final OutputStream out=response.getOutputStream();
 
-            final Continuation continuation = ContinuationSupport.getContinuation(request);
+            final Continuation continuation = ContinuationSupport.getContinuation(request,response);
             
             if (!continuation.isInitial())
                 response.sendError(HttpServletResponse.SC_GATEWAY_TIMEOUT); // Need better test that isInitial

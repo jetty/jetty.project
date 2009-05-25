@@ -210,7 +210,7 @@ public class StatisticsHandlerTest extends TestCase
             _lock = lock;
         }
 
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (!((Request)request).isAsyncStarted())
             {
@@ -243,7 +243,7 @@ public class StatisticsHandlerTest extends TestCase
             _suspendFor = suspendFor;
         }
 
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (!((Request)request).isAsyncStarted())
             {
@@ -256,7 +256,7 @@ public class StatisticsHandlerTest extends TestCase
 
     private static class ResumeHandler extends HandlerWrapper
     {
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (!((Request)request).isAsyncStarted())
             {
@@ -276,7 +276,7 @@ public class StatisticsHandlerTest extends TestCase
             _duration = duration;
         }
 
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (!((Request)request).isAsyncStarted())
             {
@@ -304,7 +304,7 @@ public class StatisticsHandlerTest extends TestCase
             _suspendFor = suspendFor;
         }
 
-        public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
 
             Integer i = (Integer)request.getAttribute("i");
@@ -346,11 +346,9 @@ public class StatisticsHandlerTest extends TestCase
             _lock = lock;
         }
         
-        public void handle(String target, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            final Request base_request=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
-            
-            if(!base_request.isAsyncStarted())
+        public void handle(String target, final Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {            
+            if(!baseRequest.isAsyncStarted())
             {
                 try
                 {
@@ -359,9 +357,9 @@ public class StatisticsHandlerTest extends TestCase
                 {
                 }
                 
-                base_request.setAsyncTimeout(_completeDuration*10);
+                baseRequest.setAsyncTimeout(_completeDuration*10);
                 
-                base_request.startAsync();
+                baseRequest.startAsync();
                 
                 (new Thread() {
                     public void run()
@@ -369,7 +367,7 @@ public class StatisticsHandlerTest extends TestCase
                         try
                         {
                             Thread.sleep(_completeDuration);
-                            base_request.getAsyncContext().complete();
+                            baseRequest.getAsyncContext().complete();
                             
                             synchronized(_lock)
                             {

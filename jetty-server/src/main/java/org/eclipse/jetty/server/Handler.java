@@ -27,6 +27,7 @@ public interface Handler extends LifeCycle
     /* ------------------------------------------------------------ */
     /** Handle a request.
      * @param target The target of the request - either a URI or a name.
+     * @param baseRequest TODO
      * @param request The request either as the {@link Request}
      * object or a wrapper of that request. The {@link HttpConnection#getCurrentConnection()} 
      * method can be used access the Request object if required.
@@ -36,7 +37,7 @@ public interface Handler extends LifeCycle
      * @throws IOException
      * @throws ServletException
      */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response)
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException;
     
     public void setServer(Server server);

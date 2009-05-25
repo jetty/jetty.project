@@ -164,10 +164,12 @@ public class TestAnnotationInheritance extends TestCase
         assertEquals(6, annotatedFields.size());
         
         InjectionCollection injections = new InjectionCollection();
+        wac.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
         LifeCycleCallbackCollection callbacks = new LifeCycleCallbackCollection();
+        wac.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, callbacks);
         RunAsCollection runAses = new RunAsCollection();
-        AnnotationProcessor processor = new AnnotationProcessor(wac, finder, runAses, injections, callbacks, 
-                Collections.EMPTY_LIST, Collections.EMPTY_LIST, Collections.EMPTY_LIST, Collections.EMPTY_LIST, Collections.EMPTY_LIST);
+        wac.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAses);
+        AnnotationProcessor processor = new AnnotationProcessor(wac, finder);
         //process with all the specific annotations turned into injections, callbacks etc
         processor.process();
         

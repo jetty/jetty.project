@@ -17,61 +17,39 @@ package org.eclipse.jetty.webapp;
 /* ------------------------------------------------------------------------------- */
 /** Base Class for WebApplicationContext Configuration.
  * This class can be extended to customize or extend the configuration
- * of the WebApplicationContext.  If WebApplicationContext.setConfiguration is not
- * called, then an XMLConfiguration instance is created.
- * 
- * 
+ * of the WebApplicationContext. 
  */
 public interface Configuration 
 {
+
     /* ------------------------------------------------------------------------------- */
-    /** Set up a context on which to perform the configuration.
-     * @param context
-     */
-    public void setWebAppContext (WebAppContext context);
-    
-    /* ------------------------------------------------------------------------------- */
-    /** Get the context on which the configuration is performed.
-     */
-    public WebAppContext getWebAppContext();
-    
-    /* ------------------------------------------------------------------------------- */
-    /** Configure ClassPath.
-     * This method is called to configure the context ClassLoader.  It is called just
-     * after a new WebAppClassLoader is constructed and before it has been used.
-     * Class paths may be added, options changed or the loader totally replaced. 
+    /** Set up for configuration.
      * @throws Exception
      */
-    public void configureClassLoader()
-    throws Exception;
-    
-    /* ------------------------------------------------------------------------------- */
-    /** Configure Defaults.
-     * This method is called to intialize the context to the containers default configuration.
-     * Typically this would mean application of the webdefault.xml file. 
-     * @throws Exception
-     */
-    public  void configureDefaults()
-    throws Exception;
+    public void preConfigure (WebAppContext context) throws Exception;
     
     
     /* ------------------------------------------------------------------------------- */
     /** Configure WebApp.
-     * This method is called to apply the standard and vendor deployment descriptors.
-     * Typically this is web.xml and jetty-web.xml.  
+     * 
      * @throws Exception
      */
-    public  void configureWebApp()
-    throws Exception;
-
+    public void configure (WebAppContext context) throws Exception;
+    
+    
+    /* ------------------------------------------------------------------------------- */
+    /** Clear down after configuration.
+     * @throws Exception
+     */
+    public void postConfigure (WebAppContext context) throws Exception;
+    
     /* ------------------------------------------------------------------------------- */
     /** DeConfigure WebApp.
-     * This method is called to undo all configuration done to this webapphandler. This is
+     * This method is called to undo all configuration done. This is
      * called to allow the context to work correctly over a stop/start cycle
      * @throws Exception
      */
-    public  void deconfigureWebApp()
-    throws Exception;
+    public void deconfigure (WebAppContext context) throws Exception;
     
     
 }

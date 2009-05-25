@@ -74,6 +74,8 @@ public abstract class AbstractConnector extends AbstractBuffers implements Conne
     
     Object _statsLock = new Object();
     transient long _statsStartedAt=-1;
+    
+    // TODO use concurrents for these!
     transient int _requests;
     transient int _connections;                  // total number of connections made to server
     
@@ -922,6 +924,8 @@ public abstract class AbstractConnector extends AbstractBuffers implements Conne
         {
             long duration=System.currentTimeMillis()-connection.getTimeStamp();
             int requests=connection.getRequests();
+            
+            
             synchronized(_statsLock)
             {
                 _requests+=requests;
@@ -943,8 +947,6 @@ public abstract class AbstractConnector extends AbstractBuffers implements Conne
             }
         }
         
-        if (connection!=null)
-            connection.destroy();
     }
 
     /* ------------------------------------------------------------ */

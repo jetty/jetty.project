@@ -319,12 +319,12 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         
         if (_authenticator==null && _authenticatorFactory!=null && _identityService!=null)
         {
-            _authenticator=_authenticatorFactory.getAuthenticator(getServer(),ContextHandler.getCurrentContext(),this);
+            _authenticator=_authenticatorFactory.getAuthenticator(getServer(),ContextHandler.getCurrentContext(),this, _identityService, _loginService);
             if (_authenticator!=null)
                 _authMethod=_authenticator.getAuthMethod();
         }
 
-        if (_authenticator==null) 
+        if (_authenticator==null)
         {
             if (_realmName!=null)
             {
@@ -338,7 +338,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             if (_authenticator instanceof LifeCycle)
                 ((LifeCycle)_authenticator).start();
         }
-        
+
         super.doStart();
     }
 
@@ -381,78 +381,85 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
      *      javax.servlet.http.HttpServletRequest,
      *      javax.servlet.http.HttpServletResponse, int)
      */
-    public void handle(String pathInContext, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String pathInContext, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        final Request base_request = (request instanceof Request) ? (Request) request : HttpConnection.getCurrentConnection().getRequest();
-        final Response base_response = (response instanceof Response) ? (Response) response : HttpConnection.getCurrentConnection().getResponse();
+        final Response base_response = baseRequest.getResponse();
         final Handler handler=getHandler();
         
         if (handler==null)
             return;
         
-        if (_authenticator!=null && checkSecurity(base_request))
+        if (_authenticator!=null && checkSecurity(baseRequest))
         {
-            Object constraintInfo = prepareConstraintInfo(pathInContext, base_request);
+            Object constraintInfo = prepareConstraintInfo(pathInContext, baseRequest);
             
             // Check data constraints
-            if (!checkUserDataPermissions(pathInContext, base_request, base_response, constraintInfo))
+            if (!checkUserDataPermissions(pathInContext, baseRequest, base_response, constraintInfo))
             {
-                if (!base_request.isHandled())
+                if (!baseRequest.isHandled())
                 {
                     response.sendError(Response.SC_FORBIDDEN);
-                    base_request.setHandled(true);
+                    baseRequest.setHandled(true);
                 }
                 return;
             }
 
             // is Auth mandatory?
-            boolean isAuthMandatory = isAuthMandatory(base_request, base_response, constraintInfo);
+            boolean isAuthMandatory = isAuthMandatory(baseRequest, base_response, constraintInfo);
 
             // check authentication
             try
             {
                 final Authenticator authenticator = _authenticator;
-                Authentication authentication = base_request.getAuthentication();
+                Authentication authentication = baseRequest.getAuthentication();
                 if (authentication==null || authentication==Authentication.NOT_CHECKED)
                     authentication=authenticator.validateRequest(request, response, isAuthMandatory);
-           
-                
+
+                if (authentication instanceof Authentication.Wrapped)
+                {
+                    request=((Authentication.Wrapped)authentication).getHttpServletRequest();
+                    response=((Authentication.Wrapped)authentication).getHttpServletResponse();
+                }
+
                 if (authentication instanceof Authentication.ResponseSent)
                 {
-                    base_request.setHandled(true);
+                    baseRequest.setHandled(true);
                 }
                 else if (authentication instanceof Authentication.User)
                 {
                     Authentication.User userAuth = (Authentication.User)authentication;
-                    base_request.setAuthentication(authentication);
-                    _identityService.associate(userAuth.getUserIdentity());  
-                  
-                    boolean authorized=checkWebResourcePermissions(pathInContext, base_request, base_response, constraintInfo, userAuth.getUserIdentity());
-                    if (isAuthMandatory && !authorized)
+                    baseRequest.setAuthentication(authentication);
+                    _identityService.associate(userAuth.getUserIdentity());
+
+                    if (isAuthMandatory)
                     {
-                        response.sendError(Response.SC_FORBIDDEN, "!role");
-                        base_request.setHandled(true);
-                        return;
+                        boolean authorized=checkWebResourcePermissions(pathInContext, baseRequest, base_response, constraintInfo, userAuth.getUserIdentity());
+                        if (!authorized)
+                        {
+                            response.sendError(Response.SC_FORBIDDEN, "!role");
+                            baseRequest.setHandled(true);
+                            return;
+                        }
                     }
                          
-                    handler.handle(pathInContext, request, response);
+                    handler.handle(pathInContext, baseRequest, request, response);
                     authenticator.secureResponse(request, response, isAuthMandatory, userAuth);
                 }
                 else if (authentication instanceof Authentication.Deferred)
                 {
                     DeferredAuthentication lazy= (DeferredAuthentication)authentication;
                     lazy.setIdentityService(_identityService);
-                    base_request.setAuthentication(authentication);
-                    
+                    baseRequest.setAuthentication(authentication);
+
                     try
                     {
-                        handler.handle(pathInContext, request, response);
+                        handler.handle(pathInContext, baseRequest, request, response);
                     }
                     finally
                     {
                         lazy.setIdentityService(null);
                     }
-                    Authentication auth=base_request.getAuthentication();
+                    Authentication auth=baseRequest.getAuthentication();
                     if (auth instanceof Authentication.User)
                     {
                         Authentication.User userAuth = (Authentication.User)auth;
@@ -463,8 +470,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 }
                 else
                 {
-                    base_request.setAuthentication(authentication);
-                    handler.handle(pathInContext, request, response);
+                    baseRequest.setAuthentication(authentication);
+                    handler.handle(pathInContext, baseRequest, request, response);
                     authenticator.secureResponse(request, response, isAuthMandatory, null);
                 }
             }
@@ -476,11 +483,11 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             }
             finally
             {
-                _identityService.associate(null);  
+                _identityService.associate(null);
             }
         }
         else
-            handler.handle(pathInContext, request, response);
+            handler.handle(pathInContext, baseRequest, request, response);
     }
 
 
@@ -491,7 +498,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     protected abstract boolean checkUserDataPermissions(String pathInContext, Request request, Response response, Object constraintInfo) throws IOException;
 
     /* ------------------------------------------------------------ */
-    protected abstract boolean isAuthMandatory(Request base_request, Response base_response, Object constraintInfo);
+    protected abstract boolean isAuthMandatory(Request baseRequest, Response base_response, Object constraintInfo);
 
     /* ------------------------------------------------------------ */
     protected abstract boolean checkWebResourcePermissions(String pathInContext, Request request, Response response, Object constraintInfo,

@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.TypeUtil;
@@ -59,7 +60,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
     /* 
      * @see org.eclipse.jetty.server.handler.ErrorHandler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
-    public void handle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         String method = request.getMethod();
         if(!method.equals(HttpMethods.GET) && !method.equals(HttpMethods.POST))
@@ -145,7 +146,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
             }
         }
         
-        super.handle(target, request, response);
+        super.handle(target, baseRequest, request, response);
     }
 
     /* ------------------------------------------------------------ */

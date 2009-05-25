@@ -153,7 +153,6 @@ public class JDBCLoginService extends MappedLoginService
                    + _userRoleTableRoleKey;
         
         Loader.loadClass(this.getClass(), _jdbcDriver).newInstance();
-        connectDatabase();
         super.doStart();
     }
 
@@ -208,6 +207,7 @@ public class JDBCLoginService extends MappedLoginService
         {
             _users.clear();
             _lastHashPurge = now;
+            closeConnection();
         }
         
         return super.login(username,credentials);
@@ -256,8 +256,22 @@ public class JDBCLoginService extends MappedLoginService
         catch (SQLException e)
         {
             Log.warn("UserRealm " + getName() + " could not load user information from database", e);
-            connectDatabase();
+            closeConnection();
         }
         return null;
     }
+
+    /**
+     * Close an existing connection
+     */
+    private void closeConnection ()
+    {
+        if (_con != null)
+        {
+            if (Log.isDebugEnabled()) Log.debug("Closing db connection for JDBCUserRealm");
+            try { _con.close(); }catch (Exception e) {Log.ignore(e);}
+        }
+        _con = null;
+    }
+
 }

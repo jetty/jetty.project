@@ -14,11 +14,8 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.List;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -212,23 +209,21 @@ public class FormAuthenticator extends LoginAuthenticator
                     response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formErrorPage));
                 }
                 
-                return Authentication.FAILURE;
+                return Authentication.SEND_FAILURE;
             }
             
             if (mandatory) 
             {
                 // redirect to login page
-                if (request.getQueryString() != null)
-                    uri += "?" + request.getQueryString();
-                
                 synchronized (session)
                 {
                     if (session.getAttribute(__J_URI)==null)
-                        session.setAttribute(__J_URI, request.getScheme() + "://"
-                                + request.getServerName()
-                                + ":"
-                                + request.getServerPort()
-                                + URIUtil.addPaths(request.getContextPath(), uri));
+                    {
+                        StringBuffer buf = request.getRequestURL();
+                        if (request.getQueryString() != null)
+                            buf.append("?").append(request.getQueryString());
+                        session.setAttribute(__J_URI, buf.toString());
+                    }
                 }
 
                 if (_dispatch)
@@ -242,7 +237,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 {
                     response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formLoginPage));
                 }
-                return Authentication.CHALLENGE;
+                return Authentication.SEND_CONTINUE;
             }
             
             return Authentication.UNAUTHENTICATED;            

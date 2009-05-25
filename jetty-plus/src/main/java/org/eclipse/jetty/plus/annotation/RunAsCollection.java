@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class RunAsCollection
 {
+    public static final String RUNAS_COLLECTION = "org.eclipse.jetty.runAsCollection";
     private HashMap _runAsMap = new HashMap();//map of classname to run-as
     
     

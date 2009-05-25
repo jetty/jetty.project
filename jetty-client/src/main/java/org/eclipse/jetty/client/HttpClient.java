@@ -85,7 +85,7 @@ public class HttpClient extends AbstractBuffers implements Attributes
 
     private int _connectorType = CONNECTOR_SELECT_CHANNEL;
     private boolean _useDirectBuffers = true;
-    private int _maxConnectionsPerAddress = 32;
+    private int _maxConnectionsPerAddress = Integer.MAX_VALUE;
     private Map<Address, HttpDestination> _destinations = new HashMap<Address, HttpDestination>();
     ThreadPool _threadPool;
     Connector _connector;
@@ -121,12 +121,19 @@ public class HttpClient extends AbstractBuffers implements Attributes
     private AttributesMap _attributes=new AttributesMap();
 
     /* ------------------------------------------------------------------------------- */
-    public void dump() throws IOException
+    public void dump()
     {
-        for (Map.Entry<Address, HttpDestination> entry : _destinations.entrySet())
+        try
         {
-            System.err.println("\n" + entry.getKey() + ":");
-            entry.getValue().dump();
+            for (Map.Entry<Address, HttpDestination> entry : _destinations.entrySet())
+            {
+                Log.info("\n" + entry.getKey() + ":");
+                entry.getValue().dump();
+            }
+        }
+        catch(Exception e)
+        {
+            Log.warn(e);
         }
     }
 

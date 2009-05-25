@@ -32,13 +32,16 @@ import java.net.Socket;
  */
 public class Monitor extends Thread
 {
-    private int _port = Integer.getInteger("STOP.PORT", -1).intValue();
-    private String _key = System.getProperty("STOP.KEY", null);
+    private int _port;
+    private String _key;
 
     ServerSocket _socket;
     
-    Monitor()
+    Monitor(int port,String key)
     {
+        _port=port;
+        _key=key;
+        
         try
         {
             if(_port<0)
@@ -55,12 +58,12 @@ public class Monitor extends Thread
             if (_key==null)
             {
                 _key=Long.toString((long)(Long.MAX_VALUE*Math.random()+this.hashCode()+System.currentTimeMillis()),36);
-                System.out.println("-DSTOP.KEY="+_key);
+                System.out.println("STOP.KEY="+_key);
             }
         }
         catch(Exception e)
         {
-            if (Main._debug)
+            if (Main.DEBUG)
                 e.printStackTrace();
             else
                 System.err.println(e.toString());
@@ -86,7 +89,7 @@ public class Monitor extends Thread
                     continue;
                 
                 String cmd=lin.readLine();
-                if (Main._debug) System.err.println("command="+cmd);
+                if (Main.DEBUG) System.err.println("command="+cmd);
                 if ("stop".equals(cmd))
                 {
                     try {socket.close();}catch(Exception e){e.printStackTrace();}
@@ -101,7 +104,7 @@ public class Monitor extends Thread
             }
             catch(Exception e)
             {
-                if (Main._debug)
+                if (Main.DEBUG)
                     e.printStackTrace();
                 else
                     System.err.println(e.toString());
@@ -120,9 +123,9 @@ public class Monitor extends Thread
     /** Start a Monitor.
      * This static method starts a monitor that listens for admin requests.
      */
-    public static void monitor()
+    public static void monitor(int port,String key)
     {
-        new Monitor();
+        new Monitor(port,key);
     }
  
 }
