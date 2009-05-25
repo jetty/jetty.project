@@ -71,6 +71,7 @@ public class TestConfiguration extends TestCase
         EnvConfiguration envConfig = new EnvConfiguration();
         
         envConfig.preConfigure(wac);
+        envConfig.configure(wac);
         envConfig.bindEnvEntries(wac);
         
         String val = (String)ic.lookup("java:comp/env/xxx/a");
