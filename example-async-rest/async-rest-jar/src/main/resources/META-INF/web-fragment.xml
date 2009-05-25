@@ -1,5 +1,4 @@
 <web-fragment>
-
 	<servlet>
 		<display-name>SerialRestServlet</display-name>
 		<servlet-name>SerialRestServlet</servlet-name>
@@ -19,6 +18,5 @@
 	<servlet-mapping>
 		<servlet-name>AsyncRestServlet</servlet-name>
 		<url-pattern>/testAsync</url-pattern>
-	</servlet-mapping>
-	
+	</servlet-mapping>	
 </web-fragment>

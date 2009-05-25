@@ -78,7 +78,7 @@ public class SerialRestServlet extends AbstractRestServlet
         out.print("Total Time: "+ms(total)+"ms<br/>");
         out.print("Thread held (<span class='red'>red</span>): "+ms(total)+"ms<br/>");
         
-        out.println("<img border='0px' src='red.png'   height='20px' width='"+width(total)+"px'>");
+        out.println("<img border='0px' src='asyncrest/red.png'   height='20px' width='"+width(total)+"px'>");
         
         out.println("<hr />");
         out.println(thumbs);

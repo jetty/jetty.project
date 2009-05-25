@@ -14,12 +14,9 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.net.URL;
 import java.util.List;
-import java.util.jar.JarEntry;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -94,7 +91,9 @@ public class FragmentConfiguration implements Configuration
         if (frags!=null)
         {
             for (Resource frag : frags)
-                processor.parseFragment(frag.getURL());
+            {
+                processor.parseFragment("jar:"+frag.getURL()+"!/META-INF/web-fragment.xml");
+            }
         }
     }
 
