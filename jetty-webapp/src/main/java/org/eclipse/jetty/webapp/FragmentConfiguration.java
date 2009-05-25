@@ -95,7 +95,9 @@ public class FragmentConfiguration implements Configuration
         if (frags!=null)
         {
             for (Resource frag : frags)
-                processor.parseFragment(frag.getURL());
+            {
+                processor.parseFragment("jar:"+frag.getURL()+"!/META-INF/web-fragment.xml");
+            }
         }
     }
 

@@ -71,21 +71,18 @@ public class WebInfConfiguration implements Configuration
         }
         
         // Look for extra resource
-        List<URL> urls = (List<URL>)context.getAttribute(RESOURCE_URLS);
-        if (urls!=null)
+        List<Resource> resources = (List<Resource>)context.getAttribute(RESOURCE_URLS);
+        if (resources!=null)
         {
-            Resource[] resources=new Resource[urls.size()+1];
+            Resource[] collection=new Resource[resources.size()+1];
             int i=0;
-            resources[i++]=context.getBaseResource();
-            for (URL url : urls)
-                resources[i++]=Resource.newResource(url);
-            ResourceCollection collection=new ResourceCollection(resources);
-            context.setBaseResource(collection);
+            collection[i++]=context.getBaseResource();
+            for (Resource resource : resources)
+                collection[i++]=resource;
+            context.setBaseResource(new ResourceCollection(collection));
         }
     }
-
-
-
+    
     public void deconfigure(WebAppContext context) throws Exception
     {
         // delete temp directory if we had to create it or if it isn't called work

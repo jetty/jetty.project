@@ -52,6 +52,8 @@ import org.eclipse.jetty.xml.XmlParser;
 public class TagLibConfiguration implements Configuration
 {
     public static final String TLD_RESOURCES = "org.eclipse.jetty.tlds";
+    
+    // TODO support patterns
     private static final String __web_inf_pattern = "org.eclipse.jetty.webapp.WebInfIncludeTLDJarPattern";
     private static final String __container_pattern = "org.eclipse.jetty.server.webapp.ContainerIncludeTLDJarPattern";
     
@@ -259,12 +261,10 @@ public class TagLibConfiguration implements Configuration
         //    else
         //       examine only files matching pattern
         //
-        String tmp = context.getInitParameter(__web_inf_pattern);
-        Pattern webInfPattern = (tmp==null?null:Pattern.compile(tmp));
-        tmp = context.getInitParameter(__container_pattern);
-        Pattern containerPattern = (tmp==null?null:Pattern.compile(tmp));
-
-        tlds.addAll((Collection<Resource>)context.getAttribute(TLD_RESOURCES));
+        
+        Collection<Resource> tld_resources=(Collection<Resource>)context.getAttribute(TLD_RESOURCES);
+        if (tld_resources!=null)
+            tlds.addAll(tld_resources);
         
         // Create a processor for the tlds and save it
         TldProcessor processor = new TldProcessor (context);

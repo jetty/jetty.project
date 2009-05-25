@@ -224,14 +224,14 @@ public class WebXmlProcessor
         return _webXmlRoot;
     }
     
-    public XmlParser.Node parseFragment (URL fragment)
+    public XmlParser.Node parseFragment (String fragment)
     throws Exception
     {
         if (isMetaDataComplete())
             return null; //do not process anything else if main web.xml file is complete
         
         //Metadata-complete is not set, or there is no web.xml
-        XmlParser.Node root = _xmlParser.parse(fragment.toString());
+        XmlParser.Node root = _xmlParser.parse(fragment);
         _webFragmentRoots.add(root);
         return root;
     }
