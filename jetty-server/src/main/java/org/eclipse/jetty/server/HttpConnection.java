@@ -545,10 +545,6 @@ public class HttpConnection implements Connection
                     }
 
                 }
-                catch (RetryRequest r)
-                {
-                    Log.ignore(r);
-                }
                 catch (EofException e)
                 {
                     Log.ignore(e);

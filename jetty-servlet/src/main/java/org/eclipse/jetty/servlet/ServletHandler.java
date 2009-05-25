@@ -29,8 +29,6 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
-import javax.servlet.ServletRequestEvent;
-import javax.servlet.ServletRequestListener;
 import javax.servlet.ServletResponse;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletRequest;
@@ -43,14 +41,10 @@ import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.DispatcherType;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.RetryRequest;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ScopedHandler;
 import org.eclipse.jetty.util.LazyList;
@@ -58,7 +52,6 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
-
 
 /* --------------------------------------------------------------------- */
 /** Servlet HttpHandler.
@@ -399,9 +392,8 @@ public class ServletHandler extends ScopedHandler
         // find the servlet
         if (target.startsWith("/"))
         {
-                if (servlet_holder!=null && _filterMappings!=null && _filterMappings.length>0)
-                    chain=getFilterChain(baseRequest, target, servlet_holder);
-    
+            if (servlet_holder!=null && _filterMappings!=null && _filterMappings.length>0)
+                chain=getFilterChain(baseRequest, target, servlet_holder);
         }
         else
         {
@@ -432,10 +424,6 @@ public class ServletHandler extends ScopedHandler
                 else 
                     servlet_holder.handle(baseRequest,request,response);
             }
-        }
-        catch(RetryRequest e)
-        {
-            throw e;
         }
         catch(EofException e)
         {
@@ -468,12 +456,7 @@ public class ServletHandler extends ScopedHandler
             }
 
             // handle or log exception
-            if (th instanceof RetryRequest)
-            {
-                baseRequest.setHandled(false);
-                throw (RetryRequest)th;  
-            }
-            else if (th instanceof HttpException)
+            if (th instanceof HttpException)
             {
                 throw (HttpException)th;
             }

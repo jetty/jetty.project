@@ -13,12 +13,9 @@
 
 package org.eclipse.jetty.servlet;
 
-import java.util.EnumSet;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
 
-import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.util.log.Log;
 
 /* --------------------------------------------------------------------- */

@@ -16,11 +16,7 @@ package org.eclipse.jetty.annotations;
 import java.util.EventListener;
 import java.util.List;
 
-import org.eclipse.jetty.plus.annotation.InjectionCollection;
-import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.plus.servlet.ServletHandler;
-import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHolder;

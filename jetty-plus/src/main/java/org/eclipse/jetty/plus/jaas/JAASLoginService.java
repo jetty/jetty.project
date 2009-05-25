@@ -34,7 +34,6 @@ import org.eclipse.jetty.plus.jaas.callback.ObjectCallback;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;

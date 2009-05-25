@@ -16,7 +16,6 @@ package org.eclipse.jetty.servlet;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Handler;
