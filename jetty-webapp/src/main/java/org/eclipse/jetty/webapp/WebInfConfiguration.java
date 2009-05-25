@@ -483,7 +483,10 @@ public class WebInfConfiguration implements Configuration
         //Virtual host (if there is one)
         canonicalName.append("_");
         String[] vhosts = context.getVirtualHosts();
-        canonicalName.append((vhosts==null||vhosts[0]==null?"":vhosts[0]));
+        if (vhosts == null || vhosts.length <= 0)
+            canonicalName.append("");
+        else
+            canonicalName.append(vhosts[0]);
         
         //base36 hash of the whole string for uniqueness
         String hash = Integer.toString(canonicalName.toString().hashCode(),36);
