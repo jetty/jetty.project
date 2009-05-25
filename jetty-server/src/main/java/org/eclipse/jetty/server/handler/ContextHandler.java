@@ -47,6 +47,7 @@ import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
+import javax.servlet.FilterRegistration.Dynamic;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -1840,153 +1841,104 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#addFilter(java.lang.String, java.lang.Class)
-         */
-        public FilterRegistration.Dynamic addFilter(String filterName, Class<? extends Filter> filterClass)
+        final static String __unimplmented="Unimplemented - use org.eclipse.jetty.servlet.ServletContextHandler";
+        
+        public Dynamic addFilter(String filterName, Class<? extends Filter> filterClass)
         {
-            Log.warn("Use servlet Context");
+            Log.warn(__unimplmented);
             return null;
         }
 
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#addFilter(java.lang.String, java.lang.String)
-         */
-        public FilterRegistration.Dynamic addFilter(String filterName, String className)
+        public Dynamic addFilter(String filterName, Filter filter)
         {
-            Log.warn("Use servlet Context");
+            Log.warn(__unimplmented);
             return null;
         }
 
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#addServlet(java.lang.String, java.lang.Class)
-         */
-        public ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
+        public Dynamic addFilter(String filterName, String className)
         {
-            Log.warn("Use servlet Context");
+            Log.warn(__unimplmented);
             return null;
         }
 
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#addServlet(java.lang.String, java.lang.String)
-         */
-        public ServletRegistration.Dynamic addServlet(String servletName, String className)
+        public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
         {
-            Log.warn("Use servlet Context");
+            Log.warn(__unimplmented);
             return null;
         }
 
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#findFilterRegistration(java.lang.String)
-         */
-        public FilterRegistration findFilterRegistration(String filterName)
+        public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
         {
-            Log.warn("Use servlet Context");
+            Log.warn(__unimplmented);
             return null;
         }
 
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#findServletRegistration(java.lang.String)
-         */
-        public ServletRegistration findServletRegistration(String servletName)
+        public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, String className)
         {
-            Log.warn("Use servlet Context");
+            Log.warn(__unimplmented);
             return null;
         }
 
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#getDefaultSessionTrackingModes()
-         */
-        public EnumSet<SessionTrackingMode> getDefaultSessionTrackingModes()
-        {
-            Log.warn("Use servlet Context");
-            return null;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#getEffectiveSessionTrackingModes()
-         */
-        public EnumSet<SessionTrackingMode> getEffectiveSessionTrackingModes()
-        {
-            Log.warn("Use servlet Context");
-            return null;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#getSessionCookieConfig()
-         */
-        public SessionCookieConfig getSessionCookieConfig()
-        {
-            Log.warn("Use servlet Context");
-            return null;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#setSessionTrackingModes(java.util.EnumSet)
-         */
-        public void setSessionTrackingModes(EnumSet<SessionTrackingMode> sessionTrackingModes)
-        {
-            Log.warn("Use servlet Context");
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#addFilter(java.lang.String, javax.servlet.Filter)
-         */
-        public FilterRegistration.Dynamic addFilter(String filterName, Filter filter)
-        {
-            Log.warn("Use servlet Context");
-            return null;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#addServlet(java.lang.String, javax.servlet.Servlet)
-         */
-        public ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
-        {
-            Log.warn("Use servlet Context");
-            return null;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#setSessionTrackingModes(java.util.Set)
-         */
-        public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
-        {
-            // TODO Auto-generated method stub
-            Log.warn("Not implemented");
-            
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#createFilter(java.lang.Class)
-         */
         public <T extends Filter> T createFilter(Class<T> c) throws ServletException
         {
-            Log.warn("Use servlet Context");
+            Log.warn(__unimplmented);
             return null;
         }
 
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#createServlet(java.lang.Class)
-         */
         public <T extends Servlet> T createServlet(Class<T> c) throws ServletException
         {
-            Log.warn("Use servlet Context");
+            Log.warn(__unimplmented);
             return null;
         }
+
+        public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        public FilterRegistration getFilterRegistration(String filterName)
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        public Map<String, FilterRegistration> getFilterRegistrations()
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        public ServletRegistration getServletRegistration(String servletName)
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        public Map<String, ServletRegistration> getServletRegistrations()
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        public SessionCookieConfig getSessionCookieConfig()
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
+        {
+            Log.warn(__unimplmented);
+            
+        }
+        
+        
     }
 }

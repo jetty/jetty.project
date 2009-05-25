@@ -13,7 +13,10 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -143,7 +146,6 @@ public class FilterHolder extends Holder
     /* ------------------------------------------------------------ */
     protected class Registration extends HolderRegistration implements FilterRegistration.Dynamic
     {
-        /* ------------------------------------------------------------ */
         public void addMappingForServletNames(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... servletNames)
         {
             illegalStateIfContextStarted();
@@ -155,7 +157,6 @@ public class FilterHolder extends Holder
                 _servletHandler.addFilterMapping(mapping);
             else
                 _servletHandler.prependFilterMapping(mapping);
-
         }
 
         public void addMappingForUrlPatterns(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... urlPatterns)
@@ -171,6 +172,35 @@ public class FilterHolder extends Holder
                 _servletHandler.prependFilterMapping(mapping);
         }
 
+        public Iterable<String> getServletNameMappings()
+        {
+            FilterMapping[] mappings =_servletHandler.getFilterMappings();
+            List<String> names=new ArrayList<String>();
+            for (FilterMapping mapping : mappings)
+            {
+                if (mapping.getFilterHolder()!=FilterHolder.this)
+                    continue;
+                String[] servlets=mapping.getServletNames();
+                if (servlets!=null && servlets.length>0)
+                    names.addAll(Arrays.asList(servlets));
+            }
+            return names;
+        }
+
+        public Iterable<String> getUrlPatternMappings()
+        {
+            FilterMapping[] mappings =_servletHandler.getFilterMappings();
+            List<String> patterns=new ArrayList<String>();
+            for (FilterMapping mapping : mappings)
+            {
+                if (mapping.getFilterHolder()!=FilterHolder.this)
+                    continue;
+                String[] specs=mapping.getPathSpecs();
+                if (specs!=null && specs.length>0)
+                    patterns.addAll(Arrays.asList(specs));
+            }
+            return patterns;
+        }
     }
 
     /* ------------------------------------------------------------ */

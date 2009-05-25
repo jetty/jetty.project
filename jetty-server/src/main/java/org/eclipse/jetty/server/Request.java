@@ -47,6 +47,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.Part;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
@@ -55,6 +56,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.MimeTypes;
@@ -617,7 +619,6 @@ public class Request implements HttpServletRequest
      */
     public Enumeration getLocales()
     {
-
         Enumeration enm = _connection.getRequestFields().getValues(HttpHeaders.ACCEPT_LANGUAGE, HttpFields.__separators);
         
         // handle no locale
@@ -1827,36 +1828,46 @@ public class Request implements HttpServletRequest
     {
         return (_handled?"[":"(")+getMethod()+" "+_uri+(_handled?"]@":")@")+hashCode()+" "+super.toString();
     }
-    
+
     /* ------------------------------------------------------------ */
-    /**
-     * @see javax.servlet.http.HttpServletRequest#login(javax.servlet.http.HttpServletResponse)
-     */
-    public boolean login(HttpServletResponse response) throws IOException, ServletException
+    public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
     {
-        // TODO Auto-generated method stub
+        if (_authentication instanceof Authentication.Deferred)
+        {
+            _authentication=((Authentication.Deferred)_authentication).authenticate(this,response);
+            return !(_authentication instanceof Authentication.ResponseSent);        
+        }
+        response.sendError(HttpStatus.UNAUTHORIZED_401);
         return false;
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see javax.servlet.http.HttpServletRequest#login(java.lang.String, java.lang.String)
-     */
-    public void login(String username, String password) throws ServletException
+    public Part getPart(String name) throws IllegalArgumentException
     {
         // TODO Auto-generated method stub
-        
+        return null;
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see javax.servlet.http.HttpServletRequest#logout()
-     */
-    public void logout() throws ServletException
+    public Iterable<Part> getParts()
     {
         // TODO Auto-generated method stub
-        
-    }    
-    
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void login(String username, String password) throws ServletException
+    {
+        if (_authentication instanceof Authentication.Deferred)
+            _authentication=((Authentication.Deferred)_authentication).login(username,password);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void logout() throws ServletException
+    {
+        if (_authentication instanceof Authentication.User)
+            ((Authentication.User)_authentication).logout();
+        _authentication=Authentication.UNAUTHENTICATED;
+    }
 }
 

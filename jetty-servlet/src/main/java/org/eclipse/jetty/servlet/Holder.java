@@ -40,10 +40,9 @@ public class Holder extends AbstractLifeCycle
     protected transient Class _class;
     protected String _className;
     protected String _displayName;
-    protected Map _initParams;
+    protected Map<String,String> _initParams;
     protected boolean _extInstance;
     protected boolean _asyncSupported;
-    protected AttributesMap _initAttributes;
 
     /* ---------------------------------------------------------------- */
     protected String _name;
@@ -129,7 +128,7 @@ public class Holder extends AbstractLifeCycle
     }
 
     /* ---------------------------------------------------------------- */
-    public Map getInitParameters()
+    public Map<String,String> getInitParameters()
     {
         return _initParams;
     }
@@ -278,33 +277,12 @@ public class Holder extends AbstractLifeCycle
         {
             return Holder.this.getInitParameterNames();
         }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletConfig#getInitAttribute(java.lang.String)
-         */
-        public Object getInitAttribute(String name)
-        {
-            return (Holder.this._initAttributes==null)?null:Holder.this._initAttributes.getAttribute(name);
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletConfig#getInitAttributeNames()
-         */
-        public Iterable<String> getInitAttributeNames()
-        {
-            if (Holder.this._initAttributes!=null)
-                return Holder.this._initAttributes.keySet();
-            return Collections.emptySet();    
-        }
-        
     }
 
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
-    protected class HolderRegistration implements Registration
+    protected class HolderRegistration implements Registration.Dynamic
     {
         public void setAsyncSupported(boolean isAsyncSupported)
         {
@@ -314,6 +292,26 @@ public class Holder extends AbstractLifeCycle
 
         public void setDescription(String description)
         {
+        }
+
+        public String getClassName()
+        {
+            return Holder.this.getClassName();
+        }
+
+        public String getInitParameter(String name)
+        {
+            return Holder.this.getInitParameter(name);
+        }
+
+        public Map<String, String> getInitParameters()
+        {
+            return Holder.this.getInitParameters();
+        }
+
+        public String getName()
+        {
+            return Holder.this.getName();
         }
 
         public boolean setInitParameter(String name, String value)
@@ -342,43 +340,9 @@ public class Holder extends AbstractLifeCycle
                 return clash;
             Holder.this.setInitParameters(initParameters);
             return Collections.emptySet();
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletRegistration#setInitAttribute(java.lang.String, java.lang.Object)
-         */
-        public boolean setInitAttribute(String name, Object value)
-        {
-            illegalStateIfContextStarted();
-            if (_initAttributes==null)
-                _initAttributes=new AttributesMap();
-            else if (_initAttributes.getAttribute(name)!=null)
-                return false;
-            _initAttributes.setAttribute(name,value);
-            return true;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletRegistration#setInitAttributes(java.util.Map)
-         */
-        public boolean setInitAttributes(Map<String, Object> initAttributes)
-        {
-            illegalStateIfContextStarted();
-            if (_initAttributes==null)
-                _initAttributes=new AttributesMap();
-            else
-            {
-                for (String name : initAttributes.keySet())
-                    if (_initAttributes.getAttribute(name)!=null)
-                        return false;
-            }
-            for (String name : initAttributes.keySet())
-                _initAttributes.setAttribute(name,initAttributes.get(name));
-            
-            return true;
         };
+        
+        
     }
 }
 

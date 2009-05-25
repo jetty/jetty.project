@@ -14,9 +14,12 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
@@ -561,12 +564,6 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
     /* -------------------------------------------------------- */
     protected class Registration extends HolderRegistration implements ServletRegistration.Dynamic
     {
-        public void setLoadOnStartup(int loadOnStartup)
-        {
-            illegalStateIfContextStarted();
-            ServletHolder.this.setInitOrder(loadOnStartup);
-        }
-
         public Set<String> addMapping(String... urlPatterns)
         {
             illegalStateIfContextStarted();
@@ -590,7 +587,27 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
             _servletHandler.addServletMapping(mapping);
             
             return Collections.emptySet();
-            
+        }
+
+        public Iterable<String> getMappings()
+        {
+            ServletMapping[] mappings =_servletHandler.getServletMappings();
+            List<String> patterns=new ArrayList<String>();
+            for (ServletMapping mapping : mappings)
+            {
+                if (!mapping.getServletName().equals(getName()))
+                    continue;
+                String[] specs=mapping.getPathSpecs();
+                if (specs!=null && specs.length>0)
+                    patterns.addAll(Arrays.asList(specs));
+            }
+            return patterns;
+        }
+
+        public void setLoadOnStartup(int loadOnStartup)
+        {
+            illegalStateIfContextStarted();
+            ServletHolder.this.setInitOrder(loadOnStartup);
         }
     }
     
