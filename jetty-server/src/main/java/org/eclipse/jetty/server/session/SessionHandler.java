@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.IOException;
-import java.util.EnumSet;
 import java.util.EventListener;
 
 import javax.servlet.ServletException;

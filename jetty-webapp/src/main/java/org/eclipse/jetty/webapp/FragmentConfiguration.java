@@ -32,6 +32,8 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class FragmentConfiguration implements Configuration
 {
+    public final static String FRAGMENT_RESOURCES="org.eclipse.jetty.webFragments";
+    
     public void preConfigure(WebAppContext context) throws Exception
     {
         if (!context.isConfigurationDiscovered())
@@ -75,7 +77,6 @@ public class FragmentConfiguration implements Configuration
     public void postConfigure(WebAppContext context) throws Exception
     {
         // TODO Auto-generated method stub
-
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -90,42 +91,11 @@ public class FragmentConfiguration implements Configuration
         String tmp = (String) context.getInitParameter("org.eclipse.jetty.webapp.WebXmlFragmentPattern");
         Pattern webFragPattern = (tmp == null ? null : Pattern.compile(tmp));
 
-        List<URL> urls = (List<URL>)context.getAttribute(MetaInfConfiguration.JARS_WITH_FRAGMENTS);
-        
-        JarScanner fragScanner = new JarScanner()
+        List<Resource> frags = (List<Resource>)context.getAttribute(MetaInfConfiguration.METAINF_FRAGMENTS);
+        if (frags!=null)
         {
-            public void processEntry(URL jarUrl, JarEntry entry)
-            {
-                try
-                {
-                    String name = entry.getName();
-                    if (name.toLowerCase().equals("meta-inf/web-fragment.xml"))
-                    {
-                        Resource webXmlFrag = context.newResource("jar:" + jarUrl + "!/" + name);
-                        Log.debug("web.xml fragment found {}", webXmlFrag);
-                        // Process web.xml
-                        // web-fragment
-                        // servlet
-                        // servlet-mapping
-                        // filter
-                        // filter-mapping
-                        // listener
-                        processor.parseFragment(webXmlFrag.getURL());      
-                    }
-                }
-                catch (Exception e)
-                {
-                    Log.warn("Problem processing jar entry " + entry, e);
-                }
-            }
-        };
-
-        //process only the jars that have web fragments in them, according to the pattern provided
-        if (urls != null)
-            fragScanner.scan(webFragPattern, urls.toArray(new URL[urls.size()]), true);
-        else
-        {
-            if (Log.isDebugEnabled()) Log.debug("No jars with web-fragments");
+            for (Resource frag : frags)
+                processor.parseFragment(frag.getURL());
         }
     }
 

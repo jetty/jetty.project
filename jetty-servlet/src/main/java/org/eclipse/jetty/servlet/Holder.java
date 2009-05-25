@@ -40,7 +40,6 @@ public class Holder extends AbstractLifeCycle
     protected Map _initParams;
     protected boolean _extInstance;
     protected boolean _asyncSupported=true;
-    protected AttributesMap _initAttributes;
 
     /* ---------------------------------------------------------------- */
     protected String _name;
@@ -274,26 +273,6 @@ public class Holder extends AbstractLifeCycle
         public Enumeration getInitParameterNames()
         {
             return Holder.this.getInitParameterNames();
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletConfig#getInitAttribute(java.lang.String)
-         */
-        public Object getInitAttribute(String name)
-        {
-            return (Holder.this._initAttributes==null)?null:Holder.this._initAttributes.getAttribute(name);
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletConfig#getInitAttributeNames()
-         */
-        public Iterable<String> getInitAttributeNames()
-        {
-            if (Holder.this._initAttributes!=null)
-                return Holder.this._initAttributes.keySet();
-            return Collections.emptySet();    
         }
     }
 }

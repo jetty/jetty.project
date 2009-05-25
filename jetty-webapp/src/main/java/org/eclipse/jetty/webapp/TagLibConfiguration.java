@@ -15,6 +15,7 @@ package org.eclipse.jetty.webapp;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EventListener;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -50,56 +51,9 @@ import org.eclipse.jetty.xml.XmlParser;
  */
 public class TagLibConfiguration implements Configuration
 {
-    public static final String __web_inf_pattern = "org.eclipse.jetty.webapp.WebInfIncludeTLDJarPattern";
-    public static final String __container_pattern = "org.eclipse.jetty.server.webapp.ContainerIncludeTLDJarPattern";
-    
-
-    
-
-     /**
-     * TagLibJarScanner
-     *
-     * Scan jars for META-INF/*.tlds
-     */
-    public class TagLibJarScanner extends JarScanner
-     {
-         Set _tlds;
-         WebAppContext _context;
-         
-         public TagLibJarScanner (WebAppContext context)
-         {
-             _context = context;
-         }
-         
-         public void setTldSet (Set tlds)
-         {
-             _tlds=tlds;
-         }
-         
-         public Set getTldSet ()
-         {
-             return _tlds;
-         }
-
-         public void processEntry(URL jarUrl, JarEntry entry)
-         {            
-             try
-             {
-                 String name = entry.getName();
-                 if (name.startsWith("META-INF/") && name.toLowerCase().endsWith(".tld"))
-                 {
-                     Resource tld=_context.newResource("jar:"+jarUrl+"!/"+name);
-                     _tlds.add(tld);
-                     Log.debug("TLD found {}",tld);
-                 }
-             }
-             catch (Exception e)
-             {
-                 Log.warn("Problem processing jar entry "+entry, e);
-             }
-         }
-     }
-
+    public static final String TLD_RESOURCES = "org.eclipse.jetty.tlds";
+    private static final String __web_inf_pattern = "org.eclipse.jetty.webapp.WebInfIncludeTLDJarPattern";
+    private static final String __container_pattern = "org.eclipse.jetty.server.webapp.ContainerIncludeTLDJarPattern";
     
     public class TldProcessor
     {
@@ -283,7 +237,6 @@ public class TagLibConfiguration implements Configuration
                     Resource l=context.getWebInf().addPath(contents[i]);
                     tlds.add(l);
                 }
-                
             }
         }
         
@@ -311,24 +264,8 @@ public class TagLibConfiguration implements Configuration
         tmp = context.getInitParameter(__container_pattern);
         Pattern containerPattern = (tmp==null?null:Pattern.compile(tmp));
 
-        List<URL> tldJars = (List<URL>)context.getAttribute(MetaInfConfiguration.JARS_WITH_TLDS);
+        tlds.addAll((Collection<Resource>)context.getAttribute(TLD_RESOURCES));
         
-        TagLibJarScanner tldScanner = new TagLibJarScanner(context);
-        try
-        {
-            tldScanner.setTldSet(tlds);
-            //scan the jars we know have META-INF/tld files
-            if (tldJars != null)
-                tldScanner.scan(webInfPattern, tldJars.toArray(new URL[tldJars.size()]), true);
-            
-            //scan the parent loader for tld files
-            tldScanner.scan(containerPattern, Thread.currentThread().getContextClassLoader().getParent(), false, true);
-        }
-        catch (Exception e)
-        {
-            Log.warn(e);
-        }
-  
         // Create a processor for the tlds and save it
         TldProcessor processor = new TldProcessor (context);
         context.setAttribute(TldProcessor.__taglib_processor, processor);

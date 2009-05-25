@@ -51,7 +51,6 @@ public class AsyncContextTest extends TestCase
         
         _handler.setRead(0);
         _handler.setSuspendFor(1000);
-
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(-1);
         check("TIMEOUT",process(null));

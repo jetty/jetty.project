@@ -97,7 +97,8 @@ public class AsyncRequest implements AsyncContext, Continuation
     {
         synchronized(this)
         {
-            _listeners=LazyList.add(_listeners,listener);
+            if ((listener instanceof ContinuationListener))
+                _listeners=LazyList.add(_listeners,listener);
 //            _history.append('L');
         }
     }
