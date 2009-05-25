@@ -19,9 +19,9 @@ import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.security.Authenticator.Configuration;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.ClientCertAuthenticator;
+import org.eclipse.jetty.security.authentication.DeferredAuthenticator;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.security.authentication.DeferredAuthenticator;
 import org.eclipse.jetty.security.authentication.SessionCachingAuthenticator;
 import org.eclipse.jetty.server.Server;
 

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http.security;
 
-import java.lang.reflect.Array;
 import java.security.MessageDigest;
 
 import org.eclipse.jetty.util.StringUtil;

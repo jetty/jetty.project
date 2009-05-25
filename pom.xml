@@ -127,7 +127,7 @@
     <module>jetty-client</module>
     <module>jetty-xml</module>
     <module>jetty-security</module>
-    <!--module>jetty-jaspi</module-->
+    <module>jetty-jaspi</module>
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
     <module>jetty-servlets</module>
@@ -135,7 +135,7 @@
     <module>jetty-ajp</module>
     <module>jetty-jmx</module>
     <module>jetty-jndi</module>
-    <module>jetty-annotations</module>
+    <!--module>jetty-annotations</module-->
     <module>jetty-plus</module>
     <module>jetty-rewrite</module>
     <module>jetty-servlet-tester</module>

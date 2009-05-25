@@ -27,7 +27,6 @@ import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.server.Authentication;
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 

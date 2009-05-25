@@ -33,7 +33,6 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.webapp.WebXmlProcessor;
 import org.eclipse.jetty.xml.XmlParser;
 

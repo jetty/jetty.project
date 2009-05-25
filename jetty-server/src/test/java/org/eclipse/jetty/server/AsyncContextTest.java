@@ -26,8 +26,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
 
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 
 public class AsyncContextTest extends TestCase
@@ -55,7 +53,6 @@ public class AsyncContextTest extends TestCase
         
         _handler.setRead(0);
         _handler.setSuspendFor(1000);
-
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(-1);
         check("TIMEOUT",process(null));
@@ -186,9 +183,7 @@ public class AsyncContextTest extends TestCase
         {
             _completeAfter = completeAfter;
         }
-
-
-
+        
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {            
             if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))

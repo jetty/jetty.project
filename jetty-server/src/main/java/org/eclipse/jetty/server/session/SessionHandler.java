@@ -28,7 +28,6 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.RetryRequest;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -182,13 +181,6 @@ public class SessionHandler extends HandlerWrapper
             }
 
             getHandler().handle(target, baseRequest, request, response);
-        }
-        catch (RetryRequest r)
-        {
-            HttpSession session=baseRequest.getSession(false);
-            if (session!=null && session.isNew())
-                baseRequest.saveNewSession(_sessionManager,session);
-            throw r;
         }
         finally
         {

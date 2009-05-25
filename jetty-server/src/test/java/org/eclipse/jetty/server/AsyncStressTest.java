@@ -23,6 +23,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -214,9 +216,9 @@ public class AsyncStressTest extends TestCase
                 if (suspend_for>=0)
                 {
                     if (suspend_for>0)
-                        baseRequest.setAsyncTimeout(suspend_for);
-                    baseRequest.addEventListener(__asyncListener);
-                    final AsyncContext asyncContext = baseRequest.startAsync();
+                        request.setAsyncTimeout(suspend_for);
+                    request.addAsyncListener(__asyncListener);
+                    final AsyncContext asyncContext = request.startAsync();
                     
                     if (complete_after>0)
                     {
@@ -316,18 +318,18 @@ public class AsyncStressTest extends TestCase
     }
     
     
-    private static ContinuationListener __asyncListener = 
-        new ContinuationListener()
+    private static AsyncListener __asyncListener = new AsyncListener()
     {
-        public void onComplete(Continuation continuation)
+        public void onComplete(AsyncEvent event) throws IOException
         {
         }
 
-        public void onTimeout(Continuation continuation)
+        public void onTimeout(AsyncEvent event) throws IOException
         {
-            continuation.getServletRequest().setAttribute("TIMEOUT",Boolean.TRUE);
-            continuation.resume();
+            event.getRequest().setAttribute("TIMEOUT",Boolean.TRUE);
+            event.getRequest().getAsyncContext().dispatch();
         }
+
         
     };
 }

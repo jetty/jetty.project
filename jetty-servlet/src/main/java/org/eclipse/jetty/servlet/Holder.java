@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -36,7 +35,7 @@ import org.eclipse.jetty.util.log.Log;
 /** 
  * 
  */
-public class Holder extends AbstractLifeCycle implements Serializable
+public class Holder extends AbstractLifeCycle 
 {
     protected transient Class _class;
     protected String _className;

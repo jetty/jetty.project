@@ -16,8 +16,6 @@ import java.security.Principal;
 import java.util.Map;
 
 import javax.security.auth.Subject;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 
 /* ------------------------------------------------------------ */
 /** User object that encapsulates user identity and operations such as run-as-role actions, 

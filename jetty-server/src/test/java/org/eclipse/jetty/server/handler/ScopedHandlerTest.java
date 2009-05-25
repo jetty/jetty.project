@@ -6,9 +6,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.Request;
-
 import junit.framework.TestCase;
+
+import org.eclipse.jetty.server.Request;
 
 public class ScopedHandlerTest extends TestCase
 {

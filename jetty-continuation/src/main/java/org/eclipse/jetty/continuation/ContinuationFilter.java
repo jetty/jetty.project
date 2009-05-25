@@ -43,7 +43,7 @@ public class ContinuationFilter implements Filter
         _partial=param!=null&&Boolean.parseBoolean(param) || (ContinuationSupport.__jetty6&&!jetty);
 
         param=filterConfig.getInitParameter("faux");
-        _faux=(param!=null&&Boolean.parseBoolean(param)) || !(jetty || _partial || ContinuationSupport.__servlet3);
+        _faux=(param!=null&&Boolean.parseBoolean(param)) || !(jetty || _partial || _context.getMajorVersion()>=3);
         
         if (_debug)
             _context.log("ContinuationFilter "+

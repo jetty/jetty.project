@@ -15,7 +15,6 @@
 package org.eclipse.jetty.webapp;
 
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.regex.Pattern;

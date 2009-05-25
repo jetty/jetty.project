@@ -14,7 +14,6 @@
 package org.eclipse.jetty.servlet;
 
 import java.util.EnumSet;
-import java.util.Set;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;

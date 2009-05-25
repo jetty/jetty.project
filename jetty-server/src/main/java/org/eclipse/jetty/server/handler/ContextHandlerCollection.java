@@ -25,7 +25,6 @@ import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.AsyncRequest;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;

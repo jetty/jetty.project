@@ -208,7 +208,8 @@ public class Request implements HttpServletRequest
             _requestAttributeListeners= LazyList.add(_requestAttributeListeners, listener);
         if (listener instanceof ContinuationListener)
             _async.addContinuationListener((ContinuationListener)listener);
-            
+        if (listener instanceof AsyncListener)
+            _async.addAsyncListener((AsyncListener)listener);
     }
 
     /* ------------------------------------------------------------ */
