@@ -138,11 +138,11 @@
     <module>jetty-annotations</module>
     <module>jetty-plus</module>
     <module>jetty-rewrite</module>
-    <module>start</module>
+    <module>jetty-start</module>
     <module>test-jetty-servlet</module>
     <module>test-jetty-webapp</module>
     <module>example-jetty-embedded</module>
-    <module>distribution</module>
+    <module>jetty-distribution</module>
   </modules>
   <dependencyManagement>
     <dependencies>
