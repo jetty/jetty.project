@@ -326,6 +326,22 @@ public abstract class Resource implements Serializable
      * Returns an URL representing the given resource
      */
     public abstract URL getURL();
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Returns an URI representing the given resource
+     */
+    public URI getURI()
+    {
+        try
+        {
+            return getURL().toURI();
+        }
+        catch(Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
     
 
     /* ------------------------------------------------------------ */
