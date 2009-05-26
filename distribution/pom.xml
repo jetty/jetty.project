@@ -83,7 +83,7 @@
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-test-webapp</artifactId>
+                  <artifactId>test-jetty-webapp</artifactId>
                   <version>${project.version}</version>
                   <classifier>config</classifier>
                   <type>jar</type>
@@ -343,7 +343,7 @@
                 </artifactItem>
                  <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-test-webapp</artifactId>
+                  <artifactId>test-jetty-webapp</artifactId>
                   <version>${project.version}</version>
                   <type>war</type>
                   <overWrite>true</overWrite>
@@ -505,7 +505,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-test-webapp</artifactId>
+        <artifactId>test-jetty-webapp</artifactId>
         <type>war</type>
         <version>${project.version}</version>
     </dependency>

@@ -6,8 +6,8 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-webapp</artifactId>
-  <name>Jetty :: Webapp Application Support</name>
-  <description>Jetty web application support</description>
+  <name>Jetty :: Web Applications</name>
+  <description>Jetty web application</description>
   <build>
     <resources>
       <resource><directory>src/main/resources</directory></resource>

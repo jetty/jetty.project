@@ -5,13 +5,9 @@
     <version>7.0.0.M3-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-embedded-examples</artifactId>
-  <name>Jetty :: Embedded Examples</name>
-  <description>Jetty Embedded Examples</description>
-  <build>
-    <plugins>
-    </plugins>
-  </build>
+  <artifactId>test-jetty-servlet</artifactId>
+  <packaging>jar</packaging>
+  <name>Test :: Jetty Servlet Tester</name>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -19,9 +15,9 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-deploy</artifactId>
-      <version>${project.version}</version>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
