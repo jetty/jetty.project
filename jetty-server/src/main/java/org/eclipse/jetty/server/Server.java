@@ -21,6 +21,8 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -68,6 +70,7 @@ public class Server extends HandlerWrapper implements Attributes
     private AttributesMap _attributes = new AttributesMap();
     private List<Object> _dependentBeans=new ArrayList<Object>();
     private int _graceful=0;
+    private boolean _stopAtShutdown;
     
     /* ------------------------------------------------------------ */
     public Server()
@@ -107,16 +110,15 @@ public class Server extends HandlerWrapper implements Attributes
     /* ------------------------------------------------------------ */
     public boolean getStopAtShutdown()
     {
-        return hookThread.contains(this);
+        return _stopAtShutdown;
     }
     
     /* ------------------------------------------------------------ */
     public void setStopAtShutdown(boolean stop)
     {
+        _stopAtShutdown=stop;
         if (stop)
             hookThread.add(this);
-        else
-            hookThread.remove(this);
     }
     
     /* ------------------------------------------------------------ */
@@ -127,7 +129,6 @@ public class Server extends HandlerWrapper implements Attributes
     {
         return _connectors;
     }
-    
 
     /* ------------------------------------------------------------ */
     public void addConnector(Connector connector)
@@ -184,6 +185,9 @@ public class Server extends HandlerWrapper implements Attributes
     /* ------------------------------------------------------------ */
     protected void doStart() throws Exception
     {
+        if (getStopAtShutdown())
+            hookThread.add(this);
+        
         Log.info("jetty-"+_version);
         HttpGenerator.setServerVersion(_version);
         MultiException mex=new MultiException();
@@ -301,6 +305,7 @@ public class Server extends HandlerWrapper implements Attributes
         }
        
         mex.ifExceptionThrow();
+        hookThread.remove(this);
     }
 
     /* ------------------------------------------------------------ */
@@ -519,8 +524,8 @@ public class Server extends HandlerWrapper implements Attributes
      */
     private static class ShutdownHookThread extends Thread
     {
-        private boolean hooked = false;
-        private ArrayList servers = new ArrayList();
+        private boolean _hooked = false;
+        private Set<Server> _servers = new CopyOnWriteArraySet<Server>();
 
         /**
          * Hooks this thread for shutdown.
@@ -529,7 +534,7 @@ public class Server extends HandlerWrapper implements Attributes
          */
         private void createShutdownHook()
         {
-            if (!hooked)
+            if (!_hooked)
             {
                 try
                 {
@@ -537,7 +542,7 @@ public class Server extends HandlerWrapper implements Attributes
                     { java.lang.Thread.class});
                     shutdownHook.invoke(Runtime.getRuntime(), new Object[]
                     { this});
-                    this.hooked = true;
+                    _hooked = true;
                 }
                 catch (Exception e)
                 {
@@ -550,11 +555,11 @@ public class Server extends HandlerWrapper implements Attributes
         /**
          * Add Server to servers list.
          */
-        public boolean add(Server server)
+        public void add(Server server)
         {
+            _servers.add(server);
             if (server.getStopAtShutdown())
                 createShutdownHook();
-            return this.servers.add(server);
         }
 
         /**
@@ -562,15 +567,20 @@ public class Server extends HandlerWrapper implements Attributes
          */
         public boolean contains(Server server)
         {
-            return this.servers.contains(server);
+            return _servers.contains(server);
         }
 
+        public Iterable<Server> getServers()
+        {
+            return _servers;
+        }
+        
         /**
          * Clear list of Servers.
          */
         public void clear()
         {
-            this.servers.clear();
+            _servers.clear();
         }
 
         /**
@@ -579,7 +589,7 @@ public class Server extends HandlerWrapper implements Attributes
         public boolean remove(Server server)
         {
             createShutdownHook();
-            return this.servers.remove(server);
+            return _servers.remove(server);
         }
 
         /**
@@ -589,11 +599,9 @@ public class Server extends HandlerWrapper implements Attributes
         {
             setName("Shutdown");
             Log.info("Shutdown hook executing");
-            Iterator it = servers.iterator();
-            while (it.hasNext())
+            for (Server svr : _servers)
             {
-                Server svr = (Server) it.next();
-                if (svr == null || !svr.getStopAtShutdown())
+                if (svr == null || !svr.getStopAtShutdown() || !svr.isRunning())
                     continue;
                 try
                 {

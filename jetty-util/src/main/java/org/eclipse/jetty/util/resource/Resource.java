@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.text.DateFormat;
@@ -55,6 +56,17 @@ public abstract class Resource implements Serializable
     public static boolean getDefaultUseCaches ()
     {
         return __defaultUseCaches;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Construct a resource from a uri.
+     * @param uri A URI.
+     * @return A Resource object.
+     */
+    public static Resource newResource(URI uri)
+        throws IOException
+    {
+        return newResource(uri.toURL());
     }
     
     /* ------------------------------------------------------------ */
