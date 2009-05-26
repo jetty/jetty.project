@@ -5,11 +5,11 @@
     <artifactId>jetty-project</artifactId>
     <version>8.0.0.M0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-distribution</artifactId>
-  <name>Jetty :: Distribution Assemblies</name>
+  <artifactId>distribution</artifactId>
+  <name>Distribution Assemblies</name>
   <packaging>pom</packaging>
   <properties>
-    <assembly.directory>target/assembly-prep</assembly.directory>
+    <assembly.directory>target/distribution</assembly.directory>
     <slf4j-version>1.5.6</slf4j-version>
     <jsp-2-1-version>9.1.1.B60.25.p1</jsp-2-1-version>
   </properties>
@@ -83,7 +83,7 @@
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-test-webapp</artifactId>
+                  <artifactId>test-jetty-webapp</artifactId>
                   <version>${project.version}</version>
                   <classifier>config</classifier>
                   <type>jar</type>
@@ -343,7 +343,7 @@
                 </artifactItem>
                  <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-test-webapp</artifactId>
+                  <artifactId>test-jetty-webapp</artifactId>
                   <version>${project.version}</version>
                   <type>war</type>
                   <overWrite>true</overWrite>
@@ -353,7 +353,7 @@
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-start</artifactId>
+                  <artifactId>start</artifactId>
                   <version>${project.version}</version>
                   <type>jar</type>
                   <overWrite>true</overWrite>
@@ -505,7 +505,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-test-webapp</artifactId>
+        <artifactId>test-jetty-webapp</artifactId>
         <type>war</type>
         <version>${project.version}</version>
     </dependency>
@@ -536,7 +536,7 @@
     </dependency>
     <dependency>
     	<groupId>org.eclipse.jetty</groupId>
-    	<artifactId>jetty-start</artifactId>
+    	<artifactId>start</artifactId>
     	<version>${project.version}</version>
     </dependency>
     <dependency>

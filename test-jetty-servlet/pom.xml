@@ -5,9 +5,9 @@
     <version>8.0.0.M0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-servlet-tester</artifactId>
+  <artifactId>test-jetty-servlet</artifactId>
   <packaging>jar</packaging>
-  <name>Jetty :: Servlet Tester</name>
+  <name>Test :: Jetty Servlet Tester</name>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

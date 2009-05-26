@@ -5,13 +5,13 @@
     <version>8.0.0.M0-SNAPSHOT</version>
   </parent>  
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty</groupId>
+  <groupId>org.eclipse.jetty.example-async-rest</groupId>
   <artifactId>example-async-rest-webapp</artifactId>
   <packaging>war</packaging>
   <name>Example Async Rest :: Webapp</name>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
+      <groupId>org.eclipse.jetty.example-async-rest</groupId>
       <artifactId>example-async-rest-jar</artifactId>
       <version>${project.version}</version>
     </dependency>

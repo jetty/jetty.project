@@ -139,12 +139,12 @@
     <!--module>jetty-annotations</module-->
     <module>jetty-plus</module>
     <module>jetty-rewrite</module>
-    <module>jetty-servlet-tester</module>
-    <module>jetty-start</module>
-    <module>jetty-embedded-examples</module>
-    <module>jetty-test-webapp</module>
-    <module>jetty-integrations</module>
-    <module>jetty-distribution</module>
+    <module>test-jetty-webapp</module>
+    <module>test-jetty-servlet</module>
+    <module>example-jetty-embedded</module>
+    <module>example-async-rest</module>
+    <module>start</module>
+    <module>distribution</module>
   </modules>
   <dependencyManagement>
     <dependencies>

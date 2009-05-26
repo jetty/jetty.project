@@ -6,8 +6,8 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-test-webapp</artifactId>
-  <name>Jetty :: Webapp Example</name>
+  <artifactId>test-jetty-webapp</artifactId>
+  <name>Test :: Jetty Test Webapp</name>
   <packaging>war</packaging>
   <build>
     <plugins>
@@ -125,7 +125,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet-tester</artifactId>
+      <artifactId>test-jetty-servlet</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
