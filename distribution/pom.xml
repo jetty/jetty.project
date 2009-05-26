@@ -5,11 +5,11 @@
     <artifactId>jetty-project</artifactId>
     <version>7.0.0.M3-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-distribution</artifactId>
-  <name>Jetty :: Distribution Assemblies</name>
+  <artifactId>distribution</artifactId>
+  <name>Distribution Assemblies</name>
   <packaging>pom</packaging>
   <properties>
-    <assembly.directory>target/assembly-prep</assembly.directory>
+    <assembly.directory>target/distribution</assembly.directory>
     <slf4j-version>1.5.6</slf4j-version>
     <jsp-2-1-version>9.1.1.B60.25.p1</jsp-2-1-version>
   </properties>

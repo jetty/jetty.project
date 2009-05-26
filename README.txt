@@ -53,10 +53,10 @@ To see the available options
 
 To run with JSP support
 
-  java -jar start.jar OPTIONS=Server,deploy,jsp
+  java -jar start.jar OPTIONS=Server,jsp
 
 To run with JMX support
 
-  java -jar start.jar OPTIONS=Server,deploy,jmx etc/jetty-jmx.xml etc/jetty.xml
+  java -jar start.jar OPTIONS=Server,jmx etc/jetty-jmx.xml etc/jetty.xml
 
 
