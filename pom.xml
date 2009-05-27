@@ -143,8 +143,8 @@
     <module>test-jetty-servlet</module>
     <module>example-jetty-embedded</module>
     <module>example-async-rest</module>
-    <module>start</module>
-    <module>distribution</module>
+    <module>jetty-start</module>
+    <module>jetty-distribution</module>
   </modules>
   <dependencyManagement>
     <dependencies>
