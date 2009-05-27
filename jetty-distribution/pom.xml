@@ -6,7 +6,7 @@
     <version>7.0.0.M3-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-distribution</artifactId>
-  <name>Distribution Assemblies</name>
+  <name>Jetty :: Distribution Assemblies</name>
   <packaging>pom</packaging>
   <properties>
     <assembly.directory>target/distribution</assembly.directory>
