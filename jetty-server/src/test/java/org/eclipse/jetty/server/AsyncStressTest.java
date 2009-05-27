@@ -160,7 +160,7 @@ public class AsyncStressTest extends TestCase
         }
         else
         {
-            doConnections(160,80);
+            doConnections(80,40);
         }
     }
     
