@@ -9,6 +9,9 @@
   <artifactId>example-async-rest-webapp</artifactId>
   <packaging>war</packaging>
   <name>Example Async Rest :: Webapp</name>
+  <build>
+    <finalName>async-rest</finalName>
+  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.example-async-rest</groupId>
