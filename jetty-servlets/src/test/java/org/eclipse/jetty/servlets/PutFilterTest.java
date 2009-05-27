@@ -18,7 +18,9 @@ import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
+import java.util.EnumSet;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
@@ -46,7 +48,7 @@ public class PutFilterTest extends TestCase
         tester.setContextPath("/context");
         tester.setResourceBase(_dir.getCanonicalPath());
         tester.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
-        FilterHolder holder = tester.addFilter(PutFilter.class,"/*",0);
+        FilterHolder holder = tester.addFilter(PutFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         holder.setInitParameter("delAllowed","true");
         tester.start();
         

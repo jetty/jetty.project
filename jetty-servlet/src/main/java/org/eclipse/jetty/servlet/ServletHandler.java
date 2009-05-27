@@ -16,6 +16,7 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -843,6 +844,7 @@ public class ServletHandler extends ScopedHandler
     {
         return (FilterHolder)_filterNameMap.get(name);
     }
+
     
     /* ------------------------------------------------------------ */
     /** conveniance method to add a filter.
@@ -851,7 +853,7 @@ public class ServletHandler extends ScopedHandler
      * @param dispatches see {@link FilterMapping#setDispatches(int)}
      * @return The filter holder.
      */
-    public FilterHolder addFilterWithMapping (Class<? extends Filter> filter,String pathSpec,int dispatches)
+    public FilterHolder addFilterWithMapping (Class<? extends Filter> filter,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
         FilterHolder holder = newFilterHolder(filter);
         addFilterWithMapping(holder,pathSpec,dispatches);
@@ -860,13 +862,13 @@ public class ServletHandler extends ScopedHandler
     }
     
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a filter.
+    /** convenience method to add a filter.
      * @param className of filter
      * @param pathSpec filter mappings for filter
      * @param dispatches see {@link FilterMapping#setDispatches(int)}
      * @return The filter holder.
      */
-    public FilterHolder addFilterWithMapping (String className,String pathSpec,int dispatches)
+    public FilterHolder addFilterWithMapping (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
         FilterHolder holder = newFilterHolder(null);
         holder.setName(className+"-"+holder.hashCode());
@@ -882,7 +884,7 @@ public class ServletHandler extends ScopedHandler
      * @param pathSpec filter mappings for filter
      * @param dispatches see {@link FilterMapping#setDispatches(int)}
      */
-    public void addFilterWithMapping (FilterHolder holder,String pathSpec,int dispatches)
+    public void addFilterWithMapping (FilterHolder holder,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
         FilterHolder[] holders = getFilters();
         if (holders!=null)
@@ -895,7 +897,7 @@ public class ServletHandler extends ScopedHandler
             FilterMapping mapping = new FilterMapping();
             mapping.setFilterName(holder.getName());
             mapping.setPathSpec(pathSpec);
-            mapping.setDispatches(dispatches);
+            mapping.setDispatcherTypes(dispatches);
             setFilterMappings((FilterMapping[])LazyList.addToArray(getFilterMappings(), mapping, FilterMapping.class));
         }
         catch (RuntimeException e)
@@ -917,9 +919,8 @@ public class ServletHandler extends ScopedHandler
      * @param pathSpec
      * @param dispatches
      * @return
-     * @deprecated
      */
-    public FilterHolder addFilter (String className,String pathSpec,int dispatches)
+    public FilterHolder addFilter (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
         return addFilterWithMapping(className, pathSpec, dispatches);
     }

@@ -91,19 +91,19 @@ public class ContinuationFilter implements Filter
         }
         else if (_partial)
         {
-            PartialContinuation c = (PartialContinuation) request.getAttribute(Continuation.ATTRIBUTE);
+            Continuation c = (Continuation) request.getAttribute(Continuation.ATTRIBUTE);
             
             try
             {
-                if (c==null || c.enter())
+                if (c==null || !(c instanceof PartialContinuation) || ((PartialContinuation)c).enter())
                     chain.doFilter(request,response);
             }
             finally
             {
                 if (c==null)
-                    c = (PartialContinuation) request.getAttribute(Continuation.ATTRIBUTE);
-                if (c!=null)
-                    c.exit();
+                    c = (Continuation) request.getAttribute(Continuation.ATTRIBUTE);
+                if (c!=null && c instanceof PartialContinuation)
+                    ((PartialContinuation)c).exit();
             }
         }
         else

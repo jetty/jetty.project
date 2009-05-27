@@ -257,7 +257,7 @@ public class ServletContextHandler extends ContextHandler
     /* ------------------------------------------------------------ */
     /** conveniance method to add a filter
      */
-    public void addFilter(FilterHolder holder,String pathSpec,int dispatches)
+    public void addFilter(FilterHolder holder,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
         getServletHandler().addFilterWithMapping(holder,pathSpec,dispatches);
     }
@@ -265,7 +265,7 @@ public class ServletContextHandler extends ContextHandler
     /* ------------------------------------------------------------ */
     /** convenience method to add a filter
      */
-    public FilterHolder addFilter(Class<? extends Filter> filterClass,String pathSpec,int dispatches)
+    public FilterHolder addFilter(Class<? extends Filter> filterClass,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
         return getServletHandler().addFilterWithMapping(filterClass,pathSpec,dispatches);
     }
@@ -273,7 +273,7 @@ public class ServletContextHandler extends ContextHandler
     /* ------------------------------------------------------------ */
     /** convenience method to add a filter
      */
-    public FilterHolder addFilter(String filterClass,String pathSpec,int dispatches)
+    public FilterHolder addFilter(String filterClass,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
         return getServletHandler().addFilterWithMapping(filterClass,pathSpec,dispatches);
     }

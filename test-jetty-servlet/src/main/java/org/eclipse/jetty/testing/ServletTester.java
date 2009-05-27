@@ -13,13 +13,18 @@
 
 package org.eclipse.jetty.testing;
 
+import java.net.InetAddress;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
+
+import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -179,13 +184,38 @@ public class ServletTester
 
             return "http://127.0.0.1:"+connector.getLocalPort();
         }
-   }
+    }
 
     /* ------------------------------------------------------------ */
-    /** Create a Socket connector.
-     * This methods adds a socket connector to the server
-     * @param locahost if true, only listen on local host, else listen on all interfaces.
-     * @return A URL to access the server via the socket connector.
+    /** Create a SelectChannel connector.
+     * This methods adds a select channel connector to the server
+     * @return A URL to access the server via the connector.
+     * @throws Exception
+     */
+    public String createChannelConnector(boolean localhost)
+    throws Exception
+    {
+        synchronized (this)
+        {
+            SelectChannelConnector connector = new SelectChannelConnector();
+            if (localhost)
+                connector.setHost("127.0.0.1");
+            _server.addConnector(connector);
+            if (_server.isStarted())
+                connector.start();
+            else
+                connector.open();
+
+            return "http://"+(localhost?"127.0.0.1":
+                InetAddress.getLocalHost().getHostAddress()    
+            )+":"+connector.getLocalPort();
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Create a local connector.
+     * This methods adds a local connector to the server
+     * @return The LocalConnector object
      * @throws Exception
      */
     public LocalConnector createLocalConnector()
@@ -221,7 +251,7 @@ public class ServletTester
      * @return
      * @see org.eclipse.jetty.servlet.Scope#addFilter(java.lang.Class, java.lang.String, int)
      */
-    public FilterHolder addFilter(Class filterClass, String pathSpec, int dispatches)
+    public FilterHolder addFilter(Class filterClass, String pathSpec, EnumSet<DispatcherType> dispatches)
     {
         return _context.addFilter(filterClass,pathSpec,dispatches);
     }
@@ -234,7 +264,7 @@ public class ServletTester
      * @return
      * @see org.eclipse.jetty.servlet.Scope#addFilter(java.lang.String, java.lang.String, int)
      */
-    public FilterHolder addFilter(String filterClass, String pathSpec, int dispatches)
+    public FilterHolder addFilter(String filterClass, String pathSpec, EnumSet<DispatcherType> dispatches)
     {
         return _context.addFilter(filterClass,pathSpec,dispatches);
     }

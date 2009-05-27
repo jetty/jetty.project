@@ -8,6 +8,7 @@ jetty-8.0.0.M0-SNAPSHOT
  + Merged 273767
  + Merged jetty-7-to-jetty-8-base-20090524-1
  + Use PFD servlet API from 25/5/2009
+ + Merged jetty-7-to-jetty-8-base-20090527-1
 
 jetty-7.0.0.M3-SNAPSHOT
  + fixed race with expired async listeners
@@ -15,6 +16,7 @@ jetty-7.0.0.M3-SNAPSHOT
  + added WebAppContext.setConfigurationDiscovered for servlet 3.0 features
  + 274251 Allow dispatch to welcome files that are servlets (configurable)
  + 277403 Cleanup system property usage.
+ + 277798 Denial of Service Filter
  + Portable continuations for jetty6 and servlet3
 
 jetty-7.0.0.M2 18 May 2009

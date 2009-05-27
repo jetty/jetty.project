@@ -6,7 +6,7 @@
     <version>8.0.0.M0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-distribution</artifactId>
-  <name>Distribution Assemblies</name>
+  <name>Jetty :: Distribution</name>
   <packaging>pom</packaging>
   <properties>
     <assembly.directory>target/distribution</assembly.directory>
@@ -468,8 +468,9 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
           <descriptors>
-            <descriptor>src/main/assembly/jetty.xml</descriptor>
+            <descriptor>src/main/assembly/jetty-assembly.xml</descriptor>
           </descriptors>
+          <tarLongFileMode>gnu</tarLongFileMode>
         </configuration>
         <executions>
           <execution>
