@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-start</artifactId>
-  <name>Start</name>
+  <name>Jetty :: Start</name>
   <description>The start utility</description>
   <build>
    <plugins>

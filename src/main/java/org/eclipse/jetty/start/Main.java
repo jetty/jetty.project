@@ -58,6 +58,7 @@ import java.util.StringTokenizer;
  *   ends with "/**" is a directory from which to recursively add all unconsidered jar and zip files.
  *   Containing = are used to assign system properties.
  *   Containing ~= are used to assign start properties.
+ *   Containing /= are used to assign a canonical path.
  *   all other subjects are treated as files to be added to the classpath.
  * 
  * ${name} is expanded to a start property
@@ -493,12 +494,22 @@ public class Main
                 // Handle the subject
                 if (subject.indexOf("~=")>0)
                 {
-                    int i=file.indexOf("=");
+                    int i=file.indexOf("~=");
                     String property=file.substring(0,i);
-                    String value=file.substring(i+1);
+                    String value=file.substring(i+2);
                     if (DEBUG)
                         System.err.println("  "+property+"~="+value);
                     setProperty(property,value);
+                }
+                if (subject.indexOf("/=")>0)
+                {
+                    int i=file.indexOf("/=");
+                    String property=file.substring(0,i);
+                    String value=file.substring(i+2);
+                    String canonical=new File(value).getCanonicalPath();
+                    if (DEBUG)
+                        System.err.println("  "+property+"/="+value+"=="+canonical);
+                    setProperty(property,canonical);
                 }
                 else if (subject.indexOf("=")>0)
                 {
