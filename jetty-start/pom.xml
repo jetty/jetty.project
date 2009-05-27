@@ -5,7 +5,7 @@
     <version>7.0.0.M3-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>start</artifactId>
+  <artifactId>jetty-start</artifactId>
   <name>Start</name>
   <description>The start utility</description>
   <build>
