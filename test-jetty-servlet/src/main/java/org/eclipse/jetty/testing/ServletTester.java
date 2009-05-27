@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.testing;
 
+import java.net.InetAddress;
 import java.util.Enumeration;
 import java.util.EventListener;
 
@@ -183,6 +184,11 @@ public class ServletTester
     }
 
     /* ------------------------------------------------------------ */
+    /** Create a SelectChannel connector.
+     * This methods adds a select channel connector to the server
+     * @return A URL to access the server via the connector.
+     * @throws Exception
+     */
     public String createChannelConnector(boolean localhost)
     throws Exception
     {
@@ -197,15 +203,16 @@ public class ServletTester
             else
                 connector.open();
 
-            return "http://127.0.0.1:"+connector.getLocalPort();
+            return "http://"+(localhost?"127.0.0.1":
+                InetAddress.getLocalHost().getHostAddress()    
+            )+":"+connector.getLocalPort();
         }
     }
-    
+
     /* ------------------------------------------------------------ */
-    /** Create a Socket connector.
-     * This methods adds a socket connector to the server
-     * @param locahost if true, only listen on local host, else listen on all interfaces.
-     * @return A URL to access the server via the socket connector.
+    /** Create a local connector.
+     * This methods adds a local connector to the server
+     * @return The LocalConnector object
      * @throws Exception
      */
     public LocalConnector createLocalConnector()
