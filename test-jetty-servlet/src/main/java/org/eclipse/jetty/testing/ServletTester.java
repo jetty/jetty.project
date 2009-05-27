@@ -20,6 +20,7 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -179,8 +180,27 @@ public class ServletTester
 
             return "http://127.0.0.1:"+connector.getLocalPort();
         }
-   }
+    }
 
+    /* ------------------------------------------------------------ */
+    public String createChannelConnector(boolean localhost)
+    throws Exception
+    {
+        synchronized (this)
+        {
+            SelectChannelConnector connector = new SelectChannelConnector();
+            if (localhost)
+                connector.setHost("127.0.0.1");
+            _server.addConnector(connector);
+            if (_server.isStarted())
+                connector.start();
+            else
+                connector.open();
+
+            return "http://127.0.0.1:"+connector.getLocalPort();
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     /** Create a Socket connector.
      * This methods adds a socket connector to the server

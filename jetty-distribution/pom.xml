@@ -353,7 +353,7 @@
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>start</artifactId>
+                  <artifactId>jetty-start</artifactId>
                   <version>${project.version}</version>
                   <type>jar</type>
                   <overWrite>true</overWrite>
@@ -536,7 +536,7 @@
     </dependency>
     <dependency>
     	<groupId>org.eclipse.jetty</groupId>
-    	<artifactId>start</artifactId>
+    	<artifactId>jetty-start</artifactId>
     	<version>${project.version}</version>
     </dependency>
     <dependency>
