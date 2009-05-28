@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -586,7 +587,7 @@ public class AnnotationFinder
      * @param resolver
      * @throws Exception
      */
-    public void find (ClassLoader loader, boolean visitParents, String jarNamePattern, boolean nullInclusive, final ClassNameResolver resolver)
+    public void find (ClassLoader loader, boolean visitParents, boolean nullInclusive, final ClassNameResolver resolver)
     throws Exception
     {
         if (loader==null)
@@ -597,7 +598,7 @@ public class AnnotationFinder
        
         JarScanner scanner = new JarScanner()
         {
-            public void processEntry(URL jarUrl, JarEntry entry)
+            public void processEntry(URI jarUri, JarEntry entry)
             {   
                 try
                 {
@@ -610,7 +611,7 @@ public class AnnotationFinder
                             if ((parsedClasses.get(shortName) == null) || (resolver.shouldOverride(shortName)))
                             {
                                 parsedClasses.remove(shortName);
-                                Resource clazz = Resource.newResource("jar:"+jarUrl+"!/"+name);                     
+                                Resource clazz = Resource.newResource("jar:"+jarUri+"!/"+name);                     
                                 scanClass(clazz.getInputStream());
                             }
                         }
@@ -623,32 +624,26 @@ public class AnnotationFinder
             }
             
         };
-        Pattern pattern = null;
-        if (jarNamePattern!=null)
-            pattern = Pattern.compile(jarNamePattern);
-        
-        scanner.scan(pattern, loader, nullInclusive, visitParents);
+
+        scanner.scan(null, loader, nullInclusive, visitParents);
     }
     
     
     /**
-     * Find annotations in classes in classes in the supplied url of jar files.
-     * @param urls
-     * @param visitParents
-     * @param jarNamePattern
-     * @param nullInclusive
+     * Find annotations in classes in the supplied url of jar files.
+     * @param uris
      * @param resolver
      * @throws Exception
      */
-    public void find (URL[] urls, boolean visitParents, String jarNamePattern, boolean nullInclusive, final ClassNameResolver resolver)
+    public void find (URI[] uris, final ClassNameResolver resolver)
     throws Exception
     {
-        if (urls==null)
+        if (uris==null)
             return;
         
         JarScanner scanner = new JarScanner()
         {
-            public void processEntry(URL jarUrl, JarEntry entry)
+            public void processEntry(URI jarUri, JarEntry entry)
             {   
                 try
                 {
@@ -661,7 +656,7 @@ public class AnnotationFinder
                             if ((parsedClasses.get(shortName) == null) || (resolver.shouldOverride(shortName)))
                             {
                                 parsedClasses.remove(shortName);
-                                Resource clazz = Resource.newResource("jar:"+jarUrl+"!/"+name);                     
+                                Resource clazz = Resource.newResource("jar:"+jarUri+"!/"+name);                     
                                 scanClass(clazz.getInputStream());
                             }
                         }
@@ -673,12 +668,8 @@ public class AnnotationFinder
                 }
             }
             
-        };
-        Pattern pattern = null;
-        if (jarNamePattern!=null)
-            pattern = Pattern.compile(jarNamePattern);
-        
-        scanner.scan(pattern, urls, nullInclusive);
+        };        
+        scanner.scan(null, uris, true);
     }
     
     

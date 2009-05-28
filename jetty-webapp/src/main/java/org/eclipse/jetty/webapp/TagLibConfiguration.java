@@ -35,12 +35,12 @@ import org.eclipse.jetty.xml.XmlParser;
 /** TagLibConfiguration.
  * 
  * The class searches for TLD descriptors found in web.xml, in WEB-INF/*.tld files of the web app
- * or *.tld files withing jars found in WEB-INF/lib of the webapp.   Any listeners defined in these
+ * or *.tld files within jars found in WEB-INF/lib of the webapp.   Any listeners defined in these
  * tld's are added to the context.
  * 
  * &lt;bile&gt;This is total rubbish special case for JSPs! If there was a general use-case for web app
  * frameworks to register listeners directly, then a generic mechanism could have been added to the servlet
- * spec.  Instead some special purpose JSP support is required that breaks all sorts of encapsualtion rules as
+ * spec.  Instead some special purpose JSP support is required that breaks all sorts of encapsulation rules as
  * the servlet container must go searching for and then parsing the descriptors for one particular framework.
  * It only appears to be used by JSF, which is being developed by the same developer who implemented this
  * feature in the first place!
@@ -242,26 +242,8 @@ public class TagLibConfiguration implements Configuration
             }
         }
         
-        
-        // Look for tlds in any jars
-        //Use an opt-in style:
-        //
-        //org.eclipse.jetty.server.server.webapp.WebInfIncludeTLDJarPattern and
-        //org.eclipse.jetty.server.server.webapp.ContainerIncludeTLDJarPattern
-        //
-        //When examining jars in WEB-INF/lib:
-        //   if WebInfIncludeTLDJarPattern is null
-        //       examine ALL for tlds
-        //   else
-        //       examine only files matching pattern
-        //
-        //When examining jars in parent loaders:
-        //    If IncludeTLDJarPattern is null
-        //       examine none
-        //    else
-        //       examine only files matching pattern
-        //
-        
+    
+        // Add in tlds found in META-INF of jars
         Collection<Resource> tld_resources=(Collection<Resource>)context.getAttribute(TLD_RESOURCES);
         if (tld_resources!=null)
             tlds.addAll(tld_resources);

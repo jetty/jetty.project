@@ -16,10 +16,10 @@ package org.eclipse.jetty.deploy;
 import java.util.ArrayList;
 
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
@@ -51,6 +51,7 @@ public class WebAppDeployer extends AbstractLifeCycle
     private boolean _parentLoaderPriority;
     private boolean _allowDuplicates;
     private ArrayList _deployed;
+    private AttributesMap _contextAttributes = new AttributesMap();
 
     public String[] getConfigurationClasses()
     {
@@ -124,6 +125,38 @@ public class WebAppDeployer extends AbstractLifeCycle
     public void setAllowDuplicates(boolean allowDuplicates)
     {
         _allowDuplicates=allowDuplicates;
+    }
+
+    
+    /**
+     * Set a contextAttribute that will be set for every Context deployed by this deployer.
+     * @param name
+     * @param value
+     */
+    public void setAttribute (String name, Object value)
+    {
+        _contextAttributes.setAttribute(name,value);
+    }
+    
+    
+    /**
+     * Get a contextAttribute that will be set for every Context deployed by this deployer.
+     * @param name
+     * @return
+     */
+    public Object getAttribute (String name)
+    {
+        return _contextAttributes.getAttribute(name);
+    }
+    
+    
+    /**
+     * Remove a contextAttribute that will be set for every Context deployed by this deployer.
+     * @param name
+     */
+    public void removeAttribute(String name)
+    {
+        _contextAttributes.removeAttribute(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -234,6 +267,10 @@ public class WebAppDeployer extends AbstractLifeCycle
             wah.setExtractWAR(_extract);
             wah.setWar(app.toString());
             wah.setParentLoaderPriority(_parentLoaderPriority);
+            
+            //set up any contextAttributes
+            wah.setAttributes(_contextAttributes);
+            
             // add it
             _contexts.addHandler(wah);
             _deployed.add(wah);

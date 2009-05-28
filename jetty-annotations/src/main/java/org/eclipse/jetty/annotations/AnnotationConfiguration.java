@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
 
@@ -25,6 +29,7 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebInfConfiguration;
 
 /**
  * Configuration
@@ -33,8 +38,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class AnnotationConfiguration extends org.eclipse.jetty.plus.webapp.Configuration
 {
-    public static final String __web_inf_pattern = "org.eclipse.jetty.server.webapp.WebInfIncludeAnnotationJarPattern";
-    public static final String __container_pattern = "org.eclipse.jetty.server.webapp.ContainerIncludeAnnotationJarPattern";
+    public static final String JAR_RESOURCES = WebInfConfiguration.JAR_RESOURCES;
                                                       
     
     
@@ -89,7 +93,25 @@ public class AnnotationConfiguration extends org.eclipse.jetty.plus.webapp.Confi
     {
         //if no pattern for the container path is defined, then by default scan NOTHING
         Log.debug("Scanning container jars");
-        parseAnnotationsFromJars(context, finder, context.getClassLoader().getParent(), context.getInitParameter(__container_pattern),true,  false, 
+        
+        //Get the container jar uris
+        
+        ArrayList<URI> containerCandidateUris = findJars (context.getClassLoader().getParent(), true);
+        
+        //Pick out the uris from JAR_RESOURCES that match those uris to be scanned
+        ArrayList<URI> containerUris = new ArrayList<URI>();
+        List<Resource> jarResources = (List<Resource>)context.getAttribute(JAR_RESOURCES);
+        for (Resource r : jarResources)
+        {
+            URI uri = r.getURI();
+            if (containerCandidateUris.contains(uri))
+            {
+                containerUris.add(uri);
+            }
+               
+        }
+        
+        finder.find (containerUris.toArray(new URI[containerUris.size()]),
                 new ClassNameResolver ()
                 {
                     public boolean isExcluded (String name)
@@ -114,8 +136,23 @@ public class AnnotationConfiguration extends org.eclipse.jetty.plus.webapp.Confi
     throws Exception
     {
         Log.debug("Scanning WEB-INF/lib jars");
+        //Get the uris of jars on the webapp classloader
+        ArrayList<URI> candidateUris = findJars(context.getClassLoader(), false);
+        
+        //Pick out the uris from JAR_RESOURCES that match those to be scanned
+        ArrayList<URI> webInfUris = new ArrayList<URI>();
+        List<Resource> jarResources = (List<Resource>)context.getAttribute(JAR_RESOURCES);
+        for (Resource r : jarResources)
+        {
+            URI uri = r.getURI();
+            if (candidateUris.contains(uri))
+            {
+                webInfUris.add(uri);
+            }
+        }
+        
         //if no pattern for web-inf/lib is defined, then by default scan everything in it
-        parseAnnotationsFromJars (context, finder, context.getClassLoader(), context.getInitParameter(__web_inf_pattern), false, true,
+       finder.find(webInfUris.toArray(new URI[webInfUris.size()]), 
                 new ClassNameResolver()
                 {
                     public boolean isExcluded (String name)
@@ -140,37 +177,54 @@ public class AnnotationConfiguration extends org.eclipse.jetty.plus.webapp.Confi
     throws Exception
     {
         Log.debug("Scanning classes in WEB-INF/classes");
-        parseAnnotationsFromDir (context, finder, context.getWebInf().addPath("classes/"), 
-                new ClassNameResolver()
+        finder.find(context.getWebInf().addPath("classes/"), 
+                    new ClassNameResolver()
+        {
+            public boolean isExcluded (String name)
+            {
+                if (context.isSystemClass(name)) return true;
+                if (context.isServerClass(name)) return false;
+                return false;
+            }
+
+            public boolean shouldOverride (String name)
+            {
+                //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
+                if (context.isParentLoaderPriority())
+                    return false;
+                return true;
+            }
+        });
+    }
+
+    
+
+    public ArrayList<URI> findJars (ClassLoader loader, boolean visitParent)
+    {
+        ArrayList<URI> uris = new ArrayList<URI>();
+       
+        while (loader != null && (loader instanceof URLClassLoader))
+        {
+            URL[] urls = ((URLClassLoader)loader).getURLs();
+            if (urls != null)
+            {
+                for (URL u : urls)
                 {
-                    public boolean isExcluded (String name)
+                    try
                     {
-                        if (context.isSystemClass(name)) return true;
-                        if (context.isServerClass(name)) return false;
-                        return false;
+                        uris.add(u.toURI());
                     }
-
-                    public boolean shouldOverride (String name)
+                    catch (Exception e)
                     {
-                        //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
-                        if (context.isParentLoaderPriority())
-                            return false;
-                        return true;
+                        Log.warn(e);
                     }
-                });
-    }
-    
-    
-
-    public void parseAnnotationsFromJars (final WebAppContext context, final AnnotationFinder finder, final ClassLoader classloader, final String pattern, boolean visitParents, boolean isNullInclusive, ClassNameResolver resolver)
-    throws Exception
-    {
-        finder.find (classloader, visitParents, pattern, isNullInclusive,resolver);
-    }
-    
-    public void parseAnnotationsFromDir (final WebAppContext context, final AnnotationFinder finder, final Resource dir, ClassNameResolver resolver)
-    throws Exception
-    {
-        finder.find(dir, resolver);   
+                } 
+            }
+            if (visitParent)
+                loader = loader.getParent();
+            else
+                loader = null;
+        }
+        return uris;
     }
 }

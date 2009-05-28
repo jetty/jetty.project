@@ -57,11 +57,11 @@ public class WebXmlConfiguration implements Configuration
         }
         
         //Get or create a processor to handle webdefaults, web.xml and the fragments
-        WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.__web_processor); 
+        WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
         if (processor == null)
         {
             processor = new WebXmlProcessor (context);
-            context.setAttribute(WebXmlProcessor.__web_processor, processor);
+            context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
         }
         
         //handle webdefault.xml
@@ -74,8 +74,6 @@ public class WebXmlConfiguration implements Configuration
             processor.parseDefaults (dftResource.getURL());
             processor.processDefaults();
         }
-        
-        
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -93,11 +91,11 @@ public class WebXmlConfiguration implements Configuration
             return;
         }
         
-        WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.__web_processor); 
+        WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
         if (processor == null)
         {
             processor = new WebXmlProcessor (context);
-            context.setAttribute(WebXmlProcessor.__web_processor, processor);
+            context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
         }
 
         //process web.xml
@@ -118,7 +116,6 @@ public class WebXmlConfiguration implements Configuration
             processor.parseOverride(orideResource.getURL());
             processor.processOverride();
         }
-
     }
     
 

@@ -51,6 +51,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
             {
                 if (_state == __STARTED || _state == __STARTING)
                     return;
+                Log.debug("Starting {}",this);
                 setStarting();
                 doStart();
                 Log.debug(STARTED+" {}",this);

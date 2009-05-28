@@ -411,7 +411,7 @@ public abstract class AbstractConfiguration implements Configuration
     {
         bindUserTransaction(context);
         
-        WebXmlProcessor webXmlProcessor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.__web_processor); 
+        WebXmlProcessor webXmlProcessor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
         if (webXmlProcessor == null)
            throw new IllegalStateException ("No processor for web xml");
 

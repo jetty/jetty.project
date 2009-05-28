@@ -62,8 +62,6 @@ public class Configuration extends AbstractConfiguration
                 EnvEntry ee = (EnvEntry)ne;
                 bound = ee.isOverrideWebXml();
             }
-            
-            System.err.println("Checked for envEntry already bound for "+name+" and got: "+ne+", bound="+bound);
         }
         catch (NameNotFoundException e)
         {
@@ -75,7 +73,6 @@ public class Configuration extends AbstractConfiguration
             //either nothing was bound or the value from web.xml should override
             Context envCtx = (Context)ic.lookup("java:comp/env");
             NamingUtil.bind(envCtx, name, value);
-            System.err.println("Bound "+name+"to "+value+" for java:comp/env");
         }
     }
 
@@ -186,7 +183,8 @@ public class Configuration extends AbstractConfiguration
      */
     public void parseAnnotations(WebAppContext context) throws Exception
     {
-        //see org.eclipse.jetty.annotations.Configuration instead
+        //Noop unless you want to do annotation discovery. 
+        //Use org.eclipse.jetty.annotations.Configuration instead.
     }
     
     /**
@@ -220,32 +218,26 @@ public class Configuration extends AbstractConfiguration
             //if we found a mapping, get out name it is mapped to in the environment
             nameInEnvironment = (String)((Link)ne).getObjectToBind();
             Link l = (Link)ne;
-            System.err.println("Link, with nameInEnvironment="+nameInEnvironment);
         }
 
         //try finding that mapped name in the webapp's environment first
-        System.err.println("Trying to find "+nameInEnvironment+" in webapp scope");
         scope = context;
         bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
         
         if (bound)
             return;
         
-        System.err.println("Trying to find "+nameInEnvironment+" in server scope");
         //try the server's environment
         scope = context.getServer();
         bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
         if (bound)
             return;
 
-        System.err.println("Trying to find "+nameInEnvironment+" in jvm scope");
         //try the jvm environment
         bound = NamingEntryUtil.bindToENC(null, name, nameInEnvironment);
         if (bound)
             return;
 
-
-        System.err.println("Didn't find "+nameInEnvironment+" anywhere - looking for "+typeClass.getName()+"/default in server or jvm scope");
         //There is no matching resource so try a default name.
         //The default name syntax is: the [res-type]/default
         //eg       javax.sql.DataSource/default

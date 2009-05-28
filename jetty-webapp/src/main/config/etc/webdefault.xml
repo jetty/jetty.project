@@ -50,24 +50,6 @@
   </context-param>
   -->
 
-  <!-- control which jars from the container's classpath will be scanned for .tlds -->
-  <context-param>
-    <param-name>org.eclipse.jetty.server.webapp.ContainerIncludeTLDJarPattern</param-name>
-    <param-value>jsp-api-.*\.jar|jsp-.*\.jar</param-value>
-  </context-param>
-            
-  <!-- control which jars from the container's classpath will be scanned for   -->
-  <!-- annotations. If this property is empty, NO JARS from the container      -->
-  <!-- classpath will be scanned. This can be overridden by a webapp by        -->
-  <!-- defining this context-param in their web.xml file. Individual webapps   -->
-  <!-- can also control which jars in their WEB-INF/lib will be scanned by     -->
-  <!-- setting a context-param in web.xml called:                              -->
-  <!--                 org.eclipse.jetty.server.webapp.WebInfIncludeAnnotationPattern -->
-  <context-param>
-    <param-name>org.eclipse.jetty.server.webapp.ContainerIncludeAnnotationJarPattern</param-name>
-    <param-value></param-value>
-  </context-param>
-
 
   <!-- ==================================================================== -->
   <!-- The default servlet.                                                 -->

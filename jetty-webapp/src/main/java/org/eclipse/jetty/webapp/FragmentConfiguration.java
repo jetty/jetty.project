@@ -35,33 +35,36 @@ public class FragmentConfiguration implements Configuration
         if (!context.isConfigurationDiscovered())
             return;
         
-        WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.__web_processor); 
+        WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
         if (processor == null)
         {
             processor = new WebXmlProcessor (context);
-            context.setAttribute(WebXmlProcessor.__web_processor, processor);
+            context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
         }
+      
         
         //parse web-fragment.xmls
         parseWebFragments(context, processor);
-        
+       
         //TODO for jetty-8/servletspec 3 we will need to merge the parsed web fragments into the 
         //effective pom in this preConfigure step
     }
     
     public void configure(WebAppContext context) throws Exception
-    {
+    { 
         if (!context.isConfigurationDiscovered())
             return;
+        
         //TODO for jetty-8/servletspec3 the fragments will not be separately processed here, but
         //will be done by webXmlConfiguration when it processes the effective merged web.xml
-        WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.__web_processor); 
+        WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
         if (processor == null)
         {
             processor = new WebXmlProcessor (context);
-            context.setAttribute(WebXmlProcessor.__web_processor, processor);
+            context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
         }
-        processor.processFragments();
+       
+        processor.processFragments(); 
     }
 
     public void deconfigure(WebAppContext context) throws Exception
@@ -83,11 +86,7 @@ public class FragmentConfiguration implements Configuration
      */
     public void parseWebFragments (final WebAppContext context, final WebXmlProcessor processor) throws Exception
     {
-        // Check to see if a specific search pattern has been set.
-        String tmp = (String) context.getInitParameter("org.eclipse.jetty.webapp.WebXmlFragmentPattern");
-        Pattern webFragPattern = (tmp == null ? null : Pattern.compile(tmp));
-
-        List<Resource> frags = (List<Resource>)context.getAttribute(MetaInfConfiguration.METAINF_FRAGMENTS);
+        List<Resource> frags = (List<Resource>)context.getAttribute(FRAGMENT_RESOURCES);
         if (frags!=null)
         {
             for (Resource frag : frags)

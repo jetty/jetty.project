@@ -201,7 +201,6 @@ public abstract class NamingEntry
         objectName.addAll(0, prefix);
         objectNameString = objectName.toString();
         NamingUtil.bind(ic, objectNameString, objectToBind);
-        System.err.println("Bound: "+objectName.toString()+" to "+objectToBind);
     } 
     
 }
