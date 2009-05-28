@@ -18,6 +18,7 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -52,6 +53,7 @@ public class StressTest extends TestCase
             new ConcurrentLinkedQueue<Long>(),
             new ConcurrentLinkedQueue<Long>()
             };
+    private Random _random=new Random();
 
     protected void setUp() throws Exception
     {
@@ -59,9 +61,10 @@ public class StressTest extends TestCase
         _threads.setMaxThreads(500);
         _server.setThreadPool(_threads);
         SelectChannelConnector c_connector=new SelectChannelConnector();
-        SocketConnector s_connector=new SocketConnector();
+        c_connector.setAcceptors(4);
+        c_connector.setAcceptQueueSize(1000);
         
-        _connector=s_connector;
+        _connector=c_connector;
         _connector.setMaxIdleTime(30000);
         
         _server.setConnectors(new Connector[]{ _connector });
@@ -89,6 +92,14 @@ public class StressTest extends TestCase
         {"/path/5","NORMAL"},
         {"/path/6","NORMAL"},
         {"/path/7","NORMAL"},
+        {"/path/8","NORMAL"},
+        {"/path/9","NORMAL"},
+        {"/path/a","NORMAL"},
+        {"/path/b","NORMAL"},
+        {"/path/c","NORMAL"},
+        {"/path/d","NORMAL"},
+        {"/path/e","NORMAL"},
+        {"/path/f","NORMAL"},
     };
     
     
@@ -144,14 +155,12 @@ public class StressTest extends TestCase
                 _latencies[1].add((i==0)?new Long(bind+flush):flush);
                 _latencies[5].add((i==0)?new Long(bind+flush+read):(flush+read));
             }
-            
         }
         else
         {
             for (int i=0;i<__tests.length;i++)
             {
-                //int timeout = __tests[i][1].equals("NORMAL")?0:(_random.nextInt(200)+1);
-                int timeout = __tests[i][1].equals("NORMAL")?0:20;
+                int timeout = __tests[i][1].equals("NORMAL")?0:(_random.nextInt(20)*_random.nextInt(20)+1);
                 String uri=__tests[i][0];
 
                 long start=System.currentTimeMillis();
@@ -196,7 +205,7 @@ public class StressTest extends TestCase
             {
                 _loops[thread]=i;
                 doPaths(thread,name+"-"+i,persistent);
-                // Thread.sleep(1+_random.nextInt(10)*_random.nextInt(10));
+                Thread.sleep(1+_random.nextInt(10)*_random.nextInt(10));
                 Thread.sleep(10);
             }
             _loops[thread]=loops;
@@ -204,7 +213,6 @@ public class StressTest extends TestCase
         catch(Exception e)
         {
             System.err.println(e);
-            //_connector.dump();
             _loops[thread]=-_loops[thread];
             throw e;
         }
@@ -242,6 +250,9 @@ public class StressTest extends TestCase
         for (int i=0;i<threads;i++)
             thread[i].start();
         
+        String last=null;
+        int same=0;
+        
         while(true)
         {
             Thread.sleep(1000L);
@@ -269,8 +280,16 @@ public class StressTest extends TestCase
                         finished++;  
                 }     
             }
-            
-            Log.info("min/ave/max/target="+min+"/"+(total/threads)+"/"+max+"/"+loops+" errors/finished/loops="+errors+"/"+finished+"/"+threads+" idle/threads="+(_threads.getIdleThreads())+"/"+_threads.getThreads());
+            String status = "min/ave/max/target="+min+"/"+(total/threads)+"/"+max+"/"+loops+" errors/finished/loops="+errors+"/"+finished+"/"+threads+" idle/threads="+(_threads.getIdleThreads())+"/"+_threads.getThreads();
+            if (status.equals(last))
+            {
+                if (same++>10)
+                    throw new IllegalStateException("Stalled");
+            }
+            else
+                same=0;
+            last=status;
+            Log.info(status);
             if ((finished+errors)==threads)
                 break;
         }
@@ -282,9 +301,7 @@ public class StressTest extends TestCase
             if (throwable[i]!=null)
                 throw throwable[i];
         
-
-        
-        int quantums=16;
+        int quantums=48;
         int[][] count = new int[_latencies.length][quantums];                        
         int length[] = new int[_latencies.length];                       
         int other[] = new int[_latencies.length];
@@ -299,7 +316,7 @@ public class StressTest extends TestCase
             {
                 for (int q=0;q<quantums;q++)
                 {
-                    if (latency>=(q*1000) && latency<((q+1)*1000))
+                    if (latency>=(q*100) && latency<((q+1)*100))
                     {
                         count[i][q]++;
                         continue loop;
@@ -312,7 +329,7 @@ public class StressTest extends TestCase
         System.out.println("           stage:\tbind\twrite\trecv\tdispatch\twrote\ttotal");
         for (int q=0;q<quantums;q++)
         {
-            System.out.print(q+"000<=latency<"+(q+1)+"000");
+            System.out.print(q+"00<=latency<"+(q+1)+"00");
             for (int i=0;i<_latencies.length;i++)
                 System.out.print("\t"+count[i][q]);
             System.out.println();
@@ -338,7 +355,7 @@ public class StressTest extends TestCase
             doThreads(200,100,false);
         }
         else
-            doThreads(10,5,false);
+            doThreads(25,50,false);
     }
     
     
@@ -351,7 +368,7 @@ public class StressTest extends TestCase
             doThreads(200,400,true);
         }
         else
-            doThreads(15,15,true);
+            doThreads(50,100,true);
     }
     
     private class SuspendHandler extends HandlerWrapper
