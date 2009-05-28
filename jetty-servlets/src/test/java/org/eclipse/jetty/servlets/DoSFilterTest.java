@@ -39,7 +39,6 @@ import org.eclipse.jetty.util.log.Log;
 
 public class DoSFilterTest extends TestCase
 {
-    static volatile AsyncContinuation _dump;
     protected ServletTester _tester;
     protected String _host;
     protected int _port;
@@ -191,8 +190,6 @@ public class DoSFilterTest extends TestCase
         String request="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\n\r\n";
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request+request+request+request,1,0,0,last);
-        System.err.println(responses);
-        System.err.println("history="+_dump.getHistory());
         assertEquals(5,count(responses,"HTTP/1.1 200 OK"));
         assertEquals(1,count(responses,"DoSFilter: delayed"));
         assertEquals(1,count(responses,"DoSFilter: throttled"));
@@ -340,19 +337,6 @@ public class DoSFilterTest extends TestCase
     
     public static class DoSFilter2 extends DoSFilter
     {
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterchain) throws IOException, ServletException
-        {
-            try
-            {
-                super.doFilter(request,response,filterchain);
-            }
-            finally
-            {
-                if (request.isAsyncStarted())
-                    DoSFilterTest._dump=(AsyncContinuation)request.getAsyncContext();
-            }
-        }
-
         public void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
         {
             try {

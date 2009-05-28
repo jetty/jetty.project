@@ -13,7 +13,7 @@
 		<display-name>AsyncRestServlet</display-name>
 		<servlet-name>AsyncRestServlet</servlet-name>
 		<servlet-class>org.eclipse.jetty.example.asyncrest.AsyncRestServlet</servlet-class>
-		<async-support>true</async-support>
+		<async-supported>true</async-supported>
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>AsyncRestServlet</servlet-name>
