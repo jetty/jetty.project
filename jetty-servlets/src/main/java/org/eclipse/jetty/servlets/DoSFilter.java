@@ -266,7 +266,6 @@ public class DoSFilter implements Filter
         // Look for the rate tracker for this request
         RateTracker tracker = (RateTracker)request.getAttribute(__TRACKER);
 
-        System.err.println("DoS "+request+" t="+tracker);
         if (tracker==null)
         {
             // This is the first time we have seen this request.
@@ -313,7 +312,6 @@ public class DoSFilter implements Filter
                     request.setAttribute(__TRACKER,tracker);
                     continuation.setTimeout(_delayMs);
 
-                    System.err.println("suspend "+request+" d="+_delayMs+" c="+continuation);
                     continuation.suspend();
                     return;
                 }

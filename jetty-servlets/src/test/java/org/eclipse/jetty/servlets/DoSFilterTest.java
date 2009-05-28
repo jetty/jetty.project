@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.AsyncRequest;
+import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.testing.ServletTester;
 import org.eclipse.jetty.util.IO;
@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Log;
 
 public class DoSFilterTest extends TestCase
 {
-    static volatile AsyncRequest _dump;
+    static volatile AsyncContinuation _dump;
     protected ServletTester _tester;
     protected String _host;
     protected int _port;
@@ -349,7 +349,7 @@ public class DoSFilterTest extends TestCase
             finally
             {
                 if (request.isAsyncStarted())
-                    DoSFilterTest._dump=(AsyncRequest)request.getAsyncContext();
+                    DoSFilterTest._dump=(AsyncContinuation)request.getAsyncContext();
             }
         }
 
