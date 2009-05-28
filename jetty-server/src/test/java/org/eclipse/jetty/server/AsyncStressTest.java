@@ -238,7 +238,7 @@ public class AsyncStressTest extends TestCase
                                     System.err.println(uri+"=="+br.getUri());
                                     System.err.println(asyncContext+"=="+br.getAsyncRequest());
                                     
-                                    System.err.println(((AsyncRequest)asyncContext).getHistory());
+                                    System.err.println(((AsyncContinuation)asyncContext).getHistory());
                                     Log.warn(e);
                                     System.exit(1);
                                 }

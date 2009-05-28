@@ -19,7 +19,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.AsyncRequest;
+import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -90,7 +90,7 @@ public class StatisticsHandler extends HandlerWrapper implements CompleteHandler
         {
             synchronized(this)
             {
-                AsyncRequest asyncContextState=baseRequest.getAsyncRequest();
+                AsyncContinuation asyncContextState=baseRequest.getAsyncRequest();
 
                 if(asyncContextState==null)
                 {

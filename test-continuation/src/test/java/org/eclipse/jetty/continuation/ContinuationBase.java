@@ -53,7 +53,7 @@ public abstract class ContinuationBase extends TestCase
         assertContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
         
-        response=process("suspend=200&resume=100",null);
+        response=process("suspend=200&resume=10",null);
         assertContains("RESUMED",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
@@ -63,7 +63,7 @@ public abstract class ContinuationBase extends TestCase
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
         
-        response=process("suspend=200&complete=100",null);
+        response=process("suspend=200&complete=10",null);
         assertContains("COMPLETED",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
@@ -72,8 +72,82 @@ public abstract class ContinuationBase extends TestCase
         assertContains("COMPLETED",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
+        
+        
+        response=process("suspend=1000&resume=10&suspend2=1000&resume2=10",null);
+        assertEquals(2,count(response,"history: suspend"));
+        assertEquals(2,count(response,"history: resume"));
+        assertEquals(0,count(response,"history: onTimeout"));
+        assertEquals(1,count(response,"history: onComplete"));
+        assertContains("RESUMED",response);
+        
+        response=process("suspend=1000&resume=10&suspend2=1000&resume2=10",null);
+        assertEquals(2,count(response,"history: suspend"));
+        assertEquals(2,count(response,"history: resume"));
+        assertEquals(0,count(response,"history: onTimeout"));
+        assertEquals(1,count(response,"history: onComplete"));
+        assertContains("RESUMED",response);
+        
+        response=process("suspend=1000&resume=10&suspend2=1000&complete2=10",null);
+        assertEquals(2,count(response,"history: suspend"));
+        assertEquals(1,count(response,"history: resume"));
+        assertEquals(0,count(response,"history: onTimeout"));
+        assertEquals(1,count(response,"history: onComplete"));
+        assertContains("COMPLETED",response);
+        
+        response=process("suspend=1000&resume=10&suspend2=10",null);
+        assertEquals(2,count(response,"history: suspend"));
+        assertEquals(1,count(response,"history: resume"));
+        assertEquals(1,count(response,"history: onTimeout"));
+        assertEquals(1,count(response,"history: onComplete"));
+        assertContains("TIMEOUT",response);
+        
+
+        
+        response=process("suspend=10&suspend2=1000&resume2=10",null);
+        assertEquals(2,count(response,"history: suspend"));
+        assertEquals(1,count(response,"history: resume"));
+        assertEquals(1,count(response,"history: onTimeout"));
+        assertEquals(1,count(response,"history: onComplete"));
+        assertContains("RESUMED",response);
+        
+        response=process("suspend=10&suspend2=1000&resume2=10",null);
+        assertEquals(2,count(response,"history: suspend"));
+        assertEquals(1,count(response,"history: resume"));
+        assertEquals(1,count(response,"history: onTimeout"));
+        assertEquals(1,count(response,"history: onComplete"));
+        assertContains("RESUMED",response);
+        
+        response=process("suspend=10&suspend2=1000&complete2=10",null);
+        assertEquals(2,count(response,"history: suspend"));
+        assertEquals(0,count(response,"history: resume"));
+        assertEquals(1,count(response,"history: onTimeout"));
+        assertEquals(1,count(response,"history: onComplete"));
+        assertContains("COMPLETED",response);
+        
+        response=process("suspend=10&suspend2=10",null);
+        assertEquals(2,count(response,"history: suspend"));
+        assertEquals(0,count(response,"history: resume"));
+        assertEquals(2,count(response,"history: onTimeout"));
+        assertEquals(1,count(response,"history: onComplete"));
+        assertContains("TIMEOUT",response);
+        
     }
 
+    
+    private int count(String responses,String substring)
+    {
+        int count=0;
+        int i=responses.indexOf(substring);
+        while (i>=0)
+        {
+            count++;
+            i=responses.indexOf(substring,i+substring.length());
+        }
+        
+        return count;
+    }
+    
     protected void assertContains(String content,String response)
     {
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
@@ -135,8 +209,11 @@ public abstract class ContinuationBase extends TestCase
             int read_before=0;
             long sleep_for=-1;
             long suspend_for=-1;
+            long suspend2_for=-1;
             long resume_after=-1;
+            long resume2_after=-1;
             long complete_after=-1;
+            long complete2_after=-1;
             
             if (request.getParameter("read")!=null)
                 read_before=Integer.parseInt(request.getParameter("read"));
@@ -144,10 +221,16 @@ public abstract class ContinuationBase extends TestCase
                 sleep_for=Integer.parseInt(request.getParameter("sleep"));
             if (request.getParameter("suspend")!=null)
                 suspend_for=Integer.parseInt(request.getParameter("suspend"));
+            if (request.getParameter("suspend2")!=null)
+                suspend2_for=Integer.parseInt(request.getParameter("suspend2"));
             if (request.getParameter("resume")!=null)
                 resume_after=Integer.parseInt(request.getParameter("resume"));
+            if (request.getParameter("resume2")!=null)
+                resume2_after=Integer.parseInt(request.getParameter("resume2"));
             if (request.getParameter("complete")!=null)
                 complete_after=Integer.parseInt(request.getParameter("complete"));
+            if (request.getParameter("complete2")!=null)
+                complete2_after=Integer.parseInt(request.getParameter("complete2"));
             
             if (continuation.isInitial())
             {
@@ -169,6 +252,7 @@ public abstract class ContinuationBase extends TestCase
                     if (suspend_for>0)
                         continuation.setTimeout(suspend_for);
                     continuation.addContinuationListener(__listener);
+                    ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","suspend");
                     continuation.suspend();
                     
                     if (complete_after>0)
@@ -206,6 +290,7 @@ public abstract class ContinuationBase extends TestCase
                         {
                             public void run()
                             {
+                                ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","resume");
                                 continuation.resume();
                             }
                         };
@@ -216,6 +301,7 @@ public abstract class ContinuationBase extends TestCase
                     }
                     else if (resume_after==0)
                     {
+                        ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","resume");
                         continuation.resume();
                     }
                 }
@@ -237,6 +323,67 @@ public abstract class ContinuationBase extends TestCase
                     response.setStatus(200);
                     response.getOutputStream().println("NORMAL\n");
                 }
+            }
+            else if (suspend2_for>=0 && request.getAttribute("2nd")==null)
+            {
+                request.setAttribute("2nd","cycle");
+
+                if (suspend2_for>0)
+                    continuation.setTimeout(suspend2_for);
+                // continuation.addContinuationListener(__listener);
+                ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","suspend");
+                continuation.suspend();
+
+                if (complete2_after>0)
+                {
+                    TimerTask complete = new TimerTask()
+                    {
+                        public void run()
+                        {
+                            try
+                            {
+                                response.setStatus(200);
+                                response.getOutputStream().println("COMPLETED\n");
+                                continuation.complete();
+                            }
+                            catch(Exception e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }
+                    };
+                    synchronized (_timer)
+                    {
+                        _timer.schedule(complete,complete2_after);
+                    }
+                }
+                else if (complete2_after==0)
+                {
+                    response.setStatus(200);
+                    response.getOutputStream().println("COMPLETED\n");
+                    continuation.complete();
+                }
+                else if (resume2_after>0)
+                {
+                    TimerTask resume = new TimerTask()
+                    {
+                        public void run()
+                        {
+                            ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","resume");
+                            continuation.resume();
+                        }
+                    };
+                    synchronized (_timer)
+                    {
+                        _timer.schedule(resume,resume2_after);
+                    }
+                }
+                else if (resume2_after==0)
+                {
+                    ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","resume");
+                    continuation.resume();
+                }
+                return;
             }
             else if (continuation.isExpired())
             {

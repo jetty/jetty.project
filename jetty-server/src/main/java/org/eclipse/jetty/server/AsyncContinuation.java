@@ -28,10 +28,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 
 /* ------------------------------------------------------------ */
-/** Asyncrhonous Request.
+/** Implementation of Continuation and AsyncContext interfaces.
  * 
  */
-public class AsyncRequest implements AsyncContext, Continuation
+public class AsyncContinuation implements AsyncContext, Continuation
 {
     // STATES:
     private static final int __IDLE=0;         // Idle request
@@ -73,7 +73,7 @@ public class AsyncRequest implements AsyncContext, Continuation
 //    private StringBuilder _history = new StringBuilder();
 
     /* ------------------------------------------------------------ */
-    protected AsyncRequest()
+    protected AsyncContinuation()
     {
         _state=__IDLE;
         _initial=true;
@@ -829,7 +829,7 @@ public class AsyncRequest implements AsyncContext, Continuation
     public void suspend()
     {
         // TODO simplify?
-        AsyncRequest.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),_connection.getResponse());       
+        AsyncContinuation.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),_connection.getResponse());       
     }
 
     /* ------------------------------------------------------------ */
@@ -865,7 +865,7 @@ public class AsyncRequest implements AsyncContext, Continuation
         {
             public void expired()
             {
-                AsyncRequest.this.expired();
+                AsyncContinuation.this.expired();
             }
         };
         

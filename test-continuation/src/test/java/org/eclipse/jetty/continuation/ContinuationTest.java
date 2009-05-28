@@ -59,7 +59,7 @@ public class ContinuationTest extends ContinuationBase
         _server.start();
         _port=_connector.getLocalPort();
         
-        doit("AsyncRequest");
+        doit("AsyncContinuation");
     }
 
     public void testNotJetty6() throws Exception
@@ -70,7 +70,7 @@ public class ContinuationTest extends ContinuationBase
         _server.start();
         _port=_connector.getLocalPort();
         
-        doit("AsyncRequest");
+        doit("AsyncContinuation");
     }
 
     public void testNoFilter() throws Exception
@@ -78,7 +78,7 @@ public class ContinuationTest extends ContinuationBase
         _server.start();
         _port=_connector.getLocalPort();
         
-        doit("AsyncRequest");
+        doit("AsyncContinuation");
     }
     
     protected String toString(InputStream in) throws IOException

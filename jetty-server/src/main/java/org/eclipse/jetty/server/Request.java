@@ -114,7 +114,7 @@ public class Request implements HttpServletRequest
 
         return HttpConnection.getCurrentConnection().getRequest();
     }
-    protected final AsyncRequest _async = new AsyncRequest();
+    protected final AsyncContinuation _async = new AsyncContinuation();
     private boolean _asyncSupported=true;
     private Attributes _attributes;
     private Authentication _authentication;
@@ -299,7 +299,7 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public AsyncRequest getAsyncRequest()
+    public AsyncContinuation getAsyncRequest()
     {
         return _async;
     }

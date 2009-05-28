@@ -139,6 +139,7 @@
     <module>jetty-plus</module>
     <module>jetty-rewrite</module>
     <module>jetty-start</module>
+    <module>test-continuation</module>
     <module>test-jetty-servlet</module>
     <module>test-jetty-webapp</module>
     <module>jetty-aggregate</module>
