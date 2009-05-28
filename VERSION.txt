@@ -9,6 +9,7 @@ jetty-8.0.0.M0-SNAPSHOT
  + Merged jetty-7-to-jetty-8-base-20090524-1
  + Use PFD servlet API from 25/5/2009
  + Merged jetty-7-to-jetty-8-base-20090527-1
+ + Merged jetty-7-to-jetty-8-base-20090528-1
 
 jetty-7.0.0.M3-SNAPSHOT
  + fixed race with expired async listeners

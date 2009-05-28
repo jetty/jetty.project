@@ -56,7 +56,7 @@ import org.eclipse.jetty.xml.XmlParser;
  */
 public class WebXmlProcessor
 {
-    public static final String __web_processor = "org.eclipse.jetty.webProcessor";
+    public static final String WEB_PROCESSOR = "org.eclipse.jetty.webProcessor";
     
     protected WebAppContext _context;
     protected XmlParser _xmlParser;
@@ -298,6 +298,7 @@ public class WebXmlProcessor
     public void process (XmlParser.Node config)
     throws Exception
     {
+       
         //Get the current objects from the context
         _servletHandler = _context.getServletHandler();
         _securityHandler = (SecurityHandler)_context.getSecurityHandler();
@@ -316,8 +317,8 @@ public class WebXmlProcessor
                 _roles.addAll(((ConstraintAware) _securityHandler).getRoles());
             }
         }
-       _errorPages = _context.getErrorHandler() instanceof ErrorPageErrorHandler ? ((ErrorPageErrorHandler)_context.getErrorHandler()).getErrorPages() : null;   
-        
+       _errorPages = _context.getErrorHandler() instanceof ErrorPageErrorHandler ? ((ErrorPageErrorHandler)_context.getErrorHandler()).getErrorPages() : null; 
+       
         Iterator iter = config.iterator();
         XmlParser.Node node = null;
         while (iter.hasNext())

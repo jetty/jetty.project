@@ -15,6 +15,7 @@
 package org.eclipse.jetty.webapp;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -38,10 +39,10 @@ import org.eclipse.jetty.util.resource.Resource;
  * method to handle entries in jar files whose names match the supplied 
  * pattern.
  */
-public abstract class JarScanner
+public abstract class JarScanner extends org.eclipse.jetty.util.PatternMatcher
 {
 
-    public abstract void processEntry (URL jarUrl, JarEntry entry);
+    public abstract void processEntry (URI jarUri, JarEntry entry);
     
     /**
      * Find jar names from the provided list matching a pattern.
@@ -70,32 +71,10 @@ public abstract class JarScanner
      * @param isNullInclusive if true, an empty pattern means all names match, if false, none match
      * @throws Exception
      */
-    public void scan (Pattern pattern, URL[] urls, boolean isNullInclusive)
+    public void scan (Pattern pattern, URI[] uris, boolean isNullInclusive)
     throws Exception
     {
-        if (urls!=null)
-        {
-            String[] patterns = (pattern==null?null:pattern.pattern().split(","));
-
-            List<Pattern> subPatterns = new ArrayList<Pattern>();
-            for (int i=0; patterns!=null && i<patterns.length;i++)
-                subPatterns.add(Pattern.compile(patterns[i]));
-            if (subPatterns.isEmpty())
-                subPatterns.add(pattern);
-
-            if (subPatterns.isEmpty())
-            {
-                processJars(null, urls, isNullInclusive);
-            }
-            else
-            {
-                //for each subpattern, iterate over all the urls, processing those that match
-                for (Pattern p : subPatterns)
-                {
-                    processJars(p, urls, isNullInclusive);
-                }
-            }
-        }
+       super.match(pattern, uris, isNullInclusive);
     }
     
     /**
@@ -133,35 +112,18 @@ public abstract class JarScanner
     public void scan (Pattern pattern, ClassLoader loader, boolean isNullInclusive, boolean visitParent)
     throws Exception
     {
-        String[] patterns = (pattern==null?null:pattern.pattern().split(","));
-
-        List<Pattern> subPatterns = new ArrayList<Pattern>();
-        for (int i=0; patterns!=null && i<patterns.length;i++)
-            subPatterns.add(Pattern.compile(patterns[i]));
-        if (subPatterns.isEmpty())
-            subPatterns.add(pattern);
-        
-        
         while (loader!=null)
         {
             if (loader instanceof URLClassLoader)
             {
                 URL[] urls = ((URLClassLoader)loader).getURLs();
-
-                if (urls!=null)
+                if (urls != null)
                 {
-                    if (subPatterns.isEmpty())
-                    {
-                        processJars(null, urls, isNullInclusive);
-                    }
-                    else
-                    {
-                        //for each subpattern, iterate over all the urls, processing those that match
-                        for (Pattern p : subPatterns)
-                        {
-                           processJars(p, urls, isNullInclusive);
-                        }
-                    }
+                    URI[] uris = new URI[urls.length];
+                    int i=0;
+                    for (URL u : urls)
+                        uris[i++] = u.toURI();
+                    scan (pattern, uris, isNullInclusive);
                 }
             }     
             if (visitParent)
@@ -172,50 +134,31 @@ public abstract class JarScanner
     }
     
     
-    
-    public void processJars (Pattern pattern, URL[] urls, boolean isNullInclusive)
+    public void matched (URI uri)
     throws Exception
     {
-        for (int i=0; i<urls.length;i++)
+        Log.debug("Search of {}",uri);
+        if (uri.toString().toLowerCase().endsWith(".jar"))
         {
-            if (urls[i].toString().toLowerCase().endsWith(".jar"))
-            {
-                String jar = urls[i].toString();
-                int slash=jar.lastIndexOf('/');
-                jar=jar.substring(slash+1);
-                
-                if ((pattern == null && isNullInclusive)
-                    ||
-                    (pattern!=null && pattern.matcher(jar).matches()))
+         
+            InputStream in = Resource.newResource(uri).getInputStream();
+            if (in==null)
+                return;
+
+            JarInputStream jar_in = new JarInputStream(in);
+            try
+            { 
+                JarEntry entry = jar_in.getNextJarEntry();
+                while (entry!=null)
                 {
-                    processJar(urls[i]);
+                    processEntry(uri, entry);
+                    entry = jar_in.getNextJarEntry();
                 }
             }
-        }
-    }
-    
-    public void processJar (URL url)
-    throws Exception
-    {
-        Log.debug("Search of {}",url);
-        
-        InputStream in = Resource.newResource(url).getInputStream();
-        if (in==null)
-            return;
-
-        JarInputStream jar_in = new JarInputStream(in);
-        try
-        { 
-            JarEntry entry = jar_in.getNextJarEntry();
-            while (entry!=null)
+            finally
             {
-                processEntry(url, entry);
-                entry = jar_in.getNextJarEntry();
-            }
+                jar_in.close();
+            }   
         }
-        finally
-        {
-            jar_in.close();
-        }   
     }
 }

@@ -40,9 +40,6 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class EnvConfiguration implements Configuration
 {
-
-    private Context compCtx;    
-    private Context envCtx;
     private URL jettyEnvXmlUrl;
 
   
@@ -96,7 +93,6 @@ public class EnvConfiguration implements Configuration
         //apply the jetty-env.xml file
         if (jettyEnvXmlUrl != null)
         {
-            System.err.println("Applying "+jettyEnvXmlUrl);
             XmlConfiguration configuration = new XmlConfiguration(jettyEnvXmlUrl);
             configuration.configure(context);
         }
@@ -122,8 +118,17 @@ public class EnvConfiguration implements Configuration
         //get rid of any bindings for comp/env for webapp
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
-        compCtx.destroySubcontext("env");
-        
+        try
+        {
+            Context ic = new InitialContext();
+            Context compCtx =  (Context)ic.lookup ("java:comp");
+            compCtx.destroySubcontext("env");
+        }
+        catch (NameNotFoundException e)
+        {
+            Log.warn(e);
+        }
+
         //unbind any NamingEntries that were configured in this webapp's name space
         try
         {
@@ -149,6 +154,8 @@ public class EnvConfiguration implements Configuration
     throws NamingException
     {
         Log.debug("Binding env entries from the jvm scope");
+        InitialContext ic = new InitialContext();
+        Context envCtx = (Context)ic.lookup("java:comp/env");
         Object scope = null;
         List list = NamingEntryUtil.lookupNamingEntries(scope, EnvEntry.class);
         Iterator itor = list.iterator();
@@ -190,9 +197,7 @@ public class EnvConfiguration implements Configuration
     throws NamingException
     {
         Context context = new InitialContext();
-        compCtx =  (Context)context.lookup ("java:comp");
-        envCtx = compCtx.createSubcontext("env");
-        
-        System.err.println("Created comp/env");
+        Context compCtx =  (Context)context.lookup ("java:comp");
+        compCtx.createSubcontext("env");
     }
 }

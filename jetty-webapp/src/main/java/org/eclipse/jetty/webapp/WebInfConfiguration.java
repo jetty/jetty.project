@@ -2,11 +2,16 @@ package org.eclipse.jetty.webapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.JarResource;
@@ -16,6 +21,9 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
 public class WebInfConfiguration implements Configuration
 {
     public static final String TEMPDIR_CREATED = "org.eclipse.jetty.tmpdirCreated";
+    public static final String JAR_RESOURCES = "org.eclipse.jetty.jarList";
+    public static final String CONTAINER_JAR_PATTERN = "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern";
+    public static final String WEBINF_JAR_PATTERN = "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern";
     
     /**
      * If set, to a list of URLs, these resources are added to the context
@@ -23,7 +31,10 @@ public class WebInfConfiguration implements Configuration
      */
     public static final String RESOURCE_URLS = "org.eclipse.jetty.resources";
     
-    public void preConfigure(WebAppContext context) throws Exception
+    
+    
+    
+    public void preConfigure(final WebAppContext context) throws Exception
     {
         //Make a temp directory for the webapp if one is not already set
         resolveTempDirectory(context);
@@ -34,6 +45,59 @@ public class WebInfConfiguration implements Configuration
         File work = findWorkDirectory(context);
         if (work != null)
             makeTempDirectory(work, context, false);
+        
+        //Apply an initial ordering to the jars which governs which will be scanned for META-INF
+        //info and annotations. The ordering is based on inclusion patterns.       
+        String tmp = (String)context.getAttribute(WEBINF_JAR_PATTERN);
+        Pattern webInfPattern = (tmp==null?null:Pattern.compile(tmp));
+        tmp = (String)context.getAttribute(CONTAINER_JAR_PATTERN);
+        Pattern containerPattern = (tmp==null?null:Pattern.compile(tmp));
+        
+        final ArrayList jarResources = new ArrayList<Resource>();
+        context.setAttribute(JAR_RESOURCES, jarResources);  
+        
+        PatternMatcher jarNameMatcher = new PatternMatcher ()
+        {
+            public void matched(URI uri) throws Exception
+            {
+                jarResources.add(Resource.newResource(uri));
+            }
+            
+        };
+        
+        //Apply ordering to container jars
+        ClassLoader loader = context.getClassLoader();
+        while (loader != null && (loader instanceof URLClassLoader))
+        {
+            URL[] urls = ((URLClassLoader)loader).getURLs();
+            if (urls != null)
+            {
+                URI[] containerUris = new URI[urls.length];
+                int i=0;
+                for (URL u : urls)
+                {
+                    containerUris[i++] = u.toURI();
+                }
+                jarNameMatcher.match(containerPattern, containerUris, false);
+            }
+            loader = loader.getParent();
+        }
+        
+        //Apply ordering to WEB-INF/lib jars
+        //Find all jars in WEB-INF
+        List<Resource> jars = findJars(context);
+        //Convert to uris for matching
+        URI[] uris = null;
+        if (jars != null)
+        {
+            uris = new URI[jars.size()];
+            int i=0;
+            for (Resource r: jars)
+            {
+                uris[i++] = r.getURI();
+            }
+        }
+        jarNameMatcher.match(webInfPattern, uris, true); //null is inclusive, no pattern == all jars match 
     }
     
     
@@ -501,4 +565,43 @@ public class WebInfConfiguration implements Configuration
         return canonicalName.toString();
     }
     
+    /**
+     * Look for jars in WEB-INF/lib
+     * @param context
+     * @return
+     * @throws Exception
+     */
+    protected List<Resource> findJars (WebAppContext context) 
+    throws Exception
+    {
+        List<Resource> jarResources = new ArrayList<Resource>();
+        
+        Resource web_inf = context.getWebInf();
+        Resource web_inf_lib = web_inf.addPath("/lib");
+       
+        
+        if (web_inf_lib.exists() && web_inf_lib.isDirectory())
+        {
+            String[] files=web_inf_lib.list();
+            for (int f=0;files!=null && f<files.length;f++)
+            {
+                try 
+                {
+                    Resource file = web_inf_lib.addPath(files[f]);
+                    String fnlc = file.getName().toLowerCase();
+                    int dot = fnlc.lastIndexOf('.');
+                    String extension = (dot < 0 ? null : fnlc.substring(dot));
+                    if (extension != null && (extension.equals(".jar") || extension.equals(".zip")))
+                    {
+                        jarResources.add(file);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.warn(Log.EXCEPTION,ex);
+                }
+            }
+        }
+        return jarResources;
+    }
 }

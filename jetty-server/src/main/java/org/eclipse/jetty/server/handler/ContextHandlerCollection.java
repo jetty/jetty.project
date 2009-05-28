@@ -172,7 +172,7 @@ public class ContextHandlerCollection extends HandlerCollection
 	    return;
 	
 	AsyncContinuation async = baseRequest.getAsyncRequest();
-	if (async!=null)
+	if (async.isAsync())
 	{
 	    ContextHandler context=async.getContextHandler();
 	    if (context!=null)

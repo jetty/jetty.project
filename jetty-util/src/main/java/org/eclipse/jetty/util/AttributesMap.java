@@ -41,6 +41,11 @@ public class AttributesMap implements Attributes
         _map=map;
     }
     
+    public AttributesMap(AttributesMap map)
+    {
+        _map=new HashMap(map._map);
+    }
+    
     /* ------------------------------------------------------------ */
     /* 
      * @see org.eclipse.jetty.util.Attributes#removeAttribute(java.lang.String)

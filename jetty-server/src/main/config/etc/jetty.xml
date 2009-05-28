@@ -110,6 +110,10 @@
           <Set name="contexts"><Ref id="Contexts"/></Set>
           <Set name="configurationDir"><SystemProperty name="jetty.home" default="."/>/contexts</Set>
           <Set name="scanInterval">5</Set>
+          <Call name="setAttribute">
+            <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
+            <Arg>.*/jsp-api-[^/]*\.jar$|.*/jsp-[^/]*\.jar$</Arg>
+          </Call>
         </New>
       </Arg>
     </Call>
@@ -136,6 +140,10 @@
 	  <Set name="extract">true</Set>
 	  <Set name="allowDuplicates">false</Set>
           <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Set>
+          <Call name="setAttribute">
+            <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
+            <Arg>.*/jsp-api-[^/]*\.jar$|.*/jsp-[^/]*\.jar$</Arg>
+          </Call>
         </New>
       </Arg>
     </Call>

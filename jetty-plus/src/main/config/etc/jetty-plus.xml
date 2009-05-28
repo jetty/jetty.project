@@ -68,6 +68,10 @@
           <Set name="allowDuplicates">false</Set>
           <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Set>
           <Set name="configurationClasses"><Ref id="plusConfig"/></Set>
+          <Call name="setAttribute">
+            <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
+            <Arg>.*/jsp-api-[^/]*\.jar$|.*/jsp-[^/]*\.jar$</Arg>
+          </Call>
         </New>
       </Arg>
     </Call>

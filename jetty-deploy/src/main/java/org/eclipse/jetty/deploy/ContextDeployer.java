@@ -22,6 +22,7 @@ import java.util.Map;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -73,7 +74,8 @@ public class ContextDeployer extends AbstractLifeCycle
     private ContextHandlerCollection _contexts;
     private ConfigurationManager _configMgr;
     private boolean _recursive = false;
-
+    private AttributesMap _contextAttributes = new AttributesMap();
+    
     /* ------------------------------------------------------------ */
     protected class ScannerListener implements Scanner.DiscreteListener
     {
@@ -255,6 +257,39 @@ public class ContextDeployer extends AbstractLifeCycle
     {
         return _recursive;
     }
+    
+    
+    /**
+     * Set a contextAttribute that will be set for every Context deployed by this deployer.
+     * @param name
+     * @param value
+     */
+    public void setAttribute (String name, Object value)
+    {
+        _contextAttributes.setAttribute(name,value);
+    }
+    
+    
+    /**
+     * Get a contextAttribute that will be set for every Context deployed by this deployer.
+     * @param name
+     * @return
+     */
+    public Object getAttribute (String name)
+    {
+        return _contextAttributes.getAttribute(name);
+    }
+    
+    
+    /**
+     * Remove a contextAttribute that will be set for every Context deployed by this deployer.
+     * @param name
+     */
+    public void removeAttribute(String name)
+    {
+        _contextAttributes.removeAttribute(name);
+    }
+
     /* ------------------------------------------------------------ */
     private void deploy(String filename) throws Exception
     {
@@ -365,6 +400,7 @@ public class ContextDeployer extends AbstractLifeCycle
            
         xmlConfiguration.setProperties(properties);
         ContextHandler context=(ContextHandler)xmlConfiguration.configure();
+        context.setAttributes(new AttributesMap(_contextAttributes));
         return context;
     }
 
