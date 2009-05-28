@@ -646,7 +646,7 @@ public class WebXmlProcessor
                 holder.setRunAsRole(roleName);
         }
 
-        String async=node.getString("async-support",false,true);
+        String async=node.getString("async-supported",false,true);
         if (async!=null)
             holder.setAsyncSupported(async.length()==0||Boolean.valueOf(async));
 
