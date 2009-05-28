@@ -269,6 +269,7 @@
                   <includes>**</includes>
                   <outputDirectory>${assembly.directory}/lib</outputDirectory>
                 </artifactItem>
+		<!--
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-annotations</artifactId>
@@ -278,6 +279,7 @@
                   <includes>**</includes>
                   <outputDirectory>${assembly.directory}/lib</outputDirectory>
                 </artifactItem>
+		-->
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-client</artifactId>
@@ -499,11 +501,13 @@
     	<artifactId>jetty-ajp</artifactId>
     	<version>${project.version}</version>
     </dependency>
+    <!--
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
     	<artifactId>jetty-annotations</artifactId>
     	<version>${project.version}</version>
     </dependency>
+    -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
         <artifactId>test-jetty-webapp</artifactId>
