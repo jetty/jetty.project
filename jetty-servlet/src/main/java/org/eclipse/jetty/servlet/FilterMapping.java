@@ -25,30 +25,30 @@ import org.eclipse.jetty.server.Handler;
 public class FilterMapping
 {
     /** Dispatch types */
-    public static final int DEFAULT=0;
-    public static final int REQUEST=1;
-    public static final int FORWARD=2;
-    public static final int INCLUDE=4;
-    public static final int ERROR=8;
-    public static final int ASYNC=16;
-    public static final int ALL=31;
+    private static final int DEFAULT=0;
+    private static final int REQUEST=1;
+    private static final int FORWARD=2;
+    private static final int INCLUDE=4;
+    private static final int ERROR=8;
+    private static final int ASYNC=16;
+    private static final int ALL=31;
     
 
     /* ------------------------------------------------------------ */
     /** Dispatch type from name
      */
-    public static int dispatch(String type)
+    public static DispatcherType dispatch(String type)
     {
         if ("request".equalsIgnoreCase(type))
-            return REQUEST;
+            return DispatcherType.REQUEST;
         if ("forward".equalsIgnoreCase(type))
-            return FORWARD;
+            return DispatcherType.FORWARD;
         if ("include".equalsIgnoreCase(type))
-            return INCLUDE;
+            return DispatcherType.INCLUDE;
         if ("error".equalsIgnoreCase(type))
-            return ERROR;
+            return DispatcherType.ERROR;
         if ("async".equalsIgnoreCase(type))
-            return ASYNC;
+            return DispatcherType.ASYNC;
         throw new IllegalArgumentException(type);
     }
     
@@ -71,28 +71,6 @@ public class FilterMapping
     		  return ERROR;
     	}
         throw new IllegalArgumentException(type.toString());
-    }
-
-    
-    /* ------------------------------------------------------------ */
-    /** Dispatch type from name
-     */
-    public static DispatcherType dispatch(int type)
-    {
-    	switch(type)
-    	{
-    	  case REQUEST:
-    		  return DispatcherType.REQUEST;
-    	  case ASYNC:
-    		  return DispatcherType.ASYNC;
-    	  case FORWARD:
-    		  return DispatcherType.FORWARD;
-    	  case INCLUDE:
-    		  return DispatcherType.INCLUDE;
-    	  case ERROR:
-    		  return DispatcherType.ERROR;
-    	}
-        throw new IllegalArgumentException(""+type);
     }
 	
 
@@ -143,15 +121,6 @@ public class FilterMapping
     
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the dispatches.
-     */
-    public int getDispatches()
-    {
-        return _dispatches;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
      * @return Returns the filterName.
      */
     public String getFilterName()
@@ -189,20 +158,8 @@ public class FilterMapping
             _dispatches|=INCLUDE;
         if (dispatcherTypes.contains(DispatcherType.REQUEST)) 
             _dispatches|=REQUEST;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param dispatches The dispatches to set.
-     * @see Handler#DEFAULT
-     * @see Handler#REQUEST
-     * @see Handler#ERROR
-     * @see Handler#FORWARD
-     * @see Handler#INCLUDE
-     */
-    public void setDispatches(int dispatches)
-    {
-        _dispatches = dispatches;
+        if (dispatcherTypes.contains(DispatcherType.ASYNC)) 
+            _dispatches|=ASYNC;
     }
     
     /* ------------------------------------------------------------ */

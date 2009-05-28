@@ -16,6 +16,7 @@ package org.eclipse.jetty.webapp;
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.Servlet;
 import javax.servlet.UnavailableException;
 
@@ -503,14 +505,17 @@ public class WebXmlProcessor
         }
         mapping.setServletNames((String[]) names.toArray(new String[names.size()]));
 
-        int dispatcher=FilterMapping.DEFAULT;
+        
+        List<DispatcherType> dispatches = new ArrayList<DispatcherType>();
         iter=node.iterator("dispatcher");
         while(iter.hasNext())
         {
             String d=((XmlParser.Node)iter.next()).toString(false,true);
-            dispatcher|=FilterMapping.dispatch(d);
+            dispatches.add(FilterMapping.dispatch(d));
         }
-        mapping.setDispatches(dispatcher);
+        
+        if (dispatches.size()>0)
+            mapping.setDispatcherTypes(EnumSet.copyOf(dispatches));
 
         _filterMappings = LazyList.add(_filterMappings, mapping);
     }

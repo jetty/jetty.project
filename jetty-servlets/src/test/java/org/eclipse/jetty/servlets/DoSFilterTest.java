@@ -19,8 +19,11 @@ import java.net.Socket;
 import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
+import javax.servlet.FilterChain;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -28,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.server.AsyncRequest;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.testing.ServletTester;
 import org.eclipse.jetty.util.IO;
@@ -35,6 +39,7 @@ import org.eclipse.jetty.util.log.Log;
 
 public class DoSFilterTest extends TestCase
 {
+    static volatile AsyncRequest _dump;
     protected ServletTester _tester;
     protected String _host;
     protected int _port;
@@ -84,7 +89,7 @@ public class DoSFilterTest extends TestCase
         throws Exception
     {
         Socket socket = new Socket(_host,_port);
-        socket.setSoTimeout(30000);
+        socket.setSoTimeout(300000);
         
         for (int i=loops;i-->0;)
         {
@@ -186,6 +191,8 @@ public class DoSFilterTest extends TestCase
         String request="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\n\r\n";
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request+request+request+request,1,0,0,last);
+        System.err.println(responses);
+        System.err.println("history="+_dump.getHistory());
         assertEquals(5,count(responses,"HTTP/1.1 200 OK"));
         assertEquals(1,count(responses,"DoSFilter: delayed"));
         assertEquals(1,count(responses,"DoSFilter: throttled"));
@@ -333,6 +340,19 @@ public class DoSFilterTest extends TestCase
     
     public static class DoSFilter2 extends DoSFilter
     {
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterchain) throws IOException, ServletException
+        {
+            try
+            {
+                super.doFilter(request,response,filterchain);
+            }
+            finally
+            {
+                if (request.isAsyncStarted())
+                    DoSFilterTest._dump=(AsyncRequest)request.getAsyncContext();
+            }
+        }
+
         public void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
         {
             try {

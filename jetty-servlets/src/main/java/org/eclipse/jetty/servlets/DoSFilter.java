@@ -265,7 +265,8 @@ public class DoSFilter implements Filter
         
         // Look for the rate tracker for this request
         RateTracker tracker = (RateTracker)request.getAttribute(__TRACKER);
-            
+
+        System.err.println("DoS "+request+" t="+tracker);
         if (tracker==null)
         {
             // This is the first time we have seen this request.
@@ -310,8 +311,9 @@ public class DoSFilter implements Filter
                         ((HttpServletResponse)response).addHeader("DoSFilter","delayed");
                     Continuation continuation = ContinuationSupport.getContinuation(request,response);
                     request.setAttribute(__TRACKER,tracker);
-                    if (_delayMs > 0)
-                        continuation.setTimeout(_delayMs);
+                    continuation.setTimeout(_delayMs);
+
+                    System.err.println("suspend "+request+" d="+_delayMs+" c="+continuation);
                     continuation.suspend();
                     return;
                 }
@@ -324,7 +326,8 @@ public class DoSFilter implements Filter
         {
             // check if we can afford to accept another request at this time
             accepted = _passes.tryAcquire(_waitMs,TimeUnit.MILLISECONDS);
-            
+
+            System.err.println("suspend "+request+" a="+accepted);
             if (!accepted)
             {
                 // we were not accepted, so either we suspend to wait,or if we were woken up we insist or we fail

@@ -36,7 +36,7 @@ public class CloseableDoSFilterTest extends DoSFilterTest
         _tester.setContextPath("/ctx");
         _tester.addServlet(TestServlet.class, "/*");
         
-        FilterHolder dos=_tester.addFilter(CloseableDoSFilter2.class,"/dos/*",EnumSet.of(DispatcherType.REQUEST));
+        FilterHolder dos=_tester.addFilter(CloseableDoSFilter2.class,"/dos/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
         dos.setInitParameter("maxRequestsPerSec","4");
         dos.setInitParameter("delayMs","200");
         dos.setInitParameter("throttledRequests","1");
@@ -45,7 +45,7 @@ public class CloseableDoSFilterTest extends DoSFilterTest
         dos.setInitParameter("remotePort", "false");
         dos.setInitParameter("insertHeaders", "true");
         
-        FilterHolder quickTimeout = _tester.addFilter(CloseableDoSFilter2.class,"/timeout/*",EnumSet.of(DispatcherType.REQUEST));
+        FilterHolder quickTimeout = _tester.addFilter(CloseableDoSFilter2.class,"/timeout/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
         quickTimeout.setInitParameter("maxRequestsPerSec","4");
         quickTimeout.setInitParameter("delayMs","200");
         quickTimeout.setInitParameter("throttledRequests","1");
