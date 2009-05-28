@@ -500,7 +500,6 @@ public class HttpConnection implements Connection
     /* ------------------------------------------------------------ */
     protected void handleRequest() throws IOException
     {
-        boolean handling=_server.isRunning() && _request._async.handling();
         boolean error = false;
 
         String threadName=null;
@@ -512,6 +511,7 @@ public class HttpConnection implements Connection
                 Thread.currentThread().setName(threadName+" - "+_uri);
             }
             
+            
             // Loop here to handle async request redispatches.  
             // The loop is controlled by the call to async.unhandle in the
             // finally block below.  If call is from a non-blocking connector,
@@ -519,6 +519,9 @@ public class HttpConnection implements Connection
             // already happened when unhandle is called.   For a blocking connector,
             // the wait for the asynchronous dispatch or timeout actually happens
             // within the call to unhandle().
+
+            final Server server=_server;
+            boolean handling=_request._async.handling() && server!=null && server.isRunning();
             while (handling)
             {
                 _request.setHandled(false);
@@ -536,14 +539,13 @@ public class HttpConnection implements Connection
                     {
                         _request.setDispatcherType(DispatcherType.REQUEST);
                         _connector.customize(_endp, _request);
-                        _server.handle(this);
+                        server.handle(this);
                     }
                     else 
                     {
                         _request.setDispatcherType(DispatcherType.ASYNC);
-                        _server.handleAsync(this);
+                        server.handleAsync(this);
                     }
-
                 }
                 catch (EofException e)
                 {
@@ -573,7 +575,7 @@ public class HttpConnection implements Connection
                 }
                 finally
                 {   
-                    handling = !_request._async.unhandle() && _server != null;
+                    handling = !_request._async.unhandle() && server.isRunning() && _server!=null;
                 }
             }
         }
