@@ -19,6 +19,7 @@ import java.util.Map;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
+import javax.servlet.ServletContextListener;
 
 import junit.framework.TestCase;
 
@@ -71,6 +72,7 @@ public class ServletAnnotationTest extends TestCase
         List classes = new ArrayList();
         classes.add("org.eclipse.jetty.annotations.ServletC");
         classes.add("org.eclipse.jetty.annotations.FilterC");
+        classes.add("org.eclipse.jetty.annotations.ListenerC");
        
         AnnotationFinder finder = new AnnotationFinder();
         finder.find (classes, 
@@ -127,6 +129,11 @@ public class ServletAnnotationTest extends TestCase
         FilterMapping fmap = (FilterMapping)filterMappings.get(0);
         assertEquals("CFilter", fmap.getFilterName());
         assertEquals(1, fmap.getPathSpecs().length);
+        
+        assertEquals(1, listeners.size());
+        java.util.EventListener listener = (java.util.EventListener)listeners.get(0);
+        assertTrue(listener instanceof ServletContextListener);
+        
         
         List<Injection> fieldInjections = injections.getFieldInjections(ServletC.class);
         assertNotNull(fieldInjections);
