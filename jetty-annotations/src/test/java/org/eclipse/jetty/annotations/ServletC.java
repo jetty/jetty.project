@@ -20,22 +20,23 @@ import javax.annotation.Resource;
 import javax.annotation.security.RunAs;
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterChain;
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.servlet.http.annotation.FilterMapping;
-import javax.servlet.http.annotation.InitParam;
-import javax.servlet.http.annotation.Servlet;
-import javax.servlet.http.annotation.ServletFilter;
-import javax.servlet.http.annotation.jaxrs.GET;
-import javax.servlet.http.annotation.jaxrs.POST;
+import javax.servlet.annotation.WebInitParam;
+import javax.servlet.annotation.WebServlet;
 
 
-@Servlet(urlMappings = { "/foo/*", "/bah/*" }, name="CServlet", initParams={@InitParam(name="x", value="y")})
-@ServletFilter(filterName="CFilter", filterMapping=@FilterMapping(dispatcherTypes={DispatcherType.REQUEST}, urlPattern = {"/*"}), initParams={@InitParam(name="a", value="99")})
+
+
+@WebServlet(urlPatterns = { "/foo/*", "/bah/*" }, name="CServlet", initParams={@WebInitParam(name="x", value="y")}, loadOnStartup=2, asyncSupported=false)
 @RunAs("admin")
-public class ClassC
+public class ServletC extends HttpServlet
 {
     @Resource (mappedName="foo")
     private Double foo;
@@ -51,25 +52,11 @@ public class ClassC
     {
         
     }
-    
-    @GET()
-    @POST()
-    public void anything (HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException
+ 
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         response.setContentType("text/html");
-        response.getWriter().println("<h1>Pojo Servlet</h1>");
+        response.getWriter().println("<h1>Annotated Servlet</h1>");
         response.getWriter().println("Acting like a Servlet.");
-    }
-    
-    
-    public void doFilter (HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-    throws java.io.IOException, javax.servlet.ServletException
-    {
-        HttpSession session = request.getSession(true);
-        String val = request.getParameter("action");
-        if (val!=null)
-            session.setAttribute("action", val);
-        chain.doFilter(request, response);
     }
 }

@@ -26,8 +26,6 @@ import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallback;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.plus.annotation.PojoFilter;
-import org.eclipse.jetty.plus.annotation.PojoServlet;
 import org.eclipse.jetty.plus.annotation.RunAs;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.server.Server;
@@ -35,6 +33,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
+import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class ServletAnnotationTest extends TestCase
@@ -67,20 +66,16 @@ public class ServletAnnotationTest extends TestCase
         }
           
         org.eclipse.jetty.plus.jndi.EnvEntry foo = new org.eclipse.jetty.plus.jndi.EnvEntry("foo", new Double(1000.00), false);
-        List servlets = new ArrayList();
-        List filters = new ArrayList();
-        List listeners = new ArrayList();
-        List servletMappings = new ArrayList();
-        List filterMappings = new ArrayList();
+     
         
         List classes = new ArrayList();
-        classes.add("org.eclipse.jetty.annotations.ClassC");
+        classes.add("org.eclipse.jetty.annotations.ServletC");
+        classes.add("org.eclipse.jetty.annotations.FilterC");
        
         AnnotationFinder finder = new AnnotationFinder();
         finder.find (classes, 
                 new ClassNameResolver()
         {
-
             public boolean isExcluded(String name)
             {
                 return false;
@@ -90,33 +85,35 @@ public class ServletAnnotationTest extends TestCase
             {
                 return true;
             }
-            
         });
-  
         
         RunAsCollection runAs = new RunAsCollection();
         InjectionCollection injections = new InjectionCollection();
         LifeCycleCallbackCollection callbacks = new LifeCycleCallbackCollection();
+        wac.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAs);
+        wac.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
+        wac.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, callbacks);
         
-        AnnotationProcessor processor = new AnnotationProcessor (wac, finder, runAs, injections, callbacks, 
-                servlets, filters, listeners, servletMappings, filterMappings);
+        AnnotationProcessor processor = new AnnotationProcessor (wac, finder);
         processor.process();
         
+ 
+        List servlets = processor.getServlets();
+        List filters = processor.getFilters();
+        List servletMappings = processor.getServletMappings();
+        List filterMappings = processor.getFilterMappings();
+        List listeners = processor.getListeners();
         
         assertEquals(1, servlets.size());
         ServletHolder sholder = (ServletHolder)servlets.get(0);
         assertEquals("CServlet", sholder.getName());
-        assertTrue(sholder.getServlet() instanceof PojoServlet);
-        PojoServlet ps  = (PojoServlet)sholder.getServlet();
-        assertEquals("anything", ps.getGetMethodName());
-        assertEquals("anything", ps.getPostMethodName());
         Map sinitparams = sholder.getInitParameters();
         assertEquals(1, sinitparams.size());
         assertTrue(sinitparams.containsKey("x"));
         assertTrue(sinitparams.containsValue("y"));
+        assertEquals(2,sholder.getInitOrder());
         assertEquals(1, filters.size());
         FilterHolder fholder = (FilterHolder)filters.get(0);
-        assertTrue(fholder.getFilter() instanceof PojoFilter);
         
         Map finitparams = fholder.getInitParameters();
         assertEquals(1, finitparams.size());
@@ -131,7 +128,7 @@ public class ServletAnnotationTest extends TestCase
         assertEquals("CFilter", fmap.getFilterName());
         assertEquals(1, fmap.getPathSpecs().length);
         
-        List<Injection> fieldInjections = injections.getFieldInjections(ClassC.class);
+        List<Injection> fieldInjections = injections.getFieldInjections(ServletC.class);
         assertNotNull(fieldInjections);
         assertEquals(1, fieldInjections.size());  
         
@@ -139,17 +136,17 @@ public class ServletAnnotationTest extends TestCase
         assertNotNull(ra);
         assertEquals("admin", ra.getRoleName());
         
-        List predestroys = callbacks.getPreDestroyCallbacks(sholder.getServlet());
+        List predestroys = callbacks.getPreDestroyCallbacks(new ServletC());
         assertNotNull(predestroys);
         assertEquals(1, predestroys.size());
         LifeCycleCallback cb = (LifeCycleCallback)predestroys.get(0);
-        assertTrue(cb.getTarget().equals(ClassC.class.getDeclaredMethod("pre", new Class[]{})));
+        assertTrue(cb.getTarget().equals(ServletC.class.getDeclaredMethod("pre", new Class[]{})));
         
-        List postconstructs = callbacks.getPostConstructCallbacks(sholder.getServlet());
+        List postconstructs = callbacks.getPostConstructCallbacks(new ServletC());
         assertNotNull(postconstructs);
         assertEquals(1, postconstructs.size());
         cb = (LifeCycleCallback)postconstructs.get(0);
-        assertTrue(cb.getTarget().equals(ClassC.class.getDeclaredMethod("post", new Class[]{})));
+        assertTrue(cb.getTarget().equals(ServletC.class.getDeclaredMethod("post", new Class[]{})));
     }
 
 }

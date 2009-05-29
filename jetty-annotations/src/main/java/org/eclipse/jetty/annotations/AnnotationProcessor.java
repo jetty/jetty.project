@@ -17,6 +17,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 
@@ -29,19 +30,26 @@ import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 import javax.servlet.DispatcherType;
-import javax.servlet.http.annotation.InitParam;
-import javax.servlet.http.annotation.jaxrs.DELETE;
-import javax.servlet.http.annotation.jaxrs.GET;
-import javax.servlet.http.annotation.jaxrs.HEAD;
-import javax.servlet.http.annotation.jaxrs.POST;
-import javax.servlet.http.annotation.jaxrs.PUT;
+import javax.servlet.Filter;
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContextAttributeListener;
+import javax.servlet.ServletContextListener;
+import javax.servlet.ServletRequestAttributeListener;
+import javax.servlet.ServletRequestListener;
+import javax.servlet.annotation.HandlesTypes;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.annotation.WebFilter;
+import javax.servlet.annotation.WebInitParam;
+import javax.servlet.annotation.WebListener;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpSessionAttributeListener;
+import javax.servlet.http.HttpSessionListener;
 
+
+import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.plus.annotation.PojoContextListener;
-import org.eclipse.jetty.plus.annotation.PojoFilter;
-import org.eclipse.jetty.plus.annotation.PojoServlet;
 import org.eclipse.jetty.plus.annotation.PostConstructCallback;
 import org.eclipse.jetty.plus.annotation.PreDestroyCallback;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
@@ -114,114 +122,158 @@ public class AnnotationProcessor
         processResourceAnnotations();
     }
     
+    
+    /**
+     * Find all ServletContainerInitializer classes that have a HandlesTypes
+     * annotation.
+     * 
+     * TODO:
+     * Could use the ServiceLoader to get all the ServletContainerInitializer
+     * classes. For each initializer, we can examine its HandlesTypes annotation.
+     * For the values that represent annotations, we need to scan for classes that
+     * have that annotation. For values that are non-annotation classes, we need
+     * to scan for classes that implement/extend those classes.
+     * 
+     * Then, there is the phase where the initializer is actually called.
+     * 
+     * 
+     * @throws Exception
+     */
+    public void processHandlesTypes ()
+    throws Exception
+    {   
+          
+    }
+    
+    
+    
     public void processServlets ()
     throws Exception
     {
-        //@Servlet(urlMappings=String[], description=String, icon=String, loadOnStartup=int, name=String, initParams=InitParams[])
-        for (Class clazz:_finder.getClassesForAnnotation(javax.servlet.http.annotation.Servlet.class))
+        for (Class clazz:_finder.getClassesForAnnotation(WebServlet.class))
         {
-            javax.servlet.http.annotation.Servlet annotation = (javax.servlet.http.annotation.Servlet)clazz.getAnnotation(javax.servlet.http.annotation.Servlet.class);
-            PojoServlet servlet = new PojoServlet(getPojoInstanceFor(clazz));
+            //Servlet Spec 8.1.1
+            if (!HttpServlet.class.isAssignableFrom(clazz))
+            {
+                Log.warn(clazz.getName()+" is not assignable from javax.servlet.http.HttpServlet");
+                continue;
+            }
             
-            List<Method> methods = _finder.getMethodsForAnnotation(GET.class);
-            if (methods.size() > 1)
-                throw new IllegalStateException ("More than one GET annotation on "+clazz.getName());           
-            else if (methods.size() == 1)
-                servlet.setGetMethodName(methods.get(0).getName());
-           
-            methods = _finder.getMethodsForAnnotation(POST.class);
-            if (methods.size() > 1)
-                throw new IllegalStateException ("More than one POST annotation on "+clazz.getName());
-            else if (methods.size() == 1)
-                servlet.setPostMethodName(methods.get(0).getName());
+            WebServlet annotation = (WebServlet)clazz.getAnnotation(WebServlet.class);
             
-            methods = _finder.getMethodsForAnnotation(PUT.class);
-            if (methods.size() > 1)
-                throw new IllegalStateException ("More than one PUT annotation on "+clazz.getName());
-            else if (methods.size() == 1)
-                servlet.setPutMethodName(methods.get(0).getName());
+            if (annotation.urlPatterns().length > 0 && annotation.value().length > 0)
+            {
+                Log.warn(clazz.getName()+ " defines both @WebServlet.value and @WebServlet.urlPatterns");
+                continue;
+            }
             
-            methods = _finder.getMethodsForAnnotation(DELETE.class);
-            if (methods.size() > 1)
-                throw new IllegalStateException ("More than one DELETE annotation on "+clazz.getName());
-            else if (methods.size() == 1)
-                servlet.setDeleteMethodName(methods.get(0).getName());
+            String[] urlPatterns = annotation.value();
+            if (urlPatterns.length == 0)
+                urlPatterns = annotation.urlPatterns();
             
-            methods = _finder.getMethodsForAnnotation(HEAD.class);
-            if (methods.size() > 1)
-                throw new IllegalStateException ("More than one HEAD annotation on "+clazz.getName());
-            else if (methods.size() == 1)
-                servlet.setHeadMethodName(methods.get(0).getName());
+            if (urlPatterns.length == 0)
+            {
+                Log.warn(clazz.getName()+ " defines neither @WebServlet.value nor @WebServlet.urlPatterns");
+                continue;
+            }
             
-            ServletHolder holder = new ServletHolder(servlet);
+            ServletHolder holder = new ServletHolder(clazz);
             holder.setName((annotation.name().equals("")?clazz.getName():annotation.name()));
             holder.setInitOrder(annotation.loadOnStartup());
-            LazyList.add(_servlets, holder);
-            
-            for (InitParam ip:annotation.initParams())
+
+            for (WebInitParam ip:annotation.initParams())
             {
                 holder.setInitParameter(ip.name(), ip.value());
             }
             
-            if (annotation.urlMappings().length > 0)
-            {
-                ArrayList paths = new ArrayList();
-                ServletMapping mapping = new ServletMapping();
-                mapping.setServletName(holder.getName());
-                for (String s:annotation.urlMappings())
-                {    
-                    paths.add(normalizePattern(s)); 
-                }
-                mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
-                LazyList.add(_servletMappings,mapping);
+            //TODO consider what would happen if the servlet name was changed
+            //in the web.xml descriptor: how would we find the ServletMapping?
+            ArrayList paths = new ArrayList();
+            ServletMapping mapping = new ServletMapping();
+            mapping.setServletName(holder.getName());
+            for (String s:urlPatterns)
+            {    
+                paths.add(normalizePattern(s)); 
             }
+            mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
+            
+            //TODO asyncSupported()
+            
+            //TODO MultipartConfig annotation
+            
+            LazyList.add(_servlets, holder);
+            LazyList.add(_servletMappings,mapping);
         } 
     }
     
     public void processFilters ()
     throws Exception
     {
-        //@ServletFilter(description=String, filterName=String, displayName=String, icon=String,initParams=InitParam[], filterMapping=FilterMapping)
-        for (Class clazz:_finder.getClassesForAnnotation(javax.servlet.http.annotation.ServletFilter.class))
+        for (Class clazz:_finder.getClassesForAnnotation(WebFilter.class))
         {
-            javax.servlet.http.annotation.ServletFilter annotation = (javax.servlet.http.annotation.ServletFilter)clazz.getAnnotation(javax.servlet.http.annotation.ServletFilter.class);
-            PojoFilter filter = new PojoFilter(getPojoInstanceFor(clazz));
-
-            FilterHolder holder = new FilterHolder(filter);
+            //Servlet Spec 8.1.2
+            if (!Filter.class.isAssignableFrom(clazz))
+            {
+                Log.warn(clazz.getName()+" is not assignable from javax.servlet.Filter");
+                continue;
+            }
+            WebFilter annotation = (WebFilter)clazz.getAnnotation(WebFilter.class);
+            
+            if (annotation.value().length > 0 && annotation.urlPatterns().length > 0)
+            {
+                Log.warn(clazz.getName()+" defines both @WebFilter.value and @WebFilter.urlPatterns");
+                continue;
+            }
+            
+            FilterHolder holder = new FilterHolder(clazz);
             holder.setName((annotation.filterName().equals("")?clazz.getName():annotation.filterName()));
             holder.setDisplayName(annotation.displayName());
-            LazyList.add(_filters, holder);
-            
-            for (InitParam ip:annotation.initParams())
+
+            for (WebInitParam ip:annotation.initParams())
             {
                 holder.setInitParameter(ip.name(), ip.value());
             }
             
-            if (annotation.filterMapping() != null)
+            String[] urlPatterns = annotation.value();
+            if (urlPatterns.length == 0)
+                urlPatterns = annotation.urlPatterns();
+           
+            //TODO consider implications of web.xml overriding
+            //the servlet name
+            FilterMapping mapping = new FilterMapping();
+            mapping.setFilterName(holder.getName());
+
+            if (urlPatterns.length > 0)
             {
-                FilterMapping mapping = new FilterMapping();
-                mapping.setFilterName(holder.getName());
                 ArrayList paths = new ArrayList();
-                for (String s:annotation.filterMapping().urlPattern())
+                for (String s:urlPatterns)
                 {
                     paths.add(normalizePattern(s));
                 }
                 mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
-                ArrayList names = new ArrayList();
-                for (String s:annotation.filterMapping().servletNames())
+            }
+
+            if (annotation.servletNames().length > 0)
+            {
+                ArrayList<String> names = new ArrayList<String>();
+                for (String s:annotation.servletNames())
                 {
                     names.add(s);
                 }
                 mapping.setServletNames((String[])names.toArray(new String[names.size()]));
-                
-                int dispatcher=FilterMapping.DEFAULT;                
-                for (DispatcherType d:annotation.filterMapping().dispatcherTypes())
-                {
-                   dispatcher = dispatcher|FilterMapping.dispatch(d);            
-                }
-                mapping.setDispatches(dispatcher);
-                LazyList.add(_filterMappings,mapping);
             }
+
+            EnumSet<DispatcherType> dispatcherSet = EnumSet.noneOf(DispatcherType.class);           
+            for (DispatcherType d:annotation.dispatcherTypes())
+            {
+                dispatcherSet.add(d);
+            }
+            mapping.setDispatcherTypes(dispatcherSet);
+
+            //TODO asyncSupported
+            
+            LazyList.add(_filters, holder);
+            LazyList.add(_filterMappings,mapping);
         }        
     }
     
@@ -230,11 +282,20 @@ public class AnnotationProcessor
     public void processListeners ()
     throws Exception
     {
-        //@ServletContextListener(description=String)
-        for (Class clazz:_finder.getClassesForAnnotation(javax.servlet.http.annotation.ServletContextListener.class))
-        { 
-            PojoContextListener listener = new PojoContextListener(getPojoInstanceFor(clazz));
-            LazyList.add(_listeners, listener);
+        for (Class clazz:_finder.getClassesForAnnotation(WebListener.class))
+        {
+            if (ServletContextListener.class.isAssignableFrom(clazz) || 
+                    ServletContextAttributeListener.class.isAssignableFrom(clazz) ||
+                    ServletRequestListener.class.isAssignableFrom(clazz) ||
+                    ServletRequestAttributeListener.class.isAssignableFrom(clazz) ||
+                    HttpSessionListener.class.isAssignableFrom(clazz) ||
+                    HttpSessionAttributeListener.class.isAssignableFrom(clazz))
+            {
+                java.util.EventListener listener = (java.util.EventListener)clazz.newInstance();
+                LazyList.add(_listeners, listener);
+            }
+            else
+                Log.warn(clazz.getName()+" does not implement one of the servlet listener interfaces");
         }
     }
     
@@ -747,7 +808,6 @@ public class AnnotationProcessor
         return isServlet;  
     }
     
-   
    
     private static boolean isEnvEntryType (Class type)
     {
