@@ -58,7 +58,6 @@ public class ConstraintTest extends TestCase
     HashLoginService _loginService = new HashLoginService(TEST_REALM);
                                                       
     RequestHandler _handler = new RequestHandler();
-    private static final String APP_CONTEXT = "localhost /ctx";
 
     {
         _server.setConnectors(new Connector[]{_connector});
