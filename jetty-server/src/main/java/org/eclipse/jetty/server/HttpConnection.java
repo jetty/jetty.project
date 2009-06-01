@@ -697,7 +697,7 @@ public class HttpConnection implements Connection
      */
     public boolean isSuspended()
     {
-        return _request.getAsyncRequest().isSuspended();
+        return _request.getAsyncContinuation().isSuspended();
     }
 
 

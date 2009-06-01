@@ -293,7 +293,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             buf.append(' ');
             buf.append(request.getProtocol());
             buf.append("\" ");
-            if (request.getAsyncRequest().isInitial())
+            if (request.getAsyncContinuation().isInitial())
             {
                 int status = response.getStatus();
                 if (status <= 0)

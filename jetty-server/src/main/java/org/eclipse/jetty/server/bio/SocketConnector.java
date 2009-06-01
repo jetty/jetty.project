@@ -203,7 +203,7 @@ public class SocketConnector extends AbstractConnector
         
         public void close() throws IOException
         {
-            _connection.getRequest().getAsyncRequest().cancel();
+            _connection.getRequest().getAsyncContinuation().cancel();
             super.close();
         }
 

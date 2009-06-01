@@ -299,7 +299,7 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public AsyncContinuation getAsyncRequest()
+    public AsyncContinuation getAsyncContinuation()
     {
         return _async;
     }

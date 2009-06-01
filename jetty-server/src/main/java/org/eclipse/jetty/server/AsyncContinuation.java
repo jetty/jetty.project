@@ -590,8 +590,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
         synchronized (this)
         {
 //            _history.append("X");
-            _state=__COMPLETE;
-            _initial = false;
             cancelTimeout();
             _listeners=null;
         }
