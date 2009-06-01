@@ -21,7 +21,6 @@ import javax.servlet.ServletResponse;
 
 class FauxContinuation implements Continuation
 {
-    private final ContinuationFilter _continuationFilter;
     private static final int __HANDLING=1;   // Request dispatched to filter/servlet
     private static final int __SUSPENDING=2;   // Suspend called, but not yet returned to container
     private static final int __RESUMING=3;     // resumed while suspending
@@ -42,9 +41,8 @@ class FauxContinuation implements Continuation
     
     private ArrayList<ContinuationListener> _listeners; 
 
-    FauxContinuation(ContinuationFilter continuationFilter, final ServletRequest request,final ServletResponse response)
+    FauxContinuation(final ServletRequest request,final ServletResponse response)
     {
-        _continuationFilter = continuationFilter;
         _request=request;
         _response=response;
     }
@@ -397,7 +395,7 @@ class FauxContinuation implements Continuation
             }
             catch (InterruptedException e)
             {
-                _continuationFilter._context.log("OpenServletFilter caught ",e);
+                break;
             }
             wait=expire_at-System.currentTimeMillis();
         }

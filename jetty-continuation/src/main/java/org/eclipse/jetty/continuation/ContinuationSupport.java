@@ -21,6 +21,9 @@ import javax.servlet.ServletResponse;
 /* ------------------------------------------------------------ */
 /** ContinuationSupport.
  * 
+ * Factory class for accessing Continuation instances, which with either be
+ * native to the container (jetty >= 6), a servlet 3.0 or a faux continuation.
+ * 
  */
 public class ContinuationSupport
 {
@@ -66,11 +69,32 @@ public class ContinuationSupport
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @param request
+     * @deprecated use {@link #getContinuation(ServletRequest, ServletResponse)}
+     * @return a Continuation instance
+     */
+    public static Continuation getContinuation(final ServletRequest request)
+    {   
+        return getContinuation(request,null);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param request
+     * @param response
+     * @return
+     */
     public static Continuation getContinuation(final ServletRequest request, final ServletResponse response)
     {   
         Continuation continuation = (Continuation) request.getAttribute(Continuation.ATTRIBUTE);
         if (continuation!=null)
+        {
+            // TODO save wrappers?
+            
             return continuation;
+        }
         
         if (__servlet3 )
         { 

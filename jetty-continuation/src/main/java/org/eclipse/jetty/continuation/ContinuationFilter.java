@@ -58,7 +58,7 @@ public class ContinuationFilter implements Filter
     {
         if (_faux)
         {
-            final FauxContinuation fc = new FauxContinuation(this, request,response);
+            final FauxContinuation fc = new FauxContinuation(request,response);
             request.setAttribute(Continuation.ATTRIBUTE,fc);
             boolean complete=false;
       

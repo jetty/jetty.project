@@ -104,7 +104,9 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                Log.warn(e.toString());
+                Log.debug(e);
+                Thread.yield();
             }
         }
     }
