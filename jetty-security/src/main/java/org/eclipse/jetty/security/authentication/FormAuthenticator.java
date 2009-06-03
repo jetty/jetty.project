@@ -148,7 +148,7 @@ public class FormAuthenticator extends LoginAuthenticator
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
         HttpSession session = request.getSession(mandatory);
-        String uri = request.getRequestURL().toString();//getPathInfo();
+        String uri = request.getRequestURI();
         
         // not mandatory or not authenticated
         if (session == null || isLoginOrErrorPage(uri)) 
