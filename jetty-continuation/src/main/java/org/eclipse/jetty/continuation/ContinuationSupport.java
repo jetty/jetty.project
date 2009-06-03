@@ -38,8 +38,8 @@ public class ContinuationSupport
         try
         {       
             s3=ServletRequest.class.getMethod("startAsync",null)!=null;
-            Class<?> s3c = ContinuationSupport.class.getClassLoader().loadClass("org.eclipse.jetty.continuation.Servlet3Continuation");
-            s3cc=s3c.getConstructors()[0];
+            Class<? extends Continuation> s3c = ContinuationSupport.class.getClassLoader().loadClass("org.eclipse.jetty.continuation.Servlet3Continuation").asSubclass(Continuation.class);
+            s3cc=s3c.getConstructor(ServletRequest.class, ServletResponse.class);
             s3=true;
         }
         catch (Exception e)
@@ -56,8 +56,8 @@ public class ContinuationSupport
         try
         {      
             j6=ContinuationSupport.class.getClassLoader().loadClass("org.mortbay.util.ajax.ContinuationSupport")!=null;
-            Class<?> j6c = ContinuationSupport.class.getClassLoader().loadClass("org.eclipse.jetty.continuation.Jetty6Continuation");
-            j6cc=j6c.getConstructors()[0];
+            Class<? extends Continuation> j6c = ContinuationSupport.class.getClassLoader().loadClass("org.eclipse.jetty.continuation.Jetty6Continuation").asSubclass(Continuation.class);
+            j6cc=j6c.getConstructor(ServletRequest.class, ServletResponse.class, Continuation.class);
             j6=true;
         }
         catch (Exception e)
