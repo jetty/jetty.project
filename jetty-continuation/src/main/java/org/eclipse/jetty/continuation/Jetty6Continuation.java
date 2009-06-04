@@ -2,7 +2,6 @@ package org.eclipse.jetty.continuation;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
@@ -12,7 +11,7 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
     private final ServletRequest _request;
     private final ServletResponse _response;
     private final org.mortbay.util.ajax.Continuation _j6Continuation;
-    
+
     private Throwable _retry;
     private int _timeout;
     private boolean _initial=true;
@@ -21,14 +20,14 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
     private volatile boolean _expired=false;
     private boolean _wrappers=false;
     private List<ContinuationListener> _listeners;
-    
-    public Jetty6Continuation(ServletRequest request, ServletResponse response,org.mortbay.util.ajax.Continuation continuation)
+
+    public Jetty6Continuation(ServletRequest request, ServletResponse response, org.mortbay.util.ajax.Continuation continuation)
     {
         _request=request;
         _response=response;
         _j6Continuation=continuation;
     }
-    
+
     public void addContinuationListener(final ContinuationListener listener)
     {
         if (_listeners==null)
@@ -54,7 +53,7 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
     }
 
     public ServletResponse getServletResponse()
-    { 
+    {
         return _response;
     }
 
@@ -108,7 +107,7 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
             _expired=false;
             _completed=false;
             _j6Continuation.suspend(_timeout);
-        }       
+        }
         catch(Throwable retry)
         {
             _retry=retry;
@@ -123,7 +122,7 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
     public boolean enter()
     {
         _expired=!_j6Continuation.isResumed();
-        
+
         if (_initial)
             return true;
 
@@ -136,17 +135,17 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
                 for (ContinuationListener l: _listeners)
                     l.onTimeout(this);
             }
-            
+
             return !_completed;
         }
-        
+
         return true;
     }
 
     public void exit()
     {
         _initial=false;
-        
+
         Throwable th=_retry;
         _retry=null;
         if (th instanceof ThreadDeath)
@@ -161,6 +160,6 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
             for (ContinuationListener l: _listeners)
                 l.onComplete(this);
         }
-        
+
     }
 }
