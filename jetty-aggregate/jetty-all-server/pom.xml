@@ -21,7 +21,6 @@
         <executions>
           <execution>
             <id>unpack-dependencies</id>
-            <phase>package</phase>
             <goals>
               <goal>unpack-dependencies</goal>
             </goals>
