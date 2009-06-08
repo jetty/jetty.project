@@ -19,8 +19,8 @@ public interface ContinuationListener extends EventListener
 {    
     /* ------------------------------------------------------------ */
     /**
-     * Called when a continuation life cycle is complete and prior
-     * to any calls to {@link ServletRequestListener#requestDestroyed(javax.servlet.ServletRequestEvent)}
+     * Called when a continuation life cycle is complete and after
+     * any calls to {@link ServletRequestListener#requestDestroyed(javax.servlet.ServletRequestEvent)}
      * The response may still be written to during the call.
      * 
      * @param continuation
