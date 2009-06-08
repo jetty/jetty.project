@@ -116,7 +116,7 @@ public class Request implements HttpServletRequest
     }
     protected final AsyncContinuation _async = new AsyncContinuation();
     private boolean _asyncSupported=true;
-    private Attributes _attributes;
+    private volatile Attributes _attributes;
     private Authentication _authentication;
     private MultiMap<String> _baseParameters;
     private String _characterEncoding;
@@ -310,12 +310,10 @@ public class Request implements HttpServletRequest
      */
     public Object getAttribute(String name)
     {
-        if (Continuation.ATTRIBUTE.equals(name))
+        Object attr=(_attributes==null)?null:_attributes.getAttribute(name);
+        if (attr==null && Continuation.ATTRIBUTE.equals(name))
             return _async;
-        
-        if (_attributes==null)
-            return null;
-        return _attributes.getAttribute(name);
+        return attr;
     }
 
     /* ------------------------------------------------------------ */

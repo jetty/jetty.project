@@ -100,6 +100,8 @@ public interface Continuation
      *                or if the request has been dispatched for error handling.
      */
     void suspend();
+    
+    void suspend(ServletResponse response);
 
     /**
      * Resume a suspended request.
@@ -190,41 +192,20 @@ public interface Continuation
      */
     boolean isInitial();
     
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Call to signal that the suspending filter/servlet has kept a 
-     * reference to any passed requests wrappers, and that these should 
-     * not be finalized until a onComplete event has been seen.
-     */
-    void keepWrappers();
-    
     /**
      * @return True if {@link #keepWrappers()} has been called.
      */
-    boolean wrappersKept();
+    boolean isResponseWrapped();
 
+    ServletResponse getServletResponse();
+    
     /* ------------------------------------------------------------ */
     /**
      * @param listener
      */
     void addContinuationListener(ContinuationListener listener);
     
-    
-    /* ------------------------------------------------------------ */
-    /** Get the associated servlet request. 
-     * <p>
-     * Not all request methods are valid to be called outside of the
-     * scope of a filter/servlet. Specifically servletPath methods will
-     * not return correct values.  The request attribute methods are suitable
-     * to be called from an asynchronous scope.
-     * @return The associated servlet request
-     */
-    ServletRequest getServletRequest();
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The associated servlet response.
-     */
-    ServletResponse getServletResponse();
+    public void removeAttribute(String name);
+    public void setAttribute(String name, Object attribute);
+    public Object getAttribute(String name);
 }

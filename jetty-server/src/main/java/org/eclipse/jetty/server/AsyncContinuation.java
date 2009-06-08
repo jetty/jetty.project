@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.Continuation;
@@ -66,7 +67,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     private boolean _initial;
     private boolean _resumed;
     private boolean _expired;
-    private boolean _keepWrappers;
+    private volatile boolean _responseWrapped;
     private long _timeoutMs;
     private AsyncEventState _event;
     
@@ -136,25 +137,14 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /**
      * @see org.eclipse.jetty.continuation.Continuation#keepWrappers()
      */
-    public void keepWrappers()
-    {
-        synchronized(this)
-        {
-//            _history.append('W');
-            _keepWrappers=true;
-        }
-    }
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.continuation.Continuation#wrappersKept()
+     * @see org.eclipse.jetty.continuation.Continuation#isResponseWrapped()
      */
-    public boolean wrappersKept()
+    public boolean isResponseWrapped()
     {
-        synchronized(this)
-        {
-            return _keepWrappers;
-        }
+        return _responseWrapped;
     }
 
     /* ------------------------------------------------------------ */
@@ -234,7 +224,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
 //            _history.append('H');
 //            _history.append(_connection.getRequest().getUri().toString());
 //            _history.append(':');
-            _keepWrappers=false;
+            _responseWrapped=false;
             
             switch(_state)
             {
@@ -283,6 +273,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
             _resumed=false;
             _expired=false;
             
+            // TODO move this to callers
             if (_event==null || request!=_event.getRequest() || response != _event.getResponse() || context != _event.getServletContext())  
                 _event=new AsyncEventState(context,request,response);
             else
@@ -577,7 +568,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
             _initial = true;
             _resumed=false;
             _expired=false;
-            _keepWrappers=false;
+            _responseWrapped=false;
             cancelTimeout();
             _timeoutMs=60000L; // TODO configure
             _listeners=null;
@@ -824,19 +815,29 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /**
      * @see Continuation#suspend()
      */
-    public void suspend()
+    public void suspend(ServletResponse response)
     {
-        // TODO simplify?
-        AsyncContinuation.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),_connection.getResponse());       
+        if (response instanceof ServletResponseWrapper)
+        {
+            _responseWrapped=true;
+            AsyncContinuation.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),response);       
+        }
+        else
+        {
+            _responseWrapped=false;
+            AsyncContinuation.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),_connection.getResponse());       
+        }
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.continuation.Continuation#getServletRequest()
+     * @see Continuation#suspend()
      */
-    public ServletRequest getServletRequest()
+    public void suspend()
     {
-        return _connection.getRequest();
+        // TODO simplify? move event creation to suspend(args)
+        _responseWrapped=false;
+        AsyncContinuation.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),_connection.getResponse());       
     }
 
     /* ------------------------------------------------------------ */
@@ -845,7 +846,36 @@ public class AsyncContinuation implements AsyncContext, Continuation
      */
     public ServletResponse getServletResponse()
     {
+        if (_responseWrapped && _event!=null && _event.getResponse()!=null)
+            return _event.getResponse();
         return _connection.getResponse();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#getAttribute(java.lang.String)
+     */
+    public Object getAttribute(String name)
+    {
+        return _connection.getRequest().getAttribute(name);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#removeAttribute(java.lang.String)
+     */
+    public void removeAttribute(String name)
+    {
+        _connection.getRequest().removeAttribute(name);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#setAttribute(java.lang.String, java.lang.Object)
+     */
+    public void setAttribute(String name, Object attribute)
+    {
+        _connection.getRequest().setAttribute(name,attribute);
     }
 
     /* ------------------------------------------------------------ */

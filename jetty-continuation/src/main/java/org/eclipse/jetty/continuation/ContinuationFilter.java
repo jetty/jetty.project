@@ -33,21 +33,27 @@ public class ContinuationFilter implements Filter
 
     public void init(FilterConfig filterConfig) throws ServletException
     {
-        boolean jetty="org.eclipse.jetty.servlet".equals(filterConfig.getClass().getPackage().getName());
+        boolean jetty_7_or_greater="org.eclipse.jetty.servlet".equals(filterConfig.getClass().getPackage().getName());
         _context = filterConfig.getServletContext();
         
         String param=filterConfig.getInitParameter("debug");
         _debug=param!=null&&Boolean.parseBoolean(param);
         
         param=filterConfig.getInitParameter("partial");
-        _partial=param!=null&&Boolean.parseBoolean(param) || (ContinuationSupport.__jetty6&&!jetty);
+        if (param!=null)
+            _partial=Boolean.parseBoolean(param);
+        else
+            _partial=ContinuationSupport.__jetty6 && !jetty_7_or_greater;
 
         param=filterConfig.getInitParameter("faux");
-        _faux=(param!=null&&Boolean.parseBoolean(param)) || !(jetty || _partial || _context.getMajorVersion()>=3);
+        if (param!=null)
+            _faux=Boolean.parseBoolean(param);
+        else
+            _faux=!(jetty_7_or_greater || _partial || _context.getMajorVersion()>=3);
         
         if (_debug)
             _context.log("ContinuationFilter "+
-                    " jetty="+jetty+
+                    " jetty="+jetty_7_or_greater+
                     " partial="+_partial+
                     " jetty6="+ContinuationSupport.__jetty6+
                     " faux="+_faux+
@@ -58,7 +64,7 @@ public class ContinuationFilter implements Filter
     {
         if (_faux)
         {
-            final FauxContinuation fc = new FauxContinuation(request,response);
+            final FauxContinuation fc = new FauxContinuation(request);
             request.setAttribute(Continuation.ATTRIBUTE,fc);
             boolean complete=false;
       
@@ -67,20 +73,6 @@ public class ContinuationFilter implements Filter
                 try
                 {
                     chain.doFilter(request,response);
-                }
-                catch(IOException e)
-                {
-                    if (fc.isSuspended())
-                        debug("ContinuationFilter caught ",e);
-                    else
-                        throw e;
-                }
-                catch(ServletException e)
-                {
-                    if (fc.isSuspended())
-                        debug("ContinuationFilter caught ",e);
-                    else
-                        throw e;
                 }
                 finally
                 {

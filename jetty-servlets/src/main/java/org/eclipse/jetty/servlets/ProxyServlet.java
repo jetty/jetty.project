@@ -271,8 +271,7 @@ public class ProxyServlet implements Servlet
                 if (hasContent)
                     exchange.setRequestContentSource(in);
 
-                continuation.suspend(); 
-                continuation.keepWrappers();
+                continuation.suspend(response); 
                 _client.send(exchange);
 
             }

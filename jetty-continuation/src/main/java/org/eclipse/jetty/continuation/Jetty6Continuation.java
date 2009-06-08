@@ -4,12 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 
 
 public class Jetty6Continuation implements ContinuationFilter.PartialContinuation
 {
     private final ServletRequest _request;
-    private final ServletResponse _response;
+    private ServletResponse _response;
     private final org.mortbay.util.ajax.Continuation _j6Continuation;
 
     private Throwable _retry;
@@ -18,13 +19,12 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
     private volatile boolean _completed=false;
     private volatile boolean _resumed=false;
     private volatile boolean _expired=false;
-    private boolean _wrappers=false;
+    private boolean _responseWrapped=false;
     private List<ContinuationListener> _listeners;
 
-    public Jetty6Continuation(ServletRequest request, ServletResponse response, org.mortbay.util.ajax.Continuation continuation)
+    public Jetty6Continuation(ServletRequest request, org.mortbay.util.ajax.Continuation continuation)
     {
         _request=request;
-        _response=response;
         _j6Continuation=continuation;
     }
 
@@ -46,12 +46,34 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
                 _j6Continuation.resume();
         }
     }
-
-    public ServletRequest getServletRequest()
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#getAttribute(java.lang.String)
+     */
+    public Object getAttribute(String name)
     {
-        return _request;
+        return _request.getAttribute(name);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#removeAttribute(java.lang.String)
+     */
+    public void removeAttribute(String name)
+    {
+        _request.removeAttribute(name);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#setAttribute(java.lang.String, java.lang.Object)
+     */
+    public void setAttribute(String name, Object attribute)
+    {
+        _request.setAttribute(name,attribute);
+    }
+    
     public ServletResponse getServletResponse()
     {
         return _response;
@@ -77,11 +99,6 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
         return _retry!=null;
     }
 
-    public void keepWrappers()
-    {
-        _wrappers=true;
-    }
-
     public void resume()
     {
         synchronized(this)
@@ -99,10 +116,16 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
         _timeout=(timeoutMs>Integer.MAX_VALUE)?Integer.MAX_VALUE:(int)timeoutMs;
     }
 
-    public void suspend()
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#suspend(javax.servlet.ServletResponse)
+     */
+    public void suspend(ServletResponse response)
     {
         try
         {
+            _response=response;
+            _responseWrapped=_response instanceof ServletResponseWrapper;
             _resumed=false;
             _expired=false;
             _completed=false;
@@ -114,9 +137,26 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
         }
     }
 
-    public boolean wrappersKept()
+    public void suspend()
     {
-        return _wrappers;
+        try
+        {
+            _response=null;
+            _responseWrapped=false;
+            _resumed=false;
+            _expired=false;
+            _completed=false;
+            _j6Continuation.suspend(_timeout);
+        }
+        catch(Throwable retry)
+        {
+            _retry=retry;
+        }
+    }
+
+    public boolean isResponseWrapped()
+    {
+        return _responseWrapped;
     }
 
     public boolean enter()
@@ -160,6 +200,5 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
             for (ContinuationListener l: _listeners)
                 l.onComplete(this);
         }
-
     }
 }

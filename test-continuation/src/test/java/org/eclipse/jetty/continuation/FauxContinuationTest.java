@@ -16,14 +16,15 @@ package org.eclipse.jetty.continuation;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.nio.SelectChannelConnector;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.FilterHolder;
-import org.mortbay.jetty.servlet.ServletHandler;
-import org.mortbay.jetty.servlet.ServletHolder;
-import org.mortbay.util.IO;
+import org.eclipse.jetty.continuation.test.ContinuationBase;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.IO;
 
 
 public class FauxContinuationTest extends ContinuationBase
@@ -37,12 +38,11 @@ public class FauxContinuationTest extends ContinuationBase
     {
         _connector = new SelectChannelConnector();
         _server.setConnectors(new Connector[]{ _connector });
-        Context servletContext = new Context(Context.NO_SECURITY|Context.NO_SESSIONS);
+        ServletContextHandler servletContext = new ServletContextHandler(ServletContextHandler.NO_SECURITY|ServletContextHandler.NO_SESSIONS);
         _server.setHandler(servletContext);
         _servletHandler=servletContext.getServletHandler();
         ServletHolder holder=new ServletHolder(_servlet);
         _servletHandler.addServletWithMapping(holder,"/");
-        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",0);
     }
 
     protected void tearDown() throws Exception
@@ -52,6 +52,7 @@ public class FauxContinuationTest extends ContinuationBase
 
     public void testFaux() throws Exception
     {
+        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",0);
         _filter.setInitParameter("debug","true");
         _filter.setInitParameter("faux","true");
         _server.start();
@@ -60,7 +61,15 @@ public class FauxContinuationTest extends ContinuationBase
         doit("FauxContinuation");
     }
 
-    
+    public void testNoFauxDefaults() throws Exception
+    {
+        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",0);
+        _filter.setInitParameter("debug","true");
+        _server.start();
+        _port=_connector.getLocalPort();
+        
+        doit("AsyncContinuation");
+    }
     
     protected String toString(InputStream in) throws IOException
     {

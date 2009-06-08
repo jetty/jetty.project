@@ -178,7 +178,8 @@ public class QoSFilterTest extends TestCase
             }
             catch(Exception e)
             {
-                Log.warn(url.toString(),e);
+                Log.warn(url.toString());
+                Log.debug(e);
             }
         }
     }

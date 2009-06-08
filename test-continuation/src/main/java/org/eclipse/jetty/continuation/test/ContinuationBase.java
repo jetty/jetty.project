@@ -11,7 +11,7 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.continuation;
+package org.eclipse.jetty.continuation.test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +23,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationListener;
+import org.eclipse.jetty.continuation.ContinuationSupport;
 
 import junit.framework.TestCase;
 
@@ -153,7 +157,7 @@ public abstract class ContinuationBase extends TestCase
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         if (response.indexOf(content,15)<0)
         {
-            System.err.println(content+" NOT IN '"+response+"'");
+            System.err.println("'"+content+"' NOT IN:\n"+response+"\n--");
             assertTrue(false);
         }
     }
@@ -163,7 +167,7 @@ public abstract class ContinuationBase extends TestCase
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         if (response.indexOf(content,15)>=0)
         {
-            System.err.println(content+" IS IN '"+response+"'");
+            System.err.println("'"+content+"' IS IN:\n"+response+"'\n--");
             assertTrue(false);
         }
     }
@@ -252,8 +256,8 @@ public abstract class ContinuationBase extends TestCase
                     if (suspend_for>0)
                         continuation.setTimeout(suspend_for);
                     continuation.addContinuationListener(__listener);
-                    ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","suspend");
-                    continuation.suspend();
+                    ((HttpServletResponse)response).addHeader("history","suspend");
+                    continuation.suspend(response);
                     
                     if (complete_after>0)
                     {
@@ -331,8 +335,8 @@ public abstract class ContinuationBase extends TestCase
                 if (suspend2_for>0)
                     continuation.setTimeout(suspend2_for);
                 // continuation.addContinuationListener(__listener);
-                ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","suspend");
-                continuation.suspend();
+                ((HttpServletResponse)response).addHeader("history","suspend");
+                continuation.suspend(response);
 
                 if (complete2_after>0)
                 {
@@ -369,7 +373,7 @@ public abstract class ContinuationBase extends TestCase
                     {
                         public void run()
                         {
-                            ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","resume");
+                            ((HttpServletResponse)response).addHeader("history","resume");
                             continuation.resume();
                         }
                     };
@@ -380,7 +384,7 @@ public abstract class ContinuationBase extends TestCase
                 }
                 else if (resume2_after==0)
                 {
-                    ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","resume");
+                    ((HttpServletResponse)response).addHeader("history","resume");
                     continuation.resume();
                 }
                 return;

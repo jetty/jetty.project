@@ -5,7 +5,7 @@
     <version>7.0.0.M3-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>test-continuation</artifactId>
+  <artifactId>test-continuation-jetty6</artifactId>
   <packaging>jar</packaging>
   <name>Test :: Continuation</name>
   <description>Asynchronous API</description>
@@ -15,13 +15,32 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <scope>provided</scope>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId> 
       <artifactId>jetty-servlet</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
+      <scope>test</scope>
     </dependency> 
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId> 
+      <artifactId>test-continuation</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency> 
+    <dependency>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>jetty</artifactId>
+        <version>6.1.18</version>
+        <type>jar</type>
+        <scope>test</scope>
+        <exclusions>
+        	<exclusion>
+        		<artifactId>servlet-api-2.5</artifactId>
+        		<groupId>org.mortbay.jetty</groupId>
+        	</exclusion>
+        </exclusions>
+    </dependency>
   </dependencies>
 </project>

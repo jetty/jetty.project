@@ -15,7 +15,9 @@ package org.eclipse.jetty.continuation;
 
 import java.lang.reflect.Constructor;
 import javax.servlet.ServletRequest;
+import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 
 /* ------------------------------------------------------------ */
 /** ContinuationSupport.
@@ -62,7 +64,7 @@ public class ContinuationSupport
             if (jetty6)
             {
                 Class<? extends Continuation> j6c = ContinuationSupport.class.getClassLoader().loadClass("org.eclipse.jetty.continuation.Jetty6Continuation").asSubclass(Continuation.class);
-                j6cc=j6c.getConstructor(ServletRequest.class, ServletResponse.class, jetty6ContinuationClass);
+                j6cc=j6c.getConstructor(ServletRequest.class, jetty6ContinuationClass);
                 jetty6Support=true;
             }
         }
@@ -78,35 +80,22 @@ public class ContinuationSupport
     /* ------------------------------------------------------------ */
     /**
      * @param request
-     * @deprecated use {@link #getContinuation(ServletRequest, ServletResponse)}
      * @return a Continuation instance
      */
-    public static Continuation getContinuation(final ServletRequest request)
-    {
-        return getContinuation(request,null);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param request
-     * @param response
-     * @return
-     */
-    public static Continuation getContinuation(final ServletRequest request, final ServletResponse response)
+    public static Continuation getContinuation(ServletRequest request)
     {
         Continuation continuation = (Continuation) request.getAttribute(Continuation.ATTRIBUTE);
         if (continuation!=null)
-        {
-            // TODO save wrappers?
-
             return continuation;
-        }
-
+        
+        while (request instanceof ServletRequestWrapper)
+            request=((ServletRequestWrapper)request).getRequest();
+        
         if (__servlet3 )
         {
             try
             {
-                continuation=__newServlet3Continuation.newInstance(request,response);
+                continuation=__newServlet3Continuation.newInstance(request);
                 request.setAttribute(Continuation.ATTRIBUTE,continuation);
                 return continuation;
             }
@@ -121,7 +110,7 @@ public class ContinuationSupport
             Object c=request.getAttribute("org.mortbay.jetty.ajax.Continuation");
             try
             {
-                continuation= __newJetty6Continuation.newInstance(request,response,c);
+                continuation= __newJetty6Continuation.newInstance(request,c);
                 request.setAttribute(Continuation.ATTRIBUTE,continuation);
                 return continuation;
             }
@@ -132,5 +121,17 @@ public class ContinuationSupport
         }
 
         throw new IllegalStateException("!(Jetty || Servlet 3.0 || ContinuationFilter)");
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param request
+     * @param response
+     * @deprecated use {@link #getContinuation(ServletRequest)}
+     * @return
+     */
+    public static Continuation getContinuation(final ServletRequest request, final ServletResponse response)
+    {
+        return getContinuation(request);
     }
 }

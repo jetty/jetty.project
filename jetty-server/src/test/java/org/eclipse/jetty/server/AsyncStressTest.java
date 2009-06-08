@@ -324,7 +324,7 @@ public class AsyncStressTest extends TestCase
 
         public void onTimeout(Continuation continuation)
         {
-            continuation.getServletRequest().setAttribute("TIMEOUT",Boolean.TRUE);
+            continuation.setAttribute("TIMEOUT",Boolean.TRUE);
             continuation.resume();
         }
         

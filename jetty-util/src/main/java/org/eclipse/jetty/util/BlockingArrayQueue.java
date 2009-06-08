@@ -573,8 +573,9 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements Queue<E>
         else
         {
             s=_elements.length+tail-head;
-            System.arraycopy(_elements,head,elements,0,s-head);
-            System.arraycopy(_elements,0,elements,s-head,tail);
+            int cut=_elements.length-head;
+            System.arraycopy(_elements,head,elements,0,cut);
+            System.arraycopy(_elements,0,elements,cut,tail);
         }
         _elements=elements;
         _head=0;

@@ -16,6 +16,7 @@ package org.eclipse.jetty.continuation;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.eclipse.jetty.continuation.test.ContinuationBase;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.nio.SelectChannelConnector;
@@ -59,7 +60,16 @@ public class Jetty6ContinuationTest extends ContinuationBase
         
         doit("Jetty6Continuation");
     }
-    
+
+    public void testFaux() throws Exception
+    {
+        _filter.setInitParameter("debug","true");
+        _filter.setInitParameter("faux","true");
+        _server.start();
+        _port=_connector.getLocalPort();
+        
+        doit("FauxContinuation");
+    }
     
     protected String toString(InputStream in) throws IOException
     {

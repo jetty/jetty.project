@@ -18,6 +18,7 @@ import java.util.ArrayList;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 
 class FauxContinuation implements Continuation
 {
@@ -30,21 +31,20 @@ class FauxContinuation implements Continuation
     private static final int __COMPLETE=7;
 
     private final ServletRequest _request;
-    private final ServletResponse _response;
+    private ServletResponse _response;
     
     private int _state=__HANDLING;
     private boolean _initial=true;
     private boolean _resumed=false;
     private boolean _timeout=false;
-    private boolean _keepWrappers=false;
+    private boolean _responseWrapped=false;
     private  long _timeoutMs=30000; // TODO configure
     
     private ArrayList<ContinuationListener> _listeners; 
 
-    FauxContinuation(final ServletRequest request,final ServletResponse response)
+    FauxContinuation(final ServletRequest request)
     {
         _request=request;
-        _response=response;
     }
 
     /* ------------------------------------------------------------ */
@@ -65,20 +65,11 @@ class FauxContinuation implements Continuation
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.continuation.Continuation#keepWrappers()
+     * @see org.eclipse.jetty.continuation.Continuation#isResponseWrapped()
      */
-    public void keepWrappers()
+    public boolean isResponseWrapped()
     {
-        _keepWrappers=true;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.continuation.Continuation#wrappersKept()
-     */
-    public boolean wrappersKept()
-    {
-        return _keepWrappers;
+        return _responseWrapped;
     }
 
     /* ------------------------------------------------------------ */
@@ -135,6 +126,14 @@ class FauxContinuation implements Continuation
         _timeoutMs = timeoutMs;
     }
 
+    /* ------------------------------------------------------------ */
+    public void suspend(ServletResponse response)
+    {
+        _response=response;
+        _responseWrapped=response instanceof ServletResponseWrapper;
+        suspend();
+    }
+    
     /* ------------------------------------------------------------ */
     public void suspend()
     {
@@ -241,17 +240,6 @@ class FauxContinuation implements Continuation
         }
         
     }
-    
-
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.continuation.Continuation#getServletRequest()
-     */
-    public ServletRequest getServletRequest()
-    {
-        return _request;
-    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -268,7 +256,7 @@ class FauxContinuation implements Continuation
     {
         synchronized (this)
         {
-            _keepWrappers=false;
+            _responseWrapped=false;
             switch(_state)
             {
                 case __HANDLING:
@@ -440,6 +428,33 @@ class FauxContinuation implements Continuation
             _listeners=new ArrayList<ContinuationListener>();
         _listeners.add(listener);
         
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#getAttribute(java.lang.String)
+     */
+    public Object getAttribute(String name)
+    {
+        return _request.getAttribute(name);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#removeAttribute(java.lang.String)
+     */
+    public void removeAttribute(String name)
+    {
+        _request.removeAttribute(name);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#setAttribute(java.lang.String, java.lang.Object)
+     */
+    public void setAttribute(String name, Object attribute)
+    {
+        _request.setAttribute(name,attribute);
     }
     
     
