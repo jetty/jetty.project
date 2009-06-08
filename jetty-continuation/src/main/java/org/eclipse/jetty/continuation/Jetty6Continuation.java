@@ -7,6 +7,13 @@ import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
 
 
+
+/* ------------------------------------------------------------ */
+/**
+ * This implementation of Continuation is used by {@link ContinuationSupport}
+ * when it detects that the application is deployed in a jetty-6 server.
+ * This continuation requires the {@link ContinuationFilter} to be deployed.
+ */
 public class Jetty6Continuation implements ContinuationFilter.PartialContinuation
 {
     private final ServletRequest _request;

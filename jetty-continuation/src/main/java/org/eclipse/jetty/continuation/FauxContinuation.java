@@ -20,6 +20,13 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
 
+
+/* ------------------------------------------------------------ */
+/**
+ * A blocking implementation of Continuation.
+ * This implementation of Continuation is used by the {@link ContinuationFilter}
+ * when there are is no native or asynchronous continuation type available. 
+ */
 class FauxContinuation implements Continuation
 {
     private final static ContinuationThrowable __exception = new ContinuationThrowable();

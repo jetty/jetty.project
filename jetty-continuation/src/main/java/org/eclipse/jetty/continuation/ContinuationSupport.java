@@ -79,7 +79,13 @@ public class ContinuationSupport
 
     /* ------------------------------------------------------------ */
     /**
-     * @param request
+     * Get a Continuation.  The type of the Continuation returned may
+     * vary depending on the container in which the application is 
+     * deployed. It may be an implementation native to the container (eg
+     * org.eclipse.jetty.server.AsyncContinuation) or one of the utility
+     * implementations provided such as {@link FauxContinuation} or 
+     * {@link Servlet3Continuation}.
+     * @param request The request 
      * @return a Continuation instance
      */
     public static Continuation getContinuation(ServletRequest request)
