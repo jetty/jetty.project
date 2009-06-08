@@ -136,6 +136,26 @@ public abstract class ContinuationBase extends TestCase
         assertEquals(1,count(response,"history: onComplete"));
         assertContains("TIMEOUT",response);
         
+
+        response=process("suspend=200&resume=10&undispatch=true",null);
+        assertContains("RESUMED",response);
+        assertNotContains("history: onTimeout",response);
+        assertContains("history: onComplete",response);
+        
+        response=process("suspend=200&resume=0&undispatch=true",null);
+        assertContains("RESUMED",response);
+        assertNotContains("history: onTimeout",response);
+        assertContains("history: onComplete",response);
+        
+        response=process("suspend=200&complete=10&undispatch=true",null);
+        assertContains("COMPLETED",response);
+        assertNotContains("history: onTimeout",response);
+        assertContains("history: onComplete",response);
+        
+        response=process("suspend=200&complete=0&undispatch=true",null);
+        assertContains("COMPLETED",response);
+        assertNotContains("history: onTimeout",response);
+        assertContains("history: onComplete",response);
     }
 
     
@@ -218,6 +238,7 @@ public abstract class ContinuationBase extends TestCase
             long resume2_after=-1;
             long complete_after=-1;
             long complete2_after=-1;
+            boolean undispatch=false;
             
             if (request.getParameter("read")!=null)
                 read_before=Integer.parseInt(request.getParameter("read"));
@@ -235,6 +256,8 @@ public abstract class ContinuationBase extends TestCase
                 complete_after=Integer.parseInt(request.getParameter("complete"));
             if (request.getParameter("complete2")!=null)
                 complete2_after=Integer.parseInt(request.getParameter("complete2"));
+            if (request.getParameter("undispatch")!=null)
+                undispatch=Boolean.parseBoolean(request.getParameter("undispatch"));
             
             if (continuation.isInitial())
             {
@@ -308,6 +331,9 @@ public abstract class ContinuationBase extends TestCase
                         ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","resume");
                         continuation.resume();
                     }
+                    
+                    if (undispatch)
+                        continuation.undispatch();
                 }
                 else if (sleep_for>=0)
                 {
@@ -387,6 +413,8 @@ public abstract class ContinuationBase extends TestCase
                     ((HttpServletResponse)response).addHeader("history","resume");
                     continuation.resume();
                 }
+                if (undispatch)
+                    continuation.undispatch();
                 return;
             }
             else if (continuation.isExpired())

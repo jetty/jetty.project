@@ -64,7 +64,7 @@ public class ContinuationFilter implements Filter
     {
         if (_faux)
         {
-            final FauxContinuation fc = new FauxContinuation(request);
+            final FauxContinuation fc = new FauxContinuation(request,_debug);
             request.setAttribute(Continuation.ATTRIBUTE,fc);
             boolean complete=false;
       
@@ -73,6 +73,10 @@ public class ContinuationFilter implements Filter
                 try
                 {
                     chain.doFilter(request,response);
+                }
+                catch (ContinuationThrowable e)
+                {
+                    debug("faux",e);
                 }
                 finally
                 {
@@ -99,13 +103,27 @@ public class ContinuationFilter implements Filter
             }
         }
         else
-            chain.doFilter(request,response);
+        {
+            try
+            {
+                chain.doFilter(request,response);
+            }
+            catch (ContinuationThrowable e)
+            {
+                debug("caught",e);
+            }
+        }
     }
     
-    private void debug(String string, Exception e)
+    private void debug(String string, Throwable th)
     {
         if (_debug)
-            _context.log("DEBUG",e);
+        {
+            if (th instanceof ContinuationThrowable)
+                _context.log("DEBUG: "+th);
+            else
+                _context.log("DEBUG",th);
+        }
     }
 
     public void destroy()

@@ -34,6 +34,7 @@ import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.HttpException;
@@ -492,6 +493,10 @@ public class ServletHandler extends ScopedHandler
             }
             else
                 if(Log.isDebugEnabled())Log.debug("Response already committed for handling "+th);
+        }
+        catch(ContinuationThrowable e)
+        {   
+            throw e;
         }
         catch(Error e)
         {   

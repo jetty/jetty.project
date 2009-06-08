@@ -22,6 +22,8 @@ import javax.servlet.ServletResponseWrapper;
 
 class FauxContinuation implements Continuation
 {
+    private final static ContinuationThrowable __exception = new ContinuationThrowable();
+    
     private static final int __HANDLING=1;   // Request dispatched to filter/servlet
     private static final int __SUSPENDING=2;   // Suspend called, but not yet returned to container
     private static final int __RESUMING=3;     // resumed while suspending
@@ -39,12 +41,14 @@ class FauxContinuation implements Continuation
     private boolean _timeout=false;
     private boolean _responseWrapped=false;
     private  long _timeoutMs=30000; // TODO configure
+    private boolean _debug;
     
     private ArrayList<ContinuationListener> _listeners; 
 
-    FauxContinuation(final ServletRequest request)
+    FauxContinuation(final ServletRequest request, boolean debug)
     {
         _request=request;
+        _debug=debug;
     }
 
     /* ------------------------------------------------------------ */
@@ -456,6 +460,15 @@ class FauxContinuation implements Continuation
     {
         _request.setAttribute(name,attribute);
     }
-    
-    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#undispatch()
+     */
+    public void undispatch()
+    {
+        if (isSuspended())
+            throw _debug?new ContinuationThrowable():__exception;
+        throw new IllegalStateException("!suspended");
+    }
 }

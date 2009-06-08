@@ -21,6 +21,7 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.http.EncodedHttpURI;
 import org.eclipse.jetty.http.Generator;
@@ -547,9 +548,13 @@ public class HttpConnection implements Connection
                         server.handleAsync(this);
                     }
                 }
+                catch (ContinuationThrowable e)
+                {
+                    Log.debug(e);
+                }
                 catch (EofException e)
                 {
-                    Log.ignore(e);
+                    Log.debug(e);
                     error=true;
                 }
                 catch (HttpException e)

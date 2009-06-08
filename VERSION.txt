@@ -7,6 +7,7 @@ jetty-7.0.0.M3-SNAPSHOT
  + 277798 Denial of Service Filter
  + Portable continuations for jetty6 and servlet3
  + Refactored continuations to only support response wrapping
+ + Added ContinuationThrowable
 
 jetty-7.0.0.M2 18 May 2009
  + JETTY-937 Work around Sun JVM bugs

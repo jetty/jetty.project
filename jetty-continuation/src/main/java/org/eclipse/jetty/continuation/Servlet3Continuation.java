@@ -13,6 +13,8 @@ import javax.servlet.ServletResponseWrapper;
 
 public class Servlet3Continuation implements Continuation
 {
+    private final static ContinuationThrowable __exception = new ContinuationThrowable();
+    
     private final ServletRequest _request;
     private ServletResponse _response;
     private AsyncContext _context;
@@ -159,5 +161,17 @@ public class Servlet3Continuation implements Continuation
     public void setAttribute(String name, Object attribute)
     {
         _request.setAttribute(name,attribute);
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#undispatch()
+     */
+    public void undispatch()
+    {
+        if (isSuspended())
+            throw __exception;
+        throw new IllegalStateException("!suspended");
     }
 }

@@ -159,6 +159,25 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
         return _responseWrapped;
     }
 
+
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#undispatch()
+     */
+    public void undispatch()
+    {
+        Throwable th=_retry;
+        if (th instanceof ThreadDeath)
+            throw (ThreadDeath)th;
+        if (th instanceof Error)
+            throw (Error)th;
+        if (th instanceof RuntimeException)
+            throw (RuntimeException)th;
+        
+        throw new IllegalStateException("!suspended");
+    }
+    
     public boolean enter()
     {
         _expired=!_j6Continuation.isResumed();
