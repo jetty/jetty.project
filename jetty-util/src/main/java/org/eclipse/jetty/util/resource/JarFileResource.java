@@ -15,6 +15,7 @@ package org.eclipse.jetty.util.resource;
 import java.io.File;
 import java.io.IOException;
 import java.net.JarURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -317,6 +318,26 @@ class JarFileResource extends JarResource
         JarFileResource newResource = new JarFileResource(oldResource.getURL(), false);
         return newResource;
         
+    }
+    
+    /**
+     * Check if this jar:file: resource is contained in the
+     * named resource. Eg jar:file:///a/b/c/foo.jar!/x.html isContainedIn file:///a/b/c/foo.jar
+     * @param resource
+     * @return
+     * @throws MalformedURLException
+     */
+    public boolean isContainedIn (Resource resource) 
+    throws MalformedURLException
+    {
+        String string = _urlString;
+        int index = string.indexOf("!/");
+        if (index > 0)
+            string = string.substring(0,index);
+        if (string.startsWith("jar:"))
+            string = string.substring(4);
+        URL url = new URL(string);
+        return url.sameFile(resource.getURL());     
     }
 }
 
