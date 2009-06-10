@@ -28,21 +28,21 @@ import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 /**
  * 
  */
-public class HttpHeaderTest extends TestCase
+public class HttpFieldsTest extends TestCase
 {
 
     /**
      * Constructor for HttpHeaderTest.
      * @param arg0
      */
-    public HttpHeaderTest(String arg0)
+    public HttpFieldsTest(String arg0)
     {
         super(arg0);
     }
 
     public static void main(String[] args)
     {
-        junit.textui.TestRunner.run(HttpHeaderTest.class);
+        junit.textui.TestRunner.run(HttpFieldsTest.class);
     }
 
     /*
@@ -375,7 +375,22 @@ public class HttpHeaderTest extends TestCase
         assertTrue(((CachedBuffer)HttpHeaderValues.CACHE.lookup("close")).getOrdinal()>=0);
         assertTrue(((CachedBuffer)HttpHeaderValues.CACHE.lookup("Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)")).getOrdinal()>=0);
     }
-    
+
+    public void testSetCookie()
+    throws Exception
+    {
+        HttpFields fields = new HttpFields();
+        fields.addSetCookie("minimal","value",null,null,-1,null,false,false,-1);
+        assertEquals("minimal=value",fields.getStringField("Set-Cookie"));
+
+        fields.clear();
+        fields.addSetCookie("everything","value","domain","path",0,"comment",true,true,0);
+        assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01 Jan 1970 00:00:00 GMT;Secure;HttpOnly",fields.getStringField("Set-Cookie"));
+ 
+        fields.clear();
+        fields.addSetCookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,2);
+        assertEquals("\"ev erything\"=\"va lue\";Version=2;Comment=\"co mment\";Path=\"pa th\";Domain=\"do main\";Max-Age=1;Secure;HttpOnly",fields.getStringField("Set-Cookie"));
+    }
     
     private Set enum2set(Enumeration e)
     {

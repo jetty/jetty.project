@@ -274,7 +274,7 @@ public class HttpFields
     
     
     
-    public final static String __01Jan1970 = formatDate(0);
+    public final static String __01Jan1970 = formatDate(0).trim();
     public final static Buffer __01Jan1970_BUFFER = new ByteArrayBuffer(__01Jan1970);
 
     /* -------------------------------------------------------------- */
@@ -979,12 +979,15 @@ public class HttpFields
         if (path != null && path.length() > 0)
         {
             buf.append(";Path=");
-            buf.append(URIUtil.encodePath(path));
+            if (path.trim().startsWith("\""))
+                buf.append(path);
+            else
+                QuotedStringTokenizer.quoteIfNeeded(buf,path);
         }
         if (domain != null && domain.length() > 0)
         {
             buf.append(";Domain=");
-            buf.append(domain.toLowerCase());// lowercase for IE
+            QuotedStringTokenizer.quoteIfNeeded(buf,domain.toLowerCase());
         }
 
         if (maxAge >= 0)

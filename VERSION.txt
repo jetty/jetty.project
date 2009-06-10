@@ -8,6 +8,7 @@ jetty-7.0.0.M3-SNAPSHOT
  + Portable continuations for jetty6 and servlet3
  + Refactored continuations to only support response wrapping
  + Added ContinuationThrowable
+ + 276545 Quoted cookie paths
  + 279725 Support 100 and 102 expectations
 
 jetty-7.0.0.M2 18 May 2009
