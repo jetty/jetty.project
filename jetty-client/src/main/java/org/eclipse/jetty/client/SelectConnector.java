@@ -216,7 +216,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             if (attachment instanceof HttpDestination)
                 ((HttpDestination)attachment).onConnectionFailed(ex);
             else
-                Log.warn(ex);
+                super.connectionFailed(channel,ex,attachment);
         }
     }
 }

@@ -383,15 +383,12 @@ public class Response implements HttpServletResponse
      */
     public void sendProcessing() throws IOException
     {
-        Generator g = _connection.getGenerator();
-        if (g instanceof HttpGenerator)
+        if (_connection.isExpecting102Processing())
         {
-            HttpGenerator generator = (HttpGenerator)g;
-
-            String expect = _connection.getRequest().getHeader(HttpHeaders.EXPECT);
-
-            if (expect!=null && expect.startsWith("102") && generator.getVersion()>=HttpVersions.HTTP_1_1_ORDINAL)
+            Generator g = _connection.getGenerator();
+            if (g instanceof HttpGenerator)
             {
+                HttpGenerator generator = (HttpGenerator)g;
                 boolean was_persistent=generator.isPersistent();
                 generator.setResponse(102,null);
                 generator.completeHeader(null,true);

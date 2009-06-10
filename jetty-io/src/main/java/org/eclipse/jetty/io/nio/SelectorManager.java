@@ -245,7 +245,8 @@ public abstract class SelectorManager extends AbstractLifeCycle
     /* ------------------------------------------------------------------------------- */
     protected void connectionFailed(SocketChannel channel,Throwable ex,Object attachment)
     {
-        Log.warn(ex);
+        Log.warn(ex+","+channel+","+attachment);
+        Log.debug(ex);
     }
 
     /* ------------------------------------------------------------------------------- */

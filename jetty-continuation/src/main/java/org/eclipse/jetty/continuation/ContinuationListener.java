@@ -3,7 +3,6 @@ package org.eclipse.jetty.continuation;
 
 import java.util.EventListener;
 
-import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestListener;
 
 
