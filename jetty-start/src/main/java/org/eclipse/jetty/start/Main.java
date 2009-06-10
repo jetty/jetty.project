@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
@@ -581,7 +582,7 @@ public class Main
                 else if (subject.toLowerCase().endsWith(".policy"))
                 {
                     //policy file to parse
-                    String cn=expand(subject.substring(0,subject.length()-5));
+                    String cn=expand(subject.substring(0,subject.length()));
                     if (cn!=null&&cn.length()>0)
                     {
                         if (DEBUG)
@@ -694,7 +695,11 @@ public class Main
         {
         	if ( _activeOptions.contains("policy") )
         	{
-        		Policy.setPolicy( new CustomPolicy( _policies ) );
+        	    Class jettyPolicy = cl.loadClass( "org.eclipse.jetty.policy.JettyPolicy" );
+        	    Constructor c = jettyPolicy.getConstructor( new Class[] { Set.class, Map.class } );
+        	    Object policyClass = c.newInstance( _policies, _properties );
+        	    
+        		Policy.setPolicy( (Policy)policyClass );
         		System.setSecurityManager( new SecurityManager() );
         	}
         	else
