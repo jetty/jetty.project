@@ -208,7 +208,7 @@ public class Main
 
     private static void usage()
     {
-        System.err.println("Usage: java -jar start.jar [--help|--stop|--version] [config ...]");        
+        System.err.println("Usage: java -jar start.jar [--help|--stop|--version] [OPTIONS=option,...] [name=value ...] [config ...]");        
         System.exit(1);
     }
 
