@@ -129,6 +129,7 @@ public class DefaultPolicyLoader
         try
         {   
             URL url = new URL( evaluator.evaluate(codeBase) ); 
+            System.out.println("\n\nCodebase: " + url.toExternalForm() + "\n\n");
             Certificate[] cert = null;
             return new CodeSource( url, cert); //TODO support certificates
         }

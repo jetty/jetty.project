@@ -44,6 +44,9 @@ public class PropertyEvaluator extends HashMap<String,String>
      */
     public String getSystemProperty(String name)
     {       
+        
+        System.out.println("Prop: " + name + " " + System.getProperty(name));
+        
         if (containsKey(name))
             return get(name);
         return System.getProperty(name);
@@ -57,8 +60,10 @@ public class PropertyEvaluator extends HashMap<String,String>
     /* ------------------------------------------------------------ */
     public String evaluate(String s)
     {
+        
         int i1=0;
         int i2=0;
+        /*
         while (s!=null)
         {
             i1=s.indexOf("$(",i2);
@@ -74,6 +79,7 @@ public class PropertyEvaluator extends HashMap<String,String>
         
         i1=0;
         i2=0;
+        */
         while (s!=null)
         {
             i1=s.indexOf("${",i2);
@@ -83,7 +89,7 @@ public class PropertyEvaluator extends HashMap<String,String>
             if (i2<0)
                 break;
             String name=s.substring(i1+2,i2);
-            String property=getProperty(name);
+            String property=getSystemProperty(name);
             s=s.substring(0,i1)+property+s.substring(i2+1);
         }
         
