@@ -650,7 +650,6 @@ public class Main
             
             configure(cpcfg,args.length);
             
-            /* TODO is this needed?
             String jetty_home=System.getProperty("jetty.home");
             if (jetty_home!=null)
             {
@@ -658,7 +657,7 @@ public class Main
                 String canonical=file.getCanonicalPath();
                 System.setProperty("jetty.home",canonical);
             }
-            */
+            
         }
         catch (Exception e)
         {
