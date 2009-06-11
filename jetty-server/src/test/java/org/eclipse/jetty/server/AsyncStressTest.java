@@ -21,6 +21,7 @@ import java.net.Socket;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -44,7 +45,6 @@ public class AsyncStressTest extends TestCase
     protected InetAddress _addr;
     protected int _port;
     protected Random _random = new Random();
-    protected int[] _loops;
     protected QueuedThreadPool _threads=new QueuedThreadPool();
     protected boolean _stress;
 
@@ -54,6 +54,7 @@ public class AsyncStressTest extends TestCase
         _threads.setMaxThreads(50);
         _server.setThreadPool(_threads);
         _connector = new SelectChannelConnector();
+        _connector.setMaxIdleTime(120000);
         _server.setConnectors(new Connector[]{ _connector });
         _server.setHandler(_handler);
         _server.start();
@@ -84,6 +85,8 @@ public class AsyncStressTest extends TestCase
         {
             socket[i] = new Socket(_addr,_port);
             socket[i].setSoTimeout(30000);
+            if (i%10==0)
+                Thread.sleep(50);
             if (i%80==0)
                 System.err.println();
             System.err.print('+');
@@ -97,7 +100,7 @@ public class AsyncStressTest extends TestCase
             {
                 int p=path[i][l]=_random.nextInt(__paths.length);
 
-                int period = _random.nextInt(490)+10;
+                int period = _random.nextInt(290)+10;
                 String uri=__paths[p][0].replace("<PERIOD>",Integer.toString(period));
 
                 long start=System.currentTimeMillis();
@@ -114,7 +117,7 @@ public class AsyncStressTest extends TestCase
             if (l%80==0)
                 System.err.println();
             System.err.print('.');
-            Thread.sleep(_random.nextInt(590)+10);
+            Thread.sleep(_random.nextInt(290)+10);
         }
 
         System.err.println();
@@ -160,7 +163,7 @@ public class AsyncStressTest extends TestCase
         }
         else
         {
-            doConnections(80,40);
+            doConnections(80,80);
         }
     }
     

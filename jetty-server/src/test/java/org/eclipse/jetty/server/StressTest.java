@@ -21,6 +21,7 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -42,7 +43,7 @@ public class StressTest extends TestCase
     protected Connector _connector;
     protected InetAddress _addr;
     protected int _port;
-    protected int[] _loops;
+    protected volatile AtomicInteger[] _loops;
     protected QueuedThreadPool _threads=new QueuedThreadPool();
     protected boolean _stress;
     private ConcurrentLinkedQueue[] _latencies= {
@@ -203,17 +204,17 @@ public class StressTest extends TestCase
         {
             for (int i=0;i<loops;i++)
             {
-                _loops[thread]=i;
+                _loops[thread].set(i);
                 doPaths(thread,name+"-"+i,persistent);
                 Thread.sleep(1+_random.nextInt(10)*_random.nextInt(10));
                 Thread.sleep(10);
             }
-            _loops[thread]=loops;
+            _loops[thread].set(loops);
         }
         catch(Exception e)
         {
             System.err.println(e);
-            _loops[thread]=-_loops[thread];
+            _loops[thread].set(-_loops[thread].get());
             throw e;
         }
     }
@@ -246,9 +247,12 @@ public class StressTest extends TestCase
             };
         }
 
-        _loops=new int[threads];
+        _loops=new AtomicInteger[threads];
         for (int i=0;i<threads;i++)
+        {
+            _loops[i]=new AtomicInteger(0);
             thread[i].start();
+        }
         
         String last=null;
         int same=0;
@@ -263,7 +267,7 @@ public class StressTest extends TestCase
             int total=0;
             for (int i=0;i<threads;i++)
             {
-                int l=_loops[i];
+                int l=_loops[i].get();
                 if (l<0)
                 {
                     errors++;
@@ -355,7 +359,7 @@ public class StressTest extends TestCase
             doThreads(200,100,false);
         }
         else
-            doThreads(25,50,false);
+            doThreads(10,20,false);
     }
     
     
