@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+
 import junit.framework.TestCase;
 
 public class TimeoutTest extends TestCase
@@ -132,7 +135,8 @@ public class TimeoutTest extends TestCase
     {
         final int LOOP=500;
         final boolean[] running = {true};
-        final int[] count = {0,0,0};
+        final AtomicIntegerArray count = new AtomicIntegerArray( 3 );
+
 
         timeout.setNow(System.currentTimeMillis());
         timeout.setDuration(500);
@@ -175,7 +179,7 @@ public class TimeoutTest extends TestCase
                     // count how many threads were started (should == LOOP)
                     synchronized(count)
                     {
-                        count[0]++;
+                        count.incrementAndGet( 0 );
                     }
                     
                     // create a task for this thread
@@ -186,7 +190,7 @@ public class TimeoutTest extends TestCase
                             // count the number of expires
                             synchronized(count)
                             {
-                                count[2]++;
+                                count.incrementAndGet( 2 );
                             }
                         }
                     };
@@ -212,7 +216,7 @@ public class TimeoutTest extends TestCase
                                 // THIS loop is the one time we wait 1000ms
                                 synchronized(count)
                                 {
-                                    count[1]++;
+                                    count.incrementAndGet( 1 );
                                 }
                                 delay=200;
                                 wait=1000;
@@ -248,8 +252,8 @@ public class TimeoutTest extends TestCase
         Thread.sleep(1000);
         
         // check the counts
-        assertEquals("count threads", LOOP,count[0]);
-        assertEquals("count once waits",LOOP,count[1]);
-        assertEquals("count expires",LOOP,count[2]);
+        assertEquals("count threads", LOOP,count.get( 0 ));
+        assertEquals("count once waits",LOOP,count.get(1 ));
+        assertEquals("count expires",LOOP,count.get(2));
     }
 }
