@@ -41,7 +41,11 @@ import org.eclipse.jetty.policy.loader.DefaultPolicyLoader;
  * permission tweaking or runtime creation and specification of policies for specific webapps
  * 3) I wanted to have support for specifying multiple policy files to source permissions from
  * 
+ * Required additions:
+ * - certificate support
+ * 
  * Possible additions are:
+ * - directories of policy file support
  * - jmx enabled a la #2 above
  * - proxying of system security policy where we can proxy access to the system policy should the jvm have been started with 
  *   one, I had support for this but ripped it out to add in again later
