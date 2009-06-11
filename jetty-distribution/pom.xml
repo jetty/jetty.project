@@ -41,8 +41,8 @@
               </goals>
               <configuration>
                 <resourceBundles>
-                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0-SNAPSHOT</resourceBundle>
-                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-distribution-remote-resources:1.0-SNAPSHOT</resourceBundle>
+                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0</resourceBundle>
+                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-distribution-remote-resources:1.0</resourceBundle>
                 </resourceBundles>
                 <outputDirectory>${assembly.directory}</outputDirectory>
               </configuration>
@@ -134,6 +134,16 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-server</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly.directory}</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-policy</artifactId>
                   <version>${project.version}</version>
                   <classifier>config</classifier>
                   <type>jar</type>
@@ -295,6 +305,15 @@
                   <overWrite>true</overWrite>
                   <includes>**</includes>
                   <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-policy</artifactId>
+                  <version>${project.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly.directory}/lib/security</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.mortbay.jetty</groupId>
@@ -538,6 +557,11 @@
     <dependency>
     	<groupId>org.eclipse.jetty</groupId>
     	<artifactId>jetty-start</artifactId>
+    	<version>${project.version}</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.eclipse.jetty</groupId>
+    	<artifactId>jetty-policy</artifactId>
     	<version>${project.version}</version>
     </dependency>
     <dependency>
