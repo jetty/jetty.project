@@ -58,7 +58,7 @@
               </goals>
               <configuration>
                 <resourceBundles>
-                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0-SNAPSHOT</resourceBundle>
+                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0</resourceBundle>
                 </resourceBundles>
               </configuration>
             </execution>
