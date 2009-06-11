@@ -138,6 +138,7 @@
     <module>jetty-annotations</module>
     <module>jetty-plus</module>
     <module>jetty-rewrite</module>
+    <module>jetty-policy</module>
     <module>jetty-start</module>
     <module>test-continuation</module>
     <module>test-jetty-servlet</module>
