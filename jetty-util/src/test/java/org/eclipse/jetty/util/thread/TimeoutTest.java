@@ -177,21 +177,15 @@ public class TimeoutTest extends TestCase
                 public void run()
                 {
                     // count how many threads were started (should == LOOP)
-                    synchronized(count)
-                    {
-                        count.incrementAndGet( 0 );
-                    }
+                    count.incrementAndGet( 0 );
                     
                     // create a task for this thread
                     Timeout.Task task = new Timeout.Task()
                     {
                         public void expired()
                         {       
-                            // count the number of expires
-                            synchronized(count)
-                            {
-                                count.incrementAndGet( 2 );
-                            }
+                            // count the number of expires                           
+                            count.incrementAndGet( 2 );                          
                         }
                     };
                     
@@ -214,10 +208,9 @@ public class TimeoutTest extends TestCase
                             if (loop++==once)
                             { 
                                 // THIS loop is the one time we wait 1000ms
-                                synchronized(count)
-                                {
-                                    count.incrementAndGet( 1 );
-                                }
+                                
+                                count.incrementAndGet( 1 );
+                              
                                 delay=200;
                                 wait=1000;
                             }
