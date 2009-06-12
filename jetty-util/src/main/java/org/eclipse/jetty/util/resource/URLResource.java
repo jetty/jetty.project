@@ -289,4 +289,9 @@ public class URLResource extends Resource
     {
         return _useCaches;
     }
+    
+    public boolean isContainedIn (Resource containingResource) throws MalformedURLException
+    {
+        return false; //TODO gregw check this!
+    }
 }
