@@ -109,7 +109,6 @@ public class StressTest extends TestCase
     
     public void doPaths(int thread,String name,boolean persistent) throws Exception
     {
-        
         if (persistent)
         {
             long start=System.currentTimeMillis();
@@ -128,6 +127,7 @@ public class StressTest extends TestCase
 
                 socket.getOutputStream().write(request.getBytes());
                 socket.getOutputStream().flush();
+                Thread.yield();
             }
 
             long written=System.currentTimeMillis();
@@ -138,6 +138,8 @@ public class StressTest extends TestCase
             long end=System.currentTimeMillis();
             
             int bodies = count(response,"HTTP/1.1 200 OK");
+            if (__tests.length!=bodies)
+                System.err.println(response);
             assertEquals(__tests.length,bodies);
             
             long bind=connected-start; 
