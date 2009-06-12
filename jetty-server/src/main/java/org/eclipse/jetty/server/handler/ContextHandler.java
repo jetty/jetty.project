@@ -856,7 +856,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 baseRequest.setPathInfo(pathInfo);
             }
             
-            nextScope(target,baseRequest,request,response);
+            // start manual inline of nextScope(target,baseRequest,request,response);
+            if (false)
+                nextScope(target,baseRequest,request,response);
+            else if (_nextScope!=null)
+                _nextScope.doScope(target,baseRequest,request, response);
+            else if (_outerScope!=null)
+                _outerScope.doHandle(target,baseRequest,request, response);
+            else 
+                doHandle(target,baseRequest,request, response);
+            // end manual inline (pathentic attempt to reduce stack depth)
         }
         finally
         {
@@ -910,7 +919,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             if (DispatcherType.REQUEST.equals(dispatch) && isProtectedTarget(target))
                 throw new HttpException(HttpServletResponse.SC_NOT_FOUND);
             
-            nextHandle(target,baseRequest,request,response);
+            // start manual inline of nextHandle(target,baseRequest,request,response);
+            if (false)
+                nextHandle(target,baseRequest,request,response);
+            else if (_nextScope!=null && _nextScope==_handler)
+                _nextScope.doHandle(target,baseRequest,request, response);
+            else if (_handler!=null)
+                _handler.handle(target,baseRequest, request, response);
+            // end manual inline
         }
         catch(HttpException e)
         {
