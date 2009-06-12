@@ -439,4 +439,11 @@ public class ResourceCollection extends Resource
         return buffer.toString();
     }
 
+
+    public boolean isContainedIn(Resource r) throws MalformedURLException
+    {
+        // TODO could look at implementing the semantic of is this collection a subset of the Resource r?
+        return false;
+    }
+
 }

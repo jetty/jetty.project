@@ -255,6 +255,22 @@ public class ResourceTest extends junit.framework.TestCase
         assertNotNull(jin);
         
     }
+    
+    public void testJarFileIsContainedIn ()
+    throws Exception
+    {
+        String s = "jar:"+__userURL+"TestData/test.zip!/subdir/";
+        Resource r = Resource.newResource(s);
+        Resource container = Resource.newResource(__userURL+"TestData/test.zip");
+        
+        assertTrue(r instanceof JarFileResource);
+        JarFileResource jarFileResource = (JarFileResource)r;
+        
+        assertTrue(jarFileResource.isContainedIn(container));
+        
+        container = Resource.newResource(__userURL+"TestData");
+        assertFalse(jarFileResource.isContainedIn(container));
+    }
 
     /**
      * Test a class path resource for existence.

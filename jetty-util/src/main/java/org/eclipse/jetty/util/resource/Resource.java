@@ -278,7 +278,10 @@ public abstract class Resource implements Serializable
         return newResource(url,useCaches);
     }
     
-    
+    public static boolean isContainedIn (Resource r, Resource containingResource) throws MalformedURLException
+    {
+        return r.isContainedIn(containingResource);
+    }
 
     /* ------------------------------------------------------------ */
     protected void finalize()
@@ -286,6 +289,9 @@ public abstract class Resource implements Serializable
         release();
     }
 
+    public abstract boolean isContainedIn (Resource r) throws MalformedURLException;
+    
+    
     /* ------------------------------------------------------------ */
     /** Release any resources held by the resource.
      */
@@ -592,4 +598,7 @@ public abstract class Resource implements Serializable
             in.close();
         }
     }    
+    
+    
+   
 }
