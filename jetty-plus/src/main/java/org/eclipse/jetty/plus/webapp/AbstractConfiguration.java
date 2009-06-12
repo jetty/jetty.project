@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebXmlProcessor;
+import org.eclipse.jetty.webapp.WebXmlProcessor.Descriptor;
 import org.eclipse.jetty.xml.XmlParser;
 
 
@@ -54,8 +55,6 @@ public abstract class AbstractConfiguration implements Configuration
     public abstract void bindUserTransaction (WebAppContext context) throws Exception;
     
     public abstract void bindMessageDestinationRef (WebAppContext context, String name, Class type)  throws Exception;
-
-    protected abstract void parseAnnotations (WebAppContext context) throws Exception;
    
     
     public class PlusWebXmlProcessor
@@ -66,7 +65,13 @@ public abstract class AbstractConfiguration implements Configuration
         {
             _context = context;
         }
-        
+
+        public void process (Descriptor d)
+        throws Exception
+        {
+            if (d != null)
+                process(d.getRoot());
+        }
         
         public void process (XmlParser.Node root)
         throws Exception
@@ -403,7 +408,7 @@ public abstract class AbstractConfiguration implements Configuration
         InjectionCollection injections = new InjectionCollection();
         context.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
         RunAsCollection runAsCollection = new RunAsCollection();
-        context.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);
+        context.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);  
     }
    
     public void configure (WebAppContext context)
@@ -420,20 +425,16 @@ public abstract class AbstractConfiguration implements Configuration
         PlusWebXmlProcessor plusProcessor = new PlusWebXmlProcessor(context);
         plusProcessor.process(webXmlProcessor.getWebDefault());
         plusProcessor.process(webXmlProcessor.getWebXml());
-        
-        //TODO: can web-fragment contain resource-ref and injection-targets?
-        for (XmlParser.Node frag: webXmlProcessor.getFragments())
+
+        //Process plus-elements of each descriptor
+        for (Descriptor frag: webXmlProcessor.getFragments())
+        {
             plusProcessor.process(frag);
-        
+        }
+
+        //process the override-web.xml descriptor
         plusProcessor.process(webXmlProcessor.getOverrideWeb());
         
-
-        //parse classes for annotations, if necessary
-        if (!webXmlProcessor.isMetaDataComplete())
-        {
-            if (Log.isDebugEnabled()) Log.debug("Processing annotations");
-            parseAnnotations(context);
-        }
         
         //configure injections and callbacks to be called by the FilterHolder and ServletHolder
         //when they lazily instantiate the Filter/Servlet.

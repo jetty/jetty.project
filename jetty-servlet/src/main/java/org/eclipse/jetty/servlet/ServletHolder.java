@@ -130,6 +130,11 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
         _initOnStartup=true;
         _initOrder = order;
     }
+    
+    public boolean isSetInitOrder()
+    {
+        return _initOnStartup;
+    }
 
     /* ------------------------------------------------------------ */
     /** Comparitor by init order.

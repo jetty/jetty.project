@@ -58,7 +58,8 @@ public class EnvConfiguration implements Configuration
      */
     public void preConfigure (WebAppContext context) throws Exception
     {        
-      
+        //create a java:comp/env
+        createEnvContext(context);
     }
 
     /** 
@@ -66,9 +67,6 @@ public class EnvConfiguration implements Configuration
      */
     public void configure (WebAppContext context) throws Exception
     {  
-        //create a java:comp/env - do this here instead of preConfigure because it needs the
-        //webapp classloader set up, which only happens in WebInfConfiguration.configure() step.
-        createEnvContext();
         if (Log.isDebugEnabled())
             Log.debug("Created java:comp/env for webapp "+context.getContextPath());
         
@@ -96,7 +94,7 @@ public class EnvConfiguration implements Configuration
             XmlConfiguration configuration = new XmlConfiguration(jettyEnvXmlUrl);
             configuration.configure(context);
         }
-        
+     
         //add java:comp/env entries for any EnvEntries that have been defined so far
         bindEnvEntries(context);
     }
@@ -193,11 +191,20 @@ public class EnvConfiguration implements Configuration
         }
     }  
     
-    protected void createEnvContext ()
+    protected void createEnvContext (WebAppContext wac)
     throws NamingException
     {
-        Context context = new InitialContext();
-        Context compCtx =  (Context)context.lookup ("java:comp");
-        compCtx.createSubcontext("env");
+        ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(wac.getClassLoader());
+        try
+        {
+            Context context = new InitialContext();
+            Context compCtx =  (Context)context.lookup ("java:comp");
+            compCtx.createSubcontext("env");
+        }
+        finally 
+        {
+           Thread.currentThread().setContextClassLoader(old_loader);
+       }
     }
 }

@@ -332,6 +332,8 @@ public class WebAppContext extends ServletContextHandler
                 }
             }
             
+          
+
             // Prepare for configuration
             for (int i=0;i<_configurations.length;i++)
                 _configurations[i].preConfigure(this);

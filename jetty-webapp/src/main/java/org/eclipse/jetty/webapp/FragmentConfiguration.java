@@ -91,7 +91,7 @@ public class FragmentConfiguration implements Configuration
         {
             for (Resource frag : frags)
             {
-                processor.parseFragment("jar:"+frag.getURL()+"!/META-INF/web-fragment.xml");
+                processor.parseFragment(Resource.newResource("jar:"+frag.getURL()+"!/META-INF/web-fragment.xml"));
             }
         }
     }

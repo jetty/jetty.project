@@ -39,12 +39,17 @@ public class MetaInfConfiguration implements Configuration
     public static final String METAINF_TLDS = TagLibConfiguration.TLD_RESOURCES;
     public static final String METAINF_FRAGMENTS = FragmentConfiguration.FRAGMENT_RESOURCES;
     public static final String METAINF_RESOURCES = WebInfConfiguration.RESOURCE_URLS;
-    public static final String JAR_RESOURCES = WebInfConfiguration.JAR_RESOURCES;
+    public static final String CONTAINER_JAR_RESOURCES = WebInfConfiguration.CONTAINER_JAR_RESOURCES;
+    public static final String WEB_INF_JAR_RESOURCES = WebInfConfiguration.WEB_INF_JAR_RESOURCES;
 
     public void preConfigure(final WebAppContext context) throws Exception
     {
-       
+       //Merge all container and webinf lib jars to look for META-INF resources
       
+        ArrayList<Resource> jars = new ArrayList<Resource>();
+        jars.addAll((List<Resource>)context.getAttribute(CONTAINER_JAR_RESOURCES));
+        jars.addAll((List<Resource>)context.getAttribute(WEB_INF_JAR_RESOURCES));
+        
         JarScanner scanner = new JarScanner()
         {
             public void processEntry(URI jarUri, JarEntry entry)
@@ -60,14 +65,13 @@ public class MetaInfConfiguration implements Configuration
             }
         };
         
-        List<Resource> jarResources = (List<Resource>)context.getAttribute(JAR_RESOURCES);
         
         //Scan jars for META-INF information
-        if (jarResources != null)
+        if (jars != null)
         {
-            URI[] uris = new URI[jarResources.size()];
+            URI[] uris = new URI[jars.size()];
             int i=0;
-            for (Resource r : jarResources)
+            for (Resource r : jars)
             {
                 uris[i++] = r.getURI();
             }

@@ -17,101 +17,93 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.EventListener;
 import java.util.List;
 
-import org.eclipse.jetty.plus.servlet.ServletHandler;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.ServletMapping;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
+import org.eclipse.jetty.webapp.WebXmlProcessor;
+import org.eclipse.jetty.webapp.WebXmlProcessor.Descriptor;
 
 /**
  * Configuration
  *
  *
  */
-public class AnnotationConfiguration extends org.eclipse.jetty.plus.webapp.Configuration
+public class AnnotationConfiguration implements Configuration
 {
-    public static final String JAR_RESOURCES = WebInfConfiguration.JAR_RESOURCES;
+    public static final String CONTAINER_JAR_RESOURCES = WebInfConfiguration.CONTAINER_JAR_RESOURCES;
+    public static final String WEB_INF_JAR_RESOURCES = WebInfConfiguration.WEB_INF_JAR_RESOURCES;
                                                       
     
     
-    /** 
-     * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#parseAnnotations()
-     */
-    public void parseAnnotations(final WebAppContext context) throws Exception
+    public void preConfigure(final WebAppContext context) throws Exception
     {
-        /*
-         * TODO Need to also take account of hidden classes on system classpath that should never
-         * contribute annotations to a webapp (system and server classes):
-         * 
-         * --- when scanning system classpath:
-         *   + system classes : should always be scanned (subject to pattern)
-         *   + server classes : always ignored
-         *   
-         * --- when scanning webapp classpath:
-         *   + system classes : always ignored
-         *   + server classes : always scanned
-         * 
-         * 
-         * If same class is found in both container and in context then need to use
-         * webappcontext parentloaderpriority to work out which one contributes the
-         * annotation.
-         */
-        AnnotationFinder finder = new AnnotationFinder();
-
-        //TODO change for servlet spec 3
-        parseContainerPath (context, finder);
-        parseWebInfLib (context, finder);
-        parseWebInfClasses (context, finder);
-
-        AnnotationProcessor processor = new AnnotationProcessor(context, finder);
-        processor.process();
-        
-        List servlets = processor.getServlets();
-        List filters = processor.getFilters();
-        List servletMappings = processor.getServletMappings();
-        List filterMappings = processor.getFilterMappings();
-        List listeners = processor.getListeners();
-        
-        ServletHandler servletHandler = (ServletHandler)context.getServletHandler();
-        servletHandler.setFilters((FilterHolder[])LazyList.toArray(filters,FilterHolder.class));
-        servletHandler.setFilterMappings((FilterMapping[])LazyList.toArray(filterMappings,FilterMapping.class));
-        servletHandler.setServlets((ServletHolder[])LazyList.toArray(servlets,ServletHolder.class));
-        servletHandler.setServletMappings((ServletMapping[])LazyList.toArray(servletMappings,ServletMapping.class));
-        context.setEventListeners((EventListener[])LazyList.toArray(listeners,EventListener.class));
     }
     
-    public void parseContainerPath (final WebAppContext context, final AnnotationFinder finder)
+    
+    
+    
+    public void configure(WebAppContext context) throws Exception
+    {
+        Boolean metadataComplete = (Boolean)context.getAttribute("metadata-complete");
+        if (metadataComplete != null && metadataComplete.booleanValue())
+        {
+            if (Log.isDebugEnabled()) Log.debug("Not processing annotations for context "+context);
+            return;
+        }
+        
+        if (Log.isDebugEnabled()) Log.debug("parsing annotations");
+        AnnotationParser parser = new AnnotationParser();
+        parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new WebServletAnnotationHandler(context));
+        parser.registerAnnotationHandler("javax.servlet.annotation.WebFilter", new WebFilterAnnotationHandler(context));
+        parser.registerAnnotationHandler("javax.servlet.annotation.WebListener", new WebListenerAnnotationHandler(context));
+        parser.registerAnnotationHandler("javax.servlet.annotation.MultipartConfig", new MultipartConfigAnnotationHandler (context));
+        parser.registerAnnotationHandler("javax.annotation.Resource", new ResourceAnnotationHandler (context));
+        parser.registerAnnotationHandler("javax.annotation.Resources", new ResourcesAnnotationHandler (context));
+        parser.registerAnnotationHandler("javax.annotation.PostConstruct", new PostConstructAnnotationHandler(context));
+        parser.registerAnnotationHandler("javax.annotation.PreDestroy", new PreDestroyAnnotationHandler(context));
+        parser.registerAnnotationHandler("javax.annotation.security.RunAs", new RunAsAnnotationHandler(context));
+        
+        parseContainerPath(context, parser);
+        parseWebInfLib (context, parser);
+        parseWebInfClasses(context, parser);
+    }
+
+
+
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+    }
+
+
+
+
+    public void postConfigure(WebAppContext context) throws Exception
+    {
+    }
+
+
+
+
+    public void parseContainerPath (final WebAppContext context, final AnnotationParser parser)
     throws Exception
     {
         //if no pattern for the container path is defined, then by default scan NOTHING
         Log.debug("Scanning container jars");
-        
-        //Get the container jar uris
-        
-        ArrayList<URI> containerCandidateUris = findJars (context.getClassLoader().getParent(), true);
-        
-        //Pick out the uris from JAR_RESOURCES that match those uris to be scanned
+           
+        //Convert from Resource to URI
         ArrayList<URI> containerUris = new ArrayList<URI>();
-        List<Resource> jarResources = (List<Resource>)context.getAttribute(JAR_RESOURCES);
+        List<Resource> jarResources = (List<Resource>)context.getAttribute(CONTAINER_JAR_RESOURCES);
         for (Resource r : jarResources)
         {
             URI uri = r.getURI();
-            if (containerCandidateUris.contains(uri))
-            {
-                containerUris.add(uri);
-            }
-               
+                containerUris.add(uri);          
         }
         
-        finder.find (containerUris.toArray(new URI[containerUris.size()]),
+        parser.parse (containerUris.toArray(new URI[containerUris.size()]),
                 new ClassNameResolver ()
                 {
                     public boolean isExcluded (String name)
@@ -132,27 +124,40 @@ public class AnnotationConfiguration extends org.eclipse.jetty.plus.webapp.Confi
     }
     
     
-    public void parseWebInfLib (final WebAppContext context, final AnnotationFinder finder)
+    public void parseWebInfLib (final WebAppContext context, final AnnotationParser parser)
     throws Exception
-    {
-        Log.debug("Scanning WEB-INF/lib jars");
-        //Get the uris of jars on the webapp classloader
-        ArrayList<URI> candidateUris = findJars(context.getClassLoader(), false);
+    {  
+        WebXmlProcessor webXmlProcessor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
+        if (webXmlProcessor == null)
+           throw new IllegalStateException ("No processor for web xml");
         
-        //Pick out the uris from JAR_RESOURCES that match those to be scanned
+        List<Descriptor> frags = webXmlProcessor.getFragments();
+        
+        //Get the web-inf lib jars who have a web-fragment.xml that is not metadata-complete (or is not set)
         ArrayList<URI> webInfUris = new ArrayList<URI>();
-        List<Resource> jarResources = (List<Resource>)context.getAttribute(JAR_RESOURCES);
-        for (Resource r : jarResources)
-        {
-            URI uri = r.getURI();
-            if (candidateUris.contains(uri))
-            {
-                webInfUris.add(uri);
-            }
-        }
+        List<Resource> jarResources = (List<Resource>)context.getAttribute(WEB_INF_JAR_RESOURCES);
         
-        //if no pattern for web-inf/lib is defined, then by default scan everything in it
-       finder.find(webInfUris.toArray(new URI[webInfUris.size()]), 
+        for (Resource r : jarResources)
+        {          
+            URI uri  = r.getURI();
+            Descriptor d = null;
+            for (Descriptor frag: frags)
+            {
+                Resource fragResource = frag.getResource(); //eg jar:file:///a/b/c/foo.jar!/META-INF/web-fragment.xml
+                if (Resource.isContainedIn(fragResource,r))
+                {
+                    d = frag;
+                    break;
+                }
+            }
+
+            //if there was no web-fragment.xml for the jar, or there was one 
+            //and its metadata is NOT complete, we want to exame it for annotations
+            if (d == null || (d != null && !d.isMetaDataComplete()))
+                webInfUris.add(uri);
+        }
+ 
+       parser.parse(webInfUris.toArray(new URI[webInfUris.size()]), 
                 new ClassNameResolver()
                 {
                     public boolean isExcluded (String name)
@@ -170,14 +175,13 @@ public class AnnotationConfiguration extends org.eclipse.jetty.plus.webapp.Confi
                         return true;
                     }
                 });  
-                
     }
      
-    public void parseWebInfClasses (final WebAppContext context, final AnnotationFinder finder)
+    public void parseWebInfClasses (final WebAppContext context, final AnnotationParser parser)
     throws Exception
     {
         Log.debug("Scanning classes in WEB-INF/classes");
-        finder.find(context.getWebInf().addPath("classes/"), 
+        parser.parse(context.getWebInf().addPath("classes/"), 
                     new ClassNameResolver()
         {
             public boolean isExcluded (String name)
@@ -197,34 +201,4 @@ public class AnnotationConfiguration extends org.eclipse.jetty.plus.webapp.Confi
         });
     }
 
-    
-
-    public ArrayList<URI> findJars (ClassLoader loader, boolean visitParent)
-    {
-        ArrayList<URI> uris = new ArrayList<URI>();
-       
-        while (loader != null && (loader instanceof URLClassLoader))
-        {
-            URL[] urls = ((URLClassLoader)loader).getURLs();
-            if (urls != null)
-            {
-                for (URL u : urls)
-                {
-                    try
-                    {
-                        uris.add(u.toURI());
-                    }
-                    catch (Exception e)
-                    {
-                        Log.warn(e);
-                    }
-                } 
-            }
-            if (visitParent)
-                loader = loader.getParent();
-            else
-                loader = null;
-        }
-        return uris;
-    }
 }
