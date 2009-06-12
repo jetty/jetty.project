@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.annotation.PermissionNote;
 public class StdErrLog implements Logger
 {    
     private static DateCache _dateCache;
-    @PermissionNote(clazz = "java.util.PropertyPermission", name="org.eclipse.jetty.util.log.DEBUG", actions="read" )
+    
     private static boolean _debug = System.getProperty("org.eclipse.jetty.util.log.DEBUG",null)!=null;
     private String _name;
     private boolean _hideStacks=false;
