@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Timer;
@@ -46,6 +47,7 @@ public class StressTest extends TestCase
     protected volatile AtomicInteger[] _loops;
     protected QueuedThreadPool _threads=new QueuedThreadPool();
     protected boolean _stress;
+    private AtomicInteger _handled=new AtomicInteger(0);
     private ConcurrentLinkedQueue[] _latencies= {
             new ConcurrentLinkedQueue<Long>(),
             new ConcurrentLinkedQueue<Long>(),
@@ -76,6 +78,7 @@ public class StressTest extends TestCase
         
         for (Queue q:_latencies)
             q.clear();
+        _handled.set(0);
     }
 
     protected void tearDown() throws Exception
@@ -85,22 +88,22 @@ public class StressTest extends TestCase
 
     final static String[][] __tests = 
     {
-        {"/path/0","NORMAL"},
-        {"/path/1","NORMAL"},
-        {"/path/2","NORMAL"},
-        {"/path/3","NORMAL"},
-        {"/path/4","NORMAL"},
-        {"/path/5","NORMAL"},
-        {"/path/6","NORMAL"},
-        {"/path/7","NORMAL"},
-        {"/path/8","NORMAL"},
-        {"/path/9","NORMAL"},
-        {"/path/a","NORMAL"},
-        {"/path/b","NORMAL"},
-        {"/path/c","NORMAL"},
-        {"/path/d","NORMAL"},
-        {"/path/e","NORMAL"},
-        {"/path/f","NORMAL"},
+        {"/path/0","NORMAL /path/0\n\n"},
+        {"/path/1","NORMAL /path/1\n\n"},
+        {"/path/2","NORMAL /path/2\n\n"},
+        {"/path/3","NORMAL /path/3\n\n"},
+        {"/path/4","NORMAL /path/4\n\n"},
+        {"/path/5","NORMAL /path/5\n\n"},
+        {"/path/6","NORMAL /path/6\n\n"},
+        {"/path/7","NORMAL /path/7\n\n"},
+        {"/path/8","NORMAL /path/8\n\n"},
+        {"/path/9","NORMAL /path/9\n\n"},
+        {"/path/a","NORMAL /path/a\n\n"},
+        {"/path/b","NORMAL /path/b\n\n"},
+        {"/path/c","NORMAL /path/c\n\n"},
+        {"/path/d","NORMAL /path/d\n\n"},
+        {"/path/e","NORMAL /path/e\n\n"},
+        {"/path/f","NORMAL /path/f\n\n"}
     };
     
     
@@ -118,8 +121,6 @@ public class StressTest extends TestCase
             
             for (int i=0;i<__tests.length;i++)
             {
-                //int timeout = __tests[i][1].equals("NORMAL")?0:(_random.nextInt(200)+1);
-                int timeout = __tests[i][1].equals("NORMAL")?0:20;
                 String uri=__tests[i][0];
 
                 String close=((i+1)<__tests.length)?"":"Connection: close\r\n";
@@ -135,6 +136,9 @@ public class StressTest extends TestCase
             socket.close();
 
             long end=System.currentTimeMillis();
+            
+            int bodies = count(response,"HTTP/1.1 200 OK");
+            assertEquals(__tests.length,bodies);
             
             long bind=connected-start; 
             long flush=(written-connected)/__tests.length;   
@@ -161,7 +165,6 @@ public class StressTest extends TestCase
         {
             for (int i=0;i<__tests.length;i++)
             {
-                int timeout = __tests[i][1].equals("NORMAL")?0:(_random.nextInt(20)*_random.nextInt(20)+1);
                 String uri=__tests[i][0];
 
                 long start=System.currentTimeMillis();
@@ -188,10 +191,7 @@ public class StressTest extends TestCase
 
                 String test=name+"-"+i+" "+uri+" "+__tests[i][1];
                 assertEquals(test,__tests[i][1],response);
-                long duration=end-start;
-                assertTrue(test+" "+duration,duration+50>=timeout);
-
-                long latency=duration-timeout;
+                long latency=end-start;
 
                 _latencies[5].add(new Long(latency));
             }
@@ -326,6 +326,7 @@ public class StressTest extends TestCase
                         continue loop;
                     }
                 }
+                System.err.println("other latency "+latency);
                 other[i]++;
             }
         }
@@ -339,14 +340,17 @@ public class StressTest extends TestCase
             System.out.println();
         }
 
-        System.out.print("    <=latency    ");
+        System.out.print("other            ");
         for (int i=0;i<_latencies.length;i++)
             System.out.print("\t"+other[i]);
         System.out.println();
         
         System.out.print("TOTAL             ");
         for (int i=0;i<_latencies.length;i++)
+        {
             System.out.print("\t"+length[i]);
+            assertEquals(_handled.get(),length[i]);
+        }
         System.out.println();
         
     }
@@ -375,6 +379,19 @@ public class StressTest extends TestCase
             doThreads(50,100,true);
     }
     
+    private int count(String s,String sub)
+    {
+        int count=0;
+        int index=s.indexOf(sub);
+        
+        while(index>=0)
+        {
+            count++;
+            index=s.indexOf(sub,index+sub.length());
+        }   
+        return count;
+    }
+    
     private class SuspendHandler extends HandlerWrapper
     {
         private Timer _timer;
@@ -386,16 +403,19 @@ public class StressTest extends TestCase
         
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
+            long now=System.currentTimeMillis();
             long start=Long.parseLong(baseRequest.getHeader("start"));
             long received=baseRequest.getTimeStamp();
 
-            _latencies[2].add(new Long(received-start));
-            _latencies[3].add(new Long(System.currentTimeMillis()-start));
-            
-            
+            _handled.incrementAndGet();
+            long delay=received-start;
+            if (delay<0)
+                delay=0;
+            _latencies[2].add(new Long(delay));
+            _latencies[3].add(new Long(now-start));
             
             response.setStatus(200);
-            response.getOutputStream().print("NORMAL");
+            response.getOutputStream().print("NORMAL "+request.getPathInfo()+"\n\n");
             baseRequest.setHandled(true);
             long end=System.currentTimeMillis();
             
