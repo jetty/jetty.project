@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util.log;
 
 import org.eclipse.jetty.util.DateCache;
-import org.eclipse.jetty.util.annotation.PermissionNote;
 
 /*-----------------------------------------------------------------------*/
 /** StdErr Logging.
