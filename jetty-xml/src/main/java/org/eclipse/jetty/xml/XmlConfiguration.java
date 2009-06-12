@@ -25,6 +25,8 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -945,46 +947,56 @@ public class XmlConfiguration
      * 
      * @param args array of property and xml configuration filenames or {@link Resource}s.
      */
-    public static void main(String[] args)
+    @SuppressWarnings( "unchecked" )
+    public static void main( final String[] args )
     {
-        try
-        {
-            Properties properties=new Properties();
-            XmlConfiguration last=null;
-            Object[] obj = new Object[args.length];
-            for (int i = 0; i < args.length; i++)
-            {
-                if (args[i].toLowerCase().endsWith(".properties"))
-                {
-                    properties.load(Resource.newResource(args[i]).getInputStream());
-                }
-                else
-                {
-                    XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(args[i]).getURL());
-                    if (last!=null)
-                        configuration.getIdMap().putAll(last.getIdMap());
-                    if (properties.size()>0)
-                        configuration.setProperties(properties);
-                    obj[i] = configuration.configure();
-                    last=configuration;
-                }
-            }
 
-            for (int i = 0; i < args.length; i++)
-            {
-                if (obj[i] instanceof LifeCycle)
-                {
-                    LifeCycle lc = (LifeCycle)obj[i];
-                    if (!lc.isRunning())
-                        lc.start();
-                }
-            }
-        }
-        catch (Exception e)
+        AccessController.doPrivileged( new PrivilegedAction()
         {
-            Log.warn(Log.EXCEPTION, e);
-        }
-        
+            public Object run()
+            {
+                try
+                {
+
+                    Properties properties = new Properties();
+                    XmlConfiguration last = null;
+                    Object[] obj = new Object[args.length];
+                    for ( int i = 0; i < args.length; i++ )
+                    {
+                        if ( args[i].toLowerCase().endsWith( ".properties" ) )
+                        {
+                            properties.load( Resource.newResource( args[i] ).getInputStream() );
+                        }
+                        else
+                        {
+                            XmlConfiguration configuration =
+                                new XmlConfiguration( Resource.newResource( args[i] ).getURL() );
+                            if ( last != null )
+                                configuration.getIdMap().putAll( last.getIdMap() );
+                            if ( properties.size() > 0 )
+                                configuration.setProperties( properties );
+                            obj[i] = configuration.configure();
+                            last = configuration;
+                        }
+                    }
+
+                    for ( int i = 0; i < args.length; i++ )
+                    {
+                        if ( obj[i] instanceof LifeCycle )
+                        {
+                            LifeCycle lc = (LifeCycle) obj[i];
+                            if ( !lc.isRunning() )
+                                lc.start();
+                        }
+                    }
+                }
+                catch ( Exception e )
+                {
+                    Log.warn( Log.EXCEPTION, e );
+                }
+                return null;
+            }
+        } );
     }
     
 }
