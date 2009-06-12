@@ -153,7 +153,7 @@
       <exclusions>
         <exclusion>
           <groupId>org.apache.geronimo.specs</groupId>
-          <artifactId>geronimo-jaspi_1.0_spec</artifactId>
+          <artifactId>geronimo-jaspic_1.0_spec</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -197,8 +197,8 @@
     </dependency>
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-jaspi_1.0_spec</artifactId>
-      <version>1.0-SNAPSHOT</version>
+      <artifactId>geronimo-jaspic_1.0_spec</artifactId>
+      <version>1.0</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
