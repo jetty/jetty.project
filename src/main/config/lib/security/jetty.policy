@@ -2,26 +2,12 @@
 //
 // Default security policy for jetty
 //
-//
+// Note: this is still a work in progress
 
 // start.jar
 grant codeBase "file:${jetty.home}/start.jar" {
 
    permission java.io.FilePermission "${jetty.home}${/}-", "read";
-   
-   
-	 permission java.util.PropertyPermission "org.eclipse.jetty.webapp.WebAppClassLoader.extensions" "read";
-	 permission java.util.PropertyPermission "org.eclipse.http.PathMap.separators" "read";
-   
-   permission java.io.FilePermission "${java.io.tmpdir}", "read, write";
-   permission java.io.FilePermission "${java.io.tmpdir}/*", "read, write";
-   
-   permission java.io.FilePermission "/private/${java.io.tmpdir}", "read, write";
-   permission java.io.FilePermission "/private/${java.io.tmpdir}/-", "read, write";
-   permission java.io.FilePermission "${java.io.tmpdir}/-" "delete";
-   
-   permission java.io.FilePermission "${jetty.home}${/}logs", "read, write";
-   permission java.io.FilePermission "${jetty.home}${/}logs/-", "read, write";
    
    permission java.lang.RuntimePermission "createClassLoader";
    permission java.lang.RuntimePermission "setContextClassLoader";    
@@ -43,61 +29,32 @@ grant codeBase "file:${jetty.home}/start.jar" {
    permission java.util.PropertyPermission "jetty.port", "read";
    permission java.util.PropertyPermission "start.class", "read";
      
-   permission java.util.PropertyPermission "main.class", "read";
-
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.DEBUG", "read";
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.URI.charset", "read"; 
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.FileResource.checkAliases", "read";
-   permission java.util.PropertyPermission "org.eclipse.jetty.xml.XmlParser.Validating", "read";
-   permission java.util.PropertyPermission "org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD", "read, write";
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.TypeUtil.IntegerCacheSize", "read, write";    
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.TypeUtil.LongCacheSize", "read";
-   
-   permission java.util.PropertyPermission "ISO_8859_1", "read";
-   
-   
-   
-	 permission java.util.PropertyPermission "org.eclipse.jetty.server.Request.maxFormContentSize" "read";
+   permission java.util.PropertyPermission "main.class", "read";  
+   permission java.util.PropertyPermission "ISO_8859_1", "read";	 
+	permission javax.security.auth.AuthPermission "modifyPrincipals";
 	 
-	 
-	 permission javax.security.auth.AuthPermission "modifyPrincipals";
-	 
-	 permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
-	 permission javax.security.auth.AuthPermission "setReadOnly";
-	 	 
-	 	 
-	 permission java.util.PropertyPermission "org.eclipse.jetty.server.webapp.parentLoaderPriority" "read";
-	 	 
-	 permission java.util.PropertyPermission "ROLLOVERFILE_BACKUP_FORMAT" "read";
-	 	 
-	 	 
-	 permission java.lang.RuntimePermission "getClassLoader";
-	 
-	 
-	 // jsp support
-	 permission java.net.SocketPermission "java.sun.com:80" "connect,resolve";
-	 
+	permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
+	permission javax.security.auth.AuthPermission "setReadOnly"; 	 
+	permission java.lang.RuntimePermission "getClassLoader";	
 }
 
 
 //
-// 
+// jetty system classes
 //
 grant codeBase "file:${jetty.home}/lib/-" {
 	 
-	 permission java.lang.RuntimePermission "getClassLoader";
+	permission java.lang.RuntimePermission "getClassLoader";
 	 
-	 permission java.util.PropertyPermission "org.eclipse.jetty.webapp.WebAppClassLoader.extensions" "read";
-	 permission java.util.PropertyPermission "org.eclipse.http.PathMap.separators" "read";
+	permission java.util.PropertyPermission "org.eclipse.jetty.webapp.WebAppClassLoader.extensions" "read";
+   permission java.util.PropertyPermission "org.eclipse.http.PathMap.separators" "read";
+ 
+   permission java.util.PropertyPermission "ROLLOVERFILE_BACKUP_FORMAT" "read";
 	 
-	 	 permission java.util.PropertyPermission "ROLLOVERFILE_BACKUP_FORMAT" "read";
-	 
-	 	 permission java.util.PropertyPermission "org.eclipse.jetty.server.webapp.parentLoaderPriority" "read";
-	 
+   permission java.util.PropertyPermission "org.eclipse.jetty.server.webapp.parentLoaderPriority" "read";
 	 permission java.util.PropertyPermission "org.eclipse.jetty.server.Request.maxFormContentSize" "read";
 	 
-	 permission javax.security.auth.AuthPermission "modifyPrincipals";
-	 
+	 permission javax.security.auth.AuthPermission "modifyPrincipals";	 
 	 permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
 	 permission javax.security.auth.AuthPermission "setReadOnly";
   
@@ -107,7 +64,7 @@ grant codeBase "file:${jetty.home}/lib/-" {
    permission java.io.FilePermission "/private/${java.io.tmpdir}", "read, write";
    permission java.io.FilePermission "/private/${java.io.tmpdir}/-", "read, write";
    
-      permission java.io.FilePermission "${java.io.tmpdir}/-" "delete";
+   permission java.io.FilePermission "${java.io.tmpdir}/-" "delete";
 
    
    permission java.io.FilePermission "${jetty.home}${/}logs", "read, write";
@@ -136,8 +93,6 @@ grant codeBase "file:${jetty.home}/lib/-" {
      
    permission java.util.PropertyPermission "jetty.class.path", "read, write";
    permission java.util.PropertyPermission "java.class.path", "read, write";
-     
-   permission java.util.PropertyPermission "repository", "read, write";
      
    permission java.util.PropertyPermission "jetty.lib", "read";
    permission java.util.PropertyPermission "jetty.server", "read";
@@ -170,6 +125,8 @@ grant codeBase "file:${jetty.home}/lib/-" {
 	 permission java.net.SocketPermission "java.sun.com:80" "connect,resolve";
 };
 
+
+// TODO template these, maybe make them setup based on OS or something
 
 //
 // the tmp directory is where webapps are unpacked by default so setup their restricted permissions
