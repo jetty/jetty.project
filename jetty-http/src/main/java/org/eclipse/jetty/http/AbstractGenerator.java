@@ -111,29 +111,22 @@ public abstract class AbstractGenerator implements Generator
         _contentWritten = 0;
         _contentLength = HttpTokens.UNKNOWN_CONTENT;
 
-        synchronized(this)
+        // always return the buffer
+        Buffer buffer=_buffer;
+        _buffer=null;
+        if (buffer!=null && _header!=buffer)
+                _buffers.returnBuffer(buffer);
+        
+        if (returnBuffers)
         {
-            if (returnBuffers)
-            {
-                if (_header != null) 
-                    _buffers.returnBuffer(_header);
-                _header = null;
-                if (_buffer != null) 
-                    _buffers.returnBuffer(_buffer);
-                _buffer = null;
-            }
-            else
-            {
-                if (_header != null) 
-                    _header.clear();
-
-                if (_buffer != null)
-                {
-                    _buffers.returnBuffer(_buffer);
-                    _buffer = null;
-                }
-            }
+            buffer=_header;
+            _header=null;
+            if (buffer!=null)
+                _buffers.returnBuffer(buffer);
         }
+        else if (_header != null) 
+            _header.clear();
+
         _content = null;
         _method=null;
     }
