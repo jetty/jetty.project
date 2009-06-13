@@ -220,141 +220,154 @@ public class StressTest extends TestCase
             throw e;
         }
     }
-    
+
     public void doThreads(int threads,final int loops,final boolean persistent) throws Throwable
     {
         final Throwable[] throwable=new Throwable[threads];
         final Thread[] thread=new Thread[threads];
-        for (int i=0;i<threads;i++)
-        {
-            final int id=i;
-            final String name = "T"+i;
-            thread[i]=new Thread()
-            {
-                public void run() 
-                { 
-                    try
-                    {
-                        doLoops(id,name,loops,persistent); 
-                    }
-                    catch(Throwable th)
-                    {
-                        th.printStackTrace();
-                        throwable[id]=th;
-                    }
-                    finally
-                    {
-                    }
-                }
-            };
-        }
 
-        _loops=new AtomicInteger[threads];
-        for (int i=0;i<threads;i++)
+        try
         {
-            _loops[i]=new AtomicInteger(0);
-            thread[i].start();
-        }
-        
-        String last=null;
-        int same=0;
-        
-        while(true)
-        {
-            Thread.sleep(1000L);
-            int finished=0;
-            int errors=0;
-            int min=loops;
-            int max=0;
-            int total=0;
             for (int i=0;i<threads;i++)
             {
-                int l=_loops[i].get();
-                if (l<0)
+                final int id=i;
+                final String name = "T"+i;
+                thread[i]=new Thread()
                 {
-                    errors++;
-                    total-=l;
+                    public void run() 
+                    { 
+                        try
+                        {
+                            doLoops(id,name,loops,persistent); 
+                        }
+                        catch(Throwable th)
+                        {
+                            th.printStackTrace();
+                            throwable[id]=th;
+                        }
+                        finally
+                        {
+                        }
+                    }
+                };
+            }
+
+            _loops=new AtomicInteger[threads];
+            for (int i=0;i<threads;i++)
+            {
+                _loops[i]=new AtomicInteger(0);
+                thread[i].start();
+            }
+
+            String last=null;
+            int same=0;
+
+            while(true)
+            {
+                Thread.sleep(1000L);
+                int finished=0;
+                int errors=0;
+                int min=loops;
+                int max=0;
+                int total=0;
+                for (int i=0;i<threads;i++)
+                {
+                    int l=_loops[i].get();
+                    if (l<0)
+                    {
+                        errors++;
+                        total-=l;
+                    }
+                    else
+                    {
+                        if (l<min)
+                            min=l;
+                        if (l>max)
+                            max=l;
+                        total+=l;
+                        if (l==loops)
+                            finished++;  
+                    }     
+                }
+                String status = "min/ave/max/target="+min+"/"+(total/threads)+"/"+max+"/"+loops+" errors/finished/loops="+errors+"/"+finished+"/"+threads+" idle/threads="+(_threads.getIdleThreads())+"/"+_threads.getThreads();
+                if (status.equals(last))
+                {
+                    if (same++>10)
+                        throw new IllegalStateException("Stalled");
                 }
                 else
-                {
-                    if (l<min)
-                        min=l;
-                    if (l>max)
-                        max=l;
-                    total+=l;
-                    if (l==loops)
-                        finished++;  
-                }     
+                    same=0;
+                last=status;
+                Log.info(status);
+                if ((finished+errors)==threads)
+                    break;
             }
-            String status = "min/ave/max/target="+min+"/"+(total/threads)+"/"+max+"/"+loops+" errors/finished/loops="+errors+"/"+finished+"/"+threads+" idle/threads="+(_threads.getIdleThreads())+"/"+_threads.getThreads();
-            if (status.equals(last))
-            {
-                if (same++>10)
-                    throw new IllegalStateException("Stalled");
-            }
-            else
-                same=0;
-            last=status;
-            Log.info(status);
-            if ((finished+errors)==threads)
-                break;
-        }
-        
-        for (int i=0;i<threads;i++)
-            thread[i].join();
-        
-        for (int i=0;i<threads;i++)
-            if (throwable[i]!=null)
-                throw throwable[i];
-        
-        int quantums=48;
-        int[][] count = new int[_latencies.length][quantums];                        
-        int length[] = new int[_latencies.length];                       
-        int other[] = new int[_latencies.length];
-        
-        for (int i=0;i<_latencies.length;i++)
-        {
-            Queue<Long> latencies=_latencies[i];
-            length[i] = latencies.size();
 
-            loop:
-            for (long latency:(Queue<Long>)(_latencies[i]))
-            {
-                for (int q=0;q<quantums;q++)
-                {
-                    if (latency>=(q*100) && latency<((q+1)*100))
-                    {
-                        count[i][q]++;
-                        continue loop;
-                    }
-                }
-                System.err.println("other latency "+latency);
-                other[i]++;
-            }
-        }
+            for (int i=0;i<threads;i++)
+                thread[i].join();
 
-        System.out.println("           stage:\tbind\twrite\trecv\tdispatch\twrote\ttotal");
-        for (int q=0;q<quantums;q++)
-        {
-            System.out.print(q+"00<=latency<"+(q+1)+"00");
+            for (int i=0;i<threads;i++)
+                if (throwable[i]!=null)
+                    throw throwable[i];
+            
             for (int i=0;i<_latencies.length;i++)
-                System.out.print("\t"+count[i][q]);
+                assertEquals(_handled.get(),_latencies[i].size());
+        }
+        finally
+        {
+            int quantums=48;
+            int[][] count = new int[_latencies.length][quantums];                        
+            int length[] = new int[_latencies.length];                       
+            int other[] = new int[_latencies.length];
+
+            for (int i=0;i<_latencies.length;i++)
+            {
+                Queue<Long> latencies=_latencies[i];
+                length[i] = latencies.size();
+
+                loop:
+                    for (long latency:(Queue<Long>)(_latencies[i]))
+                    {
+                        for (int q=0;q<quantums;q++)
+                        {
+                            if (latency>=(q*100) && latency<((q+1)*100))
+                            {
+                                count[i][q]++;
+                                continue loop;
+                            }
+                        }
+                        other[i]++;
+                    }
+            }
+
+            System.out.println("           stage:\tbind\twrite\trecv\tdispatch\twrote\ttotal");
+            for (int q=0;q<quantums;q++)
+            {
+                System.out.print(q+"00<=latency<"+(q+1)+"00");
+                for (int i=0;i<_latencies.length;i++)
+                    System.out.print("\t"+count[i][q]);
+                System.out.println();
+            }
+
+            System.out.print("other            ");
+            for (int i=0;i<_latencies.length;i++)
+                System.out.print("\t"+other[i]);
+            System.out.println();
+
+            System.out.print("HANDLED          ");
+            for (int i=0;i<_latencies.length;i++)
+            {
+                System.out.print("\t"+_handled.get());
+            }
+            System.out.println();
+            System.out.print("TOTAL             ");
+            for (int i=0;i<_latencies.length;i++)
+            {
+                System.out.print("\t"+length[i]);
+                assertEquals(_handled.get(),length[i]);
+            }
             System.out.println();
         }
-
-        System.out.print("other            ");
-        for (int i=0;i<_latencies.length;i++)
-            System.out.print("\t"+other[i]);
-        System.out.println();
-        
-        System.out.print("TOTAL             ");
-        for (int i=0;i<_latencies.length;i++)
-        {
-            System.out.print("\t"+length[i]);
-            assertEquals(_handled.get(),length[i]);
-        }
-        System.out.println();
-        
     }
 
     public void testNonPersistent() throws Throwable
