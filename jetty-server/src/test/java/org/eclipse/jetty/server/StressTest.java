@@ -64,10 +64,10 @@ public class StressTest extends TestCase
         _threads.setMaxThreads(500);
         _server.setThreadPool(_threads);
         SelectChannelConnector c_connector=new SelectChannelConnector();
-        c_connector.setAcceptors(4);
+        c_connector.setAcceptors(1);
         c_connector.setAcceptQueueSize(1000);
         
-        //c_connector.setPort(8080);
+        // c_connector.setPort(8080);
         
         _connector=c_connector;
         _connector.setMaxIdleTime(30000);
@@ -77,8 +77,8 @@ public class StressTest extends TestCase
         _server.start();
         _port=_connector.getLocalPort();
         _addr=Inet4Address.getLocalHost();
-        //_addr=Inet4Address.getByName("10.10.1.16");
-        System.err.println("ADDR "+_addr+":"+_port);
+        // _addr=Inet4Address.getByName("10.10.1.16");
+        // System.err.println("ADDR "+_addr+":"+_port);
         
         for (Queue q:_latencies)
             q.clear();
@@ -397,50 +397,9 @@ public class StressTest extends TestCase
             doThreads(200,400,true);
         }
         else
-            doThreads(50,100,true);
+            doThreads(100,100,true);
     }
 
-    /*
-    public void testNonPersistent0() throws Throwable
-    {
-        testNonPersistent();
-    }
-
-    public void testPersistent0() throws Throwable
-    {
-        testPersistent();
-    }
-
-    public void testNonPersistent1() throws Throwable
-    {
-        testNonPersistent();
-    }
-
-    public void testPersistent1() throws Throwable
-    {
-        testPersistent();
-    }
-
-    public void testNonPersistent2() throws Throwable
-    {
-        testNonPersistent();
-    }
-
-    public void testPersistent2() throws Throwable
-    {
-        testPersistent();
-    }
-
-    public void testNonPersistent3() throws Throwable
-    {
-        testNonPersistent();
-    }
-
-    public void testPersistent3() throws Throwable
-    {
-        testPersistent();
-    }
-    */
     
     
     private int count(String s,String sub)

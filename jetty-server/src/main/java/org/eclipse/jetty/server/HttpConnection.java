@@ -385,6 +385,7 @@ public class HttpConnection implements Connection
         try
         {
             _handling=true;
+            assert getCurrentConnection()==null;
             setCurrentConnection(this);
 
             while (more_in_buffer)
