@@ -108,11 +108,11 @@ public class HttpConnection implements Connection
     };
 
     /* ------------------------------------------------------------ */
-    HttpConnection(Buffers buffers, EndPoint endp, int hbs, int cbs)
+    HttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
     {
         _endp = endp;
-        _generator = new HttpGenerator(buffers,endp,hbs,cbs);
-        _parser = new HttpParser(buffers,endp,new Handler(),hbs,cbs);
+        _generator = new HttpGenerator(requestBuffers,endp);
+        _parser = new HttpParser(responseBuffers,endp,new Handler());
     }
 
     public void setReserved (boolean reserved)

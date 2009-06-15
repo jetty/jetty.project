@@ -67,6 +67,8 @@ public class StressTest extends TestCase
         c_connector.setAcceptors(4);
         c_connector.setAcceptQueueSize(1000);
         
+        //c_connector.setPort(8080);
+        
         _connector=c_connector;
         _connector.setMaxIdleTime(30000);
         
@@ -75,6 +77,8 @@ public class StressTest extends TestCase
         _server.start();
         _port=_connector.getLocalPort();
         _addr=Inet4Address.getLocalHost();
+        //_addr=Inet4Address.getByName("10.10.1.16");
+        System.err.println("ADDR "+_addr+":"+_port);
         
         for (Queue q:_latencies)
             q.clear();

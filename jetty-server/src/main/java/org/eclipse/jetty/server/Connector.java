@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * 
  * 
  */
-public interface Connector extends LifeCycle, Buffers
+public interface Connector extends LifeCycle
 { 
     /* ------------------------------------------------------------ */
     /**
@@ -59,17 +59,42 @@ public interface Connector extends LifeCycle, Buffers
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the headerBufferSize.
+     * @return Returns the request header buffer size in bytes.
      */
-    int getHeaderBufferSize();
+    int getRequestHeaderSize();
     
     /* ------------------------------------------------------------ */
     /**
-     * Set the size of the buffer to be used for request and response headers.
-     * An idle connection will at most have one buffer of this size allocated.
-     * @param headerBufferSize The headerBufferSize to set.
+     * Set the size of the buffer to be used for request headers.
+     * @param size The size in bytes.
      */
-    void setHeaderBufferSize(int headerBufferSize);
+    void setRequestHeaderSize(int size);
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the response header buffer size in bytes.
+     */
+    int getResponseHeaderSize();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the size of the buffer to be used for request headers.
+     * @param size The size in bytes.
+     */
+    void setResponseHeaderSize(int size);
+    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return factory for request buffers
+     */
+    Buffers getRequestBuffers();
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return factory for response buffers
+     */
+    Buffers getResponseBuffers();
     
     
     /* ------------------------------------------------------------ */

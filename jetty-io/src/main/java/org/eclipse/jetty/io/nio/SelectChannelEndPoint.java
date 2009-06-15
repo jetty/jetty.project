@@ -23,7 +23,6 @@ import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.HttpException;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -432,9 +431,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                 try{close();}
                 catch(IOException e2){Log.ignore(e2);}
             }
-            catch (HttpException e)
+            catch (IOException e)
             {
-                Log.debug("BAD", e);
+                Log.warn(e.toString());
+                Log.debug(e);
                 try{close();}
                 catch(IOException e2){Log.ignore(e2);}
             }

@@ -26,6 +26,7 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
+import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
@@ -86,9 +87,9 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         _session=engine.getSession();
 
         // TODO pool buffers and use only when needed.
-        _outNIOBuffer=(NIOBuffer)buffers.getBuffer(_session.getPacketBufferSize());
+        _outNIOBuffer=(NIOBuffer)_buffers.getBuffer(_session.getPacketBufferSize());
         _outBuffer=_outNIOBuffer.getByteBuffer();
-        _inNIOBuffer=(NIOBuffer)buffers.getBuffer(_session.getPacketBufferSize());
+        _inNIOBuffer=(NIOBuffer)_buffers.getBuffer(_session.getPacketBufferSize());
         _inBuffer=_inNIOBuffer.getByteBuffer();
         
         // h.append("CONSTRUCTED\n");

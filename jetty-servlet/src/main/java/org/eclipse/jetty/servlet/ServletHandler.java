@@ -35,9 +35,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.ContinuationThrowable;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.HttpException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;

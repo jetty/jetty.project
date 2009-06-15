@@ -45,9 +45,9 @@ import javax.servlet.ServletRequestListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.HttpException;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Handler;

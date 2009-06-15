@@ -54,7 +54,7 @@ public class Jetty6ContinuationTest extends ContinuationBase
     public void testJetty6() throws Exception
     {
         _filter.setInitParameter("debug","true");
-        _filter.setInitParameter("faux","false");
+        //_filter.setInitParameter("faux","false");
         _server.start();
         _port=_connector.getLocalPort();
         

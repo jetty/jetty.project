@@ -21,11 +21,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.HttpException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.HttpConnection;
@@ -109,12 +109,6 @@ public class SocketConnector extends AbstractConnector
     protected HttpConnection newHttpConnection(EndPoint endpoint) 
     {
         return new HttpConnection(this, endpoint, getServer());
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    public Buffer newBuffer(int size)
-    {
-        return new ByteArrayBuffer(size);
     }
 
     /* ------------------------------------------------------------------------------- */

@@ -46,32 +46,44 @@ public abstract class AbstractNIOConnector extends AbstractConnector implements 
     {
         _useDirectBuffers=direct;
     }
+    
+
+    // TODO
+    // Header buffers always byte array buffers (efficiency of random access)
+    // There are lots of things to consider here... DIRECT buffers are faster to
+    // send but more expensive to build and access! so we have choices to make...
+    // + headers are constructed bit by bit and parsed bit by bit, so INDiRECT looks
+    // good for them.   
+    // + but will a gather write of an INDIRECT header with a DIRECT body be any good?
+    // this needs to be benchmarked.
+    // + Will it be possible to get a DIRECT header buffer just for the gather writes of
+    // content from file mapped buffers?  
+    // + Are gather writes worth the effort?  Maybe they will work well with two INDIRECT
+    // buffers being copied into a single kernel buffer?
 
     /* ------------------------------------------------------------------------------- */
-    public Buffer newBuffer(int size)
+    public Buffer newRequestBuffer(int size)
     {
-        // TODO
-        // Header buffers always byte array buffers (efficiency of random access)
-        // There are lots of things to consider here... DIRECT buffers are faster to
-        // send but more expensive to build and access! so we have choices to make...
-        // + headers are constructed bit by bit and parsed bit by bit, so INDiRECT looks
-        // good for them.   
-        // + but will a gather write of an INDIRECT header with a DIRECT body be any good?
-        // this needs to be benchmarked.
-        // + Will it be possible to get a DIRECT header buffer just for the gather writes of
-        // content from file mapped buffers?  
-        // + Are gather writes worth the effort?  Maybe they will work well with two INDIRECT
-        // buffers being copied into a single kernel buffer?
-        // 
-        Buffer buf = null;
-        if (size==getHeaderBufferSize())
-            buf= new IndirectNIOBuffer(size);
-        else
-            buf = _useDirectBuffers
-                ?(NIOBuffer)new DirectNIOBuffer(size)
-                :(NIOBuffer)new IndirectNIOBuffer(size);
-        return buf;
+        return _useDirectBuffers?new DirectNIOBuffer(size):new IndirectNIOBuffer(size);
     }
     
+    /* ------------------------------------------------------------------------------- */
+    public Buffer newRequestHeader(int size)
+    {
+        return new IndirectNIOBuffer(size);
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    public Buffer newResponseBuffer(int size)
+    {
+        return _useDirectBuffers?new DirectNIOBuffer(size):new IndirectNIOBuffer(size);
+    }
+    
+    /* ------------------------------------------------------------------------------- */
+    public Buffer newResponseHeader(int size)
+    {
+        // TODO maybe can be direct?
+        return new IndirectNIOBuffer(size);
+    }
 
 }

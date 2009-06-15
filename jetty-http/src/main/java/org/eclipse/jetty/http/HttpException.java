@@ -11,7 +11,7 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.io;
+package org.eclipse.jetty.http;
 
 import java.io.IOException;
 

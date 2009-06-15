@@ -20,9 +20,9 @@ import java.nio.channels.ByteChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.HttpException;
 import org.eclipse.jetty.io.nio.ChannelEndPoint;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;

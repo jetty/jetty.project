@@ -20,10 +20,12 @@ import java.net.UnknownHostException;
 
 import javax.servlet.ServletRequest;
 
+import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpSchemes;
-import org.eclipse.jetty.io.AbstractBuffers;
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -43,7 +45,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * 
  * 
  */
-public abstract class AbstractConnector extends AbstractBuffers implements Connector
+public abstract class AbstractConnector extends HttpBuffers implements Connector
 {
     private String _name;
     
@@ -98,6 +100,37 @@ public abstract class AbstractConnector extends AbstractBuffers implements Conne
     {
     }
 
+    /* ------------------------------------------------------------------------------- */
+    public final Buffer newBuffer(int size)
+    {
+        // TODO remove once no overrides established
+        return null;
+    }
+    
+    /* ------------------------------------------------------------------------------- */
+    public Buffer newRequestBuffer(int size)
+    {
+        return new ByteArrayBuffer(size);
+    }
+    
+    /* ------------------------------------------------------------------------------- */
+    public Buffer newRequestHeader(int size)
+    {
+        return new ByteArrayBuffer(size);
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    public Buffer newResponseBuffer(int size)
+    {
+        return new ByteArrayBuffer(size);
+    }
+    
+    /* ------------------------------------------------------------------------------- */
+    public Buffer newResponseHeader(int size)
+    {
+        return new ByteArrayBuffer(size);
+    }
+    
     /* ------------------------------------------------------------------------------- */
     /*
      */

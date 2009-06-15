@@ -21,7 +21,6 @@ import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.HttpException;
 import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.util.StringUtil;
@@ -62,9 +61,6 @@ public class HttpParser implements Parser
     private Buffer _body; // Buffer for large content
     private Buffer _buffer; // The current buffer in use (either _header or _content)
     private final View  _contentView=new View(); // View of the content in the buffer for {@link Input}
-    private int _headerBufferSize;
-
-    private int _contentBufferSize;
     private CachedBuffer _cached;
     private View.CaseInsensitive _tok0; // Saved token: header name, request method or response version
     private View.CaseInsensitive _tok1; // Saved token: header value, request URI or response code
@@ -108,13 +104,11 @@ public class HttpParser implements Parser
      * @param headerBufferSize size in bytes of header buffer  
      * @param contentBufferSize size in bytes of content buffer
      */
-    public HttpParser(Buffers buffers, EndPoint endp, EventHandler handler, int headerBufferSize, int contentBufferSize)
+    public HttpParser(Buffers buffers, EndPoint endp, EventHandler handler)
     {
         _buffers=buffers;
         _endp=endp;
         _handler=handler;
-        _headerBufferSize=headerBufferSize;
-        _contentBufferSize=contentBufferSize;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -240,7 +234,7 @@ public class HttpParser implements Parser
         {
             if (_header == null)
             {
-                _header=_buffers.getBuffer(_headerBufferSize);
+                _header=_buffers.getHeader();
             }
             _buffer=_header;
             _tok0=new View.CaseInsensitive(_header);
@@ -522,7 +516,7 @@ public class HttpParser implements Parser
                                     case HttpTokens.EOF_CONTENT:
                                         _state=STATE_EOF_CONTENT;
                                         if(_body==null && _buffers!=null)
-                                            _body=_buffers.getBuffer(_contentBufferSize);
+                                            _body=_buffers.getBuffer();
                                         
                                         _handler.headerComplete(); // May recurse here !
                                         break;
@@ -530,7 +524,7 @@ public class HttpParser implements Parser
                                     case HttpTokens.CHUNKED_CONTENT:
                                         _state=STATE_CHUNKED_CONTENT;
                                         if (_body==null && _buffers!=null)
-                                            _body=_buffers.getBuffer(_contentBufferSize);
+                                            _body=_buffers.getBuffer();
                                         _handler.headerComplete(); // May recurse here !
                                         break;
                                         
@@ -544,7 +538,7 @@ public class HttpParser implements Parser
                                         _state=STATE_CONTENT;
                                         if(_forceContentBuffer || 
                                           (_buffers!=null && _body==null && _buffer==_header && _contentLength>=(_header.capacity()-_header.getIndex())))
-                                            _body=_buffers.getBuffer(_contentBufferSize);
+                                            _body=_buffers.getBuffer();
                                         _handler.headerComplete(); // May recurse here !
                                         break;
                                 }
@@ -957,7 +951,6 @@ public class HttpParser implements Parser
             }
         }
 
-
         if (_header!=null)
         {
             _header.setMarkIndex(-1);
@@ -965,7 +958,6 @@ public class HttpParser implements Parser
             {
                 _buffers.returnBuffer(_header);
                 _header=null;
-                _buffer=null;
             }   
             else
             {
@@ -1004,7 +996,7 @@ public class HttpParser implements Parser
     {
         if (_header == null)
         {
-            _header=_buffers.getBuffer(_headerBufferSize);
+            _header=_buffers.getHeader();
         }
         return _header;
     }

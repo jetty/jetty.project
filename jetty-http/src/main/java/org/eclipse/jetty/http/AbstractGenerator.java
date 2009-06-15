@@ -49,8 +49,6 @@ public abstract class AbstractGenerator implements Generator
 
     protected final Buffers _buffers; // source of buffers
     protected final EndPoint _endp;
-    protected final int _headerBufferSize;
-    protected int _contentBufferSize;
     
     protected int _state = STATE_HEADER;
     
@@ -83,12 +81,10 @@ public abstract class AbstractGenerator implements Generator
      * @param headerBufferSize Size of the buffer to allocate for HTTP header
      * @param contentBufferSize Size of the buffer to allocate for HTTP content
      */
-    public AbstractGenerator(Buffers buffers, EndPoint io, int headerBufferSize, int contentBufferSize)
+    public AbstractGenerator(Buffers buffers, EndPoint io)
     {
         this._buffers = buffers;
         this._endp = io;
-        _headerBufferSize=headerBufferSize;
-        _contentBufferSize=contentBufferSize;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -112,17 +108,15 @@ public abstract class AbstractGenerator implements Generator
         _contentLength = HttpTokens.UNKNOWN_CONTENT;
 
         // always return the buffer
-        Buffer buffer=_buffer;
+        if (_buffer!=null)
+            _buffers.returnBuffer(_buffer);
         _buffer=null;
-        if (buffer!=null && _header!=buffer)
-                _buffers.returnBuffer(buffer);
-        
+
         if (returnBuffers)
         {
-            buffer=_header;
+            if (_header!=null)
+                _buffers.returnBuffer(_header);
             _header=null;
-            if (buffer!=null)
-                _buffers.returnBuffer(buffer);
         }
         else if (_header != null) 
             _header.clear();
@@ -152,7 +146,9 @@ public abstract class AbstractGenerator implements Generator
      */
     public int getContentBufferSize()
     {
-        return _contentBufferSize;
+        if (_buffer==null)
+            _buffer=_buffers.getBuffer();
+        return _buffer.capacity();
     }
 
     /* ------------------------------------------------------------ */
@@ -161,12 +157,13 @@ public abstract class AbstractGenerator implements Generator
      */
     public void increaseContentBufferSize(int contentBufferSize)
     {
-        if (contentBufferSize > _contentBufferSize)
+        if (_buffer==null)
+            _buffer=_buffers.getBuffer();
+        if (contentBufferSize > _buffer.capacity())
         {
-            _contentBufferSize = contentBufferSize;
             if (_buffer != null)
             {
-                Buffer nb = _buffers.getBuffer(_contentBufferSize);
+                Buffer nb = _buffers.getBuffer(contentBufferSize);
                 nb.put(_buffer);
                 _buffers.returnBuffer(_buffer);
                 _buffer = nb;
@@ -312,8 +309,10 @@ public abstract class AbstractGenerator implements Generator
         if (reason!=null)
         {
             int len=reason.length();
-            if (len>_headerBufferSize/2)
-                len=_headerBufferSize/2;
+            
+            // TODO don't hard code
+            if (len>1024)
+                len=1024;
             _reason=new ByteArrayBuffer(len);
             for (int i=0;i<len;i++)
             {

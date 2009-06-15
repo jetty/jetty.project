@@ -22,9 +22,9 @@ import java.util.Collection;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.HttpException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
@@ -42,8 +42,8 @@ public class Ajp13Connection extends HttpConnection
     public Ajp13Connection(Connector connector, EndPoint endPoint, Server server)
     {
         super(connector, endPoint, server,
-                new Ajp13Parser(connector, endPoint),
-                new Ajp13Generator(connector, endPoint, connector.getHeaderBufferSize(), connector.getResponseBufferSize()),
+                new Ajp13Parser(connector.getRequestBuffers(), endPoint),
+                new Ajp13Generator(connector.getResponseBuffers(), endPoint),
                 new Ajp13Request()
                 );
         

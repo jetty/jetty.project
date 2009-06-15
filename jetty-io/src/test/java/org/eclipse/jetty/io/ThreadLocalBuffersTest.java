@@ -20,13 +20,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import junit.framework.TestCase;
 
-public class AbstractBuffersTest
+public class ThreadLocalBuffersTest
     extends TestCase
 {
     public boolean _stress = Boolean.getBoolean("STRESS");
     private int _headerBufferSize = 6 * 1024;
 
-    InnerAbstractBuffers buffers;
+    InnerBuffers httpBuffers;
 
     List<Thread> threadList = new ArrayList<Thread>();
 
@@ -63,7 +63,7 @@ public class AbstractBuffersTest
     {
         threadList.clear();
         buffersRetrieved = new AtomicLong( 0 );
-        buffers = new InnerAbstractBuffers();
+        httpBuffers = new InnerBuffers();
 
         for ( int i = 0; i < numThreads; ++i )
         {
@@ -115,11 +115,16 @@ public class AbstractBuffersTest
     }
 
 
-    class InnerAbstractBuffers
-        extends AbstractBuffers
+    class InnerBuffers extends ThreadLocalBuffers
     {
+        @Override
+        protected Buffer newBuffer(int size)
+        {
+            return new ByteArrayBuffer( size );
+        }
 
-        public Buffer newBuffer( int size )
+        @Override
+        protected Buffer newHeader(int size)
         {
             return new ByteArrayBuffer( size );
         }
@@ -153,7 +158,7 @@ public class AbstractBuffersTest
 
                     if ( runTest )
                     {
-                        Buffer buf = buffers.getBuffer( _headerBufferSize );
+                        Buffer buf = httpBuffers.getHeader();
 
                         buffersRetrieved.getAndIncrement();
                         
@@ -162,7 +167,7 @@ public class AbstractBuffersTest
 
                         // sleep( threadWaitTime );
 
-                        buffers.returnBuffer( buf );
+                        httpBuffers.returnBuffer(buf);
                     }
                     else
                     {

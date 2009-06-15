@@ -150,12 +150,6 @@ public class LocalConnector extends AbstractConnector
     }
 
     /* ------------------------------------------------------------ */
-    public Buffer newBuffer(int size)
-    {
-        return new ByteArrayBuffer(size);
-    }
-
-    /* ------------------------------------------------------------ */
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
         HttpConnection connection=null;

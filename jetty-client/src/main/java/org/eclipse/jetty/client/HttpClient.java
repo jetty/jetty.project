@@ -35,8 +35,8 @@ import javax.net.ssl.X509TrustManager;
 
 import org.eclipse.jetty.client.security.Authorization;
 import org.eclipse.jetty.client.security.RealmResolver;
+import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpSchemes;
-import org.eclipse.jetty.io.AbstractBuffers;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
@@ -78,7 +78,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  * @see {@link HttpExchange}
  * @see {@link HttpDestination}
  */
-public class HttpClient extends AbstractBuffers implements Attributes
+public class HttpClient extends HttpBuffers implements Attributes
 {
     public static final int CONNECTOR_SOCKET = 0;
     public static final int CONNECTOR_SELECT_CHANNEL = 2;
@@ -341,26 +341,50 @@ public class HttpClient extends AbstractBuffers implements Attributes
 
     /* ------------------------------------------------------------ */
     /**
-     * Create a new NIO buffer. If using direct buffers, it will create a direct
-     * NIO buffer, other than an indirect buffer.
+     * @see org.eclipse.jetty.http.HttpBuffers#newRequestBuffer(int)
      */
-    public Buffer newBuffer(int size)
+    @Override
+    protected Buffer newRequestBuffer(int size)
     {
-        if (_connectorType != CONNECTOR_SOCKET)
-        {
-            Buffer buf = null;
-            if (size==getHeaderBufferSize())
-                buf=new IndirectNIOBuffer(size);
-            else if (_useDirectBuffers)
-                buf=new DirectNIOBuffer(size);
-            else
-                buf=new IndirectNIOBuffer(size);
-            return buf;
-        }
-        else
-        {
+        if (_connectorType == CONNECTOR_SOCKET)
             return new ByteArrayBuffer(size);
-        }
+        return _useDirectBuffers?new DirectNIOBuffer(size):new IndirectNIOBuffer(size);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.HttpBuffers#newRequestHeader(int)
+     */
+    @Override
+    protected Buffer newRequestHeader(int size)
+    {
+        if (_connectorType == CONNECTOR_SOCKET)
+            return new ByteArrayBuffer(size);
+        return new IndirectNIOBuffer(size);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.HttpBuffers#newResponseBuffer(int)
+     */
+    @Override
+    protected Buffer newResponseBuffer(int size)
+    {
+        if (_connectorType == CONNECTOR_SOCKET)
+            return new ByteArrayBuffer(size);
+        return _useDirectBuffers?new DirectNIOBuffer(size):new IndirectNIOBuffer(size);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.HttpBuffers#newResponseHeader(int)
+     */
+    @Override
+    protected Buffer newResponseHeader(int size)
+    {
+        if (_connectorType == CONNECTOR_SOCKET)
+            return new ByteArrayBuffer(size);
+        return new IndirectNIOBuffer(size);
     }
 
     /* ------------------------------------------------------------ */

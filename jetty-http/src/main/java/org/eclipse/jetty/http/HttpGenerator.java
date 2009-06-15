@@ -115,9 +115,9 @@ public class HttpGenerator extends AbstractGenerator
      * @param headerBufferSize Size of the buffer to allocate for HTTP header
      * @param contentBufferSize Size of the buffer to allocate for HTTP content
      */
-    public HttpGenerator(Buffers buffers, EndPoint io, int headerBufferSize, int contentBufferSize)
+    public HttpGenerator(Buffers buffers, EndPoint io)
     {
-        super(buffers,io,headerBufferSize,contentBufferSize);
+        super(buffers,io);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -188,7 +188,7 @@ public class HttpGenerator extends AbstractGenerator
         {
             // Yes - so we better check we have a buffer
             if (_buffer == null) 
-                _buffer = _buffers.getBuffer(_contentBufferSize);
+                _buffer = _buffers.getBuffer();
 
             // Copy _content to buffer;
             int len=_buffer.put(_content);
@@ -255,7 +255,7 @@ public class HttpGenerator extends AbstractGenerator
         
         // we better check we have a buffer
         if (_buffer == null) 
-            _buffer = _buffers.getBuffer(_contentBufferSize);
+            _buffer = _buffers.getBuffer();
         
         // Copy _content to buffer;
         _buffer.put(b);
@@ -288,7 +288,7 @@ public class HttpGenerator extends AbstractGenerator
 
         // we better check we have a buffer
         if (_buffer == null) 
-            _buffer = _buffers.getBuffer(_contentBufferSize);
+            _buffer = _buffers.getBuffer();
 
         _contentWritten-=_buffer.length();
         
@@ -323,7 +323,7 @@ public class HttpGenerator extends AbstractGenerator
 
         // get a header buffer
         if (_header == null) 
-            _header = _buffers.getBuffer(_headerBufferSize);
+            _header = _buffers.getHeader();
         
         boolean has_server = false;
         
