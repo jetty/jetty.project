@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public abstract class SelectorManager extends AbstractLifeCycle
 {
-    private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD",32).intValue();
+    private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD",64).intValue();
     private long _maxIdleTime;
     private long _lowResourcesConnections;
     private long _lowResourcesMaxIdleTime;
@@ -465,7 +465,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
 
                     // Look for JVM bugs
                     // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6403933
-                    if (selected==0  && (now-before)<(wait/2) && __JVMBUG_THRESHHOLD>0)
+                    if (__JVMBUG_THRESHHOLD>0 && selected==0 && wait>__JVMBUG_THRESHHOLD && (now-before)<(wait/2) )
                     {
                         _jvmBug++;
                         if (_jvmBug>(__JVMBUG_THRESHHOLD*2))
@@ -486,10 +486,12 @@ public abstract class SelectorManager extends AbstractLifeCycle
                                 while (iterator.hasNext())
                                 {
                                     SelectionKey k = (SelectionKey)iterator.next();
+                                    if (!k.isValid() || k.interestOps()==0)
+                                        continue;
+                                    
                                     final SelectableChannel channel = k.channel();
                                     final Object attachment = k.attachment();
                                     
-                                    k.cancel();
                                     if (attachment==null)
                                         addChange(channel);
                                     else
