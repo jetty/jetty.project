@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 public class StressTest extends TestCase
 {
     protected Server _server = new Server();
-    protected SuspendHandler _handler = new SuspendHandler();
+    protected TestHandler _handler = new TestHandler();
     protected Connector _connector;
     protected InetAddress _addr;
     protected int _port;
@@ -86,24 +86,24 @@ public class StressTest extends TestCase
         _server.stop();
     }
 
-    final static String[][] __tests = 
+    final static String[] __tests = 
     {
-        {"/path/0","NORMAL /path/0\n\n"},
-        {"/path/1","NORMAL /path/1\n\n"},
-        {"/path/2","NORMAL /path/2\n\n"},
-        {"/path/3","NORMAL /path/3\n\n"},
-        {"/path/4","NORMAL /path/4\n\n"},
-        {"/path/5","NORMAL /path/5\n\n"},
-        {"/path/6","NORMAL /path/6\n\n"},
-        {"/path/7","NORMAL /path/7\n\n"},
-        {"/path/8","NORMAL /path/8\n\n"},
-        {"/path/9","NORMAL /path/9\n\n"},
-        {"/path/a","NORMAL /path/a\n\n"},
-        {"/path/b","NORMAL /path/b\n\n"},
-        {"/path/c","NORMAL /path/c\n\n"},
-        {"/path/d","NORMAL /path/d\n\n"},
-        {"/path/e","NORMAL /path/e\n\n"},
-        {"/path/f","NORMAL /path/f\n\n"}
+        "/path/0",
+        "/path/1",
+        "/path/2",
+        "/path/3",
+        "/path/4",
+        "/path/5",
+        "/path/6",
+        "/path/7",
+        "/path/8",
+        "/path/9",
+        "/path/a",
+        "/path/b",
+        "/path/c",
+        "/path/d",
+        "/path/e",
+        "/path/f",
     };
     
     
@@ -120,10 +120,14 @@ public class StressTest extends TestCase
             
             for (int i=0;i<__tests.length;i++)
             {
-                String uri=__tests[i][0];
+                String uri=__tests[i]+"/"+name+"/"+i;
 
                 String close=((i+1)<__tests.length)?"":"Connection: close\r\n";
-                String request = "GET "+uri+" HTTP/1.1\r\nHost: localhost\r\nstart: "+start+"\r\n"+close+"\r\n";
+                String request = 
+                    "GET "+uri+" HTTP/1.1\r\n"+
+                    "Host: localhost\r\n"+
+                    "start: "+start+"\r\n"+
+                    close+"\r\n";
 
                 socket.getOutputStream().write(request.getBytes());
                 socket.getOutputStream().flush();
@@ -139,8 +143,8 @@ public class StressTest extends TestCase
             
             int bodies = count(response,"HTTP/1.1 200 OK");
             if (__tests.length!=bodies)
-                System.err.println(response);
-            assertEquals(__tests.length,bodies);
+                System.err.println("responses=\n"+response+"\n---");
+            assertEquals(name,__tests.length,bodies);bodies = count(response,"HTTP/1.1 200 OK");
             
             long bind=connected-start; 
             long flush=(written-connected)/__tests.length;   
@@ -149,9 +153,9 @@ public class StressTest extends TestCase
             int offset=0;
             for (int i=0;i<__tests.length;i++)
             {
-                offset=response.indexOf(__tests[i][1],offset);
+                offset=response.indexOf("DATA "+__tests[i],offset);
                 assertTrue(offset>=0);
-                offset+=__tests[i][1].length();
+                offset+=__tests[i].length()+5;
                 
                 if (bind<0 || flush<0 || read <0)
                 {
@@ -167,11 +171,15 @@ public class StressTest extends TestCase
         {
             for (int i=0;i<__tests.length;i++)
             {
-                String uri=__tests[i][0];
+                String uri=__tests[i]+"/"+name+"/"+i;
 
                 long start=System.currentTimeMillis();
                 String close="Connection: close\r\n";
-                String request = "GET "+uri+" HTTP/1.1\r\nHost: localhost\r\nstart: "+start+"\r\n"+close+"\r\n";
+                String request = 
+                    "GET "+uri+" HTTP/1.1\r\n"+
+                    "Host: localhost\r\n"+
+                    "start: "+start+"\r\n"+
+                    close+"\r\n";
 
                 Socket socket = new Socket(_addr,_port);
                 socket.setSoTimeout(10000);
@@ -191,8 +199,7 @@ public class StressTest extends TestCase
 
                 response=response.substring(response.indexOf("\r\n\r\n")+4);
 
-                String test=name+"-"+i+" "+uri+" "+__tests[i][1];
-                assertEquals(test,__tests[i][1],response);
+                assertTrue(uri,response.startsWith("DATA "+__tests[i]));
                 long latency=end-start;
 
                 _latencies[5].add(new Long(latency));
@@ -388,6 +395,49 @@ public class StressTest extends TestCase
         else
             doThreads(50,100,true);
     }
+
+    /*
+    public void testNonPersistent0() throws Throwable
+    {
+        testNonPersistent();
+    }
+
+    public void testPersistent0() throws Throwable
+    {
+        testPersistent();
+    }
+
+    public void testNonPersistent1() throws Throwable
+    {
+        testNonPersistent();
+    }
+
+    public void testPersistent1() throws Throwable
+    {
+        testPersistent();
+    }
+
+    public void testNonPersistent2() throws Throwable
+    {
+        testNonPersistent();
+    }
+
+    public void testPersistent2() throws Throwable
+    {
+        testPersistent();
+    }
+
+    public void testNonPersistent3() throws Throwable
+    {
+        testNonPersistent();
+    }
+
+    public void testPersistent3() throws Throwable
+    {
+        testPersistent();
+    }
+    */
+    
     
     private int count(String s,String sub)
     {
@@ -402,11 +452,11 @@ public class StressTest extends TestCase
         return count;
     }
     
-    private class SuspendHandler extends HandlerWrapper
+    private class TestHandler extends HandlerWrapper
     {
         private Timer _timer;
         
-        public SuspendHandler()
+        public TestHandler()
         {
             _timer=new Timer();
         }
@@ -416,7 +466,7 @@ public class StressTest extends TestCase
             long now=System.currentTimeMillis();
             long start=Long.parseLong(baseRequest.getHeader("start"));
             long received=baseRequest.getTimeStamp();
-
+            
             _handled.incrementAndGet();
             long delay=received-start;
             if (delay<0)
@@ -425,7 +475,7 @@ public class StressTest extends TestCase
             _latencies[3].add(new Long(now-start));
             
             response.setStatus(200);
-            response.getOutputStream().print("NORMAL "+request.getPathInfo()+"\n\n");
+            response.getOutputStream().print("DATA "+request.getPathInfo()+"\n\n");
             baseRequest.setHandled(true);
             long end=System.currentTimeMillis();
             
