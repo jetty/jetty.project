@@ -26,6 +26,7 @@ import javax.servlet.ServletResponse;
  */
 public class ContinuationFilter implements Filter
 {
+    static boolean __debug; // shared debug status
     private boolean _faux;
     private boolean _partial;
     ServletContext _context;
@@ -38,6 +39,8 @@ public class ContinuationFilter implements Filter
         
         String param=filterConfig.getInitParameter("debug");
         _debug=param!=null&&Boolean.parseBoolean(param);
+        if (_debug)
+            __debug=true;
         
         param=filterConfig.getInitParameter("partial");
         if (param!=null)
@@ -64,7 +67,7 @@ public class ContinuationFilter implements Filter
     {
         if (_faux)
         {
-            final FauxContinuation fc = new FauxContinuation(request,_debug);
+            final FauxContinuation fc = new FauxContinuation(request);
             request.setAttribute(Continuation.ATTRIBUTE,fc);
             boolean complete=false;
       
@@ -88,7 +91,6 @@ public class ContinuationFilter implements Filter
         else if (_partial)
         {
             Continuation c = (Continuation) request.getAttribute(Continuation.ATTRIBUTE);
-            
             try
             {
                 if (c==null || !(c instanceof PartialContinuation) || ((PartialContinuation)c).enter())
@@ -114,15 +116,23 @@ public class ContinuationFilter implements Filter
             }
         }
     }
+
+    private void debug(String string)
+    {
+        if (_debug)
+        {
+            _context.log(string);
+        }
+    }
     
     private void debug(String string, Throwable th)
     {
         if (_debug)
         {
             if (th instanceof ContinuationThrowable)
-                _context.log("DEBUG: "+th);
+                _context.log(string+":"+th);
             else
-                _context.log("DEBUG",th);
+                _context.log(string,th);
         }
     }
 

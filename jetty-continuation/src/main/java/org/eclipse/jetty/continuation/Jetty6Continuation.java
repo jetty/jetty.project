@@ -16,6 +16,10 @@ import javax.servlet.ServletResponseWrapper;
  */
 public class Jetty6Continuation implements ContinuationFilter.PartialContinuation
 {
+    // Exception reused for all continuations
+    // Turn on debug in ContinuationFilter to see real stack trace.
+    private final static ContinuationThrowable __exception = new ContinuationThrowable();
+    
     private final ServletRequest _request;
     private ServletResponse _response;
     private final org.mortbay.util.ajax.Continuation _j6Continuation;
@@ -80,32 +84,38 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
     {
         _request.setAttribute(name,attribute);
     }
-    
+
+    /* ------------------------------------------------------------ */
     public ServletResponse getServletResponse()
     {
         return _response;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isExpired()
     {
         return _expired;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isInitial()
     {
         return _initial;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isResumed()
     {
         return _resumed;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isSuspended()
     {
         return _retry!=null;
     }
 
+    /* ------------------------------------------------------------ */
     public void resume()
     {
         synchronized(this)
@@ -118,6 +128,7 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
         }
     }
 
+    /* ------------------------------------------------------------ */
     public void setTimeout(long timeoutMs)
     {
         _timeout=(timeoutMs>Integer.MAX_VALUE)?Integer.MAX_VALUE:(int)timeoutMs;
@@ -144,6 +155,7 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
         }
     }
 
+    /* ------------------------------------------------------------ */
     public void suspend()
     {
         try
@@ -161,12 +173,11 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
         }
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isResponseWrapped()
     {
         return _responseWrapped;
     }
-
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -174,17 +185,16 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
      */
     public void undispatch()
     {
-        Throwable th=_retry;
-        if (th instanceof ThreadDeath)
-            throw (ThreadDeath)th;
-        if (th instanceof Error)
-            throw (Error)th;
-        if (th instanceof RuntimeException)
-            throw (RuntimeException)th;
-        
+        if (isSuspended())
+        {
+            if (ContinuationFilter.__debug)
+                throw new ContinuationThrowable();
+            throw __exception;
+        }
         throw new IllegalStateException("!suspended");
     }
-    
+
+    /* ------------------------------------------------------------ */
     public boolean enter()
     {
         _expired=!_j6Continuation.isResumed();

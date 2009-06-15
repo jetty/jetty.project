@@ -29,6 +29,8 @@ import javax.servlet.ServletResponseWrapper;
  */
 class FauxContinuation implements Continuation
 {
+    // common exception used for all continuations.  
+    // Turn on debug in ContinuationFilter to see real stack trace.
     private final static ContinuationThrowable __exception = new ContinuationThrowable();
     
     private static final int __HANDLING=1;   // Request dispatched to filter/servlet
@@ -48,14 +50,12 @@ class FauxContinuation implements Continuation
     private boolean _timeout=false;
     private boolean _responseWrapped=false;
     private  long _timeoutMs=30000; // TODO configure
-    private boolean _debug;
     
     private ArrayList<ContinuationListener> _listeners; 
 
-    FauxContinuation(final ServletRequest request, boolean debug)
+    FauxContinuation(final ServletRequest request)
     {
         _request=request;
-        _debug=debug;
     }
 
     /* ------------------------------------------------------------ */
@@ -475,7 +475,12 @@ class FauxContinuation implements Continuation
     public void undispatch()
     {
         if (isSuspended())
-            throw _debug?new ContinuationThrowable():__exception;
+        {
+            if (ContinuationFilter.__debug)
+                throw new ContinuationThrowable();
+            throw __exception;
+        }
         throw new IllegalStateException("!suspended");
+        
     }
 }
