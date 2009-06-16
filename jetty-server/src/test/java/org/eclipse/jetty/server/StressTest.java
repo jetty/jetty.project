@@ -307,7 +307,8 @@ public class StressTest extends TestCase
                     {
                         System.err.println("STALLED!!!");
                         ((SelectChannelConnector)(_server.getConnectors()[0])).dump();
-                        throw new IllegalStateException("STALLED");
+                        Thread.sleep(5000);
+                        System.exit(1);
                     }
                 }
                 else
