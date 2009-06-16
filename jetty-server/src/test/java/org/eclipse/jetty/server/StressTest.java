@@ -306,6 +306,7 @@ public class StressTest extends TestCase
                     if (same++>10)
                     {
                         System.err.println("STALLED!!!");
+                        System.err.println(_server.getThreadPool().toString());
                         ((SelectChannelConnector)(_server.getConnectors()[0])).dump();
                         Thread.sleep(5000);
                         System.exit(1);

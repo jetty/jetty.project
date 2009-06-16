@@ -149,8 +149,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
 
     /* ------------------------------------------------------------ */
     /**
-     * Called when a dispatched thread is no longer handling the endpoint. The selection key
-     * operations are updated.
+     * Called when a dispatched thread is no longer handling the endpoint. 
+     * The selection key operations are updated.
      */
     protected boolean undispatch()
     {
@@ -413,7 +413,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
      */
     public void run()
     {
-        
         boolean dispatched=true;
         do
         {
@@ -475,11 +474,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return "SCEP@" + hashCode() + "[d=" + _dispatched + ",io=" + 
-        ((SelectionKey.OP_ACCEPT&_interestOps)!=0?"A":"")+
-        ((SelectionKey.OP_CONNECT&_interestOps)!=0?"C":"")+
-        ((SelectionKey.OP_READ&_interestOps)!=0?"R":"")+
-        ((SelectionKey.OP_WRITE&_interestOps)!=0?"W":"")+
+        return "SCEP@" + hashCode() + "\t[d=" + _dispatched + ",io=" + _interestOps+
         ",w=" + _writable + ",b=" + _readBlocked + "|" + _writeBlocked + "]";
     }
 

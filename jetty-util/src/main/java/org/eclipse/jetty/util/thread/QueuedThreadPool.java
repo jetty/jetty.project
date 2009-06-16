@@ -386,6 +386,12 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
     {
         return new Thread(runnable);
     }
+
+    /* ------------------------------------------------------------ */
+    public String toString()
+    {
+        return _name+"{"+getMinThreads()+"<="+getIdleThreads()+"<="+getThreads()+"/"+getMaxThreads()+"}";
+    }
     
     /* ------------------------------------------------------------ */
     private Runnable _runnable = new Runnable()
