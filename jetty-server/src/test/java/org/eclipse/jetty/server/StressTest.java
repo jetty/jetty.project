@@ -315,7 +315,7 @@ public class StressTest extends TestCase
                 else
                     same=0;
                 last=status;
-                Log.info(status);
+                Log.info(_server.getThreadPool().toString()+" "+status);
                 if ((finished+errors)==threads)
                     break;
             }
