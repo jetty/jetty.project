@@ -21,6 +21,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -41,7 +42,9 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public abstract class SelectorManager extends AbstractLifeCycle
 {
-    private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD",64).intValue();
+    private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD",128).intValue();
+    private static final int __JVMBUG_THRESHHOLD2=__JVMBUG_THRESHHOLD*2;
+    private static final int __JVMBUG_THRESHHOLD1=(__JVMBUG_THRESHHOLD2+__JVMBUG_THRESHHOLD)/2;
     private long _maxIdleTime;
     private long _lowResourcesConnections;
     private long _lowResourcesMaxIdleTime;
@@ -292,6 +295,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
         private transient int _setID;
         private transient int _jvmBug;
         private volatile Thread _selecting;
+        private long _lastJVMBug;
         
         /* ------------------------------------------------------------ */
         SelectSet(int acceptorID) throws Exception
@@ -468,10 +472,11 @@ public abstract class SelectorManager extends AbstractLifeCycle
                     if (__JVMBUG_THRESHHOLD>0 && selected==0 && wait>__JVMBUG_THRESHHOLD && (now-before)<(wait/2) )
                     {
                         _jvmBug++;
-                        if (_jvmBug>(__JVMBUG_THRESHHOLD*2))
+                        if (_jvmBug>=(__JVMBUG_THRESHHOLD2))
                         {
                             synchronized (this)
                             {
+                                _lastJVMBug=now;
                                 if (_jvmBug1)
                                     Log.debug("seeing JVM BUG(s) - recreating selector");
                                 else
@@ -479,7 +484,6 @@ public abstract class SelectorManager extends AbstractLifeCycle
                                     _jvmBug1=true;
                                     Log.info("seeing JVM BUG(s) - recreating selector");
                                 }
-                                
                                 // BLOODY SUN BUG !!!  Try refreshing the entire selector.
                                 final Selector new_selector = Selector.open();
                                 Iterator iterator = _selector.keys().iterator();
@@ -499,10 +503,11 @@ public abstract class SelectorManager extends AbstractLifeCycle
                                 }
                                 _selector.close();
                                 _selector=new_selector;
+                                _jvmBug=0;
                                 return;
                             }
                         }
-                        else if (_jvmBug>__JVMBUG_THRESHHOLD)
+                        else if (_jvmBug==__JVMBUG_THRESHHOLD || _jvmBug==__JVMBUG_THRESHHOLD1)
                         {
                             // Cancel keys with 0 interested ops
                             if (_jvmBug0)
@@ -764,7 +769,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
             synchronized (System.err)
             {
                 Selector selector=_selector;
-                Log.info("SelectSet "+_setID+" "+selector.keys().size());
+                Log.info("SelectSet "+_setID+" "+selector.keys().size()+" lastJVMBug="+new Date(_lastJVMBug));
                 for (SelectionKey key: selector.keys())
                 {
                     if (key.isValid())

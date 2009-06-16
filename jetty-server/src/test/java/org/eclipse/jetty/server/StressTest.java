@@ -304,7 +304,11 @@ public class StressTest extends TestCase
                 if (status.equals(last))
                 {
                     if (same++>10)
-                        throw new IllegalStateException("Stalled");
+                    {
+                        System.err.println("STALLED!!!");
+                        ((SelectChannelConnector)(_server.getConnectors()[0])).dump();
+                        throw new IllegalStateException("STALLED");
+                    }
                 }
                 else
                     same=0;
