@@ -47,8 +47,11 @@ public class DefaultUserIdentity implements UserIdentity
         return _userPrincipal;
     }
 
-    public boolean isUserInRole(String role)
+    public boolean isUserInRole(String role, Scope scope)
     {
+        if (scope!=null && scope.getRoleRefMap()!=null)
+            role=scope.getRoleRefMap().get(role);
+
         for (String r :_roles)
             if (r.equals(role))
                 return true;

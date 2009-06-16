@@ -16,8 +16,6 @@ import java.security.Principal;
 import java.util.Map;
 
 import javax.security.auth.Subject;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 
 /* ------------------------------------------------------------ */
 /** User object that encapsulates user identity and operations such as run-as-role actions, 
@@ -46,9 +44,10 @@ public interface UserIdentity
      * This call is used to satisfy authorization calls from 
      * container code which will be using translated role names.
      * @param role A role name.
+     * @param scope
      * @return True if the user can act in that role.
      */
-    boolean isUserInRole(String role);
+    boolean isUserInRole(String role, Scope scope);
     
 
     /* ------------------------------------------------------------ */
@@ -105,7 +104,7 @@ public interface UserIdentity
             return null;
         }
         
-        public boolean isUserInRole(String role)
+        public boolean isUserInRole(String role, Scope scope)
         {
             return false;
         }
