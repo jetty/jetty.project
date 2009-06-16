@@ -9,10 +9,6 @@
   <artifactId>jetty-client</artifactId>
   <name>Jetty :: Aggregate :: HTTP Client</name>
 
-  <properties>
-    <jetty-version>${project.version}</jetty-version>
-  </properties>
-
   <build>
     <plugins>
       <plugin>
@@ -69,7 +65,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-      <version>${jetty-version}</version>
+      <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

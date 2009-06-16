@@ -8,11 +8,7 @@
   <groupId>org.eclipse.jetty.aggregate</groupId>
   <artifactId>jetty-all-server</artifactId>
   <name>Jetty :: Aggregate :: All Server</name>
-
-  <properties>
-    <jetty-version>${project.version}</jetty-version>
-  </properties>
-
+  
   <build>
     <plugins>
       <plugin>
@@ -68,7 +64,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-deploy</artifactId>
-      <version>${jetty-version}</version>
+      <version>${project.version}</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -89,13 +85,13 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
-      <version>${jetty-version}</version>
+      <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-plus</artifactId>
-      <version>${jetty-version}</version>
+      <version>${project.version}</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -119,13 +115,13 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-ajp</artifactId>
-      <version>${jetty-version}</version>
+      <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-annotations</artifactId>
-      <version>${jetty-version}</version>
+      <version>${project.version}</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -141,7 +137,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jaspi</artifactId>
-      <version>${jetty-version}</version>
+      <version>${project.version}</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -153,19 +149,19 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jndi</artifactId>
-      <version>${jetty-version}</version>
+      <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-rewrite</artifactId>
-      <version>${jetty-version}</version>
+      <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlets</artifactId>
-      <version>${jetty-version}</version>
+      <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

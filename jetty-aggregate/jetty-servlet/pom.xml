@@ -8,11 +8,7 @@
   <groupId>org.eclipse.jetty.aggregate</groupId>
   <artifactId>jetty-servlet</artifactId>
   <name>Jetty :: Aggregate :: Servlet Server</name>
-
-  <properties>
-    <jetty-version>${project.version}</jetty-version>
-  </properties>
-
+  
   <build>
     <plugins>
       <plugin>
@@ -69,7 +65,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
-      <version>${jetty-version}</version>
+      <version>${project.version}</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>

@@ -9,10 +9,6 @@
   <artifactId>jetty-plus</artifactId>
   <name>Jetty :: Aggregate :: Plus Server</name>
 
-  <properties>
-    <jetty-version>${project.version}</jetty-version>
-  </properties>
-
   <build>
     <plugins>
       <plugin>
@@ -69,7 +65,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-plus</artifactId>
-      <version>${jetty-version}</version>
+      <version>${project.version}</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
