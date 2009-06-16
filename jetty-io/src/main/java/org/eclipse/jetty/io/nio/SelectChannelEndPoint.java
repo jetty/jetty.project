@@ -124,26 +124,29 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                 _writable = true; // Once writable is in ops, only removed with dispatch.
             }
 
-            if (!dispatch())
-                updateKey();
+            if (_dispatched)
+                _key.interestOps(0);
+            else
+                dispatch();
         }
     }
         
     /* ------------------------------------------------------------ */
-    public boolean dispatch() 
+    public void dispatch() 
     {
         synchronized(this)
         {
             if (_dispatched)
-            {
                 _redispatched=true;
-                return true;
+            else
+            {
+                _dispatched = _manager.dispatch((Runnable)this);   
+                if(!_dispatched)
+                {
+                    Log.warn("Dispatched Failed!");
+                    updateKey();
+                }
             }
-
-            _dispatched = _manager.dispatch((Runnable)this);   
-            if(!_dispatched)
-                Log.warn("Dispatched Failed!");
-            return _dispatched;
         }
     }
 
@@ -151,6 +154,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /**
      * Called when a dispatched thread is no longer handling the endpoint. 
      * The selection key operations are updated.
+     * @return If false is returned, the endpoint has been redispatched and 
+     * thread must keep handling the endpoint.
      */
     protected boolean undispatch()
     {

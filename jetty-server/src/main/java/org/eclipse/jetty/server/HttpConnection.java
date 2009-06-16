@@ -681,7 +681,6 @@ public class HttpConnection implements Connection
     {
         return _generator;
     }
-    
 
     /* ------------------------------------------------------------ */
     public boolean isIncluding()
@@ -777,6 +776,7 @@ public class HttpConnection implements Connection
             }
             catch (Exception e)
             {
+                Log.warn(e);
                 throw new HttpException(HttpStatus.BAD_REQUEST_400,null,e);
             }
         }
