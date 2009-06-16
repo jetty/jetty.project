@@ -390,7 +390,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return _name+"{"+getMinThreads()+"<="+getIdleThreads()+"<="+getThreads()+"/"+getMaxThreads()+"}";
+        return _name+"{"+getMinThreads()+"<="+getIdleThreads()+"<="+getThreads()+"/"+getMaxThreads()+","+_jobs.size()+"}";
     }
     
     /* ------------------------------------------------------------ */
