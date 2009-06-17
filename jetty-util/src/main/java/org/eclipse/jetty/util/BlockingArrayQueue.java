@@ -42,13 +42,13 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements Queue<E>
 {
     public final int DEFAULT_CAPACITY=64;
     public final int DEFAULT_GROWTH=32;
-    protected final int _limit;
-    protected final AtomicInteger _size=new AtomicInteger();
-    protected final int _growCapacity;
+    private final int _limit;
+    private final AtomicInteger _size=new AtomicInteger();
+    private final int _growCapacity;
     
-    protected Object[] _elements;
-    protected int _head;
-    protected int _tail;
+    private Object[] _elements;
+    private int _head;
+    private int _tail;
     
     private final ReentrantLock _headLock = new ReentrantLock();
     private final Condition _notEmpty = _headLock.newCondition();
@@ -285,7 +285,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements Queue<E>
      * Retrieves and removes the head of this queue, waiting
      * if necessary up to the specified wait time if no elements are
      * present on this queue.
-     * @param timeout how long to wait before giving up, in units of
+     * @param time how long to wait before giving up, in units of
      * <tt>unit</tt>
      * @param unit a <tt>TimeUnit</tt> determining how to interpret the
      * <tt>timeout</tt> parameter
@@ -561,25 +561,30 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements Queue<E>
 
         final int head=_head;
         final int tail=_tail;
-        final int s;
+        final int new_tail;
         
         Object[] elements=new Object[_elements.length+_growCapacity];
 
         if (head<tail)
         {
-            s=tail-head;
-            System.arraycopy(_elements,head,elements,0,s);
+            new_tail=tail-head;
+            System.arraycopy(_elements,head,elements,0,new_tail);
         }
-        else
+        else if (head>tail || _size.get()>0)
         {
-            s=_elements.length+tail-head;
+            new_tail=_elements.length+tail-head;
             int cut=_elements.length-head;
             System.arraycopy(_elements,head,elements,0,cut);
             System.arraycopy(_elements,0,elements,cut,tail);
         }
+        else
+        {
+            new_tail=0;
+        }
+
         _elements=elements;
         _head=0;
-        _tail=s;
+        _tail=new_tail;
         
         return true;
     }

@@ -114,7 +114,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                 _key.interestOps(0);
                 return;
             }
-            
+
             // Otherwise if we are still dispatched
             if (!isReadyForDispatch())
             {
@@ -122,7 +122,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                 _key.interestOps(0);
                 return;
             }
-            
+
+
             // Remove writeable op
             if ((_key.readyOps() & SelectionKey.OP_WRITE) == SelectionKey.OP_WRITE && (_key.interestOps() & SelectionKey.OP_WRITE) == SelectionKey.OP_WRITE)
             {
@@ -165,7 +166,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
      * @return If false is returned, the endpoint has been redispatched and 
      * thread must keep handling the endpoint.
      */
-    boolean undispatch()
+    private boolean undispatch()
     {
         synchronized (this)
         {
@@ -329,7 +330,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     {
         synchronized (this)
         {
-        
             int ops=-1;
             if (getChannel().isOpen())
             {
@@ -346,6 +346,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                     Log.ignore(e);
                 }
             }
+
             if(_interestOps == ops && getChannel().isOpen())
                 return;
             
@@ -387,6 +388,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                                     _key.cancel();
                                 }
                                 cancelIdle();
+
                                 if (_open)
                                     _manager.endPointClosed(this);
                                 _open=false;
