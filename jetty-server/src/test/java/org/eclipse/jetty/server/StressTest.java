@@ -333,9 +333,9 @@ public class StressTest extends TestCase
         finally
         {
             int quantums=48;
-            int[][] count = new int[_latencies.length][quantums];                        
-            int length[] = new int[_latencies.length];                       
-            int other[] = new int[_latencies.length];
+            final int[][] count = new int[_latencies.length][quantums];
+            final int length[] = new int[_latencies.length];
+            final int other[] = new int[_latencies.length];
 
             for (int i=0;i<_latencies.length;i++)
             {

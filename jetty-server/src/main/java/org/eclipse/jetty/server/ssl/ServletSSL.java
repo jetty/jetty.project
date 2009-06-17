@@ -54,7 +54,7 @@ public class ServletSSL
      * @param cipherSuite String name of the TLS cipher suite.
      * @return int indicating the effective key entropy bit-length.
      */
-    public static final int deduceKeyLength(String cipherSuite)
+    public static int deduceKeyLength(String cipherSuite)
     {
         // Roughly ordered from most common to least common.
         if (cipherSuite == null)

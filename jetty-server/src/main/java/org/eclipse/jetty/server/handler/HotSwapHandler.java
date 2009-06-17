@@ -89,10 +89,6 @@ public class HotSwapHandler extends AbstractHandlerContainer
                 old_handler.stop();
 
         }
-        catch(Error e)
-        {
-            throw e;
-        }
         catch(RuntimeException e)
         {
             throw e;

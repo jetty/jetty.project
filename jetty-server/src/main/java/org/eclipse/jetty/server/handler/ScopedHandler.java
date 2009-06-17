@@ -77,7 +77,7 @@ import org.eclipse.jetty.server.Request;
  */
 public abstract class ScopedHandler extends HandlerWrapper
 {
-    private static ThreadLocal<ScopedHandler> __outerScope= new ThreadLocal<ScopedHandler>();
+    private static final ThreadLocal<ScopedHandler> __outerScope= new ThreadLocal<ScopedHandler>();
     protected ScopedHandler _outerScope;
     protected ScopedHandler _nextScope;
     

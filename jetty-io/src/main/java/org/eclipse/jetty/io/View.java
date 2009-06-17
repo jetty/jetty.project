@@ -131,7 +131,7 @@ public class View extends AbstractBuffer
      */
     public boolean equals(Object obj)
     {
-        return  this==obj ||((obj instanceof Buffer)&&((Buffer)obj).equals(this)) || super.equals(obj);
+        return  this==obj ||((obj instanceof Buffer)&& obj.equals(this)) || super.equals(obj);
     }
 
     /**

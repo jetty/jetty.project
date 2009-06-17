@@ -102,8 +102,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized(this)
         {
-            if ((listener instanceof ContinuationListener))
-                _listeners=LazyList.add(_listeners,listener);
+            _listeners=LazyList.add(_listeners,listener);
 //            _history.append('L');
         }
     }

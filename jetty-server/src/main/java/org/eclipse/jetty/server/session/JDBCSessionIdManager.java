@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class JDBCSessionIdManager extends AbstractSessionIdManager
 {    
-    protected HashSet<String> _sessionIds = new HashSet();
+    protected final HashSet<String> _sessionIds = new HashSet();
     protected String _driverClassName;
     protected String _connectionUrl;
     protected DataSource _datasource;
@@ -353,8 +353,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
             for (int i=0; contexts!=null && i<contexts.length; i++)
             {
-                SessionManager manager = (SessionManager)
-                    ((SessionHandler)((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class)).getSessionManager();
+                SessionManager manager = ((SessionHandler)((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class)).getSessionManager();
                         
                 if (manager instanceof JDBCSessionManager)
                 {
@@ -597,10 +596,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             PreparedStatement statement = connection.prepareStatement(_queryId);
             statement.setString(1, id);
             ResultSet result = statement.executeQuery();
-            if (result.next())
-                return true;
-            else
-                return false;
+            return result.next();
         }
         finally
         {
@@ -651,8 +647,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
                 for (int i=0; contexts!=null && i<contexts.length; i++)
                 {
-                    SessionManager manager = (SessionManager)
-                        ((SessionHandler)((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class)).getSessionManager();
+                    SessionManager manager = ((SessionHandler)((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class)).getSessionManager();
                             
                     if (manager instanceof JDBCSessionManager)
                     {

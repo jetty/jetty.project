@@ -127,6 +127,8 @@ public class DumpHandler extends AbstractHandler
         {
             String cookie_action=request.getParameter("Button");
             try{
+                String val=request.getParameter("CookieVal");
+                val=val.replaceAll("[ \n\r=<>]","?");
                 Cookie cookie=
                     new Cookie(cookie_name.trim(),
                                     request.getParameter("CookieVal"));

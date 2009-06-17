@@ -88,10 +88,9 @@ public class StatisticsHandler extends HandlerWrapper implements CompleteHandler
         long timestamp1=timestamp0;
         try
         {
+            AsyncContinuation asyncContextState=baseRequest.getAsyncContinuation();
             synchronized(this)
             {
-                AsyncContinuation asyncContextState=baseRequest.getAsyncContinuation();
-
                 if(asyncContextState==null)
                 {
                     _requests++;

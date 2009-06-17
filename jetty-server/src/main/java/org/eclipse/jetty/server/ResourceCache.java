@@ -35,24 +35,25 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 /** 
  * 
  */
-public class ResourceCache extends AbstractLifeCycle implements Serializable
-{   
+public class ResourceCache extends AbstractLifeCycle
+{
+    protected final Map _cache;
+    private final MimeTypes _mimeTypes;
     private int _maxCachedFileSize =1024*1024;
     private int _maxCachedFiles=2048;
     private int _maxCacheSize =16*1024*1024;
-    private MimeTypes _mimeTypes;
-    
-    protected transient Map _cache;
-    protected transient int _cachedSize;
-    protected transient int _cachedFiles;
-    protected transient Content _mostRecentlyUsed;
-    protected transient Content _leastRecentlyUsed;
+
+    protected int _cachedSize;
+    protected int _cachedFiles;
+    protected Content _mostRecentlyUsed;
+    protected Content _leastRecentlyUsed;
 
     /* ------------------------------------------------------------ */
     /** Constructor.
      */
     public ResourceCache(MimeTypes mimeTypes)
     {
+        _cache=new HashMap();
         _mimeTypes=mimeTypes;
     }
 
@@ -268,7 +269,7 @@ public class ResourceCache extends AbstractLifeCycle implements Serializable
     public synchronized void doStart()
         throws Exception
     {
-        _cache=new HashMap();
+        _cache.clear();
         _cachedSize=0;
         _cachedFiles=0;
     }
@@ -307,10 +308,10 @@ public class ResourceCache extends AbstractLifeCycle implements Serializable
      */
     public class Content implements HttpContent
     {
+        final Resource _resource;
+        final long _lastModified;
         boolean _locked;
         String _key;
-        Resource _resource;
-        long _lastModified;
         Content _prev;
         Content _next;
         
@@ -455,7 +456,7 @@ public class ResourceCache extends AbstractLifeCycle implements Serializable
                 _cache.remove(_key);
                 _key=null;
                 if (_buffer!=null)
-                    _cachedSize=_cachedSize-(int)_buffer.length();
+                    _cachedSize=_cachedSize-_buffer.length();
                 _cachedFiles--;
                 
                 if (_mostRecentlyUsed==this)
@@ -470,9 +471,7 @@ public class ResourceCache extends AbstractLifeCycle implements Serializable
                 
                 _prev=null;
                 _next=null;
-                if (_resource!=null)
-                    _resource.release();
-                _resource=null;
+                _resource.release();
                 
             }
         }

@@ -24,9 +24,9 @@ import org.eclipse.jetty.io.Buffer;
 
 public class RandomAccessFileBuffer extends AbstractBuffer implements Buffer
 {
-    RandomAccessFile _file;
-    FileChannel _channel;
-    int _capacity=Integer.MAX_VALUE;
+    final RandomAccessFile _file;
+    final FileChannel _channel;
+    final int _capacity;
 
     public RandomAccessFileBuffer(File file) 
         throws FileNotFoundException
@@ -35,6 +35,7 @@ public class RandomAccessFileBuffer extends AbstractBuffer implements Buffer
         assert file.length()<=Integer.MAX_VALUE;
         _file = new RandomAccessFile(file,"rw");
         _channel=_file.getChannel();
+        _capacity=Integer.MAX_VALUE;
         setGetIndex(0);
         setPutIndex((int)file.length());
     }

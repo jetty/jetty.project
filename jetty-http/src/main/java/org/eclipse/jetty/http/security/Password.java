@@ -107,6 +107,7 @@ public class Password extends Credential
         if (o instanceof Password)
         {
             Password p = (Password) o;
+            //noinspection StringEquality
             return p._pw == _pw || (null != _pw && _pw.equals(p._pw));
         }
 
@@ -223,7 +224,7 @@ public class Password extends Credential
             System.exit(1);
         }
         String p = arg[arg.length == 1 ? 0 : 1];
-        Password pw = "?".equals(p) ? new Password(p) : new Password(p);
+        Password pw = new Password(p);
         System.err.println(pw.toString());
         System.err.println(obfuscate(pw.toString()));
         System.err.println(Credential.MD5.digest(p));

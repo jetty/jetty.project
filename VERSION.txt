@@ -11,6 +11,7 @@ jetty-7.0.0.M3-SNAPSHOT
  + 276545 Quoted cookie paths
  + 279725 Support 100 and 102 expectations
  + Refactored AbstractBuffers to HttpBuffers for performance
+ + Numerous cleanups from static code analysis
 
 jetty-7.0.0.M2 18 May 2009
  + JETTY-937 Work around Sun JVM bugs

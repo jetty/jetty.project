@@ -27,9 +27,9 @@ import org.eclipse.jetty.util.StringMap;
  */
 public class BufferCache
 {
-    private HashMap _bufferMap=new HashMap();
-    private StringMap _stringMap=new StringMap(StringMap.CASE_INSENSTIVE);
-    private ArrayList _index= new ArrayList();
+    private final HashMap _bufferMap=new HashMap();
+    private final StringMap _stringMap=new StringMap(StringMap.CASE_INSENSTIVE);
+    private final ArrayList _index= new ArrayList();
 
     /* ------------------------------------------------------------------------------- */
     /** Add a buffer to the cache at the specified index.
@@ -112,7 +112,7 @@ public class BufferCache
     
     public static class CachedBuffer extends ByteArrayBuffer.CaseInsensitive
     {
-        private int _ordinal;
+        private final int _ordinal;
         private HashMap _associateMap=null;
         
         public CachedBuffer(String value, int ordinal)

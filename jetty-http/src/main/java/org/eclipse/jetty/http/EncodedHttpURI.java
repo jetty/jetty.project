@@ -24,7 +24,7 @@ import org.eclipse.jetty.util.Utf8StringBuffer;
 
 public class EncodedHttpURI extends HttpURI
 {
-    private String _encoding;
+    private final String _encoding;
     
     public EncodedHttpURI(String encoding)
     {

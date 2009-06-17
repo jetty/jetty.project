@@ -278,10 +278,10 @@ public class BufferUtil
         return buf;
     }
 
-    private static int[] decDivisors=
+    private final static int[] decDivisors=
         { 1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1 };
 
-    private static int[] hexDivisors=
+    private final static int[] hexDivisors=
         { 0x10000000, 0x1000000, 0x100000, 0x10000, 0x1000, 0x100, 0x10, 1 };
 
 

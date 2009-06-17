@@ -74,7 +74,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     
     private transient Thread[] _acceptorThread;
     
-    Object _statsLock = new Object();
+    final Object _statsLock = new Object();
     transient long _statsStartedAt=-1;
     
     // TODO use concurrents for these!

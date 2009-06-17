@@ -71,13 +71,13 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public class HttpConnection implements Connection
 {
-    private static int UNKNOWN = -2;
-    private static ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
+    private static final int UNKNOWN = -2;
+    private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
 
     private final long _timeStamp=System.currentTimeMillis();
     private int _requests;
     private volatile boolean _handling;
-    
+
     protected final Connector _connector;
     protected final EndPoint _endp;
     protected final Server _server;
@@ -111,7 +111,7 @@ public class HttpConnection implements Connection
     /* ------------------------------------------------------------ */
     public static HttpConnection getCurrentConnection()
     {
-        return (HttpConnection) __currentConnection.get();
+        return __currentConnection.get();
     }
     
     /* ------------------------------------------------------------ */
@@ -126,7 +126,7 @@ public class HttpConnection implements Connection
      */
     public HttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
-        _uri = URIUtil.__CHARSET==StringUtil.__UTF8?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
+        _uri = StringUtil.__UTF8.equals(URIUtil.__CHARSET)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
         _connector = connector;
         _endp = endpoint;
         HttpBuffers ab = (HttpBuffers)_connector;
@@ -144,7 +144,7 @@ public class HttpConnection implements Connection
     protected HttpConnection(Connector connector, EndPoint endpoint, Server server,
             Parser parser, Generator generator, Request request)
     {
-        _uri = URIUtil.__CHARSET==StringUtil.__UTF8?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
+        _uri = URIUtil.__CHARSET.equals(StringUtil.__UTF8)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
         _connector = connector;
         _endp = endpoint;
         _parser = parser;
@@ -383,9 +383,10 @@ public class HttpConnection implements Connection
         boolean progress=true;
 
         try
-        {
-            _handling=true;
+        {               
             assert getCurrentConnection()==null;
+            assert _handling==false;
+            _handling=true;
             setCurrentConnection(this);
 
             while (more_in_buffer)

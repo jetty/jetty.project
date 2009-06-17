@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.log.Log;
 public class SocketConnector extends AbstractConnector
 {
     protected ServerSocket _serverSocket;
-    protected Set _connections;
+    protected final Set _connections;
     
     /* ------------------------------------------------------------ */
     /** Constructor.
@@ -56,6 +56,7 @@ public class SocketConnector extends AbstractConnector
      */
     public SocketConnector()
     {
+        _connections=new HashSet();
     }
 
     /* ------------------------------------------------------------ */
@@ -137,7 +138,7 @@ public class SocketConnector extends AbstractConnector
     /* ------------------------------------------------------------------------------- */
     protected void doStart() throws Exception
     {
-        _connections=new HashSet();
+        _connections.clear();
         super.doStart();
     }
 
@@ -178,7 +179,7 @@ public class SocketConnector extends AbstractConnector
             _socket=socket;
         }
         
-        public void dispatch() throws InterruptedException, IOException
+        public void dispatch() throws IOException
         {
             if (getThreadPool()==null || !getThreadPool().dispatch(this))
             {

@@ -39,13 +39,11 @@ public class Constraint implements Cloneable, Serializable
         if (method == null)
             return false;
         method = method.trim();
-        if (method.equals(__FORM_AUTH) 
+        return (method.equals(__FORM_AUTH) 
                 || method.equals(__BASIC_AUTH) 
                 || method.equals (__DIGEST_AUTH) 
                 || method.equals (__CERT_AUTH) 
-                || method.equals(__CERT_AUTH2))
-            return true;
-        return false;
+                || method.equals(__CERT_AUTH2));
     }
 
     /* ------------------------------------------------------------ */

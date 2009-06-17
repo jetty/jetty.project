@@ -68,16 +68,16 @@ public class Dispatcher implements RequestDispatcher
     public final static String __JSP_FILE="org.apache.catalina.jsp_file";
 
     /* ------------------------------------------------------------ */
-    private ContextHandler _contextHandler;
-    private String _uri;
-    private String _path;
-    private String _dQuery;
-    private String _named;
+    private final ContextHandler _contextHandler;
+    private final String _uri;
+    private final String _path;
+    private final String _dQuery;
+    private final String _named;
     
     /* ------------------------------------------------------------ */
     /**
      * @param contextHandler
-     * @param uriInContext
+     * @param uri
      * @param pathInContext
      * @param query
      */
@@ -87,12 +87,13 @@ public class Dispatcher implements RequestDispatcher
         _uri=uri;
         _path=pathInContext;
         _dQuery=query;
+        _named=null;
     }
 
 
     /* ------------------------------------------------------------ */
     /** Constructor. 
-     * @param servletHandler
+     * @param contextHandler
      * @param name
      */
     public Dispatcher(ContextHandler contextHandler,String name)
@@ -100,6 +101,9 @@ public class Dispatcher implements RequestDispatcher
     {
         _contextHandler=contextHandler;
         _named=name;
+        _uri=null;
+        _path=null;
+        _dQuery=null;
     }
     
     /* ------------------------------------------------------------ */
@@ -176,7 +180,7 @@ public class Dispatcher implements RequestDispatcher
                 
                 baseRequest.setAttributes(attr);
                 
-                _contextHandler.handle(_named==null?_path:_named,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(_path,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
             }
         }
         finally
@@ -196,7 +200,7 @@ public class Dispatcher implements RequestDispatcher
     protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch) throws ServletException, IOException
     {
         Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
-        Response base_response=(Response)baseRequest.getResponse();
+        Response base_response=baseRequest.getResponse();
         base_response.fwdReset();
         request.removeAttribute(__JSP_FILE); // TODO remove when glassfish 1044 is fixed
         
@@ -277,7 +281,7 @@ public class Dispatcher implements RequestDispatcher
                                     Object values=entry.getValue();
                                     for (int i=0;i<LazyList.size(values);i++)
                                     {
-                                        overridden_query_string.append("&"+name+"="+LazyList.get(values, i));
+                                        overridden_query_string.append("&").append(name).append("=").append(LazyList.get(values, i));
                                     }
                                 }
                             }
@@ -300,7 +304,7 @@ public class Dispatcher implements RequestDispatcher
                 //original value. Otherwise, this is the first forward and we need to establish the values.
                 //Note: the established value on the original request for pathInfo and
                 //for queryString is allowed to be null, but cannot be null for the other values.
-                if ((String)old_attr.getAttribute(FORWARD_REQUEST_URI) != null)
+                if (old_attr.getAttribute(FORWARD_REQUEST_URI) != null)
                 {
                     attr._pathInfo=(String)old_attr.getAttribute(FORWARD_PATH_INFO);
                     attr._query=(String)old_attr.getAttribute(FORWARD_QUERY_STRING);
@@ -357,7 +361,7 @@ public class Dispatcher implements RequestDispatcher
     /* ------------------------------------------------------------ */
     private class ForwardAttributes implements Attributes
     {
-        Attributes _attr;
+        final Attributes _attr;
         
         String _requestURI;
         String _contextPath;
@@ -473,7 +477,7 @@ public class Dispatcher implements RequestDispatcher
     /* ------------------------------------------------------------ */
     private class IncludeAttributes implements Attributes
     {
-        Attributes _attr;
+        final Attributes _attr;
         
         String _requestURI;
         String _contextPath;
@@ -575,4 +579,4 @@ public class Dispatcher implements RequestDispatcher
             setAttribute(name,null);
         }
     }
-};
+}

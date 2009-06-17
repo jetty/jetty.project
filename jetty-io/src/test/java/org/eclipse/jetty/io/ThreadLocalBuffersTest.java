@@ -34,17 +34,9 @@ public class ThreadLocalBuffersTest
 
     int runTestLength = _stress?5000:1000;
 
-    int threadWaitTime = 5;
-
     boolean runTest = false;
 
     AtomicLong buffersRetrieved;
-
-    private static int __LOCAL = 1;
-
-    private static int __LIST = 2;
-
-    private static int __QUEUE = 3;
 
     protected void setUp()
         throws Exception
@@ -115,7 +107,7 @@ public class ThreadLocalBuffersTest
     }
 
 
-    class InnerBuffers extends ThreadLocalBuffers
+    static class InnerBuffers extends ThreadLocalBuffers
     {
         @Override
         protected Buffer newBuffer(int size)

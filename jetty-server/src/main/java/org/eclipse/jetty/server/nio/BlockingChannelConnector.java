@@ -121,8 +121,8 @@ public class BlockingChannelConnector extends AbstractNIOConnector
     /* ------------------------------------------------------------------------------- */
     private class Connection extends ChannelEndPoint implements Runnable
     {
+        final HttpConnection _connection;
         boolean _dispatched=false;
-        HttpConnection _connection;
         int _sotimeout;
         
         Connection(ByteChannel channel) 
@@ -136,7 +136,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
             if (!getThreadPool().dispatch(this))
             {
                 Log.warn("dispatch failed for  {}",_connection);
-                close();
+                Connection.this.close();
             }
         }
         
@@ -166,19 +166,19 @@ public class BlockingChannelConnector extends AbstractNIOConnector
             catch (EofException e)
             {
                 Log.debug("EOF", e);
-                try{close();}
+                try{Connection.this.close();}
                 catch(IOException e2){Log.ignore(e2);}
             }
             catch (HttpException e)
             {
                 Log.debug("BAD", e);
-                try{close();}
+                try{Connection.this.close();}
                 catch(IOException e2){Log.ignore(e2);}
             }
             catch(Throwable e)
             {
                 Log.warn("handle failed",e);
-                try{close();}
+                try{Connection.this.close();}
                 catch(IOException e2){Log.ignore(e2);}
             }
             finally

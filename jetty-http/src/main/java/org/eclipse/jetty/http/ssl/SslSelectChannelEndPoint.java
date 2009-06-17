@@ -43,23 +43,22 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 {
     private static final ByteBuffer[] __NO_BUFFERS={};
 
-    private Buffers _buffers;
+    private final Buffers _buffers;
     
-    private SSLEngine _engine;
-    private ByteBuffer _inBuffer;
-    private NIOBuffer _inNIOBuffer;
-    private ByteBuffer _outBuffer;
-    private NIOBuffer _outNIOBuffer;
+    private final SSLEngine _engine;
+    private final SSLSession _session;
+    private final ByteBuffer _inBuffer;
+    private final NIOBuffer _inNIOBuffer;
+    private final ByteBuffer _outBuffer;
+    private final NIOBuffer _outNIOBuffer;
 
-    private NIOBuffer[] _reuseBuffer=new NIOBuffer[2];    
-    private ByteBuffer[] _gather=new ByteBuffer[2];
+    private final NIOBuffer[] _reuseBuffer=new NIOBuffer[2];
+    private final ByteBuffer[] _gather=new ByteBuffer[2];
 
     private boolean _closing=false;
     private SSLEngineResult _result;
     private String _last;
-    
-    // ssl
-    protected SSLSession _session;
+
     
     // TODO get rid of this
     // StringBuilder h = new StringBuilder(500);
@@ -77,7 +76,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     
     /* ------------------------------------------------------------ */
     public SslSelectChannelEndPoint(Buffers buffers,SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey key, SSLEngine engine)
-            throws SSLException, IOException
+            throws IOException
     {
         super(channel,selectSet,key);
         _buffers=buffers;
@@ -111,7 +110,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         try
         {
-            _selectSet.getManager().dispatch(new Runnable()
+            getSelectManager().dispatch(new Runnable()
             {
                 public void run() 
                 { 
@@ -258,9 +257,10 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
      */
     public int fill(Buffer buffer) throws IOException
     {
-        ByteBuffer bbuf=extractInputBuffer(buffer);
+        final ByteBuffer bbuf=extractInputBuffer(buffer);
         int size=buffer.length();
         HandshakeStatus initialStatus = _engine.getHandshakeStatus();
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (bbuf)
         {
             try
@@ -508,6 +508,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             if (flushed==0)
             {
                 Thread.yield();
+                //noinspection UnusedAssignment
                 flushed=super.flush(_outNIOBuffer);
                 // h.append("flushed2=").append(flushed).append(" of ").append(_outNIOBuffer.length()).append('\n');
             }
@@ -590,9 +591,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             case CLOSED:
                 _closing=true;
             case OK:
-                boolean progress=total_filled>0 ||_result.bytesConsumed()>0 || _result.bytesProduced()>0;    
-                // h.append("progress=").append(progress).append('\n');
-                return progress;
+                return total_filled>0 ||_result.bytesConsumed()>0 || _result.bytesProduced()>0;
             default:
                 Log.warn("unwrap "+_result);
                 throw new IOException(_result.toString());
@@ -603,11 +602,9 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     /* ------------------------------------------------------------ */
     private ByteBuffer extractOutputBuffer(Buffer buffer,int n)
     {
-        NIOBuffer nBuf=null;
-
         if (buffer.buffer() instanceof NIOBuffer)
         {
-            nBuf=(NIOBuffer)buffer.buffer();
+            NIOBuffer nBuf=(NIOBuffer)buffer.buffer();
             return nBuf.getByteBuffer();
         }
         else
@@ -622,7 +619,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    private int wrap(Buffer header, Buffer buffer) throws IOException
+    private int wrap(final Buffer header, final Buffer buffer) throws IOException
     {
         _gather[0]=extractOutputBuffer(header,0);
         synchronized(_gather[0])
@@ -658,7 +655,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     {
                         _outBuffer.position(0);
 
-                        if (consumed>0 && header!=null)
+                        if (consumed>0)
                         {
                             int len=consumed<header.length()?consumed:header.length();
                             header.skip(len);
@@ -666,7 +663,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                             _gather[0].position(0);
                             _gather[0].limit(_gather[0].capacity());
                         }
-                        if (consumed>0 && buffer!=null)
+                        if (consumed>0)
                         {
                             int len=consumed<buffer.length()?consumed:buffer.length();
                             buffer.skip(len);
@@ -700,7 +697,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    private int wrap(Buffer header) throws IOException
+    private int wrap(final Buffer header) throws IOException
     {
         _gather[0]=extractOutputBuffer(header,0);
         synchronized(_gather[0])
@@ -728,7 +725,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 {
                     _outBuffer.position(0);
 
-                    if (consumed>0 && header!=null)
+                    if (consumed>0)
                     {
                         int len=consumed<header.length()?consumed:header.length();
                         header.skip(len);

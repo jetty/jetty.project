@@ -292,12 +292,6 @@ public class ByteArrayBuffer extends AbstractBuffer
         byte[] src_array = src.array();
         if (src_array != null)
             System.arraycopy(src_array, src.getIndex(), _bytes, index, length);
-        else if (src_array != null)
-        {
-            int s=src.getIndex();
-            for (int i=0;i<length;i++)
-                poke(index++,src_array[s++]);
-        }
         else 
         {
             int s=src.getIndex();
@@ -421,7 +415,7 @@ public class ByteArrayBuffer extends AbstractBuffer
 
         public boolean equals(Object obj)
         {
-            return equalsIgnoreCase((Buffer)obj);
+            return obj instanceof Buffer && equalsIgnoreCase((Buffer)obj);
         }
         
     }

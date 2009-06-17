@@ -113,12 +113,12 @@ public class ScopedHandlerTest extends TestCase
         {
             try
             {
-                _history.append(">S"+_name);
+                _history.append(">S").append(_name);
                 super.nextScope(target,baseRequest,request, response);
             }
             finally
             {
-                _history.append("<S"+_name);
+                _history.append("<S").append(_name);
             }
         }
         
@@ -126,12 +126,12 @@ public class ScopedHandlerTest extends TestCase
         {
             try
             {
-                _history.append(">W"+_name);
+                _history.append(">W").append(_name);
                 super.nextHandle(target,baseRequest,request,response);
             }
             finally
             {
-                _history.append("<W"+_name);
+                _history.append("<W").append(_name);
             }
         }
 
@@ -150,12 +150,12 @@ public class ScopedHandlerTest extends TestCase
         {
             try
             {
-                _history.append(">H"+_name);
+                _history.append(">H").append(_name);
                 super.handle(target,baseRequest,request, response);
             }
             finally
             {
-                _history.append("<H"+_name);
+                _history.append("<H").append(_name);
             }
         }
     }

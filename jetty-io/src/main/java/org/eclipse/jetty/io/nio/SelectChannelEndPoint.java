@@ -18,6 +18,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
@@ -36,25 +37,20 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, AsyncEndPoint
 {
-    protected SelectorManager _manager;
-    protected SelectorManager.SelectSet _selectSet;
-    protected boolean _dispatched = false;
-    protected boolean _redispatched = false;
-    protected boolean _writable = true; 
-    protected SelectionKey _key;
-    protected int _interestOps;
-    protected boolean _readBlocked;
-    protected boolean _writeBlocked;
-    protected Connection _connection;
-    private boolean _open;
-    private Timeout.Task _idleTask = new IdleTask();
-
-    /* ------------------------------------------------------------ */
-    public Connection getConnection()
-    {
-        return _connection;
-    }
+    private final SelectorManager.SelectSet _selectSet;
+    private final Connection _connection;
+    private final SelectorManager _manager;
+    private boolean _dispatched = false;
+    private boolean _redispatched = false;
+    private volatile boolean _writable = true; 
     
+    private  SelectionKey _key;
+    private int _interestOps;
+    private boolean _readBlocked;
+    private boolean _writeBlocked;
+    private boolean _open;
+    private final Timeout.Task _idleTask = new IdleTask();
+
     /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key)
     {
@@ -71,12 +67,24 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         _key = key;
         scheduleIdle();
     }
+    
+    /* ------------------------------------------------------------ */
+    public Connection getConnection()
+    {
+        return _connection;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public SelectorManager getSelectManager()
+    {
+        return _manager;
+    }
 
     /* ------------------------------------------------------------ */
     /** Called by selectSet to schedule handling
      * 
      */
-    public void schedule() throws IOException
+    public void schedule() 
     {
         // If threads are blocked on this
         synchronized (this)
@@ -130,7 +138,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                 dispatch();
         }
     }
-        
+    
     /* ------------------------------------------------------------ */
     public void dispatch() 
     {
@@ -140,7 +148,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                 _redispatched=true;
             else
             {
-                _dispatched = _manager.dispatch((Runnable)this);   
+                _dispatched = _manager.dispatch(this);
                 if(!_dispatched)
                 {
                     Log.warn("Dispatched Failed!");
@@ -157,7 +165,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
      * @return If false is returned, the endpoint has been redispatched and 
      * thread must keep handling the endpoint.
      */
-    protected boolean undispatch()
+    boolean undispatch()
     {
         synchronized (this)
         {
@@ -419,41 +427,52 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     public void run()
     {
         boolean dispatched=true;
-        do
+        try
         {
-            try
+            while(dispatched)
             {
-                _connection.handle();
+                try
+                {
+                    _connection.handle();
+                }
+                catch (ClosedChannelException e)
+                {
+                    Log.ignore(e);
+                }
+                catch (EofException e)
+                {
+                    Log.debug("EOF", e);
+                    try{close();}
+                    catch(IOException e2){Log.ignore(e2);}
+                }
+                catch (IOException e)
+                {
+                    Log.warn(e.toString());
+                    Log.debug(e);
+                    try{close();}
+                    catch(IOException e2){Log.ignore(e2);}
+                }
+                catch (Throwable e)
+                {
+                    Log.warn("handle failed", e);
+                    try{close();}
+                    catch(IOException e2){Log.ignore(e2);}
+                }
+                dispatched=!undispatch();
             }
-            catch (ClosedChannelException e)
-            {
-                Log.ignore(e);
-            }
-            catch (EofException e)
-            {
-                Log.debug("EOF", e);
-                try{close();}
-                catch(IOException e2){Log.ignore(e2);}
-            }
-            catch (IOException e)
-            {
-                Log.warn(e.toString());
-                Log.debug(e);
-                try{close();}
-                catch(IOException e2){Log.ignore(e2);}
-            }
-            catch (Throwable e)
-            {
-                Log.warn("handle failed", e);
-                try{close();}
-                catch(IOException e2){Log.ignore(e2);}
-            }
-            finally
+        }
+        finally
+        {
+            if (dispatched)
             {
                 dispatched=!undispatch();
-            }   
+                while (dispatched)
+                {
+                    Log.warn("SCEP.run() finally DISPATCHED");
+                    dispatched=!undispatch();
+                }
+            }
         }
-        while(dispatched);
     }
 
     /* ------------------------------------------------------------ */
@@ -479,8 +498,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return "SCEP@" + hashCode() + "\t[d=" + _dispatched + ",io=" + _interestOps+
-        ",w=" + _writable + ",b=" + _readBlocked + "|" + _writeBlocked + "]";
+        synchronized(this)
+        {
+            return "SCEP@" + hashCode() + "\t[d=" + _dispatched + ",io=" + _interestOps+
+            ",w=" + _writable + ",b=" + _readBlocked + "|" + _writeBlocked + "]";
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -498,7 +520,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public class IdleTask extends Timeout.Task 
+    private class IdleTask extends Timeout.Task
     {
         /* ------------------------------------------------------------ */
         /*

@@ -41,7 +41,7 @@ public class HttpGenerator extends AbstractGenerator
         Buffer _schemeCode;
         Buffer _responseLine;
     }
-    private static Status[] __status = new Status[HttpStatus.MAX_CODE+1];
+    private static final Status[] __status = new Status[HttpStatus.MAX_CODE+1];
     static
     {
         int versionLength=HttpVersions.HTTP_1_1_BUFFER.length();
@@ -60,7 +60,7 @@ public class HttpGenerator extends AbstractGenerator
             bytes[versionLength+3]=(byte)('0'+(i%10));
             bytes[versionLength+4]=' ';
             for (int j=0;j<reason.length();j++)
-                bytes[versionLength+5+j]=(byte)reason.charAt(j);;
+                bytes[versionLength+5+j]=(byte)reason.charAt(j);
             bytes[versionLength+5+reason.length()]=HttpTokens.CARRIAGE_RETURN;
             bytes[versionLength+6+reason.length()]=HttpTokens.LINE_FEED;
             
@@ -82,18 +82,18 @@ public class HttpGenerator extends AbstractGenerator
     
     
     // common _content
-    private static byte[] LAST_CHUNK =
+    private static final byte[] LAST_CHUNK =
     { (byte) '0', (byte) '\015', (byte) '\012', (byte) '\015', (byte) '\012'};
-    private static byte[] CONTENT_LENGTH_0 = StringUtil.getBytes("Content-Length: 0\015\012");
-    private static byte[] CONNECTION_KEEP_ALIVE = StringUtil.getBytes("Connection: keep-alive\015\012");
-    private static byte[] CONNECTION_CLOSE = StringUtil.getBytes("Connection: close\015\012");
-    private static byte[] CONNECTION_ = StringUtil.getBytes("Connection: ");
-    private static byte[] CRLF = StringUtil.getBytes("\015\012");
-    private static byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\015\012");
+    private static final byte[] CONTENT_LENGTH_0 = StringUtil.getBytes("Content-Length: 0\015\012");
+    private static final byte[] CONNECTION_KEEP_ALIVE = StringUtil.getBytes("Connection: keep-alive\015\012");
+    private static final byte[] CONNECTION_CLOSE = StringUtil.getBytes("Connection: close\015\012");
+    private static final byte[] CONNECTION_ = StringUtil.getBytes("Connection: ");
+    private static final byte[] CRLF = StringUtil.getBytes("\015\012");
+    private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\015\012");
     private static byte[] SERVER = StringUtil.getBytes("Server: Jetty(7.0.x)\015\012");
 
     // other statics
-    private static int CHUNK_SPACE = 12;
+    private static final int CHUNK_SPACE = 12;
     
     public static void setServerVersion(String version)
     {
@@ -235,7 +235,7 @@ public class HttpGenerator extends AbstractGenerator
         
         if (_last || _state==STATE_END) 
         {
-            Log.debug("Ignoring extra content {}",new Byte(b));
+            Log.debug("Ignoring extra content {}",Byte.valueOf(b));
             return false;
         }
 
@@ -303,8 +303,7 @@ public class HttpGenerator extends AbstractGenerator
     public boolean isBufferFull()
     {
         // Should we flush the buffers?
-        boolean full = super.isBufferFull() || _bufferChunked || _bypass  || (_contentLength == HttpTokens.CHUNKED_CONTENT && _buffer != null && _buffer.space() < CHUNK_SPACE);
-        return full;
+        return super.isBufferFull() || _bufferChunked || _bypass  || (_contentLength == HttpTokens.CHUNKED_CONTENT && _buffer != null && _buffer.space() < CHUNK_SPACE);
     }
     
     /* ------------------------------------------------------------ */
@@ -842,6 +841,7 @@ public class HttpGenerator extends AbstractGenerator
                     _bufferChunked = true;
 
                     // Did we leave space at the start of the buffer.
+                    //noinspection ConstantConditions
                     if (_buffer.getIndex() == CHUNK_SPACE)
                     {
                         // Oh yes, goodie! let's use it then!

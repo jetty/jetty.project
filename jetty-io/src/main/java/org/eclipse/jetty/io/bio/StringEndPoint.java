@@ -39,7 +39,6 @@ public class StringEndPoint extends StreamEndPoint
     }
     
     public StringEndPoint(String encoding)
-    	throws IOException
     {
         this();
         if (encoding!=null)

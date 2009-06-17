@@ -56,19 +56,19 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public class Server extends HandlerWrapper implements Attributes
 {
-    private static ShutdownHookThread hookThread = new ShutdownHookThread();
-    private static String _version = (Server.class.getPackage()!=null && Server.class.getPackage().getImplementationVersion()!=null)
+    private static final ShutdownHookThread hookThread = new ShutdownHookThread();
+    private static final String _version = (Server.class.getPackage()!=null && Server.class.getPackage().getImplementationVersion()!=null)
         ?Server.class.getPackage().getImplementationVersion()
         :"7.0.y.z-SNAPSHOT";
 
+    private final Container _container=new Container();
+    private final AttributesMap _attributes = new AttributesMap();
+    private final List<Object> _dependentBeans=new ArrayList<Object>();
     private ThreadPool _threadPool;
     private Connector[] _connectors;
-    private Container _container=new Container();
     private SessionIdManager _sessionIdManager;
     private boolean _sendServerVersion = true; //send Server: header
-    private boolean _sendDateHeader = false; //send Date: header 
-    private AttributesMap _attributes = new AttributesMap();
-    private List<Object> _dependentBeans=new ArrayList<Object>();
+    private boolean _sendDateHeader = false; //send Date: header
     private int _graceful=0;
     private boolean _stopAtShutdown;
     
@@ -525,7 +525,7 @@ public class Server extends HandlerWrapper implements Attributes
     private static class ShutdownHookThread extends Thread
     {
         private boolean _hooked = false;
-        private Set<Server> _servers = new CopyOnWriteArraySet<Server>();
+        private final Set<Server> _servers = new CopyOnWriteArraySet<Server>();
 
         /**
          * Hooks this thread for shutdown.
@@ -538,10 +538,8 @@ public class Server extends HandlerWrapper implements Attributes
             {
                 try
                 {
-                    Method shutdownHook = java.lang.Runtime.class.getMethod("addShutdownHook", new Class[]
-                    { java.lang.Thread.class});
-                    shutdownHook.invoke(Runtime.getRuntime(), new Object[]
-                    { this});
+                    Method shutdownHook = java.lang.Runtime.class.getMethod("addShutdownHook", Thread.class);
+                    shutdownHook.invoke(Runtime.getRuntime(), this);
                     _hooked = true;
                 }
                 catch (Exception e)

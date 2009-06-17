@@ -27,9 +27,9 @@ import java.io.Writer;
  */
 public class WriterOutputStream extends OutputStream
 {
-    protected Writer _writer;
-    protected String _encoding;
-    private byte[] _buf=new byte[1];
+    protected final Writer _writer;
+    protected final String _encoding;
+    private final byte[] _buf=new byte[1];
     
     /* ------------------------------------------------------------ */
     public WriterOutputStream(Writer writer, String encoding)
@@ -42,6 +42,7 @@ public class WriterOutputStream extends OutputStream
     public WriterOutputStream(Writer writer)
     {
         _writer=writer;
+        _encoding=null;
     }
 
     /* ------------------------------------------------------------ */
@@ -49,8 +50,6 @@ public class WriterOutputStream extends OutputStream
         throws IOException
     {
         _writer.close();
-        _writer=null;
-        _encoding=null;
     }
     
     /* ------------------------------------------------------------ */

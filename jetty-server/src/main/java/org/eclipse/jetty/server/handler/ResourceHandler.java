@@ -202,8 +202,7 @@ public class ResourceHandler extends AbstractHandler
         try
         {
             path=URIUtil.canonicalPath(path);
-            Resource resource=base.addPath(path);
-            return resource;
+            return base.addPath(path);
         }
         catch(Exception e)
         {

@@ -67,7 +67,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         if (handler==null)
             return list;
         
-        if (handler!=null && (byClass==null || byClass.isAssignableFrom(handler.getClass())))
+        if (byClass==null || byClass.isAssignableFrom(handler.getClass()))
             list=LazyList.add(list, handler);
 
         if (handler instanceof AbstractHandlerContainer)

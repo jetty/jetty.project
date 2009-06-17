@@ -161,13 +161,10 @@ public abstract class AbstractGenerator implements Generator
             _buffer=_buffers.getBuffer();
         if (contentBufferSize > _buffer.capacity())
         {
-            if (_buffer != null)
-            {
-                Buffer nb = _buffers.getBuffer(contentBufferSize);
-                nb.put(_buffer);
-                _buffers.returnBuffer(_buffer);
-                _buffer = nb;
-            }
+            Buffer nb = _buffers.getBuffer(contentBufferSize);
+            nb.put(_buffer);
+            _buffers.returnBuffer(_buffer);
+            _buffer = nb;
         }
     }
     
@@ -346,7 +343,6 @@ public abstract class AbstractGenerator implements Generator
         {
             if(_buffer!=null)
                 _buffer.clear();
-            return;
         }
         else 
         {
