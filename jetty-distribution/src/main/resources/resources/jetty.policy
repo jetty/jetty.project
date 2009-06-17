@@ -20,6 +20,8 @@ grant codeBase "file:${jetty.home}${/}-" {
 // default permissions granted to all domains
 
 grant { 
+//permission java.security.AllPermission;
+
         // Allows any thread to stop itself using the java.lang.Thread.stop()
         // method that takes no argument.
         // Note that this permission is granted by default only to remain
