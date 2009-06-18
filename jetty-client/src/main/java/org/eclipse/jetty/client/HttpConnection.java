@@ -285,8 +285,11 @@ public class HttpConnection implements Connection
                     return;
                 }
             }
-            catch (IOException e)
-            {
+            catch (Throwable e)
+            {                
+                if (e instanceof ThreadDeath)
+                    throw (ThreadDeath)e;
+                
                 synchronized (this)
                 {
                     if (_exchange != null)
@@ -295,9 +298,18 @@ public class HttpConnection implements Connection
                         _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
                     }
                 }
-                failed = true;
                 Log.warn("IOE on "+_exchange);
-                throw e;
+                failed = true;
+                if (e instanceof IOException)
+                    throw (IOException)e;
+ 
+                if (e instanceof Error)
+                    throw (Error)e;
+                
+                if (e instanceof RuntimeException)
+                    throw (RuntimeException)e;
+                
+               throw new RuntimeException(e);
             }
             finally
             {
