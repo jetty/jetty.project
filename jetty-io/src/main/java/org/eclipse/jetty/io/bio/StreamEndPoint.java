@@ -102,9 +102,7 @@ public class StreamEndPoint implements EndPoint
     	    throw new IOException("FULL");
     	}
         
-        int len = buffer.readFrom(_in,space);
-    
-    	return len;
+        return buffer.readFrom(_in,space);
     }
 
     /* (non-Javadoc)

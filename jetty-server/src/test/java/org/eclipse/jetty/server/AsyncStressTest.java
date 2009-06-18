@@ -169,7 +169,7 @@ public class AsyncStressTest extends TestCase
     
     private static class SuspendHandler extends HandlerWrapper
     {
-        private Timer _timer;
+        private final Timer _timer;
         
         public SuspendHandler()
         {

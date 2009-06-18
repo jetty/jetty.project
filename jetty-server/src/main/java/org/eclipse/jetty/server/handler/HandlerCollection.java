@@ -72,7 +72,7 @@ public class HandlerCollection extends AbstractHandlerContainer
         if (!_mutableWhenRunning && isStarted())
             throw new IllegalStateException(STARTED);
         
-        Handler [] old_handlers = _handlers==null?null:(Handler[])_handlers.clone();
+        Handler [] old_handlers = _handlers==null?null:_handlers.clone();
         
         if (getServer()!=null)
             getServer().getContainer().update(this, old_handlers, handlers, "handler");

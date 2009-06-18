@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.URIUtil;
  * as it is assumed they would have been either encoded in the original URL or 
  * stripped from the path.
  * <P>
- * This class is not synchronized for get's.  If concurrent modifications are
+ * This class is not synchronized.  If concurrent modifications are
  * possible then it should be synchronized at a higher level.
  *
  * 
@@ -83,7 +83,7 @@ public class PathMap extends HashMap implements Externalizable
     List _defaultSingletonList=null;
     Entry _prefixDefault=null;
     Entry _default=null;
-    Set _entrySet;
+    final Set _entrySet;
     boolean _nodefault=false;
     
     /* --------------------------------------------------------------- */
@@ -145,7 +145,7 @@ public class PathMap extends HashMap implements Externalizable
      * path specifications.
      * @param object The object the path maps to
      */
-    public synchronized Object put(Object pathSpec, Object object)
+    public Object put(Object pathSpec, Object object)
     {
         StringTokenizer tok = new StringTokenizer(pathSpec.toString(),__pathSpecSeparators);
         Object old =null;
@@ -337,7 +337,7 @@ public class PathMap extends HashMap implements Externalizable
     }
 
     /* --------------------------------------------------------------- */  
-    public synchronized Object remove(Object pathSpec)
+    public Object remove(Object pathSpec)
     {
         if (pathSpec!=null)
         {
@@ -510,8 +510,8 @@ public class PathMap extends HashMap implements Externalizable
     /* ------------------------------------------------------------ */
     public static class Entry implements Map.Entry
     {
-        private Object key;
-        private Object value;
+        private final Object key;
+        private final Object value;
         private String mapped; 
         private transient String string;
 

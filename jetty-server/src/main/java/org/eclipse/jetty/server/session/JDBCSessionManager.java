@@ -82,7 +82,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      */
     public class SessionData
     {
-        private String _id;
+        private final String _id;
         private String _rowId;
         private long _accessed;
         private long _lastAccessed;
@@ -249,7 +249,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      */
     public class Session extends AbstractSessionManager.Session
     {
-        private SessionData _data;
+        private final SessionData _data;
         private boolean _dirty=false;
 
         /**
@@ -622,9 +622,9 @@ public class JDBCSessionManager extends AbstractSessionManager
             //then session data will be lost.
             try
             {
-                ((JDBCSessionManager.Session)session).willPassivate();
+                session.willPassivate();
                 storeSession(((JDBCSessionManager.Session)session)._data);
-                ((JDBCSessionManager.Session)session).didActivate();
+                session.didActivate();
             }
             catch (Exception e)
             {

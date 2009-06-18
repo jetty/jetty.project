@@ -261,7 +261,7 @@ public class HttpServerTestBase extends TestCase
                 int[] points=new int[pointCount];
                 StringBuilder message=new StringBuilder();
 
-                message.append("iteration #"+(i+1));
+                message.append("iteration #").append(i + 1);
 
                 // Pick fragment points at random
                 for (int j=0; j<points.length; ++j)
@@ -306,7 +306,7 @@ public class HttpServerTestBase extends TestCase
                 int[] points=new int[] { i };
                 StringBuilder message=new StringBuilder();
 
-                message.append("iteration #"+(i+1));
+                message.append("iteration #").append(i + 1);
 
                 // Sort the list
                 Arrays.sort(points);
@@ -358,7 +358,7 @@ public class HttpServerTestBase extends TestCase
                 OutputStream os=client.getOutputStream();
                 StringBuilder message=new StringBuilder();
 
-                message.append("iteration #"+(i+1));
+                message.append("iteration #").append(i + 1);
                 writeFragments(bytes,badPoints[i],message,os);
 
                 // Read the response
@@ -802,7 +802,7 @@ public class HttpServerTestBase extends TestCase
             Thread.sleep(PAUSE);
 
             // Update the log message
-            message.append(" point #"+(j+1)+": "+point);
+            message.append(" point #").append(j + 1).append(": ").append(point);
         }
 
         // Write the last fragment

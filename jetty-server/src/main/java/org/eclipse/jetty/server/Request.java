@@ -173,7 +173,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public void addContinuationListener(ContinuationListener listener)
     {
-        _async.addContinuationListener((ContinuationListener)listener);
+        _async.addContinuationListener(listener);
     }
 
     /* ------------------------------------------------------------ */
@@ -558,11 +558,10 @@ public class Request implements HttpServletRequest
             return  Locale.getDefault();
         
         int size=acceptLanguage.size();
-        
-        // convert to locals
-        for (int i=0; i<size; i++)
+
+        if (size>0)
         {
-            String language = (String)acceptLanguage.get(i);
+            String language = (String)acceptLanguage.get(0);
             language=HttpFields.valueParameters(language,null);
             String country = "";
             int dash = language.indexOf('-');
@@ -901,7 +900,7 @@ public class Request implements HttpServletRequest
      */
     public StringBuffer getRequestURL()
     {
-        StringBuffer url = new StringBuffer(48);
+        final StringBuffer url = new StringBuffer(48);
         synchronized (url)
         {
             String scheme = getScheme();
@@ -1263,7 +1262,7 @@ public class Request implements HttpServletRequest
             return false;
         
         HttpSession session=getSession(false);
-        return (session==null?false:_sessionManager.getIdManager().getClusterId(_requestedSessionId).equals(_sessionManager.getClusterId(session)));
+        return (session != null && _sessionManager.getIdManager().getClusterId(_requestedSessionId).equals(_sessionManager.getClusterId(session)));
     }
     
     /* ------------------------------------------------------------ */
@@ -1294,7 +1293,7 @@ public class Request implements HttpServletRequest
     {
         if (_savedNewSessions==null)
             return null;
-        return (HttpSession) _savedNewSessions.get(key);
+        return _savedNewSessions.get(key);
     }
     
     /* ------------------------------------------------------------ */
@@ -1363,7 +1362,7 @@ public class Request implements HttpServletRequest
                     if (listener instanceof ServletRequestAttributeListener)
                     {
                         final ServletRequestAttributeListener l = (ServletRequestAttributeListener)listener;
-                        ((ServletRequestAttributeListener)l).attributeRemoved(event);
+                        l.attributeRemoved(event);
                     }
                 }
             }
@@ -1426,12 +1425,12 @@ public class Request implements HttpServletRequest
         {
             try
             {
-                ByteBuffer byteBuffer=(ByteBuffer)value;
+                final ByteBuffer byteBuffer=(ByteBuffer)value;
                 synchronized (byteBuffer)
                 {
                     NIOBuffer buffer = byteBuffer.isDirect()
-                        ?(NIOBuffer)new DirectNIOBuffer(byteBuffer,true)
-                        :(NIOBuffer)new IndirectNIOBuffer(byteBuffer,true);
+                        ?new DirectNIOBuffer(byteBuffer,true)
+                        :new IndirectNIOBuffer(byteBuffer,true);
                     ((HttpConnection.Output)getServletResponse().getOutputStream()).sendResponse(buffer);
                 }
             }
@@ -1501,6 +1500,7 @@ public class Request implements HttpServletRequest
 
         // check encoding is supported
         if (!StringUtil.isUTF8(encoding))
+            //noinspection ResultOfMethodCallIgnored
             "".getBytes(encoding);
     }
 

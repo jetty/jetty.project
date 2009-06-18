@@ -35,7 +35,7 @@ public abstract class ThreadLocalBuffers implements Buffers
 
     public Buffer getBuffer()
     {
-        ThreadBuffers buffers = (ThreadBuffers)_buffers.get();
+        ThreadBuffers buffers = _buffers.get();
         if (buffers._buffer!=null)
         {
             Buffer b=buffers._buffer;
@@ -55,7 +55,7 @@ public abstract class ThreadLocalBuffers implements Buffers
 
     public Buffer getHeader()
     {
-        ThreadBuffers buffers = (ThreadBuffers)_buffers.get();
+        ThreadBuffers buffers = _buffers.get();
         if (buffers._header!=null)
         {
             Buffer b=buffers._header;
@@ -75,7 +75,7 @@ public abstract class ThreadLocalBuffers implements Buffers
 
     public Buffer getBuffer(int size)
     {
-        ThreadBuffers buffers = (ThreadBuffers)_buffers.get();
+        ThreadBuffers buffers = _buffers.get();
         if (buffers._other!=null && buffers._other.capacity()==size)
         {
             Buffer b=buffers._other;
@@ -94,7 +94,7 @@ public abstract class ThreadLocalBuffers implements Buffers
 
         int size=buffer.capacity();
         
-        ThreadBuffers buffers = (ThreadBuffers)_buffers.get();
+        ThreadBuffers buffers = _buffers.get();
         
         if (size==_bufferSize && buffers._buffer==null)
         {

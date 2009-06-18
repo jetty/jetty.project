@@ -36,8 +36,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class ChannelEndPoint implements EndPoint
 {
-    protected ByteChannel _channel;
-    protected ByteBuffer[] _gather2=new ByteBuffer[2];
+    protected final ByteChannel _channel;
+    protected final ByteBuffer[] _gather2=new ByteBuffer[2];
     protected Socket _socket;
     protected InetSocketAddress _local;
     protected InetSocketAddress _remote;
@@ -55,9 +55,7 @@ public class ChannelEndPoint implements EndPoint
     
     public boolean isBlocking()
     {
-        if (_channel instanceof SelectableChannel)
-            return ((SelectableChannel)_channel).isBlocking();
-        return true;
+        return  !(_channel instanceof SelectableChannel) || ((SelectableChannel)_channel).isBlocking();
     }
     
     public boolean blockReadable(long millisecs) throws IOException
@@ -119,9 +117,10 @@ public class ChannelEndPoint implements EndPoint
         int len=0;
         if (buf instanceof NIOBuffer)
         {
-            NIOBuffer nbuf = (NIOBuffer)buf;
-            ByteBuffer bbuf=nbuf.getByteBuffer();
-            synchronized(nbuf)
+            final NIOBuffer nbuf = (NIOBuffer)buf;
+            final ByteBuffer bbuf=nbuf.getByteBuffer();
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized(bbuf)
             {
                 try
                 {
@@ -154,10 +153,10 @@ public class ChannelEndPoint implements EndPoint
         int len=0;
         if (buf instanceof NIOBuffer)
         {
-            NIOBuffer nbuf = (NIOBuffer)buf;
-            ByteBuffer bbuf=nbuf.getByteBuffer();
+            final NIOBuffer nbuf = (NIOBuffer)buf;
+            final ByteBuffer bbuf=nbuf.getByteBuffer();
 
-            // TODO synchronize 
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized(bbuf)
             {
                 try
@@ -210,16 +209,18 @@ public class ChannelEndPoint implements EndPoint
             header!=null && header.length()!=0 && buf0 instanceof NIOBuffer && 
             buffer!=null && buffer.length()!=0 && buf1 instanceof NIOBuffer)
         {
-            NIOBuffer nbuf0 = (NIOBuffer)buf0;
-            ByteBuffer bbuf0=nbuf0.getByteBuffer();
-            NIOBuffer nbuf1 = (NIOBuffer)buf1;
-            ByteBuffer bbuf1=nbuf1.getByteBuffer();
+            final NIOBuffer nbuf0 = (NIOBuffer)buf0;
+            final ByteBuffer bbuf0=nbuf0.getByteBuffer();
+            final NIOBuffer nbuf1 = (NIOBuffer)buf1;
+            final ByteBuffer bbuf1=nbuf1.getByteBuffer();
 
             synchronized(this)
             {
                 // We must sync because buffers may be shared (eg nbuf1 is likely to be cached content).
+                //noinspection SynchronizationOnLocalVariableOrMethodParameter
                 synchronized(bbuf0)
                 {
+                    //noinspection SynchronizationOnLocalVariableOrMethodParameter
                     synchronized(bbuf1)
                     {
                         try
@@ -395,8 +396,6 @@ public class ChannelEndPoint implements EndPoint
         if (_remote==null)
             _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
 
-        if (_remote==null)
-            return -1;
         return _remote==null?-1:_remote.getPort();
     }
 

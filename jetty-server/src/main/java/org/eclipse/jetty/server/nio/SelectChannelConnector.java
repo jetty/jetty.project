@@ -61,11 +61,11 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  */
 public class SelectChannelConnector extends AbstractNIOConnector 
 {
-    protected transient ServerSocketChannel _acceptChannel;
+    protected ServerSocketChannel _acceptChannel;
     private long _lowResourcesConnections;
     private long _lowResourcesMaxIdleTime;
 
-    private SelectorManager _manager = new SelectorManager()
+    private final SelectorManager _manager = new SelectorManager()
     {
         protected SocketChannel acceptChannel(SelectionKey key) throws IOException
         {

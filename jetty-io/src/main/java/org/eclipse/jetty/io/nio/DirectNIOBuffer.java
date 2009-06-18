@@ -34,7 +34,7 @@ import org.eclipse.jetty.io.Buffer;
  */
 public class DirectNIOBuffer extends AbstractBuffer implements NIOBuffer
 { 	
-    protected ByteBuffer _buf;
+    protected final ByteBuffer _buf;
     private ReadableByteChannel _in;
     private InputStream _inStream;
     private WritableByteChannel _out;
@@ -137,8 +137,7 @@ public class DirectNIOBuffer extends AbstractBuffer implements NIOBuffer
         byte[] array=src.array();
         if (array!=null)
         {
-            int length = poke(index,array,src.getIndex(),src.length());
-            return length;
+            return poke(index,array,src.getIndex(),src.length());
         }
         else
         {
@@ -279,7 +278,7 @@ public class DirectNIOBuffer extends AbstractBuffer implements NIOBuffer
     /* ------------------------------------------------------------ */
     public void writeTo(OutputStream out) throws IOException
     {
-        if (_out==null || !_out.isOpen() || _out!=_outStream)
+        if (_out==null || !_out.isOpen() || out!=_outStream)
         {
             _out=Channels.newChannel(out);
             _outStream=out;

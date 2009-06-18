@@ -162,11 +162,8 @@ public class HttpParser implements Parser
     public boolean isMoreInBuffer()
     throws IOException
     {
-        if ( _header!=null && _header.hasContent() ||
-             _body!=null && _body.hasContent())
-            return true;
-
-        return false;
+        return ( _header!=null && _header.hasContent() ||
+             _body!=null && _body.hasContent());
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -447,12 +444,12 @@ public class HttpParser implements Parser
                                 
                                 Buffer header=_cached!=null?_cached:HttpHeaders.CACHE.lookup(_tok0);
                                 _cached=null;
-                                Buffer value=_multiLineValue == null ? (Buffer) _tok1 : (Buffer) new ByteArrayBuffer(_multiLineValue);
+                                Buffer value=_multiLineValue == null ? _tok1 : new ByteArrayBuffer(_multiLineValue);
                                 
                                 int ho=HttpHeaders.CACHE.getOrdinal(header);
                                 if (ho >= 0)
                                 {
-                                    int vo=-1; 
+                                    int vo; 
                                     
                                     switch (ho)
                                     {
@@ -848,7 +845,8 @@ public class HttpParser implements Parser
         }
         if (_body!=null && _buffer!=_body)
             _buffer=_body;
-        if (_buffer == _body) 
+        if (_buffer == _body)
+            //noinspection ConstantConditions
             _buffer.compact();
         
         int space=_buffer.space();

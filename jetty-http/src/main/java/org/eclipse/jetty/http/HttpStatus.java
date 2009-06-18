@@ -664,7 +664,7 @@ public class HttpStatus
     public static final int MAX_CODE = 507;
     
 
-    private static Code codeMap[] = new Code[MAX_CODE+1];
+    private static final Code[] codeMap = new Code[MAX_CODE+1];
 
     static
     {
@@ -911,7 +911,7 @@ public class HttpStatus
         {
             return HttpStatus.isServerError(this._code);
         }
-    };
+    }
 
 
     /**

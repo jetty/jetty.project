@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class DefaultHandler extends AbstractHandler
 {
-    long _faviconModified=(System.currentTimeMillis()/1000)*1000;
+    final long _faviconModified=(System.currentTimeMillis()/1000)*1000;
     byte[] _favicon;
     boolean _serveIcon=true;
     
@@ -165,8 +165,6 @@ public class DefaultHandler extends AbstractHandler
         OutputStream out=response.getOutputStream();
         writer.writeTo(out);
         out.close();
-        
-        return;
     }
 
     /* ------------------------------------------------------------ */

@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
  */
 public class HttpURI
 {
-    private static byte[] __empty={}; 
+    private static final byte[] __empty={}; 
     private final static int 
     START=0,
     AUTH_OR_PATH=1,
@@ -68,7 +68,7 @@ public class HttpURI
     int _end;
     boolean _encoded=false;
     
-    Utf8StringBuilder _utf8b = new Utf8StringBuilder(64);
+    final Utf8StringBuilder _utf8b = new Utf8StringBuilder(64);
     
     public HttpURI()
     {
@@ -487,8 +487,7 @@ public class HttpURI
             if (bytes==null)
             {
                 bytes=new byte[length];
-                for (int j=0;j<n;j++)
-                    bytes[j]=_raw[_path+j];
+                System.arraycopy(_raw,_path,bytes,0,n);
             }
             
             bytes[n++]=b;

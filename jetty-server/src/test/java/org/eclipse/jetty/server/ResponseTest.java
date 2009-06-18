@@ -392,7 +392,7 @@ public class ResponseTest extends TestCase
             while (line!=null && line.length()==0)
                 line = reader.readLine();
 
-            assertTrue(line.startsWith("HTTP/1.1 200 OK"));
+            assertTrue(line!=null && line.startsWith("HTTP/1.1 200 OK"));
             
         }
         finally

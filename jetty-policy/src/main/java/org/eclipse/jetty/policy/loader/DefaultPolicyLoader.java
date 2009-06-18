@@ -16,16 +16,24 @@ package org.eclipse.jetty.policy.loader;
 //and contributed to that project by Alexey V. Varlamov under the ASL
 //========================================================================
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.AccessController;
 import java.security.CodeSource;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.KeyStoreSpi;
+import java.security.NoSuchAlgorithmException;
 import java.security.Permission;
 import java.security.PermissionCollection;
 import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -33,6 +41,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 
 import org.eclipse.jetty.policy.PolicyException;
 import org.eclipse.jetty.policy.PropertyEvaluator;
@@ -40,14 +49,14 @@ import org.eclipse.jetty.policy.PropertyEvaluator;
 /**
  * Load the policies within the stream and resolve into protection domains and permission collections 
  * 
- * TODO: currently this loading does not support keystores or certificates
  */
 public class DefaultPolicyLoader
 {
-
+    
     public static Map<ProtectionDomain, PermissionCollection> load( InputStream policyStream, PropertyEvaluator evaluator ) throws PolicyException
     {
         Map<ProtectionDomain, PermissionCollection> pdMappings = new HashMap<ProtectionDomain, PermissionCollection>();
+        KeyStore keystore = null;
         
         try
         {
@@ -58,11 +67,16 @@ public class DefaultPolicyLoader
             
             loader.scanStream( new InputStreamReader(policyStream), grantEntries, keystoreEntries );
             
+            for ( Iterator<KeystoreEntry> i = keystoreEntries.iterator(); i.hasNext();)
+            {
+                keystore = resolveKeyStore( i.next(), evaluator );
+            }
+            
             for ( Iterator<GrantEntry> i = grantEntries.iterator(); i.hasNext(); )
             {
                 GrantEntry grant = i.next();
                 
-                Permissions permissions = processPermissions( grant.permissions, evaluator );
+                Permissions permissions = processPermissions( grant.permissions, keystore, evaluator );
                 
                 ProtectionDomain pd;
                 
@@ -86,34 +100,31 @@ public class DefaultPolicyLoader
         }
     }
     
-    private static Permissions processPermissions( Collection<PermissionEntry> collection, PropertyEvaluator evaluator ) throws PolicyException
+    private static Permissions processPermissions( Collection<PermissionEntry> collection, KeyStore keystore, PropertyEvaluator evaluator ) throws PolicyException
     {
         Permissions permissions = new Permissions();
         
         for ( Iterator<PermissionEntry> i = collection.iterator(); i.hasNext(); )
         {
-            PermissionEntry perm = i.next();
+            PermissionEntry perm = i.next();           
             
             Class clazz;
             try 
             {
                 clazz = Class.forName( perm.klass );
                 
-                if ( perm.name == null && perm.actions == null )
-                {                  
-                    permissions.add( (Permission)clazz.newInstance() );
-                }
-                else if ( perm.name != null && perm.actions == null )
+                // if we have perm.signers then we need to validate against the class certificates
+                if ( perm.signers != null )
                 {
-                    Constructor c = clazz.getConstructor(new Class[] { String.class });
-                    permissions.add( (Permission)c.newInstance( evaluator.evaluate( perm.name ) ) );
+                    if ( validate( resolveToCertificates( keystore, perm.signers ), (Certificate[]) clazz.getSigners() ))
+                    {
+                       permissions.add( resolveToPermission( clazz, perm, evaluator ) );
+                    }                   
                 }
-                else if ( perm.name != null && perm.actions != null )
+                else
                 {
-                    Constructor c = clazz.getConstructor(new Class[] { String.class, String.class });
-                    permissions.add( (Permission)c.newInstance( evaluator.evaluate( perm.name ), perm.actions ) );
+                    permissions.add( resolveToPermission( clazz, perm, evaluator ) );
                 }
-                
             } 
             catch ( Exception e ) 
             {
@@ -122,6 +133,37 @@ public class DefaultPolicyLoader
         }
         
         return permissions;
+    }
+    
+    private static Permission resolveToPermission(Class clazz, PermissionEntry perm, PropertyEvaluator evaluator ) throws PolicyException
+    {
+        try
+        {
+            Permission permission = null;
+
+            if ( perm.name == null && perm.actions == null )
+            {
+                permission = (Permission) clazz.newInstance();
+            }
+            else if ( perm.name != null && perm.actions == null )
+            {
+                Constructor c = clazz.getConstructor( new Class[] { String.class } );
+                permission = (Permission) c.newInstance( evaluator.evaluate( perm.name ) );
+            }
+            else if ( perm.name != null && perm.actions != null )
+            {
+                Constructor c = clazz.getConstructor( new Class[] { String.class, String.class } );
+                permission = (Permission) c.newInstance( evaluator.evaluate( perm.name ), perm.actions );
+            }
+
+            return permission;
+
+        }
+        catch ( Exception e )
+        {
+            throw new PolicyException( e );
+        }
+
     }
   
     private static CodeSource resolveToCodeSource( String codeBase, PropertyEvaluator evaluator ) throws PolicyException
@@ -137,9 +179,104 @@ public class DefaultPolicyLoader
             throw new PolicyException( e );
         }      
     }
+    
+    /**
+     * resolve signers into an array of certificates using a given keystore
+     * 
+     * @param keyStore
+     * @param signers
+     * @return
+     * @throws Exception
+     */
+    private static Certificate[] resolveToCertificates( KeyStore keyStore, String signers ) throws PolicyException
+    {
+        StringTokenizer strTok = new StringTokenizer( signers, ",");
+        
+        Certificate[] certificates = new Certificate[strTok.countTokens()];
+        
+        for ( int i = 0; strTok.hasMoreTokens(); ++i )
+        {
+            try
+            {
+                certificates[i] = keyStore.getCertificate( strTok.nextToken().trim() );
+            }
+            catch ( KeyStoreException kse )
+            {
+                throw new PolicyException( kse );
+            }
+        }
+        
+        return certificates;
+    }
+    
+    private static KeyStore resolveKeyStore( KeystoreEntry entry, PropertyEvaluator evaluator ) throws PolicyException
+    {
+        try 
+        {
+            KeyStore keyStore = KeyStore.getInstance( entry.type );
+            
+            URL keyStoreLocation = new URL ( entry.url );
+            
+            InputStream istream = keyStoreLocation.openStream();
+            
+            keyStore.load( istream, null );
+            
+            return keyStore;
+        }
+        catch ( KeyStoreException kse )
+        {
+            throw new PolicyException( kse );
+        }
+        catch ( MalformedURLException me )
+        {
+            throw new PolicyException( me );
+        }
+        catch ( IOException ioe )
+        {
+            throw new PolicyException( ioe );
+        }
+        catch ( NoSuchAlgorithmException e )
+        {
+            throw new PolicyException( e );
+        }
+        catch ( CertificateException ce )
+        {
+            throw new PolicyException( ce );
+        }       
+    }
   
     /**
-     * Compound token representing <i>keystore </i> clause. See policy format
+     * validate that all permission certs are present in the class certs
+     * 
+     * @param permCerts
+     * @param classCerts
+     * @return true if the permissions match up
+     */
+    private static boolean validate( Certificate[] permCerts, Certificate[] classCerts )
+    {
+        for ( int i = 0; i < permCerts.length; ++i )
+        {
+            boolean found = false;           
+            for ( int j = 0; j < classCerts.length; ++j )
+            {
+                if ( permCerts[i].equals( classCerts[j] ) )
+                {
+                    found = true;
+                    break;
+                }
+            }
+            // if we didn't find the permCert in the classCerts then we don't match up
+            if ( found == false )
+            {
+                return false;
+            }
+        }
+        // we found all the permCerts in classCerts so return true
+        return true;
+    }
+    
+    /**
+     * Compound token representing <i>keystore</i> clause. See policy format
      * {@link org.apache.harmony.security.DefaultPolicy description}for details.
      * 
      * @see org.apache.harmony.security.fortress.DefaultPolicyParser

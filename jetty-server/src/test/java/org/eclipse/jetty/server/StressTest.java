@@ -22,6 +22,7 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
@@ -33,9 +34,12 @@ import junit.framework.TestCase;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ExecutorThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class StressTest extends TestCase
 {
@@ -45,7 +49,8 @@ public class StressTest extends TestCase
     protected InetAddress _addr;
     protected int _port;
     protected volatile AtomicInteger[] _loops;
-    protected QueuedThreadPool _threads=new QueuedThreadPool();
+    protected QueuedThreadPool _threads=new QueuedThreadPool(new BlockingArrayQueue<Runnable>(4,4));
+    // protected ExecutorThreadPool _threads=new ExecutorThreadPool(100,500,10000,TimeUnit.MILLISECONDS);
     protected boolean _stress;
     private AtomicInteger _handled=new AtomicInteger(0);
     private ConcurrentLinkedQueue[] _latencies= {
@@ -61,6 +66,7 @@ public class StressTest extends TestCase
     protected void setUp() throws Exception
     {
         _stress= Boolean.getBoolean("STRESS");
+
         _threads.setMaxThreads(500);
         _server.setThreadPool(_threads);
         SelectChannelConnector c_connector=new SelectChannelConnector();
@@ -332,10 +338,11 @@ public class StressTest extends TestCase
         }
         finally
         {
-            int quantums=48;
-            int[][] count = new int[_latencies.length][quantums];                        
-            int length[] = new int[_latencies.length];                       
-            int other[] = new int[_latencies.length];
+            System.err.println();
+            final int quantums=48;
+            final int[][] count = new int[_latencies.length][quantums];
+            final int length[] = new int[_latencies.length];
+            final int other[] = new int[_latencies.length];
 
             for (int i=0;i<_latencies.length;i++)
             {

@@ -14,6 +14,9 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
@@ -34,7 +37,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
     private final AtomicLong _lastShrink = new AtomicLong();
     private final ConcurrentLinkedQueue<Thread> _threads=new ConcurrentLinkedQueue<Thread>();
     private final Object _joinLock = new Object();
-    private BlockingArrayQueue<Runnable> _jobs;
+    private BlockingQueue<Runnable> _jobs;
     private String _name;
     private int _maxIdleTimeMs=60000;
     private int _maxThreads=254;
@@ -61,6 +64,17 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
         setMaxThreads(maxThreads);
     }
     
+    /* ------------------------------------------------------------------- */
+    /* Construct
+     */
+    public QueuedThreadPool(BlockingQueue<Runnable> jobQ)
+    {
+        this();
+        _jobs=jobQ;
+        _jobs.clear();
+    }
+    
+    
     /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
@@ -68,8 +82,11 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
         super.doStart();
         _threadsStarted.set(0);
 
-        _jobs=_maxQueued>0 ?new BlockingArrayQueue<Runnable>(_minThreads,_minThreads,_maxQueued)
+        if (_jobs==null)
+        {
+            _jobs=_maxQueued>0 ?new ArrayBlockingQueue<Runnable>(_maxQueued)
                 :new BlockingArrayQueue<Runnable>(_minThreads,_minThreads);
+        }
 
         int threads=_threadsStarted.get();
         while (isRunning() && threads<_minThreads)
@@ -207,9 +224,18 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
      */
     public int getMaxQueued()
     {
+        return _maxQueued;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param max job queue size
+     */
+    public void setMaxQueued(int max)
+    {
         if (isRunning())
             throw new IllegalStateException("started");
-        return _maxQueued;
+        _maxQueued=max;
     }
     
     /* ------------------------------------------------------------ */

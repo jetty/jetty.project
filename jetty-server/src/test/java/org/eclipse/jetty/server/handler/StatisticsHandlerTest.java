@@ -203,7 +203,7 @@ public class StatisticsHandlerTest extends TestCase
 
     private static class ActiveHandler extends HandlerWrapper
     {
-        private Object _lock;
+        private final Object _lock;
 
         public ActiveHandler(Object lock)
         {

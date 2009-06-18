@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public abstract class SelectorManager extends AbstractLifeCycle
 {
-    private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD",128).intValue();
+    private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD",128);
     private static final int __JVMBUG_THRESHHOLD2=__JVMBUG_THRESHHOLD*2;
     private static final int __JVMBUG_THRESHHOLD1=(__JVMBUG_THRESHHOLD2+__JVMBUG_THRESHHOLD)/2;
     private long _maxIdleTime;
@@ -67,7 +67,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
     
     /* ------------------------------------------------------------ */
     /**
-     * @param selectSets
+     * @param selectSets number of select sets to create
      */
     public void setSelectSets(int selectSets)
     {
@@ -100,7 +100,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
      * @param att Attached Object
      * @throws IOException
      */
-    public void register(SocketChannel channel, Object att) throws IOException
+    public void register(SocketChannel channel, Object att)
     {
         int s=_set++; 
         s=s%_selectSets;
@@ -119,7 +119,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
      * @return
      * @throws IOException
      */
-    public void register(ServerSocketChannel acceptChannel) throws IOException
+    public void register(ServerSocketChannel acceptChannel)
     {
         int s=_set++; 
         s=s%_selectSets;
@@ -211,12 +211,13 @@ public abstract class SelectorManager extends AbstractLifeCycle
         SelectSet[] sets= _selectSet;
         _selectSet=null;
         if (sets!=null)
-            for (int i=0;i<sets.length;i++)
+        {
+            for (SelectSet set : sets)
             {
-                SelectSet set = sets[i];
                 if (set!=null)
                     set.stop();
             }
+        }
         super.doStop();
     }
 
@@ -286,14 +287,15 @@ public abstract class SelectorManager extends AbstractLifeCycle
     /* ------------------------------------------------------------------------------- */
     public class SelectSet 
     {
-        private transient int _change;
-        private transient List<Object>[] _changes;
-        private transient Timeout _idleTimeout;
-        private transient int _nextSet;
-        private transient Timeout _timeout;
-        private transient Selector _selector;
-        private transient int _setID;
-        private transient int _jvmBug;
+        private final int _setID;
+        private final Timeout _idleTimeout;
+        private final Timeout _timeout;
+        private final List<Object>[] _changes;
+
+        private int _change;
+        private int _nextSet;
+        private Selector _selector;
+        private int _jvmBug;
         private volatile Thread _selecting;
         private long _lastJVMBug;
         
@@ -306,10 +308,10 @@ public abstract class SelectorManager extends AbstractLifeCycle
             _idleTimeout.setDuration(getMaxIdleTime());
             _timeout = new Timeout(this);
             _timeout.setDuration(0L);
+            _changes = new List[] {new ArrayList(),new ArrayList()};
 
             // create a selector;
             _selector = Selector.open();
-            _changes = new List[] {new ArrayList(),new ArrayList()};
             _change=0;
         }
         
@@ -435,8 +437,8 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 }
                 changes.clear();
 
-                long idle_next = 0;
-                long retry_next = 0;
+                long idle_next;
+                long retry_next;
                 long now=System.currentTimeMillis();
                 synchronized (this)
                 {
@@ -486,10 +488,8 @@ public abstract class SelectorManager extends AbstractLifeCycle
                                 }
                                 // BLOODY SUN BUG !!!  Try refreshing the entire selector.
                                 final Selector new_selector = Selector.open();
-                                Iterator iterator = _selector.keys().iterator();
-                                while (iterator.hasNext())
+                                for (SelectionKey k: selector.keys())
                                 {
-                                    SelectionKey k = (SelectionKey)iterator.next();
                                     if (!k.isValid() || k.interestOps()==0)
                                         continue;
                                     
@@ -517,10 +517,8 @@ public abstract class SelectorManager extends AbstractLifeCycle
                                 _jvmBug0=true;
                                 Log.info("seeing JVM BUG(s) - cancelling interestOps==0");
                             }
-                            Iterator iter = selector.keys().iterator();
-                            while(iter.hasNext())
+                            for (SelectionKey k: selector.keys())
                             {
-                                SelectionKey k = (SelectionKey) iter.next();
                                 if (k.isValid()&&k.interestOps()==0)
                                 {
                                     k.cancel();
@@ -716,13 +714,9 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 wakeup();
                 selecting=_selecting!=null;
             }
-            
-            ArrayList<SelectionKey> keys=new ArrayList<SelectionKey>(_selector.keys());
-            Iterator<SelectionKey> iter =keys.iterator();
 
-            while (iter.hasNext())
+            for (SelectionKey key:_selector.keys())
             {
-                SelectionKey key = (SelectionKey)iter.next();
                 if (key==null)
                     continue;
                 Object att=key.attachment();

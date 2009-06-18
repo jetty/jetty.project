@@ -634,9 +634,9 @@ public class SslSelectChannelConnector extends SelectChannelConnector
      */
     private class CachedInfo
     {
-        private X509Certificate[] _certs;
-        private Integer _keySize;
-        private String _idStr;
+        private final X509Certificate[] _certs;
+        private final Integer _keySize;
+        private final String _idStr;
 
         CachedInfo(Integer keySize, X509Certificate[] certs,String idStr)
         {

@@ -23,6 +23,8 @@
 
 package org.eclipse.jetty.http.security;
 
+import org.eclipse.jetty.util.StringUtil;
+
 /* ------------------------------------------------------------ */
 /**
  * Unix Crypt. Implements the one way cryptography used by Unix systems for
@@ -31,7 +33,7 @@ package org.eclipse.jetty.http.security;
  * @version $Id: UnixCrypt.java,v 1.1 2005/10/05 14:09:14 janb Exp $
  * @author Greg Wilkins (gregw)
  */
-public class UnixCrypt extends Object
+public class UnixCrypt
 {
 
     /* (mostly) Standard DES Tables from Tom Truscott */
@@ -104,22 +106,22 @@ public class UnixCrypt extends Object
 
     /* ===== Tables that are initialized at run time ==================== */
 
-    private static byte[] A64TOI = new byte[128]; /* ascii-64 => 0..63 */
+    private static final byte[] A64TOI = new byte[128]; /* ascii-64 => 0..63 */
 
     /* Initial key schedule permutation */
-    private static long[][] PC1ROT = new long[16][16];
+    private static final long[][] PC1ROT = new long[16][16];
 
     /* Subsequent key schedule rotation permutations */
-    private static long[][][] PC2ROT = new long[2][16][16];
+    private static final long[][][] PC2ROT = new long[2][16][16];
 
     /* Initial permutation/expansion table */
-    private static long[][] IE3264 = new long[8][16];
+    private static final long[][] IE3264 = new long[8][16];
 
     /* Table that combines the S, P, and E operations. */
-    private static long[][] SPE = new long[8][64];
+    private static final long[][] SPE = new long[8][64];
 
     /* compressed/interleaved => final permutation table */
-    private static long[][] CF6464 = new long[16][16];
+    private static final long[][] CF6464 = new long[16][16];
 
     /* ==================================== */
 
@@ -135,7 +137,7 @@ public class UnixCrypt extends Object
         // PC1ROT - bit reverse, then PC1, then Rotate, then PC2
         for (int i = 0; i < 64; i++)
             perm[i] = (byte) 0;
-        ;
+        
         for (int i = 0; i < 64; i++)
         {
             int k;
@@ -443,7 +445,7 @@ public class UnixCrypt extends Object
             rsltblock >>= 6;
         }
 
-        return new String(cryptresult, 0x00, 0, 13);
+        return new String(cryptresult, 0, 13);
     }
 
     public static void main(String[] arg)
