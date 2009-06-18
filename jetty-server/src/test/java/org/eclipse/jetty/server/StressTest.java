@@ -34,6 +34,7 @@ import junit.framework.TestCase;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -48,7 +49,7 @@ public class StressTest extends TestCase
     protected InetAddress _addr;
     protected int _port;
     protected volatile AtomicInteger[] _loops;
-    protected QueuedThreadPool _threads=new QueuedThreadPool();
+    protected QueuedThreadPool _threads=new QueuedThreadPool(new BlockingArrayQueue<Runnable>(4,4));
     // protected ExecutorThreadPool _threads=new ExecutorThreadPool(100,500,10000,TimeUnit.MILLISECONDS);
     protected boolean _stress;
     private AtomicInteger _handled=new AtomicInteger(0);
