@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>jetty-7.0.0.M4-SNAPSHOT</version>
+    <version>7.0.0.M4-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-policy</artifactId>
@@ -37,4 +37,17 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <profiles>
+    <profile>
+      <id>generate-test-jar</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
