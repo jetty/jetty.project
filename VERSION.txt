@@ -1,4 +1,5 @@
 jetty-7.0.0.M4-SNAPSHOT
+ + 281059 NPE in QTP with debug on
 
 jetty-7.0.0.M3 20 June 2009
  + fixed race with expired async listeners

@@ -14,7 +14,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -416,7 +415,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return _name+"{"+getMinThreads()+"<="+getIdleThreads()+"<="+getThreads()+"/"+getMaxThreads()+","+_jobs.size()+"}";
+        return _name+"{"+getMinThreads()+"<="+getIdleThreads()+"<="+getThreads()+"/"+getMaxThreads()+","+(_jobs==null?-1:_jobs.size())+"}";
     }
     
     /* ------------------------------------------------------------ */
