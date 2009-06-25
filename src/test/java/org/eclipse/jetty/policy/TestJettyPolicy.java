@@ -25,10 +25,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jetty.policy.JettyPolicy;
-import org.eclipse.jetty.policy.PropertyEvaluator;
-
-
 import junit.framework.TestCase;
 
 public class TestJettyPolicy extends TestCase
@@ -153,6 +149,8 @@ public class TestJettyPolicy extends TestCase
         assertFalse( pc.implies( testPerm2 ) );
     }
 
+    
+ 
  
     
     private String getWorkingDirectory()

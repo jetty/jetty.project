@@ -45,7 +45,7 @@ public class PropertyEvaluator extends HashMap<String,String>
     public String getSystemProperty(String name)
     {       
         
-        System.out.println("Prop: " + name + " " + System.getProperty(name));
+        //System.out.println("Prop: " + name + " " + System.getProperty(name));
         
         if (containsKey(name))
             return get(name);
