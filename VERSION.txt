@@ -16,6 +16,7 @@ jetty-7.0.0.M3 20 June 2009
  + Refactored AbstractBuffers to HttpBuffers for performance
  + Numerous cleanups from static code analysis
  + 280707 client.HttpConnection does not catch and handle non-IOExceptions
+ + 281470 Handle the case where request.PathInfo() should be "/*"
 
 jetty-7.0.0.M2 18 May 2009
  + JETTY-937 Work around Sun JVM bugs
