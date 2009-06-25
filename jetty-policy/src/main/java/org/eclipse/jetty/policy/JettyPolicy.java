@@ -20,6 +20,7 @@ import java.security.Permission;
 import java.security.PermissionCollection;
 import java.security.Permissions;
 import java.security.Policy;
+import java.security.Principal;
 import java.security.ProtectionDomain;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -78,7 +79,7 @@ public class JettyPolicy extends Policy
         {
             ProtectionDomain pd = (ProtectionDomain) i.next();
             
-            if ( pd.getCodeSource() == null || pd.getCodeSource().implies( domain.getCodeSource() ) )
+            if ( pd.getCodeSource() == null || pd.getCodeSource().implies( domain.getCodeSource() ) && pd.getPrincipals() == null || validate( pd.getPrincipals(), domain.getPrincipals() ) )
             {         
                 // gather dynamic permissions
                 if ( pdMapping.get( pd ) != null )
@@ -136,6 +137,34 @@ public class JettyPolicy extends Policy
         return perms;
     }
 
+    private static boolean validate( Principal[] permCerts, Principal[] classCerts )
+    {
+        if ( classCerts == null )
+        {
+            return false;
+        }
+        
+        for ( int i = 0; i < permCerts.length; ++i )
+        {
+            boolean found = false;           
+            for ( int j = 0; j < classCerts.length; ++j )
+            {
+                if ( permCerts[i].equals( classCerts[j] ) )
+                {
+                    found = true;
+                    break;
+                }
+            }
+            // if we didn't find the permCert in the classCerts then we don't match up
+            if ( found == false )
+            {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
     public void refresh()
     {
         try

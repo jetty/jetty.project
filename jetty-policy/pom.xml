@@ -9,6 +9,10 @@
   <artifactId>jetty-policy</artifactId>
   <name>Jetty :: Policy Tool</name>
   <packaging>jar</packaging>
+  <properties>
+    <jetty.test.policy>1.0-SNAPSHOT</jetty.test.policy>
+    <jetty.test.policy.loc>target/test-policy</jetty.test.policy.loc>
+  </properties>
   <build>
     <plugins>
       <plugin>
@@ -28,6 +32,52 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.toolchain</groupId>
+                  <artifactId>jetty-test-policy</artifactId>
+                  <version>${jetty.test.policy}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**/*.keystore</includes>
+                  <outputDirectory>${jetty.test.policy.loc}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>             
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.toolchain</groupId>
+                  <artifactId>jetty-test-policy</artifactId>
+                  <version>${jetty.test.policy}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${jetty.test.policy.loc}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>  
+      </plugin>
     </plugins>
   </build>
   <dependencies>   
@@ -36,18 +86,13 @@
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
+    <!--
+    <dependency>  
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-policy</artifactId>
+      <version>${jetty.test.policy}</version>
+      <scope>test</scope>
+    </dependency>
+    -->
   </dependencies>
-  <profiles>
-    <profile>
-      <id>generate-test-jar</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-jar-plugin</artifactId>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

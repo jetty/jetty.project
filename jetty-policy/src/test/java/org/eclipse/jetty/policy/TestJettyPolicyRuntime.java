@@ -13,14 +13,14 @@ package org.eclipse.jetty.policy;
 //========================================================================
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.security.AccessControlException;
 import java.security.Policy;
 import java.util.Collections;
 import java.util.HashMap;
-
-import org.eclipse.jetty.policy.JettyPolicy;
-import org.eclipse.jetty.policy.PropertyEvaluator;
-
 
 import junit.framework.TestCase;
 
@@ -141,7 +141,143 @@ public class TestJettyPolicyRuntime extends TestCase
         System.setSecurityManager( null );
         Policy.setPolicy( null );
     }
+    
+    public void testCertificateLoader()
+    throws Exception
+    {
+        JettyPolicy ap =
+            new JettyPolicy( Collections.singleton( getWorkingDirectory()
+            + "/src/test/resources/jetty-certificate.policy" ), evaluator );
+
+        ap.refresh();
+        
+        Policy.setPolicy( ap );
+        
+        System.setSecurityManager( new SecurityManager() );
+     
+        URL url = new URL("file://" + getWorkingDirectory() + "/target/test-policy/jetty-test-policy-1.0-SNAPSHOT.jar");
+        
+        URLClassLoader loader ;
+        if (Thread.currentThread().getContextClassLoader() != null )
+        {
+            loader = new URLClassLoader( new URL[]{ url }, Thread.currentThread().getContextClassLoader() );    
+        }
+        else
+        {
+            loader = new URLClassLoader( new URL[]{ url }, ClassLoader.getSystemClassLoader() );           
+        }
+        
+        Thread.currentThread().setContextClassLoader(loader);
+        
+        ap.refresh();
+        
+        try
+        {
+            Class clazz = loader.loadClass( "org.eclipse.jetty.toolchain.test.policy.Tester" );
+              
+            Method m = clazz.getMethod( "testEcho", new Class[] {String.class} );
+            
+            String foo = (String)m.invoke( clazz.newInstance(), new Object[] {"foo"} );                    
+            
+            assertEquals("foo", foo );
+            
+            Method m2 = clazz.getMethod( "testReadSystemProperty", new Class[] {String.class} );
+            
+            m2.invoke( clazz.newInstance(), new Object[] {"foo"} );                    
+            
+            assertTrue( "system property access was granted", true );
+        }
+        catch ( ClassNotFoundException e )
+        {
+            e.printStackTrace();
+            assertFalse( "should not have got here", true );
+        }
+        catch ( SecurityException e )
+        {
+            e.printStackTrace();            
+            assertFalse( "should not have got here", true );
+        }
+        catch ( IllegalAccessException e )
+        {
+            e.printStackTrace();
+            assertFalse( "should not have got here", true );
+        }
+        
+        System.setSecurityManager( null );
+        Policy.setPolicy( null );
        
+    }
+    
+    
+    public void testBadCertificateLoader()
+    throws Exception
+    {
+        JettyPolicy ap =
+            new JettyPolicy( Collections.singleton( getWorkingDirectory()
+            + "/src/test/resources/jetty-bad-certificate.policy" ), evaluator );
+
+        ap.refresh();
+        
+        Policy.setPolicy( ap );
+        
+        System.setSecurityManager( new SecurityManager() );
+     
+        URL url = new URL("file://" + getWorkingDirectory() + "/target/test-policy/jetty-test-policy-1.0-SNAPSHOT.jar");
+        
+        URLClassLoader loader ;
+        if (Thread.currentThread().getContextClassLoader() != null )
+        {
+            loader = new URLClassLoader( new URL[]{ url }, Thread.currentThread().getContextClassLoader() );    
+        }
+        else
+        {
+            loader = new URLClassLoader( new URL[]{ url }, ClassLoader.getSystemClassLoader() );           
+        }
+        
+        Thread.currentThread().setContextClassLoader(loader);
+        
+        ap.refresh();
+        
+        boolean excepted = false;
+        
+        try
+        {
+            Class clazz = loader.loadClass( "org.eclipse.jetty.toolchain.test.policy.Tester" );
+            
+            Method m = clazz.getMethod( "testEcho", new Class[] {String.class} );
+            
+            String foo = (String)m.invoke( clazz.newInstance(), new Object[] {"foo"} );                    
+            
+            assertEquals("foo", foo );
+            
+            Method m2 = clazz.getMethod( "testReadSystemProperty", new Class[] {String.class} );
+            
+            m2.invoke( clazz.newInstance(), new Object[] {"foobar"} );                    
+            
+        }
+        catch ( ClassNotFoundException e )
+        {
+            e.printStackTrace();
+            assertFalse( "should not have got here", true );
+        }
+        catch ( InvocationTargetException e )
+        {
+            assertTrue(e.getCause().getMessage().contains( "access denied" ));
+            
+            excepted = true; // we hope to get here
+        }
+        catch ( IllegalAccessException e )
+        {           
+            e.printStackTrace();
+            assertFalse( "should not have got here", true );
+        }
+        
+        assertTrue( "checking that we through a security exception", excepted );
+        
+        System.setSecurityManager( null );
+        Policy.setPolicy( null );
+       
+    }
     private String getWorkingDirectory()
     {
         return System.getProperty( "basedir" ); // TODO work in eclipse

@@ -16,24 +16,20 @@ package org.eclipse.jetty.policy.loader;
 //and contributed to that project by Alexey V. Varlamov under the ASL
 //========================================================================
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.AccessController;
 import java.security.CodeSource;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
-import java.security.KeyStoreSpi;
-import java.security.NoSuchAlgorithmException;
 import java.security.Permission;
 import java.security.PermissionCollection;
 import java.security.Permissions;
+import java.security.Principal;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -41,6 +37,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.policy.PolicyException;
@@ -70,13 +67,19 @@ public class DefaultPolicyLoader
             for ( Iterator<KeystoreEntry> i = keystoreEntries.iterator(); i.hasNext();)
             {
                 keystore = resolveKeyStore( i.next(), evaluator );
+                
+                if ( keystore != null )
+                {
+                    // we only process the first valid keystore
+                    break;
+                }
             }
             
             for ( Iterator<GrantEntry> i = grantEntries.iterator(); i.hasNext(); )
             {
                 GrantEntry grant = i.next();
                 
-                Permissions permissions = processPermissions( grant.permissions, keystore, evaluator );
+                Permissions permissions = processPermissions( grant, keystore, evaluator );
                 
                 ProtectionDomain pd;
                 
@@ -86,8 +89,11 @@ public class DefaultPolicyLoader
                 }
                 else
                 {
-                    CodeSource codeSource = resolveToCodeSource( grant.codebase, evaluator );    
-                    pd = new ProtectionDomain( codeSource, permissions );
+                    Certificate[] certs = resolveToCertificates( keystore, grant.signers );
+                    Principal[] principals = resolvePrincipals( keystore, grant.principals );
+                    CodeSource codeSource = resolveToCodeSource( grant.codebase, certs, evaluator );    
+                    pd = new ProtectionDomain( codeSource, permissions, Thread.currentThread().getContextClassLoader(),principals );
+                    //System.out.println( pd.toString() );
                 }                                
                 pdMappings.put( pd, null );                                        
             }      
@@ -100,8 +106,9 @@ public class DefaultPolicyLoader
         }
     }
     
-    private static Permissions processPermissions( Collection<PermissionEntry> collection, KeyStore keystore, PropertyEvaluator evaluator ) throws PolicyException
+    private static Permissions processPermissions( GrantEntry grant, KeyStore keystore, PropertyEvaluator evaluator ) throws PolicyException
     {
+        Collection<PermissionEntry> collection = grant.permissions;
         Permissions permissions = new Permissions();
         
         for ( Iterator<PermissionEntry> i = collection.iterator(); i.hasNext(); )
@@ -163,16 +170,57 @@ public class DefaultPolicyLoader
         {
             throw new PolicyException( e );
         }
-
     }
+    
+    /*
+     * resolve the use of the klass in the principal entry
+     * 
+     * @param keystore
+     * @param collection
+     * @return
+     * @throws PolicyException
+     */
+    private static Principal[] resolvePrincipals( KeyStore keystore, Collection<PrincipalEntry> collection ) throws PolicyException
+    {
+        if ( keystore == null || collection == null )
+        {
+            Principal[] principals = null;
+            return principals;
+        }
+             
+        Set<Principal> principalSet = new HashSet<Principal>();       
+        
+        
+        for ( Iterator<PrincipalEntry> i = collection.iterator(); i.hasNext(); )
+        {
+            PrincipalEntry principal = i.next();
+            
+            try
+            {               
+                Certificate certificate = keystore.getCertificate( principal.name );
+                
+                if ( certificate instanceof X509Certificate )
+                {
+                    principalSet.add( ((X509Certificate) certificate).getSubjectX500Principal() );
+                }              
+            }
+            catch ( KeyStoreException kse )
+            {
+                throw new PolicyException( kse );
+            }
+        }
+        
+        return principalSet.toArray( new Principal[principalSet.size()]);
+    }
+    
   
-    private static CodeSource resolveToCodeSource( String codeBase, PropertyEvaluator evaluator ) throws PolicyException
+    private static CodeSource resolveToCodeSource( String codeBase, Certificate[] signers, PropertyEvaluator evaluator ) throws PolicyException
     {
         try
         {   
             URL url = new URL( evaluator.evaluate(codeBase) ); 
-            Certificate[] cert = null;
-            return new CodeSource( url, cert); //TODO support certificates
+            
+            return new CodeSource( url, signers);
         }
         catch ( Exception e )
         {
@@ -189,16 +237,26 @@ public class DefaultPolicyLoader
      * @throws Exception
      */
     private static Certificate[] resolveToCertificates( KeyStore keyStore, String signers ) throws PolicyException
-    {
+    {               
+        if ( keyStore == null )
+        {
+            Certificate[] certs = null;
+            return certs;
+        }
+                
+        Set<Certificate> certificateSet = new HashSet<Certificate>();       
         StringTokenizer strTok = new StringTokenizer( signers, ",");
-        
-        Certificate[] certificates = new Certificate[strTok.countTokens()];
         
         for ( int i = 0; strTok.hasMoreTokens(); ++i )
         {
             try
-            {
-                certificates[i] = keyStore.getCertificate( strTok.nextToken().trim() );
+            {               
+                Certificate certificate = keyStore.getCertificate( strTok.nextToken().trim() );
+                
+                if ( certificate != null )
+                {
+                    certificateSet.add( certificate );
+                }               
             }
             catch ( KeyStoreException kse )
             {
@@ -206,43 +264,29 @@ public class DefaultPolicyLoader
             }
         }
         
-        return certificates;
+        return certificateSet.toArray( new Certificate[certificateSet.size()]);
     }
     
     private static KeyStore resolveKeyStore( KeystoreEntry entry, PropertyEvaluator evaluator ) throws PolicyException
     {
+        KeyStore keyStore = null;
+        
         try 
-        {
-            KeyStore keyStore = KeyStore.getInstance( entry.type );
+        {           
+            keyStore = KeyStore.getInstance( entry.type );
             
-            URL keyStoreLocation = new URL ( entry.url );
-            
+            URL keyStoreLocation = new URL ( evaluator.evaluate( entry.url ) );
             InputStream istream = keyStoreLocation.openStream();
             
             keyStore.load( istream, null );
-            
-            return keyStore;
         }
-        catch ( KeyStoreException kse )
+        catch ( Exception e )
         {
-            throw new PolicyException( kse );
+            e.printStackTrace();
+            //throw new PolicyException( kse );
         }
-        catch ( MalformedURLException me )
-        {
-            throw new PolicyException( me );
-        }
-        catch ( IOException ioe )
-        {
-            throw new PolicyException( ioe );
-        }
-        catch ( NoSuchAlgorithmException e )
-        {
-            throw new PolicyException( e );
-        }
-        catch ( CertificateException ce )
-        {
-            throw new PolicyException( ce );
-        }       
+        
+        return keyStore;
     }
   
     /**
@@ -254,6 +298,11 @@ public class DefaultPolicyLoader
      */
     private static boolean validate( Certificate[] permCerts, Certificate[] classCerts )
     {
+        if ( classCerts == null )
+        {
+            return false;
+        }
+        
         for ( int i = 0; i < permCerts.length; ++i )
         {
             boolean found = false;           
@@ -271,6 +320,7 @@ public class DefaultPolicyLoader
                 return false;
             }
         }
+        
         // we found all the permCerts in classCerts so return true
         return true;
     }
