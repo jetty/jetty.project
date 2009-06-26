@@ -39,95 +39,85 @@ public class CookieCutter
     private static final byte STATE_UNQUOTED_VALUE = 16;
 
     private Cookie[] _cookies;
-    private String[] _fields;
-    int _added=0;
-    boolean _dirty;
-    HttpServletRequest _request;
+    private Cookie[] _lastCookies;
+    Object _lazyFields;
+    int _fields;
     
     public CookieCutter()
-    {
-        
-    }
- 
-    public CookieCutter(HttpServletRequest request)
-    {
-        _request = request;
+    {  
     }
     
     public Cookie[] getCookies()
     {
-        if (_added>0) 
-        {
-            if (!_dirty && _added==_fields.length)
-            {
-                // same cookies as last time!
-                _added=0;
-                return _cookies;
-            }
-            
+        if (_cookies!=null)
+            return _cookies;
+        
+        if (_lastCookies!=null &&
+            _lazyFields!=null &&
+            _fields==LazyList.size(_lazyFields))
+            _cookies=_lastCookies;
+        else
             parseFields();
-        }
+        _lastCookies=_cookies;
         return _cookies;
     }
     
     public void setCookies(Cookie[] cookies)
     {
-        _dirty=false;
-        _added=0;
         _cookies=cookies;
+        _lastCookies=null;
+        _lazyFields=null;
+        _fields=0;
     }
     
     public void reset()
     {
-        _fields=null;
         _cookies=null;
+        _fields=0;
     }
     
     public void addCookieField(String f)
     {
-        if (!_dirty &&
-            _fields!=null && 
-            _fields.length>_added &&
-            _fields[_added].equals(f))
-        {
-            _added++;
+        if (f==null)
             return;
-        }
-        
-        if (_dirty)
+        f=f.trim();
+        if (f.length()==0)
+            return;
+            
+        if (LazyList.size(_lazyFields)>_fields)
         {
-            _added++;
-            _fields=(String[])LazyList.addToArray(_fields,f,String.class);
-        }
-        else
-        {
-            _dirty=true;
-            if (_added>0)
+            if (f.equals(LazyList.get(_lazyFields,_fields)))
             {
-                String[] fields=new String[_added+1];
-                System.arraycopy(_fields,0,fields,0,_added);
-                fields[_added++]=f;
-                _fields=fields;
-            }
-            else
-            {
-                _fields = new String[]{f};
-                _added=1;
+                _fields++;
+                return;
             }
             
+            while (LazyList.size(_lazyFields)>_fields)
+                _lazyFields=LazyList.remove(_lazyFields,_fields);
         }
+        _cookies=null;
+        _lastCookies=null;
+        _lazyFields=LazyList.add(_lazyFields,_fields++,f);
     }
+    
     
     protected void parseFields()
     {
+        _lastCookies=null;
+        _cookies=null;
+        
         Object cookies = null;
 
         int version = 0;
 
+        // delete excess fields
+        while (LazyList.size(_lazyFields)>_fields)
+            _lazyFields=LazyList.remove(_lazyFields,_fields);
+        
         // For each cookie field
-        for (int f=0;f<_added;f++)
+        for (int f=0;f<_fields;f++)
         {
-            String hdr = _fields[f];
+            String hdr = LazyList.get(_lazyFields,f);
             
             // Parse the header
             String name = null;
@@ -152,8 +142,6 @@ public class CookieCutter
                             case STATE_UNQUOTED_VALUE:
                                 state = STATE_NAME;
                                 value = hdr.substring(tokenstart, i).trim();
-                                if(_request!=null && _request.isRequestedSessionIdFromURL())
-                                    value = URIUtil.decodePath(value);
                                 tokenstart = i + 1;
                                 break;
                             case STATE_NAME:
@@ -218,8 +206,6 @@ public class CookieCutter
                     {
                         case STATE_UNQUOTED_VALUE:
                             value = hdr.substring(tokenstart).trim();
-                            if(_request!=null && _request.isRequestedSessionIdFromURL())
-                                value = URIUtil.decodePath(value);
                             break;
                         case STATE_NAME:
                             name = hdr.substring(tokenstart);
@@ -276,21 +262,8 @@ public class CookieCutter
             }
         }
 
-        int l = LazyList.size(cookies);
-        if (l>0)
-        {
-            if (_cookies != null && _cookies.length == l) 
-            {
-                for (int i = 0; i < l; i++)
-                    _cookies[i] = (Cookie) LazyList.get(cookies, i);
-            }
-            else
-                _cookies = (Cookie[]) LazyList.toArray(cookies,Cookie.class);
-        }
-        
-        _added=0;
-        _dirty=false;
-        
+        _cookies = (Cookie[]) LazyList.toArray(cookies,Cookie.class);
+        _lastCookies=_cookies;
     }
     
 }

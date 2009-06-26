@@ -433,27 +433,24 @@ public class Request implements HttpServletRequest
         if (_cookiesExtracted) 
             return _cookies==null?null:_cookies.getCookies();
 
-        // Handle no cookies
-        if (!_connection.getRequestFields().containsKey(HttpHeaders.COOKIE_BUFFER))
-        {
-            _cookiesExtracted = true;
-            if (_cookies!=null)
-                _cookies.reset();
-            return null;
-        }
-
-        if (_cookies==null)
-            _cookies=new CookieCutter(this);
-
+        _cookiesExtracted = true;
+        
         Enumeration enm = _connection.getRequestFields().getValues(HttpHeaders.COOKIE_BUFFER);
-        while (enm.hasMoreElements())
+        
+        // Handle no cookies
+        if (enm!=null)
         {
-            String c = (String)enm.nextElement();
-            _cookies.addCookieField(c);
-        }
-        _cookiesExtracted=true;
+            if (_cookies==null)
+                _cookies=new CookieCutter();
 
-        return _cookies.getCookies();
+            while (enm.hasMoreElements())
+            {
+                String c = (String)enm.nextElement();
+                _cookies.addCookieField(c);
+            }
+        }
+
+        return _cookies==null?null:_cookies.getCookies();
     }
 
     /* ------------------------------------------------------------ */
@@ -1308,13 +1305,16 @@ public class Request implements HttpServletRequest
         if(_attributes!=null)
             _attributes.clearAttributes();
         _characterEncoding=null;
-        _queryEncoding=null;
+        if (_cookies!=null)
+            _cookies.reset();
+        _cookiesExtracted=false;
         _context=null;
         _serverName=null;
         _method=null;
         _pathInfo=null;
         _port=0;
         _protocol=HttpVersions.HTTP_1_1;
+        _queryEncoding=null;
         _queryString=null;
         _requestedSessionId=null;
         _requestedSessionIdFromCookie=false;
@@ -1332,7 +1332,6 @@ public class Request implements HttpServletRequest
         _paramsExtracted=false;
         _inputState=__NONE;
         
-        _cookiesExtracted=false;
         if (_savedNewSessions!=null)
             _savedNewSessions.clear();
         _savedNewSessions=null;
@@ -1571,7 +1570,7 @@ public class Request implements HttpServletRequest
     public void setCookies(Cookie[] cookies)
     {
         if (_cookies==null)
-            _cookies=new CookieCutter(this);
+            _cookies=new CookieCutter();
         _cookies.setCookies(cookies);
     }
 
