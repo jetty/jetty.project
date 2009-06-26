@@ -140,6 +140,7 @@
     <module>jetty-policy</module>
     <module>jetty-start</module>
     <module>test-continuation</module>
+    <module>test-continuation-jetty6</module>
     <module>test-jetty-servlet</module>
     <module>test-jetty-webapp</module>
     <module>jetty-aggregate</module>
