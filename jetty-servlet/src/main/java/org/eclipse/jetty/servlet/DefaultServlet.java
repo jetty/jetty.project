@@ -690,10 +690,15 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         writeOptionHeaders(((Response)response).getHttpFields());
                         ((HttpConnection.Output)out).sendContent(content);
                     }
-                    else
+                    else if (content.getBuffer()!=null)
                     {
                         writeHeaders(response,content,content_length);
                         ((HttpConnection.Output)out).sendContent(content.getBuffer());
+                    }
+                    else
+                    {
+                        writeHeaders(response,content,content_length);
+                        resource.writeTo(out,0,content_length);
                     }
                 }
                 else
