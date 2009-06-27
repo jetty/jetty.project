@@ -208,9 +208,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             sslEngine.setUseClientMode(true);
             sslEngine.beginHandshake();
 
-
-            
-
             return sslEngine;
         }
 

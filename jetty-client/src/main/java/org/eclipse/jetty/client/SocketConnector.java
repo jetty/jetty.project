@@ -76,7 +76,7 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
                         Log.ignore(e);
                     else
                     {
-                        Log.warn(e);
+                        Log.debug(e);
                         destination.onException(e);
                     }
                 }
