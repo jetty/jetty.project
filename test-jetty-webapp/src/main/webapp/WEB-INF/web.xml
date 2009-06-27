@@ -173,6 +173,23 @@
     <url-pattern>/chat/*</url-pattern>
   </servlet-mapping>
   
+  <servlet>
+    <servlet-name>TransparentProxy</servlet-name>
+    <servlet-class>org.eclipse.jetty.servlets.ProxyServlet$Transparent</servlet-class>
+    <load-on-startup>1</load-on-startup>
+    <init-param>
+      <param-name>ProxyTo</param-name><param-value>http://jetty.mortbay.org/test</param-value>
+    </init-param>
+    <init-param>
+      <param-name>Prefix</param-name><param-value>/jetty</param-value>
+    </init-param>
+  </servlet>
+  
+  <servlet-mapping>
+    <servlet-name>TransparentProxy</servlet-name>
+    <url-pattern>/jetty/*</url-pattern>
+  </servlet-mapping>
+  
   <error-page>
     <error-code>404</error-code>
     <location>/error404.html</location>
