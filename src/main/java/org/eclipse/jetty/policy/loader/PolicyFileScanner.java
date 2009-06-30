@@ -27,10 +27,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
-import org.eclipse.jetty.policy.component.GrantNode;
-import org.eclipse.jetty.policy.component.KeystoreNode;
-import org.eclipse.jetty.policy.component.PermissionNode;
-import org.eclipse.jetty.policy.component.PrincipalNode;
+import org.eclipse.jetty.policy.entry.GrantEntry;
+import org.eclipse.jetty.policy.entry.KeystoreEntry;
+import org.eclipse.jetty.policy.entry.PermissionEntry;
+import org.eclipse.jetty.policy.entry.PrincipalEntry;
 
 
 /**
@@ -113,7 +113,7 @@ public class PolicyFileScanner
      * @throws IOException if stream reading failed
      * @throws InvalidFormatException if unexpected or unknown token encountered
      */
-    public void scanStream( Reader r, Collection<GrantNode> grantEntries, List<KeystoreNode> keystoreEntries )
+    public void scanStream( Reader r, Collection<GrantEntry> grantEntries, List<KeystoreEntry> keystoreEntries )
         throws IOException, InvalidFormatException
     {
         StreamTokenizer st = configure( new StreamTokenizer( r ) );
@@ -162,10 +162,10 @@ public class PolicyFileScanner
      * @throws IOException if stream reading failed
      * @throws InvalidFormatException if unexpected or unknown token encountered
      */
-    protected KeystoreNode readKeystoreNode( StreamTokenizer st )
+    protected KeystoreEntry readKeystoreNode( StreamTokenizer st )
         throws IOException, InvalidFormatException
     {
-        KeystoreNode ke = new KeystoreNode();
+        KeystoreEntry ke = new KeystoreEntry();
         if ( st.nextToken() == '"' )
         {
             ke.setUrl( st.sval );
@@ -205,10 +205,10 @@ public class PolicyFileScanner
      * @throws IOException if stream reading failed
      * @throws InvalidFormatException if unexpected or unknown token encountered
      */
-    protected GrantNode readGrantNode( StreamTokenizer st )
+    protected GrantEntry readGrantNode( StreamTokenizer st )
         throws IOException, InvalidFormatException
     {
-        GrantNode ge = new GrantNode();
+        GrantEntry ge = new GrantEntry();
         parsing: while ( true )
         {
             switch ( st.nextToken() )
@@ -275,10 +275,10 @@ public class PolicyFileScanner
      * @throws IOException if stream reading failed
      * @throws InvalidFormatException if unexpected or unknown token encountered
      */
-    protected PrincipalNode readPrincipalNode( StreamTokenizer st )
+    protected PrincipalEntry readPrincipalNode( StreamTokenizer st )
         throws IOException, InvalidFormatException
     {
-        PrincipalNode pe = new PrincipalNode();
+        PrincipalEntry pe = new PrincipalEntry();
         if ( st.nextToken() == StreamTokenizer.TT_WORD )
         {
             pe.setKlass( st.sval );
@@ -286,7 +286,7 @@ public class PolicyFileScanner
         }
         else if ( st.ttype == '*' )
         {
-            pe.setKlass( PrincipalNode.WILDCARD );
+            pe.setKlass( PrincipalEntry.WILDCARD );
             st.nextToken();
         }
         if ( st.ttype == '"' )
@@ -295,7 +295,7 @@ public class PolicyFileScanner
         }
         else if ( st.ttype == '*' )
         {
-            pe.setName( PrincipalNode.WILDCARD );
+            pe.setName( PrincipalEntry.WILDCARD );
         }
         else
         {
@@ -321,10 +321,10 @@ public class PolicyFileScanner
      * @throws IOException if stream reading failed
      * @throws InvalidFormatException if unexpected or unknown token encountered
      */
-    protected Collection<PermissionNode> readPermissionEntries( StreamTokenizer st )
+    protected Collection<PermissionEntry> readPermissionEntries( StreamTokenizer st )
         throws IOException, InvalidFormatException
     {
-        Collection<PermissionNode> permissions = new HashSet<PermissionNode>();
+        Collection<PermissionEntry> permissions = new HashSet<PermissionEntry>();
         parsing: while ( true )
         {
             switch ( st.nextToken() )
@@ -332,7 +332,7 @@ public class PolicyFileScanner
 
                 case StreamTokenizer.TT_WORD:
                     if ( Util.equalsIgnoreCase( "permission", st.sval ) ) { //$NON-NLS-1$
-                        PermissionNode pe = new PermissionNode();
+                        PermissionEntry pe = new PermissionEntry();
                         if ( st.nextToken() == StreamTokenizer.TT_WORD )
                         {
                             pe.setKlass( st.sval );

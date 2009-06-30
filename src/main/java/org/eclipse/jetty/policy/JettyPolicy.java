@@ -60,8 +60,8 @@ public class JettyPolicy extends Policy
     // Policy files that are actively managed by the aggregate policy mechanism
     private Set<String> _policies;
 
-    private Map<ProtectionDomain, PolicyEntry> pdMapping =
-        Collections.synchronizedMap( new HashMap<ProtectionDomain, PolicyEntry>() );
+    private Map<ProtectionDomain, PolicyBlock> pdMapping =
+        Collections.synchronizedMap( new HashMap<ProtectionDomain, PolicyBlock>() );
     
     private PolicyContext _context = new PolicyContext();
 

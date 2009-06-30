@@ -1,4 +1,4 @@
-package org.eclipse.jetty.policy.component;
+package org.eclipse.jetty.policy.entry;
 //========================================================================
 //Copyright (c) Webtide LLC
 //------------------------------------------------------------------------
@@ -22,7 +22,7 @@ import java.security.KeyStore;
 import org.eclipse.jetty.policy.PolicyContext;
 import org.eclipse.jetty.policy.PolicyException;
 
-public class KeystoreNode extends AbstractNode
+public class KeystoreEntry extends AbstractEntry
 {
     /**
      * The URL part of keystore clause.

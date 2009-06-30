@@ -31,10 +31,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.policy.PolicyContext;
-import org.eclipse.jetty.policy.PolicyEntry;
+import org.eclipse.jetty.policy.PolicyBlock;
 import org.eclipse.jetty.policy.PolicyException;
-import org.eclipse.jetty.policy.component.GrantNode;
-import org.eclipse.jetty.policy.component.KeystoreNode;
+import org.eclipse.jetty.policy.entry.GrantEntry;
+import org.eclipse.jetty.policy.entry.KeystoreEntry;
 
 /**
  * Load the policies within the stream and resolve into protection domains and permission collections 
@@ -43,23 +43,23 @@ import org.eclipse.jetty.policy.component.KeystoreNode;
 public class DefaultPolicyLoader
 {
     
-    public static Map<ProtectionDomain, PolicyEntry> load( InputStream policyStream, PolicyContext context ) throws PolicyException
+    public static Map<ProtectionDomain, PolicyBlock> load( InputStream policyStream, PolicyContext context ) throws PolicyException
     {
-        Map<ProtectionDomain, PolicyEntry> policies = new HashMap<ProtectionDomain, PolicyEntry>();
+        Map<ProtectionDomain, PolicyBlock> policies = new HashMap<ProtectionDomain, PolicyBlock>();
         KeyStore keystore = null;
         
         try
         {
             PolicyFileScanner loader = new PolicyFileScanner();
             
-            Collection<GrantNode> grantEntries = new ArrayList<GrantNode>();
-            List<KeystoreNode> keystoreEntries = new ArrayList<KeystoreNode>();
+            Collection<GrantEntry> grantEntries = new ArrayList<GrantEntry>();
+            List<KeystoreEntry> keystoreEntries = new ArrayList<KeystoreEntry>();
             
             loader.scanStream( new InputStreamReader(policyStream), grantEntries, keystoreEntries );
             
-            for ( Iterator<KeystoreNode> i = keystoreEntries.iterator(); i.hasNext();)
+            for ( Iterator<KeystoreEntry> i = keystoreEntries.iterator(); i.hasNext();)
             {
-                KeystoreNode node = i.next();
+                KeystoreEntry node = i.next();
                 node.expand( context );
                 
                 keystore = node.toKeyStore();
@@ -72,12 +72,12 @@ public class DefaultPolicyLoader
                 }
             }
             
-            for ( Iterator<GrantNode> i = grantEntries.iterator(); i.hasNext(); )
+            for ( Iterator<GrantEntry> i = grantEntries.iterator(); i.hasNext(); )
             {            
-                GrantNode grant = i.next();
+                GrantEntry grant = i.next();
                 grant.expand( context );
                 
-                PolicyEntry policy = new PolicyEntry();             
+                PolicyBlock policy = new PolicyBlock();             
                 
                 policy.setCodeSource( grant.getCodeSource() );
                 policy.setPrincipals( grant.getPrincipals() );

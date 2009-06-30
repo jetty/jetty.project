@@ -1,4 +1,4 @@
-package org.eclipse.jetty.policy.component;
+package org.eclipse.jetty.policy.entry;
 //========================================================================
 //Copyright (c) Webtide LLC
 //------------------------------------------------------------------------
@@ -23,7 +23,7 @@ import java.security.cert.X509Certificate;
 import org.eclipse.jetty.policy.PolicyContext;
 import org.eclipse.jetty.policy.PolicyException;
 
-public class PrincipalNode extends AbstractNode
+public class PrincipalEntry extends AbstractEntry
 {
     /**
      * Wildcard value denotes any class and/or any name. Must be asterisk, for proper general expansion and

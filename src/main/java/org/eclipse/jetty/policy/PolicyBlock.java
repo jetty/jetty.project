@@ -23,7 +23,7 @@ import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.Set;
 
-public class PolicyEntry
+public class PolicyBlock
 {
     public CodeSource codesource;
     

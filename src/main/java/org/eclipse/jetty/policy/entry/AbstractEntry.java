@@ -1,4 +1,4 @@
-package org.eclipse.jetty.policy.component;
+package org.eclipse.jetty.policy.entry;
 //========================================================================
 //Copyright (c) Webtide LLC
 //------------------------------------------------------------------------
@@ -18,7 +18,7 @@ package org.eclipse.jetty.policy.component;
 import org.eclipse.jetty.policy.PolicyContext;
 import org.eclipse.jetty.policy.PolicyException;
 
-public abstract class AbstractNode
+public abstract class AbstractEntry
 {
     private boolean isDirty = false;
     private boolean isExpanded = false;
