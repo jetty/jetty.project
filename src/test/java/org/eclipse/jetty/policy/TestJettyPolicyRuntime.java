@@ -27,7 +27,7 @@ import junit.framework.TestCase;
 public class TestJettyPolicyRuntime extends TestCase
 {
 
-    PropertyEvaluator evaluator = new PropertyEvaluator( new HashMap<String,String>());
+    HashMap evaluator = new HashMap();
     
     @Override
     protected void setUp() throws Exception
