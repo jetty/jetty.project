@@ -1,4 +1,4 @@
-package org.eclipse.jetty.policy.component;
+package org.eclipse.jetty.policy.entry;
 //========================================================================
 //Copyright (c) Webtide LLC
 //------------------------------------------------------------------------
@@ -27,7 +27,7 @@ import java.util.StringTokenizer;
 import org.eclipse.jetty.policy.PolicyContext;
 import org.eclipse.jetty.policy.PolicyException;
 
-public class PermissionNode extends AbstractNode
+public class PermissionEntry extends AbstractEntry
 {
     /**
      * The classname part of permission clause.

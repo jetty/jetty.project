@@ -25,8 +25,8 @@ import java.util.List;
 
 import junit.framework.TestCase;
 
-import org.eclipse.jetty.policy.component.GrantNode;
-import org.eclipse.jetty.policy.component.KeystoreNode;
+import org.eclipse.jetty.policy.entry.GrantEntry;
+import org.eclipse.jetty.policy.entry.KeystoreEntry;
 import org.eclipse.jetty.policy.loader.PolicyFileScanner;
 
 public class TestPolicyContext
@@ -52,22 +52,22 @@ public class TestPolicyContext
         
         PolicyContext context = new PolicyContext();       
         PolicyFileScanner loader = new PolicyFileScanner();       
-        List<GrantNode> grantEntries = new ArrayList<GrantNode>();
-        List<KeystoreNode> keystoreEntries = new ArrayList<KeystoreNode>();
+        List<GrantEntry> grantEntries = new ArrayList<GrantEntry>();
+        List<KeystoreEntry> keystoreEntries = new ArrayList<KeystoreEntry>();
         
         File policyFile = new File( getWorkingDirectory() + "/src/test/resources/context/jetty-certificate.policy" );              
    
         loader.scanStream( new InputStreamReader( new FileInputStream( policyFile ) ), grantEntries, keystoreEntries );
         
-        for ( Iterator<KeystoreNode> i = keystoreEntries.iterator(); i.hasNext();)
+        for ( Iterator<KeystoreEntry> i = keystoreEntries.iterator(); i.hasNext();)
         {
-            KeystoreNode node = i.next();
+            KeystoreEntry node = i.next();
             node.expand( context );
             
             context.setKeystore( node.toKeyStore() );
         }    
         
-        GrantNode grant = grantEntries.get( 0 );      
+        GrantEntry grant = grantEntries.get( 0 );      
         grant.expand( context );
  
         Permission perm = grant.getPermissions().elements().nextElement();
@@ -80,22 +80,22 @@ public class TestPolicyContext
         
         PolicyContext context = new PolicyContext();       
         PolicyFileScanner loader = new PolicyFileScanner();       
-        List<GrantNode> grantEntries = new ArrayList<GrantNode>();
-        List<KeystoreNode> keystoreEntries = new ArrayList<KeystoreNode>();
+        List<GrantEntry> grantEntries = new ArrayList<GrantEntry>();
+        List<KeystoreEntry> keystoreEntries = new ArrayList<KeystoreEntry>();
         
         File policyFile = new File( getWorkingDirectory() + "/src/test/resources/context/jetty-certificate-alias.policy" );              
    
         loader.scanStream( new InputStreamReader( new FileInputStream( policyFile ) ), grantEntries, keystoreEntries );
         
-        for ( Iterator<KeystoreNode> i = keystoreEntries.iterator(); i.hasNext();)
+        for ( Iterator<KeystoreEntry> i = keystoreEntries.iterator(); i.hasNext();)
         {
-            KeystoreNode node = i.next();
+            KeystoreEntry node = i.next();
             node.expand( context );
             
             context.setKeystore( node.toKeyStore() );
         }    
         
-        GrantNode grant = grantEntries.get( 0 );      
+        GrantEntry grant = grantEntries.get( 0 );      
         grant.expand( context );
  
         Permission perm = grant.getPermissions().elements().nextElement();

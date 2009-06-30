@@ -1,4 +1,4 @@
-package org.eclipse.jetty.policy.component;
+package org.eclipse.jetty.policy.entry;
 //========================================================================
 //Copyright (c) Webtide LLC
 //------------------------------------------------------------------------
@@ -32,7 +32,7 @@ import java.util.StringTokenizer;
 import org.eclipse.jetty.policy.PolicyContext;
 import org.eclipse.jetty.policy.PolicyException;
 
-public class GrantNode extends AbstractNode
+public class GrantEntry extends AbstractEntry
 {
 
     /**
@@ -48,12 +48,12 @@ public class GrantNode extends AbstractNode
     /**
      * Collection of PrincipalEntries of grant clause.
      */
-    private Collection<PrincipalNode> principalNodes;
+    private Collection<PrincipalEntry> principalNodes;
 
     /**
      * Collection of PermissionEntries of grant clause.
      */
-    private Collection<PermissionNode> permissionNodes;
+    private Collection<PermissionEntry> permissionNodes;
 
     // cached permissions
     private PermissionCollection permissions;
@@ -65,11 +65,11 @@ public class GrantNode extends AbstractNode
      * Adds specified element to the <code>principals</code> collection. If collection does not exist yet, creates a
      * new one.
      */
-    public void addPrincipal( PrincipalNode pe )
+    public void addPrincipal( PrincipalEntry pe )
     {
         if ( principalNodes == null )
         {
-            principalNodes = new HashSet<PrincipalNode>();
+            principalNodes = new HashSet<PrincipalEntry>();
         }
         principalNodes.add( pe );
     }
@@ -85,9 +85,9 @@ public class GrantNode extends AbstractNode
         if ( principalNodes != null )
         {
             Set<Principal> principalSet = new HashSet<Principal>();
-            for ( Iterator<PrincipalNode> i = principalNodes.iterator(); i.hasNext(); )
+            for ( Iterator<PrincipalEntry> i = principalNodes.iterator(); i.hasNext(); )
             {
-                PrincipalNode node = i.next();
+                PrincipalEntry node = i.next();
                 node.expand( context );
                 principalSet.add( node.toPrincipal( context ) );
             }
@@ -96,9 +96,9 @@ public class GrantNode extends AbstractNode
         
         context.setPrincipals( principals );
         permissions = new Permissions();
-        for ( Iterator<PermissionNode> i = permissionNodes.iterator(); i.hasNext(); )
+        for ( Iterator<PermissionEntry> i = permissionNodes.iterator(); i.hasNext(); )
         {
-            PermissionNode node = i.next();
+            PermissionEntry node = i.next();
             node.expand( context );
             permissions.add( node.toPermission() );
         }
@@ -190,12 +190,12 @@ public class GrantNode extends AbstractNode
         this.codebase = codebase;
     }
 
-    public void setPrincipals( Collection<PrincipalNode> principals )
+    public void setPrincipals( Collection<PrincipalEntry> principals )
     {
         this.principalNodes = principals;
     }
 
-    public void setPermissions( Collection<PermissionNode> permissions )
+    public void setPermissions( Collection<PermissionEntry> permissions )
     {
         this.permissionNodes = permissions;
     }
