@@ -129,11 +129,10 @@ public class WebServletAnnotationHandler implements AnnotationHandler
         {    
             paths.add(Util.normalizePattern(s)); 
         }
-        mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
-          
-        //TODO asyncSupported()
+        mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));     
+        holder.setAsyncSupported(annotation.asyncSupported());
         
-        //TODO MultipartConfig annotation handled separately
+        //MultipartConfig annotation handled separately
         
         //If the ServletHolder did not already exist, then add it
         if (!existed)
