@@ -40,10 +40,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
-import org.eclipse.jetty.policy.loader.DefaultPolicyLoader.GrantEntry;
-import org.eclipse.jetty.policy.loader.DefaultPolicyLoader.KeystoreEntry;
-import org.eclipse.jetty.policy.loader.DefaultPolicyLoader.PermissionEntry;
-import org.eclipse.jetty.policy.loader.DefaultPolicyLoader.PrincipalEntry;
+import org.eclipse.jetty.policy.component.GrantNode;
+import org.eclipse.jetty.policy.component.KeystoreNode;
+import org.eclipse.jetty.policy.component.PermissionNode;
+import org.eclipse.jetty.policy.component.PrincipalNode;
 
 
 /**
@@ -126,7 +126,7 @@ public class PolicyFileScanner
      * @throws IOException if stream reading failed
      * @throws InvalidFormatException if unexpected or unknown token encountered
      */
-    public void scanStream( Reader r, Collection<GrantEntry> grantEntries, List<KeystoreEntry> keystoreEntries )
+    public void scanStream( Reader r, Collection<GrantNode> grantEntries, List<KeystoreNode> keystoreEntries )
         throws IOException, InvalidFormatException
     {
         StreamTokenizer st = configure( new StreamTokenizer( r ) );
@@ -140,10 +140,10 @@ public class PolicyFileScanner
 
                 case StreamTokenizer.TT_WORD:
                     if ( Util.equalsIgnoreCase( "keystore", st.sval ) ) { //$NON-NLS-1$
-                        keystoreEntries.add( readKeystoreEntry( st ) );
+                        keystoreEntries.add( readKeystoreNode( st ) );
                     }
                     else if ( Util.equalsIgnoreCase( "grant", st.sval ) ) { //$NON-NLS-1$
-                        grantEntries.add( readGrantEntry( st ) );
+                        grantEntries.add( readGrantNode( st ) );
                     }
                     else
                     {
@@ -171,20 +171,20 @@ public class PolicyFileScanner
      * 
      * </pre>
      * 
-     * @return successfully parsed KeystoreEntry
+     * @return successfully parsed KeystoreNode
      * @throws IOException if stream reading failed
      * @throws InvalidFormatException if unexpected or unknown token encountered
      */
-    protected KeystoreEntry readKeystoreEntry( StreamTokenizer st )
+    protected KeystoreNode readKeystoreNode( StreamTokenizer st )
         throws IOException, InvalidFormatException
     {
-        KeystoreEntry ke = new KeystoreEntry();
+        KeystoreNode ke = new KeystoreNode();
         if ( st.nextToken() == '"' )
         {
-            ke.url = st.sval;
+            ke.setUrl( st.sval );
             if ( ( st.nextToken() == '"' ) || ( ( st.ttype == ',' ) && ( st.nextToken() == '"' ) ) )
             {
-                ke.type = st.sval;
+                ke.setType( st.sval );
             }
             else
             { // handle token in the main loop
@@ -203,7 +203,7 @@ public class PolicyFileScanner
      * Tries to read <i>grant </i> clause. <br>
      * First, it reads <i>codebase </i>, <i>signedby </i>, <i>principal </i> entries till the '{' (opening curly brace)
      * symbol. Then it calls readPermissionEntries() method to read the permissions of this clause. <br>
-     * Principal entries (if any) are read by invoking readPrincipalEntry() method, obtained PrincipalEntries are
+     * Principal entries (if any) are read by invoking readPrincipalNode() method, obtained PrincipalEntries are
      * accumulated. <br>
      * The expected syntax is
      * 
@@ -214,14 +214,14 @@ public class PolicyFileScanner
      * 
      * </pre>
      * 
-     * @return successfully parsed GrantEntry
+     * @return successfully parsed GrantNode
      * @throws IOException if stream reading failed
      * @throws InvalidFormatException if unexpected or unknown token encountered
      */
-    protected GrantEntry readGrantEntry( StreamTokenizer st )
+    protected GrantNode readGrantNode( StreamTokenizer st )
         throws IOException, InvalidFormatException
     {
-        GrantEntry ge = new GrantEntry();
+        GrantNode ge = new GrantNode();
         parsing: while ( true )
         {
             switch ( st.nextToken() )
@@ -231,7 +231,7 @@ public class PolicyFileScanner
                     if ( Util.equalsIgnoreCase( "signedby", st.sval ) ) { //$NON-NLS-1$
                         if ( st.nextToken() == '"' )
                         {
-                            ge.signers = st.sval;
+                            ge.setSigners( st.sval );
                         }
                         else
                         {
@@ -241,7 +241,7 @@ public class PolicyFileScanner
                     else if ( Util.equalsIgnoreCase( "codebase", st.sval ) ) { //$NON-NLS-1$
                         if ( st.nextToken() == '"' )
                         {
-                            ge.codebase = st.sval;
+                            ge.setCodebase( st.sval );
                         }
                         else
                         {
@@ -249,7 +249,7 @@ public class PolicyFileScanner
                         }
                     }
                     else if ( Util.equalsIgnoreCase( "principal", st.sval ) ) { //$NON-NLS-1$
-                        ge.addPrincipal( readPrincipalEntry( st ) );
+                        ge.addPrincipal( readPrincipalNode( st ) );
                     }
                     else
                     {
@@ -261,7 +261,7 @@ public class PolicyFileScanner
                     break;
 
                 case '{':
-                    ge.permissions = readPermissionEntries( st );
+                    ge.setPermissions( readPermissionEntries( st ) );
                     break parsing;
 
                 default: // handle token in the main loop
@@ -274,7 +274,7 @@ public class PolicyFileScanner
     }
 
     /**
-     * Tries to read <i>Principal </i> entry fields. The expected syntax is
+     * Tries to read <i>Principal </i> Node fields. The expected syntax is
      * 
      * <pre>
      * 
@@ -284,31 +284,31 @@ public class PolicyFileScanner
      * 
      * Both class and name may be wildcards, wildcard names should not surrounded by quotes.
      * 
-     * @return successfully parsed PrincipalEntry
+     * @return successfully parsed PrincipalNode
      * @throws IOException if stream reading failed
      * @throws InvalidFormatException if unexpected or unknown token encountered
      */
-    protected PrincipalEntry readPrincipalEntry( StreamTokenizer st )
+    protected PrincipalNode readPrincipalNode( StreamTokenizer st )
         throws IOException, InvalidFormatException
     {
-        PrincipalEntry pe = new PrincipalEntry();
+        PrincipalNode pe = new PrincipalNode();
         if ( st.nextToken() == StreamTokenizer.TT_WORD )
         {
-            pe.klass = st.sval;
+            pe.setKlass( st.sval );
             st.nextToken();
         }
         else if ( st.ttype == '*' )
         {
-            pe.klass = PrincipalEntry.WILDCARD;
+            pe.setKlass( PrincipalNode.WILDCARD );
             st.nextToken();
         }
         if ( st.ttype == '"' )
         {
-            pe.name = st.sval;
+            pe.setName( st.sval );
         }
         else if ( st.ttype == '*' )
         {
-            pe.name = PrincipalEntry.WILDCARD;
+            pe.setName( PrincipalNode.WILDCARD );
         }
         else
         {
@@ -334,10 +334,10 @@ public class PolicyFileScanner
      * @throws IOException if stream reading failed
      * @throws InvalidFormatException if unexpected or unknown token encountered
      */
-    protected Collection<PermissionEntry> readPermissionEntries( StreamTokenizer st )
+    protected Collection<PermissionNode> readPermissionEntries( StreamTokenizer st )
         throws IOException, InvalidFormatException
     {
-        Collection<PermissionEntry> permissions = new HashSet<PermissionEntry>();
+        Collection<PermissionNode> permissions = new HashSet<PermissionNode>();
         parsing: while ( true )
         {
             switch ( st.nextToken() )
@@ -345,13 +345,13 @@ public class PolicyFileScanner
 
                 case StreamTokenizer.TT_WORD:
                     if ( Util.equalsIgnoreCase( "permission", st.sval ) ) { //$NON-NLS-1$
-                        PermissionEntry pe = new PermissionEntry();
+                        PermissionNode pe = new PermissionNode();
                         if ( st.nextToken() == StreamTokenizer.TT_WORD )
                         {
-                            pe.klass = st.sval;
+                            pe.setKlass( st.sval );
                             if ( st.nextToken() == '"' )
                             {
-                                pe.name = st.sval;
+                                pe.setName( st.sval );
                                 st.nextToken();
                             }
                             if ( st.ttype == ',' )
@@ -360,7 +360,7 @@ public class PolicyFileScanner
                             }
                             if ( st.ttype == '"' )
                             {
-                                pe.actions = st.sval;
+                                pe.setActions( st.sval );
                                 if ( st.nextToken() == ',' )
                                 {
                                     st.nextToken();
@@ -369,7 +369,7 @@ public class PolicyFileScanner
                             if ( st.ttype == StreamTokenizer.TT_WORD && Util.equalsIgnoreCase( "signedby", st.sval ) ) { //$NON-NLS-1$
                                 if ( st.nextToken() == '"' )
                                 {
-                                    pe.signers = st.sval;
+                                    pe.setSigners( st.sval );
                                 }
                                 else
                                 {

@@ -59,13 +59,15 @@ public class JettyPolicy extends Policy
     
     private PropertyEvaluator _evaluator;
     
-    private Map<ProtectionDomain, PermissionCollection> pdMapping =
-        Collections.synchronizedMap( new HashMap<ProtectionDomain, PermissionCollection>() );
+    private Map<ProtectionDomain, PolicyEntry> pdMapping =
+        Collections.synchronizedMap( new HashMap<ProtectionDomain, PolicyEntry>() );
+    
+    private PolicyContext _context = new PolicyContext();
 
     public JettyPolicy( Set<String> policies, Map<String,String> properties )
     {
         _policies = policies;
-        _evaluator = new PropertyEvaluator( properties );
+        _context.setEvaluator( new PropertyEvaluator( properties ) );
         
         // we have the policies we need and an evaluator to reference, lets refresh and save the user a call.
         refresh();
@@ -84,7 +86,7 @@ public class JettyPolicy extends Policy
                 // gather dynamic permissions
                 if ( pdMapping.get( pd ) != null )
                 {
-                    for ( Enumeration<Permission> e = pdMapping.get( pd ).elements(); e.hasMoreElements(); )
+                    for ( Enumeration<Permission> e = pdMapping.get( pd ).getPermissions().elements(); e.hasMoreElements(); )
                     {
                         perms.add( e.nextElement() );
                     }
@@ -117,7 +119,7 @@ public class JettyPolicy extends Policy
                 // gather dynamic permissions
                 if ( pdMapping.get( pd ) != null )
                 {
-                    for ( Enumeration<Permission> e = pdMapping.get( pd ).elements(); e.hasMoreElements(); )
+                    for ( Enumeration<Permission> e = pdMapping.get( pd ).getPermissions().elements(); e.hasMoreElements(); )
                     {
                         perms.add( e.nextElement() );
                     }
@@ -174,7 +176,7 @@ public class JettyPolicy extends Policy
             for ( Iterator<String> i = _policies.iterator(); i.hasNext(); )
             {
                 File policyFile = new File( i.next() );              
-                pdMapping.putAll( DefaultPolicyLoader.load( new FileInputStream( policyFile ), _evaluator ) );
+                pdMapping.putAll( DefaultPolicyLoader.load( new FileInputStream( policyFile ), _context ) );
             }
         }
         catch ( Exception e )

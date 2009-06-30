@@ -30,14 +30,26 @@ public class TestJettyPolicyRuntime extends TestCase
     PropertyEvaluator evaluator = new PropertyEvaluator( new HashMap<String,String>());
     
     @Override
-    protected void setUp()
-        throws Exception
+    protected void setUp() throws Exception
     {
         super.setUp();
         
         evaluator.put( "jetty.home", getWorkingDirectory() );
     }
     
+    
+    
+    @Override
+    protected void tearDown() throws Exception
+    {
+        super.tearDown();
+        
+        System.setSecurityManager( null );
+        Policy.setPolicy( null );
+    }
+
+
+
     public void testSimplePolicyReplacement() throws Exception
     {   
         JettyPolicy ap =
@@ -52,9 +64,6 @@ public class TestJettyPolicyRuntime extends TestCase
         
         assertTrue ( test.canRead() );
          
-        // Policy nulling must occur after Security Manager null
-        System.setSecurityManager( null );
-        Policy.setPolicy( null );
     }
     
     public void testRepeatedPolicyReplacement() throws Exception
@@ -102,8 +111,6 @@ public class TestJettyPolicyRuntime extends TestCase
             assertTrue( "Exception was thrown as it should be.", true );
         }
               
-        System.setSecurityManager( null );
-        Policy.setPolicy( null );
     }
 
 
@@ -137,9 +144,7 @@ public class TestJettyPolicyRuntime extends TestCase
             //ace.printStackTrace();
             assertTrue( "Exception was thrown", true );
         }
-               
-        System.setSecurityManager( null );
-        Policy.setPolicy( null );
+
     }
     
     public void testCertificateLoader()
@@ -202,10 +207,7 @@ public class TestJettyPolicyRuntime extends TestCase
             e.printStackTrace();
             assertFalse( "should not have got here", true );
         }
-        
-        System.setSecurityManager( null );
-        Policy.setPolicy( null );
-       
+             
     }
     
     
@@ -273,13 +275,18 @@ public class TestJettyPolicyRuntime extends TestCase
         }
         
         assertTrue( "checking that we through a security exception", excepted );
-        
-        System.setSecurityManager( null );
-        Policy.setPolicy( null );
        
     }
+    
+    
     private String getWorkingDirectory()
     {
-        return System.getProperty( "basedir" ); // TODO work in eclipse
+        String cwd = System.getProperty( "basedir" );
+        
+        if ( cwd == null )
+        {
+            cwd = System.getProperty( "user.dir" );
+        }
+        return cwd;
     }
 }
