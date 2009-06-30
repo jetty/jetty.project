@@ -33,7 +33,7 @@ import junit.framework.TestCase;
 
 public class TestJettyPolicy extends TestCase
 {
-    PropertyEvaluator evaluator = new PropertyEvaluator( new HashMap<String,String>());
+    HashMap evaluator = new HashMap();
    
 
     @Override
