@@ -1,6 +1,6 @@
 package org.eclipse.jetty.policy;
 //========================================================================
-//Copyright (c) 2003-2009 Mort Bay Consulting Pty. Ltd.
+//Copyright (c) Webtide LLC
 //------------------------------------------------------------------------
 //All rights reserved. This program and the accompanying materials
 //are made available under the terms of the Eclipse Public License v1.0

@@ -1,15 +1,18 @@
 package org.eclipse.jetty.policy;
 
 //========================================================================
-//Copyright (c) 2003-2009 Mort Bay Consulting Pty. Ltd.
+//Copyright (c) Webtide LLC
 //------------------------------------------------------------------------
 //All rights reserved. This program and the accompanying materials
 //are made available under the terms of the Eclipse Public License v1.0
 //and Apache License v2.0 which accompanies this distribution.
+//
 //The Eclipse Public License is available at 
 //http://www.eclipse.org/legal/epl-v10.html
+//
 //The Apache License v2.0 is available at
 //http://www.opensource.org/licenses/apache2.0.php
+//
 //You may elect to redistribute this code under either of these licenses. 
 //========================================================================
 
@@ -56,9 +59,7 @@ public class JettyPolicy extends Policy
 {
     // Policy files that are actively managed by the aggregate policy mechanism
     private Set<String> _policies;
-    
-    private PropertyEvaluator _evaluator;
-    
+
     private Map<ProtectionDomain, PolicyEntry> pdMapping =
         Collections.synchronizedMap( new HashMap<ProtectionDomain, PolicyEntry>() );
     
