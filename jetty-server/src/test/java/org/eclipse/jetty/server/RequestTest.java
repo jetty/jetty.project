@@ -320,13 +320,13 @@ public class RequestTest extends TestCase
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
-                    "Cookie: name=value\n" +
+                    "Cookie: name=quoted=\\\"value\\\"\n" +
                     "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertEquals(1,cookies.size());
         assertEquals("name",((Cookie)cookies.get(0)).getName());
-        assertEquals("value",((Cookie)cookies.get(0)).getValue());
+        assertEquals("quoted=\\\"value\\\"",((Cookie)cookies.get(0)).getValue());
 
         cookies.clear();
         response=_connector.getResponses(
@@ -390,6 +390,32 @@ public class RequestTest extends TestCase
         assertTrue((Cookie)cookies.get(0)!=(Cookie)cookies.get(2));
         assertTrue((Cookie)cookies.get(1)!=(Cookie)cookies.get(3));
 
+        cookies.clear();
+        response=_connector.getResponses(
+                "POST / HTTP/1.1\r\n"+
+                "Host: whatever\r\n"+
+                "Cookie: name0=value0; name1 = value1 ; \"\\\"name2\\\"\"  =  \"\\\"value2\\\"\"  \n" +
+                "Cookie: name3=value3=value3; name4=; name5 =  ; name6\n" +
+                "Cookie: name7=value7;\n" +
+                "Connection: close\r\n"+
+        "\r\n");
+
+        assertEquals("name0",((Cookie)cookies.get(0)).getName());
+        assertEquals("value0",((Cookie)cookies.get(0)).getValue());
+        assertEquals("name1",((Cookie)cookies.get(1)).getName());
+        assertEquals("value1",((Cookie)cookies.get(1)).getValue());
+        assertEquals("\"name2\"",((Cookie)cookies.get(2)).getName());
+        assertEquals("\"value2\"",((Cookie)cookies.get(2)).getValue());
+        assertEquals("name3",((Cookie)cookies.get(3)).getName());
+        assertEquals("value3=value3",((Cookie)cookies.get(3)).getValue());
+        assertEquals("name4",((Cookie)cookies.get(4)).getName());
+        assertEquals("",((Cookie)cookies.get(4)).getValue());
+        assertEquals("name5",((Cookie)cookies.get(5)).getName());
+        assertEquals("",((Cookie)cookies.get(5)).getValue());
+        assertEquals("name6",((Cookie)cookies.get(6)).getName());
+        assertEquals("",((Cookie)cookies.get(6)).getValue());
+        assertEquals("name7",((Cookie)cookies.get(7)).getName());
+        assertEquals("value7",((Cookie)cookies.get(7)).getValue());
         
     }
     

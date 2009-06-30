@@ -1,9 +1,11 @@
 jetty-7.0.0.M4-SNAPSHOT
  + 281059 NPE in QTP with debug on
+ + JETTY-1034 Cookie parsing
  + JETTY-1042 Prevent cookie leak between shared connection
  + JETTY-1048 Fix for large partially filtered static content
  + JETTY-1049 Improved transparent proxy usability
  + JETTY-1054 Avoid double deploys
+ + JETTY-1055 Cookie quoting
 
 jetty-7.0.0.M3 20 June 2009
  + fixed race with expired async listeners
