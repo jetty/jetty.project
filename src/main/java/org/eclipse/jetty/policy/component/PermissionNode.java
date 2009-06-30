@@ -75,7 +75,15 @@ public class PermissionNode extends AbstractNode
     
     public void expand( PolicyContext context ) throws PolicyException
     {
-        name = context.getEvaluator().evaluate( name );
+        if ( name != null )
+        {
+            name = context.evaluate( name ).trim();
+        }
+        
+        if ( actions != null )
+        {
+            actions = context.evaluate( actions ).trim();
+        }
         
         if ( signers != null )
         {

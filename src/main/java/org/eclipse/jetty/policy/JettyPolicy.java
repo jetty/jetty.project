@@ -67,7 +67,7 @@ public class JettyPolicy extends Policy
     public JettyPolicy( Set<String> policies, Map<String,String> properties )
     {
         _policies = policies;
-        _context.setEvaluator( new PropertyEvaluator( properties ) );
+        _context.setProperties( properties );
         
         // we have the policies we need and an evaluator to reference, lets refresh and save the user a call.
         refresh();

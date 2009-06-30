@@ -15,6 +15,7 @@ package org.eclipse.jetty.policy;
 
 
 import java.io.File;
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,11 +45,11 @@ public class PropertyEvaluator extends HashMap<String,String>
      */
     public String getSystemProperty(String name)
     {       
-        
-        //System.out.println("Prop: " + name + " " + System.getProperty(name));
-        
         if (containsKey(name))
+        {
             return get(name);
+        }
+        
         return System.getProperty(name);
     }
     
@@ -95,4 +96,7 @@ public class PropertyEvaluator extends HashMap<String,String>
         
         return s;
     }
+    
+   
+    
 }
