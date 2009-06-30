@@ -1,6 +1,7 @@
 jetty-7.0.0.M4-SNAPSHOT
  + 281059 NPE in QTP with debug on
  + JETTY-799 shell script for jetty on cygwin
+ + JETTY-1031 Handle large pipeline
  + JETTY-1034 Cookie parsing
  + JETTY-1042 Prevent cookie leak between shared connection
  + JETTY-1048 Fix for large partially filtered static content

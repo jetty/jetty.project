@@ -931,9 +931,12 @@ public class HttpParser implements Parser
             {
                 _header.setMarkIndex(-1);
                 _header.compact();
-                // TODO if pipelined requests received after big input - maybe this is not good?.
-                _body.skip(_header.put(_body));
-
+                int take=_header.space();
+                if (take>_body.length())
+                    take=_body.length();
+                _body.peek(_body.getIndex(),take);
+                _body.skip(_header.put(_body.peek(_body.getIndex(),take)));
+                _body.compact();
             }
 
             if (_body.length()==0)
