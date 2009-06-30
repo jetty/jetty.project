@@ -26,14 +26,13 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import junit.framework.TestCase;
 
 public class TestJettyPolicy extends TestCase
 {
-    HashMap evaluator = new HashMap();
+    HashMap<String, String> evaluator = new HashMap<String, String>();
    
 
     @Override

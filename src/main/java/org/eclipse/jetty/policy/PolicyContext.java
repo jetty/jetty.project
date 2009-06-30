@@ -21,10 +21,6 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-
-import org.eclipse.jetty.policy.component.GrantNode;
-import org.eclipse.jetty.policy.component.PrincipalNode;
 
 public class PolicyContext
 {
