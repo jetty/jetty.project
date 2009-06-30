@@ -23,11 +23,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import junit.framework.TestCase;
+
 import org.eclipse.jetty.policy.component.GrantNode;
 import org.eclipse.jetty.policy.component.KeystoreNode;
 import org.eclipse.jetty.policy.loader.PolicyFileScanner;
-
-import junit.framework.TestCase;
 
 public class TestPolicyContext
     extends TestCase

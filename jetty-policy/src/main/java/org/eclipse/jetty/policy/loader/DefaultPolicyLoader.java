@@ -31,8 +31,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.policy.PolicyContext;
-import org.eclipse.jetty.policy.PolicyException;
 import org.eclipse.jetty.policy.PolicyEntry;
+import org.eclipse.jetty.policy.PolicyException;
 import org.eclipse.jetty.policy.component.GrantNode;
 import org.eclipse.jetty.policy.component.KeystoreNode;
 
