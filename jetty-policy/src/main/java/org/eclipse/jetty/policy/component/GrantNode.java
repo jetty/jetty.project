@@ -63,21 +63,25 @@ public class GrantNode extends AbstractNode
 
     public void expand( PolicyContext context ) throws PolicyException
     {
-        signerArray = resolveToCertificates( context.getKeystore(), signers );  // TODO alter to support self:: etc
-        codebase = context.getEvaluator().evaluate( codebase );
+        if ( signers != null )
+        {
+            signerArray = resolveToCertificates( context.getKeystore(), signers );  // TODO alter to support self:: etc
+        }
+        codebase = context.evaluate( codebase );
         
         if ( principalNodes != null )
         {
-        Set<Principal> principalSet = new HashSet<Principal>(); // TODO address this not being accurate ( missing prinicipals in codestore) 
-        for ( Iterator<PrincipalNode> i = principalNodes.iterator(); i.hasNext(); )
-        {
-            PrincipalNode node = i.next();
-            node.expand( context );
-            principalSet.add( node.toPrincipal( context ) );
-        }
-        principals = principalSet.toArray( new Principal[principalSet.size()] );
+            Set<Principal> principalSet = new HashSet<Principal>();
+            for ( Iterator<PrincipalNode> i = principalNodes.iterator(); i.hasNext(); )
+            {
+                PrincipalNode node = i.next();
+                node.expand( context );
+                principalSet.add( node.toPrincipal( context ) );
+            }
+            principals = principalSet.toArray( new Principal[principalSet.size()] );
         }
         
+        context.setPrincipals( principals );
         permissions = new Permissions();
         for ( Iterator<PermissionNode> i = permissionNodes.iterator(); i.hasNext(); )
         {
@@ -85,6 +89,7 @@ public class GrantNode extends AbstractNode
             node.expand( context );
             permissions.add( node.toPermission() );
         }
+        context.setPrincipals( null );
         
         setExpanded( true );
     }    

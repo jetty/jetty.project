@@ -72,7 +72,6 @@ public class DefaultPolicyLoader
             for ( Iterator<GrantNode> i = grantEntries.iterator(); i.hasNext(); )
             {            
                 GrantNode grant = i.next();
-                
                 grant.expand( context );
                 
                 PolicyEntry policy = new PolicyEntry();             
@@ -92,3 +91,8 @@ public class DefaultPolicyLoader
         }
     }
 }
+
+
+
+
+

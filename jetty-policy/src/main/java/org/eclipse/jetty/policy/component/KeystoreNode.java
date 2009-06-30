@@ -48,7 +48,7 @@ public class KeystoreNode extends AbstractNode
     
     public void expand( PolicyContext context ) throws PolicyException
     {
-        url = context.getEvaluator().evaluate( url );
+        url = context.evaluate( url );
         
         setExpanded( true );
     }

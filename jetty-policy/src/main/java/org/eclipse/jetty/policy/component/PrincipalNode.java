@@ -67,7 +67,7 @@ public class PrincipalNode extends AbstractNode
     public void expand( PolicyContext context )
         throws PolicyException
     {
-        name = context.getEvaluator().evaluate( name );
+        name = context.evaluate( name );
         
         setExpanded(true);
     }
