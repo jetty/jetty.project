@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import junit.framework.TestCase;
@@ -155,7 +156,13 @@ public class TestJettyPolicy extends TestCase
     
     private String getWorkingDirectory()
     {
-        return System.getProperty( "basedir" ); // TODO work in eclipse
+        String cwd = System.getProperty( "basedir" );
+        
+        if ( cwd == null )
+        {
+            cwd = System.getProperty( "user.dir" );
+        }
+        return cwd;
     }
 
 }
