@@ -929,6 +929,9 @@ public class HttpParser implements Parser
         {   
             if (_body.hasContent())
             {
+                // There is content in the body after the end of the request.
+                // This is probably a pipelined header of the next request, so we need to
+                // copy it to the header buffer.
                 _header.setMarkIndex(-1);
                 _header.compact();
                 int take=_header.space();
@@ -936,7 +939,6 @@ public class HttpParser implements Parser
                     take=_body.length();
                 _body.peek(_body.getIndex(),take);
                 _body.skip(_header.put(_body.peek(_body.getIndex(),take)));
-                _body.compact();
             }
 
             if (_body.length()==0)
