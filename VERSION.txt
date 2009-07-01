@@ -1,4 +1,5 @@
-jetty-7.0.0.M4-SNAPSHOT
+
+jetty-7.0.0.M4 1 June 2009
  + 281059 NPE in QTP with debug on
  + JETTY-799 shell script for jetty on cygwin
  + JETTY-1031 Handle large pipeline
