@@ -395,7 +395,7 @@ public class RequestTest extends TestCase
                 "POST / HTTP/1.1\r\n"+
                 "Host: whatever\r\n"+
                 "Cookie: name0=value0; name1 = value1 ; \"\\\"name2\\\"\"  =  \"\\\"value2\\\"\"  \n" +
-                "Cookie: name3=value3=value3; name4=; name5 =  ; name6\n" +
+                "Cookie: $Version=2; name3=value3=value3;$path=/path;$domain=acme.com;$port=8080, name4=; name5 =  ; name6\n" +
                 "Cookie: name7=value7;\n" +
                 "Connection: close\r\n"+
         "\r\n");
@@ -408,6 +408,10 @@ public class RequestTest extends TestCase
         assertEquals("\"value2\"",((Cookie)cookies.get(2)).getValue());
         assertEquals("name3",((Cookie)cookies.get(3)).getName());
         assertEquals("value3=value3",((Cookie)cookies.get(3)).getValue());
+        assertEquals(2,((Cookie)cookies.get(3)).getVersion());
+        assertEquals("/path",((Cookie)cookies.get(3)).getPath());
+        assertEquals("acme.com",((Cookie)cookies.get(3)).getDomain());
+        assertEquals("$port=8080",((Cookie)cookies.get(3)).getComment());
         assertEquals("name4",((Cookie)cookies.get(4)).getName());
         assertEquals("",((Cookie)cookies.get(4)).getValue());
         assertEquals("name5",((Cookie)cookies.get(5)).getName());
