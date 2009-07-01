@@ -8,6 +8,7 @@ jetty-7.0.0.M4-SNAPSHOT
  + JETTY-1049 Improved transparent proxy usability
  + JETTY-1054 Avoid double deploys
  + JETTY-1055 Cookie quoting
+ + JETTY-1057 Error page stack trace XSS
 
 jetty-7.0.0.M3 20 June 2009
  + fixed race with expired async listeners
