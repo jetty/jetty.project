@@ -10,7 +10,7 @@
   <name>Jetty :: Policy Tool</name>
   <packaging>jar</packaging>
   <properties>
-    <jetty.test.policy>1.0-SNAPSHOT</jetty.test.policy>
+    <jetty.test.policy>1.0</jetty.test.policy>
     <jetty.test.policy.loc>target/test-policy</jetty.test.policy.loc>
   </properties>
   <build>
