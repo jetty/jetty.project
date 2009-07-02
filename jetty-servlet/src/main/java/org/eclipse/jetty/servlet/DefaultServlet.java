@@ -415,21 +415,32 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
             else if (!resource.isDirectory())
             {   
-                // ensure we have content
-                if (content==null)
-                    content=new UnCachedContent(resource);
-                
-                if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))  
+                if (endsWithSlash && _contextHandler.isAliases() && pathInContext.length()>1)
                 {
-                    if (gzip)
-                    {
-                       response.setHeader(HttpHeaders.CONTENT_ENCODING,"gzip");
-                       String mt=_servletContext.getMimeType(pathInContext);
-                       if (mt!=null)
-                           response.setContentType(mt);
-                    }
-                    sendData(request,response,included.booleanValue(),resource,content,reqRanges);  
+                    String q=request.getQueryString();
+                    pathInContext=pathInContext.substring(0,pathInContext.length()-1);
+                    if (q!=null&&q.length()!=0)
+                        pathInContext+="?"+q;
+                    response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(_servletContext.getContextPath(),pathInContext)));
                 }
+		else
+		{
+		    // ensure we have content
+		    if (content==null)
+			content=new UnCachedContent(resource);
+		    
+		    if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))  
+		    {
+			if (gzip)
+			{
+			   response.setHeader(HttpHeaders.CONTENT_ENCODING,"gzip");
+			   String mt=_servletContext.getMimeType(pathInContext);
+			   if (mt!=null)
+			       response.setContentType(mt);
+			}
+			sendData(request,response,included.booleanValue(),resource,content,reqRanges);  
+		    }
+		}
             }
             else
             {
@@ -465,9 +476,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         response.setContentLength(0);
                         String q=request.getQueryString();
                         if (q!=null&&q.length()!=0)
-                            response.sendRedirect(URIUtil.addPaths( _servletContext.getContextPath(),ipath)+"?"+q);
+                            response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths( _servletContext.getContextPath(),ipath)+"?"+q));
                         else
-                            response.sendRedirect(URIUtil.addPaths( _servletContext.getContextPath(),ipath));
+                            response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths( _servletContext.getContextPath(),ipath)));
                     }
                     else
                     {

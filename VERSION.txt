@@ -1,5 +1,6 @@
 
 jetty-7.0.0.RC0-SNAPSHOT
+ + JETTY-1058 Handle trailing / with aliases
 
 jetty-7.0.0.M4 1 June 2009
  + 281059 NPE in QTP with debug on
