@@ -53,9 +53,6 @@ public class TagLibConfiguration implements Configuration
 {
     public static final String TLD_RESOURCES = "org.eclipse.jetty.tlds";
     
-    // TODO support patterns
-    private static final String __web_inf_pattern = "org.eclipse.jetty.webapp.WebInfIncludeTLDJarPattern";
-    private static final String __container_pattern = "org.eclipse.jetty.server.webapp.ContainerIncludeTLDJarPattern";
     
     public class TldProcessor
     {
@@ -243,7 +240,9 @@ public class TagLibConfiguration implements Configuration
         }
         
     
-        // Add in tlds found in META-INF of jars
+        // Add in tlds found in META-INF of jars. The jars that will be scanned are controlled by
+        // the patterns defined in the context attributes: org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern,
+        // and org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern
         Collection<Resource> tld_resources=(Collection<Resource>)context.getAttribute(TLD_RESOURCES);
         if (tld_resources!=null)
             tlds.addAll(tld_resources);
