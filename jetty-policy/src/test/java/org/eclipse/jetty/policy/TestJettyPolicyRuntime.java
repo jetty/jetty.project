@@ -12,7 +12,7 @@ package org.eclipse.jetty.policy;
 //You may elect to redistribute this code under either of these licenses. 
 //========================================================================
 
-/* 
+
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -22,16 +22,12 @@ import java.security.AccessControlException;
 import java.security.Policy;
 import java.util.Collections;
 import java.util.HashMap;
-*/
+
 
 import junit.framework.TestCase;
 
 public class TestJettyPolicyRuntime extends TestCase
 {
-   public void testNothing()
-   {
-   }
-/*
     HashMap evaluator = new HashMap();
     
     @Override
@@ -165,7 +161,7 @@ public class TestJettyPolicyRuntime extends TestCase
         
         System.setSecurityManager( new SecurityManager() );
      
-        URL url = new URL("file://" + getWorkingDirectory() + "/target/test-policy/jetty-test-policy-1.0-SNAPSHOT.jar");
+        URL url = new URL("file://" + getWorkingDirectory() + "/target/test-policy/jetty-test-policy-1.0.jar");
         
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )
@@ -229,7 +225,7 @@ public class TestJettyPolicyRuntime extends TestCase
         
         System.setSecurityManager( new SecurityManager() );
      
-        URL url = new URL("file://" + getWorkingDirectory() + "/target/test-policy/jetty-test-policy-1.0-SNAPSHOT.jar");
+        URL url = new URL("file://" + getWorkingDirectory() + "/target/test-policy/jetty-test-policy.jar");
         
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )
@@ -294,5 +290,4 @@ public class TestJettyPolicyRuntime extends TestCase
         }
         return cwd;
     }
-    */
 }
