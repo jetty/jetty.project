@@ -50,6 +50,16 @@ public class WebServletAnnotationHandler implements AnnotationHandler
     {
         _wac = wac;
     }
+    
+    
+    
+    /** 
+     * TODO: ensure that web.xml takes precedence:
+     *  - if servlet of same name and same class exists in web.xml, then values from annotation can override it
+     *  - if servlet is different name NEED CLARIFICATION FROM JSR. For now, we assume it is a different servlet.
+     *  
+     * @see org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler#handleClass(java.lang.String, int, int, java.lang.String, java.lang.String, java.lang.String[], java.lang.String, java.util.List)
+     */
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotationName,
                             List<AnnotationNameValue> values)
     {

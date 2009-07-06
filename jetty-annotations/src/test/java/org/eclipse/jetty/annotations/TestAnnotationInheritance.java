@@ -45,6 +45,32 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class TestAnnotationInheritance extends TestCase
 {
     List<String> classNames = new ArrayList<String>();
+  
+    
+    class SampleHandler implements AnnotationHandler
+    {
+        public final List<String> annotatedClassNames = new ArrayList<String>();
+        public final List<String> annotatedMethods = new ArrayList<String>();
+        public final List<String> annotatedFields = new ArrayList<String>();
+        
+        public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
+                                List<AnnotationNameValue> values)
+        {
+            annotatedClassNames.add(className);
+        }
+
+        public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
+                                List<AnnotationNameValue> values)
+        {                
+            annotatedFields.add(className+"."+fieldName);
+        }
+
+        public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
+                                 List<AnnotationNameValue> values)
+        {
+            annotatedMethods.add(className+"."+methodName);
+        }      
+    }
     
    
     public void tearDown () throws Exception
@@ -55,41 +81,16 @@ public class TestAnnotationInheritance extends TestCase
         comp.destroySubcontext("env");
     }
     
-    public void testInheritance ()
+  
+    public void testParseClassNames ()
     throws Exception
     {        
         classNames.add(ClassA.class.getName());
         classNames.add(ClassB.class.getName());
         
-        final List<String> annotatedClassNames = new ArrayList<String>();
-        final List<String> annotatedMethods = new ArrayList<String>();
-        final List<String> annotatedFields = new ArrayList<String>();
-        
-        class SampleHandler implements AnnotationHandler
-        {
-
-            public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNameValue> values)
-            {
-                annotatedClassNames.add(className);
-            }
-
-            public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                    List<AnnotationNameValue> values)
-            {                
-                annotatedFields.add(className+"."+fieldName);
-            }
-
-            public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNameValue> values)
-            {
-                annotatedMethods.add(className+"."+methodName);
-            }
-            
-        }
-        
+        SampleHandler handler = new SampleHandler(); 
         AnnotationParser parser = new AnnotationParser();
-        parser.registerAnnotationHandler("org.eclipse.jetty.annotations.Sample", new SampleHandler());
+        parser.registerAnnotationHandler("org.eclipse.jetty.annotations.Sample", handler);
         parser.parse(classNames, new ClassNameResolver () 
         {
             public boolean isExcluded(String name)
@@ -103,20 +104,71 @@ public class TestAnnotationInheritance extends TestCase
             }       
         });    
              
-        assertEquals(2, annotatedClassNames.size());
+        //check we got  2 class annotations
+        assertEquals(2, handler.annotatedClassNames.size());
         
-        for (String s: annotatedMethods)
-            System.err.println(s);
+        //check we got all annotated methods on each class
+        assertEquals (7, handler.annotatedMethods.size());
+        assertTrue (handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.a"));
+        assertTrue (handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.b"));
+        assertTrue (handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.c"));
+        assertTrue (handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.d"));
+        assertTrue (handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.l"));
+        assertTrue (handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassB.a"));
+        assertTrue (handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassB.c"));
+     
+        //check we got all annotated fields on each class
+        assertEquals(1, handler.annotatedFields.size());
+        assertEquals("org.eclipse.jetty.annotations.ClassA.m", handler.annotatedFields.get(0));     
+    }
+   
+    
+    
+    
+    public void testParseClass ()
+    throws Exception
+    {
+        SampleHandler handler = new SampleHandler();
+        AnnotationParser parser = new AnnotationParser();
+        parser.registerAnnotationHandler("org.eclipse.jetty.annotations.Sample", handler);
+        parser.parse(ClassB.class, new ClassNameResolver () 
+        {
+            public boolean isExcluded(String name)
+            {
+                return false;
+            }
+
+            public boolean shouldOverride(String name)
+            {
+                return false;
+            }       
+        }, true);   
         
-        for (String s: annotatedFields)
-            System.err.println(s);
+        //check we got  2 class annotations
+        assertEquals(2, handler.annotatedClassNames.size());
+        
+        //check we got all annotated methods on each class
+        assertEquals (7, handler.annotatedMethods.size());
+        assertTrue (handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.a"));
+        assertTrue (handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.b"));
+        assertTrue (handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.c"));
+        assertTrue (handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.d"));
+        assertTrue (handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassA.l"));
+        assertTrue (handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassB.a"));
+        assertTrue (handler.annotatedMethods.contains("org.eclipse.jetty.annotations.ClassB.c"));
+     
+        //check we got all annotated fields on each class
+        assertEquals(1, handler.annotatedFields.size());
+        assertEquals("org.eclipse.jetty.annotations.ClassA.m", handler.annotatedFields.get(0));    
     }
     
-    
+ 
     public void testExclusions()
     throws Exception
     {
         AnnotationParser parser = new AnnotationParser();
+        SampleHandler handler = new SampleHandler();
+        parser.registerAnnotationHandler("org.eclipse.jetty.annotations.Sample", handler);
         parser.parse(ClassA.class.getName(), new ClassNameResolver()
         {
             public boolean isExcluded(String name)
@@ -129,8 +181,14 @@ public class TestAnnotationInheritance extends TestCase
                 return false;
             }       
         });
-       // assertTrue(finder.getClassesForAnnotation(Sample.class).isEmpty());
-        
+        assertEquals (0, handler.annotatedClassNames.size());
+        assertEquals (0, handler.annotatedFields.size());
+        assertEquals (0, handler.annotatedMethods.size());
+
+        handler.annotatedClassNames.clear();
+        handler.annotatedFields.clear();
+        handler.annotatedMethods.clear();
+
         parser.parse (ClassA.class.getName(), new ClassNameResolver()
         {
             public boolean isExcluded(String name)
@@ -143,136 +201,8 @@ public class TestAnnotationInheritance extends TestCase
                 return false;
             }        
         });
-       // assertEquals(1, finder.getClassesForAnnotation(Sample.class).size());
+        assertEquals (1, handler.annotatedClassNames.size());
     }
-    
-    /*
-    public void testResourceAnnotations ()
-    throws Exception
-    {
-        Server server = new Server();
-        WebAppContext wac = new WebAppContext();
-        wac.setServer(server);
-        
-        InitialContext ic = new InitialContext();
-        Context comp = (Context)ic.lookup("java:comp");
-        Context env = comp.createSubcontext("env");
-        
-        org.eclipse.jetty.plus.jndi.EnvEntry resourceA = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", new Integer(1000), false);
-        org.eclipse.jetty.plus.jndi.EnvEntry resourceB = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", new Integer(2000), false);
-        
-
-        classNames.add(ResourceA.class.getName());
-        classNames.add(ResourceB.class.getName());
-        AnnotationFinder finder = new AnnotationFinder();
-        finder.find(classNames, new ClassNameResolver()
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }       
-        });
-       
-        List<Class<?>> resourcesClasses = finder.getClassesForAnnotation(Resources.class);
-        assertNotNull(resourcesClasses);
-        assertEquals(1, resourcesClasses.size());
-        
-        List<Class<?>> annotatedClasses = finder.getClassesForAnnotation(Resource.class);      
-        List<Method> annotatedMethods = finder.getMethodsForAnnotation(Resource.class);
-        List<Field>  annotatedFields = finder.getFieldsForAnnotation(Resource.class);
-        assertNotNull(annotatedClasses);
-        assertEquals(0, annotatedClasses.size());
-        assertEquals(3, annotatedMethods.size());
-        assertEquals(6, annotatedFields.size());
-        
-        InjectionCollection injections = new InjectionCollection();
-        wac.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
-        LifeCycleCallbackCollection callbacks = new LifeCycleCallbackCollection();
-        wac.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, callbacks);
-        RunAsCollection runAses = new RunAsCollection();
-        wac.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAses);
-        AnnotationProcessor processor = new AnnotationProcessor(wac, finder);
-        //process with all the specific annotations turned into injections, callbacks etc
-        processor.process();
-        
-        //processing classA should give us these jndi name bindings:
-        // java:comp/env/myf
-        // java:comp/env/org.eclipse.jetty.annotations.resources.ResourceA/g
-        // java:comp/env/mye
-        // java:comp/env/org.eclipse.jetty.annotations.resources.ResourceA/h
-        // java:comp/env/resA
-        // java:comp/env/org.eclipse.jetty.annotations.resources.ResourceB/f
-        // java:comp/env/org.eclipse.jetty.annotations.resources.ResourceA/n
-        // 
-        assertEquals(resourceB.getObjectToBind(), env.lookup("myf"));
-        assertEquals(resourceA.getObjectToBind(), env.lookup("mye"));
-        assertEquals(resourceA.getObjectToBind(), env.lookup("resA"));
-        assertEquals(resourceA.getObjectToBind(), env.lookup("org.eclipse.jetty.annotations.resources.ResourceA/g")); 
-        assertEquals(resourceA.getObjectToBind(), env.lookup("org.eclipse.jetty.annotations.resources.ResourceA/h"));
-        assertEquals(resourceB.getObjectToBind(), env.lookup("org.eclipse.jetty.annotations.resources.ResourceB/f"));
-        assertEquals(resourceB.getObjectToBind(), env.lookup("org.eclipse.jetty.annotations.resources.ResourceA/n"));
-        
-        //we should have Injections
-        assertNotNull(injections);
-        
-        List<Injection> fieldInjections = injections.getFieldInjections(ResourceB.class);
-        assertNotNull(fieldInjections);
-        
-        Iterator itor = fieldInjections.iterator();
-        System.err.println("Field injections:");
-        while (itor.hasNext())
-        {
-            System.err.println(itor.next());
-        }
-        //only 1 field injection because the other has no Resource mapping
-        assertEquals(1, fieldInjections.size());
-        
-        fieldInjections = injections.getFieldInjections(ResourceA.class);
-        assertNotNull(fieldInjections);
-        assertEquals(4, fieldInjections.size());
-        
-        
-        List<Injection> methodInjections = injections.getMethodInjections(ResourceB.class);
-        itor = methodInjections.iterator();
-        System.err.println("Method injections:");
-        while (itor.hasNext())
-            System.err.println(itor.next());
-        
-        assertNotNull(methodInjections);
-        assertEquals(0, methodInjections.size());
-        
-        methodInjections = injections.getMethodInjections(ResourceA.class);
-        assertNotNull(methodInjections);
-        assertEquals(3, methodInjections.size());
-        
-        //test injection
-        ResourceB binst = new ResourceB();
-        injections.inject(binst);
-        
-        //check injected values
-        Field f = ResourceB.class.getDeclaredField ("f");
-        f.setAccessible(true);
-        assertEquals(resourceB.getObjectToBind() , f.get(binst));
-        
-        //@Resource(mappedName="resA") //test the default naming scheme but using a mapped name from the environment
-        f = ResourceA.class.getDeclaredField("g"); 
-        f.setAccessible(true);
-        assertEquals(resourceA.getObjectToBind(), f.get(binst));
-        
-        //@Resource(name="resA") //test using the given name as the name from the environment
-        f = ResourceA.class.getDeclaredField("j");
-        f.setAccessible(true);
-        assertEquals(resourceA.getObjectToBind(), f.get(binst));
-        
-        //@Resource(mappedName="resB") //test using the default name on an inherited field
-        f = ResourceA.class.getDeclaredField("n"); 
-        f.setAccessible(true);
-        assertEquals(resourceB.getObjectToBind(), f.get(binst));
-    }
-*/
+ 
+ 
 }

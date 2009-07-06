@@ -19,6 +19,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
@@ -32,10 +33,8 @@ import org.eclipse.jetty.webapp.WebXmlProcessor.Descriptor;
  *
  *
  */
-public class AnnotationConfiguration implements Configuration
+public class AnnotationConfiguration extends AbstractConfiguration
 {
-    public static final String CONTAINER_JAR_RESOURCES = WebInfConfiguration.CONTAINER_JAR_RESOURCES;
-    public static final String WEB_INF_JAR_RESOURCES = WebInfConfiguration.WEB_INF_JAR_RESOURCES;
                                                       
     
     
@@ -48,28 +47,46 @@ public class AnnotationConfiguration implements Configuration
     
     public void configure(WebAppContext context) throws Exception
     {
-        Boolean metadataComplete = (Boolean)context.getAttribute("metadata-complete");
-        if (metadataComplete != null && metadataComplete.booleanValue())
+       Boolean b = (Boolean)context.getAttribute(METADATA_COMPLETE);
+       boolean metadataComplete = (b != null && b.booleanValue());
+       Integer i = (Integer)context.getAttribute(WEBXML_VERSION);
+       int webxmlVersion = (i == null? 0 : i.intValue());
+      
+        if (metadataComplete)
         {
-            if (Log.isDebugEnabled()) Log.debug("Not processing annotations for context "+context);
+            //Never scan any jars or classes for annotations if metadata is complete
+            if (Log.isDebugEnabled()) Log.debug("Metadata-complete==true,  not processing annotations for context "+context);
             return;
         }
-        
-        if (Log.isDebugEnabled()) Log.debug("parsing annotations");
-        AnnotationParser parser = new AnnotationParser();
-        parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new WebServletAnnotationHandler(context));
-        parser.registerAnnotationHandler("javax.servlet.annotation.WebFilter", new WebFilterAnnotationHandler(context));
-        parser.registerAnnotationHandler("javax.servlet.annotation.WebListener", new WebListenerAnnotationHandler(context));
-        parser.registerAnnotationHandler("javax.servlet.annotation.MultipartConfig", new MultipartConfigAnnotationHandler (context));
-        parser.registerAnnotationHandler("javax.annotation.Resource", new ResourceAnnotationHandler (context));
-        parser.registerAnnotationHandler("javax.annotation.Resources", new ResourcesAnnotationHandler (context));
-        parser.registerAnnotationHandler("javax.annotation.PostConstruct", new PostConstructAnnotationHandler(context));
-        parser.registerAnnotationHandler("javax.annotation.PreDestroy", new PreDestroyAnnotationHandler(context));
-        parser.registerAnnotationHandler("javax.annotation.security.RunAs", new RunAsAnnotationHandler(context));
-        
-        parseContainerPath(context, parser);
-        parseWebInfLib (context, parser);
-        parseWebInfClasses(context, parser);
+        else 
+        {
+            //Only scan jars and classes if metadata is not complete and the web app is version 3.0, or
+            //a 2.5 version webapp that has specifically asked to discover annotations
+            if (Log.isDebugEnabled()) Log.debug("parsing annotations");
+            AnnotationParser parser = new AnnotationParser();
+            parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new WebServletAnnotationHandler(context));
+            parser.registerAnnotationHandler("javax.servlet.annotation.WebFilter", new WebFilterAnnotationHandler(context));
+            parser.registerAnnotationHandler("javax.servlet.annotation.WebListener", new WebListenerAnnotationHandler(context));
+            parser.registerAnnotationHandler("javax.servlet.annotation.MultipartConfig", new MultipartConfigAnnotationHandler (context));
+            parser.registerAnnotationHandler("javax.annotation.Resource", new ResourceAnnotationHandler (context));
+            parser.registerAnnotationHandler("javax.annotation.Resources", new ResourcesAnnotationHandler (context));
+            parser.registerAnnotationHandler("javax.annotation.PostConstruct", new PostConstructAnnotationHandler(context));
+            parser.registerAnnotationHandler("javax.annotation.PreDestroy", new PreDestroyAnnotationHandler(context));
+            parser.registerAnnotationHandler("javax.annotation.security.RunAs", new RunAsAnnotationHandler(context));
+
+            if (webxmlVersion >= 30 || context.isConfigurationDiscovered())
+            {
+                System.err.println("SCANNING ALL ANNOTATIONS: webxmlVersion="+webxmlVersion+" configurationDiscovered="+context.isConfigurationDiscovered());
+                parseContainerPath(context, parser);
+                parseWebInfLib (context, parser);
+                parseWebInfClasses(context, parser);
+            } 
+            else
+            {
+                System.err.println("SCANNING ONLY WEB.XML ANNOTATIONS");
+                parse25Classes(context, parser);
+            }
+        }    
     }
 
 
@@ -84,121 +101,4 @@ public class AnnotationConfiguration implements Configuration
     public void postConfigure(WebAppContext context) throws Exception
     {
     }
-
-
-
-
-    public void parseContainerPath (final WebAppContext context, final AnnotationParser parser)
-    throws Exception
-    {
-        //if no pattern for the container path is defined, then by default scan NOTHING
-        Log.debug("Scanning container jars");
-           
-        //Convert from Resource to URI
-        ArrayList<URI> containerUris = new ArrayList<URI>();
-        List<Resource> jarResources = (List<Resource>)context.getAttribute(CONTAINER_JAR_RESOURCES);
-        for (Resource r : jarResources)
-        {
-            URI uri = r.getURI();
-                containerUris.add(uri);          
-        }
-        
-        parser.parse (containerUris.toArray(new URI[containerUris.size()]),
-                new ClassNameResolver ()
-                {
-                    public boolean isExcluded (String name)
-                    {
-                        if (context.isSystemClass(name)) return false;
-                        if (context.isServerClass(name)) return true;
-                        return false;
-                    }
-
-                    public boolean shouldOverride (String name)
-                    { 
-                        //looking at system classpath
-                        if (context.isParentLoaderPriority())
-                            return true;
-                        return false;
-                    }
-                });
-    }
-    
-    
-    public void parseWebInfLib (final WebAppContext context, final AnnotationParser parser)
-    throws Exception
-    {  
-        WebXmlProcessor webXmlProcessor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
-        if (webXmlProcessor == null)
-           throw new IllegalStateException ("No processor for web xml");
-        
-        List<Descriptor> frags = webXmlProcessor.getFragments();
-        
-        //Get the web-inf lib jars who have a web-fragment.xml that is not metadata-complete (or is not set)
-        ArrayList<URI> webInfUris = new ArrayList<URI>();
-        List<Resource> jarResources = (List<Resource>)context.getAttribute(WEB_INF_JAR_RESOURCES);
-        
-        for (Resource r : jarResources)
-        {          
-            URI uri  = r.getURI();
-            Descriptor d = null;
-            for (Descriptor frag: frags)
-            {
-                Resource fragResource = frag.getResource(); //eg jar:file:///a/b/c/foo.jar!/META-INF/web-fragment.xml
-                if (Resource.isContainedIn(fragResource,r))
-                {
-                    d = frag;
-                    break;
-                }
-            }
-
-            //if there was no web-fragment.xml for the jar, or there was one 
-            //and its metadata is NOT complete, we want to exame it for annotations
-            if (d == null || (d != null && !d.isMetaDataComplete()))
-                webInfUris.add(uri);
-        }
- 
-       parser.parse(webInfUris.toArray(new URI[webInfUris.size()]), 
-                new ClassNameResolver()
-                {
-                    public boolean isExcluded (String name)
-                    {    
-                        if (context.isSystemClass(name)) return true;
-                        if (context.isServerClass(name)) return false;
-                        return false;
-                    }
-
-                    public boolean shouldOverride (String name)
-                    {
-                        //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
-                        if (context.isParentLoaderPriority())
-                            return false;
-                        return true;
-                    }
-                });  
-    }
-     
-    public void parseWebInfClasses (final WebAppContext context, final AnnotationParser parser)
-    throws Exception
-    {
-        Log.debug("Scanning classes in WEB-INF/classes");
-        parser.parse(context.getWebInf().addPath("classes/"), 
-                    new ClassNameResolver()
-        {
-            public boolean isExcluded (String name)
-            {
-                if (context.isSystemClass(name)) return true;
-                if (context.isServerClass(name)) return false;
-                return false;
-            }
-
-            public boolean shouldOverride (String name)
-            {
-                //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
-                if (context.isParentLoaderPriority())
-                    return false;
-                return true;
-            }
-        });
-    }
-
 }

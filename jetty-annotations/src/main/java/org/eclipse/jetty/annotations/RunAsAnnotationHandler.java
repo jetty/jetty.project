@@ -40,7 +40,7 @@ public class RunAsAnnotationHandler implements AnnotationHandler
         Class clazz = null;
         try
         {
-            Loader.loadClass(null, className);
+            clazz = Loader.loadClass(null, className);
             if (!javax.servlet.Servlet.class.isAssignableFrom(clazz))
             {
                 Log.debug("@RunAs annotation ignored on on-servlet class "+clazz.getName());

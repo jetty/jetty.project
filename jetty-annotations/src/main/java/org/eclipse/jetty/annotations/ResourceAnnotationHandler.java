@@ -53,7 +53,7 @@ public class ResourceAnnotationHandler implements AnnotationHandler
         Class clazz = null;
         try
         {
-            Loader.loadClass(null, className);
+            clazz = Loader.loadClass(null, className);
         }
         catch (Exception e)
         {
@@ -224,8 +224,7 @@ public class ResourceAnnotationHandler implements AnnotationHandler
         Class clazz = null;
         try
         {
-            Loader.loadClass(null, className);
-
+            clazz = Loader.loadClass(null, className);
 
             Class[] args = Util.convertTypes(params); 
             Method m = clazz.getDeclaredMethod(methodName, args);

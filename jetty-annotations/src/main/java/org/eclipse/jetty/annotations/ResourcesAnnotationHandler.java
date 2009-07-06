@@ -41,7 +41,7 @@ public class ResourcesAnnotationHandler implements AnnotationHandler
         Class clazz = null;
         try
         {
-            Loader.loadClass(null,className);
+            clazz = Loader.loadClass(null,className);
         }
         catch (Exception e)
         {

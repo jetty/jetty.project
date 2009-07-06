@@ -58,6 +58,9 @@ import org.eclipse.jetty.xml.XmlParser;
 public class WebXmlProcessor
 {
     public static final String WEB_PROCESSOR = "org.eclipse.jetty.webProcessor";
+    public static final String METADATA_COMPLETE = "org.eclipse.jetty.metadataComplete";
+    public static final String WEBXML_VERSION = "org.eclipse.jetty.webXmlVersion";
+    public static final String WEBXML_CLASSNAMES = "org.eclipse.jetty.webXmlClassNames";
     
     protected WebAppContext _context;
     protected XmlParser _xmlParser;
@@ -90,6 +93,7 @@ public class WebXmlProcessor
         protected boolean _metadataComplete;
         protected boolean _hasOrdering;
         protected int _version;
+        protected ArrayList<String> _classNames;
         
         public Descriptor (Resource xml)
         {
@@ -155,14 +159,53 @@ public class WebXmlProcessor
             else
                 _metadataComplete = Boolean.valueOf((String)_root.getAttribute("metadata-complete", "false")).booleanValue();
 
-            Log.debug(_xml.toString()+": Calculated metadatacomplete = " + _metadataComplete + " with version=" + version);
+            Log.debug(_xml.toString()+": Calculated metadatacomplete = " + _metadataComplete + " with version=" + version);     
         }
         
         private void processOrdering ()
         {
             //TODO
         }
+        
+        private void processClassNames ()
+        {
+            _classNames = new ArrayList<String>();          
+            Iterator iter = _root.iterator();
+
+            while (iter.hasNext())
+            {
+                Object o = iter.next();
+                if (!(o instanceof XmlParser.Node)) continue;
+                XmlParser.Node node = (XmlParser.Node) o;
+                String name = node.getTag();
+                if ("servlet".equals(name))
+                {
+                    String className = node.getString("servlet-class", false, true);
+                    if (className != null)
+                        _classNames.add(className);
+                }
+                else if ("filter".equals(name))
+                {
+                    String className = node.getString("filter-class", false, true);
+                    if (className != null)
+                        _classNames.add(className);
+                }
+                else if ("listener".equals(name))
+                {
+                    String className = node.getString("listener-class", false, true);
+                    if (className != null)
+                        _classNames.add(className);
+                }                    
+            }
+        }
+        
+        public ArrayList<String> getClassNames ()
+        {
+            return _classNames;
+        }
     }
+    
+  
     
     
     public static XmlParser webXmlParser() throws ClassNotFoundException
@@ -263,7 +306,10 @@ public class WebXmlProcessor
     {
         _webXmlRoot = new Descriptor(webXml);
         _webXmlRoot.parse();
-        _context.setAttribute("metadata-complete", Boolean.valueOf(_webXmlRoot.isMetaDataComplete()));
+        _webXmlRoot.processClassNames();
+        _context.setAttribute(METADATA_COMPLETE, Boolean.valueOf(_webXmlRoot.isMetaDataComplete()));
+        _context.setAttribute(WEBXML_VERSION, Integer.valueOf(_webXmlRoot.getVersion()));
+        _context.setAttribute(WEBXML_CLASSNAMES, _webXmlRoot.getClassNames());
     }
     
     public void parseFragment (Resource fragment)

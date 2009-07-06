@@ -12,18 +12,27 @@
 // ========================================================================
 package org.eclipse.jetty.plus.annotation;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContext;
+
+import org.eclipse.jetty.webapp.WebAppContext;
+
 public class ContainerInitializer
 {
-    protected Class _target;
+    protected ServletContainerInitializer _target;
     protected Class[] _interestedTypes;
+    protected Set<Class<?>> _applicableClasses;
 
     
-    public void setTarget (Class target)
+    public void setTarget (ServletContainerInitializer target)
     {
         _target = target;
     }
     
-    public Class getTarget ()
+    public ServletContainerInitializer getTarget ()
     {
         return _target;
     }
@@ -36,5 +45,25 @@ public class ContainerInitializer
     public void setInterestedTypes (Class[] interestedTypes)
     {
         _interestedTypes = interestedTypes;
+    }
+    
+    public void addApplicableClass (Class c)
+    {
+        if (_applicableClasses == null)
+            _applicableClasses = new HashSet<Class<?>>();
+        _applicableClasses.add(c);
+    }
+    
+    public Set<Class<?>> getApplicableClasses ()
+    {
+        return _applicableClasses;
+    }
+    
+    
+    public void callStartup(ServletContext context)
+    throws Exception
+    {
+       if (_target != null)
+           _target.onStartup(_applicableClasses, context);
     }
 }

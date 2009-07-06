@@ -246,15 +246,23 @@ public class AnnotationParser
             
             _parsedClassNames.add(_className);
             //call all registered ClassHandlers
+            String[] normalizedInterfaces = null;
+            if (interfaces!= null)
+            {
+                normalizedInterfaces = new String[interfaces.length];
+                int i=0;
+                for (String s : interfaces)
+                    normalizedInterfaces[i++] = normalize(s);
+            }
+            
             for (ClassHandler h : AnnotationParser.this._classHandlers)
             {
-                h.handle(_className, _version, _access, _signature, _superName, _interfaces);
+                h.handle(_className, _version, _access, _signature, normalize(_superName), normalizedInterfaces);
             }
         }
 
         public AnnotationVisitor visitAnnotation (String desc, boolean visible)
         {                
-            System.err.println("Visiting annotation "+desc+" on class "+_className);
             MyAnnotationVisitor visitor = new MyAnnotationVisitor(normalize(desc))
             {
                 public void visitEnd()
@@ -366,6 +374,29 @@ public class AnnotationParser
         }
     }
     
+    public void parse (Class clazz, ClassNameResolver resolver, boolean visitSuperClasses)
+    throws Exception
+    {
+        Class cz = clazz;
+        while (cz != null)
+        {
+            if (!resolver.isExcluded(cz.getName()))
+            {
+                if (!isParsed(cz.getName()) || resolver.shouldOverride(cz.getName()))
+                {
+                    String nameAsResource = cz.getName().replace('.', '/')+".class";
+                    URL resource = Loader.getResource(this.getClass(), nameAsResource, false);
+                    if (resource!= null)
+                        scanClass(resource.openStream());
+                }
+            }
+            if (visitSuperClasses)
+                cz = cz.getSuperclass();
+            else
+                cz = null;
+        }
+    }
+    
     public void parse (String[] classNames, ClassNameResolver resolver)
     throws Exception
     {
@@ -380,15 +411,12 @@ public class AnnotationParser
     {
         for (String s:classNames)
         {
-            if (!resolver.isExcluded(s))
-            {
-                if (!isParsed(s) || resolver.shouldOverride(s))
-                {                
-                    s = s.replace('.', '/')+".class"; 
-                    URL resource = Loader.getResource(this.getClass(), s, false);
-                    if (resource!= null)
-                        scanClass(resource.openStream());
-                }
+            if ((resolver == null) || (!resolver.isExcluded(s) &&  (!isParsed(s) || resolver.shouldOverride(s))))
+            {            
+                s = s.replace('.', '/')+".class"; 
+                URL resource = Loader.getResource(this.getClass(), s, false);
+                if (resource!= null)
+                    scanClass(resource.openStream());
             }
         }
     }
@@ -411,13 +439,9 @@ public class AnnotationParser
                 String name = res.getName();
                 if (name.endsWith(".class"))
                 {
-                    if (!resolver.isExcluded(name))
-                    {
-                        if (!isParsed(name) || resolver.shouldOverride(name))
-                        {
-                            scanClass(res.getURL().openStream());
-                        }
-                    }
+                    if ((resolver == null)|| (!resolver.isExcluded(name) && (!isParsed(name) || resolver.shouldOverride(name))))
+                        scanClass(res.getURL().openStream());
+
                 }
             }
             catch (Exception ex)
@@ -457,13 +481,13 @@ public class AnnotationParser
                     if (name.toLowerCase().endsWith(".class"))
                     {
                         String shortName =  name.replace('/', '.').substring(0,name.length()-6);
-                        if (!resolver.isExcluded(shortName))
+                        if ((resolver == null)
+                             ||
+                            (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
                         {
-                            if (!isParsed(shortName) || resolver.shouldOverride(shortName))
-                            {
-                                Resource clazz = Resource.newResource("jar:"+jarUri+"!/"+name);                     
-                                scanClass(clazz.getInputStream());
-                            }
+
+                            Resource clazz = Resource.newResource("jar:"+jarUri+"!/"+name);                     
+                            scanClass(clazz.getInputStream());
                         }
                     }
                 }
@@ -501,16 +525,15 @@ public class AnnotationParser
                     if (name.toLowerCase().endsWith(".class"))
                     {
                         String shortName =  name.replace('/', '.').substring(0,name.length()-6);
-                        if (!resolver.isExcluded(shortName))
+
+                        if ((resolver == null)
+                             ||
+                            (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
                         {
-                           
-                            if (!isParsed(shortName) || resolver.shouldOverride(shortName))
-                            {
-                                Resource clazz = Resource.newResource("jar:"+jarUri+"!/"+name);                     
-                                scanClass(clazz.getInputStream());
-                            }
+                            Resource clazz = Resource.newResource("jar:"+jarUri+"!/"+name);                     
+                            scanClass(clazz.getInputStream());
+
                         }
-                      
                     }
                 }
                 catch (Exception e)

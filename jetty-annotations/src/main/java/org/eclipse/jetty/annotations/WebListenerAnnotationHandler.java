@@ -45,7 +45,7 @@ public class WebListenerAnnotationHandler implements AnnotationHandler
         try
         {
             clazz = Loader.loadClass(null, className);
-System.err.println("Adding WebListener annotated listener "+className);
+
             if (ServletContextListener.class.isAssignableFrom(clazz) || 
                     ServletContextAttributeListener.class.isAssignableFrom(clazz) ||
                     ServletRequestListener.class.isAssignableFrom(clazz) ||
