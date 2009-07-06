@@ -22,12 +22,12 @@ public class HttpTesterTest extends TestCase
     {
         HttpTester tester = new HttpTester();
         tester.parse(
-                "POST /uri© HTTP/1.1\r\n"+
+                "POST /uri\uA74A HTTP/1.1\r\n"+
                 "Host: fakehost\r\n"+
-                "Content-Length: 11\r\n" +
+                "Content-Length: 12\r\n" +
                 "Content-Type: text/plain; charset=utf-8\r\n" +
                 "\r\n" +
-                "123456789©");
+                "123456789\uA74A");
         System.err.println(tester.getMethod());
         System.err.println(tester.getURI());
         System.err.println(tester.getVersion());
@@ -35,7 +35,7 @@ public class HttpTesterTest extends TestCase
         System.err.println(tester.getContentType());
         System.err.println(tester.getCharacterEncoding());
         System.err.println(tester.getContent());
-        assertEquals(tester.getContent(), "123456789©");
+        assertEquals("123456789\uA74A", tester.getContent());
         System.err.println(tester.generate());
     }
 
