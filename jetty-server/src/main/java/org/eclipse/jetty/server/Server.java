@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -42,6 +44,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
@@ -57,10 +60,14 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 public class Server extends HandlerWrapper implements Attributes
 {
     private static final ShutdownHookThread hookThread = new ShutdownHookThread();
-    private static final String _version = (Server.class.getPackage()!=null && Server.class.getPackage().getImplementationVersion()!=null)
-        ?Server.class.getPackage().getImplementationVersion()
-        :"7.0.y.z-SNAPSHOT";
-
+    private static final String _version;
+    static
+    {
+        if (Server.class.getPackage()!=null && Server.class.getPackage().getImplementationVersion()!=null)
+            _version=Server.class.getPackage().getImplementationVersion();
+        else
+            _version=System.getProperty("jetty.version","7.0.y.z-SNAPSHOT");
+    }
     private final Container _container=new Container();
     private final AttributesMap _attributes = new AttributesMap();
     private final List<Object> _dependentBeans=new ArrayList<Object>();
@@ -707,5 +714,11 @@ public class Server extends HandlerWrapper implements Attributes
     public interface Graceful extends Handler
     {
         public void setShutdown(boolean shutdown);
+    }
+
+    /* ------------------------------------------------------------ */
+    public static void main(String[] args)
+    {
+        System.err.println(getVersion());
     }
 }
