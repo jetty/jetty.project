@@ -1,5 +1,7 @@
 
 jetty-7.0.0.RC0-SNAPSHOT
+ + JETTY-967 create standalone build for PKCS12Import at codehaus
+ + JETTY-1056 update jetty-ant module for Jetty 7 at codehaus trunk
  + JETTY-1058 Handle trailing / with aliases
 
 jetty-7.0.0.M4 1 June 2009
