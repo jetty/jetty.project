@@ -56,7 +56,9 @@ public class WebInfConfiguration implements Configuration
         
         final ArrayList containerJarResources = new ArrayList<Resource>();
         context.setAttribute(CONTAINER_JAR_RESOURCES, containerJarResources);  
-        
+
+        //Apply ordering to container jars - if no pattern is specified, we won't
+        //match any of the container jars
         PatternMatcher containerJarNameMatcher = new PatternMatcher ()
         {
             public void matched(URI uri) throws Exception
@@ -64,8 +66,6 @@ public class WebInfConfiguration implements Configuration
                 containerJarResources.add(Resource.newResource(uri));
             }      
         };
-      
-        //Apply ordering to container jars
         ClassLoader loader = context.getClassLoader();
         while (loader != null && (loader instanceof URLClassLoader))
         {
@@ -84,7 +84,6 @@ public class WebInfConfiguration implements Configuration
         }
         
         //Apply ordering to WEB-INF/lib jars
-        
         final ArrayList webInfJarResources = new ArrayList<Resource>();
         context.setAttribute(WEB_INF_JAR_RESOURCES, webInfJarResources);
         PatternMatcher webInfJarNameMatcher = new PatternMatcher ()
@@ -94,8 +93,6 @@ public class WebInfConfiguration implements Configuration
                 webInfJarResources.add(Resource.newResource(uri));
             }      
         };
-        
-        //Find all jars in WEB-INF
         List<Resource> jars = findJars(context);
         //Convert to uris for matching
         URI[] uris = null;
