@@ -692,7 +692,7 @@ public class Main
         // re-eval the policy now that env is set
         try
         {
-        	if ( _activeOptions.contains("policy") )
+        	if ( _activeOptions.contains("secure") )
         	{
         	    Class jettyPolicy = cl.loadClass( "org.eclipse.jetty.policy.JettyPolicy" );
         	    Constructor c = jettyPolicy.getConstructor( new Class[] { Set.class, Map.class } );
