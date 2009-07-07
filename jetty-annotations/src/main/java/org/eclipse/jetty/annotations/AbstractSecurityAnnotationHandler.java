@@ -16,7 +16,7 @@ package org.eclipse.jetty.annotations;
 import java.util.List;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNameValue;
+import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNode;
 
 public abstract class AbstractSecurityAnnotationHandler implements AnnotationHandler
 {

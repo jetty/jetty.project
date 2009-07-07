@@ -11,17 +11,15 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 package org.eclipse.jetty.annotations;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNameValue;
-import org.eclipse.jetty.annotations.AnnotationParser.MultiValue;
-import org.eclipse.jetty.annotations.AnnotationParser.SimpleValue;
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNode;
+
+
 
 
 public class TestAnnotationParser extends TestCase
@@ -43,25 +41,25 @@ public class TestAnnotationParser extends TestCase
             
 
             public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNameValue> values)
+                                    List<AnnotationNode> values)
             {
                 assertEquals ("org.eclipse.jetty.annotations.ClassA", className);
             }
 
             public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                   List<AnnotationNameValue> values)
+                                   List<AnnotationNode> values)
             {
               assertEquals ("m", fieldName);
               assertEquals (org.objectweb.asm.Type.OBJECT, org.objectweb.asm.Type.getType(fieldType).getSort());
               assertEquals (1, values.size());
-              AnnotationNameValue anv1 = values.get(0);
+              AnnotationNode anv1 = values.get(0);
               assertEquals ("value", anv1.getName());
-              assertEquals (7, anv1.getValue().getValue());
+              assertEquals (7, anv1.getValue());
 
             }
 
             public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNameValue> values)
+                                     List<AnnotationNode> values)
             {
                assertEquals("org.eclipse.jetty.annotations.ClassA", className);
                assertTrue(methods.contains(methodName));
@@ -102,30 +100,31 @@ public class TestAnnotationParser extends TestCase
         class MultiAnnotationHandler implements AnnotationHandler
         {
             public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNameValue> values)
+                                    List<AnnotationNode> values)
             {
                 assertTrue("org.eclipse.jetty.annotations.ClassB".equals(className));
-                for (AnnotationNameValue anv: values)
+               
+                for (AnnotationNode anv: values)
                 {
-                    System.err.println(anv.getName()+":"+anv.getValue().getValue());
+                   System.err.println(anv.toString());
                 }
             }
 
             public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                    List<AnnotationNameValue> values)
+                                    List<AnnotationNode> values)
             {
                 //there should not be any
                 fail();
             }
 
             public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNameValue> values)
+                                     List<AnnotationNode> values)
             { 
                 assertTrue("org.eclipse.jetty.annotations.ClassB".equals(className));
                 assertTrue("a".equals(methodName));
-                for (AnnotationNameValue anv: values)
+                for (AnnotationNode anv: values)
                 {
-                    System.err.println(anv.getName()+":"+anv.getValue().getValue());
+                    System.err.println(anv.toString());
                 }
             }
         }

@@ -23,7 +23,7 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.annotation.WebInitParam;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNameValue;
+import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNode;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.util.Loader;
@@ -40,7 +40,7 @@ public class WebFilterAnnotationHandler implements AnnotationHandler
     }
     
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                            List<AnnotationNameValue> values)
+                            List<AnnotationNode> values)
     {
         Class clazz = null;
         try
@@ -118,13 +118,13 @@ public class WebFilterAnnotationHandler implements AnnotationHandler
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<AnnotationNameValue> values)
+                            List<AnnotationNode> values)
     {
         Log.warn ("@WebFilter not applicable for fields: "+className+"."+fieldName);
     }
 
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                             List<AnnotationNameValue> values)
+                             List<AnnotationNode> values)
     {
         Log.warn ("@WebFilter not applicable for methods: "+className+"."+methodName+" "+signature);
     }

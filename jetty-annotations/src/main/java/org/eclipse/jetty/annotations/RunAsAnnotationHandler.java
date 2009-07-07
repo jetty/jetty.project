@@ -18,7 +18,7 @@ import java.util.List;
 import javax.annotation.security.RunAs;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNameValue;
+import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNode;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
@@ -34,7 +34,7 @@ public class RunAsAnnotationHandler implements AnnotationHandler
     }
     
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                            List<AnnotationNameValue> values)
+                            List<AnnotationNode> values)
     {
         RunAsCollection runAsCollection = (RunAsCollection)_wac.getAttribute(RunAsCollection.RUNAS_COLLECTION);
         Class clazz = null;
@@ -67,13 +67,13 @@ public class RunAsAnnotationHandler implements AnnotationHandler
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<AnnotationNameValue> values)
+                            List<AnnotationNode> values)
     {
        Log.warn ("@RunAs annotation not applicable for fields: "+className+"."+fieldName);
     }
 
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                             List<AnnotationNameValue> values)
+                             List<AnnotationNode> values)
     {
         Log.warn("@RunAs annotation ignored on method: "+className+"."+methodName+" "+signature);
     }

@@ -18,7 +18,7 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNameValue;
+import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNode;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.PreDestroyCallback;
 import org.eclipse.jetty.util.Loader;
@@ -35,19 +35,19 @@ public class PreDestroyAnnotationHandler implements AnnotationHandler
     }
 
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                            List<AnnotationNameValue> values)
+                            List<AnnotationNode> values)
     {
         Log.warn("@PreDestroy annotation not applicable for classes: "+className);      
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<AnnotationNameValue> values)
+                            List<AnnotationNode> values)
     {
         Log.warn("@PreDestroy annotation not applicable for fields: "+className+"."+fieldName);     
     }
 
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                             List<AnnotationNameValue> values)
+                             List<AnnotationNode> values)
     {
         LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_wac.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
 

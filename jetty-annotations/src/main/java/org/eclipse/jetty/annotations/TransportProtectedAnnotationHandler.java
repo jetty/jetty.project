@@ -16,7 +16,7 @@ package org.eclipse.jetty.annotations;
 import java.util.List;
 
 import javax.annotation.security.TransportProtected;
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNameValue;
+import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNode;
 import org.eclipse.jetty.util.log.Log;
 
 public class TransportProtectedAnnotationHandler extends AbstractSecurityAnnotationHandler
@@ -24,7 +24,7 @@ public class TransportProtectedAnnotationHandler extends AbstractSecurityAnnotat
 
     
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                            List<AnnotationNameValue> values)
+                            List<AnnotationNode> values)
     {
         //TransportProtected is equivalent to a <user-data-constraint><transport-guarantee> element in web.xml:
         //true == CONFIDENTIAL
@@ -37,13 +37,13 @@ public class TransportProtectedAnnotationHandler extends AbstractSecurityAnnotat
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<AnnotationNameValue> values)
+                            List<AnnotationNode> values)
     {
         Log.warn("TransportProtected annotation not permitted on field - ignoring");
     }
 
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                             List<AnnotationNameValue> values)
+                             List<AnnotationNode> values)
     {
         //TransportProtected is equivalent to a <user-data-constraint><transport-guarantee> element in web.xml
         //Got name of class with the annotation, and we can get the value of annotation from values:

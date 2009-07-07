@@ -16,7 +16,7 @@ package org.eclipse.jetty.annotations;
 import java.util.List;
 
 import javax.annotation.security.RolesAllowed;
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNameValue;
+import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNode;
 import org.eclipse.jetty.util.log.Log;
 
 public class RolesAllowedAnnotationHandler extends AbstractSecurityAnnotationHandler
@@ -24,7 +24,7 @@ public class RolesAllowedAnnotationHandler extends AbstractSecurityAnnotationHan
 
 
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                            List<AnnotationNameValue> values)
+                            List<AnnotationNode> values)
     {
         //TODO check there is not already a RolesAllowed on this method
         
@@ -32,19 +32,20 @@ public class RolesAllowedAnnotationHandler extends AbstractSecurityAnnotationHan
         
         //Get the String[] from values
         
+        
         //TODO - set it on something
     }
 
     
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<AnnotationNameValue> values)
+                            List<AnnotationNode> values)
     {
         Log.warn("RolesAllowed annotation not permitted on field "+fieldName+" - ignoring");
     }
 
    
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                             List<AnnotationNameValue> values)
+                             List<AnnotationNode> values)
     {
         if (!isHttpMethod(methodName))
         {

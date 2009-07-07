@@ -27,7 +27,7 @@ import javax.naming.InitialContext;
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNameValue;
+import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNode;
 import org.eclipse.jetty.annotations.resources.ResourceA;
 import org.eclipse.jetty.annotations.resources.ResourceB;
 import org.eclipse.jetty.plus.annotation.Injection;
@@ -54,19 +54,19 @@ public class TestAnnotationInheritance extends TestCase
         public final List<String> annotatedFields = new ArrayList<String>();
         
         public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                List<AnnotationNameValue> values)
+                                List<AnnotationNode> values)
         {
             annotatedClassNames.add(className);
         }
 
         public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                List<AnnotationNameValue> values)
+                                List<AnnotationNode> values)
         {                
             annotatedFields.add(className+"."+fieldName);
         }
 
         public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                 List<AnnotationNameValue> values)
+                                 List<AnnotationNode> values)
         {
             annotatedMethods.add(className+"."+methodName);
         }      
