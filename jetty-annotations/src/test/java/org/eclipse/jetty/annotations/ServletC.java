@@ -52,7 +52,8 @@ public class ServletC extends HttpServlet
     {
         
     }
- 
+    
+    @RolesAllowed({"bob", "carol", "ted"})
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         response.setContentType("text/html");

@@ -216,9 +216,55 @@ public class TestServletAnnotations extends TestCase
             @Override
             public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
                                      List<Value> values)
-            {}
-            
+            {
+                assertTrue(annotation.endsWith("RolesAllowed"));
+                assertEquals("doGet", methodName);
+                assertNotNull(values);
+                assertEquals(1,values.size());
+                Value anv  = values.get(0);
+                assertEquals("value", anv.getName());
+                assertTrue (anv instanceof ListValue);
+                ListValue listval = (ListValue)anv;
+                assertEquals(3, listval.size());
+                ArrayList<String> roles = new ArrayList<String>(3);
+                for (Value n : listval.getList())
+                {
+                    roles.add((String)n.getValue());
+                }
+                assertTrue(roles.contains("bob"));
+                assertTrue(roles.contains("carol"));
+                assertTrue(roles.contains("ted"));
+                System.err.print(annotation+": ");
+                System.err.println(anv);             
+            }
         }
+        
+      class TransportProtectedHandler implements AnnotationHandler
+      {
+
+        public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
+                                List<Value> values)
+        {
+           assertNotNull (values);
+           assertEquals(1, values.size());
+           Value v = values.get(0);
+           assertTrue(v instanceof SimpleValue);
+           Object o = v.getValue();
+           assertTrue (o instanceof Boolean);
+           assertFalse((Boolean)o);
+           System.err.println(annotation+": "+v);
+        }
+
+        public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
+                                List<Value> values)
+        {}
+
+        
+        public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
+                                 List<Value> values)
+        {}
+          
+      }
         parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new ServletAnnotationHandler());
         parser.registerAnnotationHandler("javax.servlet.annotation.MultipartConfig", new MultipartAnnotationHandler ());
         parser.registerAnnotationHandler("javax.annotation.Resource", new ResourceAnnotationHandler ());
@@ -226,6 +272,7 @@ public class TestServletAnnotations extends TestCase
         parser.registerAnnotationHandler("javax.annotation.PreDestroy", new CallbackAnnotationHandler());
         parser.registerAnnotationHandler("javax.annotation.security.RunAs", new RunAsAnnotationHandler());
         parser.registerAnnotationHandler("javax.annotation.security.RolesAllowed", new RolesAllowedHandler());
+        parser.registerAnnotationHandler("javax.annotation.security.TransportProtected", new TransportProtectedHandler());
 
         long start = System.currentTimeMillis();
         parser.parse(classes, new ClassNameResolver () 

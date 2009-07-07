@@ -15,7 +15,6 @@ package org.eclipse.jetty.annotations;
 
 import java.util.List;
 
-import javax.annotation.security.TransportProtected;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.util.log.Log;
 
@@ -29,11 +28,13 @@ public class TransportProtectedAnnotationHandler extends AbstractSecurityAnnotat
         //TransportProtected is equivalent to a <user-data-constraint><transport-guarantee> element in web.xml:
         //true == CONFIDENTIAL
         //false == NONE
-        
+        if (values != null && values.size() == 1)
+        {
+            org.eclipse.jetty.plus.annotation.TransportProtected tp = new org.eclipse.jetty.plus.annotation.TransportProtected(className);
+            tp.setValue((Boolean)values.get(0).getValue());
+        }
         //Need to relate the name of the class to a <security-constraint> somehow ?!
-
-        
-
+ 
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
@@ -54,6 +55,8 @@ public class TransportProtectedAnnotationHandler extends AbstractSecurityAnnotat
             Log.warn ("TransportProtected annotation not permitted on "+methodName+" - ignoring");
             return;
        }
+       org.eclipse.jetty.plus.annotation.TransportProtected tp = new org.eclipse.jetty.plus.annotation.TransportProtected(className);
+       tp.setValue((Boolean)values.get(0).getValue());
     }
 
 }
