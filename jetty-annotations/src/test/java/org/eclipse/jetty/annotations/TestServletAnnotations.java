@@ -17,9 +17,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNode;
-import org.eclipse.jetty.annotations.AnnotationParser.ListAnnotationNode;
-import org.eclipse.jetty.annotations.AnnotationParser.SimpleAnnotationNode;
+import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import org.eclipse.jetty.annotations.AnnotationParser.ListValue;
+import org.eclipse.jetty.annotations.AnnotationParser.SimpleValue;
 
 
 import junit.framework.TestCase;
@@ -43,27 +43,27 @@ public class TestServletAnnotations extends TestCase
         class MultipartAnnotationHandler implements AnnotationHandler
         {
             public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {
                     assertEquals(3, values.size());
             }
             public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {}
             
             public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNode> values)
+                                     List<Value> values)
             {}
         }
         
         class ResourceAnnotationHandler implements AnnotationHandler
         {
             public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {}
 
             public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {
                 assertEquals ("org.eclipse.jetty.annotations.ServletC", className);
 
@@ -72,7 +72,7 @@ public class TestServletAnnotations extends TestCase
                 assertNotNull (annotation);
                 assertTrue (annotation.endsWith("Resource"));
                 assertEquals (1, values.size());
-                AnnotationNode anv = values.get(0);
+                Value anv = values.get(0);
                 assertEquals ("mappedName", anv.getName());
                 assertEquals ("foo", anv.getValue());
                 System.err.print(annotation+": ");
@@ -80,7 +80,7 @@ public class TestServletAnnotations extends TestCase
             }
 
             public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNode> values)
+                                     List<Value> values)
             {}
 
         }
@@ -88,43 +88,43 @@ public class TestServletAnnotations extends TestCase
         class ServletAnnotationHandler implements AnnotationHandler
         {
 
-            public void print (AnnotationNode anv)
+            public void print (Value anv)
             {
                 System.err.print(anv.toString());
             }
             
             public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {
                 assertNotNull(annotation);
                 assertTrue(annotation.endsWith("WebServlet"));
                 System.err.println(annotation+": ");
                 assertEquals(5, values.size());
-                for (AnnotationNode anv: values)
+                for (Value anv: values)
                 {
                     if (anv.getName().equals("name"))
                         assertEquals("CServlet", anv.getValue());
                     else if (anv.getName().equals("urlPatterns"))
                     {
-                        assertTrue (anv instanceof ListAnnotationNode);
-                        assertEquals (2, ((ListAnnotationNode)anv).size());
-                        List<AnnotationNode> urlPatterns = (List<AnnotationNode>)((ListAnnotationNode)anv).getValue();
+                        assertTrue (anv instanceof ListValue);
+                        assertEquals (2, ((ListValue)anv).size());
+                        List<Value> urlPatterns = (List<Value>)((ListValue)anv).getValue();
                         assertNull(urlPatterns.get(0).getName());
                         assertEquals("/foo/*", urlPatterns.get(0).getValue());
                     }
                     else if (anv.getName().equals("initParams"))
                     {
-                        assertTrue(anv instanceof ListAnnotationNode);
+                        assertTrue(anv instanceof ListValue);
                     }
                     System.err.println(anv);
                 }       
             }
         
             public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {}
             public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNode> values)
+                                     List<Value> values)
             {}
         }
 
@@ -132,11 +132,11 @@ public class TestServletAnnotations extends TestCase
         class CallbackAnnotationHandler implements AnnotationHandler
         {
             public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {}
 
             public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNode> values)
+                                     List<Value> values)
             {
                 assertEquals ("org.eclipse.jetty.annotations.ServletC", className);
                 assertNotNull(methodName);
@@ -154,18 +154,18 @@ public class TestServletAnnotations extends TestCase
                   
             }
             public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {}
         }
         
         class RunAsAnnotationHandler implements AnnotationHandler
         {
             public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {
                 assertNotNull (values);
                 assertEquals(1, values.size());
-                AnnotationNode anv = values.get(0);
+                Value anv = values.get(0);
                 assertEquals("value", anv.getName());
                 assertEquals("admin", anv.getValue());
                 System.err.print(annotation+": ");
@@ -173,10 +173,10 @@ public class TestServletAnnotations extends TestCase
             }
             
             public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNode> values)
+                                     List<Value> values)
             {}
             public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {}
         }
         
@@ -185,19 +185,19 @@ public class TestServletAnnotations extends TestCase
 
             @Override
             public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {
                 
                 assertTrue(annotation.endsWith("RolesAllowed"));
                 assertNotNull(values);
                 assertEquals(1,values.size());
-                AnnotationNode anv  = values.get(0);
+                Value anv  = values.get(0);
                 assertEquals("value", anv.getName());
-                assertTrue (anv instanceof ListAnnotationNode);
-                ListAnnotationNode listval = (ListAnnotationNode)anv;
+                assertTrue (anv instanceof ListValue);
+                ListValue listval = (ListValue)anv;
                 assertEquals(3, listval.size());
                 ArrayList<String> roles = new ArrayList<String>(3);
-                for (AnnotationNode n : listval.getList())
+                for (Value n : listval.getList())
                 {
                     roles.add((String)n.getValue());
                 }
@@ -210,12 +210,12 @@ public class TestServletAnnotations extends TestCase
 
             @Override
             public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {}
 
             @Override
             public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNode> values)
+                                     List<Value> values)
             {}
             
         }

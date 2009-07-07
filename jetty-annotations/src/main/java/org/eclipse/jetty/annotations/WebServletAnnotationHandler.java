@@ -21,7 +21,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNode;
+import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.Loader;
@@ -61,7 +61,7 @@ public class WebServletAnnotationHandler implements AnnotationHandler
      * @see org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler#handleClass(java.lang.String, int, int, java.lang.String, java.lang.String, java.lang.String[], java.lang.String, java.util.List)
      */
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotationName,
-                            List<AnnotationNode> values)
+                            List<Value> values)
     {
         if (!"javax.servlet.annotation.WebServlet".equals(annotationName))
             return;    
@@ -152,13 +152,13 @@ public class WebServletAnnotationHandler implements AnnotationHandler
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<AnnotationNode> values)
+                            List<Value> values)
     {
         Log.warn ("@WebServlet annotation not supported for fields");
     }
 
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                             List<AnnotationNode> values)
+                             List<Value> values)
     {
         Log.warn ("@WebServlet annotation not supported for methods");
     }    

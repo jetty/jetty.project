@@ -66,11 +66,11 @@ public class AnnotationParser
     
 
     
-    public abstract class AnnotationNode
+    public abstract class Value
     {
         String _name;
         
-        public AnnotationNode (String name)
+        public Value (String name)
         {
             _name = name;
         }
@@ -87,11 +87,11 @@ public class AnnotationParser
    
  
     
-    public class SimpleAnnotationNode extends AnnotationNode
+    public class SimpleValue extends Value
     {
         Object _val;
         
-        public SimpleAnnotationNode(String name)
+        public SimpleValue(String name)
         {
             super(name);
         }
@@ -111,14 +111,14 @@ public class AnnotationParser
         }
     }
     
-    public class ListAnnotationNode extends AnnotationNode
+    public class ListValue extends Value
     {
-        List<AnnotationNode> _val;
+        List<Value> _val;
         
-        public ListAnnotationNode (String name)
+        public ListValue (String name)
         {
             super(name);
-            _val = new ArrayList<AnnotationNode>();
+            _val = new ArrayList<Value>();
         }
       
         public Object getValue()
@@ -126,12 +126,12 @@ public class AnnotationParser
             return _val;
         }
         
-        public List<AnnotationNode> getList()
+        public List<Value> getList()
         {
             return _val;
         }
         
-        public void addValue (AnnotationNode v)
+        public void addValue (Value v)
         {
             _val.add(v);
         }
@@ -147,7 +147,7 @@ public class AnnotationParser
             buff.append("(");
             buff.append(getName());
             buff.append(":");
-            for (AnnotationNode n: _val)
+            for (Value n: _val)
             {
                 buff.append(" "+n.toString());
             }
@@ -163,15 +163,15 @@ public class AnnotationParser
     {
         public void handleClass (String className, int version, int access, 
                                  String signature, String superName, String[] interfaces, 
-                                 String annotation, List<AnnotationNode>values);
+                                 String annotation, List<Value>values);
         
         public void handleMethod (String className, String methodName, int access,  
                                   String params, String signature,String[] exceptions, 
-                                  String annotation, List<AnnotationNode>values);
+                                  String annotation, List<Value>values);
         
         public void handleField (String className, String fieldName,  int access, 
                                  String fieldType, String signature, Object value, 
-                                 String annotation, List<AnnotationNode>values);
+                                 String annotation, List<Value>values);
     }
     
     
@@ -192,16 +192,16 @@ public class AnnotationParser
     
     public class MyAnnotationVisitor implements AnnotationVisitor
     {
-        List<AnnotationNode> _annotationValues;
+        List<Value> _annotationValues;
         String _annotationName;
         
-        public MyAnnotationVisitor (String annotationName, List<AnnotationNode> values)
+        public MyAnnotationVisitor (String annotationName, List<Value> values)
         {
             _annotationValues = values;
             _annotationName = annotationName;
         }
         
-        public List<AnnotationNode> getAnnotationValues()
+        public List<Value> getAnnotationValues()
         {
             return _annotationValues;
         }
@@ -212,7 +212,7 @@ public class AnnotationParser
          */
         public void visit(String aname, Object avalue)
         {
-           SimpleAnnotationNode v = new SimpleAnnotationNode(aname);
+           SimpleValue v = new SimpleValue(aname);
            v.setValue(avalue);
            _annotationValues.add(v);
         }
@@ -224,7 +224,7 @@ public class AnnotationParser
         public AnnotationVisitor visitAnnotation(String name, String desc)
         {
             String s = normalize(desc);
-            ListAnnotationNode v = new ListAnnotationNode(s);
+            ListValue v = new ListValue(s);
             _annotationValues.add(v);
             MyAnnotationVisitor visitor = new MyAnnotationVisitor(s, v.getList());
             return visitor; 
@@ -236,7 +236,7 @@ public class AnnotationParser
          */
         public AnnotationVisitor visitArray(String name)
         {
-            ListAnnotationNode v = new ListAnnotationNode(name);
+            ListValue v = new ListValue(name);
             _annotationValues.add(v);
             MyAnnotationVisitor visitor = new MyAnnotationVisitor(null, v.getList());
             return visitor; 
@@ -307,7 +307,7 @@ public class AnnotationParser
 
         public AnnotationVisitor visitAnnotation (String desc, boolean visible)
         {                
-            MyAnnotationVisitor visitor = new MyAnnotationVisitor(normalize(desc), new ArrayList<AnnotationNode>())
+            MyAnnotationVisitor visitor = new MyAnnotationVisitor(normalize(desc), new ArrayList<Value>())
             {
                 public void visitEnd()
                 {   
@@ -336,7 +336,7 @@ public class AnnotationParser
             {
                 public AnnotationVisitor visitAnnotation(String desc, boolean visible)
                 {
-                    MyAnnotationVisitor visitor = new MyAnnotationVisitor (normalize(desc), new ArrayList<AnnotationNode>())
+                    MyAnnotationVisitor visitor = new MyAnnotationVisitor (normalize(desc), new ArrayList<Value>())
                     {
                         public void visitEnd()
                         {   
@@ -366,7 +366,7 @@ public class AnnotationParser
             {
                 public AnnotationVisitor visitAnnotation(String desc, boolean visible)
                 {
-                    MyAnnotationVisitor visitor = new MyAnnotationVisitor(normalize(desc), new ArrayList<AnnotationNode>())
+                    MyAnnotationVisitor visitor = new MyAnnotationVisitor(normalize(desc), new ArrayList<Value>())
                     {
                         public void visitEnd()
                         {

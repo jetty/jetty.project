@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.security.RolesAllowed;
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNode;
+import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import org.eclipse.jetty.annotations.AnnotationParser.ListValue;
 import org.eclipse.jetty.util.log.Log;
 
 public class RolesAllowedAnnotationHandler extends AbstractSecurityAnnotationHandler
@@ -24,28 +26,38 @@ public class RolesAllowedAnnotationHandler extends AbstractSecurityAnnotationHan
 
 
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                            List<AnnotationNode> values)
+                            List<Value> values)
     {
         //TODO check there is not already a RolesAllowed on this method
         
         org.eclipse.jetty.plus.annotation.RolesAllowed rolesAllowed = new org.eclipse.jetty.plus.annotation.RolesAllowed (className);
         
         //Get the String[] from values
-        
+        if (values != null && values.size() == 1)
+        {
+            Value v = values.get(0);
+            ArrayList<String> roles = new ArrayList<String>();
+            if (v instanceof ListValue)
+            {
+                for (Value n : ((ListValue)v).getList())
+                    roles.add((String)n.getValue());
+            }
+            rolesAllowed.setRoles(roles.toArray(new String[roles.size()]));
+        }
         
         //TODO - set it on something
     }
 
     
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<AnnotationNode> values)
+                            List<Value> values)
     {
         Log.warn("RolesAllowed annotation not permitted on field "+fieldName+" - ignoring");
     }
 
    
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                             List<AnnotationNode> values)
+                             List<Value> values)
     {
         if (!isHttpMethod(methodName))
         {

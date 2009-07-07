@@ -24,7 +24,7 @@ import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNode;
+import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.util.IntrospectionUtil;
@@ -48,7 +48,7 @@ public class ResourceAnnotationHandler implements AnnotationHandler
      *  not specify an injection.
      */
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                            List<AnnotationNode> values)
+                            List<Value> values)
     {
         Class clazz = null;
         try
@@ -93,7 +93,7 @@ public class ResourceAnnotationHandler implements AnnotationHandler
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<AnnotationNode> values)
+                            List<Value> values)
     {
         InjectionCollection injections = (InjectionCollection)_wac.getAttribute(InjectionCollection.INJECTION_COLLECTION);
         Class clazz = null;
@@ -218,7 +218,7 @@ public class ResourceAnnotationHandler implements AnnotationHandler
      * @param injections
      */
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                             List<AnnotationNode> values)
+                             List<Value> values)
     {
         InjectionCollection injections = (InjectionCollection)_wac.getAttribute(InjectionCollection.INJECTION_COLLECTION);
         Class clazz = null;

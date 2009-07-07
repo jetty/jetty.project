@@ -17,7 +17,7 @@ import java.util.List;
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNode;
+import org.eclipse.jetty.annotations.AnnotationParser.Value;
 
 
 
@@ -41,25 +41,25 @@ public class TestAnnotationParser extends TestCase
             
 
             public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {
                 assertEquals ("org.eclipse.jetty.annotations.ClassA", className);
             }
 
             public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                   List<AnnotationNode> values)
+                                   List<Value> values)
             {
               assertEquals ("m", fieldName);
               assertEquals (org.objectweb.asm.Type.OBJECT, org.objectweb.asm.Type.getType(fieldType).getSort());
               assertEquals (1, values.size());
-              AnnotationNode anv1 = values.get(0);
+              Value anv1 = values.get(0);
               assertEquals ("value", anv1.getName());
               assertEquals (7, anv1.getValue());
 
             }
 
             public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNode> values)
+                                     List<Value> values)
             {
                assertEquals("org.eclipse.jetty.annotations.ClassA", className);
                assertTrue(methods.contains(methodName));
@@ -100,29 +100,29 @@ public class TestAnnotationParser extends TestCase
         class MultiAnnotationHandler implements AnnotationHandler
         {
             public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {
                 assertTrue("org.eclipse.jetty.annotations.ClassB".equals(className));
                
-                for (AnnotationNode anv: values)
+                for (Value anv: values)
                 {
                    System.err.println(anv.toString());
                 }
             }
 
             public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                    List<AnnotationNode> values)
+                                    List<Value> values)
             {
                 //there should not be any
                 fail();
             }
 
             public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNode> values)
+                                     List<Value> values)
             { 
                 assertTrue("org.eclipse.jetty.annotations.ClassB".equals(className));
                 assertTrue("a".equals(methodName));
-                for (AnnotationNode anv: values)
+                for (Value anv: values)
                 {
                     System.err.println(anv.toString());
                 }
