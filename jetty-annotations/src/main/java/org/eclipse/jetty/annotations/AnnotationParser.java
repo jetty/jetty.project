@@ -181,12 +181,20 @@ public class AnnotationParser
             return _annotationValues;
         }
 
+        /** 
+         * Visit a single-valued (name,value) pair for this annotation
+         * @see org.objectweb.asm.AnnotationVisitor#visit(java.lang.String, java.lang.Object)
+         */
         public void visit(String aname, Object avalue)
         {
            SimpleValue v = new SimpleValue(avalue);
            _annotationValues.add(new AnnotationNameValue(aname, v));
         }
 
+        /** 
+         * Visit a (name,value) pair whose value is another Annotation
+         * @see org.objectweb.asm.AnnotationVisitor#visitAnnotation(java.lang.String, java.lang.String)
+         */
         public AnnotationVisitor visitAnnotation(String name, String desc)
         {
             MyAnnotationVisitor visitor = new MyAnnotationVisitor(normalize(desc));
@@ -195,6 +203,10 @@ public class AnnotationParser
             return visitor; 
         }
 
+        /** 
+         * Visit an array valued (name, value) pair for this annotation
+         * @see org.objectweb.asm.AnnotationVisitor#visitArray(java.lang.String)
+         */
         public AnnotationVisitor visitArray(String name)
         {
             MyAnnotationVisitor visitor = new MyAnnotationVisitor(null);
@@ -202,6 +214,10 @@ public class AnnotationParser
             return visitor; 
         }
 
+        /** 
+         * Visit a enum-valued (name,value) pair for this annotation
+         * @see org.objectweb.asm.AnnotationVisitor#visitEnum(java.lang.String, java.lang.String, java.lang.String)
+         */
         public void visitEnum(String name, String desc, String value)
         {
             //TODO

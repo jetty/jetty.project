@@ -11,45 +11,19 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.annotations;
-
-
+package org.eclipse.jetty.plus.annotation;
 
 /**
- * ClassB
+ * DenyAll
  *
  *
  */
-@Sample(value=50)
-@Multi({"do", "re", "mi"})
-public class ClassB extends ClassA
+public class DenyAll extends AbstractAccessControl
 {
 
-    //test override of public scope method
-    @Sample(value=51)
-    @Multi({"fa", "so", "la"})
-    public void a()
+    public DenyAll(String className)
     {
-       System.err.println("ClassB.public");
-    }
-    
-    //test override of package scope method
-    @Sample(value=52)
-    void c()
-    {
-        System.err.println("ClassB.package");
-    }
-    
-    public void l()
-    {
-        System.err.println("Overridden method l has no annotation");
-    }
-    
-    
-    //test no annotation
-    public void z()
-    {
-        System.err.println("ClassB.z");
+        super(className);
     }
 
 }

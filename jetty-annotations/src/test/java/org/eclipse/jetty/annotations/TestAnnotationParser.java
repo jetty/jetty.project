@@ -91,183 +91,46 @@ public class TestAnnotationParser extends TestCase
         System.err.println("Time to parse class: "+((end-start)));
     } 
 
-
-    public void testServletAnnotation()
+    
+    public void testMultiAnnotation ()
     throws Exception
     {
-        List<String> classes = new ArrayList<String>();
-        classes.add("org.eclipse.jetty.annotations.ServletC");
+        String[] classNames = new String[]{"org.eclipse.jetty.annotations.ClassB"};
         AnnotationParser parser = new AnnotationParser();
-
-        class MultipartAnnotationHandler implements AnnotationHandler
-        {
-            public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNameValue> values)
-            {
-                    assertEquals(3, values.size());
-            }
-            public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                    List<AnnotationNameValue> values)
-            {}
-            
-            public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNameValue> values)
-            {}
-        }
         
-        class ResourceAnnotationHandler implements AnnotationHandler
+        
+        class MultiAnnotationHandler implements AnnotationHandler
         {
             public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
                                     List<AnnotationNameValue> values)
-            {}
-            
-            public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                    List<AnnotationNameValue> values)
             {
-                assertEquals ("org.eclipse.jetty.annotations.ServletC", className);
-            
-            assertEquals ("foo",fieldName);
-            assertNotNull (values);
-            assertNotNull (annotation);
-            assertTrue (annotation.endsWith("Resource"));
-            assertEquals (1, values.size());
-            AnnotationNameValue anv = values.get(0);
-            assertEquals ("mappedName", anv.getName());
-            assertEquals ("foo", anv.getValue().getValue());
-            }
-            
-            public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNameValue> values)
-            {}
-            
-        }
-
-        class ServletAnnotationHandler implements AnnotationHandler
-        {
-
-            public void print (AnnotationNameValue anv)
-            {
-                System.err.print(anv.getName()+":");
-                Value v = anv.getValue();
-                if (v instanceof SimpleValue)
-                    System.err.println(v.getValue());
-                else if (v instanceof MultiValue)
+                assertTrue("org.eclipse.jetty.annotations.ClassB".equals(className));
+                for (AnnotationNameValue anv: values)
                 {
-                    List<AnnotationNameValue> list = (List<AnnotationNameValue>)v.getValue();
-                    System.err.println();
-                    for (AnnotationNameValue anv2 : list)
-                    {
-                        System.err.print("\t");
-                        print (anv2);
-                    }
-                     
+                    System.err.println(anv.getName()+":"+anv.getValue().getValue());
                 }
             }
-            
-            public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNameValue> values)
-            {
-                assertNotNull(annotation);
-                if (annotation.endsWith("WebServlet"))
-                {
-                    assertEquals(5, values.size());
-                    for (AnnotationNameValue anv: values)
-                    {
-                        if (anv.getName().equals("name"))
-                            assertEquals("CServlet", anv.getValue().getValue());
-                        else if (anv.getName().equals("urlPatterns"))
-                        {
-                            Value v = anv.getValue();
-                            assertTrue (v instanceof MultiValue);
-                            assertEquals (2, ((MultiValue)v).size());
-                            List<AnnotationNameValue> urlPatterns = (List<AnnotationNameValue>)((MultiValue)v).getValue();
-                            assertNull(urlPatterns.get(0).getName());
-                            assertEquals("/foo/*", urlPatterns.get(0).getValue().getValue());
-                        }
-                    }
-                }
-                else
-                    fail("Unknown annotation: "+annotation);
-            }
-        
+
             public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
                                     List<AnnotationNameValue> values)
-            {}
-            public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNameValue> values)
-            {}
-        }
-
-        
-        class CallbackAnnotationHandler implements AnnotationHandler
-        {
-            public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNameValue> values)
-            {}
+            {
+                //there should not be any
+                fail();
+            }
 
             public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
                                      List<AnnotationNameValue> values)
-            {
-                assertEquals ("org.eclipse.jetty.annotations.ServletC", className);
-                assertNotNull(methodName);
-                if (methodName.endsWith("pre"))
+            { 
+                assertTrue("org.eclipse.jetty.annotations.ClassB".equals(className));
+                assertTrue("a".equals(methodName));
+                for (AnnotationNameValue anv: values)
                 {
-                    assertTrue(annotation.endsWith("PreDestroy"));
-                    assertTrue(values.isEmpty());
-                }
-                else if (methodName.endsWith("post"))
-                {
-                    assertTrue(annotation.endsWith("PostConstruct"));
-                    assertTrue(values.isEmpty());
+                    System.err.println(anv.getName()+":"+anv.getValue().getValue());
                 }
             }
-            public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                    List<AnnotationNameValue> values)
-            {}
         }
         
-        class RunAsAnnotationHandler implements AnnotationHandler
-        {
-            public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                                    List<AnnotationNameValue> values)
-            {
-                assertNotNull (values);
-                assertEquals(1, values.size());
-                AnnotationNameValue anv = values.get(0);
-                assertEquals("value", anv.getName());
-                assertEquals("admin", anv.getValue().getValue());
-            }
-            
-            public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                                     List<AnnotationNameValue> values)
-            {}
-            public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                                    List<AnnotationNameValue> values)
-            {}
-        }
-        parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new ServletAnnotationHandler());
-        parser.registerAnnotationHandler("javax.servlet.annotation.MultipartConfig", new MultipartAnnotationHandler ());
-        parser.registerAnnotationHandler("javax.annotation.Resource", new ResourceAnnotationHandler ());
-        parser.registerAnnotationHandler("javax.annotation.PostConstruct", new CallbackAnnotationHandler());
-        parser.registerAnnotationHandler("javax.annotation.PreDestroy", new CallbackAnnotationHandler());
-        parser.registerAnnotationHandler("javax.annotation.security.RunAs", new RunAsAnnotationHandler());
-
-        long start = System.currentTimeMillis();
-        parser.parse(classes, new ClassNameResolver () 
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }
-
-        });
-        long end = System.currentTimeMillis();
-
-        System.err.println("Time to parse class: "+((end-start)));
+        parser.registerAnnotationHandler("org.eclipse.jetty.annotations.Multi", new MultiAnnotationHandler());
+        parser.parse(classNames, null);
     }
 }

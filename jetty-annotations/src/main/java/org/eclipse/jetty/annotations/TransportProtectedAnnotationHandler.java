@@ -11,67 +11,49 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-
 package org.eclipse.jetty.annotations;
 
 import java.util.List;
 
-import javax.servlet.annotation.HandlesTypes;
-
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
+import javax.annotation.security.TransportProtected;
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNameValue;
-import org.eclipse.jetty.plus.annotation.ContainerInitializer;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 
-/**
- * HandlesTypesAnnotationHandler
- *
- * 
- */
-public class ContainerInitializerAnnotationHandler implements AnnotationHandler
+public class TransportProtectedAnnotationHandler extends AbstractSecurityAnnotationHandler
 {
-    ContainerInitializer _initializer;
-    Class _annotation;
 
-    public ContainerInitializerAnnotationHandler (ContainerInitializer initializer, Class annotation)
-    {
-        _initializer = initializer;
-        _annotation = annotation;
-    }
     
-    /** 
-     * Handle finding a class that is annotated with the annotation we were constructed with.
-     * @see org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler#handleClass(java.lang.String, int, int, java.lang.String, java.lang.String, java.lang.String[], java.lang.String, java.util.List)
-     */
-    public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotationName,
+    public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
                             List<AnnotationNameValue> values)
     {
-        Class clazz = null;
+        //TransportProtected is equivalent to a <user-data-constraint><transport-guarantee> element in web.xml:
+        //true == CONFIDENTIAL
+        //false == NONE
         
-        System.err.println("Got annotated class "+className);
-        try
-        {
-           clazz = Loader.loadClass(null, className);
-            _initializer.addApplicableClass(clazz);
-        }
-        catch (Exception e)
-        {
-            Log.warn(e);
-            return;
-        } 
+        //Need to relate the name of the class to a <security-constraint> somehow ?!
+
+        
+
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
                             List<AnnotationNameValue> values)
     {
-        //Not valid on fields
+        Log.warn("TransportProtected annotation not permitted on field - ignoring");
     }
 
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
                              List<AnnotationNameValue> values)
     {
-       //not valid on methods
+        //TransportProtected is equivalent to a <user-data-constraint><transport-guarantee> element in web.xml
+        //Got name of class with the annotation, and we can get the value of annotation from values:
+        //true == CONFIDENTIAL
+        //false == NONE
+       if (!isHttpMethod(methodName))
+       {
+            Log.warn ("TransportProtected annotation not permitted on "+methodName+" - ignoring");
+            return;
+       }
     }
 
 }

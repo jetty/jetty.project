@@ -13,43 +13,29 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.util.List;
 
+import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNameValue;
 
-/**
- * ClassB
- *
- *
- */
-@Sample(value=50)
-@Multi({"do", "re", "mi"})
-public class ClassB extends ClassA
+public abstract class AbstractSecurityAnnotationHandler implements AnnotationHandler
 {
+    
+    
+    public boolean isHttpMethod (String methodName)
+    {
+        if ("doGet".equals(methodName) ||
+                "doPost".equals(methodName) ||
+                "doDelete".equals(methodName) ||
+                "doHead".equals(methodName) ||
+                "doOptions".equals(methodName) ||
+                "doPut".equals(methodName) ||
+                "doTrace".equals(methodName))
+        {
+            return true;
+        }
 
-    //test override of public scope method
-    @Sample(value=51)
-    @Multi({"fa", "so", "la"})
-    public void a()
-    {
-       System.err.println("ClassB.public");
-    }
-    
-    //test override of package scope method
-    @Sample(value=52)
-    void c()
-    {
-        System.err.println("ClassB.package");
-    }
-    
-    public void l()
-    {
-        System.err.println("Overridden method l has no annotation");
-    }
-    
-    
-    //test no annotation
-    public void z()
-    {
-        System.err.println("ClassB.z");
+        return false;
     }
 
 }

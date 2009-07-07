@@ -11,45 +11,38 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.plus.annotation;
 
-
-
-/**
- * ClassB
- *
- *
- */
-@Sample(value=50)
-@Multi({"do", "re", "mi"})
-public class ClassB extends ClassA
+public abstract class AbstractAccessControl
 {
-
-    //test override of public scope method
-    @Sample(value=51)
-    @Multi({"fa", "so", "la"})
-    public void a()
-    {
-       System.err.println("ClassB.public");
-    }
+    protected String _className;
+    protected String _methodName;
     
-    //test override of package scope method
-    @Sample(value=52)
-    void c()
-    {
-        System.err.println("ClassB.package");
-    }
     
-    public void l()
+    public AbstractAccessControl(String className)
     {
-        System.err.println("Overridden method l has no annotation");
+        _className = className;
     }
     
     
-    //test no annotation
-    public void z()
+    public void setClassName (String name)
     {
-        System.err.println("ClassB.z");
+        _className = name;
+    }
+    
+    public void setMethodName (String name)
+    {
+        _methodName = name;
+    }
+    
+    public boolean isMethodType ()
+    {
+        return _methodName != null;
+    }
+    
+    public boolean isClassType ()
+    {
+        return _methodName == null;
     }
 
 }

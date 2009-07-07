@@ -17,7 +17,9 @@ import java.io.IOException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import javax.annotation.security.RolesAllowed;
 import javax.annotation.security.RunAs;
+import javax.annotation.security.TransportProtected;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebInitParam;
@@ -32,6 +34,8 @@ import javax.servlet.http.HttpServletResponse;
 @WebServlet(urlPatterns = { "/foo/*", "/bah/*" }, name="CServlet", initParams={@WebInitParam(name="x", value="y")}, loadOnStartup=2, asyncSupported=false)
 @MultipartConfig(fileSizeThreshold=1000, maxFileSize=2000, maxRequestSize=3000)
 @RunAs("admin")
+@TransportProtected(false)
+@RolesAllowed({"fred", "bill", "dorothy"})
 public class ServletC extends HttpServlet
 {
     @Resource (mappedName="foo")

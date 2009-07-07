@@ -11,45 +11,33 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.annotations;
-
-
+package org.eclipse.jetty.plus.annotation;
 
 /**
- * ClassB
+ * RolesAllowed
  *
  *
  */
-@Sample(value=50)
-@Multi({"do", "re", "mi"})
-public class ClassB extends ClassA
+public class RolesAllowed extends AbstractAccessControl
 {
-
-    //test override of public scope method
-    @Sample(value=51)
-    @Multi({"fa", "so", "la"})
-    public void a()
-    {
-       System.err.println("ClassB.public");
-    }
+    protected String[] _roles;
     
-    //test override of package scope method
-    @Sample(value=52)
-    void c()
+    public RolesAllowed(String className)
     {
-        System.err.println("ClassB.package");
-    }
-    
-    public void l()
-    {
-        System.err.println("Overridden method l has no annotation");
-    }
-    
-    
-    //test no annotation
-    public void z()
-    {
-        System.err.println("ClassB.z");
+        super(className);
     }
 
+    public void setRoles (String[] roles)
+    {
+        if (roles != null)
+        {
+            _roles = new String[roles.length];
+            System.arraycopy(roles, 0, _roles, 0, roles.length);
+        }
+    }
+    
+    public String[] getRoles ()
+    {
+        return _roles;
+    }
 }

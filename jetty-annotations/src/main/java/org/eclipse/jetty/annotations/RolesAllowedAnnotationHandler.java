@@ -11,67 +11,54 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-
 package org.eclipse.jetty.annotations;
 
 import java.util.List;
 
-import javax.servlet.annotation.HandlesTypes;
-
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
+import javax.annotation.security.RolesAllowed;
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationNameValue;
-import org.eclipse.jetty.plus.annotation.ContainerInitializer;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 
-/**
- * HandlesTypesAnnotationHandler
- *
- * 
- */
-public class ContainerInitializerAnnotationHandler implements AnnotationHandler
+public class RolesAllowedAnnotationHandler extends AbstractSecurityAnnotationHandler
 {
-    ContainerInitializer _initializer;
-    Class _annotation;
 
-    public ContainerInitializerAnnotationHandler (ContainerInitializer initializer, Class annotation)
-    {
-        _initializer = initializer;
-        _annotation = annotation;
-    }
-    
-    /** 
-     * Handle finding a class that is annotated with the annotation we were constructed with.
-     * @see org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler#handleClass(java.lang.String, int, int, java.lang.String, java.lang.String, java.lang.String[], java.lang.String, java.util.List)
-     */
-    public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotationName,
+
+    public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
                             List<AnnotationNameValue> values)
     {
-        Class clazz = null;
+        //TODO check there is not already a RolesAllowed on this method
         
-        System.err.println("Got annotated class "+className);
-        try
-        {
-           clazz = Loader.loadClass(null, className);
-            _initializer.addApplicableClass(clazz);
-        }
-        catch (Exception e)
-        {
-            Log.warn(e);
-            return;
-        } 
+        org.eclipse.jetty.plus.annotation.RolesAllowed rolesAllowed = new org.eclipse.jetty.plus.annotation.RolesAllowed (className);
+        
+        //Get the String[] from values
+        
+        //TODO - set it on something
     }
 
+    
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
                             List<AnnotationNameValue> values)
     {
-        //Not valid on fields
+        Log.warn("RolesAllowed annotation not permitted on field "+fieldName+" - ignoring");
     }
 
+   
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
                              List<AnnotationNameValue> values)
     {
-       //not valid on methods
+        if (!isHttpMethod(methodName))
+        {
+            Log.warn ("RolesAllowed annotation not permitted on method "+methodName+" - ignoring");
+            return;
+        }
+        //TODO check there is not already a RolesAllowed on this method
+
+        org.eclipse.jetty.plus.annotation.RolesAllowed rolesAllowed = new org.eclipse.jetty.plus.annotation.RolesAllowed (className);
+        rolesAllowed.setMethodName(methodName);
+
+        //Get the String[] from values
+
+        //TODO - set it on something
     }
 
 }
