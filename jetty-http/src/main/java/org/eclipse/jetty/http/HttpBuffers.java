@@ -39,6 +39,11 @@ public abstract class HttpBuffers extends AbstractLifeCycle
         {
             return newRequestHeader(size);
         }
+        @Override
+        protected boolean isHeader(Buffer buffer)
+        {
+            return isRequestHeader(buffer);
+        }
     };
     
     private final ThreadLocalBuffers _responseBuffers = new ThreadLocalBuffers()
@@ -53,6 +58,11 @@ public abstract class HttpBuffers extends AbstractLifeCycle
         protected Buffer newHeader(int size)
         {
             return newResponseHeader(size);
+        }
+        @Override
+        protected boolean isHeader(Buffer buffer)
+        {
+            return isResponseHeader(buffer);
         }
     };
     
@@ -129,6 +139,22 @@ public abstract class HttpBuffers extends AbstractLifeCycle
     protected abstract Buffer newResponseBuffer(int size);
 
     protected abstract Buffer newResponseHeader(int size);
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param buffer
+     * @return True if the buffer is the correct type for a request header buffer
+     */
+    protected abstract boolean isRequestHeader(Buffer buffer);
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param buffer
+     * @return True if the buffer is the correct type for a response header buffer
+     */
+    protected abstract boolean isResponseHeader(Buffer buffer);
+    
+    
 
     /**
      * @param headerBufferSize The headerBufferSize to set.

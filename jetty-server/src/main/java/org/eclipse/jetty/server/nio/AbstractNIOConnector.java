@@ -17,6 +17,7 @@
 package org.eclipse.jetty.server.nio;
 
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.NIOBuffer;
@@ -46,20 +47,6 @@ public abstract class AbstractNIOConnector extends AbstractConnector implements 
     {
         _useDirectBuffers=direct;
     }
-    
-
-    // TODO
-    // Header buffers always byte array buffers (efficiency of random access)
-    // There are lots of things to consider here... DIRECT buffers are faster to
-    // send but more expensive to build and access! so we have choices to make...
-    // + headers are constructed bit by bit and parsed bit by bit, so INDiRECT looks
-    // good for them.   
-    // + but will a gather write of an INDIRECT header with a DIRECT body be any good?
-    // this needs to be benchmarked.
-    // + Will it be possible to get a DIRECT header buffer just for the gather writes of
-    // content from file mapped buffers?  
-    // + Are gather writes worth the effort?  Maybe they will work well with two INDIRECT
-    // buffers being copied into a single kernel buffer?
 
     /* ------------------------------------------------------------------------------- */
     public Buffer newRequestBuffer(int size)
@@ -82,8 +69,18 @@ public abstract class AbstractNIOConnector extends AbstractConnector implements 
     /* ------------------------------------------------------------------------------- */
     public Buffer newResponseHeader(int size)
     {
-        // TODO maybe can be direct?
         return new IndirectNIOBuffer(size);
     }
 
+    /* ------------------------------------------------------------------------------- */
+    protected boolean isRequestHeader(Buffer buffer)
+    {
+        return buffer instanceof IndirectNIOBuffer;
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    protected boolean isResponseHeader(Buffer buffer)
+    {
+        return buffer instanceof IndirectNIOBuffer;
+    }
 }

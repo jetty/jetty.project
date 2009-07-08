@@ -24,7 +24,8 @@ public abstract class ThreadLocalBuffers implements Buffers
 {
     private int _bufferSize=12*1024;
     private int _headerSize=6*1024;
-    
+
+    /* ------------------------------------------------------------ */
     private final ThreadLocal<ThreadBuffers> _buffers=new ThreadLocal<ThreadBuffers>()
     {
         protected ThreadBuffers initialValue()
@@ -33,6 +34,12 @@ public abstract class ThreadLocalBuffers implements Buffers
         }
     };
 
+    /* ------------------------------------------------------------ */
+    public ThreadLocalBuffers()
+    {   
+    }
+
+    /* ------------------------------------------------------------ */
     public Buffer getBuffer()
     {
         ThreadBuffers buffers = _buffers.get();
@@ -53,6 +60,7 @@ public abstract class ThreadLocalBuffers implements Buffers
         return newBuffer(_bufferSize);
     }
 
+    /* ------------------------------------------------------------ */
     public Buffer getHeader()
     {
         ThreadBuffers buffers = _buffers.get();
@@ -63,7 +71,7 @@ public abstract class ThreadLocalBuffers implements Buffers
             return b;
         }
 
-        if (buffers._other!=null && buffers._other.capacity()==_headerSize)
+        if (buffers._other!=null && buffers._other.capacity()==_headerSize && isHeader(buffers._other))
         {
             Buffer b=buffers._other;
             buffers._other=null;
@@ -73,6 +81,7 @@ public abstract class ThreadLocalBuffers implements Buffers
         return newHeader(_headerSize);
     }
 
+    /* ------------------------------------------------------------ */
     public Buffer getBuffer(int size)
     {
         ThreadBuffers buffers = _buffers.get();
@@ -86,6 +95,7 @@ public abstract class ThreadLocalBuffers implements Buffers
         return newBuffer(size);
     }
 
+    /* ------------------------------------------------------------ */
     public void returnBuffer(Buffer buffer)
     {
         buffer.clear();
@@ -96,22 +106,17 @@ public abstract class ThreadLocalBuffers implements Buffers
         
         ThreadBuffers buffers = _buffers.get();
         
-        if (size==_bufferSize && buffers._buffer==null)
-        {
-            buffers._buffer=buffer;
-        }
-        else if (size==_headerSize && buffers._header==null)
-        {
+        if (buffers._header==null && size==_headerSize && isHeader(buffer))
             buffers._header=buffer;
-        }
+        else if (size==_bufferSize && buffers._buffer==null)
+            buffers._buffer=buffer;
         else
-        {
             buffers._other=buffer;
-        }
     }
 
 
-    
+
+    /* ------------------------------------------------------------ */
     /**
      * @return Returns the buffer size in bytes.
      */
@@ -119,7 +124,8 @@ public abstract class ThreadLocalBuffers implements Buffers
     {
         return _bufferSize;
     }
-    
+
+    /* ------------------------------------------------------------ */
     /**
      * @return Returns the header size in bytes.
      */
@@ -128,10 +134,30 @@ public abstract class ThreadLocalBuffers implements Buffers
         return _headerSize;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Create a new content Buffer
+     * @param size
+     * @return new Buffer
+     */
     protected abstract Buffer newBuffer(int size);
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Create a new header Buffer
+     * @param size
+     * @return new Buffer
+     */
     protected abstract Buffer newHeader(int size);
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @param buffer
+     * @return True if the buffer is the correct type to be a Header buffer
+     */
+    protected abstract boolean isHeader(Buffer buffer);
+
+    /* ------------------------------------------------------------ */
     /**
      * @param size The buffer size in bytes
      */
@@ -140,6 +166,7 @@ public abstract class ThreadLocalBuffers implements Buffers
         _bufferSize = size;
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @param size The header size in bytes
      */
@@ -147,7 +174,9 @@ public abstract class ThreadLocalBuffers implements Buffers
     {
         _headerSize = size;
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     protected static class ThreadBuffers
     {
         Buffer _buffer;

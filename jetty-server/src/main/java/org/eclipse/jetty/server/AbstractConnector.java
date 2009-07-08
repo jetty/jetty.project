@@ -130,6 +130,18 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     {
         return new ByteArrayBuffer(size);
     }
+
+    /* ------------------------------------------------------------------------------- */
+    protected boolean isRequestHeader(Buffer buffer)
+    {
+        return true;
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    protected boolean isResponseHeader(Buffer buffer)
+    {
+        return true;
+    }
     
     /* ------------------------------------------------------------------------------- */
     /*

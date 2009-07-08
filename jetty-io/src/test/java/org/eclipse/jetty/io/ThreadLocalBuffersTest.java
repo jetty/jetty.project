@@ -14,8 +14,10 @@
 package org.eclipse.jetty.io;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import junit.framework.TestCase;
@@ -103,10 +105,126 @@ public class ThreadLocalBuffersTest
         throws Exception
     {
         execAbstractBuffer( );
-
     }
 
+    public void testDifferentSizes()
+    throws Exception
+    {
+        InnerBuffers buffers = new InnerBuffers();
+        buffers.setHeaderSize(128);
+        buffers.setBufferSize(256);
+        
+        Buffer h1 = buffers.getHeader();
+        Buffer h2 = buffers.getHeader();
+        Buffer b1 = buffers.getBuffer();
+        Buffer b2 = buffers.getBuffer();
+        Buffer b3 = buffers.getBuffer(512);
+        
+        buffers.returnBuffer(h1);
+        buffers.returnBuffer(h2);
+        buffers.returnBuffer(b1);
+        buffers.returnBuffer(b2);
+        buffers.returnBuffer(b3);
+        
+        assertTrue(h1==buffers.getHeader()); // pooled header
+        assertTrue(h2!=buffers.getHeader()); // b2 replaced h2 in other slot
+        assertTrue(b1==buffers.getBuffer()); // pooled buffer
+        assertTrue(b2!=buffers.getBuffer()); // b3 replaced b2 in other slot
+        assertTrue(b3==buffers.getBuffer(512)); // b2 from other slot
+        
+        buffers.returnBuffer(h1);
+        buffers.returnBuffer(h2);
+        buffers.returnBuffer(b1);
+        
+        assertTrue(h1==buffers.getHeader()); // pooled header
+        assertTrue(h2==buffers.getHeader()); // h2 in other slot
+        assertTrue(b1==buffers.getBuffer()); // pooled buffer
+        assertTrue(b2!=buffers.getBuffer()); // new buffer
+        assertTrue(b3!=buffers.getBuffer(512)); // new buffer
+        
 
+        // check that sizes are respected
+        buffers.returnBuffer(b3);
+        buffers.returnBuffer(b1);
+        buffers.returnBuffer(b2);
+        buffers.returnBuffer(h1);
+        buffers.returnBuffer(h2);
+        
+        assertTrue(h1==buffers.getHeader()); // pooled header
+        assertTrue(h2==buffers.getHeader()); // h2 in other slot
+        assertTrue(b1==buffers.getBuffer()); // pooled buffer
+        assertTrue(b2!=buffers.getBuffer()); // new buffer
+        assertTrue(b3!=buffers.getBuffer(512)); // new buffer
+    }
+    
+    public void testSameSizes()
+    throws Exception
+    {
+        Buffer buffer=null;
+        InnerBuffers buffers = new InnerBuffers();
+        buffers.setHeaderSize(128);
+        buffers.setBufferSize(128);
+        
+        Buffer h1 = buffers.getHeader();
+        Buffer h2 = buffers.getHeader();
+        Buffer b1 = buffers.getBuffer();
+        Buffer b2 = buffers.getBuffer();
+        Buffer b3 = buffers.getBuffer(128);
+        List<Buffer> known = new ArrayList<Buffer>();
+        known.add(h1);
+        known.add(h2);
+        known.add(b1);
+        known.add(b2);
+        known.add(h1);
+        
+        buffers.returnBuffer(h1);
+        buffers.returnBuffer(h2);
+        buffers.returnBuffer(b1);
+        buffers.returnBuffer(b2);
+        buffers.returnBuffer(b3);
+        
+        assertTrue(h1==buffers.getHeader()); // pooled header
+        buffer=buffers.getHeader();
+        for (Buffer b:known) assertTrue(b!=buffer); // new buffer
+        assertTrue(h2==buffers.getBuffer()); // h2 used from buffer slot
+        assertTrue(b3==buffers.getBuffer()); // b1 from other slot
+        buffer=buffers.getBuffer(128);
+        for (Buffer b:known) assertTrue(b!=buffer); // new buffer
+        
+
+        buffers.returnBuffer(h1);
+        buffers.returnBuffer(h2);
+        buffers.returnBuffer(b1);
+        
+        assertTrue(h1==buffers.getHeader()); // pooled header
+        buffer=buffers.getHeader();
+        for (Buffer b:known) assertTrue(b!=buffer); // new buffer
+        assertTrue(h2==buffers.getBuffer()); // h2 used from buffer slot
+        assertTrue(b1==buffers.getBuffer()); // h2 used from other slot
+
+        buffers.returnBuffer(h1);
+        buffers.returnBuffer(b1);
+        buffers.returnBuffer(h2);
+        
+        assertTrue(h1==buffers.getHeader()); // pooled header
+        assertTrue(h2==buffers.getHeader()); // h2 from other slot
+        buffer=buffers.getHeader();
+        for (Buffer b:known) assertTrue(b!=buffer); // new buffer
+        assertTrue(b1==buffers.getBuffer()); // b1 used from buffer slot
+        buffer=buffers.getBuffer();
+        for (Buffer b:known) assertTrue(b!=buffer); // new buffer
+        
+        
+    }
+
+    static class HeaderBuffer extends ByteArrayBuffer
+    {
+        public HeaderBuffer(int size)
+        {
+            super(size);
+        }
+    }
+    
     static class InnerBuffers extends ThreadLocalBuffers
     {
         @Override
@@ -114,13 +232,16 @@ public class ThreadLocalBuffersTest
         {
             return new ByteArrayBuffer( size );
         }
-
         @Override
         protected Buffer newHeader(int size)
         {
-            return new ByteArrayBuffer( size );
+            return new HeaderBuffer( size );
         }
-
+        @Override
+        protected boolean isHeader(Buffer buffer)
+        {
+            return buffer instanceof HeaderBuffer;
+        }
     }
 
 

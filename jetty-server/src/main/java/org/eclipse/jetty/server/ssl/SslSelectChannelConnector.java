@@ -554,6 +554,11 @@ public class SslSelectChannelConnector extends SelectChannelConnector
                 // TODO indirect?
                 return new DirectNIOBuffer(size);
             }
+            @Override
+            protected boolean isHeader(Buffer buffer)
+            {
+                return true;
+            }
         };
         buffers.setBufferSize(ssl_session.getApplicationBufferSize());
         buffers.setHeaderSize(ssl_session.getPacketBufferSize());

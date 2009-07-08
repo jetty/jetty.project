@@ -379,7 +379,6 @@ public class HttpClient extends HttpBuffers implements Attributes
     /**
      * @see org.eclipse.jetty.http.HttpBuffers#newResponseHeader(int)
      */
-    @Override
     protected Buffer newResponseHeader(int size)
     {
         if (_connectorType == CONNECTOR_SOCKET)
@@ -387,6 +386,23 @@ public class HttpClient extends HttpBuffers implements Attributes
         return new IndirectNIOBuffer(size);
     }
 
+    /* ------------------------------------------------------------------------------- */
+    protected boolean isRequestHeader(Buffer buffer)
+    {
+        if (_connectorType == CONNECTOR_SOCKET)
+            return buffer instanceof ByteArrayBuffer;
+        return buffer instanceof IndirectNIOBuffer;
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    protected boolean isResponseHeader(Buffer buffer)
+    {
+        if (_connectorType == CONNECTOR_SOCKET)
+            return buffer instanceof ByteArrayBuffer;
+        return buffer instanceof IndirectNIOBuffer;
+    }
+    
+    
     /* ------------------------------------------------------------ */
     public int getMaxConnectionsPerAddress()
     {
