@@ -103,6 +103,19 @@ public class TestPolicyContext
         assertEquals( __PRINCIPAL, perm.getName() );
     }
     
+    public void testFileSeparatorExpansion() throws Exception
+    {
+        PolicyContext context = new PolicyContext();  
+        context.addProperty( "foo", "bar" );
+        
+        assertEquals(File.separator, context.evaluate( "${/}" ) );
+
+        assertEquals(File.separator + "bar" + File.separator, context.evaluate( "${/}${foo}${/}" ) );
+        
+
+        assertEquals(File.separator + File.separator, context.evaluate( "${/}${/}" ) );
+    }
+    
     private String getWorkingDirectory()
     {
         String cwd = System.getProperty( "basedir" );

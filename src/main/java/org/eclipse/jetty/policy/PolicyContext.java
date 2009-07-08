@@ -15,6 +15,7 @@ package org.eclipse.jetty.policy;
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
+import java.io.File;
 import java.security.KeyStore;
 import java.security.Principal;
 import java.security.cert.Certificate;
@@ -28,6 +29,12 @@ public class PolicyContext
     
     private Principal[] principals;
     private KeyStore keystore;
+    
+    public PolicyContext()
+    {
+        // special property case for resolving ${/} to native separator
+        properties.put( "/", File.separator );
+    }
     
     public void addProperty( String name, String value )
     {
@@ -68,13 +75,17 @@ public class PolicyContext
 
         while (s!=null)
         {
-            i1=s.indexOf("${",i2);
+            System.out.println("Reviewing: " + s );
+            //i1=s.indexOf("${",i2);
+            i1=s.indexOf("${");
+            System.out.println("i1:" + i1);
             if (i1<0)
             {
                 break;
             }
             
             i2=s.indexOf("}",i1+2);
+            System.out.println("i2:" + i2);
             if (i2<0)
             {
                 break;
@@ -83,6 +94,8 @@ public class PolicyContext
             String property=getProperty(s.substring(i1+2,i2));
        
             s=s.substring(0,i1)+property+s.substring(i2+1);
+            
+            System.out.println("expanded to: " + s);
         }
         
         return s;
@@ -95,7 +108,7 @@ public class PolicyContext
 
         while (s!=null)
         {
-            i1=s.indexOf("${{",i2);
+            i1=s.indexOf("${{");
             if (i1<0)
             {
                 break;
