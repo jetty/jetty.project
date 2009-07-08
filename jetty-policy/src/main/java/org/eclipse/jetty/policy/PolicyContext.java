@@ -75,17 +75,17 @@ public class PolicyContext
 
         while (s!=null)
         {
-            System.out.println("Reviewing: " + s );
+            //System.out.println("Reviewing: " + s );
             //i1=s.indexOf("${",i2);
             i1=s.indexOf("${");
-            System.out.println("i1:" + i1);
+            //System.out.println("i1:" + i1);
             if (i1<0)
             {
                 break;
             }
             
             i2=s.indexOf("}",i1+2);
-            System.out.println("i2:" + i2);
+            //System.out.println("i2:" + i2);
             if (i2<0)
             {
                 break;
@@ -95,7 +95,7 @@ public class PolicyContext
        
             s=s.substring(0,i1)+property+s.substring(i2+1);
             
-            System.out.println("expanded to: " + s);
+            //System.out.println("expanded to: " + s);
         }
         
         return s;
