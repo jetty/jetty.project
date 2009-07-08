@@ -315,7 +315,7 @@ public class Main
         int i2=0;
         while (s!=null)
         {
-            i1=s.indexOf("$(",i2);
+            i1=s.indexOf("$(");
             if (i1<0)
                 break;
             i2=s.indexOf(")",i1+2);
@@ -330,7 +330,7 @@ public class Main
         i2=0;
         while (s!=null)
         {
-            i1=s.indexOf("${",i2);
+            i1=s.indexOf("${");
             if (i1<0)
                 break;
             i2=s.indexOf("}",i1+2);
