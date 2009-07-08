@@ -179,6 +179,11 @@ public class JettyPolicy extends Policy
                 File policyFile = new File( i.next() );              
                 pdMapping.putAll( DefaultPolicyLoader.load( new FileInputStream( policyFile ), _context ) );
             }
+            
+            //for ( Iterator<ProtectionDomain> i = pdMapping.keySet().iterator(); i.hasNext();)
+            //{
+            //    System.out.println(i.next().toString());
+            //}
         }
         catch ( Exception e )
         {
