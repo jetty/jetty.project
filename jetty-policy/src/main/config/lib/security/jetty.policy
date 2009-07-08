@@ -60,15 +60,15 @@ grant codeBase "file:${jetty.home}/lib/-" {
   
    permission java.io.FilePermission "${jetty.home}${/}-", "read";
    permission java.io.FilePermission "${java.io.tmpdir}", "read, write";
-   permission java.io.FilePermission "${java.io.tmpdir}/-", "read, write";
-   permission java.io.FilePermission "/private/${java.io.tmpdir}", "read, write";
-   permission java.io.FilePermission "/private/${java.io.tmpdir}/-", "read, write";
+   permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read, write";
+   permission java.io.FilePermission "${/}private${/}${java.io.tmpdir}", "read, write";
+   permission java.io.FilePermission "${/}private${/}${java.io.tmpdir}${/}-", "read, write";
    
-   permission java.io.FilePermission "${java.io.tmpdir}/-" "delete";
+   permission java.io.FilePermission "${java.io.tmpdir}${/}-" "delete";
 
    
    permission java.io.FilePermission "${jetty.home}${/}logs", "read, write";
-   permission java.io.FilePermission "${jetty.home}${/}logs/*", "read, write";
+   permission java.io.FilePermission "${jetty.home}${/}logs${/}*", "read, write";
      
    permission java.lang.RuntimePermission "createClassLoader";
    permission java.lang.RuntimePermission "setContextClassLoader";
@@ -132,7 +132,7 @@ grant codeBase "file:${jetty.home}/lib/-" {
 // the tmp directory is where webapps are unpacked by default so setup their restricted permissions
 //
 grant codeBase "file:${java.io.tmpdir}/-" {
-permission java.io.FilePermission "${java.io.tmpdir}/-" "read";
+permission java.io.FilePermission "${java.io.tmpdir}${/}-" "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";   
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.IGNORED", "read";   
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.DEBUG", "read";  
@@ -158,7 +158,7 @@ permission java.io.FilePermission "/private/${java.io.tmpdir}/-" "read";
 //
 grant codeBase "file:${jetty.home}/work/-" {
 
-   permission java.io.FilePermission "${jetty.home}/work/-" "read";
+   permission java.io.FilePermission "${jetty.home}${/}work${/}-" "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";  
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.DEBUG", "read";  
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.VERBOSE", "read";     
