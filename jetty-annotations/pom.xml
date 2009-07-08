@@ -37,12 +37,6 @@
       </plugin>
     </plugins>
   </build>
-  <repositories>
-  	<repository>
-  		<id>glassfish</id>
-  		<url>http://download.java.net/maven/glassfish</url>
-  	</repository>
-  </repositories>
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -65,20 +59,15 @@
       <artifactId>jetty-webapp</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!--dependency>
+    <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-annotation_1.0_spec</artifactId>
       <version>1.1.1</version>
-    </dependency -->
+    </dependency>
     <dependency>
       <groupId>asm</groupId>
       <artifactId>asm-commons</artifactId>
       <version>3.1</version>
-    </dependency>
-    <dependency>
-    	<groupId>org.glassfish</groupId>
-    	<artifactId>javax.annotation</artifactId>
-    	<version>3.0-b53</version>
     </dependency>
   </dependencies>
 </project>
