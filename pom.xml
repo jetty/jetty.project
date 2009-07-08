@@ -149,6 +149,7 @@
     <module>jetty-aggregate</module>
     <module>example-jetty-embedded</module>
     <module>jetty-distribution</module>
+    <module>tests</module>
   </modules>
   <dependencyManagement>
     <dependencies>
