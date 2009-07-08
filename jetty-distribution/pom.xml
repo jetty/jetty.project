@@ -42,7 +42,7 @@
               <configuration>
                 <resourceBundles>
                   <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0</resourceBundle>
-                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-distribution-remote-resources:1.0</resourceBundle>
+                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-distribution-remote-resources:1.1</resourceBundle>
                 </resourceBundles>
                 <outputDirectory>${assembly.directory}</outputDirectory>
               </configuration>
