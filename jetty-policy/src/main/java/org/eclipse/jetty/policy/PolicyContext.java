@@ -43,7 +43,7 @@ public class PolicyContext
     
     public void setProperties( Map<String,String> properties )
     {
-        this.properties = properties;
+        this.properties.putAll( properties );
     }
 
     public KeyStore getKeystore()
