@@ -26,11 +26,10 @@ import java.util.Vector;
 
 /**
  * Class to handle CLASSPATH construction
- * 
  */
 public class Classpath {
 
-    Vector _elements = new Vector();    
+    private final Vector<File> _elements = new Vector<File>();    
 
     public Classpath()
     {}    
@@ -42,7 +41,12 @@ public class Classpath {
     
     public File[] getElements()
     {
-        return (File[])_elements.toArray(new File[_elements.size()]);
+        return _elements.toArray(new File[_elements.size()]);
+    }
+    
+    public int count()
+    {
+        return _elements.size();
     }
         
     public boolean addComponent(String component)
@@ -94,16 +98,17 @@ public class Classpath {
         return added;
     }    
     
+    @Override
     public String toString()
     {
         StringBuffer cp = new StringBuffer(1024);
         int cnt = _elements.size();
         if (cnt >= 1) {
-            cp.append( ((File)(_elements.elementAt(0))).getPath() );
+            cp.append( ((_elements.elementAt(0))).getPath() );
         }
         for (int i=1; i < cnt; i++) {
             cp.append(File.pathSeparatorChar);
-            cp.append( ((File)(_elements.elementAt(i))).getPath() );
+            cp.append( ((_elements.elementAt(i))).getPath() );
         }
         return cp.toString();
     }
@@ -113,7 +118,7 @@ public class Classpath {
         URL[] urls = new URL[cnt];
         for (int i=0; i < cnt; i++) {
             try {
-                String u=((File)(_elements.elementAt(i))).toURL().toString();
+                String u=((_elements.elementAt(i))).toURL().toString();
                 urls[i] = new URL(encodeFileURL(u));
             } catch (MalformedURLException e) {}
         }
@@ -138,6 +143,7 @@ public class Classpath {
             name = "StartLoader"+Arrays.asList(urls);
         }
 
+        @Override
         public String toString()
         {
             return name;
@@ -189,8 +195,8 @@ public class Classpath {
                           }
                       }
                       buf.append('%');
-                      buf.append(Integer.toHexString((0xf0&(int)b)>>4));
-                      buf.append(Integer.toHexString((0x0f&(int)b)));
+                      buf.append(Integer.toHexString((0xf0&b)>>4));
+                      buf.append(Integer.toHexString((0x0f&b)));
                       continue;
                 }
             }

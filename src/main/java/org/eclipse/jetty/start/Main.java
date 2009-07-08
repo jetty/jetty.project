@@ -14,11 +14,14 @@ package org.eclipse.jetty.start;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -31,8 +34,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -128,9 +129,9 @@ public class Main
     
     public static void main(String[] args)
     {
+        Main main=new Main();
         try
         {
-            Main main=new Main();
             List<String> arguments = new ArrayList<String>(Arrays.asList(args));
             
             for (int i=0; i<arguments.size(); i++)
@@ -138,7 +139,7 @@ public class Main
                 String arg=arguments.get(i);
                 if (arg.equalsIgnoreCase("--help"))
                 {
-                    usage();
+                    main.usage();
                 }
                 
                 if (arg.equalsIgnoreCase("--stop"))
@@ -167,6 +168,8 @@ public class Main
                 }
             }
             
+            arguments.addAll( main.loadStartIni() );
+            
             DEBUG=Boolean.parseBoolean(main.getProperty("DEBUG","false"));
             main.start(arguments.toArray(new String[arguments.size()]));        
             
@@ -174,8 +177,76 @@ public class Main
         catch (Exception e)
         {
             e.printStackTrace();
-            usage();
+            main.usage();
         }
+    }
+
+    /**
+     * If a start.ini is present in the CWD, then load it into the argument list.
+     */
+    private List<String> loadStartIni()
+    {
+        File startIniFile = new File("start.ini");
+        if (!startIniFile.exists())
+        {
+            // No start.ini found, skip load.
+            return Collections.emptyList();
+        }
+
+        List<String> args = new ArrayList<String>();
+
+        FileReader reader = null;
+        BufferedReader buf = null;
+        try
+        {
+            reader = new FileReader(startIniFile);
+            buf = new BufferedReader(reader);
+
+            String arg;
+            while ((arg = buf.readLine()) != null)
+            {
+                // Is this a Property?
+                if (arg.indexOf('=')>=0)
+                {
+                    // A System Property?
+                    if (arg.startsWith("-D"))
+                    {
+                        String[] assign = arg.substring(2).split("=", 2);
+
+                        if (assign.length == 2)
+                        {
+                            System.setProperty(assign[0], assign[1]);
+                        } else
+                        {
+                            System.err.printf("Unable to set System Property '%s', no value provided%n", assign[0]);
+                        }
+                    } else // Nah, it's a normal property
+                    {
+                        String[] assign = arg.split("=", 2);
+
+                        if (assign.length == 2)
+                        {
+                            this.setProperty(assign[0], assign[1]);
+                        } else
+                        {
+                            this.setProperty(assign[0], null);
+                        }
+                    }
+                } else // A normal argument
+                {
+                    args.add(arg);
+                }
+            }
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        } finally
+        {
+            close(buf);
+            close(reader);
+        }
+
+        return args;
     }
 
     private String getSystemProperty(String name)
@@ -207,9 +278,102 @@ public class Main
         _properties.put(name,value);
     }
 
-    private static void usage()
+    private void usage()
     {
-        System.err.println("Usage: java -jar start.jar [--help|--stop|--version] [OPTIONS=option,...] [name=value ...] [config ...]");        
+        String usageResource = "org/eclipse/jetty/start/usage.txt";
+        InputStream usageStream = getClass().getClassLoader().getResourceAsStream(usageResource);
+
+        if (usageStream == null)
+        {
+            System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
+            System.err.println("ERROR: detailed usage resource unavailable");
+            System.exit(1);
+        }
+
+        BufferedReader buf = null;
+        try
+        {
+            buf = new BufferedReader(new InputStreamReader(usageStream));
+            String line;
+
+            while ((line = buf.readLine()) != null)
+            {
+                if (line.startsWith("@OPTIONS@"))
+                {
+                    List<String> sortedOptions = new ArrayList<String>();
+                    sortedOptions.addAll(_options);
+                    Collections.sort(sortedOptions);
+
+                    System.err.println("      Available OPTIONS: ");
+
+                    for (String option : sortedOptions)
+                    {
+                        System.err.println("         [" + option + "]");
+                    }
+                }
+                else if (line.startsWith("@CONFIGS@"))
+                {
+                    System.err.println("    Configurations Available in ${jetty.home}/etc/: ");
+                    File etc = new File(System.getProperty("jetty.home","."),"etc");
+                    if (!etc.exists())
+                    {
+                        System.err.println("      Unable to find " + etc);
+                        continue;
+                    }
+
+                    if (!etc.isDirectory())
+                    {
+                        System.err.println("      Unable list dir " + etc);
+                        continue;
+                    }
+
+                    File configs[] = etc.listFiles(new FileFilter()
+                    {
+                        public boolean accept(File path)
+                        {
+                            if (!path.isFile())
+                            {
+                                return false;
+                            }
+
+                            String name = path.getName().toLowerCase();
+                            return (name.startsWith("jetty") && name.endsWith(".xml"));
+                        }
+                    });
+
+                    List<File> configFiles = new ArrayList<File>();
+                    configFiles.addAll(Arrays.asList(configs));
+                    Collections.sort(configFiles);
+
+                    for (File configFile : configFiles)
+                    {
+                        System.err.println("         etc/" + configFile.getName());
+                    }
+                }
+                else
+                {
+                    System.err.println(line);
+                }
+            }
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace(System.err);
+        }
+        finally
+        {
+            if (buf != null)
+            {
+                try
+                {
+                    buf.close();
+                }
+                catch (IOException ignore)
+                {
+                    /* ignore */
+                }
+            }
+        }
         System.exit(1);
     }
 
@@ -288,12 +452,14 @@ public class Main
                 System.err.println("ClassNotFound: "+classname);
             else
                 System.err.println(classname+" "+invoked_class.getPackage().getImplementationVersion());
+            
+            /*
             File[] elements = _classpath.getElements();
             for (int i=0;i<elements.length;i++)
                 System.err.println("  "+elements[i].getAbsolutePath());
+             */
             if (_showVersions || invoked_class==null)
             {
-                System.err.println("OPTIONS: "+_options);
 	        usage();
             }
         }
@@ -625,6 +791,36 @@ public class Main
             System.err.println("Unresolved options: "+unsatisfied_options);
         }
     }
+    
+    private void close(Reader reader)
+    {
+        if (reader == null)
+        {
+            return;
+        }
+        try
+        {
+            reader.close();
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    private void close(InputStream stream)
+    {
+        if (stream == null)
+        {
+            return;
+        }
+        try
+        {
+            stream.close();
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
 
     /* ------------------------------------------------------------ */
     public void start(String[] args)
@@ -666,14 +862,7 @@ public class Main
         }
         finally
         {
-            try
-            {
-                cpcfg.close();
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
+            close(cpcfg);
         }
         // okay, classpath complete.
         System.setProperty("java.class.path",_classpath.toString());
