@@ -46,20 +46,9 @@ public class ContainerInitializerAnnotationHandler implements AnnotationHandler
      */
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotationName,
                             List<Value> values)
-    {
-        Class clazz = null;
-        
+    { 
         System.err.println("Got annotated class "+className);
-        try
-        {
-           clazz = Loader.loadClass(null, className);
-            _initializer.addApplicableClass(clazz);
-        }
-        catch (Exception e)
-        {
-            Log.warn(e);
-            return;
-        } 
+         _initializer.addAnnotatedTypeName(className);
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,

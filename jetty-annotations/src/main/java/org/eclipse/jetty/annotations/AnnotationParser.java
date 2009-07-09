@@ -59,8 +59,6 @@ public class AnnotationParser
         if (name.endsWith(".class"))
             name = name.substring(0, name.length()-".class".length());
         
-       name = name.replace('$', '.');
-        
         return name.replace('/', '.');
     }
     
@@ -281,6 +279,7 @@ public class AnnotationParser
                            final String superName,
                            final String[] interfaces)
         {     
+            System.err.println("VISITING : "+name);
             _className = normalize(name);
             _access = access;
             _signature = signature;

@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
 import javax.annotation.Resources;
@@ -35,6 +36,8 @@ import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -204,5 +207,42 @@ public class TestAnnotationInheritance extends TestCase
         assertEquals (1, handler.annotatedClassNames.size());
     }
  
- 
+    public void testTypeInheritanceHandling ()
+    throws Exception
+    {
+        AnnotationParser parser = new AnnotationParser();
+        ClassInheritanceHandler handler = new ClassInheritanceHandler();
+        parser.registerClassHandler(handler);
+        
+        class Foo implements InterfaceD
+        {
+            
+        }
+        
+        classNames.clear();
+        classNames.add(ClassA.class.getName());
+        classNames.add(ClassB.class.getName());
+        classNames.add(InterfaceD.class.getName());
+        classNames.add(Foo.class.getName());
+        
+        
+        parser.parse(classNames, null);
+        
+        MultiMap map = handler.getMap();
+        assertNotNull(map);
+        assertFalse(map.isEmpty());
+        assertEquals(2, map.size());
+        Map stringArrayMap = map.toStringArrayMap();
+        assertTrue (stringArrayMap.keySet().contains("org.eclipse.jetty.annotations.ClassA"));
+        assertTrue (stringArrayMap.keySet().contains("org.eclipse.jetty.annotations.InterfaceD"));
+        String[] classes = (String[])stringArrayMap.get("org.eclipse.jetty.annotations.ClassA");
+        assertEquals(1, classes.length);
+        assertEquals ("org.eclipse.jetty.annotations.ClassB", classes[0]);
+
+        classes = (String[])stringArrayMap.get("org.eclipse.jetty.annotations.InterfaceD");
+        assertEquals(2, classes.length);
+        assertEquals ("org.eclipse.jetty.annotations.ClassB", classes[0]);
+        assertEquals(Foo.class.getName(), classes[1]);
+    }
+
 }

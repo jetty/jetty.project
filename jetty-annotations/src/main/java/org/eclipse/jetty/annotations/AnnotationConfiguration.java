@@ -18,7 +18,12 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ServiceLoader;
 
+import javax.servlet.ServletContainerInitializer;
+import javax.servlet.annotation.HandlesTypes;
+
+import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
@@ -35,7 +40,7 @@ import org.eclipse.jetty.webapp.WebXmlProcessor.Descriptor;
  */
 public class AnnotationConfiguration extends AbstractConfiguration
 {
-                                                      
+    public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";
     
     
     public void preConfigure(final WebAppContext context) throws Exception
@@ -73,7 +78,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
             parser.registerAnnotationHandler("javax.annotation.PostConstruct", new PostConstructAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.annotation.PreDestroy", new PreDestroyAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.annotation.security.RunAs", new RunAsAnnotationHandler(context));
-
+            ClassInheritanceHandler classHandler = new ClassInheritanceHandler();
+            parser.registerClassHandler(classHandler);
+            registerServletContainerInitializerAnnotationHandlers(context, parser);
+            
             if (webxmlVersion >= 30 || context.isConfigurationDiscovered())
             {
                 System.err.println("SCANNING ALL ANNOTATIONS: webxmlVersion="+webxmlVersion+" configurationDiscovered="+context.isConfigurationDiscovered());
@@ -86,6 +94,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 System.err.println("SCANNING ONLY WEB.XML ANNOTATIONS");
                 parse25Classes(context, parser);
             }
+            
+            //save the type inheritance map created by the parser for later reference
+            context.setAttribute(CLASS_INHERITANCE_MAP, classHandler.getMap());
         }    
     }
 
@@ -100,5 +111,50 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     public void postConfigure(WebAppContext context) throws Exception
     {
+    }
+    
+
+    public void registerServletContainerInitializerAnnotationHandlers (WebAppContext context, AnnotationParser parser)
+    {     
+        //Get all ServletContainerInitializers, and check them for HandlesTypes annotations.
+        //For each class in the HandlesTypes value, if it IS an annotation, register a handler
+        //that will record the classes that have that annotation.
+        //If it is NOT an annotation, then we will interrogate the type hierarchy discovered during
+        //parsing later on to find the applicable classes.
+        ArrayList<ContainerInitializer> initializers = new ArrayList<ContainerInitializer>();
+        context.setAttribute(ContainerInitializerConfiguration.CONTAINER_INITIALIZERS, initializers);
+        
+        //We use the ServiceLoader mechanism to find the ServletContainerInitializer classes to inspect
+        ServiceLoader<ServletContainerInitializer> loadedInitializers = ServiceLoader.load(ServletContainerInitializer.class);
+        if (loadedInitializers != null)
+        {
+            for (ServletContainerInitializer i : loadedInitializers)
+            {
+                HandlesTypes annotation = i.getClass().getAnnotation(HandlesTypes.class);
+                ContainerInitializer initializer = new ContainerInitializer();
+                initializer.setTarget(i);
+                initializers.add(initializer);
+                if (annotation != null)
+                {
+                    Class[] classes = annotation.value();
+                    if (classes != null)
+                    {
+                        initializer.setInterestedTypes(classes);
+                        for (Class c: classes)
+                        {
+                            if (c.isAnnotation())
+                            {
+                                System.err.println("Registering annotation handler for "+c.getName());
+                                parser.registerAnnotationHandler(c.getName(), new ContainerInitializerAnnotationHandler(initializer, c));
+                            }
+                        }
+                    }
+                    else
+                        System.err.println("No classes in HandlesTypes on initializer "+i.getClass());
+                }
+                else
+                    System.err.println("No annotation on initializer "+i.getClass());
+            }
+        }
     }
 }

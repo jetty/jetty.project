@@ -13,46 +13,52 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.util.List;
+
 import org.eclipse.jetty.annotations.AnnotationParser.ClassHandler;
-import org.eclipse.jetty.plus.annotation.ContainerInitializer;
-import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.log.Log;
 
-public class ContainerInitializerClassHandler implements ClassHandler
+/**
+ * ClassInheritanceHandler
+ *
+ * As asm scans for classes, remember the type hierarchy.
+ */
+public class ClassInheritanceHandler implements ClassHandler
 {
-    public ContainerInitializer _initializer;
-    public Class _handlesTypeClass;
     
+    MultiMap _inheritanceMap = new MultiMap();
     
-    public ContainerInitializerClassHandler(ContainerInitializer initializer, Class c)
+    public ClassInheritanceHandler()
     {
-        super();
-        _initializer = initializer;
-        _handlesTypeClass = c;
     }
-
 
     public void handle(String className, int version, int access, String signature, String superName, String[] interfaces)
     {
         try
         {
-            System.err.print("Checking class "+className+" with super "+superName+" interfaces:");
             for (int i=0; interfaces != null && i<interfaces.length;i++)
-                System.err.print(interfaces[i]+",");
-            System.err.println();
-            //Looking at a class - need to check if this class extends or implements the _handlesTypeClass
-            if (superName != null && superName.equals(_handlesTypeClass.getName()))
-                _initializer.addApplicableClass(Loader.loadClass(null, className));
-
-            for (int i=0; interfaces != null && i<interfaces.length; i++)
             {
-                if (interfaces[i].equals(_handlesTypeClass.getName()))
-                    _initializer.addApplicableClass(Loader.loadClass(null, className));
+                System.err.print(interfaces[i]);
+                _inheritanceMap.add (interfaces[i], className);
             }
+            //To save memory, we don't record classes that only extend Object, as that can be assumed
+            if (!"java.lang.Object".equals(superName))
+                _inheritanceMap.add(superName, className);
         }
         catch (Exception e)
         {
             Log.warn(e);
         }  
+    }
+    
+    public List getClassNamesExtendingOrImplementing (String className)
+    {
+        return _inheritanceMap.getValues(className);
+    }
+    
+    public MultiMap getMap ()
+    {
+        return _inheritanceMap;
     }
 }
