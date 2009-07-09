@@ -23,9 +23,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.security.Policy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -122,17 +127,6 @@ import java.util.StringTokenizer;
 public class Config
 {
     public static final String DEFAULT_SECTION = "";
-    private final boolean DEBUG = false;
-
-    private final Map<String, Classpath> _classpaths = new HashMap<String, Classpath>();
-    // private Set<String> _options = new TreeSet<String>();
-    private final List<String> _xml = new ArrayList<String>();
-    private final Set<String> _policies = new HashSet<String>();
-    private String _classname = null;
-    private static final String _version;
-    private final Map<String, String> _properties = new HashMap<String, String>();
-    private final int nargs = 0;
-
     static
     {
         Package pkg = Config.class.getPackage();
@@ -142,14 +136,66 @@ public class Config
             _version = "Unknown";
     }
 
+    private final boolean DEBUG = false;
+    private static final String _version;
+    private Map<String, Classpath> _classpaths = new HashMap<String, Classpath>();
+    private List<String> _xml = new ArrayList<String>();
+    private Set<String> _policies = new HashSet<String>();
+    private String _classname = null;
+    private Map<String, String> _properties = new HashMap<String, String>();
+    private int argCount = 0;
+    
+    private boolean addClasspathComponent(List<String> sections, String component)
+    {
+        for (String section : sections)
+        {
+            Classpath cp = _classpaths.get(section);
+            if (cp == null)
+            {
+                cp = new Classpath();
+            }
+
+            boolean added = cp.addComponent(component);
+            _classpaths.put(section,cp);
+
+            if (!added)
+            {
+                // First failure means all failed.
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private boolean addClasspathPath(List<String> sections, String path)
+    {
+        for (String section : sections)
+        {
+            Classpath cp = _classpaths.get(section);
+            if (cp == null)
+            {
+                cp = new Classpath();
+            }
+            if (!cp.addClasspath(path))
+            {
+                // First failure means all failed.
+                return false;
+            }
+            _classpaths.put(section,cp);
+        }
+
+        return true;
+    }
+    
     private void addJars(List<String> sections, File dir, boolean recurse) throws IOException
     {
-        File[] entries = dir.listFiles();
+        List<File> entries = new ArrayList<File>();
+        entries.addAll(Arrays.asList(dir.listFiles()));
+        Collections.sort(entries,FilenameComparator.INSTANCE);
 
-        for (int i = 0; entries != null && i < entries.length; i++)
+        for (File entry : entries)
         {
-            File entry = entries[i];
-
             if (entry.isDirectory() && recurse)
                 addJars(sections,entry,recurse);
             else
@@ -195,6 +241,22 @@ public class Config
         }
     }
 
+    private void debug(String msg)
+    {
+        if (DEBUG)
+        {
+            System.err.println(msg);
+        }
+    }
+
+    private void debug(Throwable t)
+    {
+        if (DEBUG)
+        {
+            t.printStackTrace(System.err);
+        }
+    }
+
     private String expand(String s)
     {
         int i1 = 0;
@@ -231,18 +293,6 @@ public class Config
     }
 
     /**
-     * Get the list of section Ids.
-     * 
-     * @return
-     */
-    public Set<String> getSectionIds()
-    {
-        // TODO: sort keys.
-        // TODO: by natural language ordering?
-        return _classpaths.keySet();
-    }
-
-    /**
      * Get the default classpath.
      * 
      * @return the default classpath
@@ -253,35 +303,31 @@ public class Config
     }
 
     /**
-     * Get the classpath for the named section
-     * 
-     * @param sectionId
-     * @return
-     */
-    public Classpath getSectionClasspath(String sectionId)
-    {
-        return _classpaths.get(sectionId);
-    }
-
-    /**
      * Get the combined classpath representing the default classpath plus all named sections.
      * 
-     * @param sectionId
-     * @return
+     * NOTE: the default classpath will be prepended, and the '*' classpath will be appended.
+     * 
+     * @param sectionIds
+     *            the list of section ids to fetch
+     * @return the {@link Classpath} representing combination all of the selected sectionIds, combined with the default
+     *         section id, and '*' special id.
      */
-    public Classpath getCombinedClasspath(String... sectionId)
+    public Classpath getCombinedClasspath(Collection<String> sectionIds)
     {
-        return null;
+        Classpath cp = new Classpath();
+        
+        cp.overlay(_classpaths.get(DEFAULT_SECTION));
+        for (String sectionId : sectionIds)
+        {
+            cp.overlay(_classpaths.get(sectionId));
+        }
+        cp.overlay(_classpaths.get("*"));
+        return cp;
     }
 
     public String getMainClassname()
     {
         return _classname;
-    }
-
-    public List<String> getXmlConfigs()
-    {
-        return _xml;
     }
 
     public String getProperty(String name)
@@ -299,6 +345,29 @@ public class Config
         return dftValue;
     }
 
+    /**
+     * Get the classpath for the named section
+     * 
+     * @param sectionId
+     * @return
+     */
+    public Classpath getSectionClasspath(String sectionId)
+    {
+        return _classpaths.get(sectionId);
+    }
+
+    /**
+     * Get the list of section Ids.
+     * 
+     * @return
+     */
+    public Set<String> getSectionIds()
+    {
+        // TODO: sort keys.
+        // TODO: by natural language ordering?
+        return _classpaths.keySet();
+    }
+
     private String getSystemProperty(String name)
     {
         if ("version".equalsIgnoreCase(name))
@@ -306,6 +375,11 @@ public class Config
         if (_properties.containsKey(name))
             return _properties.get(name);
         return System.getProperty(name);
+    }
+    
+    public List<String> getXmlConfigs()
+    {
+        return _xml;
     }
 
     private boolean isAvailable(List<String> sections, String classname)
@@ -365,6 +439,26 @@ public class Config
     public void parse(CharSequence buf) throws IOException
     {
         parse(new StringReader(buf.toString()));
+    }
+
+    /**
+     * Parse the configuration
+     * 
+     * @param buf
+     * @throws IOException
+     */
+    public void parse(InputStream stream) throws IOException
+    {
+        InputStreamReader reader = null;
+        try
+        {
+            reader = new InputStreamReader(stream);
+            parse(reader);
+        }
+        finally
+        {
+            close(reader);
+        }
     }
 
     public void parse(Reader reader) throws IOException
@@ -485,10 +579,10 @@ public class Config
                         {
                             String operator = st.nextToken();
                             int number = Integer.parseInt(st.nextToken());
-                            eval = (operator.equals("<") && nargs < number) || (operator.equals(">") && nargs > number)
-                                    || (operator.equals("<=") && nargs <= number) || (operator.equals("=<") && nargs <= number)
-                                    || (operator.equals("=>") && nargs >= number) || (operator.equals(">=") && nargs >= number)
-                                    || (operator.equals("==") && nargs == number) || (operator.equals("!=") && nargs != number);
+                            eval = (operator.equals("<") && argCount < number) || (operator.equals(">") && argCount > number)
+                                    || (operator.equals("<=") && argCount <= number) || (operator.equals("=<") && argCount <= number)
+                                    || (operator.equals("=>") && argCount >= number) || (operator.equals(">=") && argCount >= number)
+                                    || (operator.equals("==") && argCount == number) || (operator.equals("!=") && argCount != number);
                         }
                         else
                         {
@@ -618,22 +712,6 @@ public class Config
         }
     }
 
-    private void debug(Throwable t)
-    {
-        if (DEBUG)
-        {
-            t.printStackTrace(System.err);
-        }
-    }
-
-    private void debug(String msg)
-    {
-        if (DEBUG)
-        {
-            System.err.println(msg);
-        }
-    }
-
     public void parse(URL url) throws IOException
     {
         InputStream stream = null;
@@ -651,51 +729,29 @@ public class Config
         }
     }
 
-    private boolean addClasspathComponent(List<String> sections, String component)
+    public void setArgCount(int argCount)
     {
-        for (String section : sections)
-        {
-            Classpath cp = _classpaths.get(section);
-            if (cp == null)
-            {
-                cp = new Classpath();
-            }
-
-            boolean added = cp.addComponent(component);
-            _classpaths.put(section,cp);
-
-            if (!added)
-            {
-                // First failure means all failed.
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private boolean addClasspathPath(List<String> sections, String path)
-    {
-        for (String section : sections)
-        {
-            Classpath cp = _classpaths.get(section);
-            if (cp == null)
-            {
-                cp = new Classpath();
-            }
-            if (!cp.addClasspath(path))
-            {
-                // First failure means all failed.
-                return false;
-            }
-            _classpaths.put(section,cp);
-        }
-
-        return true;
+        this.argCount = argCount;
     }
 
     public void setProperty(String name, String value)
     {
         _properties.put(name,value);
+    }
+
+    public Policy getPolicyInstance(ClassLoader cl) throws ClassNotFoundException, SecurityException, NoSuchMethodException, IllegalArgumentException,
+            InstantiationException, IllegalAccessException, InvocationTargetException
+    {
+        Class<?> jettyPolicy = cl.loadClass("org.eclipse.jetty.policy.JettyPolicy");
+        Constructor<?> c = jettyPolicy.getConstructor(new Class[]
+        { Set.class, Map.class });
+        Object policyClass = c.newInstance(_policies,_properties);
+        
+        if (policyClass instanceof Policy)
+        {
+            return (Policy)policyClass;
+        }
+        
+        throw new ClassCastException("Unable to cast to " + Policy.class.getName() + " : " + policyClass.getClass().getName());
     }
 }

@@ -37,14 +37,29 @@ public class ConfigTest extends TestCase
         assertNotNull(msg + " : expected classpath should not be null",expected);
         assertNotNull(msg + " : actual classpath should not be null",actual);
         assertTrue(msg + " : expected should have an entry",expected.count() >= 1);
-        assertEquals(msg + " : count",expected.count(),actual.count());
+        assertTrue(msg + " : actual should have an entry",actual.count() >= 1);
+        if (expected.count() != actual.count())
+        {
+            expected.dump(System.err);
+            actual.dump(System.err);
+            assertEquals(msg + " : count",expected.count(),actual.count());
+        }
 
         List<File> actualEntries = Arrays.asList(actual.getElements());
         List<File> expectedEntries = Arrays.asList(expected.getElements());
 
-        for (File expectedEntry : expectedEntries)
+        int len = expectedEntries.size();
+        
+        for (int i = 0; i < len; i++)
         {
-            assertTrue(msg + " : should contain <" + expectedEntry + ">",actualEntries.contains(expectedEntry));
+            File expectedFile = expectedEntries.get(i);
+            File actualFile = actualEntries.get(i);
+            if (!expectedFile.equals(actualFile))
+            {
+                expected.dump(System.err);
+                actual.dump(System.err);
+                assertEquals(msg + ": entry [" + i + "]",expectedEntries.get(i),actualEntries.get(i));
+            }
         }
     }
 
@@ -458,11 +473,14 @@ public class ConfigTest extends TestCase
     }
 
     /**
-     * Test Section Handling
+     * Test Section Handling, with multiple defined sections.
      */
-    public void testSectionClasspathComplex() throws IOException
+    public void testSectionClasspathMultiples() throws IOException
     {
         StringBuffer buf = new StringBuffer();
+        buf.append("# default\n");
+        buf.append("$(jetty.home)/lib/spec.zip\n");
+        buf.append("\n");
         buf.append("[*]\n");
         buf.append("$(jetty.home)/lib/io.jar\n");
         buf.append("$(jetty.home)/lib/util.jar\n");
@@ -474,6 +492,9 @@ public class ConfigTest extends TestCase
         buf.append("\n");
         buf.append("[All,xml,default]\n");
         buf.append("$(jetty.home)/lib/xml.jar\n");
+        buf.append("\n");
+        buf.append("[All,logging]\n");
+        buf.append("$(jetty.home)/lib/LOGGING.JAR\n");
 
         String jettyHome = getTestableJettyHome();
 
@@ -487,6 +508,7 @@ public class ConfigTest extends TestCase
         Classpath foocp = cfg.getSectionClasspath("Foo");
         assertNull("Foo Classpath should not exist",foocp);
 
+        // Test if entire section list can be fetched
         Set<String> sections = cfg.getSectionIds();
 
         Set<String> expected = new HashSet<String>();
@@ -496,20 +518,45 @@ public class ConfigTest extends TestCase
         expected.add("server");
         expected.add("default");
         expected.add("xml");
+        expected.add("logging");
 
         assertEquals("Multiple Section IDs",expected,sections);
 
-        Classpath allcp = cfg.getSectionClasspath("All");
-        assertNotNull("Classpath section 'All' should exist",allcp);
+        // Test fetch of specific section by name works
+        Classpath cpAll = cfg.getSectionClasspath("All");
+        assertNotNull("Classpath section 'All' should exist",cpAll);
 
         File lib = new File(getJettyHomeDir(),"lib");
 
-        Classpath allexpected = new Classpath();
-        allexpected.addComponent(new File(lib,"core.jar"));
-        allexpected.addComponent(new File(lib,"server.jar"));
-        allexpected.addComponent(new File(lib,"http.jar"));
-        allexpected.addComponent(new File(lib,"xml.jar"));
+        Classpath expectedAll = new Classpath();
+        expectedAll.addComponent(new File(lib,"core.jar"));
+        expectedAll.addComponent(new File(lib,"server.jar"));
+        expectedAll.addComponent(new File(lib,"http.jar"));
+        expectedAll.addComponent(new File(lib,"xml.jar"));
+        expectedAll.addComponent(new File(lib,"LOGGING.JAR"));
 
-        assertEquals("Classpath 'All' Section",allexpected,allcp);
+        assertEquals("Classpath 'All' Section",expectedAll,cpAll);
+        
+        // Test combined classpath fetch of multiple sections works
+        List<String> activated = new ArrayList<String>();
+        activated.add("server");
+        activated.add("logging");
+        
+        Classpath cpCombined = cfg.getCombinedClasspath(activated);
+        
+        Classpath expectedCombined = new Classpath();
+        // from default
+        expectedCombined.addComponent(new File(lib,"spec.zip"));
+        // from 'server'
+        expectedCombined.addComponent(new File(lib,"core.jar"));
+        expectedCombined.addComponent(new File(lib,"server.jar"));
+        expectedCombined.addComponent(new File(lib,"http.jar"));
+        // from 'logging'
+        expectedCombined.addComponent(new File(lib,"LOGGING.JAR"));
+        // from '*'
+        expectedCombined.addComponent(new File(lib,"io.jar"));
+        expectedCombined.addComponent(new File(lib,"util.jar"));
+        
+        assertEquals("Classpath combined 'server,logging'",expectedCombined,cpCombined);
     }
 }
