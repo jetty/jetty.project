@@ -70,7 +70,7 @@ public class InclusiveByteRange
      * @param size Size of the resource.
      * @return LazyList of satisfiable ranges
      */
-    public static List satisfiableRanges(Enumeration headers,long size)
+    public static List satisfiableRanges(Enumeration headers, boolean allowRelativeRange, long size)
     {
         Object satRanges=null;
         
@@ -86,54 +86,66 @@ public class InclusiveByteRange
                 // read all byte ranges for this header 
                 while (tok.hasMoreTokens())
                 {
-                    t=tok.nextToken().trim();
-                    
-                    long first = -1;
-                    long last  = -1;
-                    int d=t.indexOf('-');
-                    if (d<0 || t.indexOf("-",d+1)>=0)
-                    {           
-                        if ("bytes".equals(t))
-                            continue;
-                        Log.warn("Bad range format: {}",t);
-                        continue headers;
-                    }
-                    else if (d==0)
+                    try
                     {
-                        if (d+1<t.length())
-                            last = Long.parseLong(t.substring(d+1).trim());
-                        else
+                        t = tok.nextToken().trim();
+
+                        long first = -1;
+                        long last = -1;
+                        int d = t.indexOf('-');
+                        if (d < 0 || t.indexOf("-",d + 1) >= 0)
                         {
+                            if ("bytes".equals(t))
+                                continue;
                             Log.warn("Bad range format: {}",t);
                             continue headers;
                         }
-                    }
-                    else if (d+1<t.length())
-                    {
-                        first = Long.parseLong(t.substring(0,d).trim());
-                        last = Long.parseLong(t.substring(d+1).trim());
-                    }
-                    else
-                        first = Long.parseLong(t.substring(0,d).trim());
+                        else if (d == 0)
+                        {
+                            if (d + 1 < t.length())
+                                last = Long.parseLong(t.substring(d + 1).trim());
+                            else
+                            {
+                                Log.warn("Bad range format: {}",t);
+                                continue;
+                            }
+                        }
+                        else if (d + 1 < t.length())
+                        {
+                            first = Long.parseLong(t.substring(0,d).trim());
+                            last = Long.parseLong(t.substring(d + 1).trim());
+                        }
+                        else
+                            first = Long.parseLong(t.substring(0,d).trim());
 
-                    
-                    if (first == -1 && last == -1)
-                        continue headers;
-                    
-                    if (first != -1 && last != -1 && (first > last))
-                        continue headers;
+                        if (first == -1 && last == -1)
+                            continue headers;
 
-                    if (first<size)
+                        if (first != -1 && last != -1 && (first > last))
+                            continue headers;
+
+                        if (first < size)
+                        {
+                            // Relative range end points not allowed (in some cases)
+                            if ((!allowRelativeRange) && ((first < 0) || (last < 0)))
+                            {
+                                continue headers;
+                            }
+                            InclusiveByteRange range = new InclusiveByteRange(first,last);
+                            satRanges = LazyList.add(satRanges,range);
+                        }
+                    }
+                    catch (NumberFormatException e)
                     {
-                        InclusiveByteRange range = new
-                            InclusiveByteRange(first, last);
-                        satRanges=LazyList.add(satRanges,range);
+                        Log.warn("Bad range format: {}",t);
+                        Log.ignore(e);
+                        continue;
                     }
                 }
             }
             catch(Exception e)
             {
-                Log.warn("Bad range format: "+t);
+                Log.warn("Bad range format: {}",t);
                 Log.ignore(e);
             }    
         }
@@ -195,6 +207,7 @@ public class InclusiveByteRange
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder(60);

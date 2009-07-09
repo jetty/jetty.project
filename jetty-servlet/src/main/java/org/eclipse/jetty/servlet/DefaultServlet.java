@@ -141,6 +141,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     
     
     /* ------------------------------------------------------------ */
+    @Override
     public void init()
         throws UnavailableException
     {
@@ -243,6 +244,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getInitParameter(String name)
     {
         String value=getServletContext().getInitParameter("org.eclipse.jetty.servlet.Default."+name);
@@ -309,12 +311,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     	throws ServletException, IOException
     {
         String servletPath=null;
         String pathInfo=null;
         Enumeration reqRanges = null;
+        boolean byteRangeRules = false;
         Boolean included =request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI)!=null;
         if (included!=null && included.booleanValue())
         {
@@ -328,14 +332,25 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
         else
         {
-            included=Boolean.FALSE;
-            servletPath=request.getServletPath();
-            pathInfo=request.getPathInfo();
-            
-            // Is this a range request?
-            reqRanges = request.getHeaders(HttpHeaders.RANGE);
-            if (reqRanges!=null && !reqRanges.hasMoreElements())
-                reqRanges=null;
+            included = Boolean.FALSE;
+            servletPath = request.getServletPath();
+            pathInfo = request.getPathInfo();
+
+            // Is this a Content-Range request?
+            reqRanges = request.getHeaders(HttpHeaders.CONTENT_RANGE);
+            if (!hasDefinedRange(reqRanges))
+            {
+                // Is this a Range request?
+                reqRanges = request.getHeaders(HttpHeaders.RANGE);
+                if (hasDefinedRange(reqRanges))
+                {
+                    byteRangeRules = true;
+                }
+                else
+                {
+                    reqRanges = null;
+                }
+            }
         }
         
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
@@ -438,7 +453,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 			   if (mt!=null)
 			       response.setContentType(mt);
 			}
-			sendData(request,response,included.booleanValue(),resource,content,reqRanges);  
+			sendData(request,response,included.booleanValue(),resource,content,reqRanges,byteRangeRules);  
 		    }
 		}
             }
@@ -520,7 +535,13 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         
     }
     
+    private boolean hasDefinedRange(Enumeration reqRanges)
+    {
+        return (reqRanges!=null && reqRanges.hasMoreElements());
+    }
+
     /* ------------------------------------------------------------ */
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
     {
@@ -531,6 +552,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     /* (non-Javadoc)
      * @see javax.servlet.http.HttpServlet#doTrace(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
+    @Override
     protected void doTrace(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
         resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
@@ -674,7 +696,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                             boolean include,
                             Resource resource,
                             HttpContent content,
-                            Enumeration reqRanges)
+                            Enumeration reqRanges,
+                            boolean byteRangeRules)
     throws IOException
     {
         long content_length=resource.length();
@@ -723,7 +746,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         else
         {
             // Parse the satisfiable ranges
-            List ranges =InclusiveByteRange.satisfiableRanges(reqRanges,content_length);
+            List ranges =InclusiveByteRange.satisfiableRanges(reqRanges,byteRangeRules,content_length);
             
             //  if there are no satisfiable ranges, send 416 response
             if (ranges==null || ranges.size()==0)
@@ -735,7 +758,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 resource.writeTo(out,0,content_length);
                 return;
             }
-            
             
             //  if there is only a single valid range (must be satisfiable 
             //  since were here now), send that range with a 216 response
@@ -752,6 +774,17 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 return;
             }
             
+            // If not following byte range rules (such as when using the "Content-Range" request)
+            // There is no possibility of sending a multi-part range.
+            // See http://tools.ietf.org/html/rfc2616#section-14.16
+            if (!byteRangeRules)
+            {
+                writeHeaders(response,content,content_length);
+                response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
+                response.setHeader(HttpHeaders.CONTENT_RANGE,InclusiveByteRange.to416HeaderRangeString(content_length));
+                resource.writeTo(out,0,content_length);
+                return;
+            }
             
             //  multiple non-overlapping valid ranges cause a multipart
             //  216 response which does not require an overall 
@@ -881,6 +914,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     /* 
      * @see javax.servlet.Servlet#destroy()
      */
+    @Override
     public void destroy()
     {
         try
