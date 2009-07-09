@@ -147,6 +147,8 @@ public class TestableJettyServer
         Assert.assertEquals("Server load count",1,serverCount);
 
         this.server = foundServer;
+        this.server.setGracefulShutdown(10);
+        
     }
 
     public String getScheme()
