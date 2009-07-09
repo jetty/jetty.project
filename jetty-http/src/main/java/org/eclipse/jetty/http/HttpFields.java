@@ -815,7 +815,7 @@ public class HttpFields
             return -1;
 
         final long date = __dateParser.get().parse(val);
-        if (date<0)
+        if (date==-1)
             throw new IllegalArgumentException("Cannot convert date: " + val);
         field._numValue=date;
         return date;

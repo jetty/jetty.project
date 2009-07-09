@@ -535,6 +535,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         
     }
     
+    /* ------------------------------------------------------------ */
     private boolean hasDefinedRange(Enumeration reqRanges)
     {
         return (reqRanges!=null && reqRanges.hasMoreElements());
