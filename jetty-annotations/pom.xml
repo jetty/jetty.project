@@ -60,9 +60,9 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-annotation_1.0_spec</artifactId>
-      <version>1.1.1</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>tmp-common-annotations</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>asm</groupId>
