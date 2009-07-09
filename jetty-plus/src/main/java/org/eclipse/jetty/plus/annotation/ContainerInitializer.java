@@ -18,13 +18,15 @@ import java.util.Set;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class ContainerInitializer
 {
     protected ServletContainerInitializer _target;
     protected Class[] _interestedTypes;
-    protected Set<Class<?>> _applicableClasses;
+    protected Set<String> _applicableTypeNames;
+    protected Set<String> _annotatedTypeNames;
 
     
     public void setTarget (ServletContainerInitializer target)
@@ -47,16 +49,33 @@ public class ContainerInitializer
         _interestedTypes = interestedTypes;
     }
     
-    public void addApplicableClass (Class c)
+    /**
+     * A class has been found that has an annotation of interest 
+     * to this initializer.
+     * @param className
+     */
+    public void addAnnotatedTypeName (String className)
     {
-        if (_applicableClasses == null)
-            _applicableClasses = new HashSet<Class<?>>();
-        _applicableClasses.add(c);
+        if (_annotatedTypeNames == null)
+            _annotatedTypeNames = new HashSet<String>();
+        _annotatedTypeNames.add(className);
     }
     
-    public Set<Class<?>> getApplicableClasses ()
+    public Set<String> getAnnotatedTypeNames ()
     {
-        return _applicableClasses;
+        return _annotatedTypeNames;
+    }
+    
+    public void addApplicableTypeName (String className)
+    {
+        if (_applicableTypeNames == null)
+            _applicableTypeNames = new HashSet<String>();
+        _applicableTypeNames.add(className);
+    }
+    
+    public Set<String> getApplicableTypeNames ()
+    {
+        return _applicableTypeNames;
     }
     
     
@@ -64,6 +83,14 @@ public class ContainerInitializer
     throws Exception
     {
        if (_target != null)
-           _target.onStartup(_applicableClasses, context);
+       {
+           //TODO
+           //Convert the applicableTypeNames into classes
+           Set<Class<?>> classes = new HashSet<Class<?>>();
+           for (String s : _applicableTypeNames)
+               classes.add(Loader.loadClass(null, s));
+           
+           _target.onStartup(classes, context);
+       }
     }
 }
