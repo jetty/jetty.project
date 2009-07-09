@@ -16,6 +16,7 @@ package org.eclipse.jetty.annotations;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebInitParam;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -31,16 +32,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
 /**
  * WebServletAnnotationHandler
  *
- * Process a @WebServlet annotation on a class.
+ * Process a WebServlet annotation on a class.
  * 
- * We will create a ServletHolder based on the annotation
- * that may be overridden by the WebXmlConfiguration class
- * when it processes web.xml and the web-fragment.xml files.
- * 
- * TODO, ensure AnnotationConfiguration parses and calls this
- * handler in preConfigure() and the application of the Resource
- * injections and lifecycle callbacks in its configure() method
- * instead.
  */
 public class WebServletAnnotationHandler implements AnnotationHandler
 {
@@ -55,7 +48,8 @@ public class WebServletAnnotationHandler implements AnnotationHandler
     
     /** 
      * TODO: ensure that web.xml takes precedence:
-     *  - if servlet of same name and same class exists in web.xml, then values from annotation can override it
+     *  - if servlet of same name and same class exists in web.xml, then values from annotation cannot override it?
+     *  
      *  - if servlet is different name NEED CLARIFICATION FROM JSR. For now, we assume it is a different servlet.
      *  
      * @see org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler#handleClass(java.lang.String, int, int, java.lang.String, java.lang.String, java.lang.String[], java.lang.String, java.util.List)
@@ -107,20 +101,25 @@ public class WebServletAnnotationHandler implements AnnotationHandler
 
         String servletName = (annotation.name().equals("")?clazz.getName():annotation.name());
 
-        //Create ServletHolder for the class if one does not exist already
-        boolean existed = false;
+        //Find out if a <servlet> from web.xml of this type already exists with this name
         ServletHolder[] holders = _wac.getServletHandler().getServlets();
         ServletHolder holder = null;
         for (ServletHolder h : holders)
         {
-            if (h.getClassName().equals(clazz.getName()))
+            if (h.getClassName().equals(clazz.getName()) && h.getName().equals(servletName))
             {
                 holder = h;
-                existed = true;
                 break;
             }
         }
         
+        //A <servlet> with matching name already exists in web.xml, ignore
+        //the annotation
+        //TODO - Get confirmation from JSR!
+        if (holder != null)
+            return;
+        
+        // If no <servlet> with matching name was found, we need to make one
         if (holder == null)
             holder = new ServletHolder(clazz);
         
@@ -131,7 +130,7 @@ public class WebServletAnnotationHandler implements AnnotationHandler
         {
             holder.setInitParameter(ip.name(), ip.value());
         }
-        
+
         ArrayList paths = new ArrayList();
         ServletMapping mapping = new ServletMapping();
         mapping.setServletName(holder.getName());
@@ -143,10 +142,14 @@ public class WebServletAnnotationHandler implements AnnotationHandler
         holder.setAsyncSupported(annotation.asyncSupported());
         
         //MultipartConfig annotation handled separately
+        MultipartConfig multipart = (MultipartConfig)clazz.getAnnotation(MultipartConfig.class);
+        if (multipart != null)
+        {
+            //TODO handle in here
+        }
         
         //If the ServletHolder did not already exist, then add it
-        if (!existed)
-            _wac.getServletHandler().addServlet(holder);
+         _wac.getServletHandler().addServlet(holder);
         //Add the mappings for it 
         _wac.getServletHandler().addServletMapping(mapping);
     }
