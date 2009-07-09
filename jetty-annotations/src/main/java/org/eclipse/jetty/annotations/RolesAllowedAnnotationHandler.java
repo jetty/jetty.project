@@ -16,7 +16,6 @@ package org.eclipse.jetty.annotations;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.annotation.security.RolesAllowed;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.annotations.AnnotationParser.ListValue;
 import org.eclipse.jetty.util.log.Log;

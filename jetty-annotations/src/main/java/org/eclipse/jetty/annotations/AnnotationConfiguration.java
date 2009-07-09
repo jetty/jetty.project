@@ -72,12 +72,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
             parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new WebServletAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.servlet.annotation.WebFilter", new WebFilterAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.servlet.annotation.WebListener", new WebListenerAnnotationHandler(context));
-            parser.registerAnnotationHandler("javax.servlet.annotation.MultipartConfig", new MultipartConfigAnnotationHandler (context));
             parser.registerAnnotationHandler("javax.annotation.Resource", new ResourceAnnotationHandler (context));
             parser.registerAnnotationHandler("javax.annotation.Resources", new ResourcesAnnotationHandler (context));
             parser.registerAnnotationHandler("javax.annotation.PostConstruct", new PostConstructAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.annotation.PreDestroy", new PreDestroyAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.annotation.security.RunAs", new RunAsAnnotationHandler(context));
+            parser.registerAnnotationHandler("javax.annotation.security.DenyAll", new DenyAllAnnotationHandler());
+            parser.registerAnnotationHandler("javax.annotation.security.PermitAll", new PermitAllAnnotationHandler());
+            parser.registerAnnotationHandler("javax.annotation.security.RolesAllowed", new RolesAllowedAnnotationHandler());
+            parser.registerAnnotationHandler("javax.annotation.security.TransportProtected", new TransportProtectedAnnotationHandler());
             ClassInheritanceHandler classHandler = new ClassInheritanceHandler();
             parser.registerClassHandler(classHandler);
             registerServletContainerInitializerAnnotationHandlers(context, parser);
