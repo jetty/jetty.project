@@ -307,12 +307,13 @@ public class HttpConnection implements Connection
         // If the client is expecting 100 CONTINUE, then send it now.
         if (_expect100Continue)
         {
+            // is content missing?
             if (((HttpParser)_parser).getHeaderBuffer()==null || ((HttpParser)_parser).getHeaderBuffer().length()<2)
             {
-                _generator.setResponse(HttpStatus.CONTINUE_100, null);
-                _generator.completeHeader(null, true);
-                _generator.complete();
-                _generator.reset(false);
+                if (_generator.isCommitted())
+                    throw new IllegalStateException("Committed before 100 Continues");
+                
+                ((HttpGenerator)_generator).send1xx(HttpStatus.CONTINUE_100);
             }
             _expect100Continue=false;
         }
@@ -800,11 +801,11 @@ public class HttpConnection implements Connection
                     switch(HttpHeaderValues.CACHE.getOrdinal(value))
                     {
                         case HttpHeaderValues.CONTINUE_ORDINAL:
-                            _expect100Continue=true;
+                            _expect100Continue=_generator instanceof HttpGenerator;
                             break;
 
                         case HttpHeaderValues.PROCESSING_ORDINAL:
-                            _expect102Processing=true;
+                            _expect102Processing=_generator instanceof HttpGenerator;
                             break;
                             
                         default:
@@ -819,10 +820,10 @@ public class HttpConnection implements Connection
                                     switch(cb.getOrdinal())
                                     {
                                         case HttpHeaderValues.CONTINUE_ORDINAL:
-                                            _expect100Continue=true;
+                                            _expect100Continue=_generator instanceof HttpGenerator;
                                             break;
                                         case HttpHeaderValues.PROCESSING_ORDINAL:
-                                            _expect102Processing=true;
+                                            _expect102Processing=_generator instanceof HttpGenerator;
                                             break;
                                         default:
                                             _expect=true;

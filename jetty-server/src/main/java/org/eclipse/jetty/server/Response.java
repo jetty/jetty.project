@@ -379,22 +379,8 @@ public class Response implements HttpServletResponse
      */
     public void sendProcessing() throws IOException
     {
-        if (_connection.isExpecting102Processing())
-        {
-            Generator g = _connection.getGenerator();
-            if (g instanceof HttpGenerator)
-            {
-                HttpGenerator generator = (HttpGenerator)g;
-                boolean was_persistent=generator.isPersistent();
-                generator.setResponse(102,null);
-                generator.completeHeader(null,true);
-                generator.setPersistent(true);
-                generator.complete();
-                generator.flushBuffer();
-                generator.reset(false);
-                generator.setPersistent(was_persistent);
-            }
-        }
+        if (_connection.isExpecting102Processing() && !isCommitted())
+            ((HttpGenerator)_connection.getGenerator()).send1xx(HttpStatus.PROCESSING_102);
     }
 
     /* ------------------------------------------------------------ */

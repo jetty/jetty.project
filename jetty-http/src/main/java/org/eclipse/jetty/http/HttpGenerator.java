@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.BufferUtil;
@@ -304,6 +305,45 @@ public class HttpGenerator extends AbstractGenerator
     {
         // Should we flush the buffers?
         return super.isBufferFull() || _bufferChunked || _bypass  || (_contentLength == HttpTokens.CHUNKED_CONTENT && _buffer != null && _buffer.space() < CHUNK_SPACE);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void send1xx(int code) throws IOException
+    {
+        if (_state != STATE_HEADER) 
+            return;
+        
+        if (code<100||code>199)
+            throw new IllegalArgumentException("!1xx");
+        Status status=__status[code];
+        if (status==null)
+            throw new IllegalArgumentException(code+"?");
+        
+        // get a header buffer
+        if (_header == null) 
+            _header = _buffers.getHeader();
+        
+        _header.put(status._responseLine);
+        _header.put(HttpTokens.CRLF);
+        
+        try
+        {
+            // nasty semi busy flush!
+            while(_header.length()>0)
+            {
+                int len = _endp.flush(_header);
+                if (len<0)
+                    throw new EofException();
+                if (len==0)
+                    Thread.sleep(100);
+            }
+        }
+        catch(InterruptedException e)
+        {
+            Log.debug(e);
+            throw new InterruptedIOException(e.toString());
+        }
+        
     }
     
     /* ------------------------------------------------------------ */
@@ -682,7 +722,7 @@ public class HttpGenerator extends AbstractGenerator
             }
         }
         
-        if (!has_server && _status>100 && getSendServerVersion())
+        if (!has_server && _status>199 && getSendServerVersion())
             _header.put(SERVER);
 
         // end the header.
@@ -691,6 +731,8 @@ public class HttpGenerator extends AbstractGenerator
         _state = STATE_CONTENT;
 
     }
+    
+
 
     /* ------------------------------------------------------------ */
     /**

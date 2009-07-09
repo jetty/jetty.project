@@ -6,6 +6,7 @@ jetty-7.0.0.RC0 8 June 2009
  + 280843 Buffer pool uses isHeader
  + 271535 Adding integration tests, and enabling RFC2616 tests
  + 281287 Handle date headers before 1 Jan 1970
+ + 282807 Better handling of 100 continues if response committed.
 
 jetty-7.0.0.M4 1 June 2009
  + 281059 NPE in QTP with debug on
