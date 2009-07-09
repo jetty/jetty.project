@@ -30,37 +30,6 @@ import org.eclipse.jetty.io.BufferCache.CachedBuffer;
  */
 public class HttpFieldsTest extends TestCase
 {
-
-    /**
-     * Constructor for HttpHeaderTest.
-     * @param arg0
-     */
-    public HttpFieldsTest(String arg0)
-    {
-        super(arg0);
-    }
-
-    public static void main(String[] args)
-    {
-        junit.textui.TestRunner.run(HttpFieldsTest.class);
-    }
-
-    /*
-     * @see TestCase#setUp()
-     */
-    protected void setUp() throws Exception
-    {
-        super.setUp();
-    }
-
-    /*
-     * @see TestCase#tearDown()
-     */
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-    
     public void testPut()
         throws Exception
     {
@@ -71,7 +40,7 @@ public class HttpFieldsTest extends TestCase
         
         assertEquals("value0",header.getStringField("name0"));
         assertEquals("value1",header.getStringField("name1"));
-        assertEquals(null,header.getStringField("name2"));
+        assertNull(header.getStringField("name2"));
         
         int matches=0;
         Enumeration e = header.getFieldNames();
@@ -149,7 +118,7 @@ public class HttpFieldsTest extends TestCase
         assertEquals("value0",header.getStringField("name0"));
         assertEquals("value1",header.getStringField("name1"));
         assertEquals("value2",header.getStringField("name2"));
-        assertEquals(null,header.getStringField("name3"));
+        assertNull(header.getStringField("name3"));
         
         int matches=0;
         Enumeration e = header.getFieldNames();
@@ -188,9 +157,9 @@ public class HttpFieldsTest extends TestCase
         header.remove("name1");
         
         assertEquals("value0",header.getStringField("name0"));
-        assertEquals(null,header.getStringField("name1"));
+        assertNull(header.getStringField("name1"));
         assertEquals("value2",header.getStringField("name2"));
-        assertEquals(null,header.getStringField("name3"));
+        assertNull(header.getStringField("name3"));
         
         int matches=0;
         Enumeration e = header.getFieldNames();
@@ -230,7 +199,7 @@ public class HttpFieldsTest extends TestCase
         assertEquals("value0",fields.getStringField("name0"));
         assertEquals("valueA",fields.getStringField("name1"));
         assertEquals("value2",fields.getStringField("name2"));
-        assertEquals(null,fields.getStringField("name3"));
+        assertNull(fields.getStringField("name3"));
         
         int matches=0;
         Enumeration e = fields.getFieldNames();
@@ -276,10 +245,10 @@ public class HttpFieldsTest extends TestCase
         assertEquals("value0",header.getStringField("name0"));
         assertEquals("value1",header.getStringField("name1"));
         assertEquals("value2",header.getStringField("name2"));
-        assertEquals(null,header.getStringField("name3"));
+        assertNull(header.getStringField("name3"));
         
         header.remove(n1);
-        assertEquals(null,header.getStringField("name1"));
+        assertNull(header.getStringField("name1"));
         header.put(n1,vb);
         assertEquals("value1",header.getStringField("name1"));
         
