@@ -19,6 +19,7 @@ package org.eclipse.jetty.test.rfcs;
 import static org.junit.Assert.assertThat;
 import static org.junit.matchers.JUnitMatchers.containsString;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
@@ -76,17 +77,23 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         }
     }
 
+    @Override
     @Before
     public void setUp() throws Exception
     {
         super.setUp();
 
+        File testWorkDir = new File(getTargetDir(), "work" + File.pathSeparator + getName());
+        
+        System.setProperty("java.io.tmpdir",testWorkDir.getAbsolutePath());
+        
         server = getJettyServer();
         server.load();
         server.start();
         http = new HttpTesting(getHttpClientSocket(),server.getServerPort());
     }
 
+    @Override
     @After
     public void tearDown() throws Exception
     {

@@ -43,6 +43,13 @@ public abstract class AbstractJettyTestCase extends TestCase
 
         return baseDir;
     }
+    
+    public File getTargetDir()
+    {
+        File path = new File(getBaseDir(),"target");
+        assertDirExists("target dir",path);
+        return path;
+    }
 
     public File getTestResourcesDir()
     {
