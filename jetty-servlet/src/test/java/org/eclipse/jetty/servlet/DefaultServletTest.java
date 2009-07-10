@@ -13,12 +13,15 @@ import org.eclipse.jetty.util.IO;
 
 public class DefaultServletTest extends TestCase
 {
+    private boolean _runningOnWindows;
     private Server server;
     private LocalConnector connector;
     private ServletContextHandler context;
 
     protected void setUp() throws Exception
     {
+        _runningOnWindows = System.getProperty( "os.name" ).startsWith( "Windows" );
+        
         super.setUp();
 
         server = new Server();
@@ -96,8 +99,11 @@ public class DefaultServletTest extends TestCase
         new File(resBase, "one").mkdir();
         new File(resBase, "two").mkdir();
         new File(resBase, "three").mkdir();
-        assertTrue("Creating dir 'f??r' (Might not work in Windows)", new File(resBase, "f??r").mkdir());
-
+        if ( !_runningOnWindows )
+        {
+            assertTrue("Creating dir 'f??r' (Might not work in Windows)", new File(resBase, "f??r").mkdir());
+        }
+            
         String resBasePath = resBase.getAbsolutePath();
         defholder.setInitParameter("resourceBase",resBasePath);
 
@@ -192,8 +198,11 @@ public class DefaultServletTest extends TestCase
         createFile(index, "<h>Hello Index</h1>");
         
         File wackyDir = new File(resBase, "dir?");
-        assertTrue(wackyDir.mkdirs());
-        
+        if ( !_runningOnWindows )
+        {
+            assertTrue(wackyDir.mkdirs());
+        }
+            
         wackyDir = new File(resBase, "dir;");
         assertTrue(wackyDir.mkdirs());
 
