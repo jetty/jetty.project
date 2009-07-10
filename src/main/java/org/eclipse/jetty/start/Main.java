@@ -31,9 +31,7 @@ import java.security.Policy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /*-------------------------------------------*/
 /**
@@ -49,15 +47,18 @@ import java.util.Set;
  */
 public class Main
 {
-    public static boolean DEBUG=false;
+    public static boolean DEBUG = false;
 
+    private boolean _showUsage = false;
     private boolean _dumpVersions = false;
-    private Set<String> _activeOptions = new HashSet<String>();
+    private List<String> _activeOptions = new ArrayList<String>();
     private Config _config = new Config();
+
+    private String _jettyHome;
 
     public static void main(String[] args)
     {
-        Main main=new Main();
+        Main main = new Main();
         try
         {
             main.parseCommandLine(args);
@@ -75,18 +76,18 @@ public class Main
             List<String> arguments = new ArrayList<String>();
             arguments.addAll(Arrays.asList(args)); // Add Arguments on Command Line
             arguments.addAll(loadStartIni()); // Add Arguments from start.ini (if it exists)
-            
+
             // The XML Configuration Files to initialize with
             List<String> xmls = new ArrayList<String>();
-            
+
             for (String arg : arguments)
             {
                 if (arg.equalsIgnoreCase("--help"))
                 {
-                    usage();
-                    return;
+                    _showUsage = true;
+                    continue;
                 }
-                
+
                 if (arg.equalsIgnoreCase("--stop"))
                 {
                     int port = Integer.parseInt(_config.getProperty("STOP.PORT","-1"));
@@ -94,55 +95,77 @@ public class Main
                     stop(port,key);
                     return;
                 }
-                
-                if (arg.equalsIgnoreCase("--version")||arg.equalsIgnoreCase("-v")||arg.equalsIgnoreCase("-info"))
+
+                if (arg.equalsIgnoreCase("--version") || arg.equalsIgnoreCase("-v") || arg.equalsIgnoreCase("-info"))
                 {
                     _dumpVersions = true;
                     continue;
                 }
 
                 // Process property spec
-                if (arg.indexOf('=')>=0)
+                if (arg.indexOf('=') >= 0)
                 {
-                    if (arg.startsWith("-D"))
-                    {
-                        // Process System Property
-                        String[] prop = arg.substring(2).split("=",2);
-                        if(prop.length == 2) {
-                            setSystemProperty(prop[0],prop[1]);
-                        }
-                        else
-                        {
-                            System.err.println("Unable to set value-less System Property: " + prop[0]);
-                        }
-                    }
-                    else
-                    {
-                        // Process Startup Property
-                        String[] prop = arg.split("=",2);
-                        if (prop.length == 2)
-                        {
-                            _config.setProperty(prop[0],prop[1]);
-                        }
-                        else
-                        {
-                            _config.setProperty(prop[0],null);
-                        }
-                    }
+                    processProperty(arg);
                     continue;
                 }
-                
+
                 // Anything else is considered an XML file.
                 xmls.add(arg);
             }
-            
+
             DEBUG = Boolean.parseBoolean(_config.getProperty("DEBUG","false"));
-            start(xmls);        
+            start(xmls);
         }
         catch (Throwable t)
         {
             t.printStackTrace(System.err);
             usage();
+        }
+    }
+
+    private void processProperty(String arg)
+    {
+        String[] prop = arg.split("=",2);
+
+        if (prop[0].startsWith("-D"))
+        {
+            // Process System Property
+            if (prop.length == 2)
+            {
+                setSystemProperty(prop[0].substring(2),prop[1]);
+            }
+            else
+            {
+                System.err.println("Unable to set value-less System Property: " + prop[0]);
+            }
+        }
+        else
+        {
+            // Process Startup Property
+            if (prop.length == 2)
+            {
+                // Special case (the Config section id options)
+                if ("OPTIONS".equals(prop[0]))
+                {
+                    String ids[] = prop[1].split(",");
+                    for (String id : ids)
+                    {
+                        if (!_activeOptions.contains(id))
+                        {
+                            _activeOptions.add(id);
+                        }
+                    }
+                    _activeOptions.addAll(Arrays.asList(ids));
+                }
+                else
+                {
+                    _config.setProperty(prop[0],prop[1]);
+                }
+            }
+            else
+            {
+                _config.setProperty(prop[0],null);
+            }
         }
     }
 
@@ -171,41 +194,49 @@ public class Main
             while ((arg = buf.readLine()) != null)
             {
                 // Is this a Property?
-                if (arg.indexOf('=')>=0)
+                if (arg.indexOf('=') >= 0)
                 {
                     // A System Property?
                     if (arg.startsWith("-D"))
                     {
-                        String[] assign = arg.substring(2).split("=", 2);
+                        String[] assign = arg.substring(2).split("=",2);
 
                         if (assign.length == 2)
                         {
-                            System.setProperty(assign[0], assign[1]);
-                        } else
-                        {
-                            System.err.printf("Unable to set System Property '%s', no value provided%n", assign[0]);
+                            System.setProperty(assign[0],assign[1]);
                         }
-                    } else // Nah, it's a normal property
+                        else
+                        {
+                            System.err.printf("Unable to set System Property '%s', no value provided%n",assign[0]);
+                        }
+                    }
+                    else
+                    // Nah, it's a normal property
                     {
-                        String[] assign = arg.split("=", 2);
+                        String[] assign = arg.split("=",2);
 
                         if (assign.length == 2)
                         {
                             this._config.setProperty(assign[0],assign[1]);
-                        } else
+                        }
+                        else
                         {
                             this._config.setProperty(assign[0],null);
                         }
                     }
-                } else // A normal argument
+                }
+                else
+                // A normal argument
                 {
                     args.add(arg);
                 }
             }
-        } catch (IOException e)
+        }
+        catch (IOException e)
         {
             e.printStackTrace();
-        } finally
+        }
+        finally
         {
             close(buf);
             close(reader);
@@ -322,35 +353,35 @@ public class Main
             NoSuchMethodException, ClassNotFoundException
     {
         Class<?> invoked_class = null;
-        
+
         try
         {
-            invoked_class=classloader.loadClass(classname);
+            invoked_class = classloader.loadClass(classname);
         }
-        catch(ClassNotFoundException e)
+        catch (ClassNotFoundException e)
         {
             //ignored
         }
-        
+
         if (DEBUG || invoked_class == null)
         {
-            if (invoked_class==null)
-                System.err.println("ClassNotFound: "+classname);
+            if (invoked_class == null)
+                System.err.println("ClassNotFound: " + classname);
             else
-                System.err.println(classname+" "+invoked_class.getPackage().getImplementationVersion());
-            
+                System.err.println(classname + " " + invoked_class.getPackage().getImplementationVersion());
+
             if (invoked_class == null)
             {
-	        usage();
-	        return;
+                usage();
+                return;
             }
         }
-        
+
         String argArray[] = args.toArray(new String[0]);
 
         Class<?>[] method_param_types = new Class[]
         { String.class };
-        
+
         Method main = invoked_class.getDeclaredMethod("main",method_param_types);
         Object[] method_params = new Object[]
         { argArray };
@@ -359,7 +390,7 @@ public class Main
     }
 
     /* ------------------------------------------------------------ */
-    private void close(Reader reader)
+    public static void close(Reader reader)
     {
         if (reader == null)
         {
@@ -368,14 +399,15 @@ public class Main
         try
         {
             reader.close();
-        } catch (IOException e)
+        }
+        catch (IOException e)
         {
             e.printStackTrace();
         }
     }
 
     /* ------------------------------------------------------------ */
-    private void close(InputStream stream)
+    public static void close(InputStream stream)
     {
         if (stream == null)
         {
@@ -384,7 +416,8 @@ public class Main
         try
         {
             stream.close();
-        } catch (IOException e)
+        }
+        catch (IOException e)
         {
             e.printStackTrace();
         }
@@ -398,10 +431,17 @@ public class Main
 
         // Initialize the Config (start.config)
         initConfig(xmls);
-        
+
+        // Default options (if not specified)
+        if (_activeOptions.isEmpty())
+        {
+            _activeOptions.add("default");
+            _activeOptions.add("*");
+        }
+
         // Get Desired Classpath
         Classpath classpath = _config.getCombinedClasspath(_activeOptions);
-        
+
         System.setProperty("java.class.path",classpath.toString());
         ClassLoader cl = classpath.getClassLoader();
         if (DEBUG)
@@ -413,45 +453,106 @@ public class Main
             System.err.println("classloader=" + cl);
             System.err.println("classloader.parent=" + cl.getParent());
         }
-        
+
+        // Show the usage information and return
+        if (_showUsage)
+        {
+            usage();
+            return;
+        }
+
+        // Show the version information and return
         if (_dumpVersions)
         {
             // Iterate through active classpath, and fetch Implementation Version from each entry (if present)
             // to dump to end user.
+
+            if (classpath.count() == 0)
+            {
+                System.out.println("No version information available show.");
+                System.out.println("Active Options: " + _activeOptions);
+                return;
+            }
+
+            System.out.println("Version Information on " + classpath.count() + " entr" + ((classpath.count() > 1)?"ies":"y") + " in the classpath.");
+            System.out.println("Note: order presented here is how they would appear on the classpath.");
+            System.out.println("      changes to the OPTIONS=[mode,mode,...] command line option will be reflected here.");
+
+            int i = 0;
+            for (File element : classpath.getElements())
+            {
+                String elementPath = element.getAbsolutePath();
+                if (elementPath.startsWith(_jettyHome))
+                {
+                    elementPath = "${jetty.home}" + elementPath.substring(_jettyHome.length());
+                }
+                System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),elementPath);
+            }
+
             return;
         }
-        
+
         // Set current context class loader to what is selected.
         Thread.currentThread().setContextClassLoader(cl);
-        
+
         // Initialize the Security
         initSecurity(cl);
-        
+
         // Invoke the Main Class
         try
         {
             // Get main class as defined in start.config
             String classname = _config.getMainClassname();
-            
+
             // Check for override of start class (via "jetty.server" property)
-            String mainClass=System.getProperty("jetty.server");
-            if (mainClass!=null)
+            String mainClass = System.getProperty("jetty.server");
+            if (mainClass != null)
                 classname = mainClass;
 
             // Check for override of start class (via "main.class" property)
-            mainClass=System.getProperty("main.class");
-            if (mainClass!=null)
+            mainClass = System.getProperty("main.class");
+            if (mainClass != null)
                 classname = mainClass;
-            
+
             if (DEBUG)
                 System.err.println("main.class=" + classname);
-            
+
             invokeMain(cl,classname,xmls);
         }
         catch (Exception e)
         {
             e.printStackTrace();
         }
+    }
+
+    private String getVersion(File element)
+    {
+        if (element.isDirectory())
+        {
+            return "(dir)";
+        }
+
+        if (element.isFile())
+        {
+            String name = element.getName().toLowerCase();
+            if (name.endsWith(".jar"))
+            {
+                return JarVersion.getVersion(element);
+            }
+
+            if (name.endsWith(".zip"))
+            {
+                return getZipVersion(element);
+            }
+        }
+
+        return "";
+    }
+
+    private String getZipVersion(File element)
+    {
+        // TODO - find version in zip file.  Look for META-INF/MANIFEST.MF ?
+        return "";
     }
 
     private void initSecurity(ClassLoader cl)
@@ -483,14 +584,14 @@ public class Main
         try
         {
             _config.setArgCount(xmls.size());
-            
+
             // What start.config should we use?
             String cfgName = _config.getProperty("START","org/eclipse/jetty/start/start.config");
             if (DEBUG)
             {
                 System.err.println("config=" + cfgName);
             }
-            
+
             // Look up config as resource first.
             cfgstream = getClass().getClassLoader().getResourceAsStream(cfgName);
 
@@ -500,13 +601,12 @@ public class Main
 
             // parse the config
             _config.parse(cfgstream);
-            
-            // expand the jetty.home property (might be a short path like ".")
-            String jetty_home = _config.getProperty("jetty.home");
-            if (jetty_home!=null)
+
+            _jettyHome = _config.getProperty("jetty.home");
+            if (_jettyHome != null)
             {
-                String canonical = new File(jetty_home).getCanonicalPath();
-                System.setProperty("jetty.home",canonical);
+                _jettyHome = new File(_jettyHome).getCanonicalPath();
+                System.setProperty("jetty.home",_jettyHome);
             }
         }
         catch (Exception e)
@@ -531,25 +631,25 @@ public class Main
     /**
      * Stop a running jetty instance.
      */
-    public void stop(int port,String key)
+    public void stop(int port, String key)
     {
-        int _port=port;
-        String _key=key;
+        int _port = port;
+        String _key = key;
 
         try
         {
-            if (_port<=0)
+            if (_port <= 0)
                 System.err.println("STOP.PORT system property must be specified");
-            if (_key==null)
+            if (_key == null)
             {
-                _key="";
+                _key = "";
                 System.err.println("STOP.KEY system property must be specified");
                 System.err.println("Using empty key");
             }
 
-            Socket s=new Socket(InetAddress.getByName("127.0.0.1"),_port);
-            OutputStream out=s.getOutputStream();
-            out.write((_key+"\r\nstop\r\n").getBytes());
+            Socket s = new Socket(InetAddress.getByName("127.0.0.1"),_port);
+            OutputStream out = s.getOutputStream();
+            out.write((_key + "\r\nstop\r\n").getBytes());
             out.flush();
             s.close();
         }
