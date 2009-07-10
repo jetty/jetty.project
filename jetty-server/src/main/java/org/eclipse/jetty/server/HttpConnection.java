@@ -382,7 +382,7 @@ public class HttpConnection implements Connection
         // Loop while more in buffer
         boolean more_in_buffer =true; // assume true until proven otherwise
         boolean progress=true;
-
+        
         try
         {               
             assert getCurrentConnection()==null;
@@ -396,14 +396,17 @@ public class HttpConnection implements Connection
                 {
                     if (_request._async.isAsync())
                     {
-                        Log.debug("resume request",_request);
+                        Log.debug("async request",_request);
                         if (!_request._async.isComplete())
                             handleRequest();
                         else if (!_parser.isComplete()) 
-                            progress|=_parser.parseAvailable()>0;
+                        {
+                            long parsed=_parser.parseAvailable();
+                            progress|=parsed>0;
+                        }
                         
                         if (_generator.isCommitted() && !_generator.isComplete())
-                            _generator.flushBuffer();
+                            progress|=_generator.flushBuffer()>0;
                         if (_endp.isBufferingOutput())
                             _endp.flush();
                     }

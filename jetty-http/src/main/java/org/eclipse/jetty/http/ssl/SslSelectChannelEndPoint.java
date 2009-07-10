@@ -26,21 +26,26 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
- * SslHttpChannelEndPoint.
- * 
- * 
- * 
+ * SslSelectChannelEndPoint
+ * <p>
+ * A SelectChannelEndPoint that uses an {@link SSLEngine} to handle an
+ * SSL connection.
+ * <p>
+ * There is a named logger "org.eclipse.jetty.http.ssl"
+ * </p>
  */
 public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 {
+    static Logger __log = Log.getLogger("org.eclipse.jetty.http.ssl");
+    
     private static final ByteBuffer[] __NO_BUFFERS={};
 
     private final Buffers _buffers;
@@ -58,6 +63,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     private boolean _closing=false;
     private SSLEngineResult _result;
     private String _last;
+
+    private final boolean _debug = __log.isDebugEnabled(); // snapshot debug status for optimizer 
 
     
     // TODO get rid of this
@@ -92,6 +99,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         _inBuffer=_inNIOBuffer.getByteBuffer();
         
         // h.append("CONSTRUCTED\n");
+        if (_debug) __log.debug(_session+" channel="+channel);
     }
 
     // TODO get rid of these dumps
@@ -165,6 +173,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     Thread.sleep(100); // TODO yuck
                 }
 
+                if (_debug) __log.debug(_session+" closing "+_engine.getHandshakeStatus());
                 switch(_engine.getHandshakeStatus())
                 {
                     case FINISHED:
@@ -215,6 +224,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                             _result=null;
                             _last="close wrap";
                             _result=_engine.wrap(__NO_BUFFERS,_outBuffer);
+                            if (_debug) __log.debug(_session+" close wrap "+_result);
                             _outNIOBuffer.setPutIndex(put+_result.bytesProduced());
                         }
                         finally
@@ -311,6 +321,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                                 // The fix simply detects the signature of the bug and then close the connection (fail-fast) so that ff3 will delegate to using SSL instead of TLS.
                                 // This is a jvm bug on java1.6 where the SSLEngine expects more data from the initial handshake when the client(ff3-tls) already had given it.
                                 // See http://jira.codehaus.org/browse/JETTY-567 for more details
+                                if (_debug) __log.warn(_session+" JETTY-567");
                                 return -1;
                             }
                             break;
@@ -329,6 +340,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                                     _result=null;
                                     _last="fill wrap";
                                     _result=_engine.wrap(__NO_BUFFERS,_outBuffer);
+                                    if (_debug) __log.debug(_session+" fill wrap "+_result);
                                     switch(_result.getStatus())
                                     {
                                         case BUFFER_OVERFLOW:
@@ -469,6 +481,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                             _result=null;
                             _last="flush wrap";
                             _result=_engine.wrap(__NO_BUFFERS,_outBuffer);
+                            if (_debug) __log.debug(_session+" flush wrap "+_result);
                             switch(_result.getStatus())
                             {
                                 case BUFFER_OVERFLOW:
@@ -496,13 +509,13 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         return consumed;
     }
     
-    
     /* ------------------------------------------------------------ */
     public void flush() throws IOException
     {
         while (_outNIOBuffer.length()>0)
         {
             int flushed=super.flush(_outNIOBuffer);
+            if (_debug) __log.debug(_session+" flushed "+flushed);
 
             // h.append("flushed=").append(flushed).append(" of ").append(_outNIOBuffer.length()).append('\n');
             if (flushed==0)
@@ -542,6 +555,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             try
             {
                 int filled=super.fill(_inNIOBuffer);
+                if (_debug) __log.debug(_session+" unwrap filled "+filled);
                 // h.append("fill=").append(filled).append('\n');
                 if (filled<=0)
                     break;
@@ -571,6 +585,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             _result=null;
             _last="unwrap";
             _result=_engine.unwrap(_inBuffer,buffer);
+            if (_debug) __log.debug(_session+" unwrap unwrap "+_result);
             // h.append("unwrap=").append(_result).append('\n');
             _inNIOBuffer.skip(_result.bytesConsumed());
         }
@@ -579,7 +594,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             _inBuffer.position(0);
             _inBuffer.limit(_inBuffer.capacity());
         }
-        
 
         switch(_result.getStatus())
         {
@@ -646,6 +660,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                         _result=null;
                         _last="wrap wrap";
                         _result=_engine.wrap(_gather,_outBuffer);
+                        if (_debug) __log.debug(_session+" wrap wrap "+_result);
                         // h.append("wrap2=").append(_result).append('\n');
                         _outNIOBuffer.setGetIndex(0);
                         _outNIOBuffer.setPutIndex(_result.bytesProduced());
@@ -716,6 +731,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     _result=null;
                     _last="wrap wrap";
                     _result=_engine.wrap(_gather[0],_outBuffer);
+                    if (_debug) __log.debug(_session+" wrap wrap "+_result);
                     // h.append("wrap1=").append(_result).append('\n');
                     _outNIOBuffer.setGetIndex(0);
                     _outNIOBuffer.setPutIndex(_result.bytesProduced());

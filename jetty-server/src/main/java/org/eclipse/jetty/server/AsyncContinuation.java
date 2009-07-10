@@ -35,6 +35,8 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public class AsyncContinuation implements AsyncContext, Continuation
 {
+    private final static long DEFAULT_TIMEOUT=30000L;
+    
     private final static ContinuationThrowable __exception = new ContinuationThrowable();
     
     // STATES:
@@ -72,8 +74,9 @@ public class AsyncContinuation implements AsyncContext, Continuation
     private boolean _resumed;
     private boolean _expired;
     private volatile boolean _responseWrapped;
-    private long _timeoutMs;
+    private long _timeoutMs=DEFAULT_TIMEOUT;
     private AsyncEventState _event;
+    private volatile long _expireAt;
     
 //    private StringBuilder _history = new StringBuilder();
 
@@ -573,7 +576,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
             _expired=false;
             _responseWrapped=false;
             cancelTimeout();
-            _timeoutMs=60000L; // TODO configure
+            _timeoutMs=DEFAULT_TIMEOUT;
             _listeners=null;
         }
     }    
@@ -607,9 +610,9 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             synchronized(this)
             {
-                long expire_at = System.currentTimeMillis()+_timeoutMs;
+                _expireAt = System.currentTimeMillis()+_timeoutMs;
                 long wait=_timeoutMs;
-                while (_timeoutMs>0 && wait>0)
+                while (_expireAt>0 && wait>0)
                 {
                     try
                     {
@@ -619,11 +622,13 @@ public class AsyncContinuation implements AsyncContext, Continuation
                     {
                         Log.ignore(e);
                     }
-                    wait=expire_at-System.currentTimeMillis();
+                    wait=_expireAt-System.currentTimeMillis();
                 }
 
-                if (_timeoutMs>0 && wait<=0)
+                if (_expireAt>0 && wait<=0)
+                {
                     expired();
+                }
             }            
         }
         else
@@ -638,7 +643,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             synchronized(this)
             {
-                _timeoutMs=0;
+                _expireAt=0;
                 this.notifyAll();
             }
         }

@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class LikeJettyXml
@@ -34,6 +35,7 @@ public class LikeJettyXml
         throws Exception
     {
         String jetty_home = System.getProperty("jetty.home","../jetty-distribution/target/distribution");
+        System.setProperty("jetty.home",jetty_home);
         
         Server server = new Server();
         
@@ -45,6 +47,15 @@ public class LikeJettyXml
         connector.setPort(8080);
         connector.setMaxIdleTime(30000);
         server.setConnectors(new Connector[]{connector});
+
+        SslSelectChannelConnector ssl_connector=new SslSelectChannelConnector();
+        ssl_connector.setPort(8443);
+        ssl_connector.setKeystore(jetty_home+"/etc/keystore");
+        ssl_connector.setPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        ssl_connector.setKeyPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        ssl_connector.setTruststore(jetty_home+"/etc/keystore");
+        ssl_connector.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        server.addConnector(ssl_connector);
         
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();

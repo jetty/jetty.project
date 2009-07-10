@@ -86,7 +86,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
      */
     public void schedule() 
     {
-        // If threads are blocked on this
         synchronized (this)
         {
             // If there is no key, then do nothing

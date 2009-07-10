@@ -19,15 +19,19 @@ import org.eclipse.jetty.util.DateCache;
 /** StdErr Logging.
  * This implementation of the Logging facade sends all logs to StdErr with minimal formatting.
  * 
- * If the system property org.eclipse.jetty.util.log.DEBUG is set, 
+ * If the system property "org.eclipse.jetty.util.log.DEBUG" is set, 
  * then debug logs are printed if stderr is being used.
+ * <p>
+ * For named debuggers, the system property name+".DEBUG" is checked. If it is not not set, then
+ * "org.eclipse.jetty.util.log.DEBUG" is used as the default.
  * 
  */
 public class StdErrLog implements Logger
 {    
     private static DateCache _dateCache;
     
-    private static boolean _debug = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.DEBUG","false"));
+    private final static boolean __debug = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.DEBUG","false"));
+    private boolean _debug = __debug;
     private String _name;
     private boolean _hideStacks=false;
     
@@ -52,6 +56,7 @@ public class StdErrLog implements Logger
     public StdErrLog(String name)
     {    
         this._name=name==null?"":name;
+        _debug=Boolean.parseBoolean(System.getProperty(name+".DEBUG",Boolean.toString(__debug)));
     }
     
     public boolean isDebugEnabled()
@@ -72,6 +77,13 @@ public class StdErrLog implements Logger
     public void setHideStacks(boolean hideStacks)
     {
         _hideStacks = hideStacks;
+    }
+
+    public void info(String msg)
+    {
+        String d=_dateCache.now();
+        int ms=_dateCache.lastMs();
+        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":INFO:  "+msg);
     }
 
     public void info(String msg,Object arg0, Object arg1)
@@ -98,6 +110,16 @@ public class StdErrLog implements Logger
         }
     }
     
+    public void debug(String msg)
+    {
+        if (_debug)
+        {
+            String d=_dateCache.now();
+            int ms=_dateCache.lastMs();
+            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":DEBUG: "+msg);
+        }
+    }
+    
     public void debug(String msg,Object arg0, Object arg1)
     {
         if (_debug)
@@ -106,6 +128,13 @@ public class StdErrLog implements Logger
             int ms=_dateCache.lastMs();
             System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":DEBUG: "+format(msg,arg0,arg1));
         }
+    }
+    
+    public void warn(String msg)
+    {
+        String d=_dateCache.now();
+        int ms=_dateCache.lastMs();
+        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":WARN:  "+msg);
     }
     
     public void warn(String msg,Object arg0, Object arg1)
@@ -146,12 +175,12 @@ public class StdErrLog implements Logger
         if ((name==null && this._name==null) ||
             (name!=null && name.equals(this._name)))
             return this;
-        return new StdErrLog(name);
+        return new StdErrLog(_name==null||_name.length()==0?name:_name+"."+name);
     }
     
     public String toString()
     {
-        return "STDERR"+_name;
+        return "StdErrLog:"+_name+":DEBUG="+_debug;
     }
 
 }

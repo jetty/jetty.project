@@ -35,6 +35,15 @@ public class Slf4jLog implements Logger
     
     /* ------------------------------------------------------------ */
     /* 
+     * @see org.eclipse.log.Log#doDebug(java.lang.String)
+     */
+    public void debug(String msg)
+    {
+        logger.debug(msg);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /* 
      * @see org.eclipse.log.Log#doDebug(java.lang.String, java.lang.Object, java.lang.Object)
      */
     public void debug(String msg, Object arg0, Object arg1)
@@ -60,6 +69,16 @@ public class Slf4jLog implements Logger
         return logger.isDebugEnabled();
     }
 
+
+    /* ------------------------------------------------------------ */
+    /* 
+     * @see org.eclipse.log.Log#doInfo(java.lang.String)
+     */
+    public void info(String msg)
+    {
+        logger.info(msg);
+    }
+    
     /* ------------------------------------------------------------ */
     /* 
      * @see org.eclipse.log.Log#doInfo(java.lang.String, java.lang.Object, java.lang.Object)
@@ -69,6 +88,16 @@ public class Slf4jLog implements Logger
         logger.info(msg, arg0, arg1);
     }
 
+
+    /* ------------------------------------------------------------ */
+    /* 
+     * @see org.eclipse.log.Log#doWarn(java.lang.String)
+     */
+    public void warn(String msg)
+    {
+        logger.warn(msg);
+    }
+    
     /* ------------------------------------------------------------ */
     /* 
      * @see org.eclipse.log.Log#doWarn(java.lang.String, java.lang.Object, java.lang.Object)
