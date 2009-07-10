@@ -52,11 +52,11 @@ public class HttpResponseTesterTest extends AbstractJettyTestCase
         assertEquals("Response[Content-Length]",28,response.getLongHeader("Content-Length"));
         assertEquals("Response[Connection]","close",response.getHeader("Connection"));
 
-        assertEquals("Response.content","ABCDEFGHIJKLMNOPQRSTTUVWXYZ\n",response.getContent().toString());
+        assertEquals("Response.content",toSystemLN("ABCDEFGHIJKLMNOPQRSTTUVWXYZ\n"),response.getContent().toString());
     }
 
     @Test
-    public void testMultHttp11Response() throws IOException
+    public void testMultiHttp11Response() throws IOException
     {
         StringBuffer rawResponse = new StringBuffer();
         rawResponse.append("HTTP/1.1 200 OK\n");
