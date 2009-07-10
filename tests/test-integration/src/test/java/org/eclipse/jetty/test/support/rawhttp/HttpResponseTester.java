@@ -366,8 +366,21 @@ public class HttpResponseTester
         {
             return str;
         }
+        
+        StringBuffer ret = new StringBuffer();
+        for (char c : str.toCharArray())
+        {
+            switch (c)
+            {
+                case '\n':
+                    ret.append("\r\n");
+                    break;
+                default:
+                    ret.append(c);
+            }
+        }
 
-        return str.replaceAll("\n","\r\n");
+        return ret.toString();
     }
 
     public void assertNoBody(String msg)

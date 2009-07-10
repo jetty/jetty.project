@@ -103,6 +103,19 @@ public abstract class AbstractJettyTestCase extends TestCase
             return str;
         }
         
-        return str.replaceAll("\n","\r\n");
+        StringBuffer ret = new StringBuffer();
+        for (char c : str.toCharArray())
+        {
+            switch (c)
+            {
+                case '\n':
+                    ret.append("\r\n");
+                    break;
+                default:
+                    ret.append(c);
+            }
+        }
+        
+        return ret.toString();
     }
 }
