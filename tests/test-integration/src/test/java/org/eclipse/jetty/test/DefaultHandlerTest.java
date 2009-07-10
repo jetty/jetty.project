@@ -45,6 +45,7 @@ public class DefaultHandlerTest extends AbstractJettyTestCase
     private TestableJettyServer server;
     private int serverPort;
 
+    @Override
     @Before
     public void setUp() throws Exception
     {
@@ -59,6 +60,7 @@ public class DefaultHandlerTest extends AbstractJettyTestCase
         serverPort = server.getServerPort();
     }
 
+    @Override
     @After
     public void tearDown() throws Exception
     {
@@ -76,7 +78,8 @@ public class DefaultHandlerTest extends AbstractJettyTestCase
         InputStream in = conn.getInputStream();
 
         String response = IO.toString(in);
-        assertEquals("Response","ABCDEFGHIJKLMNOPQRSTUVWXYZ\n",response);
+        
+        assertEquals("Response",toSystemLN("ABCDEFGHIJKLMNOPQRSTUVWXYZ\n"),response);
     }
 
     @Test

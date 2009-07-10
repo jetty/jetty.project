@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.Server;
 
 public abstract class AbstractJettyTestCase extends TestCase
 {
+    public static final boolean IS_ON_WINDOWS = System.getProperty("os.name").startsWith("Windows");
     private File baseDir;
 
     public File getBaseDir()
@@ -86,5 +87,22 @@ public abstract class AbstractJettyTestCase extends TestCase
         }
 
         throw new AssertionFailedError("No valid connector port found.");
+    }
+    
+    /**
+     * Utility method to convert "\n" found to "\r\n" if running on windows.
+     * 
+     * @param str
+     *            input string.
+     * @return
+     */
+    public String toSystemLN(String str)
+    {
+        if (!IS_ON_WINDOWS)
+        {
+            return str;
+        }
+        
+        return str.replaceAll("\n","\r\n");
     }
 }

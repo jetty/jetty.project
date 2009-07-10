@@ -41,8 +41,11 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
  */
 public class HttpResponseTester
 {
+    private static final boolean IS_ON_WINDOWS = System.getProperty("os.name").startsWith("Windows");
+    
     private class PH extends HttpParser.EventHandler
     {
+        @Override
         public void content(Buffer ref) throws IOException
         {
             if (content == null)
@@ -50,6 +53,7 @@ public class HttpResponseTester
             content.write(ref.asArray());
         }
 
+        @Override
         public void headerComplete() throws IOException
         {
             contentType = fields.get(HttpHeaders.CONTENT_TYPE_BUFFER);
@@ -63,15 +67,18 @@ public class HttpResponseTester
             }
         }
 
+        @Override
         public void messageComplete(long contextLength) throws IOException
         {
         }
 
+        @Override
         public void parsedHeader(Buffer name, Buffer value) throws IOException
         {
             fields.add(name,value);
         }
 
+        @Override
         public void startRequest(Buffer method, Buffer url, Buffer version) throws IOException
         {
             reset();
@@ -80,6 +87,7 @@ public class HttpResponseTester
             HttpResponseTester.this.version = getString(version);
         }
 
+        @Override
         public void startResponse(Buffer version, int status, Buffer reason) throws IOException
         {
             reset();
@@ -336,13 +344,30 @@ public class HttpResponseTester
     public void assertBody(String expected)
     {
         Assert.assertNotNull("Response.content should not be null",this.content);
-        Assert.assertEquals("Response.content",expected,this.content.toString());
+        Assert.assertEquals("Response.content",toSystemLN(expected),this.content.toString());
     }
 
     public void assertBody(String msg, String expected)
     {
         Assert.assertNotNull(msg + ": Response.content should not be null",this.content);
-        Assert.assertEquals(msg + ": Response.content",expected,this.content.toString());
+        Assert.assertEquals(msg + ": Response.content",toSystemLN(expected),this.content.toString());
+    }
+    
+    /**
+     * Utility method to convert "\n" found to "\r\n" if running on windows.
+     * 
+     * @param str
+     *            input string.
+     * @return
+     */
+    public String toSystemLN(String str)
+    {
+        if (!IS_ON_WINDOWS)
+        {
+            return str;
+        }
+
+        return str.replaceAll("\n","\r\n");
     }
 
     public void assertNoBody(String msg)
