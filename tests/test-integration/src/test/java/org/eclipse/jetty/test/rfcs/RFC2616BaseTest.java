@@ -83,7 +83,11 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
     {
         super.setUp();
 
-        File testWorkDir = new File(getTargetDir(), "work" + File.pathSeparator + getName());
+        File testWorkDir = new File(getTargetDir(),"work" + File.separator + getClass().getSimpleName() + File.separator + getName());
+        if (!testWorkDir.exists())
+        {
+            testWorkDir.mkdirs();
+        }
         
         System.setProperty("java.io.tmpdir",testWorkDir.getAbsolutePath());
         
