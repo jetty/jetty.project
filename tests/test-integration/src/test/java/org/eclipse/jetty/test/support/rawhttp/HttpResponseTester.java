@@ -41,8 +41,6 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
  */
 public class HttpResponseTester
 {
-    private static final boolean IS_ON_WINDOWS = System.getProperty("os.name").startsWith("Windows");
-    
     private class PH extends HttpParser.EventHandler
     {
         @Override
@@ -344,45 +342,17 @@ public class HttpResponseTester
     public void assertBody(String expected)
     {
         Assert.assertNotNull("Response.content should not be null",this.content);
-        Assert.assertEquals("Response.content",toSystemLN(expected),this.content.toString());
+        String actual = this.content.toString();
+        Assert.assertEquals("Response.content",expected,actual);
     }
 
     public void assertBody(String msg, String expected)
     {
         Assert.assertNotNull(msg + ": Response.content should not be null",this.content);
-        Assert.assertEquals(msg + ": Response.content",toSystemLN(expected),this.content.toString());
+        String actual = this.content.toString();
+        Assert.assertEquals(msg + ": Response.content",expected,actual);
     }
     
-    /**
-     * Utility method to convert "\n" found to "\r\n" if running on windows.
-     * 
-     * @param str
-     *            input string.
-     * @return
-     */
-    public String toSystemLN(String str)
-    {
-        if (!IS_ON_WINDOWS)
-        {
-            return str;
-        }
-        
-        StringBuffer ret = new StringBuffer();
-        for (char c : str.toCharArray())
-        {
-            switch (c)
-            {
-                case '\n':
-                    ret.append("\r\n");
-                    break;
-                default:
-                    ret.append(c);
-            }
-        }
-
-        return ret.toString();
-    }
-
     public void assertNoBody(String msg)
     {
         Assert.assertNull(msg + ": Response.content should be null",this.content);

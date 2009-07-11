@@ -47,6 +47,7 @@ import org.junit.Test;
  */
 public abstract class RFC2616BaseTest extends AbstractJettyTestCase
 {
+    private static final String ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
     /** STRICT RFC TESTS */
     private static final boolean STRICT = false;
     private List<HttpResponseTester> responses;
@@ -1135,7 +1136,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         response = http.request(req1);
 
         response.assertStatusOK();
-        response.assertBody("ABCDEFGHIJKLMNOPQRSTUVWXYZ\n");
+        response.assertBody(ALPHA);
     }
 
     private void assertBadContentRange(String rangedef) throws IOException
@@ -1251,7 +1252,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
     @Test
     public void test14_16_PartialRange() throws Exception
     {
-        String alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
+        String alpha = ALPHA;
 
         // server should not return a 416 if at least one syntactically valid ranges
         // are is satisfiable
@@ -1271,7 +1272,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
     @Test
     public void test14_16_PartialRange_MixedRanges() throws Exception
     {
-        String alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
+        String alpha = ALPHA;
 
         // server should not return a 416 if at least one syntactically valid ranges
         // are is satisfiable
@@ -1313,7 +1314,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
     @Test
     public void test14_16_PartialRange_MixedBytes() throws Exception
     {
-        String alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
+        String alpha = ALPHA;
 
         // server should not return a 416 if at least one syntactically valid ranges
         // are is satisfiable
@@ -1352,7 +1353,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
     @Test
     public void test14_16_PartialRange_MixedMultiple() throws Exception
     {
-        String alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
+        String alpha = ALPHA;
 
         // server should not return a 416 if at least one syntactically valid ranges
         // are is satisfiable
@@ -1506,7 +1507,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         // tested yet
         //
 
-        String alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
+        String alpha = ALPHA;
 
         // First 3 bytes
         assertByteRange("bytes=0-2","0-2/27",alpha.substring(0,2 + 1));
@@ -1661,7 +1662,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         // tested yet
         //
 
-        String alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
+        String alpha = ALPHA;
 
         // server should not return a 416 if at least one syntactically valid ranges
         // are is satisfiable

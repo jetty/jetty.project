@@ -18,6 +18,8 @@ package org.eclipse.jetty.test.support;
 
 public class StringUtil
 {
+    public static final String LN = System.getProperty("line.separator");
+    
     public static boolean isBlank(String str)
     {
         if (str == null)
@@ -100,5 +102,39 @@ public class StringUtil
         }
 
         return ret;
+    }
+    
+    /**
+     * Utility method to convert "\n" found to "\r\n" if running on windows.
+     * 
+     * @param str
+     *            input string.
+     * @return
+     */
+    public static String toSystemLN(String str)
+    {
+        boolean linesep = false;
+        StringBuffer ret = new StringBuffer();
+        for (char c : str.toCharArray())
+        {
+            switch (c)
+            {
+                case '\r':
+                    linesep = true;
+                    break;
+                case '\n':
+                    linesep = true;
+                    break;
+                default:
+                    if (linesep)
+                    {
+                        ret.append(LN);
+                        linesep = false;
+                    }
+                    ret.append(c);
+            }
+        }
+
+        return ret.toString();
     }
 }

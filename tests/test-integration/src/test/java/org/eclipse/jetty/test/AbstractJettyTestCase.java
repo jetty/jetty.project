@@ -95,34 +95,4 @@ public abstract class AbstractJettyTestCase extends TestCase
 
         throw new AssertionFailedError("No valid connector port found.");
     }
-    
-    /**
-     * Utility method to convert "\n" found to "\r\n" if running on windows.
-     * 
-     * @param str
-     *            input string.
-     * @return
-     */
-    public String toSystemLN(String str)
-    {
-        if (!IS_ON_WINDOWS)
-        {
-            return str;
-        }
-        
-        StringBuffer ret = new StringBuffer();
-        for (char c : str.toCharArray())
-        {
-            switch (c)
-            {
-                case '\n':
-                    ret.append("\r\n");
-                    break;
-                default:
-                    ret.append(c);
-            }
-        }
-        
-        return ret.toString();
-    }
 }

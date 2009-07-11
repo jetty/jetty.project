@@ -78,8 +78,9 @@ public class DefaultHandlerTest extends AbstractJettyTestCase
         InputStream in = conn.getInputStream();
 
         String response = IO.toString(in);
+        String expected = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
         
-        assertEquals("Response",toSystemLN("ABCDEFGHIJKLMNOPQRSTUVWXYZ\n"),response);
+        assertEquals("Response",expected,response);
     }
 
     @Test

@@ -52,7 +52,9 @@ public class HttpResponseTesterTest extends AbstractJettyTestCase
         assertEquals("Response[Content-Length]",28,response.getLongHeader("Content-Length"));
         assertEquals("Response[Connection]","close",response.getHeader("Connection"));
 
-        assertEquals("Response.content",toSystemLN("ABCDEFGHIJKLMNOPQRSTTUVWXYZ\n"),response.getContent().toString());
+        String expected = "ABCDEFGHIJKLMNOPQRSTTUVWXYZ\n";
+
+        assertEquals("Response.content",expected,response.getContent().toString());
     }
 
     @Test
