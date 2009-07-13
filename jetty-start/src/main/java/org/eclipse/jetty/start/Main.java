@@ -106,7 +106,7 @@ public class Main
 {
     private static final String _version = (Main.class.getPackage()!=null && Main.class.getPackage().getImplementationVersion()!=null)
         ?Main.class.getPackage().getImplementationVersion()
-        :"Unknown";
+        :System.getProperty("jetty.version", "Unknown");
         
     public static boolean DEBUG=false;
     
@@ -482,7 +482,8 @@ public class Main
                     expression&=not?!eval:eval;
                     not=false;
                 }
-                String file=expand(subject).replace('/',File.separatorChar);
+                String file=expand(subject);
+                
                 if (DEBUG)
                     System.err.println((expression?"T ":"F ")+line);
                 if (!expression)
@@ -491,54 +492,63 @@ public class Main
                     continue;
                 }
                 
-                
-                // Handle the subject
+                // Handle setting of start property
                 if (subject.indexOf("~=")>0)
                 {
                     int i=file.indexOf("~=");
                     String property=file.substring(0,i);
-                    String value=file.substring(i+2);
+                    String value=fixPath(file.substring(i+2));
                     if (DEBUG)
                         System.err.println("  "+property+"~="+value);
                     setProperty(property,value);
                 }
+                else
+                // Handle setting of start property with canonical path
                 if (subject.indexOf("/=")>0)
                 {
                     int i=file.indexOf("/=");
                     String property=file.substring(0,i);
-                    String value=file.substring(i+2);
+                    String value=fixPath(file.substring(i+2));
                     String canonical=new File(value).getCanonicalPath();
                     if (DEBUG)
                         System.err.println("  "+property+"/="+value+"=="+canonical);
                     setProperty(property,canonical);
                 }
-                else if (subject.indexOf("=")>0)
+                else
+                // Handle setting of system property
+                if (subject.indexOf("=")>0)
                 {
                     int i=file.indexOf("=");
                     String property=file.substring(0,i);
-                    String value=file.substring(i+1);
+                    String value=fixPath(file.substring(i+1));
                     if (DEBUG)
                         System.err.println("  "+property+"="+value);
                     System.setProperty(property,value);
                 }
-                else if (subject.endsWith("/*"))
+                else
+                // Handle adding all unconsidered jar and zip file
+                if (subject.endsWith("/*"))
                 {
                     // directory of JAR files - only add jars and zips
                     // within the directory
-                    File dir=new File(file.substring(0,file.length()-1));
+                    File dir=new File(fixPath(file.substring(0,file.length()-1)));
                     addJars(dir,done,false);
                 }
-                else if (subject.endsWith("/**"))
+                else
+                // Handle recursive add of all unconsidered jar and zip files
+                if (subject.endsWith("/**"))
                 {
                     //directory hierarchy of jar files - recursively add all
                     //jars and zips in the hierarchy
-                    File dir=new File(file.substring(0,file.length()-2));
+                    File dir=new File(fixPath(file.substring(0,file.length()-2)));
                     addJars(dir,done,true);
                 }
-                else if (subject.endsWith("/"))
+                else
+                // Handle adding raw classpath directory to classpath
+                if (subject.endsWith("/"))
                 {
                     // class directory
-                    File cd=new File(file);
+                    File cd=new File(fixPath(file));
                     String d=cd.getCanonicalPath();
                     if (!done.contains(d))
                     {
@@ -548,16 +558,20 @@ public class Main
                             System.err.println((added?"  CLASSPATH+=":"  !")+d);
                     }
                 }
-                else if (subject.toLowerCase().endsWith(".xml"))
+                else
+                // Handle adding xml configuration
+                if (subject.toLowerCase().endsWith(".xml"))
                 {
                     // Config file
-                    File f=new File(file);
+                    File f=new File(fixPath(file));
                     if (f.exists())
                         _xml.add(f.getCanonicalPath());
                     if (DEBUG)
                         System.err.println("  ARGS+="+f);
                 }
-                else if (subject.toLowerCase().endsWith(".class"))
+                else
+                // Handle setting main class to execute
+                if (subject.toLowerCase().endsWith(".class"))
                 {
                     // Class
                     String cn=expand(subject.substring(0,subject.length()-6));
@@ -568,7 +582,9 @@ public class Main
                         _classname=cn;
                     }
                 }
-                else if (subject.toLowerCase().endsWith(".path"))
+                else
+                // Handle adding raw claspath entry
+                if (subject.toLowerCase().endsWith(".path"))
                 {
                     //classpath (jetty.class.path?) to add to runtime classpath
                     String cn=expand(subject.substring(0,subject.length()-5));
@@ -579,7 +595,9 @@ public class Main
                         _classpath.addClasspath(cn);
                     }                  
                 }
-                else if (subject.toLowerCase().endsWith(".policy"))
+                else
+                // Handle adding Security policy
+                if (subject.toLowerCase().endsWith(".policy"))
                 {
                     //policy file to parse
                     String cn=expand(subject.substring(0,subject.length()));
@@ -587,13 +605,13 @@ public class Main
                     {
                         if (DEBUG)
                             System.err.println("  POLICY="+cn);
-                        _policies.add(cn);
+                        _policies.add(fixPath(cn));
                     }                  
                 }
                 else
                 {
                     // single JAR file
-                    File f=new File(file);
+                    File f=new File(fixPath(file));
                     if(f.exists())
                     {
                         String d=f.getCanonicalPath();
@@ -624,6 +642,11 @@ public class Main
         {
             System.err.println("Unresolved options: "+unsatisfied_options);
         }
+    }
+    
+    private String fixPath(String path)
+    {
+    	return path.replace('/',File.separatorChar);
     }
 
     /* ------------------------------------------------------------ */
