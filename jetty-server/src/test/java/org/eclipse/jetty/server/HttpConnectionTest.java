@@ -122,6 +122,40 @@ public class HttpConnectionTest extends TestCase
     }
 
     /* --------------------------------------------------------------- */
+    public void testBad() throws Exception
+    {        
+        String response=connector.getResponses("GET & HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "\015\012");
+        checkContains(response,0,"HTTP/1.1 400");
+        
+        connector.reopen();
+        response=connector.getResponses("GET http://localhost:WRONG/ HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "\015\012");
+        checkContains(response,0,"HTTP/1.1 400");
+        
+        connector.reopen();
+        response=connector.getResponses("GET /foo/bar%1 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "\015\012");
+        checkContains(response,0,"HTTP/1.1 400");
+
+        connector.reopen();
+        response=connector.getResponses("GET /foo/bar%c0%00 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "\015\012");
+        checkContains(response,0,"HTTP/1.1 400");
+        
+        connector.reopen();
+        response=connector.getResponses("GET /foo/bar%c1 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "\015\012");
+        checkContains(response,0,"HTTP/1.1 400");
+        
+    }
+
+    /* --------------------------------------------------------------- */
     public void testAutoFlush() throws Exception
     {        
         String response=null;

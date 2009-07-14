@@ -65,9 +65,6 @@ import org.eclipse.jetty.util.thread.Timeout;
  * with the connection via the parser and/or generator.
  * </p>
  * 
- * 
- * 
- * 
  */
 public class HttpConnection implements Connection
 {
@@ -544,9 +541,12 @@ public class HttpConnection implements Connection
             while (handling)
             {
                 _request.setHandled(false);
+
+                String info=null;
                 try
                 {
-                    String info=URIUtil.canonicalPath(_uri.getDecodedPath());
+                    _uri.getPort();
+                    info=URIUtil.canonicalPath(_uri.getDecodedPath());
                     if (info==null)
                         throw new HttpException(400);
                     _request.setPathInfo(info);
@@ -582,19 +582,24 @@ public class HttpConnection implements Connection
                     _response.sendError(e.getStatus(), e.getReason());
                     error=true;
                 }
-                catch (Exception e)
+                catch (Throwable e)
                 {
-                    Log.warn(e);
-                    _request.setHandled(true);
-                    _generator.sendError(500, null, null, true);
+                    if (e instanceof ThreadDeath)
+                        throw (ThreadDeath)e;
+                        
                     error=true;
-                }
-                catch (Error e)
-                {
-                    Log.warn(e);
-                    _request.setHandled(true);
-                    _generator.sendError(500, null, null, true);
-                    error=true;
+                    if (info==null)
+                    {
+                        Log.warn(_uri+": "+e);
+                        _request.setHandled(true);
+                        _generator.sendError(400, null, null, true);
+                    }
+                    else
+                    {
+                        Log.warn(""+_uri,e);
+                        _request.setHandled(true);
+                        _generator.sendError(500, null, null, true);
+                    }
                 }
                 finally
                 {   
@@ -781,7 +786,8 @@ public class HttpConnection implements Connection
             }
             catch (Exception e)
             {
-                Log.warn(e);
+                Log.warn(method+" "+uri+" "+version+": "+e);
+                Log.debug(e);
                 throw new HttpException(HttpStatus.BAD_REQUEST_400,null,e);
             }
         }

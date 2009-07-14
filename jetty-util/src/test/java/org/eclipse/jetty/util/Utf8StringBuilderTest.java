@@ -28,5 +28,48 @@ public class Utf8StringBuilderTest extends junit.framework.TestCase
         assertEquals(source, buffer.toString());
         assertTrue(buffer.toString().endsWith("jetty")); 
     }
+    
+    public void testShort()
+    throws Exception
+    {
+        String source="abc\u10fb";
+        byte[] bytes = source.getBytes(StringUtil.__UTF8);
+        Utf8StringBuilder buffer = new Utf8StringBuilder();
+        for (int i=0;i<bytes.length-1;i++)
+            buffer.append(bytes[i]);
+        try
+        {
+            buffer.toString();
+            assertTrue(false);
+        }
+        catch(IllegalStateException e)
+        {
+            assertTrue(e.toString().indexOf("!utf8")>=0);
+        }
+    }
+    
+    public void testLong()
+    throws Exception
+    {
+        String source="abcXX";
+        byte[] bytes = source.getBytes(StringUtil.__UTF8);
+        bytes[3]=(byte)0xc0;
+        bytes[4]=(byte)0x00;
+        
+        Utf8StringBuilder buffer = new Utf8StringBuilder();
+        try
+        {
+            for (int i=0;i<bytes.length;i++)
+                buffer.append(bytes[i]);
+            buffer.toString();
+            assertTrue(false);
+        }
+        catch(Exception e)
+        {
+            assertTrue(e.toString().indexOf("!utf8")>=0);
+        }
+    }
+    
+    
 
 }

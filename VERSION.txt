@@ -1,4 +1,6 @@
 
+ + JETTY-1066 283357 400 response for bad URIs
+
 jetty-7.0.0.RC0 8 June 2009
  + JETTY-967 create standalone build for PKCS12Import at codehaus
  + JETTY-1056 update jetty-ant module for Jetty 7 at codehaus trunk
