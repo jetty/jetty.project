@@ -210,9 +210,19 @@ public abstract class Resource implements Serializable
             loader=Thread.currentThread().getContextClassLoader();
         if (loader!=null)
         {
-            url=loader.getResource(resource);
-            if (url==null && resource.startsWith("/"))
-                url=loader.getResource(resource.substring(1));
+            try
+            {
+                url = loader.getResource(resource);
+                if (url == null && resource.startsWith("/"))
+                    url = loader.getResource(resource.substring(1));
+            }
+            catch (IllegalArgumentException e)
+            {
+                // Catches scenario where a bad Windows path like "C:\dev" is
+                // improperly escaped, which various downstream classloaders
+                // tend to have a problem with
+                url = null;
+            }
         }
         if (url==null)
         {
