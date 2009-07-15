@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>7.0.0.RC1</version>
+    <version>7.0.0.RC2-SNAPSHOT</version>
   </parent>
   <artifactId>test-webapp-logging-slf4j</artifactId>
   <name>Jetty Tests :: WebApp :: Slf4J Logging</name>
