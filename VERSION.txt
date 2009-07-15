@@ -1,4 +1,4 @@
-
+jetty-7.0.0.RC1 15 June 2009
  + JETTY-1066 283357 400 response for bad URIs
  + 283344 Startup on windows is broken
 
