@@ -21,9 +21,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.jar.JarEntry;
-import java.util.regex.Pattern;
-
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.util.Loader;
@@ -251,19 +248,21 @@ public class TagLibConfiguration implements Configuration
         // Create a processor for the tlds and save it
         TldProcessor processor = new TldProcessor (context);
         context.setAttribute(TldProcessor.__taglib_processor, processor);
+        
         // Parse the tlds into memory
+        Resource tld = null;
         Iterator iter = tlds.iterator();
         while (iter.hasNext())
         {
             try
             {
-                Resource tld = (Resource)iter.next();
+                tld = (Resource)iter.next();
                 if (Log.isDebugEnabled()) Log.debug("TLD="+tld);
                 processor.parse(tld);
             }
             catch(Exception e)
             {
-                Log.warn(e);
+                Log.warn("Unable to parse TLD: " + tld,e);
             }
         }
     }
