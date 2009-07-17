@@ -44,8 +44,8 @@ import java.util.StringTokenizer;
  * </p>
  * 
  * <p>
- * The behaviour of Main is controlled by the <code>"org/eclipse/start/start.config"</code> file obtained as a resource or file. This can be overridden with the
- * START system property. The format of each line in this file is:
+ * The behaviour of Main is controlled by the <code>"org/eclipse/start/start.config"</code> file obtained as a resource
+ * or file. This can be overridden with the START system property. The format of each line in this file is:
  * </p>
  * 
  * <p>
@@ -96,15 +96,18 @@ import java.util.StringTokenizer;
  * <li><code>exists file</code> - true if file/dir exists</li>
  * <li><code>java OPERATOR version</code> - java version compared to literal</li>
  * <li><code>nargs OPERATOR number</code> - number of command line args compared to literal</li>
- * <li>OPERATOR := one of <code>"&lt;"</code>,<code>"&gt;"</code>,<code>"&lt;="</code>,<code>"&gt;="</code>,<code>"=="</code>,<code>"!="</code></li>
+ * <li>OPERATOR := one of <code>"&lt;"</code>,<code>"&gt;"</code>,<code>"&lt;="</code>,<code>"&gt;="</code>,
+ * <code>"=="</code>,<code>"!="</code></li>
  * </ul>
  * 
  * <p>
- * CONDITIONS can be combined with <code>AND</code> <code>OR</code> or <code>!</code>, with <code>AND</code> being the assume operator for a list of CONDITIONS.
+ * CONDITIONS can be combined with <code>AND</code> <code>OR</code> or <code>!</code>, with <code>AND</code> being the
+ * assume operator for a list of CONDITIONS.
  * </p>
  * 
  * <p>
- * Classpath operations are evaluated on the fly, so once a class or jar is added to the classpath, subsequent available conditions will see that class.
+ * Classpath operations are evaluated on the fly, so once a class or jar is added to the classpath, subsequent available
+ * conditions will see that class.
  * </p>
  * 
  * <p>
@@ -112,8 +115,8 @@ import java.util.StringTokenizer;
  * </p>
  * 
  * <p>
- * Clauses after a section header will only be included if they match one of the tags in the options property. By default options are set to "default,*" or the
- * OPTIONS property may be used to pass in a list of tags, eg. :
+ * Clauses after a section header will only be included if they match one of the tags in the options property. By
+ * default options are set to "default,*" or the OPTIONS property may be used to pass in a list of tags, eg. :
  * </p>
  * 
  * <pre>
@@ -133,7 +136,7 @@ public class Config
         if (pkg != null && (pkg.getImplementationVersion() != null))
             _version = pkg.getImplementationVersion();
         else
-            _version = "Unknown";
+            _version = System.getProperty("jetty.version","Unknown");
     }
 
     private final boolean DEBUG = false;
@@ -144,7 +147,7 @@ public class Config
     private String _classname = null;
     private Map<String, String> _properties = new HashMap<String, String>();
     private int argCount = 0;
-    
+
     private boolean addClasspathComponent(List<String> sections, String component)
     {
         for (String section : sections)
@@ -187,7 +190,7 @@ public class Config
 
         return true;
     }
-    
+
     private void addJars(List<String> sections, File dir, boolean recurse) throws IOException
     {
         List<File> entries = new ArrayList<File>();
@@ -315,7 +318,7 @@ public class Config
     public Classpath getCombinedClasspath(Collection<String> sectionIds)
     {
         Classpath cp = new Classpath();
-        
+
         cp.overlay(_classpaths.get(DEFAULT_SECTION));
         for (String sectionId : sectionIds)
         {
@@ -376,7 +379,7 @@ public class Config
             return _properties.get(name);
         return System.getProperty(name);
     }
-    
+
     public List<String> getXmlConfigs()
     {
         return _xml;
@@ -592,68 +595,81 @@ public class Config
                         expression &= not?!eval:eval;
                         not = false;
                     }
-                    String file = expand(subject).replace('/',File.separatorChar);
+
+                    String file = expand(subject);
                     debug((expression?"T ":"F ") + line);
                     if (!expression)
                         continue;
 
-                    // Handle the subject
+                    // Setting of a start property
                     if (subject.indexOf("~=") > 0)
                     {
                         int i = file.indexOf("~=");
                         String property = file.substring(0,i);
-                        String value = file.substring(i + 2);
+                        String value = fixPath(file.substring(i + 2));
                         debug("  " + property + "~=" + value);
                         setProperty(property,value);
                     }
+                    else
+                    // Setting of start property with canonical path
                     if (subject.indexOf("/=") > 0)
                     {
                         int i = file.indexOf("/=");
                         String property = file.substring(0,i);
-                        String value = file.substring(i + 2);
+                        String value = fixPath(file.substring(i + 2));
                         String canonical = new File(value).getCanonicalPath();
                         debug("  " + property + "/=" + value + "==" + canonical);
                         setProperty(property,canonical);
                     }
-                    else if (subject.indexOf("=") > 0)
+                    else
+                    // Setting of system property
+                    if (subject.indexOf("=") > 0)
                     {
                         int i = file.indexOf("=");
                         String property = file.substring(0,i);
-                        String value = file.substring(i + 1);
+                        String value = fixPath(file.substring(i + 1));
                         debug("  " + property + "=" + value);
                         System.setProperty(property,value);
                     }
-                    else if (subject.endsWith("/*"))
+                    else
+                    // Add all unconsidered JAR and ZIP files to classpath
+                    if (subject.endsWith("/*"))
                     {
-                        // directory of JAR files - only add jars and zips
-                        // within the directory
-                        File dir = new File(file.substring(0,file.length() - 1));
+                        // directory of JAR files - only add jars and zips within the directory
+                        File dir = new File(fixPath(file.substring(0,file.length() - 1)));
                         addJars(sections,dir,false);
                     }
-                    else if (subject.endsWith("/**"))
+                    else
+                    // Recursively add all unconsidered JAR and ZIP files to classpath
+                    if (subject.endsWith("/**"))
                     {
-                        //directory hierarchy of jar files - recursively add all
-                        //jars and zips in the hierarchy
-                        File dir = new File(file.substring(0,file.length() - 2));
+                        //directory hierarchy of jar files - recursively add all jars and zips in the hierarchy
+                        File dir = new File(fixPath(file.substring(0,file.length() - 2)));
                         addJars(sections,dir,true);
                     }
-                    else if (subject.endsWith("/"))
+                    else
+                    // Add raw classpath directory to classpath
+                    if (subject.endsWith("/"))
                     {
                         // class directory
-                        File cd = new File(file);
+                        File cd = new File(fixPath(file));
                         String d = cd.getCanonicalPath();
                         boolean added = addClasspathComponent(sections,d);
                         debug((added?"  CLASSPATH+=":"  !") + d);
                     }
-                    else if (subject.toLowerCase().endsWith(".xml"))
+                    else
+                    // Add XML configuration
+                    if (subject.toLowerCase().endsWith(".xml"))
                     {
                         // Config file
-                        File f = new File(file);
+                        File f = new File(fixPath(file));
                         if (f.exists())
                             _xml.add(f.getCanonicalPath());
                         debug("  ARGS+=" + f);
                     }
-                    else if (subject.toLowerCase().endsWith(".class"))
+                    else
+                    // Set the main class to execute (overrides any previously set)
+                    if (subject.toLowerCase().endsWith(".class"))
                     {
                         // Class
                         String cn = expand(subject.substring(0,subject.length() - 6));
@@ -663,9 +679,11 @@ public class Config
                             _classname = cn;
                         }
                     }
-                    else if (subject.toLowerCase().endsWith(".path"))
+                    else
+                    // Add raw classpath entry
+                    if (subject.toLowerCase().endsWith(".path"))
                     {
-                        //classpath (jetty.class.path?) to add to runtime classpath
+                        // classpath (jetty.class.path?) to add to runtime classpath
                         String cn = expand(subject.substring(0,subject.length() - 5));
                         if (cn != null && cn.length() > 0)
                         {
@@ -673,20 +691,22 @@ public class Config
                             addClasspathPath(sections,cn);
                         }
                     }
-                    else if (subject.toLowerCase().endsWith(".policy"))
+                    else
+                    // Add Security Policy file reference
+                    if (subject.toLowerCase().endsWith(".policy"))
                     {
                         //policy file to parse
                         String cn = expand(subject.substring(0,subject.length()));
                         if (cn != null && cn.length() > 0)
                         {
                             debug("  POLICY=" + cn);
-                            _policies.add(cn);
+                            _policies.add(fixPath(cn));
                         }
                     }
                     else
                     {
                         // single JAR file
-                        File f = new File(file);
+                        File f = new File(fixPath(file));
                         if (f.exists())
                         {
                             String d = f.getCanonicalPath();
@@ -710,6 +730,11 @@ public class Config
         {
             close(buf);
         }
+    }
+
+    private String fixPath(String path)
+    {
+        return path.replace('/',File.separatorChar);
     }
 
     public void parse(URL url) throws IOException
@@ -746,12 +771,12 @@ public class Config
         Constructor<?> c = jettyPolicy.getConstructor(new Class[]
         { Set.class, Map.class });
         Object policyClass = c.newInstance(_policies,_properties);
-        
+
         if (policyClass instanceof Policy)
         {
             return (Policy)policyClass;
         }
-        
+
         throw new ClassCastException("Unable to cast to " + Policy.class.getName() + " : " + policyClass.getClass().getName());
     }
 }
