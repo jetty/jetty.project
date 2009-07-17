@@ -139,8 +139,8 @@ public class Config
             _version = System.getProperty("jetty.version","Unknown");
     }
 
-    private final boolean DEBUG = false;
     private static final String _version;
+    private static boolean DEBUG = false;
     private Map<String, Classpath> _classpaths = new HashMap<String, Classpath>();
     private List<String> _xml = new ArrayList<String>();
     private Set<String> _policies = new HashSet<String>();
@@ -243,8 +243,13 @@ public class Config
             /* ignore */
         }
     }
+    
+    public static boolean isDebug()
+    {
+        return DEBUG;
+    }
 
-    private void debug(String msg)
+    public static void debug(String msg)
     {
         if (DEBUG)
         {
@@ -252,7 +257,7 @@ public class Config
         }
     }
 
-    private void debug(Throwable t)
+    public static void debug(Throwable t)
     {
         if (DEBUG)
         {
@@ -761,6 +766,10 @@ public class Config
 
     public void setProperty(String name, String value)
     {
+        if (name.equals("DEBUG"))
+        {
+            DEBUG = Boolean.parseBoolean(value);
+        }
         _properties.put(name,value);
     }
 

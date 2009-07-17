@@ -143,7 +143,7 @@ public class Classpath {
         return new Loader(urls, parent);
     }
 
-    private class Loader extends URLClassLoader
+    private static class Loader extends URLClassLoader
     {
         String name;
         

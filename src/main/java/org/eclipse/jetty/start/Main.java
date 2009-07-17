@@ -47,8 +47,6 @@ import java.util.List;
  */
 public class Main
 {
-    public static boolean DEBUG = false;
-
     private boolean _showUsage = false;
     private boolean _dumpVersions = false;
     private List<String> _activeOptions = new ArrayList<String>();
@@ -113,7 +111,6 @@ public class Main
                 xmls.add(arg);
             }
 
-            DEBUG = Boolean.parseBoolean(_config.getProperty("DEBUG","false"));
             start(xmls);
         }
         catch (Throwable t)
@@ -363,7 +360,7 @@ public class Main
             //ignored
         }
 
-        if (DEBUG || invoked_class == null)
+        if (Config.isDebug() || invoked_class == null)
         {
             if (invoked_class == null)
                 System.err.println("ClassNotFound: " + classname);
@@ -444,7 +441,7 @@ public class Main
 
         System.setProperty("java.class.path",classpath.toString());
         ClassLoader cl = classpath.getClassLoader();
-        if (DEBUG)
+        if (Config.isDebug())
         {
             System.err.println("java.class.path=" + System.getProperty("java.class.path"));
             System.err.println("jetty.home=" + System.getProperty("jetty.home"));
@@ -514,8 +511,7 @@ public class Main
             if (mainClass != null)
                 classname = mainClass;
 
-            if (DEBUG)
-                System.err.println("main.class=" + classname);
+            Config.debug("main.class=" + classname);
 
             invokeMain(cl,classname,xmls);
         }
@@ -587,10 +583,7 @@ public class Main
 
             // What start.config should we use?
             String cfgName = _config.getProperty("START","org/eclipse/jetty/start/start.config");
-            if (DEBUG)
-            {
-                System.err.println("config=" + cfgName);
-            }
+            Config.debug("config=" + cfgName);
 
             // Look up config as resource first.
             cfgstream = getClass().getClassLoader().getResourceAsStream(cfgName);
