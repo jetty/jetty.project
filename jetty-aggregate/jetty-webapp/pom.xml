@@ -2,16 +2,12 @@
   <parent>
     <groupId>org.eclipse.jetty.aggregate</groupId>
     <artifactId>jetty-aggregate-project</artifactId>
-    <version>7.0.0.M3-SNAPSHOT</version>
+    <version>8.0.0.M0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.aggregate</groupId>
   <artifactId>jetty-webapp</artifactId>
   <name>Jetty :: Aggregate :: WebApp Server</name>
-
-  <properties>
-    <jetty-version>${project.version}</jetty-version>
-  </properties>
 
   <build>
     <plugins>
@@ -21,7 +17,6 @@
         <executions>
           <execution>
             <id>unpack-dependencies</id>
-            <phase>package</phase>
             <goals>
               <goal>unpack-dependencies</goal>
             </goals>
@@ -70,7 +65,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
-      <version>${jetty-version}</version>
+      <version>${project.version}</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
@@ -80,7 +75,7 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>javax.servlet</groupId>
+      <groupId>org.mortbay.jetty</groupId>
       <artifactId>servlet-api</artifactId>
       <scope>compile</scope>
     </dependency>

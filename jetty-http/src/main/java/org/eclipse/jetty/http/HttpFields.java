@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
 /**
@@ -69,9 +70,9 @@ public class HttpFields
     public final static String __separators = ", \t";
 
     /* ------------------------------------------------------------ */
-    private static String[] DAYS =
+    private static final String[] DAYS =
     { "Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-    private static String[] MONTHS =
+    private static final String[] MONTHS =
     { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan"};
 
     
@@ -163,7 +164,7 @@ public class HttpFields
     }
 
     /* ------------------------------------------------------------ */
-    private static ThreadLocal<DateGenerator> __dateGenerator =new ThreadLocal<DateGenerator>()
+    private static final ThreadLocal<DateGenerator> __dateGenerator =new ThreadLocal<DateGenerator>()
     {
         @Override
         protected DateGenerator initialValue()
@@ -261,7 +262,7 @@ public class HttpFields
     }
 
     /* ------------------------------------------------------------ */
-    private static ThreadLocal<DateParser> __dateParser =new ThreadLocal<DateParser>()
+    private static final ThreadLocal<DateParser> __dateParser =new ThreadLocal<DateParser>()
     {
         @Override
         protected DateParser initialValue()
@@ -275,7 +276,7 @@ public class HttpFields
     
     
     
-    public final static String __01Jan1970 = formatDate(0);
+    public final static String __01Jan1970 = formatDate(0).trim();
     public final static Buffer __01Jan1970_BUFFER = new ByteArrayBuffer(__01Jan1970);
 
     /* -------------------------------------------------------------- */
@@ -364,7 +365,7 @@ public class HttpFields
                 if (field != null) return true;
                 while (i < _fields.size())
                 {
-                    Field f = (Field) _fields.get(i++);
+                    Field f = _fields.get(i++);
                     if (f != null && f._prev == null && f._revision == revision)
                     {
                         field = f;
@@ -410,13 +411,13 @@ public class HttpFields
     /* ------------------------------------------------------------ */
     private Field getField(String name)
     {
-        return (Field) _bufferMap.get(HttpHeaders.CACHE.lookup(name));
+        return _bufferMap.get(HttpHeaders.CACHE.lookup(name));
     }
 
     /* ------------------------------------------------------------ */
     private Field getField(Buffer name)
     {
-        return (Field) _bufferMap.get(name);
+        return _bufferMap.get(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -626,7 +627,7 @@ public class HttpFields
                 if (tok != null && tok.hasMoreElements()) return true;
                 while (e.hasMoreElements())
                 {
-                    String value = (String) e.nextElement();
+                    String value = e.nextElement();
                     tok = new QuotedStringTokenizer(value, separators, false, false);
                     if (tok.hasMoreElements()) return true;
                 }
@@ -703,7 +704,7 @@ public class HttpFields
 
         if (!(name instanceof BufferCache.CachedBuffer)) name = HttpHeaders.CACHE.lookup(name);
 
-        Field field = (Field) _bufferMap.get(name);
+        Field field = _bufferMap.get(name);
 
         // Look for value to replace.
         if (field != null)
@@ -715,7 +716,6 @@ public class HttpFields
                 field.clear();
                 field = field._next;
             }
-            return;
         }
         else
         {
@@ -808,7 +808,7 @@ public class HttpFields
 
         if (!(name instanceof BufferCache.CachedBuffer)) name = HttpHeaders.CACHE.lookup(name);
         
-        Field field = (Field) _bufferMap.get(name);
+        Field field = _bufferMap.get(name);
         Field last = null;
         if (field != null)
         {
@@ -858,7 +858,7 @@ public class HttpFields
      */
     public void remove(Buffer name)
     {
-        Field field = (Field) _bufferMap.get(name);
+        Field field = _bufferMap.get(name);
 
         if (field != null)
         {
@@ -922,7 +922,7 @@ public class HttpFields
             return -1;
 
         final long date = __dateParser.get().parse(val);
-        if (date<0)
+        if (date==-1)
             throw new IllegalArgumentException("Cannot convert date: " + val);
         field._numValue=date;
         return date;
@@ -1067,7 +1067,7 @@ public class HttpFields
 
         // Format value and params
         StringBuilder buf = new StringBuilder(128);
-        String name_value_params = null;
+        String name_value_params;
         QuotedStringTokenizer.quoteIfNeeded(buf, name);
         buf.append('=');
         if (value != null && value.length() > 0)
@@ -1086,12 +1086,15 @@ public class HttpFields
         if (path != null && path.length() > 0)
         {
             buf.append(";Path=");
-            buf.append(URIUtil.encodePath(path));
+            if (path.trim().startsWith("\""))
+                buf.append(path);
+            else
+                QuotedStringTokenizer.quoteIfNeeded(buf,path);
         }
         if (domain != null && domain.length() > 0)
         {
             buf.append(";Domain=");
-            buf.append(domain.toLowerCase());// lowercase for IE
+            QuotedStringTokenizer.quoteIfNeeded(buf,domain.toLowerCase());
         }
 
         if (maxAge >= 0)
@@ -1131,7 +1134,7 @@ public class HttpFields
     {
         for (int i = 0; i < _fields.size(); i++)
         {
-            Field field = (Field) _fields.get(i);
+            Field field = _fields.get(i);
             if (field != null && field._revision == _revision) field.put(buffer);
         }
         BufferUtil.putCRLF(buffer);
@@ -1148,10 +1151,10 @@ public class HttpFields
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            Log.warn(e);
+            return e.toString();
         }
 
-        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -1166,7 +1169,7 @@ public class HttpFields
             _revision = 0;
             for (int i = _fields.size(); i-- > 0;)
             {
-                Field field = (Field) _fields.get(i);
+                Field field = _fields.get(i);
                 if (field != null) field.clear();
             }
         }
@@ -1182,11 +1185,11 @@ public class HttpFields
         {
             for (int i = _fields.size(); i-- > 0;)
             {
-                Field field = (Field) _fields.get(i);
+                Field field = _fields.get(i);
                 if (field != null) field.destroy();
             }
+            _fields.clear();
         }
-        _fields.clear();
     }
 
     /* ------------------------------------------------------------ */
@@ -1251,9 +1254,9 @@ public class HttpFields
     }
 
     /* ------------------------------------------------------------ */
-    private static Float __one = new Float("1.0");
-    private static Float __zero = new Float("0.0");
-    private static StringMap __qualities = new StringMap();
+    private static final Float __one = new Float("1.0");
+    private static final Float __zero = new Float("0.0");
+    private static final StringMap __qualities = new StringMap();
     static
     {
         __qualities.put(null, __one);

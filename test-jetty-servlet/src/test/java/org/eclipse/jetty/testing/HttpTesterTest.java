@@ -28,15 +28,13 @@ public class HttpTesterTest extends TestCase
                 "Content-Type: text/plain; charset=utf-8\r\n" +
                 "\r\n" +
                 "123456789\uA74A");
-        System.err.println(tester.getMethod());
-        System.err.println(tester.getURI());
-        System.err.println(tester.getVersion());
-        System.err.println(tester.getHeader("Host"));
-        System.err.println(tester.getContentType());
-        System.err.println(tester.getCharacterEncoding());
-        System.err.println(tester.getContent());
-        assertEquals("123456789\uA74A", tester.getContent());
-        System.err.println(tester.generate());
+        assertEquals("POST",tester.getMethod());
+        assertEquals("/uri\uA74A",tester.getURI());
+        assertEquals("HTTP/1.1",tester.getVersion());
+        assertEquals("fakehost",tester.getHeader("Host"));
+        assertEquals("text/plain; charset=utf-8",tester.getContentType());
+        assertEquals("utf-8",tester.getCharacterEncoding());
+        assertEquals("123456789\uA74A",tester.getContent());
     }
 
 }

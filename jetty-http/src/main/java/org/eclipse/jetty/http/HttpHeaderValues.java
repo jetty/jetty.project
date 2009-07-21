@@ -76,18 +76,25 @@ public class HttpHeaderValues extends BufferCache
         CACHE.add("gzip",index++);
         CACHE.add("gzip,deflate",index++);
         CACHE.add("deflate",index++);
-        
+
+        InputStream ua = HttpHeaderValues.class.getResourceAsStream("/org/eclipse/jetty/http/useragents");
         try
         {
-            InputStream ua = HttpHeaderValues.class.getResourceAsStream("/org/eclipse/jetty/http/useragents");
             if (ua!=null)
             {
-                LineNumberReader in = new LineNumberReader(new InputStreamReader(ua));
-                String line = in.readLine();
-                while (line!=null)
+                try
                 {
-                    CACHE.add(line,index++);
-                    line = in.readLine();
+                    LineNumberReader in = new LineNumberReader(new InputStreamReader(ua));
+                    String line = in.readLine();
+                    while (line!=null)
+                    {
+                        CACHE.add(line,index++);
+                        line = in.readLine();
+                    }
+                }
+                finally
+                {
+                    ua.close();
                 }
             }
         }

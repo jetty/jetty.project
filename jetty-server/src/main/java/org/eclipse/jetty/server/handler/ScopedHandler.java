@@ -77,7 +77,7 @@ import org.eclipse.jetty.server.Request;
  */
 public abstract class ScopedHandler extends HandlerWrapper
 {
-    private static ThreadLocal<ScopedHandler> __outerScope= new ThreadLocal<ScopedHandler>();
+    private static final ThreadLocal<ScopedHandler> __outerScope= new ThreadLocal<ScopedHandler>();
     protected ScopedHandler _outerScope;
     protected ScopedHandler _nextScope;
     
@@ -132,6 +132,9 @@ public abstract class ScopedHandler extends HandlerWrapper
     public final void nextScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) 
         throws IOException, ServletException
     {
+        // this method has been manually inlined in several locations, but
+        // is called protected by an in(false), so your IDE can find those
+        // locations if this code is changed.
         if (_nextScope!=null)
             _nextScope.doScope(target,baseRequest,request, response);
         else if (_outerScope!=null)
@@ -153,6 +156,9 @@ public abstract class ScopedHandler extends HandlerWrapper
      */
     public final void nextHandle(String target, final Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
+        // this method has been manually inlined in several locations, but
+        // is called protected by an in(false), so your IDE can find those
+        // locations if this code is changed.
         if (_nextScope!=null && _nextScope==_handler)
             _nextScope.doHandle(target,baseRequest,request, response);
         else if (_handler!=null)

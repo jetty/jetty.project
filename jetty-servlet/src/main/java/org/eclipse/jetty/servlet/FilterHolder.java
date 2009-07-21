@@ -83,6 +83,7 @@ public class FilterHolder extends Holder
 
     /* ------------------------------------------------------------ */
     public void doStop()
+        throws Exception
     {      
         if (_filter!=null)
         {

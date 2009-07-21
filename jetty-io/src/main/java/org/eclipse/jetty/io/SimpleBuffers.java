@@ -21,54 +21,92 @@ package org.eclipse.jetty.io;
  */
 public class SimpleBuffers implements Buffers
 {   
-    Buffer[] _buffers;
+    final Buffer _header;
+    final Buffer _buffer;
+    boolean _headerOut;
+    boolean _bufferOut;
     
     /* ------------------------------------------------------------ */
     /**
      * 
      */
-    public SimpleBuffers(Buffer[] buffers)
+    public SimpleBuffers(Buffer header, Buffer buffer)
     {
-        _buffers=buffers;
+        _header=header;
+        _buffer=buffer;
     }
 
     /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.io.Buffers#getBuffer(boolean)
-     */
+    public Buffer getBuffer()
+    {
+        synchronized(this)
+        {
+            if (_buffer!=null && !_bufferOut)
+            {
+                _bufferOut=true;
+                return _buffer;
+            }
+            
+            if (_buffer!=null && _header!=null && _header.capacity()==_buffer.capacity() && !_headerOut)
+            {
+                _headerOut=true;
+                return _header;
+            }
+            
+            if (_buffer!=null)
+                return new ByteArrayBuffer(_buffer.capacity());
+            return new ByteArrayBuffer(4096);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    public Buffer getHeader()
+    {
+        synchronized(this)
+        {
+            if (_header!=null && !_headerOut)
+            {
+                _headerOut=true;
+                return _header;
+            }
+            
+            if (_buffer!=null && _header!=null && _header.capacity()==_buffer.capacity() && !_bufferOut)
+            {
+                _bufferOut=true;
+                return _buffer;
+            }
+            
+            if (_header!=null)
+                return new ByteArrayBuffer(_header.capacity());
+            return new ByteArrayBuffer(4096);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
     public Buffer getBuffer(int size)
     {
-        if (_buffers!=null)
+        synchronized(this)
         {
-            for (int i=0;i<_buffers.length;i++)
-            {
-                if (_buffers[i]!=null && _buffers[i].capacity()==size)
-                {
-                    Buffer b=_buffers[i];
-                    _buffers[i]=null;
-                    return b;
-                }
-            }
+            if (_header!=null && _header.capacity()==size)
+                return getHeader();
+            if (_buffer!=null && _buffer.capacity()==size)
+                return getBuffer();
+            return null;            
         }
-        return new ByteArrayBuffer(size);
     }
 
     /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.io.Buffers#returnBuffer(org.eclipse.io.Buffer)
-     */
     public void returnBuffer(Buffer buffer)
     {
-        buffer.clear();
-        if (_buffers!=null)
+        synchronized(this)
         {
-            for (int i=0;i<_buffers.length;i++)
-            {
-                if (_buffers[i]==null)
-                    _buffers[i]=buffer;
-            }
+            buffer.clear();
+            if (buffer==_header)
+                _headerOut=false;
+            if (buffer==_buffer)
+                _bufferOut=false;
         }
     }
-    
+
 
 }

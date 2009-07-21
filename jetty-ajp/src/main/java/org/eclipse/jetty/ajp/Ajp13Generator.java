@@ -108,9 +108,9 @@ public class Ajp13Generator extends AbstractGenerator
     private boolean _bufferPrepared = false;
 
     /* ------------------------------------------------------------ */
-    public Ajp13Generator(Buffers buffers, EndPoint io, int headerBufferSize, int contentBufferSize)
+    public Ajp13Generator(Buffers buffers, EndPoint io)
     {
-        super(buffers, io, headerBufferSize, contentBufferSize);
+        super(buffers, io);
     }
 
     /* ------------------------------------------------------------ */
@@ -342,7 +342,7 @@ public class Ajp13Generator extends AbstractGenerator
 
         // get a header buffer
         if (_header == null)
-            _header = _buffers.getBuffer(_headerBufferSize);
+            _header = _buffers.getHeader();
 
         Buffer tmpbuf = _buffer;
         _buffer = _header;
@@ -658,7 +658,7 @@ public class Ajp13Generator extends AbstractGenerator
 
                 if (_header == null)
                 {
-                    _header = _buffers.getBuffer(_headerBufferSize);
+                    _header = _buffers.getHeader();
                 }
 
                 if (_buffer == null && _header != null && _header.space() >= AJP13_MORE_CONTENT.length)
@@ -709,7 +709,7 @@ public class Ajp13Generator extends AbstractGenerator
     {
         if (_buffer == null)
         {
-            _buffer = _buffers.getBuffer(_contentBufferSize);
+            _buffer = _buffers.getBuffer();
             _buffer.setPutIndex(7);
             _buffer.setGetIndex(7);
         }
@@ -782,14 +782,13 @@ public class Ajp13Generator extends AbstractGenerator
     public void sendCPong() throws IOException
     {
 
-        Buffer buff = _buffers.getBuffer(AJP13_CPONG_RESPONSE.length);
+        Buffer buff = _buffers.getBuffer();
         buff.put(AJP13_CPONG_RESPONSE);
 
         // flushing cpong response
         do
         {
             _endp.flush(buff);
-
         }
         while(buff.length() >0);
         _buffers.returnBuffer(buff);

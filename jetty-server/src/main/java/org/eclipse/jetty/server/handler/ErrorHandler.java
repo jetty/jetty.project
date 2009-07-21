@@ -75,12 +75,6 @@ public class ErrorHandler extends AbstractHandler
     {
         if (message == null)
             message=HttpStatus.getCode(code).getMessage();
-        else
-        {
-            message= StringUtil.replace(message, "&", "&amp;");
-            message= StringUtil.replace(message, "<", "&lt;");
-            message= StringUtil.replace(message, ">", "&gt;");
-        }
 
         writer.write("<html>\n<head>\n");
         writeErrorPageHead(request,writer,code,message);
@@ -98,7 +92,7 @@ public class ErrorHandler extends AbstractHandler
         writer.write(Integer.toString(code));
         writer.write(' ');
         if (message!=null)
-            writer.write(message);
+            writer.write(deScript(message));
         writer.write("</title>\n");    
     }
 
@@ -107,12 +101,6 @@ public class ErrorHandler extends AbstractHandler
         throws IOException
     {
         String uri= request.getRequestURI();
-        if (uri!=null)
-        {
-            uri= StringUtil.replace(uri, "&", "&amp;");
-            uri= StringUtil.replace(uri, "<", "&lt;");
-            uri= StringUtil.replace(uri, ">", "&gt;");
-        }
         
         writeErrorPageMessage(request,writer,code,message,uri);
         if (showStacks)
@@ -131,7 +119,7 @@ public class ErrorHandler extends AbstractHandler
         writer.write("</h2>\n<p>Problem accessing ");
         writer.write(uri);
         writer.write(". Reason:\n<pre>    ");
-        writer.write(message);
+        writer.write(deScript(message));
         writer.write("</pre></p>");
     }
 
@@ -147,7 +135,7 @@ public class ErrorHandler extends AbstractHandler
             PrintWriter pw = new PrintWriter(sw);
             th.printStackTrace(pw);
             pw.flush();
-            writer.write(sw.getBuffer().toString());
+            writer.write(deScript(sw.getBuffer().toString()));
             writer.write("</pre>\n");
 
             th =th.getCause();
@@ -173,4 +161,14 @@ public class ErrorHandler extends AbstractHandler
         _showStacks = showStacks;
     }
 
+    /* ------------------------------------------------------------ */
+    protected String deScript(String string)
+    {
+        if (string==null)
+            return null;
+        string=StringUtil.replace(string, "&", "&amp;");
+        string=StringUtil.replace(string, "<", "&lt;");
+        string=StringUtil.replace(string, ">", "&gt;");
+        return string;
+    }
 }

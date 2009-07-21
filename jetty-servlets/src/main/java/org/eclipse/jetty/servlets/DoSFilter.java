@@ -308,7 +308,7 @@ public class DoSFilter implements Filter
                     // insert a delay before throttling the request
                     if (_insertHeaders)
                         ((HttpServletResponse)response).addHeader("DoSFilter","delayed");
-                    Continuation continuation = ContinuationSupport.getContinuation(request,response);
+                    Continuation continuation = ContinuationSupport.getContinuation(request);
                     request.setAttribute(__TRACKER,tracker);
                     continuation.setTimeout(_delayMs);
 
@@ -325,11 +325,10 @@ public class DoSFilter implements Filter
             // check if we can afford to accept another request at this time
             accepted = _passes.tryAcquire(_waitMs,TimeUnit.MILLISECONDS);
 
-            System.err.println("suspend "+request+" a="+accepted);
             if (!accepted)
             {
                 // we were not accepted, so either we suspend to wait,or if we were woken up we insist or we fail
-                final Continuation continuation = ContinuationSupport.getContinuation(request,response);
+                final Continuation continuation = ContinuationSupport.getContinuation(request);
                 
                 Boolean throttled = (Boolean)request.getAttribute(__THROTTLED);
                 if (throttled!=Boolean.TRUE && _throttleMs>0)

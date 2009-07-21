@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
  */
 public class HttpURI
 {
-    private static byte[] __empty={}; 
+    private static final byte[] __empty={}; 
     private final static int 
     START=0,
     AUTH_OR_PATH=1,
@@ -61,6 +61,7 @@ public class HttpURI
     int _authority;
     int _host;
     int _port;
+    int _portValue;
     int _path;
     int _param;
     int _query;
@@ -68,7 +69,7 @@ public class HttpURI
     int _end;
     boolean _encoded=false;
     
-    Utf8StringBuilder _utf8b = new Utf8StringBuilder(64);
+    final Utf8StringBuilder _utf8b = new Utf8StringBuilder(64);
     
     public HttpURI()
     {
@@ -122,6 +123,7 @@ public class HttpURI
         _authority=offset;
         _host=offset;
         _port=offset;
+        _portValue=-1;
         _path=offset;
         _param=_end;
         _query=_end;
@@ -164,7 +166,7 @@ public class HttpURI
                             if (Character.isLetterOrDigit(c))
                                 state=SCHEME_OR_PATH;
                             else
-                                throw new IllegalArgumentException(StringUtil.toString(_raw,offset,length,URIUtil.__CHARSET));
+                                throw new IllegalArgumentException("!(SCHEME|PATH|AUTH):"+StringUtil.toString(_raw,offset,length,URIUtil.__CHARSET));
                     }
                     
                     continue;
@@ -401,6 +403,9 @@ public class HttpURI
                 }
             }
         }
+
+        if (_port<_path)
+            _portValue=TypeUtil.parseInt(_raw, _port+1, _path-_port-1,10);
     }
     
     private String toUtf8String(int offset,int length)
@@ -448,9 +453,7 @@ public class HttpURI
     
     public int getPort()
     {
-        if (_port==_path)
-            return -1;
-        return TypeUtil.parseInt(_raw, _port+1, _path-_port-1,10);
+        return _portValue;
     }
     
     public String getPath()
@@ -473,8 +476,10 @@ public class HttpURI
         {
             byte b = _raw[i];
             
-            if (b=='%' && (i+2)<_param)
+            if (b=='%')
             {
+                if ((i+2)>=_param)
+                    throw new IllegalArgumentException("Bad % encoding: "+this);
                 b=(byte)(0xff&TypeUtil.parseInt(_raw,i+1,2,16));
                 i+=2;
             }
@@ -487,8 +492,7 @@ public class HttpURI
             if (bytes==null)
             {
                 bytes=new byte[length];
-                for (int j=0;j<n;j++)
-                    bytes[j]=_raw[_path+j];
+                System.arraycopy(_raw,_path,bytes,0,n);
             }
             
             bytes[n++]=b;

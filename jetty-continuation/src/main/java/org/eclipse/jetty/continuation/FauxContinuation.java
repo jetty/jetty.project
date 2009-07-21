@@ -18,10 +18,21 @@ import java.util.ArrayList;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 
+
+/* ------------------------------------------------------------ */
+/**
+ * A blocking implementation of Continuation.
+ * This implementation of Continuation is used by the {@link ContinuationFilter}
+ * when there are is no native or asynchronous continuation type available. 
+ */
 class FauxContinuation implements Continuation
 {
-    private final ContinuationFilter _continuationFilter;
+    // common exception used for all continuations.  
+    // Turn on debug in ContinuationFilter to see real stack trace.
+    private final static ContinuationThrowable __exception = new ContinuationThrowable();
+    
     private static final int __HANDLING=1;   // Request dispatched to filter/servlet
     private static final int __SUSPENDING=2;   // Suspend called, but not yet returned to container
     private static final int __RESUMING=3;     // resumed while suspending
@@ -31,22 +42,20 @@ class FauxContinuation implements Continuation
     private static final int __COMPLETE=7;
 
     private final ServletRequest _request;
-    private final ServletResponse _response;
+    private ServletResponse _response;
     
     private int _state=__HANDLING;
     private boolean _initial=true;
     private boolean _resumed=false;
     private boolean _timeout=false;
-    private boolean _keepWrappers=false;
+    private boolean _responseWrapped=false;
     private  long _timeoutMs=30000; // TODO configure
     
     private ArrayList<ContinuationListener> _listeners; 
 
-    FauxContinuation(ContinuationFilter continuationFilter, final ServletRequest request,final ServletResponse response)
+    FauxContinuation(final ServletRequest request)
     {
-        _continuationFilter = continuationFilter;
         _request=request;
-        _response=response;
     }
 
     /* ------------------------------------------------------------ */
@@ -67,20 +76,11 @@ class FauxContinuation implements Continuation
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.continuation.Continuation#keepWrappers()
+     * @see org.eclipse.jetty.continuation.Continuation#isResponseWrapped()
      */
-    public void keepWrappers()
+    public boolean isResponseWrapped()
     {
-        _keepWrappers=true;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.continuation.Continuation#wrappersKept()
-     */
-    public boolean wrappersKept()
-    {
-        return _keepWrappers;
+        return _responseWrapped;
     }
 
     /* ------------------------------------------------------------ */
@@ -137,6 +137,14 @@ class FauxContinuation implements Continuation
         _timeoutMs = timeoutMs;
     }
 
+    /* ------------------------------------------------------------ */
+    public void suspend(ServletResponse response)
+    {
+        _response=response;
+        _responseWrapped=response instanceof ServletResponseWrapper;
+        suspend();
+    }
+    
     /* ------------------------------------------------------------ */
     public void suspend()
     {
@@ -243,18 +251,16 @@ class FauxContinuation implements Continuation
         }
         
     }
-    
-
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.continuation.Continuation#getServletRequest()
+     * @see org.eclipse.jetty.continuation.Continuation#getServletResponse()
      */
-    public ServletRequest getServletRequest()
+    void setServletResponse(ServletResponse response)
     {
-        return _request;
+        _response=response;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.continuation.Continuation#getServletResponse()
@@ -270,7 +276,7 @@ class FauxContinuation implements Continuation
     {
         synchronized (this)
         {
-            _keepWrappers=false;
+            _responseWrapped=false;
             switch(_state)
             {
                 case __HANDLING:
@@ -397,7 +403,7 @@ class FauxContinuation implements Continuation
             }
             catch (InterruptedException e)
             {
-                _continuationFilter._context.log("OpenServletFilter caught ",e);
+                break;
             }
             wait=expire_at-System.currentTimeMillis();
         }
@@ -443,6 +449,47 @@ class FauxContinuation implements Continuation
         _listeners.add(listener);
         
     }
-    
-    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#getAttribute(java.lang.String)
+     */
+    public Object getAttribute(String name)
+    {
+        return _request.getAttribute(name);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#removeAttribute(java.lang.String)
+     */
+    public void removeAttribute(String name)
+    {
+        _request.removeAttribute(name);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#setAttribute(java.lang.String, java.lang.Object)
+     */
+    public void setAttribute(String name, Object attribute)
+    {
+        _request.setAttribute(name,attribute);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#undispatch()
+     */
+    public void undispatch()
+    {
+        if (isSuspended())
+        {
+            if (ContinuationFilter.__debug)
+                throw new ContinuationThrowable();
+            throw __exception;
+        }
+        throw new IllegalStateException("!suspended");
+        
+    }
 }

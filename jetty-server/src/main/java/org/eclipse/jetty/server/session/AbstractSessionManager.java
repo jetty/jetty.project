@@ -151,7 +151,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
         if (_sessionIdManager==null)
         {
-            Server server=getSessionHandler().getServer();
+            final Server server=getSessionHandler().getServer();
             synchronized (server)
             {
                 _sessionIdManager=server.getSessionIdManager();
@@ -543,6 +543,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      */
     protected void addSession(Session session, boolean created)
     {
+        //noinspection SynchronizeOnNonFinalField
         synchronized (_sessionIdManager)
         {
             _sessionIdManager.addSession(session);
@@ -626,6 +627,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     public void removeSession(Session session, boolean invalidate)
     {
         // Remove session from context and global maps
+        //noinspection SynchronizeOnNonFinalField
         synchronized (_sessionIdManager)
         {
             boolean removed = false;
@@ -1081,8 +1083,6 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
                         if (old_value==null)
                             l.attributeAdded(event);
-                        else if (value==null)
-                            l.attributeRemoved(event);
                         else
                             l.attributeReplaced(event);
                     }

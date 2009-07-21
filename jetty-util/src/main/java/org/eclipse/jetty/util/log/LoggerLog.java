@@ -67,6 +67,21 @@ public class LoggerLog implements Logger
         }
     }
 
+    public void debug(String msg)
+    {
+        if (_debug)
+        {
+            try
+            {
+                _debugMAA.invoke(_logger,msg,null,null);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public void debug(String msg, Object arg0, Object arg1)
     {
         if (_debug)
@@ -94,6 +109,18 @@ public class LoggerLog implements Logger
             e.printStackTrace();
         }
         return this;
+    }
+
+    public void info(String msg)
+    {
+        try
+        {
+            _infoMAA.invoke(_logger,msg,null,null);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 
     public void info(String msg, Object arg0, Object arg1)
@@ -125,6 +152,18 @@ public class LoggerLog implements Logger
             e.printStackTrace();
         }
         
+    }
+
+    public void warn(String msg)
+    {
+        try
+        {
+            _warnMAA.invoke(_logger,msg,null,null);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 
     public void warn(String msg, Object arg0, Object arg1)

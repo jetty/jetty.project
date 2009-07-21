@@ -18,20 +18,12 @@ import java.io.InputStream;
 import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 
+import org.eclipse.jetty.continuation.test.ContinuationBase;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -43,7 +35,6 @@ public class FauxContinuationTest extends ContinuationBase
     protected Server _server = new Server();
     protected ServletHandler _servletHandler;
     protected SelectChannelConnector _connector;
-    FilterHolder _wrapper;
     FilterHolder _filter;
 
     protected void setUp() throws Exception
@@ -55,10 +46,6 @@ public class FauxContinuationTest extends ContinuationBase
         _servletHandler=servletContext.getServletHandler();
         ServletHolder holder=new ServletHolder(_servlet);
         _servletHandler.addServletWithMapping(holder,"/");
-        _wrapper=_servletHandler.addFilterWithMapping(WrappingFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        _wrapper.setAsyncSupported(true);
-        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        _filter.setAsyncSupported(true);
     }
 
     protected void tearDown() throws Exception
@@ -68,6 +55,7 @@ public class FauxContinuationTest extends ContinuationBase
 
     public void testFaux() throws Exception
     {
+        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
         _filter.setInitParameter("debug","true");
         _filter.setInitParameter("faux","true");
         _server.start();
@@ -76,46 +64,19 @@ public class FauxContinuationTest extends ContinuationBase
         doit("FauxContinuation");
     }
 
-    
+    public void testNoFauxDefaults() throws Exception
+    {
+        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
+        _filter.setInitParameter("debug","true");
+        _server.start();
+        _port=_connector.getLocalPort();
+        
+        doit("AsyncContinuation");
+    }
     
     protected String toString(InputStream in) throws IOException
     {
         return IO.toString(in);
-    }
-    
-    
-    public static class WrappingFilter implements Filter
-    {
-
-        public void destroy()
-        {
-        }
-
-        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        {
-            chain.doFilter(new HttpServletRequestWrapper((HttpServletRequest)request)
-            {
-                public Object getAttribute(String name)
-                {
-                    if (Continuation.ATTRIBUTE.equals(name))
-                        return super.getAttribute("test."+name);
-                    return super.getAttribute(name);
-                }
-
-                public void setAttribute(String name, Object o)
-                {
-                    if (Continuation.ATTRIBUTE.equals(name))
-                        super.setAttribute("test."+name,o);
-                    super.setAttribute(name,o);
-                }
-                
-            },response);
-        }
-
-        public void init(FilterConfig arg0) throws ServletException
-        {
-        }
-        
     }
     
 }

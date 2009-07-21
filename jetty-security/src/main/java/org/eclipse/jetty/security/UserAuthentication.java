@@ -46,10 +46,7 @@ public class UserAuthentication implements Authentication.User
 
     public boolean isUserInRole(Scope scope, String role)
     {
-        if (scope!=null && scope.getRoleRefMap()!=null)
-            role=scope.getRoleRefMap().get(role);
-            
-        return _userIdentity.isUserInRole(role);
+        return _userIdentity.isUserInRole(role, scope);
     }
     
     public void logout() 

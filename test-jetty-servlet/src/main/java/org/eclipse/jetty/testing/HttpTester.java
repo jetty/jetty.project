@@ -154,7 +154,7 @@ public class HttpTester
         Buffer bb=new ByteArrayBuffer(32*1024 + (_genContent!=null?_genContent.length:0));
         Buffer sb=new ByteArrayBuffer(4*1024);
         StringEndPoint endp = new StringEndPoint(_charset);
-        HttpGenerator generator = new HttpGenerator(new SimpleBuffers(new Buffer[]{sb,bb}),endp, sb.capacity(), bb.capacity());
+        HttpGenerator generator = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
         
         if (_method!=null)
         {

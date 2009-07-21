@@ -33,7 +33,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     protected Random _random;
     protected boolean _weakRandom;
     protected String _workerName;
-    protected Server _server;
+    protected final Server _server;
     
     
     public AbstractSessionIdManager(Server server)

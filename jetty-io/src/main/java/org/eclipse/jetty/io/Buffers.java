@@ -20,11 +20,12 @@ package org.eclipse.jetty.io;
  * of specific types of buffers (eg NIO).   The concept of big and little buffers
  * is supported, but these terms have no absolute meaning and must be determined by context.
  * 
- * 
- *
  */
 public interface Buffers
 {
-    public Buffer getBuffer(int size);
-    public void returnBuffer(Buffer buffer);
+    Buffer getHeader();
+    Buffer getBuffer();
+    Buffer getBuffer(int size);
+    
+    void returnBuffer(Buffer buffer);
 }

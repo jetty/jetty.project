@@ -108,11 +108,11 @@ public class HttpConnection implements Connection
     };
 
     /* ------------------------------------------------------------ */
-    HttpConnection(Buffers buffers, EndPoint endp, int hbs, int cbs)
+    HttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
     {
         _endp = endp;
-        _generator = new HttpGenerator(buffers,endp,hbs,cbs);
-        _parser = new HttpParser(buffers,endp,new Handler(),hbs,cbs);
+        _generator = new HttpGenerator(requestBuffers,endp);
+        _parser = new HttpParser(responseBuffers,endp,new Handler());
     }
 
     public void setReserved (boolean reserved)
@@ -285,8 +285,11 @@ public class HttpConnection implements Connection
                     return;
                 }
             }
-            catch (IOException e)
-            {
+            catch (Throwable e)
+            {                
+                if (e instanceof ThreadDeath)
+                    throw (ThreadDeath)e;
+                
                 synchronized (this)
                 {
                     if (_exchange != null)
@@ -295,9 +298,18 @@ public class HttpConnection implements Connection
                         _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
                     }
                 }
-                failed = true;
                 Log.warn("IOE on "+_exchange);
-                throw e;
+                failed = true;
+                if (e instanceof IOException)
+                    throw (IOException)e;
+ 
+                if (e instanceof Error)
+                    throw (Error)e;
+                
+                if (e instanceof RuntimeException)
+                    throw (RuntimeException)e;
+                
+               throw new RuntimeException(e);
             }
             finally
             {

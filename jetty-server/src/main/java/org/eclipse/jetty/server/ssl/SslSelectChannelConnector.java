@@ -17,7 +17,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.security.KeyStore;
@@ -27,7 +26,6 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -44,12 +42,12 @@ import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.http.ssl.SslSelectChannelEndPoint;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ThreadLocalBuffers;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
-import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
-import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.server.HttpConnection;
@@ -114,61 +112,8 @@ public class SslSelectChannelConnector extends SelectChannelConnector
     private String _truststore;
     private String _truststoreType="JKS"; // type of the key store
     private SSLContext _context;
+    Buffers _sslBuffers;
 
-    private int _packetBufferSize;
-    private int _applicationBufferSize;
-    private ConcurrentLinkedQueue<Buffer> _packetBuffers = new ConcurrentLinkedQueue<Buffer>();
-    private ConcurrentLinkedQueue<Buffer> _applicationBuffers = new ConcurrentLinkedQueue<Buffer>();
-    
-    /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see org.eclipse.jetty.io.AbstractBuffers#getBuffer(int)
-     */
-    public Buffer getBuffer(int size)
-    {
-        // TODO why is this reimplemented?
-        Buffer buffer;
-        if (size==_applicationBufferSize)
-        {   
-            buffer = _applicationBuffers.poll();
-            if (buffer==null)
-                buffer=new IndirectNIOBuffer(size);
-        }
-        else if (size==_packetBufferSize)
-        {   
-            buffer = _packetBuffers.poll();
-            if (buffer==null)
-                buffer=getUseDirectBuffers()
-                    ?(NIOBuffer)new DirectNIOBuffer(size)
-                    :(NIOBuffer)new IndirectNIOBuffer(size);
-        }
-        else 
-            buffer=super.getBuffer(size);
-        
-        return buffer;
-    }
-
-    /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see org.eclipse.jetty.io.AbstractBuffers#returnBuffer(org.eclipse.io.Buffer)
-     */
-    public void returnBuffer(Buffer buffer)
-    {
-        buffer.clear();
-        int size=buffer.capacity();
-        ByteBuffer bbuf = ((NIOBuffer)buffer).getByteBuffer();
-        bbuf.position(0);
-        bbuf.limit(size);
-        
-        if (size==_applicationBufferSize)
-            _applicationBuffers.add(buffer);
-        else if (size==_packetBufferSize)
-            _packetBuffers.add(buffer);
-        else 
-            super.returnBuffer(buffer);
-    }
-    
-    
 
     /**
      * Return the chain of X509 certificates used to negotiate the SSL Session.
@@ -528,7 +473,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector
     /* ------------------------------------------------------------------------------- */
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
-        return new SslSelectChannelEndPoint(this,channel,selectSet,key,createSSLEngine());
+        return new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,createSSLEngine());
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -591,9 +536,34 @@ public class SslSelectChannelConnector extends SelectChannelConnector
         SSLEngine engine=createSSLEngine();
         SSLSession ssl_session=engine.getSession();
         
-        setHeaderBufferSize(ssl_session.getApplicationBufferSize());
-        setRequestBufferSize(ssl_session.getApplicationBufferSize());
-        setResponseBufferSize(ssl_session.getApplicationBufferSize());
+        ThreadLocalBuffers buffers = new ThreadLocalBuffers()
+        {
+            @Override
+            protected Buffer newBuffer(int size)
+            {
+                // TODO indirect?
+                return new DirectNIOBuffer(size);
+            }
+            @Override
+            protected Buffer newHeader(int size)
+            {
+                // TODO indirect?
+                return new DirectNIOBuffer(size);
+            }
+            @Override
+            protected boolean isHeader(Buffer buffer)
+            {
+                return true;
+            }
+        };
+        buffers.setBufferSize(ssl_session.getApplicationBufferSize());
+        buffers.setHeaderSize(ssl_session.getPacketBufferSize());
+        _sslBuffers=buffers;
+        
+        if (getRequestHeaderSize()<ssl_session.getApplicationBufferSize())
+            setRequestHeaderSize(ssl_session.getApplicationBufferSize());
+        if (getRequestBufferSize()<ssl_session.getApplicationBufferSize())
+            setRequestBufferSize(ssl_session.getApplicationBufferSize());
         
         super.doStart();
     }
@@ -665,9 +635,9 @@ public class SslSelectChannelConnector extends SelectChannelConnector
      */
     private class CachedInfo
     {
-        private X509Certificate[] _certs;
-        private Integer _keySize;
-        private String _idStr;
+        private final X509Certificate[] _certs;
+        private final Integer _keySize;
+        private final String _idStr;
 
         CachedInfo(Integer keySize, X509Certificate[] certs,String idStr)
         {

@@ -35,8 +35,8 @@ public class HttpWriter extends Writer
     private static final int WRITE_ISO1 = 1;
     private static final int WRITE_UTF8 = 2;
     
-    HttpOutput _out;
-    AbstractGenerator _generator;
+    final HttpOutput _out;
+    final AbstractGenerator _generator;
     int _writeMode;
     int _surrogate;
 

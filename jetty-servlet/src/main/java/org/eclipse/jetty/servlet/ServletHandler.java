@@ -36,9 +36,10 @@ import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.continuation.ContinuationThrowable;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.HttpException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
@@ -386,7 +387,16 @@ public class ServletHandler extends ScopedHandler
                 old_scope=baseRequest.getUserIdentityScope();
                 baseRequest.setUserIdentityScope(servlet_holder);
 
-                nextScope(target,baseRequest,request, response);
+                // start manual inline of nextScope(target,baseRequest,request,response);
+                if (false)
+                    nextScope(target,baseRequest,request,response);
+                else if (_nextScope!=null)
+                    _nextScope.doScope(target,baseRequest,request, response);
+                else if (_outerScope!=null)
+                    _outerScope.doHandle(target,baseRequest,request, response);
+                else 
+                    doHandle(target,baseRequest,request, response);
+                // end manual inline (pathentic attempt to reduce stack depth)
             }
         }
         finally
@@ -518,6 +528,10 @@ public class ServletHandler extends ScopedHandler
             }
             else
                 if(Log.isDebugEnabled())Log.debug("Response already committed for handling "+th);
+        }
+        catch(ContinuationThrowable e)
+        {   
+            throw e;
         }
         catch(Error e)
         {   

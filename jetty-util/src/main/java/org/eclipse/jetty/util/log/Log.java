@@ -57,7 +57,7 @@ public class Log
                 public Boolean run() 
                 { 
                     __logClass = System.getProperty("org.eclipse.jetty.util.log.class","org.eclipse.jetty.util.log.Slf4jLog"); 
-                    __ignored = System.getProperty("org.eclipse.jetty.util.log.IGNORED",null)!=null; 
+                    __ignored = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.IGNORED","false")); 
                     return true; 
                 }
             });

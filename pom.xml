@@ -27,9 +27,9 @@
   	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
   <scm>
-    <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk</connection>
-    <developerConnection>scm:svn:svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk</developerConnection>
-    <url>http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk</url>
+    <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/branches/jetty-8</connection>
+    <developerConnection>scm:svn:svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/branches/jetty-8</developerConnection>
+    <url>http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/branches/jetty-8</url>
   </scm>
   <build>
     <defaultGoal>install</defaultGoal>
@@ -59,7 +59,7 @@
               </goals>
               <configuration>
                 <resourceBundles>
-                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0-SNAPSHOT</resourceBundle>
+                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0</resourceBundle>
                 </resourceBundles>
               </configuration>
             </execution>
@@ -74,7 +74,6 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <Eclipse-Status>Incubation</Eclipse-Status>
               <Implementation-Version>${project.version}</Implementation-Version>
               <Implementation-Vendor>Eclipse.org - Jetty</Implementation-Vendor>
               <url>${jetty.url}</url>
@@ -86,6 +85,9 @@
          <groupId>org.apache.maven.plugins</groupId>
          <artifactId>maven-surefire-plugin</artifactId>
          <version>2.4.2</version>
+         <configuration>
+           <failIfNoTests>false</failIfNoTests>
+         </configuration>
        </plugin>
        <plugin>
         <groupId>org.apache.felix</groupId>
@@ -120,6 +122,7 @@
     </pluginManagement>
   </build>
   <modules>
+    <module>tmp-common-annotations</module>
     <module>jetty-util</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
@@ -139,15 +142,17 @@
     <module>jetty-annotations</module>
     <module>jetty-plus</module>
     <module>jetty-rewrite</module>
+    <module>jetty-policy</module>
+    <module>jetty-start</module>
+    <module>test-jetty-webapp</module>
     <module>test-continuation</module>
     <module>test-continuation-jetty6</module>
-    <module>test-jetty-webapp</module>
     <module>test-jetty-servlet</module>
     <module>jetty-aggregate</module>
     <module>example-jetty-embedded</module>
     <module>example-async-rest</module>
-    <module>jetty-start</module>
     <module>jetty-distribution</module>
+    <module>tests</module>
   </modules>
   <dependencyManagement>
     <dependencies>

@@ -17,8 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.EnumSet;
 
-import javax.servlet.DispatcherType;
-
+import org.eclipse.jetty.continuation.test.ContinuationBase;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -49,35 +48,12 @@ public class ContinuationTest extends ContinuationBase
         _servletHandler.addServletWithMapping(holder,"/");
     }
 
-
     protected void tearDown() throws Exception
     {
         _server.stop();
     }
-
-    public void testNotFaux() throws Exception
-    {
-        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
-        _filter.setInitParameter("debug","true");
-        _filter.setInitParameter("faux","true");
-        _server.start();
-        _port=_connector.getLocalPort();
-        
-        doit("AsyncContinuation");
-    }
-
-    public void testNotJetty6() throws Exception
-    {
-        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
-        _filter.setInitParameter("debug","true");
-        _filter.setInitParameter("faux","false");
-        _server.start();
-        _port=_connector.getLocalPort();
-        
-        doit("AsyncContinuation");
-    }
-
-    public void testNoFilter() throws Exception
+    
+    public void testContinuation() throws Exception
     {
         _server.start();
         _port=_connector.getLocalPort();

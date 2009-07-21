@@ -32,11 +32,11 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class MovedContextHandler extends ContextHandler
 {
+    final Redirector _redirector;
     String _newContextURL;
     boolean _discardPathInfo;
     boolean _discardQuery;
     boolean _permanent;
-    Redirector _redirector;
     String _expires;
 
     public MovedContextHandler()

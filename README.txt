@@ -10,7 +10,7 @@ The Jetty @ eclipse project is based on the Jetty project at codehaus
 
   http://jetty.codehaus.org
 
-Ongoing development is now under incubation at the eclipse foundation
+Ongoing development is now at the eclipse foundation
 
   http://www.eclipse.org/jetty/
 

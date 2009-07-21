@@ -228,7 +228,7 @@ public class HashSessionIdManager extends AbstractLifeCycle implements SessionId
                 ?(hashCode()^Runtime.getRuntime().freeMemory()^_random.nextInt()^(((long)request.hashCode())<<32))
                 :_random.nextLong();
                 r^=created;
-                if (request!=null && request.getRemoteAddr()!=null)
+                if (request.getRemoteAddr()!=null)
                     r^=request.getRemoteAddr().hashCode();
                 if (r<0)
                     r=-r;

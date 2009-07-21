@@ -22,6 +22,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -223,18 +224,26 @@ public class WebAppDeployer extends AbstractLifeCycle
                 for (int i=0; i<installed.length; i++)
                 {
                     ContextHandler c=(ContextHandler)installed[i];
-        
+
                     if (context.equals(c.getContextPath()))
                         continue files;
                     
-                   String path;
-                   if (c instanceof WebAppContext)
-                       path = ((WebAppContext)c).getWar();
-                   else
-                       path = (c.getBaseResource()==null?"":c.getBaseResource().getFile().getAbsolutePath());
+                   try
+                   {
+                       String path=null;
+                       if (c instanceof WebAppContext)
+                           path = Resource.newResource(((WebAppContext)c).getWar()).getFile().getAbsolutePath();
+                       else if (c.getBaseResource()!=null)
+                           path = c.getBaseResource().getFile().getAbsolutePath();
 
-                    if (path.equals(app.getFile().getAbsolutePath()))
-                        continue files;
+                       if (path!=null && path.equals(app.getFile().getAbsolutePath()))
+                           continue files;
+                   }
+                   catch (Exception e)
+                   {
+                       Log.ignore(e);
+                   }
+                   
    
                 }
             }

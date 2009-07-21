@@ -19,14 +19,17 @@ import java.nio.channels.SocketChannel;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSession;
 
+import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.ssl.SslSelectChannelEndPoint;
-import org.eclipse.jetty.io.AbstractBuffers;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.ThreadLocalBuffers;
+import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
@@ -40,7 +43,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     private Buffers _sslBuffers;
     private boolean _blockingConnect;
 
-    SelectorManager _selectorManager=new Manager();
+    Manager _selectorManager=new Manager();
 
     /**
      * @param httpClient
@@ -71,7 +74,37 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     /* ------------------------------------------------------------ */
     protected void doStart() throws Exception
     {
+        super.doStart();
+
         _selectorManager.start();
+        
+        SSLEngine sslEngine=_selectorManager.newSslEngine();
+        SSLSession ssl_session=sslEngine.getSession();
+        
+        ThreadLocalBuffers buffers = new ThreadLocalBuffers()
+        {
+            @Override
+            protected Buffer newBuffer(int size)
+            {
+                // TODO indirect?
+                return new DirectNIOBuffer(size);
+            }
+            @Override
+            protected Buffer newHeader(int size)
+            {
+                // TODO indirect?
+                return new DirectNIOBuffer(size);
+            }
+            @Override
+            protected boolean isHeader(Buffer buffer)
+            {
+                return true;
+            }
+        };
+        buffers.setBufferSize(ssl_session.getApplicationBufferSize());
+        buffers.setHeaderSize(ssl_session.getPacketBufferSize());
+        _sslBuffers=buffers;
+        
         _httpClient._threadPool.dispatch(this);
     }
 
@@ -104,7 +137,9 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                Log.warn(e.toString());
+                Log.debug(e);
+                Thread.yield();
             }
         }
     }
@@ -132,7 +167,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
 
         protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
         {
-            return new HttpConnection(_httpClient,endpoint,SelectConnector.this._httpClient.getHeaderBufferSize(),SelectConnector.this._httpClient.getRequestBufferSize());
+            return new HttpConnection(_httpClient.getRequestBuffers(),_httpClient.getResponseBuffers(),endpoint);
         }
 
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
@@ -178,30 +213,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             sslEngine.setUseClientMode(true);
             sslEngine.beginHandshake();
 
-            if (_sslBuffers==null)
-            {
-                AbstractBuffers buffers = new AbstractBuffers()
-                {
-                    public Buffer newBuffer( int size )
-                    {
-                        return new IndirectNIOBuffer( size);
-                    }
-                };
-
-                buffers.setRequestBufferSize( sslEngine.getSession().getPacketBufferSize());
-                buffers.setResponseBufferSize(sslEngine.getSession().getApplicationBufferSize());
-
-                try
-                {
-                    buffers.start();
-                }
-                catch(Exception e)
-                {
-                    throw new IllegalStateException(e);
-                }
-                _sslBuffers=buffers;
-            }
-
             return sslEngine;
         }
 
@@ -214,7 +225,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             if (attachment instanceof HttpDestination)
                 ((HttpDestination)attachment).onConnectionFailed(ex);
             else
-                Log.warn(ex);
+                super.connectionFailed(channel,ex,attachment);
         }
     }
 }

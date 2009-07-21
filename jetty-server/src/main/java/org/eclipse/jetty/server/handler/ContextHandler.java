@@ -51,9 +51,9 @@ import javax.servlet.FilterRegistration.Dynamic;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.HttpException;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
@@ -88,7 +88,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful, CompleteHandler
 {
-    private static ThreadLocal<Context> __context=new ThreadLocal<Context>();
+    private static final ThreadLocal<Context> __context=new ThreadLocal<Context>();
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.servlet.ManagedAttributes";
     
     /* ------------------------------------------------------------ */
@@ -100,8 +100,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public static Context getCurrentContext()
     {
-        Context context = __context.get();
-        return context;
+        return __context.get();
     }
 
     protected Context _scontext;
@@ -299,7 +298,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         if (_connectors==null || _connectors.size()==0)
             return null;
             
-        return (String[])_connectors.toArray(new String[_connectors.size()]);
+        return _connectors.toArray(new String[_connectors.size()]);
     }
 
     /* ------------------------------------------------------------ */
@@ -405,7 +404,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public String getInitParameter(String name)
     {
-        return (String)_initParams.get(name);
+        return _initParams.get(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -637,9 +636,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         if (managedAttributes!=null)
         {
             _managedAttributes=new HashSet<String>();
-            String[] attributes = managedAttributes.toString().split(",");
-            for (String s : attributes)
-                _managedAttributes.add(s);
+            String[] attributes = managedAttributes.split(",");
+            _managedAttributes.addAll(Arrays.asList(attributes));
 
             Enumeration e = _scontext.getAttributeNames();
             while(e.hasMoreElements())
@@ -861,7 +859,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 baseRequest.setPathInfo(pathInfo);
             }
             
-            nextScope(target,baseRequest,request,response);
+            // start manual inline of nextScope(target,baseRequest,request,response);
+            //noinspection ConstantIfStatement
+            if (false)
+                nextScope(target,baseRequest,request,response);
+            else if (_nextScope!=null)
+                _nextScope.doScope(target,baseRequest,request, response);
+            else if (_outerScope!=null)
+                _outerScope.doHandle(target,baseRequest,request, response);
+            else 
+                doHandle(target,baseRequest,request, response);
+            // end manual inline (pathentic attempt to reduce stack depth)
         }
         finally
         {
@@ -915,7 +923,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             if (DispatcherType.REQUEST.equals(dispatch) && isProtectedTarget(target))
                 throw new HttpException(HttpServletResponse.SC_NOT_FOUND);
             
-            nextHandle(target,baseRequest,request,response);
+            // start manual inline of nextHandle(target,baseRequest,request,response);
+            //noinspection ConstantIfStatement
+            if (false)
+                nextHandle(target,baseRequest,request,response);
+            else if (_nextScope!=null && _nextScope==_handler)
+                _nextScope.doHandle(target,baseRequest,request, response);
+            else if (_handler!=null)
+                _handler.handle(target,baseRequest, request, response);
+            // end manual inline
         }
         catch(HttpException e)
         {
@@ -1308,9 +1324,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         if (_localeEncodingMap==null)
             return null;
-        String encoding = (String)_localeEncodingMap.get(locale.toString());
+        String encoding = _localeEncodingMap.get(locale.toString());
         if (encoding==null)
-            encoding = (String)_localeEncodingMap.get(locale.getLanguage());
+            encoding = _localeEncodingMap.get(locale.getLanguage());
         return encoding;
     }
     
@@ -1748,7 +1764,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
 
             setManagedAttribute(name,value);
-            Object old_value=_contextAttributes==null?null:_contextAttributes.getAttribute(name);
+            Object old_value=_contextAttributes.getAttribute(name);
             
             if (value==null)
                 _contextAttributes.removeAttribute(name);

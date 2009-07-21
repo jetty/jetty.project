@@ -171,7 +171,7 @@ public class ContextHandlerCollection extends HandlerCollection
         if (handlers==null || handlers.length==0)
 	    return;
 	
-	AsyncContinuation async = baseRequest.getAsyncRequest();
+	AsyncContinuation async = baseRequest.getAsyncContinuation();
 	if (async.isAsync())
 	{
 	    ContextHandler context=async.getContextHandler();
@@ -270,7 +270,7 @@ public class ContextHandlerCollection extends HandlerCollection
     {
         try
         {
-            ContextHandler context = (ContextHandler)_contextClass.newInstance();
+            ContextHandler context = _contextClass.newInstance();
             context.setContextPath(contextPath);
             context.setResourceBase(resourceBase);
             addHandler(context);

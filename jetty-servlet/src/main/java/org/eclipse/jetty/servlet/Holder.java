@@ -88,6 +88,7 @@ public class Holder extends AbstractLifeCycle
     
     /* ------------------------------------------------------------ */
     public void doStop()
+        throws Exception
     {
         if (!_extInstance)
             _class=null;

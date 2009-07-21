@@ -284,10 +284,6 @@ public class RequestTest extends TestCase
         assertTrue(response.indexOf("200")>0);
         assertTrue(response.indexOf("Connection: close")>0);
         assertTrue(response.indexOf("Hello World")>0);
-
-        
-        
-        
     }
     
     
@@ -324,13 +320,13 @@ public class RequestTest extends TestCase
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
-                    "Cookie: name=value\n" +
+                    "Cookie: name=quoted=\\\"value\\\"\n" +
                     "\n"
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertEquals(1,cookies.size());
         assertEquals("name",((Cookie)cookies.get(0)).getName());
-        assertEquals("value",((Cookie)cookies.get(0)).getValue());
+        assertEquals("quoted=\\\"value\\\"",((Cookie)cookies.get(0)).getValue());
 
         cookies.clear();
         response=_connector.getResponses(
@@ -394,9 +390,119 @@ public class RequestTest extends TestCase
         assertTrue((Cookie)cookies.get(0)!=(Cookie)cookies.get(2));
         assertTrue((Cookie)cookies.get(1)!=(Cookie)cookies.get(3));
 
+        cookies.clear();
+        response=_connector.getResponses(
+                "POST / HTTP/1.1\r\n"+
+                "Host: whatever\r\n"+
+                "Cookie: name0=value0; name1 = value1 ; \"\\\"name2\\\"\"  =  \"\\\"value2\\\"\"  \n" +
+                "Cookie: $Version=2; name3=value3=value3;$path=/path;$domain=acme.com;$port=8080, name4=; name5 =  ; name6\n" +
+                "Cookie: name7=value7;\n" +
+                "Connection: close\r\n"+
+        "\r\n");
 
+        assertEquals("name0",((Cookie)cookies.get(0)).getName());
+        assertEquals("value0",((Cookie)cookies.get(0)).getValue());
+        assertEquals("name1",((Cookie)cookies.get(1)).getName());
+        assertEquals("value1",((Cookie)cookies.get(1)).getValue());
+        assertEquals("\"name2\"",((Cookie)cookies.get(2)).getName());
+        assertEquals("\"value2\"",((Cookie)cookies.get(2)).getValue());
+        assertEquals("name3",((Cookie)cookies.get(3)).getName());
+        assertEquals("value3=value3",((Cookie)cookies.get(3)).getValue());
+        assertEquals(2,((Cookie)cookies.get(3)).getVersion());
+        assertEquals("/path",((Cookie)cookies.get(3)).getPath());
+        assertEquals("acme.com",((Cookie)cookies.get(3)).getDomain());
+        assertEquals("$port=8080",((Cookie)cookies.get(3)).getComment());
+        assertEquals("name4",((Cookie)cookies.get(4)).getName());
+        assertEquals("",((Cookie)cookies.get(4)).getValue());
+        assertEquals("name5",((Cookie)cookies.get(5)).getName());
+        assertEquals("",((Cookie)cookies.get(5)).getValue());
+        assertEquals("name6",((Cookie)cookies.get(6)).getName());
+        assertEquals("",((Cookie)cookies.get(6)).getValue());
+        assertEquals("name7",((Cookie)cookies.get(7)).getName());
+        assertEquals("value7",((Cookie)cookies.get(7)).getValue());
         
     }
+    
+    public void testCookieLeak()
+        throws Exception
+    {
+      
+        final String[] cookie=new String[10];
+        
+        _handler._checker = new RequestTester()
+        {
+            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            {
+                for (int i=0;i<cookie.length; i++)
+                    cookie[i]=null;
+                
+                Cookie[] cookies = request.getCookies();
+                for (int i=0;cookies!=null && i<cookies.length; i++)
+                {
+                    cookie[i]=cookies[i].getValue();
+                }
+                return true;
+            }  
+        };
+        
+        
+        String request="POST / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Cookie: other=cookie\r\n"+
+        "\r\n"
+        +
+        "POST / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Cookie: name=value\r\n"+
+        "Connection: close\r\n"+
+        "\r\n";
+
+        _connector.reopen();
+        _connector.getResponses(request);
+
+        assertEquals("value",cookie[0]);
+        assertEquals(null,cookie[1]);
+        
+        request="POST / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Cookie: name=value\r\n"+
+        "\r\n"
+        +
+        "POST / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Cookie:\r\n"+
+        "Connection: close\r\n"+
+        "\r\n";
+
+        _connector.reopen();
+        _connector.getResponses(request);
+        assertEquals(null,cookie[0]);
+        assertEquals(null,cookie[1]);
+        
+        
+        request="POST / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Cookie: name=value\r\n"+
+        "Cookie: other=cookie\r\n"+
+        "\r\n"
+        +
+        "POST / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Cookie: name=value\r\n"+
+        "Cookie:\r\n"+
+        "Connection: close\r\n"+
+        "\r\n";
+
+        _connector.reopen();
+        _connector.getResponses(request);
+        
+        assertEquals("value",cookie[0]);
+        assertEquals(null,cookie[1]);
+        
+        
+    }
+    
+    
     
     
     interface RequestTester

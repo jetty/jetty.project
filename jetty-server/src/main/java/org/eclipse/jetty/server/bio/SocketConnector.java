@@ -21,11 +21,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.HttpException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.HttpConnection;
@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.log.Log;
 public class SocketConnector extends AbstractConnector
 {
     protected ServerSocket _serverSocket;
-    protected Set _connections;
+    protected final Set _connections;
     
     /* ------------------------------------------------------------ */
     /** Constructor.
@@ -56,6 +56,7 @@ public class SocketConnector extends AbstractConnector
      */
     public SocketConnector()
     {
+        _connections=new HashSet();
     }
 
     /* ------------------------------------------------------------ */
@@ -112,12 +113,6 @@ public class SocketConnector extends AbstractConnector
     }
 
     /* ------------------------------------------------------------------------------- */
-    public Buffer newBuffer(int size)
-    {
-        return new ByteArrayBuffer(size);
-    }
-
-    /* ------------------------------------------------------------------------------- */
     public void customize(EndPoint endpoint, Request request)
         throws IOException
     {
@@ -143,7 +138,7 @@ public class SocketConnector extends AbstractConnector
     /* ------------------------------------------------------------------------------- */
     protected void doStart() throws Exception
     {
-        _connections=new HashSet();
+        _connections.clear();
         super.doStart();
     }
 
@@ -184,7 +179,7 @@ public class SocketConnector extends AbstractConnector
             _socket=socket;
         }
         
-        public void dispatch() throws InterruptedException, IOException
+        public void dispatch() throws IOException
         {
             if (getThreadPool()==null || !getThreadPool().dispatch(this))
             {
@@ -203,7 +198,7 @@ public class SocketConnector extends AbstractConnector
         
         public void close() throws IOException
         {
-            _connection.getRequest().getAsyncRequest().cancel();
+            _connection.getRequest().getAsyncContinuation().cancel();
             super.close();
         }
 

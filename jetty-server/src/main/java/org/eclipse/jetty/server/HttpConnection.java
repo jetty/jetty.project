@@ -22,10 +22,13 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.http.EncodedHttpURI;
 import org.eclipse.jetty.http.Generator;
+import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeaderValues;
@@ -41,7 +44,6 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.HttpException;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -64,19 +66,16 @@ import org.eclipse.jetty.util.thread.Timeout;
  * with the connection via the parser and/or generator.
  * </p>
  * 
- * 
- * 
- * 
  */
 public class HttpConnection implements Connection
 {
-    private static int UNKNOWN = -2;
-    private static ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
+    private static final int UNKNOWN = -2;
+    private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
 
     private final long _timeStamp=System.currentTimeMillis();
     private int _requests;
     private volatile boolean _handling;
-    
+
     protected final Connector _connector;
     protected final EndPoint _endp;
     protected final Server _server;
@@ -97,17 +96,20 @@ public class HttpConnection implements Connection
     int _include;
     
     private Object _associatedObject; // associated object
+
+    private int _version = UNKNOWN;
     
-    private transient int _expect = UNKNOWN;
-    private transient int _version = UNKNOWN;
-    private transient boolean _head = false;
-    private transient boolean _host = false;
-    private transient boolean  _delayedHandling=false;
+    private boolean _expect = false;
+    private boolean _expect100Continue = false;
+    private boolean _expect102Processing = false;
+    private boolean _head = false;
+    private boolean _host = false;
+    private boolean  _delayedHandling=false;
 
     /* ------------------------------------------------------------ */
     public static HttpConnection getCurrentConnection()
     {
-        return (HttpConnection) __currentConnection.get();
+        return __currentConnection.get();
     }
     
     /* ------------------------------------------------------------ */
@@ -122,15 +124,16 @@ public class HttpConnection implements Connection
      */
     public HttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
-        _uri = URIUtil.__CHARSET==StringUtil.__UTF8?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
+        _uri = StringUtil.__UTF8.equals(URIUtil.__CHARSET)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
         _connector = connector;
         _endp = endpoint;
-        _parser = new HttpParser(_connector, endpoint, new RequestHandler(), _connector.getHeaderBufferSize(), _connector.getRequestBufferSize());
+        HttpBuffers ab = (HttpBuffers)_connector;
+        _parser = new HttpParser(ab.getRequestBuffers(), endpoint, new RequestHandler());
         _requestFields = new HttpFields();
         _responseFields = new HttpFields();
         _request = new Request(this);
         _response = new Response(this);
-        _generator = new HttpGenerator(_connector, _endp, _connector.getHeaderBufferSize(), _connector.getResponseBufferSize());
+        _generator = new HttpGenerator(ab.getResponseBuffers(), _endp);
         _generator.setSendServerVersion(server.getSendServerVersion());
         _server = server;
     }
@@ -139,7 +142,7 @@ public class HttpConnection implements Connection
     protected HttpConnection(Connector connector, EndPoint endpoint, Server server,
             Parser parser, Generator generator, Request request)
     {
-        _uri = URIUtil.__CHARSET==StringUtil.__UTF8?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
+        _uri = URIUtil.__CHARSET.equals(StringUtil.__UTF8)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
         _connector = connector;
         _endp = endpoint;
         _parser = parser;
@@ -288,21 +291,29 @@ public class HttpConnection implements Connection
 
     /* ------------------------------------------------------------ */
     /**
-     * @return The input stream for this connection. The stream will be created if it does not already exist.
+     * Get the inputStream from the connection.
+     * <p>
+     * If the associated response has the Expect header set to 100 Continue,
+     * then accessing the input stream indicates that the handler/servlet
+     * is ready for the request body and thus a 100 Continue response is sent.
+     * 
+     * @return The input stream for this connection. 
+     * The stream will be created if it does not already exist.
      */
     public ServletInputStream getInputStream() throws IOException
     {
         // If the client is expecting 100 CONTINUE, then send it now.
-        if (_expect == HttpHeaderValues.CONTINUE_ORDINAL)
+        if (_expect100Continue)
         {
+            // is content missing?
             if (((HttpParser)_parser).getHeaderBuffer()==null || ((HttpParser)_parser).getHeaderBuffer().length()<2)
             {
-                _generator.setResponse(HttpStatus.CONTINUE_100, null);
-                _generator.completeHeader(null, true);
-                _generator.complete();
-                _generator.reset(false);
+                if (_generator.isCommitted())
+                    throw new IllegalStateException("Committed before 100 Continues");
+                
+                ((HttpGenerator)_generator).send1xx(HttpStatus.CONTINUE_100);
             }
-            _expect = UNKNOWN;
+            _expect100Continue=false;
         }
 
         if (_in == null) 
@@ -369,9 +380,11 @@ public class HttpConnection implements Connection
         // Loop while more in buffer
         boolean more_in_buffer =true; // assume true until proven otherwise
         boolean progress=true;
-
+        
         try
-        {
+        {               
+            assert getCurrentConnection()==null;
+            assert _handling==false;
             _handling=true;
             setCurrentConnection(this);
 
@@ -381,14 +394,17 @@ public class HttpConnection implements Connection
                 {
                     if (_request._async.isAsync())
                     {
-                        Log.debug("resume request",_request);
+                        Log.debug("async request",_request);
                         if (!_request._async.isComplete())
                             handleRequest();
                         else if (!_parser.isComplete()) 
-                            progress|=_parser.parseAvailable()>0;
+                        {
+                            long parsed=_parser.parseAvailable();
+                            progress|=parsed>0;
+                        }
                         
                         if (_generator.isCommitted() && !_generator.isComplete())
-                            _generator.flushBuffer();
+                            progress|=_generator.flushBuffer()>0;
                         if (_endp.isBufferingOutput())
                             _endp.flush();
                     }
@@ -501,7 +517,6 @@ public class HttpConnection implements Connection
     /* ------------------------------------------------------------ */
     protected void handleRequest() throws IOException
     {
-        boolean handling=_server.isRunning() && _request._async.handling();
         boolean error = false;
 
         String threadName=null;
@@ -513,6 +528,7 @@ public class HttpConnection implements Connection
                 Thread.currentThread().setName(threadName+" - "+_uri);
             }
             
+            
             // Loop here to handle async request redispatches.  
             // The loop is controlled by the call to async.unhandle in the
             // finally block below.  If call is from a non-blocking connector,
@@ -520,12 +536,18 @@ public class HttpConnection implements Connection
             // already happened when unhandle is called.   For a blocking connector,
             // the wait for the asynchronous dispatch or timeout actually happens
             // within the call to unhandle().
+
+            final Server server=_server;
+            boolean handling=_request._async.handling() && server!=null && server.isRunning();
             while (handling)
             {
                 _request.setHandled(false);
+
+                String info=null;
                 try
                 {
-                    String info=URIUtil.canonicalPath(_uri.getDecodedPath());
+                    _uri.getPort();
+                    info=URIUtil.canonicalPath(_uri.getDecodedPath());
                     if (info==null)
                         throw new HttpException(400);
                     _request.setPathInfo(info);
@@ -537,18 +559,21 @@ public class HttpConnection implements Connection
                     {
                         _request.setDispatcherType(DispatcherType.REQUEST);
                         _connector.customize(_endp, _request);
-                        _server.handle(this);
+                        server.handle(this);
                     }
                     else 
                     {
                         _request.setDispatcherType(DispatcherType.ASYNC);
-                        _server.handleAsync(this);
+                        server.handleAsync(this);
                     }
-
+                }
+                catch (ContinuationThrowable e)
+                {
+                    Log.debug(e);
                 }
                 catch (EofException e)
                 {
-                    Log.ignore(e);
+                    Log.debug(e);
                     error=true;
                 }
                 catch (HttpException e)
@@ -558,23 +583,28 @@ public class HttpConnection implements Connection
                     _response.sendError(e.getStatus(), e.getReason());
                     error=true;
                 }
-                catch (Exception e)
+                catch (Throwable e)
                 {
-                    Log.warn(e);
-                    _request.setHandled(true);
-                    _generator.sendError(500, null, null, true);
+                    if (e instanceof ThreadDeath)
+                        throw (ThreadDeath)e;
+                        
                     error=true;
-                }
-                catch (Error e)
-                {
-                    Log.warn(e);
-                    _request.setHandled(true);
-                    _generator.sendError(500, null, null, true);
-                    error=true;
+                    if (info==null)
+                    {
+                        Log.warn(_uri+": "+e);
+                        _request.setHandled(true);
+                        _generator.sendError(400, null, null, true);
+                    }
+                    else
+                    {
+                        Log.warn(""+_uri,e);
+                        _request.setHandled(true);
+                        _generator.sendError(500, null, null, true);
+                    }
                 }
                 finally
                 {   
-                    handling = !_request._async.unhandle() && _server != null;
+                    handling = !_request._async.unhandle() && server.isRunning() && _server!=null;
                 }
             }
         }
@@ -587,10 +617,10 @@ public class HttpConnection implements Connection
             {   
                 _request._async.doComplete();
                 
-                if (_expect == HttpHeaderValues.CONTINUE_ORDINAL)
+                if (_expect100Continue)
                 {
                     // Continue not sent so don't parse any content 
-                    _expect = UNKNOWN;
+                    _expect100Continue = false;
                     if (_parser instanceof HttpParser)
                         ((HttpParser)_parser).setState(HttpParser.STATE_END);
                 }
@@ -662,7 +692,6 @@ public class HttpConnection implements Connection
     {
         return _generator;
     }
-    
 
     /* ------------------------------------------------------------ */
     public boolean isIncluding()
@@ -696,10 +725,20 @@ public class HttpConnection implements Connection
      */
     public boolean isSuspended()
     {
-        return _request.getAsyncRequest().isSuspended();
+        return _request.getAsyncContinuation().isSuspended();
     }
 
+    /* ------------------------------------------------------------ */
+    public boolean isExpecting100Continues()
+    {
+        return _expect100Continue;
+    }
 
+    /* ------------------------------------------------------------ */
+    public boolean isExpecting102Processing()
+    {
+        return _expect102Processing;
+    }
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -716,7 +755,9 @@ public class HttpConnection implements Connection
         public void startRequest(Buffer method, Buffer uri, Buffer version) throws IOException
         {
             _host = false;
-            _expect = UNKNOWN;
+            _expect = false;
+            _expect100Continue=false;
+            _expect102Processing=false;
             _delayedHandling=false;
             _charset=null;
 
@@ -746,6 +787,8 @@ public class HttpConnection implements Connection
             }
             catch (Exception e)
             {
+                Log.warn(method+" "+uri+" "+version+": "+e);
+                Log.debug(e);
                 throw new HttpException(HttpStatus.BAD_REQUEST_400,null,e);
             }
         }
@@ -765,7 +808,39 @@ public class HttpConnection implements Connection
                     
                 case HttpHeaders.EXPECT_ORDINAL:
                     value = HttpHeaderValues.CACHE.lookup(value);
-                    _expect = HttpHeaderValues.CACHE.getOrdinal(value);
+                    switch(HttpHeaderValues.CACHE.getOrdinal(value))
+                    {
+                        case HttpHeaderValues.CONTINUE_ORDINAL:
+                            _expect100Continue=_generator instanceof HttpGenerator;
+                            break;
+
+                        case HttpHeaderValues.PROCESSING_ORDINAL:
+                            _expect102Processing=_generator instanceof HttpGenerator;
+                            break;
+                            
+                        default:
+                            String[] values = value.toString().split(",");
+                            for  (int i=0;values!=null && i<values.length;i++)
+                            {
+                                CachedBuffer cb=HttpHeaderValues.CACHE.get(values[i].trim());
+                                if (cb==null)
+                                    _expect=true;
+                                else
+                                {
+                                    switch(cb.getOrdinal())
+                                    {
+                                        case HttpHeaderValues.CONTINUE_ORDINAL:
+                                            _expect100Continue=_generator instanceof HttpGenerator;
+                                            break;
+                                        case HttpHeaderValues.PROCESSING_ORDINAL:
+                                            _expect102Processing=_generator instanceof HttpGenerator;
+                                            break;
+                                        default:
+                                            _expect=true;
+                                    }
+                                }
+                            }
+                    }
                     break;
                     
                 case HttpHeaders.ACCEPT_ENCODING_ORDINAL:
@@ -780,8 +855,7 @@ public class HttpConnection implements Connection
 
                 case HttpHeaders.CONNECTION_ORDINAL:
                     //looks rather clumsy, but the idea is to optimize for a single valued header
-                    int ordinal = HttpHeaderValues.CACHE.getOrdinal(value);
-                    switch(ordinal)
+                    switch(HttpHeaderValues.CACHE.getOrdinal(value))
                     {
                         case -1:
                         { 
@@ -852,19 +926,10 @@ public class HttpConnection implements Connection
                         return;
                     }
 
-                    if (_expect != UNKNOWN)
+                    if (_expect)
                     {
-                        if (_expect == HttpHeaderValues.CONTINUE_ORDINAL)
-                        {
-                        }
-                        else if (_expect == HttpHeaderValues.PROCESSING_ORDINAL)
-                        {
-                        }
-                        else
-                        {
-                            _generator.sendError(HttpStatus.EXPECTATION_FAILED_417, null, null, true);
-                            return;
-                        }
+                        _generator.sendError(HttpStatus.EXPECTATION_FAILED_417, null, null, true);
+                        return;
                     }
                     
                     break;
@@ -875,7 +940,7 @@ public class HttpConnection implements Connection
                 _request.setCharacterEncodingUnchecked(_charset);
             
             // Either handle now or wait for first content
-            if ((((HttpParser)_parser).getContentLength()<=0 && !((HttpParser)_parser).isChunking())||_expect==HttpHeaderValues.CONTINUE_ORDINAL) 
+            if ((((HttpParser)_parser).getContentLength()<=0 && !((HttpParser)_parser).isChunking())||_expect100Continue) 
                 handleRequest();
             else
                 _delayedHandling=true;
@@ -894,6 +959,7 @@ public class HttpConnection implements Connection
             }
         }
 
+        /* ------------------------------------------------------------ */
         /*
          * (non-Javadoc)
          * 
@@ -908,6 +974,7 @@ public class HttpConnection implements Connection
             }
         }
 
+        /* ------------------------------------------------------------ */
         /*
          * (non-Javadoc)
          * 
@@ -918,7 +985,6 @@ public class HttpConnection implements Connection
         {
             Log.debug("Bad request!: "+version+" "+status+" "+reason);
         }
-
     }
 
     

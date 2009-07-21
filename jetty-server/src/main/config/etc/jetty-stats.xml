@@ -8,9 +8,6 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-    <!-- =========================================================== -->
-    <!-- configure rewrite handler                                   --> 
-    <!-- =========================================================== -->
     <Get id="oldhandler" name="handler"/>
 
     <Set name="handler">

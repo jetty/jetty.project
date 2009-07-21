@@ -64,24 +64,18 @@ public class Response implements HttpServletResponse
      * can be set during include using only {@link #setHeader(String, String)} or
      * {@link #addHeader(String, String)}.
      */
-    public static String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
+    public final static String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
 
-    private static PrintWriter __nullPrintWriter;
-    private static ServletOutputStream __nullServletOut;
+    private static final PrintWriter __nullPrintWriter;
+    private static final ServletOutputStream __nullServletOut;
 
     static
     {
-        try{
-            __nullPrintWriter = new PrintWriter(IO.getNullWriter());
-            __nullServletOut = new NullOutput();
-        }
-        catch (Exception e)
-        {
-            Log.warn(e);
-        }
+        __nullPrintWriter = new PrintWriter(IO.getNullWriter());
+        __nullServletOut = new NullOutput();
     }
 
-    private HttpConnection _connection;
+    private final HttpConnection _connection;
     private int _status=SC_OK;
     private String _reason;
     private Locale _locale;
@@ -170,8 +164,10 @@ public class Response implements HttpServletResponse
         if (sessionURLPrefix==null)
             return url;
 
+        if (url==null)
+            return null;
         // should not encode if cookies in evidence
-        if (url==null || request==null || request.isRequestedSessionIdFromCookie())
+        if (request.isRequestedSessionIdFromCookie())
         {
             int prefix=url.indexOf(sessionURLPrefix);
             if (prefix!=-1)
@@ -381,25 +377,8 @@ public class Response implements HttpServletResponse
      */
     public void sendProcessing() throws IOException
     {
-        Generator g = _connection.getGenerator();
-        if (g instanceof HttpGenerator)
-        {
-            HttpGenerator generator = (HttpGenerator)g;
-
-            String expect = _connection.getRequest().getHeader(HttpHeaders.EXPECT);
-
-            if (expect!=null && expect.startsWith("102") && generator.getVersion()>=HttpVersions.HTTP_1_1_ORDINAL)
-            {
-                boolean was_persistent=generator.isPersistent();
-                generator.setResponse(102,null);
-                generator.completeHeader(null,true);
-                generator.setPersistent(true);
-                generator.complete();
-                generator.flushBuffer();
-                generator.reset(false);
-                generator.setPersistent(was_persistent);
-            }
-        }
+        if (_connection.isExpecting102Processing() && !isCommitted())
+            ((HttpGenerator)_connection.getGenerator()).send1xx(HttpStatus.PROCESSING_102);
     }
 
     /* ------------------------------------------------------------ */

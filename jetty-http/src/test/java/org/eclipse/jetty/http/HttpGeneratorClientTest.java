@@ -39,7 +39,7 @@ public class HttpGeneratorClientTest extends TestCase
         Buffer bb=new ByteArrayBuffer(8096);
         Buffer sb=new ByteArrayBuffer(1500);
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
-        HttpGenerator generator = new HttpGenerator(new SimpleBuffers(new Buffer[]{sb,bb}),endp, sb.capacity(), bb.capacity());
+        HttpGenerator generator = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
         
         generator.setRequest("GET","/usr");
         
@@ -67,7 +67,7 @@ public class HttpGeneratorClientTest extends TestCase
         Buffer bb=new ByteArrayBuffer(8096);
         Buffer sb=new ByteArrayBuffer(1500);
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
-        HttpGenerator generator = new HttpGenerator(new SimpleBuffers(new Buffer[]{sb,bb}),endp, sb.capacity(), bb.capacity());
+        HttpGenerator generator = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
         
         generator.setRequest("GET","/usr");
         
@@ -94,7 +94,7 @@ public class HttpGeneratorClientTest extends TestCase
         Buffer bb=new ByteArrayBuffer(8096);
         Buffer sb=new ByteArrayBuffer(1500);
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
-        HttpGenerator generator = new HttpGenerator(new SimpleBuffers(new Buffer[]{sb,bb}),endp, sb.capacity(), bb.capacity());
+        HttpGenerator generator = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
         
         generator.setRequest("GET","/usr");
         
@@ -122,7 +122,7 @@ public class HttpGeneratorClientTest extends TestCase
         Buffer sb=new ByteArrayBuffer(1500);
         HttpFields fields = new HttpFields();
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
-        HttpGenerator hb = new HttpGenerator(new SimpleBuffers(new Buffer[]{sb,bb}),endp, sb.capacity(), bb.capacity());
+        HttpGenerator hb = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
         Handler handler = new Handler();
         HttpParser parser=null;
         

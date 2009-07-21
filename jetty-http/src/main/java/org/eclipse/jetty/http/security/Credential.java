@@ -73,7 +73,7 @@ public abstract class Credential
     {
         public static final String __TYPE = "CRYPT:";
 
-        private String _cooked;
+        private final String _cooked;
 
         Crypt(String cooked)
         {
@@ -109,7 +109,7 @@ public abstract class Credential
 
         private static MessageDigest __md;
 
-        private byte[] _digest;
+        private final byte[] _digest;
 
         /* ------------------------------------------------------------ */
         MD5(String digest)

@@ -91,7 +91,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                         if (x<8)
                             return 0;
 
-                        if (x<16 & buffer.space()>=1)
+                        if (x<16 && buffer.space()>=1)
                         {
                             NIOBuffer one = new IndirectNIOBuffer(1);
                             int l=super.fill(one);
@@ -100,7 +100,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                             return l;
                         }
                         
-                        if (x<24 & buffer.space()>=2)
+                        if (x<24 && buffer.space()>=2)
                         {
                             NIOBuffer two = new IndirectNIOBuffer(2);
                             int l=super.fill(two);
@@ -111,7 +111,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                             return l;
                         }
                         
-                        if (x<64 & buffer.space()>=3)
+                        if (x<64 && buffer.space()>=3)
                         {
                             NIOBuffer three = new IndirectNIOBuffer(3);
                             int l=super.fill(three);

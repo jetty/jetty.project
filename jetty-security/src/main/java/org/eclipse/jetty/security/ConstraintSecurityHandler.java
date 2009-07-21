@@ -335,7 +335,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         String[] roles = roleInfo.getRoles();
         for (String role : roles)
         {
-            if (userIdentity.isUserInRole(role))
+            if (userIdentity.isUserInRole(role, null))
                 return true;
         }
         return false;

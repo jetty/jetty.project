@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +44,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
@@ -55,19 +59,23 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public class Server extends HandlerWrapper implements Attributes
 {
-    private static ShutdownHookThread hookThread = new ShutdownHookThread();
-    private static String _version = (Server.class.getPackage()!=null && Server.class.getPackage().getImplementationVersion()!=null)
-        ?Server.class.getPackage().getImplementationVersion()
-        :"8.0.y.z-SNAPSHOT";
-
+    private static final ShutdownHookThread hookThread = new ShutdownHookThread();
+    private static final String _version;
+    static
+    {
+        if (Server.class.getPackage()!=null && Server.class.getPackage().getImplementationVersion()!=null)
+            _version=Server.class.getPackage().getImplementationVersion();
+        else
+            _version=System.getProperty("jetty.version","8.0.y.z-SNAPSHOT");
+    }
+    private final Container _container=new Container();
+    private final AttributesMap _attributes = new AttributesMap();
+    private final List<Object> _dependentBeans=new ArrayList<Object>();
     private ThreadPool _threadPool;
     private Connector[] _connectors;
-    private Container _container=new Container();
     private SessionIdManager _sessionIdManager;
     private boolean _sendServerVersion = true; //send Server: header
-    private boolean _sendDateHeader = false; //send Date: header 
-    private AttributesMap _attributes = new AttributesMap();
-    private List<Object> _dependentBeans=new ArrayList<Object>();
+    private boolean _sendDateHeader = false; //send Date: header
     private int _graceful=0;
     private boolean _stopAtShutdown;
     
@@ -337,7 +345,7 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public void handleAsync(HttpConnection connection) throws IOException, ServletException
     {
-        final AsyncContinuation async = connection.getRequest().getAsyncRequest();
+        final AsyncContinuation async = connection.getRequest().getAsyncContinuation();
         final AsyncContinuation.AsyncEventState state = async.getAsyncEventState();
 
         final Request baseRequest=connection.getRequest();
@@ -524,7 +532,7 @@ public class Server extends HandlerWrapper implements Attributes
     private static class ShutdownHookThread extends Thread
     {
         private boolean _hooked = false;
-        private Set<Server> _servers = new CopyOnWriteArraySet<Server>();
+        private final Set<Server> _servers = new CopyOnWriteArraySet<Server>();
 
         /**
          * Hooks this thread for shutdown.
@@ -537,10 +545,8 @@ public class Server extends HandlerWrapper implements Attributes
             {
                 try
                 {
-                    Method shutdownHook = java.lang.Runtime.class.getMethod("addShutdownHook", new Class[]
-                    { java.lang.Thread.class});
-                    shutdownHook.invoke(Runtime.getRuntime(), new Object[]
-                    { this});
+                    Method shutdownHook = java.lang.Runtime.class.getMethod("addShutdownHook", Thread.class);
+                    shutdownHook.invoke(Runtime.getRuntime(), this);
                     _hooked = true;
                 }
                 catch (Exception e)
@@ -708,5 +714,11 @@ public class Server extends HandlerWrapper implements Attributes
     public interface Graceful extends Handler
     {
         public void setShutdown(boolean shutdown);
+    }
+
+    /* ------------------------------------------------------------ */
+    public static void main(String[] args)
+    {
+        System.err.println(getVersion());
     }
 }

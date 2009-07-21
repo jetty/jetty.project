@@ -72,7 +72,6 @@ public class Utf8StringBuilder
                 _bits=0;
             }
             else
-
             { 
                 if ((b & 0xe0) == 0xc0)
                 {
@@ -106,11 +105,11 @@ public class Utf8StringBuilder
                 }
                 else
                 {
-                    throw new IllegalArgumentException();
+                    throw new IllegalArgumentException("!utf8");
                 }
                 
                 if (_bits==0)
-                    throw new IllegalArgumentException("non-shortest UTF-8 form");
+                    throw new IllegalArgumentException("!utf8");
             }
         }
         else
@@ -120,7 +119,7 @@ public class Utf8StringBuilder
                 _buffer.append('?');
                 _more=0;
                 _bits=0;
-                throw new IllegalArgumentException();
+                throw new IllegalArgumentException("!utf8");
             }
             else
             {
@@ -147,14 +146,14 @@ public class Utf8StringBuilder
     public StringBuilder getStringBuilder()
     {
         if (_more!=0)
-            throw new IllegalStateException();
+            throw new IllegalStateException("!utf8");
         return _buffer;
     }
     
     public String toString()
     {
         if (_more!=0)
-            throw new IllegalStateException();
+            throw new IllegalStateException("!utf8");
         return _buffer.toString();
     }
 }

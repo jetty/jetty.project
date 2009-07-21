@@ -158,6 +158,7 @@ public class DoSFilterTest extends TestCase
     {
         String request="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\n\r\n";
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
+       
         String responses = doRequests(request+request+request+request+request,2,1100,1100,last);
         
         assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
@@ -304,10 +305,12 @@ public class DoSFilterTest extends TestCase
             {
                 try
                 {
-                    Thread.sleep(Long.parseLong(request.getParameter("sleep")));
+                    long sleep=Long.parseLong(request.getParameter("sleep"));
+                    Thread.sleep(sleep);
                 }
                 catch(InterruptedException e)
                 {    
+                    e.printStackTrace();
                 }
             }
             

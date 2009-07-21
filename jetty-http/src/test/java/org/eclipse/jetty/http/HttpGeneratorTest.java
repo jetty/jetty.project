@@ -47,7 +47,7 @@ public class HttpGeneratorTest extends TestCase
         Buffer sb=new ByteArrayBuffer(1500);
         HttpFields fields = new HttpFields();
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
-        HttpGenerator hb = new HttpGenerator(new SimpleBuffers(new Buffer[]{sb,bb}),endp, sb.capacity(), bb.capacity());
+        HttpGenerator hb = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
         Handler handler = new Handler();
         HttpParser parser=null;
         

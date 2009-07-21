@@ -33,13 +33,13 @@ public class TestAjpParser extends TestCase
         byte[] src = TypeUtil.fromHexString(packet);
         
         ByteArrayBuffer buffer= new ByteArrayBuffer(Ajp13Packet.MAX_PACKET_SIZE);
-        SimpleBuffers buffers=new SimpleBuffers(new Buffer[]{buffer});
+        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
         
         EndPoint endp = new ByteArrayEndPoint(src,Ajp13Packet.MAX_PACKET_SIZE);
         
         Ajp13Parser parser = new Ajp13Parser(buffers,endp);
         parser.setEventHandler(new EH());
-        parser.setGenerator(new Ajp13Generator(buffers,endp,0,0));
+        parser.setGenerator(new Ajp13Generator(buffers,endp));
         
         parser.parseAvailable();
         
@@ -51,12 +51,11 @@ public class TestAjpParser extends TestCase
         String packet="1234020102020008485454502f312e3100000f2f6363632d7777777777772f61616100000c38382e3838382e38382e383830ffff00116363632e6363636363636363632e636f6d0001bb010009a00b00116363632e6363636363636363632e636f6d00a00e005a4d6f7a696c6c612f352e30202857696e646f77733b20553b2057696e646f7773204e5420352e313b20656e2d55533b2072763a312e382e312e3129204765636b6f2f32303036313230342046697265666f782f322e302e302e3100a0010063746578742f786d6c2c6170706c69636174696f6e2f786d6c2c6170706c69636174696f6e2f7868746d6c2b786d6c2c746578742f68746d6c3b713d302e392c746578742f706c61696e3b713d302e382c696d6167652f706e672c2a2f2a3b713d302e3500a004000e656e2d75732c656e3b713d302e3500a003000c677a69702c6465666c61746500a002001e49534f2d383835392d312c7574662d383b713d302e372c2a3b713d302e3700000a4b6565702d416c69766500000333303000a006000a6b6565702d616c69766500000c4d61782d466f7277617264730000023130000800124448452d5253412d4145533235362d5348410009004039324643303544413043444141443232303137413743443141453939353132413330443938363838423843433041454643364231363035323543433232353341000b0100ff";
         byte[] src=TypeUtil.fromHexString(packet);
         ByteArrayBuffer buffer=new ByteArrayBuffer(Ajp13Packet.MAX_PACKET_SIZE);
-        SimpleBuffers buffers=new SimpleBuffers(new Buffer[]
-        { buffer });
+        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
         EndPoint endp=new ByteArrayEndPoint(src,Ajp13Packet.MAX_PACKET_SIZE);
         Ajp13Parser parser = new Ajp13Parser(buffers,endp);
         parser.setEventHandler(new EH());
-        parser.setGenerator(new Ajp13Generator(buffers,endp,0,0));
+        parser.setGenerator(new Ajp13Generator(buffers,endp));
         parser.parse();
         assertTrue(true);
     }    
@@ -66,12 +65,11 @@ public class TestAjpParser extends TestCase
         String packet="1234028f02020008485454502f312e3100000d2f666f726d746573742e6a737000000d3139322e3136382e342e31383000ffff00107777772e777265636b6167652e6f726700005000000aa0010063746578742f786d6c2c6170706c69636174696f6e2f786d6c2c6170706c69636174696f6e2f7868746d6c2b786d6c2c746578742f68746d6c3b713d302e392c746578742f706c61696e3b713d302e382c696d6167652f706e672c2a2f2a3b713d302e3500a00200075554462d382c2a00a003000c677a69702c6465666c61746500a004000e656e2d67622c656e3b713d302e3500a006000a6b6565702d616c69766500a00900f95048505345535349443d37626361383232616638333466316465373663633630336366636435313938633b20667041757468436f6f6b69653d433035383430394537393344364245434633324230353234344242303039343230383344443645443533304230454637464137414544413745453231313538333745363033454435364332364446353531383635333335423433374531423637414641343533364345304546323342333642323133374243423932333943363631433131443330393842333938414546334546334146454344423746353842443b204a53455353494f4e49443d7365366331623864663432762e6a657474793300a00b00107777772e777265636b6167652e6f726700000a6b6565702d616c69766500000333303000a00e00654d6f7a696c6c612f352e3020285831313b20553b204c696e7578207838365f36343b20656e2d55533b2072763a312e382e302e3929204765636b6f2f3230303631323035202844656269616e2d312e382e302e392d3129204570697068616e792f322e313400a008000130000600066a657474793300ff";
         byte[] src=TypeUtil.fromHexString(packet);
         ByteArrayBuffer buffer=new ByteArrayBuffer(Ajp13Packet.MAX_PACKET_SIZE);
-        SimpleBuffers buffers=new SimpleBuffers(new Buffer[]
-        { buffer });
+        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
         EndPoint endp=new ByteArrayEndPoint(src,Ajp13Packet.MAX_PACKET_SIZE);
         Ajp13Parser parser = new Ajp13Parser(buffers,endp);
         parser.setEventHandler(new EH());
-        parser.setGenerator(new Ajp13Generator(buffers,endp,0,0));
+        parser.setGenerator(new Ajp13Generator(buffers,endp));
         parser.parse();
         assertTrue(true);
     }
@@ -83,13 +81,13 @@ public class TestAjpParser extends TestCase
         byte[] src = TypeUtil.fromHexString(packet);
         
         ByteArrayBuffer buffer= new ByteArrayBuffer(Ajp13Packet.MAX_PACKET_SIZE);
-        SimpleBuffers buffers=new SimpleBuffers(new Buffer[]{buffer});
+        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
         
         EndPoint endp = new ByteArrayEndPoint(src,Ajp13Packet.MAX_PACKET_SIZE);
         
         Ajp13Parser parser = new Ajp13Parser(buffers,endp);
         parser.setEventHandler(new EH());
-        parser.setGenerator(new Ajp13Generator(buffers,endp,0,0));
+        parser.setGenerator(new Ajp13Generator(buffers,endp));
         
         parser.parseAvailable();
         
@@ -102,13 +100,13 @@ public class TestAjpParser extends TestCase
         byte[] src = TypeUtil.fromHexString(packet);
         
         ByteArrayBuffer buffer= new ByteArrayBuffer(Ajp13Packet.MAX_PACKET_SIZE);
-        SimpleBuffers buffers=new SimpleBuffers(new Buffer[]{buffer});
+        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
         
         EndPoint endp = new ByteArrayEndPoint(src,Ajp13Packet.MAX_PACKET_SIZE);
         
         Ajp13Parser parser = new Ajp13Parser(buffers,endp);
         parser.setEventHandler(new EH());
-        parser.setGenerator(new Ajp13Generator(buffers,endp,0,0));
+        parser.setGenerator(new Ajp13Generator(buffers,endp));
         
         parser.parseAvailable();
         
@@ -129,14 +127,14 @@ public class TestAjpParser extends TestCase
             System.arraycopy(src,src.length-f,frag1,0,f);
         
             ByteArrayBuffer buffer= new ByteArrayBuffer(Ajp13Packet.MAX_PACKET_SIZE);
-            SimpleBuffers buffers=new SimpleBuffers(new Buffer[]{buffer});
+            SimpleBuffers buffers=new SimpleBuffers(buffer,null);
         
             ByteArrayEndPoint endp = new ByteArrayEndPoint(frag0,Ajp13Packet.MAX_PACKET_SIZE);
             endp.setNonBlocking(true);
         
             Ajp13Parser parser = new Ajp13Parser(buffers,endp);
             parser.setEventHandler(new EH());
-            parser.setGenerator(new Ajp13Generator(buffers,endp,0,0));
+            parser.setGenerator(new Ajp13Generator(buffers,endp));
             parser.parseNext();
             
             endp.setIn(new ByteArrayBuffer(frag1));
@@ -153,13 +151,12 @@ public class TestAjpParser extends TestCase
         String packet=getTestHeader();
         byte[] src=TypeUtil.fromHexString(packet);
         ByteArrayBuffer buffer=new ByteArrayBuffer(Ajp13Packet.MAX_PACKET_SIZE);
-        SimpleBuffers buffers=new SimpleBuffers(new Buffer[]
-        { buffer });
+        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
         ByteArrayEndPoint endp=new ByteArrayEndPoint(src,Ajp13Packet.MAX_PACKET_SIZE);
         endp.setNonBlocking(true);
         
         final int count[]={0};
-        Ajp13Generator gen = new Ajp13Generator(buffers,endp,0,0)
+        Ajp13Generator gen = new Ajp13Generator(buffers,endp)
         {
             public void getBodyChunk() throws IOException
             {
@@ -198,13 +195,12 @@ public class TestAjpParser extends TestCase
         String packet="123400ff02040008485454502f312e3100000f2f746573742f64756d702f696e666f0000093132372e302e302e3100ffff00096c6f63616c686f7374000050000007a00e000d4a6176612f312e352e305f313100a00b00096c6f63616c686f737400a0010034746578742f68746d6c2c20696d6167652f6769662c20696d6167652f6a7065672c202a3b20713d2e322c202a2f2a3b20713d2e3200a006000a6b6565702d616c69766500a00700216170706c69636174696f6e2f782d7777772d666f726d2d75726c656e636f6465640000115472616e736665722d456e636f64696e670000076368756e6b656400000c4d61782d466f727761726473000002313000ff";
         byte[] src=TypeUtil.fromHexString(packet);
         ByteArrayBuffer buffer=new ByteArrayBuffer(Ajp13Packet.MAX_PACKET_SIZE);
-        SimpleBuffers buffers=new SimpleBuffers(new Buffer[]
-        { buffer });
+        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
         ByteArrayEndPoint endp=new ByteArrayEndPoint(src,Ajp13Packet.MAX_PACKET_SIZE);
         endp.setNonBlocking(true);
         
         final int count[]={0};
-        Ajp13Generator gen = new Ajp13Generator(buffers,endp,0,0)
+        Ajp13Generator gen = new Ajp13Generator(buffers,endp)
         {
             public void getBodyChunk() throws IOException
             {
@@ -258,14 +254,14 @@ public class TestAjpParser extends TestCase
             System.arraycopy(src,src.length-f,frag1,0,f);
         
             ByteArrayBuffer buffer= new ByteArrayBuffer(Ajp13Packet.MAX_PACKET_SIZE);
-            SimpleBuffers buffers=new SimpleBuffers(new Buffer[]{buffer});
+            SimpleBuffers buffers=new SimpleBuffers(buffer,null);
         
             ByteArrayEndPoint endp = new ByteArrayEndPoint(frag0,Ajp13Packet.MAX_PACKET_SIZE);
             endp.setNonBlocking(true);
         
             Ajp13Parser parser = new Ajp13Parser(buffers,endp);
             parser.setEventHandler(new EH());
-            parser.setGenerator(new Ajp13Generator(buffers,endp,0,0));
+            parser.setGenerator(new Ajp13Generator(buffers,endp));
             parser.parseNext();
             
             endp.setIn(new ByteArrayBuffer(frag1));
@@ -291,14 +287,14 @@ public class TestAjpParser extends TestCase
             System.arraycopy(src,src.length-f,frag1,0,f);
         
             ByteArrayBuffer buffer= new ByteArrayBuffer(Ajp13Packet.MAX_PACKET_SIZE);
-            SimpleBuffers buffers=new SimpleBuffers(new Buffer[]{buffer});
+            SimpleBuffers buffers=new SimpleBuffers(buffer,null);
         
             ByteArrayEndPoint endp = new ByteArrayEndPoint(frag0,Ajp13Packet.MAX_PACKET_SIZE);
             endp.setNonBlocking(true);
             
             Ajp13Parser parser = new Ajp13Parser(buffers,endp);
             parser.setEventHandler(new EH());
-            parser.setGenerator(new Ajp13Generator(buffers,endp,0,0));
+            parser.setGenerator(new Ajp13Generator(buffers,endp));
             parser.parseNext();
             
             endp.setIn(new ByteArrayBuffer(frag1));

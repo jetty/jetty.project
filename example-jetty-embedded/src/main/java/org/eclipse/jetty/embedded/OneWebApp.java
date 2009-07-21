@@ -23,8 +23,7 @@ public class OneWebApp
     public static void main(String[] args)
         throws Exception
     {
-        String jetty_default=new java.io.File("./start.jar").exists()?".":"../..";;
-        String jetty_home = System.getProperty("jetty.home",jetty_default);
+        String jetty_home = System.getProperty("jetty.home","..");
 
         Server server = new Server();
         
@@ -32,10 +31,14 @@ public class OneWebApp
         connector.setPort(Integer.getInteger("jetty.port",8080).intValue());
         server.setConnectors(new Connector[]{connector});
         
+        String war=args.length>0?args[0]:jetty_home+"/test-jetty-webapp/target/test-jetty-webapp-"+Server.getVersion();
+        String path=args.length>1?args[1]:"/";
+        
+        System.err.println(war+" "+path);
+        
         WebAppContext webapp = new WebAppContext();
-        webapp.setContextPath("/");
-        webapp.setWar(jetty_home+"/webapps/test");
-        webapp.setDefaultsDescriptor(jetty_home+"/etc/webdefault.xml");
+        webapp.setContextPath(path);
+        webapp.setWar(war);
         
         server.setHandler(webapp);
         

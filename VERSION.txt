@@ -10,8 +10,41 @@ jetty-8.0.0.M0-SNAPSHOT
  + Use PFD servlet API from 25/5/2009
  + Merged jetty-7-to-jetty-8-base-20090527-1
  + Merged jetty-7-to-jetty-8-base-20090528-1
+ + Merged jetty-7-to-jetty-8-base-20090721-1
 
 jetty-7.0.0.M3-SNAPSHOT
+
+jetty-7.0.0.RC2-SNAPSHOT
+ + 283844 Webapp / TLD errors are not clear
+
+jetty-7.0.0.RC1 15 June 2009
+ + JETTY-1066 283357 400 response for bad URIs
+ + JETTY-1068 Avoid busy flush of async SSL
+ + 283344 Startup on windows is broken
+
+jetty-7.0.0.RC0 8 June 2009
+ + JETTY-967 create standalone build for PKCS12Import at codehaus
+ + JETTY-1056 update jetty-ant module for Jetty 7 at codehaus trunk
+ + JETTY-1058 Handle trailing / with aliases
+ + 280843 Buffer pool uses isHeader
+ + 271535 Adding integration tests, and enabling RFC2616 tests
+ + 281287 Handle date headers before 1 Jan 1970
+ + 282807 Better handling of 100 continues if response committed.
+ + 282807 283049 282543 Improved handling of timeouts and complete. More debug
+
+jetty-7.0.0.M4 1 June 2009
+ + 281059 NPE in QTP with debug on
+ + JETTY-799 shell script for jetty on cygwin
+ + JETTY-1031 Handle large pipeline
+ + JETTY-1034 Cookie parsing
+ + JETTY-1042 Prevent cookie leak between shared connection
+ + JETTY-1048 Fix for large partially filtered static content
+ + JETTY-1049 Improved transparent proxy usability
+ + JETTY-1054 Avoid double deploys
+ + JETTY-1055 Cookie quoting
+ + JETTY-1057 Error page stack trace XSS
+
+jetty-7.0.0.M3 20 June 2009
  + fixed race with expired async listeners
  + refactored configuration mechanism
  + added WebAppContext.setConfigurationDiscovered for servlet 3.0 features
@@ -19,6 +52,14 @@ jetty-7.0.0.M3-SNAPSHOT
  + 277403 Cleanup system property usage.
  + 277798 Denial of Service Filter
  + Portable continuations for jetty6 and servlet3
+ + Refactored continuations to only support response wrapping
+ + Added ContinuationThrowable
+ + 276545 Quoted cookie paths
+ + 279725 Support 100 and 102 expectations
+ + Refactored AbstractBuffers to HttpBuffers for performance
+ + Numerous cleanups from static code analysis
+ + 280707 client.HttpConnection does not catch and handle non-IOExceptions
+ + 281470 Handle the case where request.PathInfo() should be "/*"
 
 jetty-7.0.0.M2 18 May 2009
  + JETTY-937 Work around Sun JVM bugs

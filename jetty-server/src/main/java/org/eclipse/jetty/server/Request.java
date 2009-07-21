@@ -124,7 +124,7 @@ public class Request implements HttpServletRequest
     }
     protected final AsyncContinuation _async = new AsyncContinuation();
     private boolean _asyncSupported=true;
-    private Attributes _attributes;
+    private volatile Attributes _attributes;
     private Authentication _authentication;
     private MultiMap<String> _baseParameters;
     private String _characterEncoding;
@@ -327,7 +327,7 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public AsyncContinuation getAsyncRequest()
+    public AsyncContinuation getAsyncContinuation()
     {
         return _async;
     }
@@ -344,12 +344,10 @@ public class Request implements HttpServletRequest
      */
     public Object getAttribute(String name)
     {
-        if (Continuation.ATTRIBUTE.equals(name))
+        Object attr=(_attributes==null)?null:_attributes.getAttribute(name);
+        if (attr==null && Continuation.ATTRIBUTE.equals(name))
             return _async;
-        
-        if (_attributes==null)
-            return null;
-        return _attributes.getAttribute(name);
+        return attr;
     }
 
     /* ------------------------------------------------------------ */
@@ -469,27 +467,24 @@ public class Request implements HttpServletRequest
         if (_cookiesExtracted) 
             return _cookies==null?null:_cookies.getCookies();
 
-        // Handle no cookies
-        if (!_connection.getRequestFields().containsKey(HttpHeaders.COOKIE_BUFFER))
-        {
-            _cookiesExtracted = true;
-            if (_cookies!=null)
-                _cookies.reset();
-            return null;
-        }
-
-        if (_cookies==null)
-            _cookies=new CookieCutter(this);
-
+        _cookiesExtracted = true;
+        
         Enumeration enm = _connection.getRequestFields().getValues(HttpHeaders.COOKIE_BUFFER);
-        while (enm.hasMoreElements())
+        
+        // Handle no cookies
+        if (enm!=null)
         {
-            String c = (String)enm.nextElement();
-            _cookies.addCookieField(c);
-        }
-        _cookiesExtracted=true;
+            if (_cookies==null)
+                _cookies=new CookieCutter();
 
-        return _cookies.getCookies();
+            while (enm.hasMoreElements())
+            {
+                String c = (String)enm.nextElement();
+                _cookies.addCookieField(c);
+            }
+        }
+
+        return _cookies==null?null:_cookies.getCookies();
     }
 
     /* ------------------------------------------------------------ */
@@ -594,11 +589,10 @@ public class Request implements HttpServletRequest
             return  Locale.getDefault();
         
         int size=acceptLanguage.size();
-        
-        // convert to locals
-        for (int i=0; i<size; i++)
+
+        if (size>0)
         {
-            String language = (String)acceptLanguage.get(i);
+            String language = (String)acceptLanguage.get(0);
             language=HttpFields.valueParameters(language,null);
             String country = "";
             int dash = language.indexOf('-');
@@ -936,7 +930,7 @@ public class Request implements HttpServletRequest
      */
     public StringBuffer getRequestURL()
     {
-        StringBuffer url = new StringBuffer(48);
+        final StringBuffer url = new StringBuffer(48);
         synchronized (url)
         {
             String scheme = getScheme();
@@ -1298,7 +1292,7 @@ public class Request implements HttpServletRequest
             return false;
         
         HttpSession session=getSession(false);
-        return (session==null?false:_sessionManager.getIdManager().getClusterId(_requestedSessionId).equals(_sessionManager.getClusterId(session)));
+        return (session != null && _sessionManager.getIdManager().getClusterId(_requestedSessionId).equals(_sessionManager.getClusterId(session)));
     }
     
     /* ------------------------------------------------------------ */
@@ -1329,7 +1323,7 @@ public class Request implements HttpServletRequest
     {
         if (_savedNewSessions==null)
             return null;
-        return (HttpSession) _savedNewSessions.get(key);
+        return _savedNewSessions.get(key);
     }
     
     /* ------------------------------------------------------------ */
@@ -1344,13 +1338,16 @@ public class Request implements HttpServletRequest
         if(_attributes!=null)
             _attributes.clearAttributes();
         _characterEncoding=null;
-        _queryEncoding=null;
+        if (_cookies!=null)
+            _cookies.reset();
+        _cookiesExtracted=false;
         _context=null;
         _serverName=null;
         _method=null;
         _pathInfo=null;
         _port=0;
         _protocol=HttpVersions.HTTP_1_1;
+        _queryEncoding=null;
         _queryString=null;
         _requestedSessionId=null;
         _requestedSessionIdFromCookie=false;
@@ -1368,7 +1365,6 @@ public class Request implements HttpServletRequest
         _paramsExtracted=false;
         _inputState=__NONE;
         
-        _cookiesExtracted=false;
         if (_savedNewSessions!=null)
             _savedNewSessions.clear();
         _savedNewSessions=null;
@@ -1398,7 +1394,7 @@ public class Request implements HttpServletRequest
                     if (listener instanceof ServletRequestAttributeListener)
                     {
                         final ServletRequestAttributeListener l = (ServletRequestAttributeListener)listener;
-                        ((ServletRequestAttributeListener)l).attributeRemoved(event);
+                        l.attributeRemoved(event);
                     }
                 }
             }
@@ -1461,12 +1457,12 @@ public class Request implements HttpServletRequest
         {
             try
             {
-                ByteBuffer byteBuffer=(ByteBuffer)value;
+                final ByteBuffer byteBuffer=(ByteBuffer)value;
                 synchronized (byteBuffer)
                 {
                     NIOBuffer buffer = byteBuffer.isDirect()
-                        ?(NIOBuffer)new DirectNIOBuffer(byteBuffer,true)
-                        :(NIOBuffer)new IndirectNIOBuffer(byteBuffer,true);
+                        ?new DirectNIOBuffer(byteBuffer,true)
+                        :new IndirectNIOBuffer(byteBuffer,true);
                     ((HttpConnection.Output)getServletResponse().getOutputStream()).sendResponse(buffer);
                 }
             }
@@ -1536,6 +1532,7 @@ public class Request implements HttpServletRequest
 
         // check encoding is supported
         if (!StringUtil.isUTF8(encoding))
+            //noinspection ResultOfMethodCallIgnored
             "".getBytes(encoding);
     }
 
@@ -1606,7 +1603,7 @@ public class Request implements HttpServletRequest
     public void setCookies(Cookie[] cookies)
     {
         if (_cookies==null)
-            _cookies=new CookieCutter(this);
+            _cookies=new CookieCutter();
         _cookies.setCookies(cookies);
     }
 

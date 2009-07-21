@@ -26,6 +26,7 @@ import javax.servlet.ServletResponse;
  */
 public class ContinuationFilter implements Filter
 {
+    static boolean __debug; // shared debug status
     private boolean _faux;
     private boolean _partial;
     ServletContext _context;
@@ -33,21 +34,29 @@ public class ContinuationFilter implements Filter
 
     public void init(FilterConfig filterConfig) throws ServletException
     {
-        boolean jetty="org.eclipse.jetty.servlet".equals(filterConfig.getClass().getPackage().getName());
+        boolean jetty_7_or_greater="org.eclipse.jetty.servlet".equals(filterConfig.getClass().getPackage().getName());
         _context = filterConfig.getServletContext();
         
         String param=filterConfig.getInitParameter("debug");
         _debug=param!=null&&Boolean.parseBoolean(param);
+        if (_debug)
+            __debug=true;
         
         param=filterConfig.getInitParameter("partial");
-        _partial=param!=null&&Boolean.parseBoolean(param) || (ContinuationSupport.__jetty6&&!jetty);
+        if (param!=null)
+            _partial=Boolean.parseBoolean(param);
+        else
+            _partial=ContinuationSupport.__jetty6 && !jetty_7_or_greater;
 
         param=filterConfig.getInitParameter("faux");
-        _faux=(param!=null&&Boolean.parseBoolean(param)) || !(jetty || _partial || _context.getMajorVersion()>=3);
+        if (param!=null)
+            _faux=Boolean.parseBoolean(param);
+        else
+            _faux=!(jetty_7_or_greater || _partial || _context.getMajorVersion()>=3);
         
         if (_debug)
             _context.log("ContinuationFilter "+
-                    " jetty="+jetty+
+                    " jetty="+jetty_7_or_greater+
                     " partial="+_partial+
                     " jetty6="+ContinuationSupport.__jetty6+
                     " faux="+_faux+
@@ -58,7 +67,7 @@ public class ContinuationFilter implements Filter
     {
         if (_faux)
         {
-            final FauxContinuation fc = new FauxContinuation(this, request,response);
+            final FauxContinuation fc = new FauxContinuation(request);
             request.setAttribute(Continuation.ATTRIBUTE,fc);
             boolean complete=false;
       
@@ -66,21 +75,12 @@ public class ContinuationFilter implements Filter
             {
                 try
                 {
+                    fc.setServletResponse(response);
                     chain.doFilter(request,response);
                 }
-                catch(IOException e)
+                catch (ContinuationThrowable e)
                 {
-                    if (fc.isSuspended())
-                        debug("ContinuationFilter caught ",e);
-                    else
-                        throw e;
-                }
-                catch(ServletException e)
-                {
-                    if (fc.isSuspended())
-                        debug("ContinuationFilter caught ",e);
-                    else
-                        throw e;
+                    debug("faux",e);
                 }
                 finally
                 {
@@ -92,7 +92,6 @@ public class ContinuationFilter implements Filter
         else if (_partial)
         {
             Continuation c = (Continuation) request.getAttribute(Continuation.ATTRIBUTE);
-            
             try
             {
                 if (c==null || !(c instanceof PartialContinuation) || ((PartialContinuation)c).enter())
@@ -107,13 +106,35 @@ public class ContinuationFilter implements Filter
             }
         }
         else
-            chain.doFilter(request,response);
+        {
+            try
+            {
+                chain.doFilter(request,response);
+            }
+            catch (ContinuationThrowable e)
+            {
+                debug("caught",e);
+            }
+        }
     }
-    
-    private void debug(String string, Exception e)
+
+    private void debug(String string)
     {
         if (_debug)
-            _context.log("DEBUG",e);
+        {
+            _context.log(string);
+        }
+    }
+    
+    private void debug(String string, Throwable th)
+    {
+        if (_debug)
+        {
+            if (th instanceof ContinuationThrowable)
+                _context.log(string+":"+th);
+            else
+                _context.log(string,th);
+        }
     }
 
     public void destroy()

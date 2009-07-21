@@ -1,0 +1,6 @@
+keystore "file://${basedir}/target/test-policy/jetty-policy.keystore", "jks";
+
+grant principal "jetty-policy"
+{
+  permission java.util.PropertyPermission "${{self}}", "read";
+};

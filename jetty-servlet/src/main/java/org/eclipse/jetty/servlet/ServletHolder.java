@@ -227,7 +227,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
     
     /* ------------------------------------------------------------ */
     public void doStart()
-    throws Exception
+        throws Exception
     {
         _unavailable=0;
         try
@@ -267,6 +267,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
 
     /* ------------------------------------------------------------ */
     public void doStop()
+        throws Exception
     {
         Object old_run_as = null;
         if (_servlet!=null)

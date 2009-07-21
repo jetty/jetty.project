@@ -2,33 +2,43 @@ package org.eclipse.jetty.continuation;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 
 
+
+/* ------------------------------------------------------------ */
+/**
+ * This implementation of Continuation is used by {@link ContinuationSupport}
+ * when it detects that the application is deployed in a jetty-6 server.
+ * This continuation requires the {@link ContinuationFilter} to be deployed.
+ */
 public class Jetty6Continuation implements ContinuationFilter.PartialContinuation
 {
-    private final ServletRequest _request;
-    private final ServletResponse _response;
-    private final org.mortbay.util.ajax.Continuation _j6Continuation;
+    // Exception reused for all continuations
+    // Turn on debug in ContinuationFilter to see real stack trace.
+    private final static ContinuationThrowable __exception = new ContinuationThrowable();
     
+    private final ServletRequest _request;
+    private ServletResponse _response;
+    private final org.mortbay.util.ajax.Continuation _j6Continuation;
+
     private Throwable _retry;
     private int _timeout;
     private boolean _initial=true;
     private volatile boolean _completed=false;
     private volatile boolean _resumed=false;
     private volatile boolean _expired=false;
-    private boolean _wrappers=false;
+    private boolean _responseWrapped=false;
     private List<ContinuationListener> _listeners;
-    
-    public Jetty6Continuation(ServletRequest request, ServletResponse response,org.mortbay.util.ajax.Continuation continuation)
+
+    public Jetty6Continuation(ServletRequest request, org.mortbay.util.ajax.Continuation continuation)
     {
         _request=request;
-        _response=response;
         _j6Continuation=continuation;
     }
-    
+
     public void addContinuationListener(final ContinuationListener listener)
     {
         if (_listeners==null)
@@ -47,42 +57,65 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
                 _j6Continuation.resume();
         }
     }
-
-    public ServletRequest getServletRequest()
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#getAttribute(java.lang.String)
+     */
+    public Object getAttribute(String name)
     {
-        return _request;
+        return _request.getAttribute(name);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#removeAttribute(java.lang.String)
+     */
+    public void removeAttribute(String name)
+    {
+        _request.removeAttribute(name);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#setAttribute(java.lang.String, java.lang.Object)
+     */
+    public void setAttribute(String name, Object attribute)
+    {
+        _request.setAttribute(name,attribute);
+    }
+
+    /* ------------------------------------------------------------ */
     public ServletResponse getServletResponse()
-    { 
+    {
         return _response;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isExpired()
     {
         return _expired;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isInitial()
     {
         return _initial;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isResumed()
     {
         return _resumed;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isSuspended()
     {
         return _retry!=null;
     }
 
-    public void keepWrappers()
-    {
-        _wrappers=true;
-    }
-
+    /* ------------------------------------------------------------ */
     public void resume()
     {
         synchronized(this)
@@ -95,35 +128,77 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
         }
     }
 
+    /* ------------------------------------------------------------ */
     public void setTimeout(long timeoutMs)
     {
         _timeout=(timeoutMs>Integer.MAX_VALUE)?Integer.MAX_VALUE:(int)timeoutMs;
     }
 
-    public void suspend()
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#suspend(javax.servlet.ServletResponse)
+     */
+    public void suspend(ServletResponse response)
     {
         try
         {
+            _response=response;
+            _responseWrapped=_response instanceof ServletResponseWrapper;
             _resumed=false;
             _expired=false;
             _completed=false;
             _j6Continuation.suspend(_timeout);
-        }       
+        }
         catch(Throwable retry)
         {
             _retry=retry;
         }
     }
 
-    public boolean wrappersKept()
+    /* ------------------------------------------------------------ */
+    public void suspend()
     {
-        return _wrappers;
+        try
+        {
+            _response=null;
+            _responseWrapped=false;
+            _resumed=false;
+            _expired=false;
+            _completed=false;
+            _j6Continuation.suspend(_timeout);
+        }
+        catch(Throwable retry)
+        {
+            _retry=retry;
+        }
     }
 
+    /* ------------------------------------------------------------ */
+    public boolean isResponseWrapped()
+    {
+        return _responseWrapped;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#undispatch()
+     */
+    public void undispatch()
+    {
+        if (isSuspended())
+        {
+            if (ContinuationFilter.__debug)
+                throw new ContinuationThrowable();
+            throw __exception;
+        }
+        throw new IllegalStateException("!suspended");
+    }
+
+    /* ------------------------------------------------------------ */
     public boolean enter()
     {
         _expired=!_j6Continuation.isResumed();
-        
+
         if (_initial)
             return true;
 
@@ -136,17 +211,17 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
                 for (ContinuationListener l: _listeners)
                     l.onTimeout(this);
             }
-            
+
             return !_completed;
         }
-        
+
         return true;
     }
 
     public void exit()
     {
         _initial=false;
-        
+
         Throwable th=_retry;
         _retry=null;
         if (th instanceof ThreadDeath)
@@ -161,6 +236,5 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
             for (ContinuationListener l: _listeners)
                 l.onComplete(this);
         }
-        
     }
 }

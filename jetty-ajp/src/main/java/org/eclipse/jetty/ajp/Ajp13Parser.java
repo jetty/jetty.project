@@ -234,10 +234,8 @@ public class Ajp13Parser implements Parser
         if (_buffer == null)
         {
             if (_header == null)
-            {
-                _header = _buffers.getBuffer(Ajp13Packet.MAX_PACKET_SIZE);
-                _header.clear();
-            }
+                _header = _buffers.getHeader();
+           
             _buffer = _header;
             _tok0 = new View(_header);
             _tok1 = new View(_header);
@@ -491,7 +489,7 @@ public class Ajp13Parser implements Parser
                     _generator.getBodyChunk();
                     if (_buffers != null && _body == null && _buffer == _header && _header.length() <= 0)
                     {
-                        _body = _buffers.getBuffer(Ajp13Packet.MAX_PACKET_SIZE);
+                        _body = _buffers.getBuffer();
                         _body.clear();
                     }
                     _state = STATE_AJP13CHUNK_START;
@@ -503,7 +501,7 @@ public class Ajp13Parser implements Parser
 
                     if (_buffers != null && _body == null && _buffer == _header && _contentLength > (_header.capacity() - _header.getIndex()))
                     {
-                        _body = _buffers.getBuffer(Ajp13Packet.MAX_PACKET_SIZE);
+                        _body = _buffers.getBuffer();
                         _body.clear();
 
                     }

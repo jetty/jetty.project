@@ -61,18 +61,18 @@
           <webAppConfig>
             <contextPath>/test</contextPath>
             <tempDirectory>${project.build.directory}/work</tempDirectory>
-            <sessionHandler implementation="org.eclipse.jetty.servlet.SessionHandler">
-              <sessionManager implementation="org.eclipse.jetty.servlet.HashSessionManager">
+            <sessionHandler implementation="org.eclipse.jetty.server.session.SessionHandler">
+              <sessionManager implementation="org.eclipse.jetty.server.session.HashSessionManager">
                 <storeDirectory>${basedir}/target/sessions</storeDirectory>
               </sessionManager>
             </sessionHandler>
           </webAppConfig>
-          <userRealms>
-            <userRealm implementation="org.eclipse.jetty.security.HashUserRealm">
+          <loginServices>
+            <loginService implementation="org.eclipse.jetty.security.HashLoginService">
               <name>Test Realm</name>
-              <config>../../../etc/realm.properties</config>
-            </userRealm>
-          </userRealms>
+              <config>../jetty-server/src/main/config/etc/realm.properties</config>
+            </loginService>
+          </loginServices>
         </configuration>
       </plugin>
       -->
