@@ -269,7 +269,7 @@ public class WebAppDeployer extends AbstractLifeCycle
             wah.setParentLoaderPriority(_parentLoaderPriority);
             
             //set up any contextAttributes
-            wah.setAttributes(_contextAttributes);
+            wah.setAttributes(new AttributesMap(_contextAttributes));
             
             // add it
             _contexts.addHandler(wah);
