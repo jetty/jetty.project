@@ -30,9 +30,19 @@ public abstract class AbstractAccessControl
         _className = name;
     }
     
+    public String getClassName ()
+    {
+        return _className;
+    }
+    
     public void setMethodName (String name)
     {
         _methodName = name;
+    }
+    
+    public String getMethodName ()
+    {
+        return _methodName;
     }
     
     public boolean isMethodType ()

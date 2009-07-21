@@ -18,12 +18,22 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
 
+import org.eclipse.jetty.plus.annotation.AbstractAccessControl;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.plus.annotation.DenyAll;
+import org.eclipse.jetty.plus.annotation.PermitAll;
+import org.eclipse.jetty.plus.annotation.RolesAllowed;
+import org.eclipse.jetty.plus.annotation.TransportProtected;
+import org.eclipse.jetty.security.ConstraintAware;
+import org.eclipse.jetty.security.ConstraintMapping;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
@@ -42,13 +52,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
 {
     public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";
     
-    
     public void preConfigure(final WebAppContext context) throws Exception
     {
     }
-    
-    
-    
+   
     
     public void configure(WebAppContext context) throws Exception
     {
@@ -68,6 +75,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             //Only scan jars and classes if metadata is not complete and the web app is version 3.0, or
             //a 2.5 version webapp that has specifically asked to discover annotations
             if (Log.isDebugEnabled()) Log.debug("parsing annotations");
+                       
             AnnotationParser parser = new AnnotationParser();
             parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new WebServletAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.servlet.annotation.WebFilter", new WebFilterAnnotationHandler(context));
@@ -77,10 +85,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
             parser.registerAnnotationHandler("javax.annotation.PostConstruct", new PostConstructAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.annotation.PreDestroy", new PreDestroyAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.annotation.security.RunAs", new RunAsAnnotationHandler(context));
-            parser.registerAnnotationHandler("javax.annotation.security.DenyAll", new DenyAllAnnotationHandler());
-            parser.registerAnnotationHandler("javax.annotation.security.PermitAll", new PermitAllAnnotationHandler());
-            parser.registerAnnotationHandler("javax.annotation.security.RolesAllowed", new RolesAllowedAnnotationHandler());
-            parser.registerAnnotationHandler("javax.annotation.security.TransportProtected", new TransportProtectedAnnotationHandler());
+            parser.registerAnnotationHandler("javax.annotation.security.DenyAll", new DenyAllAnnotationHandler(context));
+            parser.registerAnnotationHandler("javax.annotation.security.PermitAll", new PermitAllAnnotationHandler(context));
+            parser.registerAnnotationHandler("javax.annotation.security.RolesAllowed", new RolesAllowedAnnotationHandler(context));
+            parser.registerAnnotationHandler("javax.annotation.security.TransportProtected", new TransportProtectedAnnotationHandler(context));
             ClassInheritanceHandler classHandler = new ClassInheritanceHandler();
             parser.registerClassHandler(classHandler);
             registerServletContainerInitializerAnnotationHandlers(context, parser);
@@ -114,6 +122,47 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     public void postConfigure(WebAppContext context) throws Exception
     {
+        if (!(context.getSecurityHandler() instanceof ConstraintAware))
+        {
+            Log.warn("SecurityHandler not ConstraintAware, skipping security annotation processing");
+            return;
+        }
+        ConstraintAware securityHandler = (ConstraintAware)context.getSecurityHandler();
+        ConstraintMapping[] constraintMappings = securityHandler.getConstraintMappings();
+        ServletMapping[] mappings = context.getServletHandler().getServletMappings();
+        
+        //process Security Annotations class by class
+        Map<String, List<AbstractAccessControl>> securityAnnotations = (Map<String, List<AbstractAccessControl>>) context.getAttribute(AbstractSecurityAnnotationHandler.SECURITY_ANNOTATIONS);
+        for (Map.Entry<String, List<AbstractAccessControl>> e: securityAnnotations.entrySet())
+        {
+            //Find all url-patterns that have been mapped to this class and convert to <security-constraints>
+          
+            for (ServletMapping mapping : mappings)
+            {
+              //Check the name of the servlet that this mapping applies to, and then find the ServletHolder for it to find it's class
+                ServletHolder holder = context.getServletHandler().getServlet(mapping.getServletName());
+                if (!holder.getClassName().equals(e.getKey()))
+                    continue;
+                
+                //If the class is the same as one on the securityAnnotation then get its url mappings
+                String[] pathSpecs = mapping.getPathSpecs();
+                
+                //Now that we have the set of url mappings, see if there are any security constraints that would
+                //already apply, in which case we ignore this annotation
+                if (constraintMappings != null)
+                {
+                    for (ConstraintMapping constraintMapping : constraintMappings)
+                    {
+                       //TODO
+                    }
+                }
+              
+               
+                
+                
+                //Otherwise, we go about constructing a security-constraint that satisfies all of the annotations for this class
+            }
+        }
     }
     
 

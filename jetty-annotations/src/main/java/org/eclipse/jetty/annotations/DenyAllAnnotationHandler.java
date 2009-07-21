@@ -14,22 +14,33 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.webapp.WebAppContext;
 
 public class DenyAllAnnotationHandler extends AbstractSecurityAnnotationHandler
-{
+{ 
+
+    public DenyAllAnnotationHandler(WebAppContext context)
+    {
+        super(context);
+    }
 
 
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
                             List<Value> values)
     {
-        //TODO check that there is not already a PermitAll or DenyAll on the class
+        if (exists(className, AUTH_TYPES))
+        {
+            Log.warn("Multiple conflicting security annotations for "+className);
+            return;
+        }
         org.eclipse.jetty.plus.annotation.DenyAll denyAll = new org.eclipse.jetty.plus.annotation.DenyAll (className);
-        //add it to something - TODO
+        add(denyAll);
     }
 
  
@@ -48,11 +59,13 @@ public class DenyAllAnnotationHandler extends AbstractSecurityAnnotationHandler
              Log.warn ("DenyAll annotation not permitted on "+methodName+" - ignoring");
              return;
         }
-        //TODO check there is not already a PermitAll or a DenyAll for the method
+        if (exists(className, methodName, AUTH_TYPES))
+        {
+            Log.warn("Multiple conflicting security annotations for "+className+"."+methodName);
+            return;
+        }
         org.eclipse.jetty.plus.annotation.DenyAll denyAll = new org.eclipse.jetty.plus.annotation.DenyAll (className);
         denyAll.setMethodName(methodName);
-        //TODO - add it to something
-        
+        add(denyAll);      
     }
-
 }
