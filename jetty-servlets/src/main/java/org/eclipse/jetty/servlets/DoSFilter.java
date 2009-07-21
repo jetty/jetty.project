@@ -308,7 +308,7 @@ public class DoSFilter implements Filter
                     // insert a delay before throttling the request
                     if (_insertHeaders)
                         ((HttpServletResponse)response).addHeader("DoSFilter","delayed");
-                    Continuation continuation = ContinuationSupport.getContinuation(request,response);
+                    Continuation continuation = ContinuationSupport.getContinuation(request);
                     request.setAttribute(__TRACKER,tracker);
                     if (_delayMs > 0)
                         continuation.setTimeout(_delayMs);
