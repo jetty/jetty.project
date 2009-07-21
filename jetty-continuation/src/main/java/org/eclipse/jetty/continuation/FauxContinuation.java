@@ -249,7 +249,15 @@ class FauxContinuation implements Continuation
                     throw new IllegalStateException(this.getStatusString());
             }
         }
-        
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.continuation.Continuation#getServletResponse()
+     */
+    void setServletResponse(ServletResponse response)
+    {
+        _response=response;
     }
 
     /* ------------------------------------------------------------ */

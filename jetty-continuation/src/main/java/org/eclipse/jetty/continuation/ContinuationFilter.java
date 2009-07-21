@@ -75,6 +75,7 @@ public class ContinuationFilter implements Filter
             {
                 try
                 {
+                    fc.setServletResponse(response);
                     chain.doFilter(request,response);
                 }
                 catch (ContinuationThrowable e)
