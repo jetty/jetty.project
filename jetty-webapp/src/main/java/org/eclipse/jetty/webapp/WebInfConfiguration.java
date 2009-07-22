@@ -21,7 +21,8 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
 public class WebInfConfiguration implements Configuration
 {
     public static final String TEMPDIR_CREATED = "org.eclipse.jetty.tmpdirCreated";
-    public static final String JAR_RESOURCES = "org.eclipse.jetty.jarList";
+    public static final String CONTAINER_JAR_RESOURCES = "org.eclipse.jetty.containerJars";
+    public static final String WEB_INF_JAR_RESOURCES = "org.eclipse.jetty.webInfJars";
     public static final String CONTAINER_JAR_PATTERN = "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern";
     public static final String WEBINF_JAR_PATTERN = "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern";
     
@@ -53,19 +54,18 @@ public class WebInfConfiguration implements Configuration
         tmp = (String)context.getAttribute(CONTAINER_JAR_PATTERN);
         Pattern containerPattern = (tmp==null?null:Pattern.compile(tmp));
         
-        final ArrayList jarResources = new ArrayList<Resource>();
-        context.setAttribute(JAR_RESOURCES, jarResources);  
-        
-        PatternMatcher jarNameMatcher = new PatternMatcher ()
+        final ArrayList containerJarResources = new ArrayList<Resource>();
+        context.setAttribute(CONTAINER_JAR_RESOURCES, containerJarResources);  
+
+        //Apply ordering to container jars - if no pattern is specified, we won't
+        //match any of the container jars
+        PatternMatcher containerJarNameMatcher = new PatternMatcher ()
         {
             public void matched(URI uri) throws Exception
             {
-                jarResources.add(Resource.newResource(uri));
-            }
-            
+                containerJarResources.add(Resource.newResource(uri));
+            }      
         };
-        
-        //Apply ordering to container jars
         ClassLoader loader = context.getClassLoader();
         while (loader != null && (loader instanceof URLClassLoader))
         {
@@ -78,13 +78,21 @@ public class WebInfConfiguration implements Configuration
                 {
                     containerUris[i++] = u.toURI();
                 }
-                jarNameMatcher.match(containerPattern, containerUris, false);
+                containerJarNameMatcher.match(containerPattern, containerUris, false);
             }
             loader = loader.getParent();
         }
         
         //Apply ordering to WEB-INF/lib jars
-        //Find all jars in WEB-INF
+        final ArrayList webInfJarResources = new ArrayList<Resource>();
+        context.setAttribute(WEB_INF_JAR_RESOURCES, webInfJarResources);
+        PatternMatcher webInfJarNameMatcher = new PatternMatcher ()
+        {
+            public void matched(URI uri) throws Exception
+            {
+                webInfJarResources.add(Resource.newResource(uri));
+            }      
+        };
         List<Resource> jars = findJars(context);
         //Convert to uris for matching
         URI[] uris = null;
@@ -97,7 +105,7 @@ public class WebInfConfiguration implements Configuration
                 uris[i++] = r.getURI();
             }
         }
-        jarNameMatcher.match(webInfPattern, uris, true); //null is inclusive, no pattern == all jars match 
+        webInfJarNameMatcher.match(webInfPattern, uris, true); //null is inclusive, no pattern == all jars match 
     }
     
     

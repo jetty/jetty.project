@@ -13,218 +13,83 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.net.URI;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.EventListener;
-import java.util.List;
-
-import org.eclipse.jetty.plus.servlet.ServletHandler;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.ServletMapping;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
 
 /**
  * Configuration
  *
  *
  */
-public class AnnotationConfiguration extends org.eclipse.jetty.plus.webapp.Configuration
+public class AnnotationConfiguration extends AbstractConfiguration
 {
-    public static final String JAR_RESOURCES = WebInfConfiguration.JAR_RESOURCES;
-                                                      
+    public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";
     
-    
-    /** 
-     * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#parseAnnotations()
-     */
-    public void parseAnnotations(final WebAppContext context) throws Exception
+    public void preConfigure(final WebAppContext context) throws Exception
     {
-        /*
-         * TODO Need to also take account of hidden classes on system classpath that should never
-         * contribute annotations to a webapp (system and server classes):
-         * 
-         * --- when scanning system classpath:
-         *   + system classes : should always be scanned (subject to pattern)
-         *   + server classes : always ignored
-         *   
-         * --- when scanning webapp classpath:
-         *   + system classes : always ignored
-         *   + server classes : always scanned
-         * 
-         * 
-         * If same class is found in both container and in context then need to use
-         * webappcontext parentloaderpriority to work out which one contributes the
-         * annotation.
-         */
-        AnnotationFinder finder = new AnnotationFinder();
-
-        //TODO change for servlet spec 3
-        parseContainerPath (context, finder);
-        parseWebInfLib (context, finder);
-        parseWebInfClasses (context, finder);
-
-        AnnotationProcessor processor = new AnnotationProcessor(context, finder);
-        processor.process();
-        
-        List servlets = processor.getServlets();
-        List filters = processor.getFilters();
-        List servletMappings = processor.getServletMappings();
-        List filterMappings = processor.getFilterMappings();
-        List listeners = processor.getListeners();
-        
-        ServletHandler servletHandler = (ServletHandler)context.getServletHandler();
-        servletHandler.setFilters((FilterHolder[])LazyList.toArray(filters,FilterHolder.class));
-        servletHandler.setFilterMappings((FilterMapping[])LazyList.toArray(filterMappings,FilterMapping.class));
-        servletHandler.setServlets((ServletHolder[])LazyList.toArray(servlets,ServletHolder.class));
-        servletHandler.setServletMappings((ServletMapping[])LazyList.toArray(servletMappings,ServletMapping.class));
-        context.setEventListeners((EventListener[])LazyList.toArray(listeners,EventListener.class));
     }
+   
     
-    public void parseContainerPath (final WebAppContext context, final AnnotationFinder finder)
-    throws Exception
+    public void configure(WebAppContext context) throws Exception
     {
-        //if no pattern for the container path is defined, then by default scan NOTHING
-        Log.debug("Scanning container jars");
-        
-        //Get the container jar uris
-        
-        ArrayList<URI> containerCandidateUris = findJars (context.getClassLoader().getParent(), true);
-        
-        //Pick out the uris from JAR_RESOURCES that match those uris to be scanned
-        ArrayList<URI> containerUris = new ArrayList<URI>();
-        List<Resource> jarResources = (List<Resource>)context.getAttribute(JAR_RESOURCES);
-        for (Resource r : jarResources)
+       Boolean b = (Boolean)context.getAttribute(METADATA_COMPLETE);
+       boolean metadataComplete = (b != null && b.booleanValue());
+       Integer i = (Integer)context.getAttribute(WEBXML_VERSION);
+       int webxmlVersion = (i == null? 0 : i.intValue());
+      
+        if (metadataComplete)
         {
-            URI uri = r.getURI();
-            if (containerCandidateUris.contains(uri))
-            {
-                containerUris.add(uri);
-            }
-               
+            //Never scan any jars or classes for annotations if metadata is complete
+            if (Log.isDebugEnabled()) Log.debug("Metadata-complete==true,  not processing annotations for context "+context);
+            return;
         }
-        
-        finder.find (containerUris.toArray(new URI[containerUris.size()]),
-                new ClassNameResolver ()
-                {
-                    public boolean isExcluded (String name)
-                    {
-                        if (context.isSystemClass(name)) return false;
-                        if (context.isServerClass(name)) return true;
-                        return false;
-                    }
-
-                    public boolean shouldOverride (String name)
-                    { 
-                        //looking at system classpath
-                        if (context.isParentLoaderPriority())
-                            return true;
-                        return false;
-                    }
-                });
-    }
-    
-    
-    public void parseWebInfLib (final WebAppContext context, final AnnotationFinder finder)
-    throws Exception
-    {
-        Log.debug("Scanning WEB-INF/lib jars");
-        //Get the uris of jars on the webapp classloader
-        ArrayList<URI> candidateUris = findJars(context.getClassLoader(), false);
-        
-        //Pick out the uris from JAR_RESOURCES that match those to be scanned
-        ArrayList<URI> webInfUris = new ArrayList<URI>();
-        List<Resource> jarResources = (List<Resource>)context.getAttribute(JAR_RESOURCES);
-        for (Resource r : jarResources)
+        else 
         {
-            URI uri = r.getURI();
-            if (candidateUris.contains(uri))
-            {
-                webInfUris.add(uri);
-            }
-        }
-        
-        //if no pattern for web-inf/lib is defined, then by default scan everything in it
-       finder.find(webInfUris.toArray(new URI[webInfUris.size()]), 
-                new ClassNameResolver()
-                {
-                    public boolean isExcluded (String name)
-                    {    
-                        if (context.isSystemClass(name)) return true;
-                        if (context.isServerClass(name)) return false;
-                        return false;
-                    }
+            //Only scan jars and classes if metadata is not complete and the web app is version 3.0, or
+            //a 2.5 version webapp that has specifically asked to discover annotations
+            if (Log.isDebugEnabled()) Log.debug("parsing annotations");
+                       
+            AnnotationParser parser = new AnnotationParser();
 
-                    public boolean shouldOverride (String name)
-                    {
-                        //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
-                        if (context.isParentLoaderPriority())
-                            return false;
-                        return true;
-                    }
-                });  
-                
-    }
-     
-    public void parseWebInfClasses (final WebAppContext context, final AnnotationFinder finder)
-    throws Exception
-    {
-        Log.debug("Scanning classes in WEB-INF/classes");
-        finder.find(context.getWebInf().addPath("classes/"), 
-                    new ClassNameResolver()
-        {
-            public boolean isExcluded (String name)
-            {
-                if (context.isSystemClass(name)) return true;
-                if (context.isServerClass(name)) return false;
-                return false;
-            }
+            parser.registerAnnotationHandler("javax.annotation.Resource", new ResourceAnnotationHandler (context));
+            parser.registerAnnotationHandler("javax.annotation.Resources", new ResourcesAnnotationHandler (context));
+            parser.registerAnnotationHandler("javax.annotation.PostConstruct", new PostConstructAnnotationHandler(context));
+            parser.registerAnnotationHandler("javax.annotation.PreDestroy", new PreDestroyAnnotationHandler(context));
+            parser.registerAnnotationHandler("javax.annotation.security.RunAs", new RunAsAnnotationHandler(context));
 
-            public boolean shouldOverride (String name)
+            ClassInheritanceHandler classHandler = new ClassInheritanceHandler();
+            parser.registerClassHandler(classHandler);
+            
+            
+            if (webxmlVersion >= 30 || context.isConfigurationDiscovered())
             {
-                //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
-                if (context.isParentLoaderPriority())
-                    return false;
-                return true;
-            }
-        });
-    }
-
-    
-
-    public ArrayList<URI> findJars (ClassLoader loader, boolean visitParent)
-    {
-        ArrayList<URI> uris = new ArrayList<URI>();
-       
-        while (loader != null && (loader instanceof URLClassLoader))
-        {
-            URL[] urls = ((URLClassLoader)loader).getURLs();
-            if (urls != null)
-            {
-                for (URL u : urls)
-                {
-                    try
-                    {
-                        uris.add(u.toURI());
-                    }
-                    catch (Exception e)
-                    {
-                        Log.warn(e);
-                    }
-                } 
-            }
-            if (visitParent)
-                loader = loader.getParent();
+                if (Log.isDebugEnabled()) Log.debug("Scanning all classes for annotations: webxmlVersion="+webxmlVersion+" configurationDiscovered="+context.isConfigurationDiscovered());
+                parseContainerPath(context, parser);
+                parseWebInfLib (context, parser);
+                parseWebInfClasses(context, parser);
+            } 
             else
-                loader = null;
-        }
-        return uris;
+            {
+                if (Log.isDebugEnabled()) Log.debug("Scanning only classes in web.xml for annotations");
+                parse25Classes(context, parser);
+            }
+            
+            //save the type inheritance map created by the parser for later reference
+            context.setAttribute(CLASS_INHERITANCE_MAP, classHandler.getMap());
+        }    
     }
+
+
+
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+    }
+
+
+
+
+    public void postConfigure(WebAppContext context) throws Exception
+    {
+    }
+  
 }

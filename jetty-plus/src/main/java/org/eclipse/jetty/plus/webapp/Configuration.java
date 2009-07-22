@@ -143,7 +143,7 @@ public class Configuration extends AbstractConfiguration
       //lock this webapp's java:comp namespace as per J2EE spec
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
-        lockCompEnv();
+        lockCompEnv(context);
         Thread.currentThread().setContextClassLoader(oldLoader);
     }
     
@@ -151,42 +151,52 @@ public class Configuration extends AbstractConfiguration
     {
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
-        unlockCompEnv();
+        unlockCompEnv(context);
         _key = null;
         Thread.currentThread().setContextClassLoader(oldLoader);
         super.deconfigure (context);
     }
     
-    protected void lockCompEnv ()
+    protected void lockCompEnv (WebAppContext wac)
     throws Exception
     {
-        Random random = new Random ();
-        _key = new Integer(random.nextInt());
-        Context context = new InitialContext();
-        Context compCtx = (Context)context.lookup("java:comp");
-        compCtx.addToEnvironment("org.eclipse.jndi.lock", _key);
+        ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(wac.getClassLoader());
+        try
+        {
+            Random random = new Random ();
+            _key = new Integer(random.nextInt());
+            Context context = new InitialContext();
+            Context compCtx = (Context)context.lookup("java:comp");
+            compCtx.addToEnvironment("org.eclipse.jndi.lock", _key);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old_loader);
+        }
     }
     
-    protected void unlockCompEnv ()
+    protected void unlockCompEnv (WebAppContext wac)
     throws Exception
     {
         if (_key!=null)
+        {ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(wac.getClassLoader());
+
+        try
         {
             Context context = new InitialContext();
             Context compCtx = (Context)context.lookup("java:comp");
             compCtx.addToEnvironment("org.eclipse.jndi.unlock", _key); 
         }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old_loader);
+        }
+        }
     }
 
-    /** 
-     * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#parseAnnotations()
-     */
-    public void parseAnnotations(WebAppContext context) throws Exception
-    {
-        //Noop unless you want to do annotation discovery. 
-        //Use org.eclipse.jetty.annotations.Configuration instead.
-    }
-    
+  
     /**
      * Bind a resource with the given name from web.xml of the given type
      * with a jndi resource from either the server or the webapp's naming 

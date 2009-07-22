@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2009 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -10,46 +10,24 @@
 // http://www.opensource.org/licenses/apache2.0.php
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
-
 package org.eclipse.jetty.annotations;
 
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 
 
-/**
- * ClassB
- *
- *
- */
-@Sample(value=50)
-@Multi({"do", "re", "mi"})
-public class ClassB extends ClassA implements InterfaceD
+
+public class ListenerC implements ServletContextListener
 {
 
-    //test override of public scope method
-    @Sample(value=51)
-    @Multi({"fa", "so", "la"})
-    public void a()
+    public void contextDestroyed(ServletContextEvent arg0)
     {
-       System.err.println("ClassB.public");
+       
     }
-    
-    //test override of package scope method
-    @Sample(value=52)
-    void c()
+
+    public void contextInitialized(ServletContextEvent arg0)
     {
-        System.err.println("ClassB.package");
-    }
-    
-    public void l()
-    {
-        System.err.println("Overridden method l has no annotation");
-    }
-    
-    
-    //test no annotation
-    public void z()
-    {
-        System.err.println("ClassB.z");
+       
     }
 
 }

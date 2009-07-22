@@ -18,15 +18,20 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import javax.annotation.security.RunAs;
+import javax.servlet.Filter;
 import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 
+
 @RunAs("admin")
-public class ClassC
+public class FilterC implements Filter
 {
     @Resource (mappedName="foo")
     private Double foo;
@@ -42,23 +47,25 @@ public class ClassC
     {
         
     }
-    
-    public void anything (HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException
+
+
+    public void doFilter(ServletRequest arg0, ServletResponse arg1, FilterChain arg2)
+    throws IOException, ServletException
     {
-        response.setContentType("text/html");
-        response.getWriter().println("<h1>Pojo Servlet</h1>");
-        response.getWriter().println("Acting like a Servlet.");
-    }
-    
-    
-    public void doFilter (HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-    throws java.io.IOException, javax.servlet.ServletException
-    {
+        HttpServletRequest request = (HttpServletRequest)arg0;
+        HttpServletResponse response = (HttpServletResponse)arg1;
         HttpSession session = request.getSession(true);
         String val = request.getParameter("action");
         if (val!=null)
             session.setAttribute("action", val);
-        chain.doFilter(request, response);
+        arg2.doFilter(request, response);
+    }
+
+    public void destroy()
+    { 
+    }
+
+    public void init(FilterConfig arg0) throws ServletException
+    {  
     }
 }

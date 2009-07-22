@@ -21,10 +21,6 @@ import java.util.EventListener;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingListener;
@@ -39,13 +35,11 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
@@ -115,7 +109,7 @@ public class WebAppContext extends ServletContextHandler
     
     private Map _resourceAliases;
     private boolean _ownClassLoader=false;
-    private boolean _configurationDiscovered=false;
+    private boolean _configurationDiscovered=true;
 
     public static ContextHandler getCurrentWebAppContext()
     {
@@ -338,6 +332,8 @@ public class WebAppContext extends ServletContextHandler
                 }
             }
             
+          
+
             // Prepare for configuration
             for (int i=0;i<_configurations.length;i++)
                 _configurations[i].preConfigure(this);

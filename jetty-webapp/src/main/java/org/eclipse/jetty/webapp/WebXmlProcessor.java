@@ -56,15 +56,16 @@ import org.eclipse.jetty.xml.XmlParser;
 public class WebXmlProcessor
 {
     public static final String WEB_PROCESSOR = "org.eclipse.jetty.webProcessor";
+    public static final String METADATA_COMPLETE = "org.eclipse.jetty.metadataComplete";
+    public static final String WEBXML_VERSION = "org.eclipse.jetty.webXmlVersion";
+    public static final String WEBXML_CLASSNAMES = "org.eclipse.jetty.webXmlClassNames";
     
     protected WebAppContext _context;
     protected XmlParser _xmlParser;
-    protected XmlParser.Node _webDefaultsRoot;
-    protected XmlParser.Node _webXmlRoot;
-    protected List<XmlParser.Node> _webFragmentRoots = new ArrayList<XmlParser.Node>();
-    protected XmlParser.Node _webOverrideRoot;
-    protected int _version;
-    protected boolean _metaDataComplete = false;
+    protected Descriptor _webDefaultsRoot;
+    protected Descriptor _webXmlRoot;
+    protected List<Descriptor> _webFragmentRoots = new ArrayList<Descriptor>();   
+    protected Descriptor _webOverrideRoot;
     
     protected ServletHandler _servletHandler;
     protected SecurityHandler _securityHandler;
@@ -83,6 +84,126 @@ public class WebXmlProcessor
     protected boolean _defaultWelcomeFileList;
    
 
+    public class Descriptor
+    {
+        protected Resource _xml;
+        protected XmlParser.Node _root;
+        protected boolean _metadataComplete;
+        protected boolean _hasOrdering;
+        protected int _version;
+        protected ArrayList<String> _classNames;
+        
+        public Descriptor (Resource xml)
+        {
+            _xml = xml;
+        }
+        
+        public void parse ()
+        throws Exception
+        {
+            if (_root == null)
+            {
+                _root = _xmlParser.parse(_xml.getURL().toString());
+                processVersion();
+                processOrdering();
+            }
+        }
+        
+        public boolean isMetaDataComplete()
+        {
+            return _metadataComplete;
+        }
+        
+        
+        public XmlParser.Node getRoot ()
+        {
+            return _root;
+        }
+        
+        public int getVersion ()
+        {
+            return _version;
+        }
+        
+        public Resource getResource ()
+        {
+            return _xml;
+        }
+        
+        public void process()
+        throws Exception
+        {
+            WebXmlProcessor.this.process(_root);
+        }
+        
+        private void processVersion ()
+        {
+            String version = _root.getAttribute("version", "DTD");
+            if ("2.5".equals(version))
+                _version = 25;
+            else if ("2.4".equals(version))
+                _version = 24;
+            else if ("3.0".equals(version))
+                _version = 30;
+            else if ("DTD".equals(version))
+            {
+                _version = 23;
+                String dtd = _xmlParser.getDTD();
+                if (dtd != null && dtd.indexOf("web-app_2_2") >= 0) _version = 22;
+            }
+
+            if (_version < 25)
+                _metadataComplete = true; // does not apply before 2.5
+            else
+                _metadataComplete = Boolean.valueOf((String)_root.getAttribute("metadata-complete", "false")).booleanValue();
+
+            Log.debug(_xml.toString()+": Calculated metadatacomplete = " + _metadataComplete + " with version=" + version);     
+        }
+        
+        private void processOrdering ()
+        {
+            //TODO
+        }
+        
+        private void processClassNames ()
+        {
+            _classNames = new ArrayList<String>();          
+            Iterator iter = _root.iterator();
+
+            while (iter.hasNext())
+            {
+                Object o = iter.next();
+                if (!(o instanceof XmlParser.Node)) continue;
+                XmlParser.Node node = (XmlParser.Node) o;
+                String name = node.getTag();
+                if ("servlet".equals(name))
+                {
+                    String className = node.getString("servlet-class", false, true);
+                    if (className != null)
+                        _classNames.add(className);
+                }
+                else if ("filter".equals(name))
+                {
+                    String className = node.getString("filter-class", false, true);
+                    if (className != null)
+                        _classNames.add(className);
+                }
+                else if ("listener".equals(name))
+                {
+                    String className = node.getString("listener-class", false, true);
+                    if (className != null)
+                        _classNames.add(className);
+                }                    
+            }
+        }
+        
+        public ArrayList<String> getClassNames ()
+        {
+            return _classNames;
+        }
+    }
+    
+  
     
     
     public static XmlParser webXmlParser() throws ClassNotFoundException
@@ -171,124 +292,89 @@ public class WebXmlProcessor
         _xmlParser = webXmlParser();
     }
     
-   
-    public int getVersion ()
-    {
-        return _version;
-    }
-    
-    public boolean isMetaDataComplete ()
-    {
-        return _metaDataComplete;
-    }
-    
-    public void processForVersion (XmlParser.Node config)
-    {
-        String version = config.getAttribute("version", "DTD");
-        if ("2.5".equals(version))
-            _version = 25;
-        else if ("2.4".equals(version))
-            _version = 24;
-        else if ("3.0".equals(version))
-            _version = 30;
-        else if ("DTD".equals(version))
-        {
-            _version = 23;
-            String dtd = _xmlParser.getDTD();
-            if (dtd != null && dtd.indexOf("web-app_2_2") >= 0) _version = 22;
-        }
-
-        if (_version < 25)
-            _metaDataComplete = true; // does not apply before 2.5
-        else
-            _metaDataComplete = Boolean.valueOf((String) config.getAttribute("metadata-complete", "false")).booleanValue();
-
-        Log.debug("Calculated metadatacomplete = " + _metaDataComplete + " with version=" + version);
-
-        _context.setAttribute("metadata-complete", String.valueOf(_metaDataComplete));
-    }
-    
-    public XmlParser.Node parseDefaults (URL webDefaults)
+    public void parseDefaults (Resource webDefaults)
     throws Exception
     {
-        _webDefaultsRoot =  _xmlParser.parse(webDefaults.toString());
-        return _webDefaultsRoot;
-        
+        _webDefaultsRoot =  new Descriptor(webDefaults); 
+        _webDefaultsRoot.parse();
     }
     
-    public XmlParser.Node parseWebXml (URL webXml)
+    public void parseWebXml (Resource webXml)
     throws Exception
     {
-        _webXmlRoot = _xmlParser.parse(webXml.toString());
-        processForVersion(_webXmlRoot);
-        return _webXmlRoot;
+        _webXmlRoot = new Descriptor(webXml);
+        _webXmlRoot.parse();
+        _webXmlRoot.processClassNames();
+        _context.setAttribute(METADATA_COMPLETE, Boolean.valueOf(_webXmlRoot.isMetaDataComplete()));
+        _context.setAttribute(WEBXML_VERSION, Integer.valueOf(_webXmlRoot.getVersion()));
+        _context.setAttribute(WEBXML_CLASSNAMES, _webXmlRoot.getClassNames());
     }
     
-    public XmlParser.Node parseFragment (String fragment)
+    public void parseFragment (Resource fragment)
     throws Exception
     {
-        if (isMetaDataComplete())
-            return null; //do not process anything else if main web.xml file is complete
+        if (_webXmlRoot.isMetaDataComplete())
+            return; //do not process anything else if main web.xml file is complete
         
         //Metadata-complete is not set, or there is no web.xml
-        XmlParser.Node root = _xmlParser.parse(fragment);
-        _webFragmentRoots.add(root);
-        return root;
+        Descriptor frag = new Descriptor(fragment);
+        frag.parse();
+        _webFragmentRoots.add(frag);
     }
     
-    public XmlParser.Node parseOverride (URL override)
+    public void parseOverride (Resource override)
     throws Exception
     {
         _xmlParser.setValidating(false);
-        _webOverrideRoot = _xmlParser.parse(override.toString()); 
-        return _webOverrideRoot;
+        _webOverrideRoot = new Descriptor(override);
+        _webOverrideRoot.parse();
     }
     
     
     public void processDefaults ()
     throws Exception
     {
-        process (_webDefaultsRoot);
+        _webDefaultsRoot.process();
         _defaultWelcomeFileList = _context.getWelcomeFiles() != null;   
     }
     
     public void processWebXml ()
     throws Exception
     {
-        process (_webXmlRoot);
+        _webXmlRoot.process();
     }
     
     public void processFragments ()
     throws Exception
     {
-        for (XmlParser.Node frag : _webFragmentRoots)
+        for (Descriptor frag : _webFragmentRoots)
         {
-            process (frag);
+            frag.process();
         }
     }
     
     public void processOverride ()
     throws Exception
     {
-        process(_webOverrideRoot);
+        _webOverrideRoot.process();
     }
     
-    public XmlParser.Node getWebXml ()
+    public Descriptor getWebXml ()
     {
         return _webXmlRoot;
     }
     
-    public XmlParser.Node getOverrideWeb ()
+    public Descriptor getOverrideWeb ()
     {
         return _webOverrideRoot;
     }
     
-    public XmlParser.Node getWebDefault ()
+    public Descriptor getWebDefault ()
     {
         return _webDefaultsRoot;
     }
     
-    public List<XmlParser.Node> getFragments ()
+    public List<Descriptor> getFragments ()
     {
         return _webFragmentRoots;
     }
@@ -469,9 +555,12 @@ public class WebXmlProcessor
             holder.setInitParameter(pname, pvalue);
         }
 
-        String async=node.getString("async-support",false,true);
+        String async=node.getString("async-supported",false,true);
         if (async!=null)
-            holder.setAsyncSupported(Boolean.valueOf(async));
+            holder.setAsyncSupported(async.length()==0||Boolean.valueOf(async));
+        
+        String timeout=node.getString("async-timeout",false,true);
+        // TODO set it
     }
 
     /* ------------------------------------------------------------ */
@@ -640,9 +729,12 @@ public class WebXmlProcessor
                 holder.setRunAsRole(roleName);
         }
 
-        String async=node.getString("async-support",false,true);
+        String async=node.getString("async-supported",false,true);
         if (async!=null)
-            holder.setAsyncSupported(Boolean.valueOf(async));
+            holder.setAsyncSupported(async.length()==0||Boolean.valueOf(async));
+
+        String timeout=node.getString("async-timeout",false,true);
+        // TODO set it
     }
 
     /* ------------------------------------------------------------ */

@@ -17,7 +17,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
 
-
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -71,8 +70,15 @@ public class WebXmlConfiguration implements Configuration
             Resource dftResource = Resource.newSystemResource(defaultsDescriptor);
             if (dftResource == null) 
                 dftResource = context.newResource(defaultsDescriptor);
-            processor.parseDefaults (dftResource.getURL());
+            processor.parseDefaults (dftResource);
             processor.processDefaults();
+        }
+        
+        //parse, but don't process web.xml
+        Resource webxml = findWebXml(context);
+        if (webxml != null) 
+        {      
+            processor.parseWebXml(webxml);
         }
     }
 
@@ -98,13 +104,9 @@ public class WebXmlConfiguration implements Configuration
             context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
         }
 
-        //process web.xml
-        URL webxml = findWebXml(context);
-        if (webxml != null) 
-        {      
-            processor.parseWebXml(webxml);
-            processor.processWebXml();
-        }
+        //process web.xml (the effective web.xml???)
+        processor.processWebXml();
+     
         
         //process override-web.xml
         String overrideDescriptor = context.getOverrideDescriptor();
@@ -113,7 +115,7 @@ public class WebXmlConfiguration implements Configuration
             Resource orideResource = Resource.newSystemResource(overrideDescriptor);
             if (orideResource == null) 
                 orideResource = context.newResource(overrideDescriptor);
-            processor.parseOverride(orideResource.getURL());
+            processor.parseOverride(orideResource);
             processor.processOverride();
         }
     }
@@ -128,13 +130,13 @@ public class WebXmlConfiguration implements Configuration
   
 
     /* ------------------------------------------------------------------------------- */
-    protected URL findWebXml(WebAppContext context) throws IOException, MalformedURLException
+    protected Resource findWebXml(WebAppContext context) throws IOException, MalformedURLException
     {
         String descriptor = context.getDescriptor();
         if (descriptor != null)
         {
             Resource web = context.newResource(descriptor);
-            if (web.exists() && !web.isDirectory()) return web.getURL();
+            if (web.exists() && !web.isDirectory()) return web;
         }
 
         Resource web_inf = context.getWebInf();
@@ -142,7 +144,7 @@ public class WebXmlConfiguration implements Configuration
         {
             // do web.xml file
             Resource web = web_inf.addPath("web.xml");
-            if (web.exists()) return web.getURL();
+            if (web.exists()) return web;
             Log.debug("No WEB-INF/web.xml in " + context.getWar() + ". Serving files and default/dynamic servlets only");
         }
         return null;

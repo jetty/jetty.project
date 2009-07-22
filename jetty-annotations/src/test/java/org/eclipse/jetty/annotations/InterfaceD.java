@@ -13,43 +13,12 @@
 
 package org.eclipse.jetty.annotations;
 
-
-
 /**
- * ClassB
+ * InterfaceD
  *
  *
  */
-@Sample(value=50)
-@Multi({"do", "re", "mi"})
-public class ClassB extends ClassA implements InterfaceD
+public interface InterfaceD
 {
-
-    //test override of public scope method
-    @Sample(value=51)
-    @Multi({"fa", "so", "la"})
-    public void a()
-    {
-       System.err.println("ClassB.public");
-    }
-    
-    //test override of package scope method
-    @Sample(value=52)
-    void c()
-    {
-        System.err.println("ClassB.package");
-    }
-    
-    public void l()
-    {
-        System.err.println("Overridden method l has no annotation");
-    }
-    
-    
-    //test no annotation
-    public void z()
-    {
-        System.err.println("ClassB.z");
-    }
 
 }
