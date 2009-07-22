@@ -1,6 +1,7 @@
 jetty-7.0.0.RC2-SNAPSHOT
  + 283844 Webapp / TLD errors are not clear
  + 283375 improved extensibility of SSL connectors
+ + backport jetty-8 annotation parsing to jetty-7
 
 jetty-7.0.0.RC1 15 June 2009
  + JETTY-1066 283357 400 response for bad URIs
