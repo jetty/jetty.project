@@ -39,7 +39,6 @@ public class ClassInheritanceHandler implements ClassHandler
         {
             for (int i=0; interfaces != null && i<interfaces.length;i++)
             {
-                System.err.print(interfaces[i]);
                 _inheritanceMap.add (interfaces[i], className);
             }
             //To save memory, we don't record classes that only extend Object, as that can be assumed
