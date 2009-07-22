@@ -51,6 +51,7 @@ public class Main
     private boolean _showUsage = false;
     private boolean _dumpVersions = false;
     private boolean _listModes = false;
+    private boolean _execPrint = false;
     private List<String> _activeOptions = new ArrayList<String>();
     private Config _config = new Config();
 
@@ -108,6 +109,12 @@ public class Main
                     continue;
                 }
 
+                if ("--exec-print".equals(arg))
+                {
+                    _execPrint = true;
+                    continue;
+                }
+                
                 // Process property spec
                 if (arg.indexOf('=') >= 0)
                 {
@@ -453,6 +460,7 @@ public class Main
         {
             System.err.println("java.class.path=" + System.getProperty("java.class.path"));
             System.err.println("jetty.home=" + System.getProperty("jetty.home"));
+            System.err.println("java.home=" + System.getProperty("java.home"));
             System.err.println("java.io.tmpdir=" + System.getProperty("java.io.tmpdir"));
             System.err.println("java.class.path=" + classpath);
             System.err.println("classloader=" + cl);
@@ -477,6 +485,13 @@ public class Main
         if (_listModes)
         {
             showAllModesWithVersions(classpath);
+            return;
+        }
+        
+        // Show Command Line to execute Jetty
+        if (_execPrint)
+        {
+            showExecPrint(classpath,xmls);
             return;
         }
 
@@ -510,6 +525,56 @@ public class Main
         {
             e.printStackTrace();
         }
+    }
+
+    private void showExecPrint(Classpath classpath, List<String> xmls)
+    {
+        StringBuffer cmd = new StringBuffer();
+        
+        cmd.append(findJavaBin());
+        cmd.append(" -cp ").append(classpath.toString());
+        cmd.append(" -Djetty.home=").append(_jettyHome);
+        cmd.append(" ").append(_config.getMainClassname());
+        for (String xml : xmls)
+        {
+            cmd.append(" ").append(xml);
+        }
+
+        System.out.println(cmd);
+    }
+    
+    private String findJavaBin()
+    {
+        File javaHome = new File(System.getProperty("java.home"));
+        if (!javaHome.exists())
+        {
+            return null;
+        }
+
+        File javabin = findExecutable(javaHome,"bin/java");
+        if (javabin != null)
+        {
+            return javabin.getAbsolutePath();
+        }
+
+        javabin = findExecutable(javaHome,"bin/java.exe");
+        if (javabin != null)
+        {
+            return javabin.getAbsolutePath();
+        }
+
+        return "java";
+    }
+
+    private File findExecutable(File root, String path)
+    {
+        String npath = path.replace('/',File.separatorChar);
+        File exe = new File(root,npath);
+        if (!exe.exists())
+        {
+            return null;
+        }
+        return exe;
     }
 
     private void showAllModesWithVersions(Classpath classpath)

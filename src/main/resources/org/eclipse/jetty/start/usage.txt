@@ -12,10 +12,6 @@ Advanced Options:
                    (useful in shell scripts)
   --list-modes     List available classpath mode options, then exit.
                    (see OPTION property in section below)
-  --debug-modes    List each classpath mode option, with what classpath
-                   with all entries that are detected for that defined
-                   classpath mode.
-                   (see OPTION property in section below)
 
 Properties:
 Execution properties, similar in scope to JVM Properties.
