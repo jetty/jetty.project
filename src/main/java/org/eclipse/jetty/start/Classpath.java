@@ -234,4 +234,9 @@ public class Classpath {
             this._elements.add(otherElement);
         }
     }
+
+    public boolean isEmpty()
+    {
+        return (_elements == null) || (_elements.isEmpty());
+    }
 }

@@ -27,16 +27,20 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.security.Policy;
+import java.text.CollationKey;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.TreeSet;
 
 /**
  * <p>
@@ -139,6 +143,21 @@ public class Config
             _version = System.getProperty("jetty.version","Unknown");
     }
 
+    /**
+     * Natural language sorting for key names.
+     */
+    private Comparator<String> keySorter = new Comparator<String>() 
+    {
+        private Collator collator = Collator.getInstance();
+
+        public int compare(String o1, String o2)
+        {
+            CollationKey key1 = collator.getCollationKey(o1);
+            CollationKey key2 = collator.getCollationKey(o2);
+            return key1.compareTo(key2);
+        }
+    };
+
     private static final String _version;
     private static boolean DEBUG = false;
     private Map<String, Classpath> _classpaths = new HashMap<String, Classpath>();
@@ -194,7 +213,13 @@ public class Config
     private void addJars(List<String> sections, File dir, boolean recurse) throws IOException
     {
         List<File> entries = new ArrayList<File>();
-        entries.addAll(Arrays.asList(dir.listFiles()));
+        File[] files = dir.listFiles();
+        if (files == null)
+        {
+            // No files found, skip it.
+            return;
+        }
+        entries.addAll(Arrays.asList(files));
         Collections.sort(entries,FilenameComparator.INSTANCE);
 
         for (File entry : entries)
@@ -371,9 +396,9 @@ public class Config
      */
     public Set<String> getSectionIds()
     {
-        // TODO: sort keys.
-        // TODO: by natural language ordering?
-        return _classpaths.keySet();
+        Set<String> ids = new TreeSet<String>(keySorter);
+        ids.addAll(_classpaths.keySet());
+        return ids;
     }
 
     private String getSystemProperty(String name)

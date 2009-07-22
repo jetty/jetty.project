@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /*-------------------------------------------*/
 /**
@@ -49,6 +50,7 @@ public class Main
 {
     private boolean _showUsage = false;
     private boolean _dumpVersions = false;
+    private boolean _listModes = false;
     private List<String> _activeOptions = new ArrayList<String>();
     private Config _config = new Config();
 
@@ -80,13 +82,13 @@ public class Main
 
             for (String arg : arguments)
             {
-                if (arg.equalsIgnoreCase("--help"))
+                if ("--help".equals(arg))
                 {
                     _showUsage = true;
                     continue;
                 }
 
-                if (arg.equalsIgnoreCase("--stop"))
+                if ("--stop".equals(arg))
                 {
                     int port = Integer.parseInt(_config.getProperty("STOP.PORT","-1"));
                     String key = _config.getProperty("STOP.KEY",null);
@@ -94,9 +96,15 @@ public class Main
                     return;
                 }
 
-                if (arg.equalsIgnoreCase("--version") || arg.equalsIgnoreCase("-v") || arg.equalsIgnoreCase("-info"))
+                if ("--version".equals(arg) || "-v".equals(arg) || "--info".equals(arg))
                 {
                     _dumpVersions = true;
+                    continue;
+                }
+                
+                if ("--list-modes".equals(arg))
+                {
+                    _listModes = true;
                     continue;
                 }
 
@@ -461,31 +469,14 @@ public class Main
         // Show the version information and return
         if (_dumpVersions)
         {
-            // Iterate through active classpath, and fetch Implementation Version from each entry (if present)
-            // to dump to end user.
-
-            if (classpath.count() == 0)
-            {
-                System.out.println("No version information available show.");
-                System.out.println("Active Options: " + _activeOptions);
-                return;
-            }
-
-            System.out.println("Version Information on " + classpath.count() + " entr" + ((classpath.count() > 1)?"ies":"y") + " in the classpath.");
-            System.out.println("Note: order presented here is how they would appear on the classpath.");
-            System.out.println("      changes to the OPTIONS=[mode,mode,...] command line option will be reflected here.");
-
-            int i = 0;
-            for (File element : classpath.getElements())
-            {
-                String elementPath = element.getAbsolutePath();
-                if (elementPath.startsWith(_jettyHome))
-                {
-                    elementPath = "${jetty.home}" + elementPath.substring(_jettyHome.length());
-                }
-                System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),elementPath);
-            }
-
+            showClasspathWithVersions(classpath);
+            return;
+        }
+        
+        // Show all modes with version information
+        if (_listModes)
+        {
+            showAllModesWithVersions(classpath);
             return;
         }
 
@@ -518,6 +509,108 @@ public class Main
         catch (Exception e)
         {
             e.printStackTrace();
+        }
+    }
+
+    private void showAllModesWithVersions(Classpath classpath)
+    {
+        Set<String> sectionIds = _config.getSectionIds();
+
+        StringBuffer msg = new StringBuffer();
+        msg.append("There ");
+        if (sectionIds.size() > 1)
+        {
+            msg.append("are ");
+        }
+        else
+        {
+            msg.append("is ");
+        }
+        msg.append(String.valueOf(sectionIds.size()));
+        msg.append(" OPTION mode");
+        if (sectionIds.size() > 1)
+        {
+            msg.append("s");
+        }
+        msg.append(" available to use.");
+        System.out.println(msg);
+        System.out.println("Each mode is listed along with associated available classpath entries,  in the order that they would appear from that mode.");
+        System.out.println("Note: If using multiple modes (eg: 'Server,servlet,webapp,jms,jmx') "
+                + "then overlapping entries will not be repeated in the eventual classpath.");
+        System.out.println();
+        System.out.printf("${jetty.home} = %s%n",_jettyHome);
+        System.out.println();
+
+        for (String sectionId : sectionIds)
+        {
+            if (Config.DEFAULT_SECTION.equals(sectionId))
+            {
+                System.out.println("GLOBAL Mode (Prepended Entries)");
+            }
+            else if ("*".equals(sectionId))
+            {
+                System.out.println("GLOBAL Mode (Appended Entries) (*)");
+            }
+            else
+            {
+                System.out.printf("Mode [%s]",sectionId);
+                if (Character.isUpperCase(sectionId.charAt(0)))
+                {
+                    System.out.print(" (Aggregate)");
+                }
+                System.out.println();
+            }
+            System.out.println("-------------------------------------------------------------");
+            
+            Classpath sectionCP = _config.getSectionClasspath(sectionId);
+            
+            if (sectionCP.isEmpty())
+            {
+                System.out.println("Empty mode, no classpath entries active.");
+                System.out.println();
+                continue;
+            } 
+            
+            int i = 0;
+            for (File element : sectionCP.getElements())
+            {
+                String elementPath = element.getAbsolutePath();
+                if (elementPath.startsWith(_jettyHome))
+                {
+                    elementPath = "${jetty.home}" + elementPath.substring(_jettyHome.length());
+                }
+                System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),elementPath);
+            }
+            
+            System.out.println();
+        }
+    }
+
+    private void showClasspathWithVersions(Classpath classpath)
+    {
+        // Iterate through active classpath, and fetch Implementation Version from each entry (if present)
+        // to dump to end user.
+
+        if (classpath.count() == 0)
+        {
+            System.out.println("No version information available show.");
+            System.out.println("Active Options: " + _activeOptions);
+            return;
+        }
+
+        System.out.println("Version Information on " + classpath.count() + " entr" + ((classpath.count() > 1)?"ies":"y") + " in the classpath.");
+        System.out.println("Note: order presented here is how they would appear on the classpath.");
+        System.out.println("      changes to the OPTIONS=[mode,mode,...] command line option will be reflected here.");
+
+        int i = 0;
+        for (File element : classpath.getElements())
+        {
+            String elementPath = element.getAbsolutePath();
+            if (elementPath.startsWith(_jettyHome))
+            {
+                elementPath = "${jetty.home}" + elementPath.substring(_jettyHome.length());
+            }
+            System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),elementPath);
         }
     }
 
