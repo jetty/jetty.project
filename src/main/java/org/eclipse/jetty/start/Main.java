@@ -678,10 +678,11 @@ public class Main
         // Iterate through active classpath, and fetch Implementation Version from each entry (if present)
         // to dump to end user.
 
+        System.out.println("Active Options: " + _activeOptions);
+
         if (classpath.count() == 0)
         {
             System.out.println("No version information available show.");
-            System.out.println("Active Options: " + _activeOptions);
             return;
         }
 
