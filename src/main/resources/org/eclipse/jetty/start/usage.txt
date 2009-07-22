@@ -7,6 +7,11 @@ Common Options:
   --stop           Stop the running Jetty instance.
 
 Advanced Options:
+  --secure         Enable Security:
+                     * JVM Security Manager
+                     * Security Policies
+                     * Secure Logging
+                     * Audit Logging
   --exec-print     Print the command line that the start.jar uses to start 
                    jetty, then exit.
                    (useful in shell scripts)

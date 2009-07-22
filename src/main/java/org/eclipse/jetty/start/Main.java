@@ -52,6 +52,7 @@ public class Main
     private boolean _dumpVersions = false;
     private boolean _listModes = false;
     private boolean _execPrint = false;
+    private boolean _secure = false;
     private List<String> _activeOptions = new ArrayList<String>();
     private Config _config = new Config();
 
@@ -112,6 +113,12 @@ public class Main
                 if ("--exec-print".equals(arg))
                 {
                     _execPrint = true;
+                    continue;
+                }
+                
+                if ("--secure".equals(arg))
+                {
+                    _secure = true;
                     continue;
                 }
                 
@@ -450,6 +457,13 @@ public class Main
             _activeOptions.add("default");
             _activeOptions.add("*");
         }
+        
+        // Add mandatory options for secure mode
+        if (_secure)
+        {
+            addMandatoryOption("secure");
+            addMandatoryOption("security");
+        }
 
         // Get Desired Classpath
         Classpath classpath = _config.getCombinedClasspath(_activeOptions);
@@ -524,6 +538,14 @@ public class Main
         catch (Exception e)
         {
             e.printStackTrace();
+        }
+    }
+
+    private void addMandatoryOption(String id)
+    {
+        if (!_activeOptions.contains(id))
+        {
+            _activeOptions.add(id);
         }
     }
 
@@ -714,7 +736,7 @@ public class Main
         // Init the Security Policies
         try
         {
-            if (_activeOptions.contains("secure"))
+            if (_secure)
             {
                 Policy.setPolicy(_config.getPolicyInstance(cl));
                 System.setSecurityManager(new SecurityManager());
