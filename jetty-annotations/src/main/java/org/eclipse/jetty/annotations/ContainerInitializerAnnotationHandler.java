@@ -47,7 +47,6 @@ public class ContainerInitializerAnnotationHandler implements AnnotationHandler
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotationName,
                             List<Value> values)
     { 
-        System.err.println("Got annotated class "+className);
          _initializer.addAnnotatedTypeName(className);
     }
 

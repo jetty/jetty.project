@@ -95,14 +95,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
             
             if (webxmlVersion >= 30 || context.isConfigurationDiscovered())
             {
-                System.err.println("SCANNING ALL ANNOTATIONS: webxmlVersion="+webxmlVersion+" configurationDiscovered="+context.isConfigurationDiscovered());
+                if (Log.isDebugEnabled()) Log.debug("Scanning all classses for annotations: webxmlVersion="+webxmlVersion+" configurationDiscovered="+context.isConfigurationDiscovered());
                 parseContainerPath(context, parser);
                 parseWebInfLib (context, parser);
                 parseWebInfClasses(context, parser);
             } 
             else
             {
-                System.err.println("SCANNING ONLY WEB.XML ANNOTATIONS");
+                if (Log.isDebugEnabled()) Log.debug("Scanning only classes in web.xml for annotations");
                 parse25Classes(context, parser);
             }
             
@@ -196,7 +196,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                         {
                             if (c.isAnnotation())
                             {
-                                System.err.println("Registering annotation handler for "+c.getName());
+                                if (Log.isDebugEnabled()) Log.debug("Registering annotation handler for "+c.getName());
                                 parser.registerAnnotationHandler(c.getName(), new ContainerInitializerAnnotationHandler(initializer, c));
                             }
                         }
