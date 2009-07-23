@@ -201,6 +201,7 @@ public class Dispatcher implements RequestDispatcher
     {
         Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
         Response base_response=baseRequest.getResponse();
+        response.resetBuffer();
         base_response.fwdReset();
         request.removeAttribute(__JSP_FILE); // TODO remove when glassfish 1044 is fixed
         
@@ -221,21 +222,26 @@ public class Dispatcher implements RequestDispatcher
                 _contextHandler.handle(_named,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
             else 
             {
-                String query=_dQuery;
                 
+                // process any query string from the dispatch URL
+                String query=_dQuery;
                 if (query!=null)
                 {
+                    // extract parameters from dispatch query
                     MultiMap parameters=new MultiMap();
                     UrlEncoded.decodeTo(query,parameters,request.getCharacterEncoding());
                  
-                    boolean rewrite_old_query = false;
+                    boolean merge_old_query = false;
 
+                    // Have we evaluated parameters
                     if( old_params == null )
                     {
-                        baseRequest.getParameterNames();    // force parameters to be evaluated
+                        // no - so force parameters to be evaluated
+                        baseRequest.getParameterNames();
                         old_params = baseRequest.getParameters();
                     }
                     
+                    // Are there any existing parameters?
                     if (old_params!=null && old_params.size()>0)
                     {
                         // Merge parameters; new parameters of the same name take precedence.
@@ -245,24 +251,20 @@ public class Dispatcher implements RequestDispatcher
                             Map.Entry entry = (Map.Entry)iter.next();
                             String name=(String)entry.getKey();
                             
+                            // If the names match, we will need to remake the query string
                             if (parameters.containsKey(name))
-                            {
-                                rewrite_old_query = true;
-                            }
-                            else
-                            {
-                                Object values=entry.getValue();
-                                for (int i=0;i<LazyList.size(values);i++)
-                                {
-                                    parameters.add(name, LazyList.get(values, i));
-                                }
-                            }
+                                merge_old_query = true;
+
+                            // Add the old values to the new parameter map
+                            Object values=entry.getValue();
+                            for (int i=0;i<LazyList.size(values);i++)
+                                parameters.add(name, LazyList.get(values, i));
                         }
                     }
                     
                     if (old_query != null && old_query.length()>0)
                     {
-                        if ( rewrite_old_query )
+                        if ( merge_old_query )
                         {
                             StringBuilder overridden_query_string = new StringBuilder();
                             MultiMap overridden_old_query = new MultiMap();
@@ -333,12 +335,18 @@ public class Dispatcher implements RequestDispatcher
                 if (baseRequest.getConnection().getResponse().isWriting())
                 {
                     try {response.getWriter().close();}
-                    catch(IllegalStateException e) { response.getOutputStream().close(); }
+                    catch(IllegalStateException e) 
+                    { 
+                        response.getOutputStream().close(); 
+                    }
                 }
                 else
                 {
                     try {response.getOutputStream().close();}
-                    catch(IllegalStateException e) { response.getWriter().close(); }
+                    catch(IllegalStateException e) 
+                    { 
+                        response.getWriter().close(); 
+                    }
                 }
             }
         }

@@ -59,15 +59,13 @@ import org.eclipse.jetty.util.log.Log;
  * This filter extends {@link UserAgentFilter} and if the the initParameter <code>excludedAgents</code> 
  * is set to a comma separated list of user agents, then these agents will be excluded from gzip content.
  * </p>
- *  
- * 
  *
  */
 public class GzipFilter extends UserAgentFilter
 {
     protected Set _mimeTypes;
     protected int _bufferSize=8192;
-    protected int _minGzipSize=1;
+    protected int _minGzipSize=256;
     protected Set _excluded;
     
     public void init(FilterConfig filterConfig) throws ServletException
@@ -421,10 +419,12 @@ public class GzipFilter extends UserAgentFilter
 
         public void resetBuffer()
         {
+            if (_response.isCommitted())
+                throw new IllegalStateException("Committed");
             _closed=false;
             _out=null;
             _bOut=null;
-            if (_gzOut!=null && !_response.isCommitted())
+            if (_gzOut!=null)
                 _response.setHeader("Content-Encoding",null);
             _gzOut=null;
         }
@@ -449,6 +449,9 @@ public class GzipFilter extends UserAgentFilter
 
         public void close() throws IOException
         {
+            if (_closed)
+                return;
+            
             if (_request.getAttribute("javax.servlet.include.request_uri")!=null)            
                 flush();
             else
@@ -561,10 +564,7 @@ public class GzipFilter extends UserAgentFilter
         private void checkOut(int length) throws IOException 
         {
             if (_closed) 
-            {
-                new Throwable().printStackTrace();
                 throw new IOException("CLOSED");
-            }
             
             if (_out==null)
             {
@@ -579,7 +579,7 @@ public class GzipFilter extends UserAgentFilter
             {
                 if (_response.isCommitted() || (_contentLength>=0 && _contentLength<_minGzipSize))
                     doNotGzip();
-                else if (length>=(_bOut.size()-_bOut.getCount()))
+                else if (length>=(_bOut.getBuf().length -_bOut.getCount()))
                     doGzip();
             }
         }
