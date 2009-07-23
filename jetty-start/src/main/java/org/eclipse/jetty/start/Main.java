@@ -14,12 +14,14 @@ package org.eclipse.jetty.start;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.lang.reflect.Constructor;
+import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
@@ -29,618 +31,674 @@ import java.security.Policy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.StringTokenizer;
 
 /*-------------------------------------------*/
 /**
- * Main start class. This class is intended to be the main class listed in the MANIFEST.MF of the
- * start.jar archive. It allows an application to be started with the command "java -jar
- * start.jar". The behaviour of Main is controlled by the "org/eclipse/start/start.config" file
- * obtained as a resource or file. This can be overridden with the START system property. The
- * format of each line in this file is:
+ * <p>
+ * Main start class. This class is intended to be the main class listed in the MANIFEST.MF of the start.jar archive. It
+ * allows an application to be started with the command "java -jar start.jar".
+ * </p>
  * 
- * <PRE>
- * Each line contains entry in the format:
- * 
- *  SUBJECT [ [!] CONDITION [AND|OR] ]*
- * 
- * where SUBJECT: 
- *   ends with ".class" is the Main class to run.
- *   ends with ".xml" is a configuration file for the command line
- *   ends with "/" is a directory from which to add all jar and zip files. 
- *   ends with "/*" is a directory from which to add all unconsidered jar and zip files.
- *   ends with "/**" is a directory from which to recursively add all unconsidered jar and zip files.
- *   Containing = are used to assign system properties.
- *   Containing ~= are used to assign start properties.
- *   Containing /= are used to assign a canonical path.
- *   all other subjects are treated as files to be added to the classpath.
- * 
- * ${name} is expanded to a start property
- * $(name) is expanded to either a start property or a system property. 
- * The start property ${version} is defined as the version of the start.jar
- * 
- * Files starting with "/" are considered absolute, all others are relative to
- * the home directory.
- * 
- * CONDITION is one of:
- *   always
- *   never
- *   available classname         - true if class on classpath
- *   property name               - true if set as start property
- *   system   name               - true if set as system property
- *   exists file                 - true if file/dir exists
- *   java OPERATOR version       - java version compared to literal
- *   nargs OPERATOR number       - number of command line args compared to literal
- *   OPERATOR := one of "<",">","<=",">=","==","!="
- * 
- * CONTITIONS can be combined with AND OR or !, with AND being the assume
- * operator for a list of CONDITIONS.
- * 
- * Classpath operations are evaluated on the fly, so once a class or jar is
- * added to the classpath, subsequent available conditions will see that class.
- * 
- * The configuration file may be divided into sections with option names like:
- * [ssl,default]
- * 
- * Clauses after a section header will only be included if they match one of the tags in the 
- * options property.  By default options are set to "default,*" or the OPTIONS property may
- * be used to pass in a list of tags, eg. :
- * 
- *    java -jar start.jar OPTIONS=jetty,jsp,ssl
- * 
- * The tag '*' is always appended to the options, so any section with the * tag is always 
- * applied.
- * 
- * </PRE>
- * 
- * 
+ * <p>
+ * The behaviour of Main is controlled by the parsing of the {@link Config} "org/eclipse/start/start.config" file
+ * obtained as a resource or file. This can be overridden with the START system property.
+ * </p>
  */
 public class Main
 {
-    private static final String _version = (Main.class.getPackage()!=null && Main.class.getPackage().getImplementationVersion()!=null)
-        ?Main.class.getPackage().getImplementationVersion()
-        :System.getProperty("jetty.version", "Unknown");
-        
-    public static boolean DEBUG=false;
-    
-    private Map<String,String> _properties = new HashMap<String,String>();
-    
-    
-    private String _classname=null;
-    private Classpath _classpath=new Classpath();
-    
-    private boolean _showVersions=false;
-    private List<String> _xml=new ArrayList<String>();
-    private Set<String> _activeOptions = new HashSet<String>();
-    private Set<String> _options = new HashSet<String>();
-    private Set<String> _policies = new HashSet<String>();     
-    
-    /*
-    private String _config=System.getProperty("START","org/eclipse/jetty/start/start.config");
-    */
-    
+    private boolean _showUsage = false;
+    private boolean _dumpVersions = false;
+    private boolean _listModes = false;
+    private boolean _execPrint = false;
+    private boolean _secure = false;
+    private List<String> _activeOptions = new ArrayList<String>();
+    private Config _config = new Config();
+
+    private String _jettyHome;
+
     public static void main(String[] args)
+    {
+        Main main = new Main();
+        try
+        {
+            main.parseCommandLine(args);
+        }
+        catch (Throwable t)
+        {
+            t.printStackTrace(System.err);
+        }
+    }
+
+    public void parseCommandLine(String[] args)
     {
         try
         {
-            Main main=new Main();
-            List<String> arguments = new ArrayList<String>(Arrays.asList(args));
-            
-            for (int i=0; i<arguments.size(); i++)
+            List<String> arguments = new ArrayList<String>();
+            arguments.addAll(Arrays.asList(args)); // Add Arguments on Command Line
+            arguments.addAll(loadStartIni()); // Add Arguments from start.ini (if it exists)
+
+            // The XML Configuration Files to initialize with
+            List<String> xmls = new ArrayList<String>();
+
+            for (String arg : arguments)
             {
-                String arg=arguments.get(i);
-                if (arg.equalsIgnoreCase("--help"))
+                if ("--help".equals(arg))
                 {
-                    usage();
-                }
-                
-                if (arg.equalsIgnoreCase("--stop"))
-                {
-                    int port = Integer.parseInt(main.getProperty("STOP.PORT","-1"));
-                    String key = main.getProperty("STOP.KEY", null);
-                    main.stop(port,key);
-                    return;
-                }
-                
-                if (arg.equalsIgnoreCase("--version")||arg.equalsIgnoreCase("-v")||arg.equalsIgnoreCase("-info"))
-                {
-                    arguments.remove(i--);
-                    main._showVersions=true;
+                    _showUsage = true;
+                    continue;
                 }
 
-                if (arg.indexOf('=')>=0)
+                if ("--stop".equals(arg))
                 {
-                    arguments.remove(i--);
-                    String[] assign=arg.split("=",2);
-                    
-                    if (assign.length==2)
-                        main.setProperty(assign[0],assign[1]);
-                    else
-                        main.setProperty(assign[0],null);
+                    int port = Integer.parseInt(_config.getProperty("STOP.PORT","-1"));
+                    String key = _config.getProperty("STOP.KEY",null);
+                    stop(port,key);
+                    return;
                 }
+
+                if ("--version".equals(arg) || "-v".equals(arg) || "--info".equals(arg))
+                {
+                    _dumpVersions = true;
+                    continue;
+                }
+                
+                if ("--list-modes".equals(arg))
+                {
+                    _listModes = true;
+                    continue;
+                }
+
+                if ("--exec-print".equals(arg))
+                {
+                    _execPrint = true;
+                    continue;
+                }
+                
+                if ("--secure".equals(arg))
+                {
+                    _secure = true;
+                    continue;
+                }
+                
+                // Process property spec
+                if (arg.indexOf('=') >= 0)
+                {
+                    processProperty(arg);
+                    continue;
+                }
+
+                // Anything else is considered an XML file.
+                xmls.add(arg);
             }
-            
-            DEBUG=Boolean.parseBoolean(main.getProperty("DEBUG","false"));
-            main.start(arguments.toArray(new String[arguments.size()]));        
-            
+
+            start(xmls);
         }
-        catch (Exception e)
+        catch (Throwable t)
         {
-            e.printStackTrace();
+            t.printStackTrace(System.err);
             usage();
         }
     }
 
-    private String getSystemProperty(String name)
+    private void processProperty(String arg)
     {
-        if ("version".equalsIgnoreCase(name))
-            return _version;
-        if (_properties.containsKey(name))
-            return _properties.get(name);
-        return System.getProperty(name);
-    }
-    
-    private String getProperty(String name)
-    {
-        if ("version".equalsIgnoreCase(name))
-            return _version;
-        
-        return _properties.get(name);
-    }
-    
-    private String getProperty(String name, String dftValue)
-    {
-        if (_properties.containsKey(name))
-            return _properties.get(name);
-        return dftValue;
+        String[] prop = arg.split("=",2);
+
+        if (prop[0].startsWith("-D"))
+        {
+            // Process System Property
+            if (prop.length == 2)
+            {
+                setSystemProperty(prop[0].substring(2),prop[1]);
+            }
+            else
+            {
+                System.err.println("Unable to set value-less System Property: " + prop[0]);
+            }
+        }
+        else
+        {
+            // Process Startup Property
+            if (prop.length == 2)
+            {
+                // Special case (the Config section id options)
+                if ("OPTIONS".equals(prop[0]))
+                {
+                    String ids[] = prop[1].split(",");
+                    for (String id : ids)
+                    {
+                        if (!_activeOptions.contains(id))
+                        {
+                            _activeOptions.add(id);
+                        }
+                    }
+                    _activeOptions.addAll(Arrays.asList(ids));
+                }
+                else
+                {
+                    _config.setProperty(prop[0],prop[1]);
+                }
+            }
+            else
+            {
+                _config.setProperty(prop[0],null);
+            }
+        }
     }
 
-    private void setProperty(String name, String value)
+    /**
+     * If a start.ini is present in the CWD, then load it into the argument list.
+     */
+    private List<String> loadStartIni()
     {
-        _properties.put(name,value);
-    }
+        File startIniFile = new File("start.ini");
+        if (!startIniFile.exists())
+        {
+            // No start.ini found, skip load.
+            return Collections.emptyList();
+        }
 
-    private static void usage()
-    {
-        System.err.println("Usage: java -jar start.jar [--help|--stop|--version] [OPTIONS=option,...] [name=value ...] [config ...]");        
-        System.exit(1);
-    }
+        List<String> args = new ArrayList<String>();
 
-    static File getDirectory(String name)
-    {
+        FileReader reader = null;
+        BufferedReader buf = null;
         try
         {
-            if (name!=null)
+            reader = new FileReader(startIniFile);
+            buf = new BufferedReader(reader);
+
+            String arg;
+            while ((arg = buf.readLine()) != null)
             {
-                File dir=new File(name).getCanonicalFile();
-                if (dir.isDirectory())
+                // Is this a Property?
+                if (arg.indexOf('=') >= 0)
                 {
-                    return dir;
+                    // A System Property?
+                    if (arg.startsWith("-D"))
+                    {
+                        String[] assign = arg.substring(2).split("=",2);
+
+                        if (assign.length == 2)
+                        {
+                            System.setProperty(assign[0],assign[1]);
+                        }
+                        else
+                        {
+                            System.err.printf("Unable to set System Property '%s', no value provided%n",assign[0]);
+                        }
+                    }
+                    else
+                    // Nah, it's a normal property
+                    {
+                        String[] assign = arg.split("=",2);
+
+                        if (assign.length == 2)
+                        {
+                            this._config.setProperty(assign[0],assign[1]);
+                        }
+                        else
+                        {
+                            this._config.setProperty(assign[0],null);
+                        }
+                    }
+                }
+                else
+                // A normal argument
+                {
+                    args.add(arg);
                 }
             }
         }
         catch (IOException e)
         {
+            e.printStackTrace();
         }
-        return null;
+        finally
+        {
+            close(buf);
+            close(reader);
+        }
+
+        return args;
     }
 
-    boolean isAvailable(String classname)
+    private void setSystemProperty(String key, String value)
     {
-        try
-        {
-            Class.forName(classname);
-            return true;
-        }
-        catch (NoClassDefFoundError e)
-        {
-            if (DEBUG)
-                System.err.println(e);
-        }
-        catch (ClassNotFoundException e)
-        {            
-            if (DEBUG)
-                System.err.println(e);
-        }
-        ClassLoader loader=_classpath.getClassLoader();
-        try
-        {
-            loader.loadClass(classname);
-            return true;
-        }
-        catch (NoClassDefFoundError e)
-        {
-            if (DEBUG)
-                System.err.println(e);
-        }
-        catch (ClassNotFoundException e)
-        {
-            if (DEBUG)
-                System.err.println(e);
-        }
-        return false;
+        _config.setProperty(key,value);
     }
 
-    public void invokeMain(ClassLoader classloader, String classname, String[] args) throws IllegalAccessException, InvocationTargetException,
+    private void usage()
+    {
+        String usageResource = "org/eclipse/jetty/start/usage.txt";
+        InputStream usageStream = getClass().getClassLoader().getResourceAsStream(usageResource);
+
+        if (usageStream == null)
+        {
+            System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
+            System.err.println("ERROR: detailed usage resource unavailable");
+            System.exit(1);
+        }
+
+        BufferedReader buf = null;
+        try
+        {
+            buf = new BufferedReader(new InputStreamReader(usageStream));
+            String line;
+
+            while ((line = buf.readLine()) != null)
+            {
+                if (line.startsWith("@OPTIONS@"))
+                {
+                    List<String> sortedOptions = new ArrayList<String>();
+                    sortedOptions.addAll(_config.getSectionIds());
+                    Collections.sort(sortedOptions);
+
+                    System.err.println("      Available OPTIONS: ");
+
+                    for (String option : sortedOptions)
+                    {
+                        System.err.println("         [" + option + "]");
+                    }
+                }
+                else if (line.startsWith("@CONFIGS@"))
+                {
+                    System.err.println("    Configurations Available in ${jetty.home}/etc/: ");
+                    File etc = new File(System.getProperty("jetty.home","."),"etc");
+                    if (!etc.exists())
+                    {
+                        System.err.println("      Unable to find " + etc);
+                        continue;
+                    }
+
+                    if (!etc.isDirectory())
+                    {
+                        System.err.println("      Unable list dir " + etc);
+                        continue;
+                    }
+
+                    File configs[] = etc.listFiles(new FileFilter()
+                    {
+                        public boolean accept(File path)
+                        {
+                            if (!path.isFile())
+                            {
+                                return false;
+                            }
+
+                            String name = path.getName().toLowerCase();
+                            return (name.startsWith("jetty") && name.endsWith(".xml"));
+                        }
+                    });
+
+                    List<File> configFiles = new ArrayList<File>();
+                    configFiles.addAll(Arrays.asList(configs));
+                    Collections.sort(configFiles);
+
+                    for (File configFile : configFiles)
+                    {
+                        System.err.println("         etc/" + configFile.getName());
+                    }
+                }
+                else
+                {
+                    System.err.println(line);
+                }
+            }
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace(System.err);
+        }
+        finally
+        {
+            if (buf != null)
+            {
+                try
+                {
+                    buf.close();
+                }
+                catch (IOException ignore)
+                {
+                    /* ignore */
+                }
+            }
+        }
+        System.exit(1);
+    }
+
+    public void invokeMain(ClassLoader classloader, String classname, List<String> args) throws IllegalAccessException, InvocationTargetException,
             NoSuchMethodException, ClassNotFoundException
     {
-        Class invoked_class=null;
-        
+        Class<?> invoked_class = null;
+
         try
         {
-            invoked_class=classloader.loadClass(classname);
+            invoked_class = classloader.loadClass(classname);
         }
-        catch(ClassNotFoundException e)
+        catch (ClassNotFoundException e)
         {
             //ignored
         }
-        
-        if (DEBUG || _showVersions || invoked_class==null)
+
+        if (Config.isDebug() || invoked_class == null)
         {
-            if (invoked_class==null)
-                System.err.println("ClassNotFound: "+classname);
+            if (invoked_class == null)
+                System.err.println("ClassNotFound: " + classname);
             else
-                System.err.println(classname+" "+invoked_class.getPackage().getImplementationVersion());
-            File[] elements = _classpath.getElements();
-            for (int i=0;i<elements.length;i++)
-                System.err.println("  "+elements[i].getAbsolutePath());
-            if (_showVersions || invoked_class==null)
+                System.err.println(classname + " " + invoked_class.getPackage().getImplementationVersion());
+
+            if (invoked_class == null)
             {
-                System.err.println("OPTIONS: "+_options);
-	        usage();
+                usage();
+                return;
             }
         }
 
-        Class[] method_param_types=new Class[1];
-        method_param_types[0]=args.getClass();
-        Method main=null;
-        main=invoked_class.getDeclaredMethod("main",method_param_types);
-        Object[] method_params=new Object[1];
-        method_params[0]=args;
+        String argArray[] = args.toArray(new String[0]);
+
+        Class<?>[] method_param_types = new Class[]
+        { String.class };
+
+        Method main = invoked_class.getDeclaredMethod("main",method_param_types);
+        Object[] method_params = new Object[]
+        { argArray };
 
         main.invoke(null,method_params);
     }
 
     /* ------------------------------------------------------------ */
-    String expand(String s)
+    public static void close(Reader reader)
     {
-        int i1=0;
-        int i2=0;
-        while (s!=null)
+        if (reader == null)
         {
-            i1=s.indexOf("$(");
-            if (i1<0)
-                break;
-            i2=s.indexOf(")",i1+2);
-            if (i2<0)
-                break;
-            String name=s.substring(i1+2,i2);
-            String property=getSystemProperty(name);
-            s=s.substring(0,i1)+property+s.substring(i2+1);
+            return;
         }
-        
-        i1=0;
-        i2=0;
-        while (s!=null)
+        try
         {
-            i1=s.indexOf("${");
-            if (i1<0)
-                break;
-            i2=s.indexOf("}",i1+2);
-            if (i2<0)
-                break;
-            String name=s.substring(i1+2,i2);
-            String property=getProperty(name);
-            s=s.substring(0,i1)+property+s.substring(i2+1);
+            reader.close();
         }
-        
-        return s;
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     /* ------------------------------------------------------------ */
-    void configure(InputStream config, int nargs) throws Exception
+    public static void close(InputStream stream)
     {
-        BufferedReader cfg=new BufferedReader(new InputStreamReader(config,"ISO-8859-1"));
-        Version java_version=new Version(System.getProperty("java.version"));
-        Version ver=new Version();
-        // JAR's already processed
-        Set<String> done=new HashSet<String>();
-        
-        // Initial classpath
-        String classpath=System.getProperty("CLASSPATH");
-        if (classpath!=null)
+        if (stream == null)
         {
-            StringTokenizer tok=new StringTokenizer(classpath,File.pathSeparator);
-            while (tok.hasMoreTokens())
-                _classpath.addComponent(tok.nextToken());
+            return;
+        }
+        try
+        {
+            stream.close();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    public void start(List<String> xmls)
+    {
+        // Setup Start / Stop Monitoring
+        startMonitor();
+
+        // Initialize the Config (start.config)
+        initConfig(xmls);
+
+        // Default options (if not specified)
+        if (_activeOptions.isEmpty())
+        {
+            _activeOptions.add("default");
+            _activeOptions.add("*");
+        }
+        
+        // Add mandatory options for secure mode
+        if (_secure)
+        {
+            addMandatoryOption("secure");
+            addMandatoryOption("security");
         }
 
-        List<String> section=null;
-        String o=getProperty("OPTIONS","default");
-        _activeOptions.addAll(Arrays.asList((o.toString()+",*").split("[ ,]")));
-        List<String> unsatisfied_options = new ArrayList<String>( _activeOptions );
-        
-        // Handle line by line
-        String line=null;
-        while (true)
+        // Get Desired Classpath
+        Classpath classpath = _config.getCombinedClasspath(_activeOptions);
+
+        System.setProperty("java.class.path",classpath.toString());
+        ClassLoader cl = classpath.getClassLoader();
+        if (Config.isDebug())
         {
-            line=cfg.readLine();
-            if (line==null)
-                break;
-            String trim=line.trim();
-            if (trim.length()==0||trim.startsWith("#"))
-                continue;
-            
-            // handle options
-            if (trim.startsWith("[") && trim.endsWith("]"))
-            {
-                section = Arrays.asList(trim.substring(1,trim.length()-1).split("[ ,]"));  
-                _options.addAll(section);
-            }
-            
-            if (section!=null && Collections.disjoint(section,_activeOptions))
-                continue;
-            if (section!=null)
-                unsatisfied_options.removeAll(section);
-            try
-            {
-                StringTokenizer st=new StringTokenizer(line);
-                String subject=st.nextToken();
-                boolean expression=true;
-                boolean not=false;
-                String condition=null;
-                // Evaluate all conditions
-                while (st.hasMoreTokens())
-                {
-                    condition=st.nextToken();
-                    if (condition.equalsIgnoreCase("!"))
-                    {
-                        not=true;
-                        continue;
-                    }
-                    if (condition.equalsIgnoreCase("OR"))
-                    {
-                        if (expression)
-                            break;
-                        expression=true;
-                        continue;
-                    }
-                    if (condition.equalsIgnoreCase("AND"))
-                    {
-                        if (!expression)
-                            break;
-                        continue;
-                    }
-                    boolean eval=true;
-                    if (condition.equals("true")||condition.equals("always"))
-                    {
-                        eval=true;
-                    }
-                    else if (condition.equals("false")||condition.equals("never"))
-                    {
-                        eval=false;
-                    }
-                    else if (condition.equals("available"))
-                    {
-                        String class_to_check=st.nextToken();
-                        eval=isAvailable(class_to_check);
-                    }
-                    else if (condition.equals("exists"))
-                    {
-                        try
-                        {
-                            eval=false;
-                            File file=new File(expand(st.nextToken()));
-                            eval=file.exists();
-                        }
-                        catch (Exception e)
-                        {
-                            if (DEBUG)
-                                e.printStackTrace();
-                        }
-                    }
-                    else if (condition.equals("property"))
-                    {
-                        String property=getProperty(st.nextToken());
-                        eval=property!=null&&property.length()>0;
-                    }
-                    else if (condition.equals("system"))
-                    {
-                        String property=System.getProperty(st.nextToken());
-                        eval=property!=null&&property.length()>0;
-                    }
-                    else if (condition.equals("java"))
-                    {
-                        String operator=st.nextToken();
-                        String version=st.nextToken();
-                        ver.parse(version);
-                        eval=(operator.equals("<")&&java_version.compare(ver)<0)||(operator.equals(">")&&java_version.compare(ver)>0)
-                                ||(operator.equals("<=")&&java_version.compare(ver)<=0)||(operator.equals("=<")&&java_version.compare(ver)<=0)
-                                ||(operator.equals("=>")&&java_version.compare(ver)>=0)||(operator.equals(">=")&&java_version.compare(ver)>=0)
-                                ||(operator.equals("==")&&java_version.compare(ver)==0)||(operator.equals("!=")&&java_version.compare(ver)!=0);
-                    }
-                    else if (condition.equals("nargs"))
-                    {
-                        String operator=st.nextToken();
-                        int number=Integer.parseInt(st.nextToken());
-                        eval=(operator.equals("<")&&nargs<number)||(operator.equals(">")&&nargs>number)||(operator.equals("<=")&&nargs<=number)
-                                ||(operator.equals("=<")&&nargs<=number)||(operator.equals("=>")&&nargs>=number)||(operator.equals(">=")&&nargs>=number)
-                                ||(operator.equals("==")&&nargs==number)||(operator.equals("!=")&&nargs!=number);
-                    }
-                    else
-                    {
-                        System.err.println("ERROR: Unknown condition: "+condition);
-                        eval=false;
-                    }
-                    expression&=not?!eval:eval;
-                    not=false;
-                }
-                String file=expand(subject);
-                
-                if (DEBUG)
-                    System.err.println((expression?"T ":"F ")+line);
-                if (!expression)
-                {
-                    done.add(file);
-                    continue;
-                }
-                
-                // Handle setting of start property
-                if (subject.indexOf("~=")>0)
-                {
-                    int i=file.indexOf("~=");
-                    String property=file.substring(0,i);
-                    String value=fixPath(file.substring(i+2));
-                    if (DEBUG)
-                        System.err.println("  "+property+"~="+value);
-                    setProperty(property,value);
-                }
-                else
-                // Handle setting of start property with canonical path
-                if (subject.indexOf("/=")>0)
-                {
-                    int i=file.indexOf("/=");
-                    String property=file.substring(0,i);
-                    String value=fixPath(file.substring(i+2));
-                    String canonical=new File(value).getCanonicalPath();
-                    if (DEBUG)
-                        System.err.println("  "+property+"/="+value+"=="+canonical);
-                    setProperty(property,canonical);
-                }
-                else
-                // Handle setting of system property
-                if (subject.indexOf("=")>0)
-                {
-                    int i=file.indexOf("=");
-                    String property=file.substring(0,i);
-                    String value=fixPath(file.substring(i+1));
-                    if (DEBUG)
-                        System.err.println("  "+property+"="+value);
-                    System.setProperty(property,value);
-                }
-                else
-                // Handle adding all unconsidered jar and zip file
-                if (subject.endsWith("/*"))
-                {
-                    // directory of JAR files - only add jars and zips
-                    // within the directory
-                    File dir=new File(fixPath(file.substring(0,file.length()-1)));
-                    addJars(dir,done,false);
-                }
-                else
-                // Handle recursive add of all unconsidered jar and zip files
-                if (subject.endsWith("/**"))
-                {
-                    //directory hierarchy of jar files - recursively add all
-                    //jars and zips in the hierarchy
-                    File dir=new File(fixPath(file.substring(0,file.length()-2)));
-                    addJars(dir,done,true);
-                }
-                else
-                // Handle adding raw classpath directory to classpath
-                if (subject.endsWith("/"))
-                {
-                    // class directory
-                    File cd=new File(fixPath(file));
-                    String d=cd.getCanonicalPath();
-                    if (!done.contains(d))
-                    {
-                        done.add(d);
-                        boolean added=_classpath.addComponent(d);
-                        if (DEBUG)
-                            System.err.println((added?"  CLASSPATH+=":"  !")+d);
-                    }
-                }
-                else
-                // Handle adding xml configuration
-                if (subject.toLowerCase().endsWith(".xml"))
-                {
-                    // Config file
-                    File f=new File(fixPath(file));
-                    if (f.exists())
-                        _xml.add(f.getCanonicalPath());
-                    if (DEBUG)
-                        System.err.println("  ARGS+="+f);
-                }
-                else
-                // Handle setting main class to execute
-                if (subject.toLowerCase().endsWith(".class"))
-                {
-                    // Class
-                    String cn=expand(subject.substring(0,subject.length()-6));
-                    if (cn!=null&&cn.length()>0)
-                    {
-                        if (DEBUG)
-                            System.err.println("  CLASS="+cn);
-                        _classname=cn;
-                    }
-                }
-                else
-                // Handle adding raw claspath entry
-                if (subject.toLowerCase().endsWith(".path"))
-                {
-                    //classpath (jetty.class.path?) to add to runtime classpath
-                    String cn=expand(subject.substring(0,subject.length()-5));
-                    if (cn!=null&&cn.length()>0)
-                    {
-                        if (DEBUG)
-                            System.err.println("  PATH="+cn);
-                        _classpath.addClasspath(cn);
-                    }                  
-                }
-                else
-                // Handle adding Security policy
-                if (subject.toLowerCase().endsWith(".policy"))
-                {
-                    //policy file to parse
-                    String cn=expand(subject.substring(0,subject.length()));
-                    if (cn!=null&&cn.length()>0)
-                    {
-                        if (DEBUG)
-                            System.err.println("  POLICY="+cn);
-                        _policies.add(fixPath(cn));
-                    }                  
-                }
-                else
-                {
-                    // single JAR file
-                    File f=new File(fixPath(file));
-                    if(f.exists())
-                    {
-                        String d=f.getCanonicalPath();
-                        if (!done.contains(d))
-                        {
-                            done.add(d);
-                            boolean added=_classpath.addComponent(d);
-                            if (!added)
-                            {
-                                added=_classpath.addClasspath(expand(subject));
-                                if (DEBUG)
-                                    System.err.println((added?"  CLASSPATH+=":"  !")+d);
-                            }
-                            else if (DEBUG)
-                                System.err.println((added?"  CLASSPATH+=":"  !")+d);
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                System.err.println("on line: '"+line+"'");
-                e.printStackTrace();
-            }
+            System.err.println("java.class.path=" + System.getProperty("java.class.path"));
+            System.err.println("jetty.home=" + System.getProperty("jetty.home"));
+            System.err.println("java.home=" + System.getProperty("java.home"));
+            System.err.println("java.io.tmpdir=" + System.getProperty("java.io.tmpdir"));
+            System.err.println("java.class.path=" + classpath);
+            System.err.println("classloader=" + cl);
+            System.err.println("classloader.parent=" + cl.getParent());
         }
 
-        if (unsatisfied_options!=null && unsatisfied_options.size()>0)
+        // Show the usage information and return
+        if (_showUsage)
         {
-            System.err.println("Unresolved options: "+unsatisfied_options);
+            usage();
+            return;
+        }
+
+        // Show the version information and return
+        if (_dumpVersions)
+        {
+            showClasspathWithVersions(classpath);
+            return;
+        }
+        
+        // Show all modes with version information
+        if (_listModes)
+        {
+            showAllModesWithVersions(classpath);
+            return;
+        }
+        
+        // Show Command Line to execute Jetty
+        if (_execPrint)
+        {
+            showExecPrint(classpath,xmls);
+            return;
+        }
+
+        // Set current context class loader to what is selected.
+        Thread.currentThread().setContextClassLoader(cl);
+
+        // Initialize the Security
+        initSecurity(cl);
+
+        // Invoke the Main Class
+        try
+        {
+            // Get main class as defined in start.config
+            String classname = _config.getMainClassname();
+
+            // Check for override of start class (via "jetty.server" property)
+            String mainClass = System.getProperty("jetty.server");
+            if (mainClass != null)
+                classname = mainClass;
+
+            // Check for override of start class (via "main.class" property)
+            mainClass = System.getProperty("main.class");
+            if (mainClass != null)
+                classname = mainClass;
+
+            Config.debug("main.class=" + classname);
+
+            invokeMain(cl,classname,xmls);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    private void addMandatoryOption(String id)
+    {
+        if (!_activeOptions.contains(id))
+        {
+            _activeOptions.add(id);
+        }
+    }
+
+    private void showExecPrint(Classpath classpath, List<String> xmls)
+    {
+        StringBuffer cmd = new StringBuffer();
+        
+        cmd.append(findJavaBin());
+        cmd.append(" -cp ").append(classpath.toString());
+        cmd.append(" -Djetty.home=").append(_jettyHome);
+        cmd.append(" ").append(_config.getMainClassname());
+        for (String xml : xmls)
+        {
+            cmd.append(" ").append(xml);
+        }
+
+        System.out.println(cmd);
+    }
+    
+    private String findJavaBin()
+    {
+        File javaHome = new File(System.getProperty("java.home"));
+        if (!javaHome.exists())
+        {
+            return null;
+        }
+
+        File javabin = findExecutable(javaHome,"bin/java");
+        if (javabin != null)
+        {
+            return javabin.getAbsolutePath();
+        }
+
+        javabin = findExecutable(javaHome,"bin/java.exe");
+        if (javabin != null)
+        {
+            return javabin.getAbsolutePath();
+        }
+
+        return "java";
+    }
+
+    private File findExecutable(File root, String path)
+    {
+        String npath = path.replace('/',File.separatorChar);
+        File exe = new File(root,npath);
+        if (!exe.exists())
+        {
+            return null;
+        }
+        return exe;
+    }
+
+    private void showAllModesWithVersions(Classpath classpath)
+    {
+        Set<String> sectionIds = _config.getSectionIds();
+
+        StringBuffer msg = new StringBuffer();
+        msg.append("There ");
+        if (sectionIds.size() > 1)
+        {
+            msg.append("are ");
+        }
+        else
+        {
+            msg.append("is ");
+        }
+        msg.append(String.valueOf(sectionIds.size()));
+        msg.append(" OPTION mode");
+        if (sectionIds.size() > 1)
+        {
+            msg.append("s");
+        }
+        msg.append(" available to use.");
+        System.out.println(msg);
+        System.out.println("Each mode is listed along with associated available classpath entries,  in the order that they would appear from that mode.");
+        System.out.println("Note: If using multiple modes (eg: 'Server,servlet,webapp,jms,jmx') "
+                + "then overlapping entries will not be repeated in the eventual classpath.");
+        System.out.println();
+        System.out.printf("${jetty.home} = %s%n",_jettyHome);
+        System.out.println();
+
+        for (String sectionId : sectionIds)
+        {
+            if (Config.DEFAULT_SECTION.equals(sectionId))
+            {
+                System.out.println("GLOBAL Mode (Prepended Entries)");
+            }
+            else if ("*".equals(sectionId))
+            {
+                System.out.println("GLOBAL Mode (Appended Entries) (*)");
+            }
+            else
+            {
+                System.out.printf("Mode [%s]",sectionId);
+                if (Character.isUpperCase(sectionId.charAt(0)))
+                {
+                    System.out.print(" (Aggregate)");
+                }
+                System.out.println();
+            }
+            System.out.println("-------------------------------------------------------------");
+            
+            Classpath sectionCP = _config.getSectionClasspath(sectionId);
+            
+            if (sectionCP.isEmpty())
+            {
+                System.out.println("Empty mode, no classpath entries active.");
+                System.out.println();
+                continue;
+            } 
+            
+            int i = 0;
+            for (File element : sectionCP.getElements())
+            {
+                String elementPath = element.getAbsolutePath();
+                if (elementPath.startsWith(_jettyHome))
+                {
+                    elementPath = "${jetty.home}" + elementPath.substring(_jettyHome.length());
+                }
+                System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),elementPath);
+            }
+            
+            System.out.println();
+        }
+    }
+
+    private void showClasspathWithVersions(Classpath classpath)
+    {
+        // Iterate through active classpath, and fetch Implementation Version from each entry (if present)
+        // to dump to end user.
+
+        System.out.println("Active Options: " + _activeOptions);
+
+        if (classpath.count() == 0)
+        {
+            System.out.println("No version information available show.");
+            return;
+        }
+
+        System.out.println("Version Information on " + classpath.count() + " entr" + ((classpath.count() > 1)?"ies":"y") + " in the classpath.");
+        System.out.println("Note: order presented here is how they would appear on the classpath.");
+        System.out.println("      changes to the OPTIONS=[mode,mode,...] command line option will be reflected here.");
+
+        int i = 0;
+        for (File element : classpath.getElements())
+        {
+            String elementPath = element.getAbsolutePath();
+            if (elementPath.startsWith(_jettyHome))
+            {
+                elementPath = "${jetty.home}" + elementPath.substring(_jettyHome.length());
+            }
+            System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),elementPath);
         }
     }
     
@@ -649,38 +707,86 @@ public class Main
     	return path.replace('/',File.separatorChar);
     }
 
-    /* ------------------------------------------------------------ */
-    public void start(String[] args)
+    private String getVersion(File element)
     {
-        // set up classpath:
-        InputStream cpcfg=null;
+        if (element.isDirectory())
+        {
+            return "(dir)";
+        }
+
+        if (element.isFile())
+        {
+            String name = element.getName().toLowerCase();
+            if (name.endsWith(".jar"))
+            {
+                return JarVersion.getVersion(element);
+            }
+
+            if (name.endsWith(".zip"))
+            {
+                return getZipVersion(element);
+            }
+        }
+
+        return "";
+    }
+
+    private String getZipVersion(File element)
+    {
+        // TODO - find version in zip file.  Look for META-INF/MANIFEST.MF ?
+        return "";
+    }
+
+    private void initSecurity(ClassLoader cl)
+    {
+        // Init the Security Policies
         try
         {
-            int port = Integer.parseInt(getProperty("STOP.PORT","-1"));
-            String key = getProperty("STOP.KEY", null);
-            
-            Monitor.monitor(port,key);
+            if (_secure)
+            {
+                Policy.setPolicy(_config.getPolicyInstance(cl));
+                System.setSecurityManager(new SecurityManager());
+            }
+            else
+            {
+                Policy policy = Policy.getPolicy();
+                if (policy != null)
+                    policy.refresh();
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
 
-            String config=getProperty("START","org/eclipse/jetty/start/start.config");
-            if (DEBUG)
+    private void initConfig(List<String> xmls)
+    {
+        InputStream cfgstream = null;
+        try
+        {
+            _config.setArgCount(xmls.size());
+
+            // What start.config should we use?
+            String cfgName = _config.getProperty("START","org/eclipse/jetty/start/start.config");
+            Config.debug("config=" + cfgName);
+
+            // Look up config as resource first.
+            cfgstream = getClass().getClassLoader().getResourceAsStream(cfgName);
+
+            // resource not found, try filesystem next
+            if (cfgstream == null)
+                cfgstream = new FileInputStream(cfgName);
+
+            // parse the config
+            _config.parse(cfgstream);
+
+            _jettyHome = _config.getProperty("jetty.home");
+            if (_jettyHome != null)
             {
-                System.err.println("config="+config);
-                System.err.println("properties="+_properties);
+                _jettyHome = new File(_jettyHome).getCanonicalPath();
+                System.setProperty("jetty.home",_jettyHome);
             }
-            cpcfg=getClass().getClassLoader().getResourceAsStream(config);
-            if (cpcfg==null)
-                cpcfg=new FileInputStream(config);
-            
-            configure(cpcfg,args.length);
-            
-            String jetty_home=System.getProperty("jetty.home");
-            if (jetty_home!=null)
-            {
-                File file=new File(jetty_home);
-                String canonical=file.getCanonicalPath();
-                System.setProperty("jetty.home",canonical);
-            }
-            
         }
         catch (Exception e)
         {
@@ -689,100 +795,40 @@ public class Main
         }
         finally
         {
-            try
-            {
-                cpcfg.close();
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
+            close(cfgstream);
         }
-        // okay, classpath complete.
-        System.setProperty("java.class.path",_classpath.toString());
-        ClassLoader cl=_classpath.getClassLoader();
-        if (DEBUG)
-        {
-            System.err.println("java.class.path="+System.getProperty("java.class.path"));
-            System.err.println("jetty.home="+System.getProperty("jetty.home"));
-            System.err.println("java.io.tmpdir="+System.getProperty("java.io.tmpdir"));
-            System.err.println("java.class.path="+_classpath);
-            System.err.println("classloader="+cl);
-            System.err.println("classloader.parent="+cl.getParent());
-        }
-        // Invoke main(args) using new classloader.
-        Thread.currentThread().setContextClassLoader(cl);
-        // re-eval the policy now that env is set
-        try
-        {
-        	if ( _activeOptions.contains("secure") )
-        	{
-        	    Class jettyPolicy = cl.loadClass( "org.eclipse.jetty.policy.JettyPolicy" );
-        	    Constructor c = jettyPolicy.getConstructor( new Class[] { Set.class, Map.class } );
-        	    Object policyClass = c.newInstance( _policies, _properties );
-        	    
-        		Policy.setPolicy( (Policy)policyClass );
-        		System.setSecurityManager( new SecurityManager() );
-        	}
-        	else
-        	{
-        		Policy policy=Policy.getPolicy();
-        		if (policy!=null)
-        			policy.refresh();
-        	}
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        try
-        {
-            for (int i=0; i<args.length; i++)
-            {
-                if (args[i]==null)
-                    continue;
-                _xml.add(args[i]);
-            }
-            args=(String[])_xml.toArray(args);
-            //check for override of start class
-            String mainClass=System.getProperty("jetty.server");
-            if (mainClass!=null)
-                _classname=mainClass;
-            mainClass=System.getProperty("main.class");
-            if (mainClass!=null)
-                _classname=mainClass;
-            if (DEBUG)
-                System.err.println("main.class="+_classname);
-            invokeMain(cl,_classname,args);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
+    }
+
+    private void startMonitor()
+    {
+        int port = Integer.parseInt(_config.getProperty("STOP.PORT","-1"));
+        String key = _config.getProperty("STOP.KEY",null);
+
+        Monitor.monitor(port,key);
     }
 
     /**
      * Stop a running jetty instance.
      */
-    public void stop(int port,String key)
+    public void stop(int port, String key)
     {
-        int _port=port;
-        String _key=key;
+        int _port = port;
+        String _key = key;
 
         try
         {
-            if (_port<=0)
+            if (_port <= 0)
                 System.err.println("STOP.PORT system property must be specified");
-            if (_key==null)
+            if (_key == null)
             {
-                _key="";
+                _key = "";
                 System.err.println("STOP.KEY system property must be specified");
                 System.err.println("Using empty key");
             }
 
-            Socket s=new Socket(InetAddress.getByName("127.0.0.1"),_port);
-            OutputStream out=s.getOutputStream();
-            out.write((_key+"\r\nstop\r\n").getBytes());
+            Socket s = new Socket(InetAddress.getByName("127.0.0.1"),_port);
+            OutputStream out = s.getOutputStream();
+            out.write((_key + "\r\nstop\r\n").getBytes());
             out.flush();
             s.close();
         }
@@ -793,34 +839,6 @@ public class Main
         catch (Exception e)
         {
             e.printStackTrace();
-        }
-    }
-
-    private void addJars(File dir, Set<String> table, boolean recurse) throws IOException
-    {
-        File[] entries=dir.listFiles();
-
-        for (int i=0; entries!=null&&i<entries.length; i++)
-        {
-            File entry=entries[i];
-
-            if (entry.isDirectory()&&recurse)
-                addJars(entry,table,recurse);
-            else
-            {
-                String name=entry.getName().toLowerCase();
-                if (name.endsWith(".jar")||name.endsWith(".zip"))
-                {
-                    String jar=entry.getCanonicalPath();
-                    if (!table.contains(jar))
-                    {
-                        table.add(jar);
-                        boolean added=_classpath.addComponent(jar);
-                        if (DEBUG)
-                            System.err.println((added?"  CLASSPATH+=":"  !")+jar);
-                    }
-                }
-            }
         }
     }
 }
