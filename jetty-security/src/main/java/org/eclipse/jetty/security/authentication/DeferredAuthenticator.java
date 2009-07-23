@@ -73,8 +73,8 @@ public class DeferredAuthenticator extends DelegateAuthenticator
         protected final ServletRequest _request;
         protected final ServletResponse _response;
 
-        private Authentication _delegate;
         private IdentityService _identityService;
+        private Object _previousAssociation;
 
         public DeferredAuthentication(Authenticator authenticator, ServletRequest request, ServletResponse response)
         {
@@ -116,7 +116,7 @@ public class DeferredAuthenticator extends DelegateAuthenticator
                 if (authentication!=null && (authentication instanceof Authentication.User) && !(authentication instanceof Authentication.ResponseSent))
                 {
                     if (_identityService!=null)
-                        _identityService.associate(((Authentication.User)authentication).getUserIdentity());
+                        _previousAssociation=_identityService.associate(((Authentication.User)authentication).getUserIdentity());
                     return authentication;
                 }
             }
@@ -137,7 +137,7 @@ public class DeferredAuthenticator extends DelegateAuthenticator
             {
                 Authentication authentication = _authenticator.validateRequest(_request,response,true);
                 if (authentication instanceof Authentication.User && _identityService!=null)
-                    _identityService.associate(((Authentication.User)authentication).getUserIdentity());
+                    _previousAssociation=_identityService.associate(((Authentication.User)authentication).getUserIdentity());
                 return authentication;
             }
             catch (ServerAuthException e)
@@ -156,7 +156,13 @@ public class DeferredAuthenticator extends DelegateAuthenticator
             return null; // TODO implement
         }
 
+        /* ------------------------------------------------------------ */
+        public Object getPreviousAssociation()
+        {
+            return _previousAssociation;
+        }
     }
+    
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

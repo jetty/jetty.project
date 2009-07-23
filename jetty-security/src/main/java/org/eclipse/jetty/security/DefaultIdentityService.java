@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.UserIdentity;
  */
 public class DefaultIdentityService implements IdentityService
 {
+    /* ------------------------------------------------------------ */
     public DefaultIdentityService()
     {
     }
@@ -42,29 +43,40 @@ public class DefaultIdentityService implements IdentityService
      * If there are roles refs present in the scope, then wrap the UserIdentity 
      * with one that uses the role references in the {@link UserIdentity#isUserInRole(String)}
      */
-    public void associate(UserIdentity user)
+    public Object associate(UserIdentity user)
+    {
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void disassociate(Object previous) 
     {
     }
 
+    /* ------------------------------------------------------------ */
     public Object setRunAs(UserIdentity user, RunAsToken token)
     {
         return token;
     }
 
+    /* ------------------------------------------------------------ */
     public void unsetRunAs(Object lastToken)
     {
     }
-    
+
+    /* ------------------------------------------------------------ */
     public RunAsToken newRunAsToken(String runAsName)
     {
         return new RoleRunAsToken(runAsName);
     }
 
+    /* ------------------------------------------------------------ */
     public UserIdentity getSystemUserIdentity()
     {
         return null;
     }
 
+    /* ------------------------------------------------------------ */
     public UserIdentity newUserIdentity(final Subject subject, final Principal userPrincipal, final String[] roles)
     {
         return new DefaultUserIdentity(subject,userPrincipal,roles);

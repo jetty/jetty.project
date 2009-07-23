@@ -36,9 +36,18 @@ public interface IdentityService
      * {@link SecurityHandler#handle(String, Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)}
      * method and then again with a null argument as that call exits.
      * @param user The current user or null for no user to associated.
+     * @return an object representing the previous associated state
      */
-    void associate(UserIdentity user);
+    Object associate(UserIdentity user);
     
+    /* ------------------------------------------------------------ */
+    /** 
+     * Disassociate the user identity from the current thread 
+     * and restore previous identity.
+     * @param previous The opaque object returned from a call to {@link IdentityService#associate(UserIdentity)}
+     */
+    void disassociate(Object previous);
+
     /* ------------------------------------------------------------ */
     /**
      * Associate a runas Token with the current user and thread.
