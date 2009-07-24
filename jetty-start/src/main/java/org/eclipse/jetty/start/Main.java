@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 package org.eclipse.jetty.start;
 
@@ -16,11 +16,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -33,6 +35,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
+
+import org.eclipse.jetty.start.log.RedirectedStreamLogger;
 
 /*-------------------------------------------*/
 /**
@@ -53,6 +58,7 @@ public class Main
     private boolean _listModes = false;
     private boolean _execPrint = false;
     private boolean _secure = false;
+    private boolean _fromDaemon = false;
     private List<String> _activeOptions = new ArrayList<String>();
     private Config _config = new Config();
 
@@ -103,7 +109,7 @@ public class Main
                     _dumpVersions = true;
                     continue;
                 }
-                
+
                 if ("--list-modes".equals(arg))
                 {
                     _listModes = true;
@@ -115,13 +121,23 @@ public class Main
                     _execPrint = true;
                     continue;
                 }
-                
+
+                // Special internal indicator that jetty was started by the jetty.sh Daemon
+                if ("--fromDaemon".equals(arg))
+                {
+                    _fromDaemon = true;
+                    PrintStream logger = new PrintStream(new RedirectedStreamLogger("daemon_yyyy_mm_dd.log",false,90,TimeZone.getTimeZone("GMT")));
+                    System.setOut(logger);
+                    System.setErr(logger);
+                    continue;
+                }
+
                 if ("--secure".equals(arg))
                 {
                     _secure = true;
                     continue;
                 }
-                
+
                 // Process property spec
                 if (arg.indexOf('=') >= 0)
                 {
@@ -230,7 +246,7 @@ public class Main
                         }
                     }
                     else
-                    // Nah, it's a normal property
+                        // Nah, it's a normal property
                     {
                         String[] assign = arg.split("=",2);
 
@@ -245,7 +261,7 @@ public class Main
                     }
                 }
                 else
-                // A normal argument
+                    // A normal argument
                 {
                     args.add(arg);
                 }
@@ -369,7 +385,7 @@ public class Main
     }
 
     public void invokeMain(ClassLoader classloader, String classname, List<String> args) throws IllegalAccessException, InvocationTargetException,
-            NoSuchMethodException, ClassNotFoundException
+    NoSuchMethodException, ClassNotFoundException
     {
         Class<?> invoked_class = null;
 
@@ -399,11 +415,11 @@ public class Main
         String argArray[] = args.toArray(new String[0]);
 
         Class<?>[] method_param_types = new Class[]
-        { String.class };
+                                                  { argArray.getClass() };
 
         Method main = invoked_class.getDeclaredMethod("main",method_param_types);
         Object[] method_params = new Object[]
-        { argArray };
+                                            { argArray };
 
         main.invoke(null,method_params);
     }
@@ -443,13 +459,10 @@ public class Main
     }
 
     /* ------------------------------------------------------------ */
-    public void start(List<String> xmls)
+    public void start(List<String> xmls) throws FileNotFoundException
     {
         // Setup Start / Stop Monitoring
         startMonitor();
-
-        // Initialize the Config (start.config)
-        initConfig(xmls);
 
         // Default options (if not specified)
         if (_activeOptions.isEmpty())
@@ -457,7 +470,7 @@ public class Main
             _activeOptions.add("default");
             _activeOptions.add("*");
         }
-        
+
         // Add mandatory options for secure mode
         if (_secure)
         {
@@ -465,7 +478,25 @@ public class Main
             addMandatoryOption("security");
         }
 
-        // Get Desired Classpath
+        // Default XMLs (if not specified)
+        if (xmls.isEmpty())
+        {
+            // Do not rely on _jettyHome yet, as initConfig(xmls) defines _jettyHome, and
+            // resolveXmlConfigs(xmls) normalizes the xmls based off it.
+            if (_fromDaemon)
+            {
+                xmls.add("etc/jetty-logging.xml");
+            }
+            xmls.add("etc/jetty.xml");
+        }
+
+        // Initialize the Config (start.config)
+        initConfig(xmls);
+
+        // Normalize the XML config options passed on the command line.
+        xmls = resolveXmlConfigs(xmls);
+
+        // Get Desired Classpath based on user provided Active Options.
         Classpath classpath = _config.getCombinedClasspath(_activeOptions);
 
         System.setProperty("java.class.path",classpath.toString());
@@ -494,14 +525,14 @@ public class Main
             showClasspathWithVersions(classpath);
             return;
         }
-        
+
         // Show all modes with version information
         if (_listModes)
         {
             showAllModesWithVersions(classpath);
             return;
         }
-        
+
         // Show Command Line to execute Jetty
         if (_execPrint)
         {
@@ -541,6 +572,29 @@ public class Main
         }
     }
 
+    private String resolveXmlConfig(String xmlFilename) throws FileNotFoundException
+    {
+        File xml = new File(xmlFilename);
+        if (xml.exists() && xml.isFile())
+        {
+            return xml.getAbsolutePath();
+        }
+
+        xml = new File(_jettyHome,fixPath(xmlFilename));
+        if (xml.exists() && xml.isFile())
+        {
+            return xml.getAbsolutePath();
+        }
+
+        xml = new File(_jettyHome,fixPath("etc/" + xmlFilename));
+        if (xml.exists() && xml.isFile())
+        {
+            return xml.getAbsolutePath();
+        }
+
+        throw new FileNotFoundException("Unable to find XML Config: " + xmlFilename);
+    }
+
     private void addMandatoryOption(String id)
     {
         if (!_activeOptions.contains(id))
@@ -552,7 +606,7 @@ public class Main
     private void showExecPrint(Classpath classpath, List<String> xmls)
     {
         StringBuffer cmd = new StringBuffer();
-        
+
         cmd.append(findJavaBin());
         cmd.append(" -cp ").append(classpath.toString());
         cmd.append(" -Djetty.home=").append(_jettyHome);
@@ -564,7 +618,7 @@ public class Main
 
         System.out.println(cmd);
     }
-    
+
     private String findJavaBin()
     {
         File javaHome = new File(System.getProperty("java.home"));
@@ -648,16 +702,16 @@ public class Main
                 System.out.println();
             }
             System.out.println("-------------------------------------------------------------");
-            
+
             Classpath sectionCP = _config.getSectionClasspath(sectionId);
-            
+
             if (sectionCP.isEmpty())
             {
                 System.out.println("Empty mode, no classpath entries active.");
                 System.out.println();
                 continue;
-            } 
-            
+            }
+
             int i = 0;
             for (File element : sectionCP.getElements())
             {
@@ -668,7 +722,7 @@ public class Main
                 }
                 System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),elementPath);
             }
-            
+
             System.out.println();
         }
     }
@@ -701,10 +755,10 @@ public class Main
             System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),elementPath);
         }
     }
-    
+
     private String fixPath(String path)
     {
-    	return path.replace('/',File.separatorChar);
+        return path.replace('/',File.separatorChar);
     }
 
     private String getVersion(File element)
@@ -758,6 +812,17 @@ public class Main
         {
             e.printStackTrace();
         }
+    }
+
+    private List<String> resolveXmlConfigs(List<String> xmls) throws FileNotFoundException
+    {
+        List<String> ret = new ArrayList<String>();
+        for (String xml : xmls)
+        {
+            ret.add(resolveXmlConfig(xml));
+        }
+
+        return ret;
     }
 
     private void initConfig(List<String> xmls)

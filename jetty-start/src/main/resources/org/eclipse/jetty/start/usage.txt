@@ -40,6 +40,9 @@ NOTE: Not all properties are listed here.
   STOP.KEY=[alphanumeric]
       The passphrase defined to stop the server.
       Requried along with STOP.PORT if you want to use the --stop option above.
+  DEBUG=true
+      Enable debug level log messages on the default logging implementation.
+      (default: false)
   OPTIONS=[mode,mode,...]
       Classpath Options to use.  Eg: All, Server, jmx, webapp, plus, etc...
       (default: "default,*")
