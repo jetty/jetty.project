@@ -48,8 +48,6 @@ public class ManyConnectors
         ssl_connector.setKeystore(jetty_home + "/etc/keystore");
         ssl_connector.setPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         ssl_connector.setKeyPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        ssl_connector.setTruststore(jetty_home + "/etc/keystore");
-        ssl_connector.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         server.addConnector(ssl_connector);
 
         server.setConnectors(new Connector[]

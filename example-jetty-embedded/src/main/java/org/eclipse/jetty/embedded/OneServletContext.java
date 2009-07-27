@@ -13,13 +13,6 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.IOException;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -35,6 +28,8 @@ public class OneServletContext
         server.setHandler(context);
 
         context.addServlet(new ServletHolder(new HelloServlet()),"/*");
+        context.addServlet(new ServletHolder(new HelloServlet("Buongiorno Mondo")),"/it/*");
+        context.addServlet(new ServletHolder(new HelloServlet("Bonjour le Monde")),"/fr/*");
 
         server.start();
         server.join();
