@@ -112,7 +112,7 @@
           <Set name="scanInterval">5</Set>
           <Call name="setAttribute">
             <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-            <Arg>.*/jsp-api-[^/]*\.jar$|.*/jsp-[^/]*\.jar$</Arg>
+            <Arg>.*/jsp-api-[^/]*\.jar$|.*/jsp-[^/]*\.jar$|.*/servlet-api-[^/]*\.jar$</Arg>
           </Call>
         </New>
       </Arg>
