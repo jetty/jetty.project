@@ -279,7 +279,6 @@ public class AnnotationParser
                            final String superName,
                            final String[] interfaces)
         {     
-            System.err.println("VISITING : "+name);
             _className = normalize(name);
             _access = access;
             _signature = signature;
