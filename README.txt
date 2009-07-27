@@ -49,7 +49,7 @@ To run with specific configuration file(s)
 
 To see the available options
 
-  java -jar start.jar --info
+  java -jar start.jar --help
 
 To run with JSP support
 

@@ -55,8 +55,8 @@ public class Main
 {
     private boolean _showUsage = false;
     private boolean _dumpVersions = false;
-    private boolean _listModes = false;
-    private boolean _execPrint = false;
+    private boolean _listOptions = false;
+    private boolean _dryRun = false;
     private boolean _secure = false;
     private boolean _fromDaemon = false;
     private List<String> _activeOptions = new ArrayList<String>();
@@ -110,15 +110,15 @@ public class Main
                     continue;
                 }
 
-                if ("--list-modes".equals(arg))
+                if ("--list-modes".equals(arg) || "--list-options".equals(arg))
                 {
-                    _listModes = true;
+                    _listOptions = true;
                     continue;
                 }
 
-                if ("--exec-print".equals(arg))
+                if ("--exec-print".equals(arg)||"--dry-run".equals(arg))
                 {
-                    _execPrint = true;
+                    _dryRun = true;
                     continue;
                 }
 
@@ -526,17 +526,17 @@ public class Main
             return;
         }
 
-        // Show all modes with version information
-        if (_listModes)
+        // Show all options with version information
+        if (_listOptions)
         {
-            showAllModesWithVersions(classpath);
+            showAllOptionsWithVersions(classpath);
             return;
         }
 
         // Show Command Line to execute Jetty
-        if (_execPrint)
+        if (_dryRun)
         {
-            showExecPrint(classpath,xmls);
+            showDryRun(classpath,xmls);
             return;
         }
 
@@ -603,7 +603,7 @@ public class Main
         }
     }
 
-    private void showExecPrint(Classpath classpath, List<String> xmls)
+    private void showDryRun(Classpath classpath, List<String> xmls)
     {
         StringBuffer cmd = new StringBuffer();
 
@@ -653,7 +653,7 @@ public class Main
         return exe;
     }
 
-    private void showAllModesWithVersions(Classpath classpath)
+    private void showAllOptionsWithVersions(Classpath classpath)
     {
         Set<String> sectionIds = _config.getSectionIds();
 
@@ -668,15 +668,15 @@ public class Main
             msg.append("is ");
         }
         msg.append(String.valueOf(sectionIds.size()));
-        msg.append(" OPTION mode");
+        msg.append(" OPTION");
         if (sectionIds.size() > 1)
         {
             msg.append("s");
         }
         msg.append(" available to use.");
         System.out.println(msg);
-        System.out.println("Each mode is listed along with associated available classpath entries,  in the order that they would appear from that mode.");
-        System.out.println("Note: If using multiple modes (eg: 'Server,servlet,webapp,jms,jmx') "
+        System.out.println("Each option is listed along with associated available classpath entries,  in the order that they would appear from that mode.");
+        System.out.println("Note: If using multiple options (eg: 'Server,servlet,webapp,jms,jmx') "
                 + "then overlapping entries will not be repeated in the eventual classpath.");
         System.out.println();
         System.out.printf("${jetty.home} = %s%n",_jettyHome);
@@ -686,15 +686,15 @@ public class Main
         {
             if (Config.DEFAULT_SECTION.equals(sectionId))
             {
-                System.out.println("GLOBAL Mode (Prepended Entries)");
+                System.out.println("GLOBAL option (Prepended Entries)");
             }
             else if ("*".equals(sectionId))
             {
-                System.out.println("GLOBAL Mode (Appended Entries) (*)");
+                System.out.println("GLOBAL option (Appended Entries) (*)");
             }
             else
             {
-                System.out.printf("Mode [%s]",sectionId);
+                System.out.printf("Option [%s]",sectionId);
                 if (Character.isUpperCase(sectionId.charAt(0)))
                 {
                     System.out.print(" (Aggregate)");
@@ -707,7 +707,7 @@ public class Main
 
             if (sectionCP.isEmpty())
             {
-                System.out.println("Empty mode, no classpath entries active.");
+                System.out.println("Empty option, no classpath entries active.");
                 System.out.println();
                 continue;
             }
@@ -742,7 +742,7 @@ public class Main
 
         System.out.println("Version Information on " + classpath.count() + " entr" + ((classpath.count() > 1)?"ies":"y") + " in the classpath.");
         System.out.println("Note: order presented here is how they would appear on the classpath.");
-        System.out.println("      changes to the OPTIONS=[mode,mode,...] command line option will be reflected here.");
+        System.out.println("      changes to the OPTIONS=[option,option,...] command line option will be reflected here.");
 
         int i = 0;
         for (File element : classpath.getElements())
