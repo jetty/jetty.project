@@ -13,62 +13,34 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.IOException;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
 public class ManyServletContexts
 {
-    public static void main(String[] args)
-        throws Exception
+    public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);
-        
+
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
-        
+
         ServletContextHandler root = new ServletContextHandler(contexts,"/",ServletContextHandler.SESSIONS);
-        root.addServlet(new ServletHolder(new HelloServlet("Hello")), "/");
-        root.addServlet(new ServletHolder(new HelloServlet("Ciao")), "/it/*");
-        root.addServlet(new ServletHolder(new HelloServlet("Bonjoir")), "/fr/*");
-        
+        root.addServlet(new ServletHolder(new HelloServlet("Hello")),"/");
+        root.addServlet(new ServletHolder(new HelloServlet("Ciao")),"/it/*");
+        root.addServlet(new ServletHolder(new HelloServlet("Bonjoir")),"/fr/*");
+
         ServletContextHandler other = new ServletContextHandler(contexts,"/other",ServletContextHandler.SESSIONS);
-        other.addServlet(DefaultServlet.class.getCanonicalName(), "/");
-        other.addServlet(new ServletHolder(new HelloServlet("YO!")), "*.yo");
-        
+        other.addServlet(DefaultServlet.class.getCanonicalName(),"/");
+        other.addServlet(new ServletHolder(new HelloServlet("YO!")),"*.yo");
+
         server.start();
         System.err.println(server.dump());
         server.join();
-    }
-
-    public static class HelloServlet extends HttpServlet
-    {
-        String greeting="Hello";
-        public HelloServlet()
-        {}
-        
-        public HelloServlet(String hi)
-        {greeting=hi;}
-        
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-        {
-            response.setContentType("text/html");
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().println("<h1>"+greeting+" SimpleServlet</h1>");
-            response.getWriter().println("session="+request.getSession(true).getId());
-        }
     }
 }

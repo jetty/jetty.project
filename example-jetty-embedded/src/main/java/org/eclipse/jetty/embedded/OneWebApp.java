@@ -20,28 +20,28 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 public class OneWebApp
 {
-    public static void main(String[] args)
-        throws Exception
+    public static void main(String[] args) throws Exception
     {
         String jetty_home = System.getProperty("jetty.home","..");
 
         Server server = new Server();
-        
-        Connector connector=new SelectChannelConnector();
+
+        Connector connector = new SelectChannelConnector();
         connector.setPort(Integer.getInteger("jetty.port",8080).intValue());
-        server.setConnectors(new Connector[]{connector});
-        
-        String war=args.length>0?args[0]:jetty_home+"/test-jetty-webapp/target/test-jetty-webapp-"+Server.getVersion();
-        String path=args.length>1?args[1]:"/";
-        
-        System.err.println(war+" "+path);
-        
+        server.setConnectors(new Connector[]
+        { connector });
+
+        String war = args.length > 0?args[0]:jetty_home + "/test-jetty-webapp/target/test-jetty-webapp-" + Server.getVersion();
+        String path = args.length > 1?args[1]:"/";
+
+        System.err.println(war + " " + path);
+
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath(path);
         webapp.setWar(war);
-        
+
         server.setHandler(webapp);
-        
+
         server.start();
         server.join();
     }

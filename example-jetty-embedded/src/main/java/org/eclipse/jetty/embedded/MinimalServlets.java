@@ -27,19 +27,19 @@ import org.eclipse.jetty.servlet.ServletHandler;
 
 public class MinimalServlets
 {
-    public static void main(String[] args)
-        throws Exception
+    public static void main(String[] args) throws Exception
     {
         Server server = new Server();
-        Connector connector=new SocketConnector();
+        Connector connector = new SocketConnector();
         connector.setPort(8080);
-        server.setConnectors(new Connector[]{connector});
-        
-        ServletHandler handler=new ServletHandler();
+        server.setConnectors(new Connector[]
+        { connector });
+
+        ServletHandler handler = new ServletHandler();
         server.setHandler(handler);
-        
-        handler.addServletWithMapping("org.eclipse.jetty.server.example.MinimalServlets$HelloServlet", "/");
-        
+
+        handler.addServletWithMapping("org.eclipse.jetty.server.example.MinimalServlets$HelloServlet","/");
+
         server.start();
         server.join();
     }

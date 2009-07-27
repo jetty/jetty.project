@@ -58,6 +58,7 @@ public class ResourceHandler extends AbstractHandler
     MimeTypes _mimeTypes = new MimeTypes();
     ByteArrayBuffer _cacheControl;
     boolean _aliases;
+    boolean _directory;
 
     /* ------------------------------------------------------------ */
     public ResourceHandler()
@@ -96,6 +97,24 @@ public class ResourceHandler extends AbstractHandler
     public void setAliases(boolean aliases)
     {
         _aliases = aliases;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the directory option.
+     * @return true if directories are listed.
+     */
+    public boolean isDirectoriesListed()
+    {
+        return _directory;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the directory.
+     * @param directory true if directories are listed.
+     */
+    public void setDirectoriesListed(boolean directory)
+    {
+        _directory = directory;
     }
 
     /* ------------------------------------------------------------ */
@@ -339,7 +358,14 @@ public class ResourceHandler extends AbstractHandler
     protected void doDirectory(HttpServletRequest request,HttpServletResponse response, Resource resource)
         throws IOException
     {
-        response.sendError(HttpStatus.FORBIDDEN_403);
+        if (_directory)
+        {
+            String listing = resource.getListHTML(request.getRequestURI(),request.getPathInfo().lastIndexOf("/") > 0);
+            response.setContentType("text/html; charset=UTF-8");
+            response.getWriter().println(listing);
+        }
+        else
+            response.sendError(HttpStatus.FORBIDDEN_403);
     }
     
     /* ------------------------------------------------------------ */

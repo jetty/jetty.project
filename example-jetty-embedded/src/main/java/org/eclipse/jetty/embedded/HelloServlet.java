@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2009-2009 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -11,6 +11,7 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
+
 package org.eclipse.jetty.embedded;
 
 import java.io.IOException;
@@ -20,23 +21,25 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-
-public class OneServletContext
+@SuppressWarnings("serial")
+public class HelloServlet extends HttpServlet
 {
-    public static void main(String[] args) throws Exception
+    String greeting = "Hello";
+
+    public HelloServlet()
     {
-        Server server = new Server(8080);
+    }
 
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/");
-        server.setHandler(context);
+    public HelloServlet(String hi)
+    {
+        greeting = hi;
+    }
 
-        context.addServlet(new ServletHolder(new HelloServlet()),"/*");
-
-        server.start();
-        server.join();
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        response.setContentType("text/html");
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.getWriter().println("<h1>" + greeting + " SimpleServlet</h1>");
+        response.getWriter().println("session=" + request.getSession(true).getId());
     }
 }

@@ -21,19 +21,19 @@ import org.eclipse.jetty.servlets.ProxyServlet;
 
 public class ProxyServer
 {
-    public static void main(String[] args)
-        throws Exception
+    public static void main(String[] args) throws Exception
     {
         Server server = new Server();
-        Connector connector=new SocketConnector();
+        Connector connector = new SocketConnector();
         connector.setPort(8080);
-        server.setConnectors(new Connector[]{connector});
-        
-        ServletHandler handler=new ServletHandler();
+        server.setConnectors(new Connector[]
+        { connector });
+
+        ServletHandler handler = new ServletHandler();
         server.setHandler(handler);
-        
-        handler.addServletWithMapping(ProxyServlet.class, "/");
-        
+
+        handler.addServletWithMapping(ProxyServlet.class,"/");
+
         server.start();
         server.join();
     }
