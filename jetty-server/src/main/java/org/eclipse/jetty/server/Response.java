@@ -992,6 +992,7 @@ public class Response implements HttpServletResponse
      */
     public void reset()
     {
+        resetBuffer();
         fwdReset();
         _status=200;
         _reason=null;

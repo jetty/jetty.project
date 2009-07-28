@@ -63,10 +63,8 @@ public class Monitor extends Thread
         }
         catch(Exception e)
         {
-            if (Main.DEBUG)
-                e.printStackTrace();
-            else
-                System.err.println(e.toString());
+            Config.debug(e);
+            System.err.println(e.toString());
         }
         if (_socket!=null)
             this.start();
@@ -74,6 +72,7 @@ public class Monitor extends Thread
             System.err.println("WARN: Not listening on monitor port: "+_port);
     }
     
+    @Override
     public void run()
     {
         while (true)
@@ -89,7 +88,7 @@ public class Monitor extends Thread
                     continue;
                 
                 String cmd=lin.readLine();
-                if (Main.DEBUG) System.err.println("command="+cmd);
+                Config.debug("command=" + cmd);
                 if ("stop".equals(cmd))
                 {
                     try {socket.close();}catch(Exception e){e.printStackTrace();}
@@ -104,10 +103,8 @@ public class Monitor extends Thread
             }
             catch(Exception e)
             {
-                if (Main.DEBUG)
-                    e.printStackTrace();
-                else
-                    System.err.println(e.toString());
+                Config.debug(e);
+                System.err.println(e.toString());
             }
             finally
             {

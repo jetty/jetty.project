@@ -1,0 +1,57 @@
+Usage: java -jar start.jar [options] [properties] [configs]
+Run Jetty Server Standalone.
+
+Common Options:
+  --help           This help / usage information.
+  --version        Print the version information for Jetty, then exit.
+  --stop           Stop the running Jetty instance.
+
+Advanced Options:
+  --secure         Enable Security:
+                     * JVM Security Manager
+                     * Security Policies
+                     * Secure Logging
+                     * Audit Logging
+  --dry-run        Print the command line that the start.jar generates,
+                   then exit.
+  --list-options   List available options, then exit.
+                   (see OPTION property in section below)
+
+Properties:
+Execution properties, similar in scope to JVM Properties.
+NOTE: Not all properties are listed here.
+  org.eclipse.jetty.util.log.class=[class]   
+      A Low Level Jetty Logger Implementation to use
+      (default: org.eclipse.jetty.util.log.Slf4jLog)
+  org.eclipse.jetty.util.log.DEBUG=[boolean]
+      Debug logs will be produced, along with the default logging levels of
+      INFO, WARN, and ERROR
+      (default: false)
+  org.eclipse.jetty.util.log.VERBOSE=[boolean]
+      Verbose logging is produced, including ignored exceptions
+      (default: false)
+  org.eclipse.jetty.util.log.IGNORED=[boolean]
+      Ignored exceptions are logged, independent of DEBUG and VERBOSE settings
+      (default: false)
+  STOP.PORT=[number]
+      The port to use to stop the running Jetty server.
+      Required along with STOP.KEY if you want to use the --stop option above.
+  STOP.KEY=[alphanumeric]
+      The passphrase defined to stop the server.
+      Requried along with STOP.PORT if you want to use the --stop option above.
+  DEBUG=true
+      Enable debug on the start mechanism.  ( Note this is not equivalent
+      to enabling debug on the logging mechanism of the started server).
+      (default: false)
+  OPTIONS=[option,option,...]
+      Classpath Options to use.  By convention, option names starting with capitals
+      will include associated options (eg Server includes jetty-server, jetty-webapp,
+      jetty-deploy, etc). An option starting with a lowercase letter includes 
+      just the direct dependencies of the option (eg jsp includes just jetty-jsp 
+      module and it's dependencies).
+      (default: "default,*")
+@OPTIONS@
+
+Configs:
+XML Configurations to use.
+@CONFIGS@

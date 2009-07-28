@@ -117,12 +117,6 @@ running()
     return 0
 }
 
-
-
-
-
-
-
 ##################################################
 # Get the action & configs
 ##################################################
@@ -130,7 +124,6 @@ running()
 ACTION=$1
 shift
 ARGS="$*"
-CONFIGS=""
 NO_START=0
 
 ##################################################
@@ -230,6 +223,7 @@ if [ -z "$JETTY_HOME" ] ; then
     echo "** ERROR: JETTY_HOME not set, you need to set it or install in a standard location" 
     exit 1
 fi
+
 cd $JETTY_HOME
 JETTY_HOME=`pwd`
 
@@ -242,40 +236,6 @@ then
    echo "** ERROR:  $JETTY_HOME/$JETTY_INSTALL_TRACE_FILE is not readable!"
    exit 1
 fi
-
-
-###########################################################
-# Get the list of config.xml files from the command line.
-###########################################################
-if [ ! -z "$ARGS" ] 
-then
-  for A in $ARGS 
-  do
-    if [ -f $A ] 
-    then
-       CONF="$A" 
-    elif [ -f $JETTY_HOME/etc/$A ] 
-    then
-       CONF="$JETTY_HOME/etc/$A" 
-    elif [ -f ${A}.xml ] 
-    then
-       CONF="${A}.xml" 
-    elif [ -f $JETTY_HOME/etc/${A}.xml ] 
-    then
-       CONF="$JETTY_HOME/etc/${A}.xml" 
-    else
-       echo "** ERROR: Cannot find configuration '$A' specified in the command line." 
-       exit 1
-    fi
-    if [ ! -r $CONF ] 
-    then
-       echo "** ERROR: Cannot read configuration '$A' specified in the command line." 
-       exit 1
-    fi
-    CONFIGS="$CONFIGS $CONF"
-  done
-fi
-
 
 ##################################################
 # Try to find this script's configuration file,
@@ -297,54 +257,10 @@ fi
 # Read the configuration file if one exists
 ##################################################
 CONFIG_LINES=
-if [ -z "$CONFIGS" ] && [ -f "$JETTY_CONF" ] && [ -r "$JETTY_CONF" ] 
+if [ -f "$JETTY_CONF" ] && [ -r "$JETTY_CONF" ] 
 then
   CONFIG_LINES=`cat $JETTY_CONF | grep -v "^[:space:]*#" | tr "\n" " "` 
 fi
-
-##################################################
-# Get the list of config.xml files from jetty.conf
-##################################################
-if [ ! -z "${CONFIG_LINES}" ] 
-then
-  for CONF in ${CONFIG_LINES} 
-  do
-    if [ ! -r "$CONF" ] 
-    then
-      echo "** WARNING: Cannot read '$CONF' specified in '$JETTY_CONF'" 
-    elif [ -f "$CONF" ] 
-    then
-      # assume it's a configure.xml file
-      CONFIGS="$CONFIGS $CONF" 
-    elif [ -d "$CONF" ] 
-    then
-      # assume it's a directory with configure.xml files
-      # for example: /etc/jetty.d/
-      # sort the files before adding them to the list of CONFIGS
-      XML_FILES=`ls ${CONF}/*.xml | sort | tr "\n" " "` 
-      for FILE in ${XML_FILES} 
-      do
-         if [ -r "$FILE" ] && [ -f "$FILE" ] 
-         then
-            CONFIGS="$CONFIGS $FILE" 
-         else
-           echo "** WARNING: Cannot read '$FILE' specified in '$JETTY_CONF'" 
-         fi
-      done
-    else
-      echo "** WARNING: Don''t know what to do with '$CONF' specified in '$JETTY_CONF'" 
-    fi
-  done
-fi
-
-#####################################################
-# Run the standard server if there's nothing else to run
-#####################################################
-if [ -z "$CONFIGS" ] 
-then
-    CONFIGS="${JETTY_HOME}/etc/jetty-logging.xml ${JETTY_HOME}/etc/jetty.xml"
-fi
-
 
 #####################################################
 # Find a location for the pid file
@@ -380,7 +296,7 @@ then
         /usr/local/java \
         /usr/local/jdk \
         /usr/local/jre \
-	/usr/lib/jvm \
+        /usr/lib/jvm \
         /opt/java \
         /opt/jdk \
         /opt/jre \
@@ -475,7 +391,7 @@ JAVA_OPTIONS="$JAVA_OPTIONS -Djetty.home=$JETTY_HOME -Djava.io.tmpdir=$TMP"
 JETTY_START=$JETTY_HOME/start.jar
 [ ! -f $JETTY_START ] && JETTY_START=$JETTY_HOME/lib/start.jar
 
-RUN_ARGS="$JAVA_OPTIONS -jar $JETTY_START $JETTY_ARGS $CONFIGS"
+RUN_ARGS="$JAVA_OPTIONS -jar $JETTY_START --fromDaemon $JETTY_ARGS $ARGS"
 RUN_CMD="$JAVA $RUN_ARGS"
 
 #####################################################
@@ -487,7 +403,7 @@ RUN_CMD="$JAVA $RUN_ARGS"
 #echo "JETTY_RUN      =  $JETTY_RUN"
 #echo "JETTY_PID      =  $JETTY_PID"
 #echo "JETTY_ARGS     =  $JETTY_ARGS"
-#echo "CONFIGS        =  $CONFIGS"
+#echo "ARGS           =  $ARGS"
 #echo "JAVA_OPTIONS   =  $JAVA_OPTIONS"
 #echo "JAVA           =  $JAVA"
 
@@ -640,7 +556,6 @@ case "$ACTION" in
         echo "JETTY_PID      =  $JETTY_PID"
         echo "JETTY_PORT     =  $JETTY_PORT"
         echo "JETTY_LOGS     =  $JETTY_LOGS"
-        echo "CONFIGS        =  $CONFIGS"
         echo "JAVA_OPTIONS   =  $JAVA_OPTIONS"
         echo "JAVA           =  $JAVA"
         echo "CLASSPATH      =  $CLASSPATH"

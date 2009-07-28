@@ -14,14 +14,12 @@
 package org.eclipse.jetty.server.ssl;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.security.KeyStore;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,7 +64,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * 
  * 
  */
-public class SslSelectChannelConnector extends SelectChannelConnector
+public class SslSelectChannelConnector extends SelectChannelConnector implements SslConnector
 {
     /**
      * The name of the SSLSession attribute that will contain any cached
@@ -74,20 +72,11 @@ public class SslSelectChannelConnector extends SelectChannelConnector
      */
     static final String CACHED_INFO_ATTR=CachedInfo.class.getName();
 
-    /** Default value for the keystore location path. */
-    public static final String DEFAULT_KEYSTORE=System.getProperty("user.home")+File.separator+".keystore";
-
-    /** String name of key password property. */
-    public static final String KEYPASSWORD_PROPERTY="jetty.ssl.keypassword";
-
-    /** String name of keystore password property. */
-    public static final String PASSWORD_PROPERTY="jetty.ssl.password";
-
     /** Default value for the cipher Suites. */
     private String _excludeCipherSuites[]=null;
 
     /** Default value for the keystore location path. */
-    private String _keystore=DEFAULT_KEYSTORE;
+    private String _keystorePath=DEFAULT_KEYSTORE;
     private String _keystoreType="JKS"; // type of the key store
 
     /** Set to true if we require client certificate authentication. */
@@ -98,18 +87,11 @@ public class SslSelectChannelConnector extends SelectChannelConnector
     private transient Password _keyPassword;
     private transient Password _trustPassword;
     private String _protocol="TLS";
-    private String _algorithm="SunX509"; // cert algorithm
     private String _provider;
     private String _secureRandomAlgorithm; // cert algorithm
-    private String _sslKeyManagerFactoryAlgorithm=(Security.getProperty("ssl.KeyManagerFactory.algorithm")==null?"SunX509":Security
-            .getProperty("ssl.KeyManagerFactory.algorithm")); // cert
-                                                                // algorithm
-
-    private String _sslTrustManagerFactoryAlgorithm=(Security.getProperty("ssl.TrustManagerFactory.algorithm")==null?"SunX509":Security
-            .getProperty("ssl.TrustManagerFactory.algorithm")); // cert
-                                                                // algorithm
-
-    private String _truststore;
+    private String _sslKeyManagerFactoryAlgorithm="SunX509"; 
+    private String _sslTrustManagerFactoryAlgorithm="SunX509"; 
+    private String _truststorePath;
     private String _truststoreType="JKS"; // type of the key store
     private SSLContext _context;
     Buffers _sslBuffers;
@@ -241,104 +223,130 @@ public class SslSelectChannelConnector extends SelectChannelConnector
     {
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * 
-     * @deprecated As of Java Servlet API 2.0, with no replacement.
-     * 
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getExcludeCipherSuites()
      */
-    public String[] getCipherSuites()
-    {
-        return getExcludeCipherSuites();
-    }
-
     public String[] getExcludeCipherSuites()
     {
         return _excludeCipherSuites;
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * 
-     * @deprecated As of Java Servlet API 2.0, with no replacement.
-     * 
-     * 
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setExcludeCipherSuites(java.lang.String[])
      */
-    public void setCipherSuites(String[] cipherSuites)
-    {
-        setExcludeCipherSuites(cipherSuites);
-    }
-
     public void setExcludeCipherSuites(String[] cipherSuites)
     {
         this._excludeCipherSuites=cipherSuites;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setPassword(java.lang.String)
+     */
     public void setPassword(String password)
     {
         _password=Password.getPassword(PASSWORD_PROPERTY,password,null);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setTrustPassword(java.lang.String)
+     */
     public void setTrustPassword(String password)
     {
         _trustPassword=Password.getPassword(PASSWORD_PROPERTY,password,null);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setKeyPassword(java.lang.String)
+     */
     public void setKeyPassword(String password)
     {
         _keyPassword=Password.getPassword(KEYPASSWORD_PROPERTY,password,null);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @deprecated use {@link #getSslKeyManagerFactoryAlgorithm()} or 
+     * {@link #getSslTrustManagerFactoryAlgorithm()}
+     */
     public String getAlgorithm()
     {
-        return (this._algorithm);
+        return getSslKeyManagerFactoryAlgorithm();
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @deprecated use {@link #setSslKeyManagerFactoryAlgorithm(String)} or 
+     * {@link #setSslTrustManagerFactoryAlgorithm(String)}
+     */
     public void setAlgorithm(String algorithm)
     {
-        this._algorithm=algorithm;
+        setSslKeyManagerFactoryAlgorithm(algorithm);
+        setSslTrustManagerFactoryAlgorithm(algorithm);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getProtocol()
+     */
     public String getProtocol()
     {
         return _protocol;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setProtocol(java.lang.String)
+     */
     public void setProtocol(String protocol)
     {
         _protocol=protocol;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setKeystore(java.lang.String)
+     */
     public void setKeystore(String keystore)
     {
-        _keystore=keystore;
+        _keystorePath=keystore;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getKeystore()
+     */
     public String getKeystore()
     {
-        return _keystore;
+        return _keystorePath;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getKeystoreType()
+     */
     public String getKeystoreType()
     {
         return (_keystoreType);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getNeedClientAuth()
+     */
     public boolean getNeedClientAuth()
     {
         return _needClientAuth;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getWantClientAuth()
+     */
     public boolean getWantClientAuth()
     {
         return _wantClientAuth;
@@ -346,100 +354,168 @@ public class SslSelectChannelConnector extends SelectChannelConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * Set the value of the needClientAuth property
-     * 
-     * @param needClientAuth
-     *                true iff we require client certificate authentication.
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setNeedClientAuth(boolean)
      */
     public void setNeedClientAuth(boolean needClientAuth)
     {
         _needClientAuth=needClientAuth;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setWantClientAuth(boolean)
+     */
     public void setWantClientAuth(boolean wantClientAuth)
     {
         _wantClientAuth=wantClientAuth;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setKeystoreType(java.lang.String)
+     */
     public void setKeystoreType(String keystoreType)
     {
         _keystoreType=keystoreType;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getProvider()
+     */
     public String getProvider()
     {
         return _provider;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getSecureRandomAlgorithm()
+     */
     public String getSecureRandomAlgorithm()
     {
         return (this._secureRandomAlgorithm);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getSslKeyManagerFactoryAlgorithm()
+     */
     public String getSslKeyManagerFactoryAlgorithm()
     {
         return (this._sslKeyManagerFactoryAlgorithm);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getSslTrustManagerFactoryAlgorithm()
+     */
     public String getSslTrustManagerFactoryAlgorithm()
     {
         return (this._sslTrustManagerFactoryAlgorithm);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getTruststore()
+     */
     public String getTruststore()
     {
-        return _truststore;
+        return _truststorePath;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getTruststoreType()
+     */
     public String getTruststoreType()
     {
         return _truststoreType;
     }
 
     /* ------------------------------------------------------------ */
-    public void setProvider(String _provider)
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setProvider(java.lang.String)
+     */
+    public void setProvider(String provider)
     {
-        this._provider=_provider;
+        _provider=provider;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setSecureRandomAlgorithm(java.lang.String)
+     */
     public void setSecureRandomAlgorithm(String algorithm)
     {
         this._secureRandomAlgorithm=algorithm;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setSslKeyManagerFactoryAlgorithm(java.lang.String)
+     */
     public void setSslKeyManagerFactoryAlgorithm(String algorithm)
     {
         this._sslKeyManagerFactoryAlgorithm=algorithm;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setSslTrustManagerFactoryAlgorithm(java.lang.String)
+     */
     public void setSslTrustManagerFactoryAlgorithm(String algorithm)
     {
         this._sslTrustManagerFactoryAlgorithm=algorithm;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setTruststore(java.lang.String)
+     */
     public void setTruststore(String truststore)
     {
-        _truststore=truststore;
+        _truststorePath=truststore;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setTruststoreType(java.lang.String)
+     */
     public void setTruststoreType(String truststoreType)
     {
         _truststoreType=truststoreType;
     }
-    
-    public void setSslContext(SSLContext sslContext) {
-		this._context = sslContext;
-	}
-    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setSslContext(javax.net.ssl.SSLContext)
+     */
+    public void setSslContext(SSLContext sslContext) 
+    {
+        _context = sslContext;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @throws Exception 
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setSslContext(javax.net.ssl.SSLContext)
+     */
+    public SSLContext getSslContext()
+    {
+        try
+        {
+            if (_context == null)
+                _context=createSSLContext();
+        }
+        catch(Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+         
+        return _context;
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * By default, we're confidential, given we speak SSL. But, if we've been
@@ -529,9 +605,8 @@ public class SslSelectChannelConnector extends SelectChannelConnector
    
     protected void doStart() throws Exception
     {
-    	if (_context == null) {
+    	if (_context == null)
            _context=createSSLContext();
-    	}
         
         SSLEngine engine=createSSLEngine();
         SSLSession ssl_session=engine.getSession();
@@ -568,60 +643,12 @@ public class SslSelectChannelConnector extends SelectChannelConnector
         super.doStart();
     }
 
+    /* ------------------------------------------------------------ */
     protected SSLContext createSSLContext() throws Exception
     {
-        if (_truststore==null)
-        {
-            _truststore=_keystore;
-            _truststoreType=_keystoreType;
-        }
+        KeyManager[] keyManagers=getKeyManagers();
 
-        InputStream keystoreInputStream = null;
-
-        KeyManager[] keyManagers=null;
-        KeyStore keyStore = null;
-        try
-        {
-            if (_keystore!=null)
-            {
-                keystoreInputStream=Resource.newResource(_keystore).getInputStream();
-                keyStore = KeyStore.getInstance(_keystoreType);
-                keyStore.load(keystoreInputStream,_password==null?null:_password.toString().toCharArray());
-            }
-        }
-        finally
-        {
-            if (keystoreInputStream != null)
-                keystoreInputStream.close();
-        }
-
-        KeyManagerFactory keyManagerFactory=KeyManagerFactory.getInstance(_sslKeyManagerFactoryAlgorithm);
-        keyManagerFactory.init(keyStore,_keyPassword==null?(_password==null?null:_password.toString().toCharArray()):_keyPassword.toString().toCharArray());
-        keyManagers=keyManagerFactory.getKeyManagers();
-
-
-        TrustManager[] trustManagers=null;
-        InputStream truststoreInputStream = null;
-        KeyStore trustStore = null;
-        try
-        {
-            if (_truststore!=null)
-            {
-                truststoreInputStream = Resource.newResource(_truststore).getInputStream();
-                trustStore=KeyStore.getInstance(_truststoreType);
-                trustStore.load(truststoreInputStream,_trustPassword==null?null:_trustPassword.toString().toCharArray());
-            }
-        }
-        finally
-        {
-            if (truststoreInputStream != null)
-                truststoreInputStream.close();
-        }
-
-
-        TrustManagerFactory trustManagerFactory=TrustManagerFactory.getInstance(_sslTrustManagerFactoryAlgorithm);
-        trustManagerFactory.init(trustStore);
-        trustManagers=trustManagerFactory.getTrustManagers();
+        TrustManager[] trustManagers=getTrustManagers();
 
         SecureRandom secureRandom=_secureRandomAlgorithm==null?null:SecureRandom.getInstance(_secureRandomAlgorithm);
         SSLContext context=_provider==null?SSLContext.getInstance(_protocol):SSLContext.getInstance(_protocol,_provider);
@@ -629,6 +656,57 @@ public class SslSelectChannelConnector extends SelectChannelConnector
         return context;
     }
 
+    /* ------------------------------------------------------------ */
+    protected KeyManager[] getKeyManagers() throws Exception
+    {
+        KeyStore keyStore = getKeyStore(_keystorePath, _keystoreType, _password.toString());
+        
+        KeyManagerFactory keyManagerFactory=KeyManagerFactory.getInstance(_sslKeyManagerFactoryAlgorithm);
+        keyManagerFactory.init(keyStore,_keyPassword==null?(_password==null?null:_password.toString().toCharArray()):_keyPassword.toString().toCharArray());
+        return keyManagerFactory.getKeyManagers();
+    }
+
+    /* ------------------------------------------------------------ */
+    protected TrustManager[] getTrustManagers() throws Exception
+    {        
+        if (_truststorePath==null)
+        {
+            _truststorePath=_keystorePath;
+            _truststoreType=_keystoreType;
+            _trustPassword = _password;
+            _sslTrustManagerFactoryAlgorithm = _sslKeyManagerFactoryAlgorithm;
+        }
+        
+        KeyStore trustStore = getKeyStore(_truststorePath, _truststoreType, _trustPassword.toString());
+
+        TrustManagerFactory trustManagerFactory=TrustManagerFactory.getInstance(_sslTrustManagerFactoryAlgorithm);
+        trustManagerFactory.init(trustStore);
+        return trustManagerFactory.getTrustManagers();
+    }
+
+    /* ------------------------------------------------------------ */
+    protected KeyStore getKeyStore(String keystorePath, String keystoreType, String keystorePassword) throws Exception
+    {
+    	KeyStore keystore;
+    	InputStream keystoreInputStream = null;
+    	try
+        {
+            if (keystorePath!=null)
+                keystoreInputStream = Resource.newResource(keystorePath).getInputStream();
+            keystore=KeyStore.getInstance(keystoreType);
+            keystore.load(keystoreInputStream,keystorePassword==null?null:keystorePassword.toString().toCharArray());
+            return keystore;
+        }
+        finally
+        {
+            if (keystoreInputStream != null)
+            	keystoreInputStream.close();
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     /**
      * Simple bundle of information that is cached in the SSLSession. Stores the
      * effective keySize and the client certificate chain.

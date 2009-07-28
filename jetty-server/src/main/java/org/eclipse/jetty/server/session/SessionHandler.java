@@ -220,9 +220,10 @@ public class SessionHandler extends HandlerWrapper
             Cookie[] cookies=request.getCookies();
             if (cookies!=null && cookies.length>0)
             {
+                final String sessionCookie=sessionManager.getSessionCookieConfig().getName();
                 for (int i=0;i<cookies.length;i++)
                 {
-                    if (sessionManager.getSessionCookie().equalsIgnoreCase(cookies[i].getName()))
+                    if (sessionCookie.equalsIgnoreCase(cookies[i].getName()))
                     {
                         if (requested_session_id!=null)
                         {

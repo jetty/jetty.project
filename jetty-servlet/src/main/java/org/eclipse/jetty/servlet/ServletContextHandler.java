@@ -13,7 +13,12 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.security.AccessController;
 import java.util.EnumSet;
+import java.util.EventListener;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -23,6 +28,10 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
+import javax.servlet.SessionCookieConfig;
+import javax.servlet.SessionTrackingMode;
+import javax.servlet.FilterRegistration.Dynamic;
+import javax.servlet.descriptor.JspConfigDescriptor;
 
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
@@ -33,6 +42,8 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.log.Log;
 
 
 /* ------------------------------------------------------------ */
@@ -58,6 +69,7 @@ public class ServletContextHandler extends ContextHandler
     protected SecurityHandler _securityHandler;
     protected ServletHandler _servletHandler;
     protected int _options;
+    protected Injector _injector;
     
     /* ------------------------------------------------------------ */
     public ServletContextHandler()
@@ -315,6 +327,24 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @return The inject used to resource inject new Filters, Servlets and EventListeners
+     */
+    public Injector getInjector()
+    {
+        return _injector;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param injector The inject used to resource inject new Filters, Servlets and EventListeners
+     */
+    public void setInjector(Injector injector)
+    {
+        _injector = injector;
+    }
+
+    /* ------------------------------------------------------------ */
     public class Context extends ContextHandler.Context
     {
 
@@ -322,6 +352,7 @@ public class ServletContextHandler extends ContextHandler
         /* 
          * @see javax.servlet.ServletContext#getNamedDispatcher(java.lang.String)
          */
+        @Override
         public RequestDispatcher getNamedDispatcher(String name)
         {
             ContextHandler context=org.eclipse.jetty.servlet.ServletContextHandler.this;
@@ -329,36 +360,12 @@ public class ServletContextHandler extends ContextHandler
                 return null;
             return new Dispatcher(context, name);
         }
-
-
-        /* ------------------------------------------------------------ */
-        public void addFilterMappingForServletNames(String filterName, EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... servletNames)
-        {
-            if (isStarted())
-                throw new IllegalStateException();
-            ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            FilterMapping mapping = new FilterMapping();
-            mapping.setFilterName(filterName);
-            mapping.setServletNames(servletNames);
-            mapping.setDispatcherTypes(dispatcherTypes);
-            handler.addFilterMapping(mapping);
-        }
-
-        /* ------------------------------------------------------------ */
-        public void addServletMapping(String servletName, String[] urlPatterns)
-        {
-            if (isStarted())
-                throw new IllegalStateException();
-            ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            ServletHolder holder= handler.newServletHolder();
-            holder.setName(servletName);
-            handler.addServlet(holder);
-        }
         
         /* ------------------------------------------------------------ */
         /**
          * @see javax.servlet.ServletContext#addFilter(java.lang.String, java.lang.Class)
          */
+        @Override
         public FilterRegistration.Dynamic addFilter(String filterName, Class<? extends Filter> filterClass)
         {
             if (isStarted())
@@ -376,6 +383,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.ServletContext#addFilter(java.lang.String, java.lang.String)
          */
+        @Override
         public FilterRegistration.Dynamic addFilter(String filterName, String className)
         {
             if (isStarted())
@@ -394,6 +402,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.ServletContext#addFilter(java.lang.String, javax.servlet.Filter)
          */
+        @Override
         public FilterRegistration.Dynamic addFilter(String filterName, Filter filter)
         {
             if (isStarted())
@@ -411,6 +420,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.ServletContext#addServlet(java.lang.String, java.lang.Class)
          */
+        @Override
         public ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
         {
             if (!isStarting())
@@ -428,6 +438,7 @@ public class ServletContextHandler extends ContextHandler
         /**
          * @see javax.servlet.ServletContext#addServlet(java.lang.String, java.lang.String)
          */
+        @Override
         public ServletRegistration.Dynamic addServlet(String servletName, String className)
         {
             if (!isStarting())
@@ -442,9 +453,7 @@ public class ServletContextHandler extends ContextHandler
         }
 
         /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#addServlet(java.lang.String, javax.servlet.Servlet)
-         */
+        @Override
         public ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
         {
             if (!isStarting())
@@ -459,47 +468,208 @@ public class ServletContextHandler extends ContextHandler
         }
 
         /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#findFilterRegistration(java.lang.String)
-         */
-        public FilterRegistration findFilterRegistration(String filterName)
+        @Override
+        public boolean setInitParameter(String name, String value)
         {
-            final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final FilterHolder holder=handler.getFilter(filterName);
-            return (holder==null)?null:holder.getRegistration();
+            // TODO other started conditions
+            if (!isStarting())
+                throw new IllegalStateException();
+            return super.setInitParameter(name,value);
         }
 
         /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#findServletRegistration(java.lang.String)
-         */
-        public ServletRegistration findServletRegistration(String servletName)
-        {
-            final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final ServletHolder holder=handler.getServlet(servletName);
-            return (holder==null)?null:holder.getRegistration();
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#createFilter(java.lang.Class)
-         */
+        @Override
         public <T extends Filter> T createFilter(Class<T> c) throws ServletException
         {
-            // TODO Not implemented
-            return null;
+            try
+            {
+                T f = c.newInstance();
+                if (_injector!=null)
+                    f=_injector.injectFilter(f);
+                return f;
+            }
+            catch (InstantiationException e)
+            {
+                throw new ServletException(e);
+            }
+            catch (IllegalAccessException e)
+            {
+                throw new ServletException(e);
+            }
         }
 
         /* ------------------------------------------------------------ */
-        /**
-         * @see javax.servlet.ServletContext#createServlet(java.lang.Class)
-         */
+        @Override
         public <T extends Servlet> T createServlet(Class<T> c) throws ServletException
         {
-            // TODO Not implemented
+            try
+            {
+                T s = c.newInstance();
+                if (_injector!=null)
+                    s=_injector.injectServlet(s);
+                return s;
+            }
+            catch (InstantiationException e)
+            {
+                throw new ServletException(e);
+            }
+            catch (IllegalAccessException e)
+            {
+                throw new ServletException(e);
+            }
+        }
+
+        @Override
+        public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
+        {
+            if (_sessionHandler!=null)
+                return _sessionHandler.getSessionManager().getDefaultSessionTrackingModes();
             return null;
         }
 
+        @Override
+        public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
+        {
+            if (_sessionHandler!=null)
+                return _sessionHandler.getSessionManager().getEffectiveSessionTrackingModes();
+            return null;
+        }
 
+        @Override
+        public FilterRegistration getFilterRegistration(String filterName)
+        {
+            final FilterHolder holder=ServletContextHandler.this.getServletHandler().getFilter(filterName);
+            return (holder==null)?null:holder.getRegistration();
+        }
+
+        @Override
+        public Map<String, FilterRegistration> getFilterRegistrations()
+        {
+            HashMap<String, FilterRegistration> registrations = new HashMap<String, FilterRegistration>();
+            ServletHandler handler=ServletContextHandler.this.getServletHandler();
+            FilterHolder[] holders=handler.getFilters();
+            if (holders!=null)
+            {
+                for (FilterHolder holder : holders)
+                    registrations.put(holder.getName(),holder.getRegistration());
+            }
+            return registrations;
+        }
+
+        @Override
+        public ServletRegistration getServletRegistration(String servletName)
+        {
+            final ServletHolder holder=ServletContextHandler.this.getServletHandler().getServlet(servletName);
+            return (holder==null)?null:holder.getRegistration();
+        }
+
+        @Override
+        public Map<String, ServletRegistration> getServletRegistrations()
+        {
+            HashMap<String, ServletRegistration> registrations = new HashMap<String, ServletRegistration>();
+            ServletHandler handler=ServletContextHandler.this.getServletHandler();
+            ServletHolder[] holders=handler.getServlets();
+            if (holders!=null)
+            {
+                for (ServletHolder holder : holders)
+                    registrations.put(holder.getName(),holder.getRegistration());
+            }
+            return registrations;
+        }
+
+        @Override
+        public SessionCookieConfig getSessionCookieConfig()
+        {
+            // TODO other started conditions
+            if (_sessionHandler!=null)
+                return _sessionHandler.getSessionManager().getSessionCookieConfig();
+            return null;
+        }
+
+        @Override
+        public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
+        {
+            // TODO other started conditions
+            if (!isStarting())
+                throw new IllegalStateException();
+            
+            if (_sessionHandler!=null)
+                _sessionHandler.getSessionManager().setSessionTrackingModes(sessionTrackingModes);
+        }
+
+        @Override
+        public void addListener(String className)
+        {
+            // TODO other started conditions
+            if (!isStarting())
+                throw new IllegalStateException();
+            super.addListener(className);
+        }
+
+        @Override
+        public <T extends EventListener> void addListener(T t)
+        {
+            // TODO other started conditions
+            if (!isStarting())
+                throw new IllegalStateException();
+            super.addListener(t);
+        }
+
+        @Override
+        public void addListener(Class<? extends EventListener> listenerClass)
+        {
+            // TODO other started conditions
+            if (!isStarting())
+                throw new IllegalStateException();
+            super.addListener(listenerClass);
+        }
+
+        @Override
+        public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException
+        {
+            try
+            {
+                T l = super.createListener(clazz);
+                if (_injector!=null)
+                    l=_injector.injectListener(l);
+                return l;
+            }
+            catch(ServletException e)
+            {
+                throw e;
+            }
+            catch(Exception e)
+            {
+                throw new ServletException(e);
+            }
+        }
+
+        @Override
+        public int getEffectiveMajorVersion()
+        {
+            // TODO
+            return 3;
+        }
+
+        @Override
+        public int getEffectiveMinorVersion()
+        {
+            // TODO
+            return 0;
+        }
+
+        @Override
+        public JspConfigDescriptor getJspConfigDescriptor()
+        {
+            // TODO
+            return null;
+        }
+    }
+    
+    public interface Injector
+    {
+        public <T extends Filter> T injectFilter(T filter) throws ServletException;
+        public <T extends Servlet> T injectServlet(T servlet) throws ServletException;
+        public <T extends EventListener> T injectListener(T listener) throws ServletException;
     }
 }

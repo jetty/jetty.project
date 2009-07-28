@@ -1,23 +1,5 @@
 
-
 Jetty is built with maven >= 2.0.8
-
-Currently there is not eclipse maven repository and we are not yet
-cleared to make releases to the public maven repositories.  Thus in
-order to build jetty, you need to locally check out and build
-two modules used by the build system:
-
-  cd /my/work/directory
-  svn co http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty-parent/trunk/jetty-parent jetty-parent
-  cd jetty-parent
-  mvn install
-  cd ..
-  svn co svn+ssh://gwilkins@dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty-toolchain/trunk jetty-toolchain
-  cd jetty-toolchain
-  mvn install
-  cd ..
-
-You can then build this project:
 
   cd /my/work/directory/jetty-7
   mvn install

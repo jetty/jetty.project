@@ -28,10 +28,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.LazyList;
@@ -646,7 +648,5 @@ public class HashSessionManager extends AbstractSessionManager
                 return super.resolveClass(cl);
             }
         }
-    }
-
-    
+    }    
 }

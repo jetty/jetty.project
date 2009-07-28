@@ -54,37 +54,25 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
 /**
- * JSSE Socket Listener.
+ * SSL Socket Connector.
  * 
- * This specialization of HttpListener is an abstract listener that can be used as the basis for a
+ * This specialization of SocketConnector is an abstract listener that can be used as the basis for a
  * specific JSSE listener.
  * 
- * This is heavily based on the work from Court Demas, which in turn is based on the work from Forge
- * Research.
+ * The original of this class was heavily based on the work from Court Demas, which in turn is 
+ * based on the work from Forge Research. Since JSSE, this class has evolved significantly from
+ * that early work.
  * 
  * @org.apache.xbean.XBean element="sslSocketConnector" description="Creates an ssl socket connector"
  *
  * 
- * 
- * 
- * 
  */
-public class SslSocketConnector extends SocketConnector
+public class SslSocketConnector extends SocketConnector  implements SslConnector
 {
     /**
      * The name of the SSLSession attribute that will contain any cached information.
      */
     static final String CACHED_INFO_ATTR = CachedInfo.class.getName();
-
-    /** Default value for the keystore location path. */
-    public static final String DEFAULT_KEYSTORE = System.getProperty("user.home") + File.separator
-            + ".keystore";
-
-    /** String name of key password property. */
-    public static final String KEYPASSWORD_PROPERTY = "jetty.ssl.keypassword";
-
-    /** String name of keystore password property. */
-    public static final String PASSWORD_PROPERTY = "jetty.ssl.password";
 
     /**
      * Return the chain of X509 certificates used to negotiate the SSL Session.
@@ -135,7 +123,7 @@ public class SslSocketConnector extends SocketConnector
     private String _excludeCipherSuites[] = null;
     
     /** Default value for the keystore location path. */
-    private String _keystore=DEFAULT_KEYSTORE ;
+    private String _keystorePath=DEFAULT_KEYSTORE ;
     private String _keystoreType = "JKS"; // type of the key store
     
     /** Set to true if we require client certificate authentication. */
@@ -149,7 +137,7 @@ public class SslSocketConnector extends SocketConnector
     private String _sslKeyManagerFactoryAlgorithm = (Security.getProperty("ssl.KeyManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.KeyManagerFactory.algorithm")); // cert algorithm
     private String _sslTrustManagerFactoryAlgorithm = (Security.getProperty("ssl.TrustManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.TrustManagerFactory.algorithm")); // cert algorithm
     
-    private String _truststore;
+    private String _truststorePath;
     private String _truststoreType = "JKS"; // type of the key store
 
     /** Set to true if we would like client certificate authentication. */
@@ -188,48 +176,75 @@ public class SslSocketConnector extends SocketConnector
     }
 
     /* ------------------------------------------------------------ */
+    protected SSLContext createSSLContext() throws Exception
+    {
+        KeyManager[] keyManagers = getKeyManagers();
+        TrustManager[] trustManagers = getTrustManagers();
+        SecureRandom secureRandom = _secureRandomAlgorithm==null?null:SecureRandom.getInstance(_secureRandomAlgorithm);
+        SSLContext context = _provider==null?SSLContext.getInstance(_protocol):SSLContext.getInstance(_protocol, _provider);
+        context.init(keyManagers, trustManagers, secureRandom);
+        return context;
+    }
+    
+    /* ------------------------------------------------------------ */
     protected SSLServerSocketFactory createFactory() 
         throws Exception
     {
-    	SSLContext context = _context;
-    	if (context == null) {
-	        if (_truststore==null)
-	        {
-	            _truststore=_keystore;
-	            _truststoreType=_keystoreType;
-	        }
-	
-	        KeyManager[] keyManagers = null;
-	        InputStream keystoreInputStream = null;
-	        if (_keystore != null)
-	        	keystoreInputStream = Resource.newResource(_keystore).getInputStream();
-	        KeyStore keyStore = KeyStore.getInstance(_keystoreType);
-	        keyStore.load(keystoreInputStream, _password==null?null:_password.toString().toCharArray());
-	
-	        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(_sslKeyManagerFactoryAlgorithm);        
-	        keyManagerFactory.init(keyStore,_keyPassword==null?null:_keyPassword.toString().toCharArray());
-	        keyManagers = keyManagerFactory.getKeyManagers();
-	
-	        TrustManager[] trustManagers = null;
-	        InputStream truststoreInputStream = null;
-	        if (_truststore != null)
-	        	truststoreInputStream = Resource.newResource(_truststore).getInputStream();
-	        KeyStore trustStore = KeyStore.getInstance(_truststoreType);
-	        trustStore.load(truststoreInputStream,_trustPassword==null?null:_trustPassword.toString().toCharArray());
-	        
-	        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(_sslTrustManagerFactoryAlgorithm);
-	        trustManagerFactory.init(trustStore);
-	        trustManagers = trustManagerFactory.getTrustManagers();
-	        
-	
-	        SecureRandom secureRandom = _secureRandomAlgorithm==null?null:SecureRandom.getInstance(_secureRandomAlgorithm);
-	
-	        context = _provider==null?SSLContext.getInstance(_protocol):SSLContext.getInstance(_protocol, _provider);
-	
-	        context.init(keyManagers, trustManagers, secureRandom);
-    	}
+        if (_context==null)
+            _context=createSSLContext();
     	
-        return context.getServerSocketFactory();
+        return _context.getServerSocketFactory();
+    }
+    
+
+    /* ------------------------------------------------------------ */
+    protected KeyManager[] getKeyManagers() throws Exception
+    {
+        KeyStore keyStore = getKeyStore(_keystorePath, _keystoreType, _password.toString());
+        
+        KeyManagerFactory keyManagerFactory=KeyManagerFactory.getInstance(_sslKeyManagerFactoryAlgorithm);
+        keyManagerFactory.init(keyStore,_keyPassword==null?(_password==null?null:_password.toString().toCharArray()):_keyPassword.toString().toCharArray());
+        return keyManagerFactory.getKeyManagers();
+    }
+    
+    protected TrustManager[] getTrustManagers() throws Exception
+    {        
+        if (_truststorePath==null)
+        {
+            _truststorePath=_keystorePath;
+            _truststoreType=_keystoreType;
+            //TODO is this right? it wasn't in the code before refactoring
+            _trustPassword = _password;
+            _sslTrustManagerFactoryAlgorithm = _sslKeyManagerFactoryAlgorithm;
+        }
+        KeyStore trustStore = getKeyStore(_truststorePath, _truststoreType, _trustPassword.toString());
+
+        TrustManagerFactory trustManagerFactory=TrustManagerFactory.getInstance(_sslTrustManagerFactoryAlgorithm);
+        trustManagerFactory.init(trustStore);
+        return trustManagerFactory.getTrustManagers();
+    }
+    
+    protected KeyStore getKeyStore(String keystorePath, String keystoreType, String keystorePassword) throws Exception
+    {
+    	KeyStore keystore;
+    	InputStream keystoreInputStream = null;
+    	try
+        {
+            if (keystorePath!=null)
+            {
+                keystoreInputStream = Resource.newResource(keystorePath).getInputStream();
+                keystore=KeyStore.getInstance(keystoreType);
+                keystore.load(keystoreInputStream,keystorePassword==null?null:keystorePassword.toString().toCharArray());
+                return keystore;
+            }
+            
+            return null;
+        }
+        finally
+        {
+            if (keystoreInputStream != null)
+            	keystoreInputStream.close();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -309,7 +324,7 @@ public class SslSocketConnector extends SocketConnector
     /* ------------------------------------------------------------ */
     public String getKeystore()
     {
-        return _keystore;
+        return _keystorePath;
     }
 
     /* ------------------------------------------------------------ */
@@ -356,7 +371,7 @@ public class SslSocketConnector extends SocketConnector
     /* ------------------------------------------------------------ */
     public String getTruststore()
     {
-        return _truststore;
+        return _truststorePath;
     }
 
     /* ------------------------------------------------------------ */
@@ -483,7 +498,7 @@ public class SslSocketConnector extends SocketConnector
      */
     public void setKeystore(String keystore)
     {
-        _keystore = keystore;
+        _keystorePath = keystore;
     }
 
     /* ------------------------------------------------------------ */
@@ -547,7 +562,7 @@ public class SslSocketConnector extends SocketConnector
 
     public void setTruststore(String truststore)
     {
-        _truststore = truststore;
+        _truststorePath = truststore;
     }
     
 
@@ -563,6 +578,26 @@ public class SslSocketConnector extends SocketConnector
 
     /* ------------------------------------------------------------ */
     /**
+     * @throws Exception 
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setSslContext(javax.net.ssl.SSLContext)
+     */
+    public SSLContext getSslContext()
+    {
+        try
+        {
+            if (_context == null)
+                _context=createSSLContext();
+        }
+        catch(Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+         
+        return _context;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
      * Set the value of the _wantClientAuth property. This property is used when
      * {@link #newServerSocket(SocketAddress, int) opening server sockets}.
      * 
@@ -574,6 +609,7 @@ public class SslSocketConnector extends SocketConnector
         _wantClientAuth = wantClientAuth;
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * Set the time in milliseconds for so_timeout during ssl handshaking
      * @param msec a non-zero value will be used to set so_timeout during
@@ -584,11 +620,14 @@ public class SslSocketConnector extends SocketConnector
         _handshakeTimeout = msec;
     }
     
-    
+
+    /* ------------------------------------------------------------ */
     public int getHandshakeTimeout ()
     {
         return _handshakeTimeout;
     }
+
+    /* ------------------------------------------------------------ */
     /**
      * Simple bundle of information that is cached in the SSLSession. Stores the effective keySize
      * and the client certificate chain.
@@ -623,7 +662,8 @@ public class SslSocketConnector extends SocketConnector
         }
     }
     
-    
+
+    /* ------------------------------------------------------------ */
     public class SslConnection extends Connection
     {
         public SslConnection(Socket socket) throws IOException
@@ -662,4 +702,23 @@ public class SslSocketConnector extends SocketConnector
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Unsupported.
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getAlgorithm()
+     */
+    public String getAlgorithm()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Unsupported.
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setAlgorithm(java.lang.String)
+     */
+    public void setAlgorithm(String algorithm)
+    {
+        throw new UnsupportedOperationException();
+    }
 }

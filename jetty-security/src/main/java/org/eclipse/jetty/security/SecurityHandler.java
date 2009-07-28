@@ -407,6 +407,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             boolean isAuthMandatory = isAuthMandatory(baseRequest, base_response, constraintInfo);
 
             // check authentication
+            Object previousIdentity = null;
             try
             {
                 final Authenticator authenticator = _authenticator;
@@ -428,7 +429,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 {
                     Authentication.User userAuth = (Authentication.User)authentication;
                     baseRequest.setAuthentication(authentication);
-                    _identityService.associate(userAuth.getUserIdentity());
+                    previousIdentity = _identityService.associate(userAuth.getUserIdentity());
 
                     if (isAuthMandatory)
                     {
@@ -456,6 +457,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     }
                     finally
                     {
+                        previousIdentity = lazy.getPreviousAssociation();
                         lazy.setIdentityService(null);
                     }
                     Authentication auth=baseRequest.getAuthentication();
@@ -466,10 +468,12 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     }
                     else
                         authenticator.secureResponse(request, response, isAuthMandatory, null);
+                    //TODO fish previousIdentity out of something.
                 }
                 else
                 {
                     baseRequest.setAuthentication(authentication);
+                    previousIdentity = _identityService.associate(null);
                     handler.handle(pathInContext, baseRequest, request, response);
                     authenticator.secureResponse(request, response, isAuthMandatory, null);
                 }
@@ -482,7 +486,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             }
             finally
             {
-                _identityService.associate(null);
+                _identityService.disassociate(previousIdentity);
             }
         }
         else

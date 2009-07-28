@@ -27,6 +27,8 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
+import org.eclipse.jetty.util.log.Log;
+
 
 /* ------------------------------------------------------------ */
 /** Test Servlet RequestDispatcher.
@@ -152,11 +154,15 @@ public class DispatchServlet extends HttpServlet
                 dispatch.forward(sreq, sres);
                 try
                 {
+                    // should be closed
                     out.println("IOException");
+                    // should not get here
                     throw new IllegalStateException();
                 }
                 catch(IOException e)
-                {}
+                {
+                    Log.ignore(e);
+                }
             }
             else
             {
