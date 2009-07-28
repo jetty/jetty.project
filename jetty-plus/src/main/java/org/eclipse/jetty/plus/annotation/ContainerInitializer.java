@@ -84,11 +84,9 @@ public class ContainerInitializer
     {
        if (_target != null)
        {
-           //TODO
-           //Convert the applicableTypeNames into classes
            Set<Class<?>> classes = new HashSet<Class<?>>();
            for (String s : _applicableTypeNames)
-               classes.add(Loader.loadClass(null, s));
+               classes.add(Loader.loadClass(ContainerInitializer.class, s));
            
            _target.onStartup(classes, context);
        }
