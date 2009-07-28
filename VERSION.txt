@@ -7,6 +7,7 @@ jetty-7.0.0.RC2-SNAPSHOT
  + 284510 Enhance jetty-start for diagnosis and unit testing
  + 284475 update jetty.sh for new OPTIONS syntax
  + Added DebugHandler
+ + Added JavaUtilLog for Jetty logging to java.util.logging framework
 
 jetty-7.0.0.RC1 15 June 2009
  + JETTY-1066 283357 400 response for bad URIs
