@@ -444,6 +444,8 @@ public class WebInfConfiguration implements Configuration
             if (extractedWebInfDir.exists())
                 extractedWebInfDir.delete();
             extractedWebInfDir.mkdir();
+            extractedWebInfDir=new File(extractedWebInfDir,"WEB-INF");
+            extractedWebInfDir.mkdir();
             Log.info("Extract " + web_inf + " to " + extractedWebInfDir);
             JarResource.extract(web_inf, extractedWebInfDir, false);
             web_inf=Resource.newResource(extractedWebInfDir.toURL());
