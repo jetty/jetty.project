@@ -445,7 +445,7 @@ public class WebInfConfiguration implements Configuration
                 extractedWebInfDir.delete();
             extractedWebInfDir.mkdir();
             Log.info("Extract " + web_inf + " to " + extractedWebInfDir);
-            JarResource.extract(web_app, extractedWebInfDir, false);
+            JarResource.extract(web_inf, extractedWebInfDir, false);
             web_inf=Resource.newResource(extractedWebInfDir.toURL());
             ResourceCollection rc = new ResourceCollection(new Resource[]{web_inf,web_app});
             context.setBaseResource(rc);
