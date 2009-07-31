@@ -378,22 +378,16 @@ public class WebInfConfiguration implements Configuration
                 // No - then lets see if it can be turned into a jar URL.
                 Resource jarWebApp = context.newResource("jar:" + web_app + "!/");
                 if (jarWebApp.exists() && jarWebApp.isDirectory())
-                {
                     web_app= jarWebApp;
-                }
             }
 
             // If we should extract or the URL is still not usable
-            if (web_app.exists()  && 
-                    (
-                            (context.isCopyWebDir() && web_app.getFile()!= null && web_app.getFile().isDirectory()) 
-                            ||
-                            (context.isExtractWAR() && web_app.getFile()!= null && !web_app.getFile().isDirectory())
-                            ||
-                            (context.isExtractWAR() && web_app.getFile() == null)
-                            ||
-                            !web_app.isDirectory()
-                    ))
+            if (web_app.exists()  && (
+                    (context.isCopyWebDir() && web_app.getFile() != null && web_app.getFile().isDirectory()) ||
+                    (context.isExtractWAR() && web_app.getFile() != null && !web_app.getFile().isDirectory()) ||
+                    (context.isExtractWAR() && web_app.getFile() == null) || 
+                    !web_app.isDirectory())
+                            )
             {
                 // Then extract it if necessary to the temporary location
                 File extractedWebAppDir= new File(context.getTempDirectory(), "webapp");
@@ -441,6 +435,21 @@ public class WebInfConfiguration implements Configuration
             if (Log.isDebugEnabled())
                 Log.debug("webapp=" + web_app);
         }
+        
+        // Do we need to extract WEB-INF/lib?
+        Resource web_inf= web_app.addPath("WEB-INF/");
+        if (web_inf.exists() && web_inf.isDirectory() && (web_inf.getFile()==null || !web_app.getFile().isDirectory()))
+        {
+            File extractedWebInfDir= new File(context.getTempDirectory(), "webinf");
+            if (extractedWebInfDir.exists())
+                extractedWebInfDir.delete();
+            extractedWebInfDir.mkdir();
+            Log.info("Extract " + web_inf + " to " + extractedWebInfDir);
+            JarResource.extract(web_app, extractedWebInfDir, false);
+            web_inf=Resource.newResource(extractedWebInfDir.toURL());
+            ResourceCollection rc = new ResourceCollection(new Resource[]{web_inf,web_app});
+            context.setBaseResource(rc);
+        }       
     }
     
     

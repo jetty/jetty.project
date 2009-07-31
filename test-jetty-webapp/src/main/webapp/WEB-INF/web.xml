@@ -2,8 +2,8 @@
 <web-app 
    xmlns="http://java.sun.com/xml/ns/javaee" 
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" 
-   version="3.0"> 
+   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" 
+   version="2.5"> 
 
   <display-name>Test WebApp</display-name>
   
@@ -15,7 +15,6 @@
   <filter>
     <filter-name>QoSFilter</filter-name>
     <filter-class>org.eclipse.jetty.servlets.QoSFilter</filter-class>
-    <async-support>true</async-support>
     <init-param>
       <param-name>maxRequests</param-name>
       <param-value>20</param-value>
@@ -30,7 +29,6 @@
   <filter>
     <filter-name>MultiPart</filter-name>
     <filter-class>org.eclipse.jetty.servlets.MultiPartFilter</filter-class>
-    <async-support>true</async-support>
     <init-param>
       <param-name>deleteFiles</param-name>
       <param-value>true</param-value>
@@ -44,7 +42,6 @@
   <filter>
     <filter-name>GzipFilter</filter-name>
     <filter-class>org.eclipse.jetty.servlets.IncludableGzipFilter</filter-class>
-    <async-support>true</async-support>
     <init-param>
       <param-name>bufferSize</param-name>
       <param-value>8192</param-value>
@@ -105,7 +102,6 @@
   <servlet>
     <servlet-name>Dump</servlet-name>
     <servlet-class>com.acme.Dump</servlet-class>
-    <async-support>true</async-support>
     <load-on-startup>1</load-on-startup>
     <run-as><role-name>admin</role-name></run-as>
   </servlet>
@@ -141,7 +137,6 @@
   <servlet>
     <servlet-name>Dispatch</servlet-name>
     <servlet-class>com.acme.DispatchServlet</servlet-class>
-    <async-support>true</async-support>
     <load-on-startup>1</load-on-startup>
   </servlet>
   
@@ -164,7 +159,6 @@
   <servlet>
     <servlet-name>Chat</servlet-name>
     <servlet-class>com.acme.ChatServlet</servlet-class>
-    <async-support>true</async-support>
     <load-on-startup>1</load-on-startup>
   </servlet>
 
@@ -176,13 +170,13 @@
   <servlet>
     <servlet-name>TransparentProxy</servlet-name>
     <servlet-class>org.eclipse.jetty.servlets.ProxyServlet$Transparent</servlet-class>
-    <load-on-startup>1</load-on-startup>
-    <init-param>
-      <param-name>ProxyTo</param-name><param-value>http://jetty.mortbay.org/test</param-value>
-    </init-param>
     <init-param>
       <param-name>Prefix</param-name><param-value>/jetty</param-value>
     </init-param>
+    <init-param>
+      <param-name>ProxyTo</param-name><param-value>http://jetty.mortbay.org/test</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
   </servlet>
   
   <servlet-mapping>
