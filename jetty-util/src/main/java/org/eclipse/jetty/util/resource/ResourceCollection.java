@@ -20,6 +20,7 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.StringTokenizer;
 
@@ -405,7 +406,9 @@ public class ResourceCollection extends Resource
             for(String s : r.list())
                 set.add(s);
         }
-        return set.toArray(new String[set.size()]);
+        String[] result=set.toArray(new String[set.size()]);
+        Arrays.sort(result);
+        return result;
     }
     
     /* ------------------------------------------------------------ */

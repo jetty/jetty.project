@@ -9,6 +9,7 @@ jetty-7.0.0.RC2 29 June 2009
  + Added DebugHandler
  + Added JavaUtilLog for Jetty logging to java.util.logging framework
  + 284981 Implement a cross-origin filter
+ + Improved handling of overlays and resourceCollections
 
 jetty-7.0.0.RC1 15 June 2009
  + JETTY-1066 283357 400 response for bad URIs

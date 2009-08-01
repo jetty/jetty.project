@@ -230,7 +230,7 @@ public class TagLibConfiguration implements Configuration
             {
                 if (contents[i]!=null && contents[i].toLowerCase().endsWith(".tld"))
                 {
-                    Resource l=context.getWebInf().addPath(contents[i]);
+                    Resource l=web_inf.addPath(contents[i]);
                     tlds.add(l);
                 }
             }

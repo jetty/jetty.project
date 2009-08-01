@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.FileResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
 
@@ -482,7 +483,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     }
                 }
                 // else look for a welcome file
-                else if (null!=(welcome=getWelcomeFile(resource)))
+                else if (null!=(welcome=getWelcomeFile(pathInContext)))
                 {
                     String ipath=URIUtil.addPaths(pathInContext,welcome);
                     if (_redirectWelcome)
@@ -515,7 +516,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 {
                     content=new UnCachedContent(resource);
                     if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
-                        sendDirectory(request,response,resource,pathInContext.length()>1);
+                        sendDirectory(request,response,resource,pathInContext);
                 }
             }
         }
@@ -572,26 +573,26 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
      * @throws IOException
      * @throws MalformedURLException
      */
-    private String getWelcomeFile(Resource resource) throws MalformedURLException, IOException
+    private String getWelcomeFile(String pathInContext) throws MalformedURLException, IOException
     {
-        if (!resource.isDirectory() || _welcomes==null)
+        if (_welcomes==null)
             return null;
 
         for (int i=0;i<_welcomes.length;i++)
         {
-            Resource welcome=resource.addPath(_welcomes[i]);
+            Resource welcome=getResource(URIUtil.addPaths(pathInContext,_welcomes[i]));
             if (welcome.exists())
                 return _welcomes[i];
         }
 
         if (_welcomeServlets)
         {
-	        ServletHandler servletHandler = (ServletHandler)_contextHandler.getChildHandlerByClass(ServletHandler.class);
-	     	for (int i=0;i<_welcomes.length;i++)
-	     	{
-	     		if (servletHandler.matchesPath(_welcomes[i]))
-	     			return _welcomes[i];
-	     	}
+            ServletHandler servletHandler = (ServletHandler)_contextHandler.getChildHandlerByClass(ServletHandler.class);
+            for (int i=0;i<_welcomes.length;i++)
+            {
+                if (servletHandler.matchesPath(_welcomes[i]))
+                    return _welcomes[i];
+            }
         }
 
         return null;
@@ -666,7 +667,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     protected void sendDirectory(HttpServletRequest request,
                                  HttpServletResponse response,
                                  Resource resource,
-                                 boolean parent)
+                                 String pathInContext)
     throws IOException
     {
         if (!_dirAllowed)
@@ -677,7 +678,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         
         byte[] data=null;
         String base = URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH);
-        String dir = resource.getListHTML(base,parent);
+        
+        // handle ResourceCollection
+        if (_resourceBase instanceof ResourceCollection)
+            resource=_resourceBase.addPath(pathInContext);
+        else if (_contextHandler.getBaseResource() instanceof ResourceCollection)
+            resource=_contextHandler.getBaseResource().addPath(pathInContext);
+        
+        String dir = resource.getListHTML(base,pathInContext.length()>1);
         if (dir==null)
         {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,

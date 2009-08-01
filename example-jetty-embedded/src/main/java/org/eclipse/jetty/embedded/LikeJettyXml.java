@@ -32,7 +32,7 @@ public class LikeJettyXml
 {
     public static void main(String[] args) throws Exception
     {
-        String jetty_home = System.getProperty("jetty.home","../jetty-distribution/target/distribution");
+        String jetty_home = System.getProperty("jetty.home","..");
         System.setProperty("jetty.home",jetty_home);
 
         Server server = new Server();
