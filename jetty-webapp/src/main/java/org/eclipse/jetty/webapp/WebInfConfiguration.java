@@ -438,7 +438,7 @@ public class WebInfConfiguration implements Configuration
         
         // Do we need to extract WEB-INF/lib?
         Resource web_inf= web_app.addPath("WEB-INF/");
-        if (web_inf.exists() && web_inf.isDirectory() && (web_inf.getFile()==null || !web_app.getFile().isDirectory()))
+        if (web_inf.exists() && web_inf.isDirectory() && (web_inf.getFile()==null || !web_inf.getFile().isDirectory()))
         {
             File extractedWebInfDir= new File(context.getTempDirectory(), "webinf");
             if (extractedWebInfDir.exists())
