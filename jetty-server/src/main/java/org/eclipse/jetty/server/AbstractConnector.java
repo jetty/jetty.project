@@ -724,13 +724,14 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         public void run()
         {   
             Thread current = Thread.currentThread();
+            String name;
             synchronized(AbstractConnector.this)
             {
                 if (_acceptorThread==null)
                     return;
                 
                 _acceptorThread[_acceptor]=current;
-                String name =_acceptorThread[_acceptor].getName();
+                name =_acceptorThread[_acceptor].getName();
                 current.setName(name+" - Acceptor"+_acceptor+" "+AbstractConnector.this);
             }
             int old_priority=current.getPriority();
