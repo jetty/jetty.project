@@ -730,9 +730,9 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
                     return;
                 
                 _acceptorThread[_acceptor]=current;
+                String name =_acceptorThread[_acceptor].getName();
+                current.setName(name+" - Acceptor"+_acceptor+" "+AbstractConnector.this);
             }
-            String name =_acceptorThread[_acceptor].getName();
-            current.setName(name+" - Acceptor"+_acceptor+" "+AbstractConnector.this);
             int old_priority=current.getPriority();
             
             try
