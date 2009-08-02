@@ -489,50 +489,101 @@ public class HttpExchange
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     // methods to handle response
+    
+    /**
+     * Called when the request headers has been sent
+     * @throws IOException
+     */
     protected void onRequestCommitted() throws IOException
     {
     }
 
+    /**
+     * Called when the request and it's body have been sent.
+     * @throws IOException
+     */
     protected void onRequestComplete() throws IOException
     {
     }
 
+    /**
+     * Called when a response status line has been received.
+     * @param version HTTP version
+     * @param status HTTP status code
+     * @param reason HTTP status code reason string
+     * @throws IOException
+     */
     protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
     {
     }
 
+    /**
+     * Called for each response header received
+     * @param name header name
+     * @param value header value
+     * @throws IOException
+     */
     protected void onResponseHeader(Buffer name, Buffer value) throws IOException
     {
     }
 
+    /**
+     * Called when the response header has been completely received.
+     * @throws IOException
+     */
     protected void onResponseHeaderComplete() throws IOException
     {
     }
 
+    /**
+     * Called for each chunk of the response content received.
+     * @param content
+     * @throws IOException
+     */
     protected void onResponseContent(Buffer content) throws IOException
     {
     }
 
+    /**
+     * Called when the entire response has been received
+     * @throws IOException
+     */
     protected void onResponseComplete() throws IOException
     {
     }
 
+    /**
+     * Called when an exception was thrown during an attempt to open a connectoin
+     * @param ex
+     */
     protected void onConnectionFailed(Throwable ex)
     {
         Log.warn("CONNECTION FAILED on " + this,ex);
     }
 
+    /**
+     * Called when any other exception occurs during handling for the exchange
+     * @param ex
+     */
     protected void onException(Throwable ex)
     {
-
         Log.warn("EXCEPTION on " + this,ex);
     }
 
+    /**
+     * Called when no response has been recieved within the timeout.
+     */
     protected void onExpire()
     {
-        Log.debug("EXPIRED " + this);
+        Log.warn("EXPIRED " + this);
     }
 
+    /**
+     * Called when the request is retried (due to failures or authentication).
+     * Implementations may need to reset any consumable content that needs to
+     * be sent.
+     * @throws IOException
+     */
     protected void onRetry() throws IOException
     {}
 
