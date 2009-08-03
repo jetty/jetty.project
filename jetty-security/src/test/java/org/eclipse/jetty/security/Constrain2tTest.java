@@ -113,12 +113,12 @@ public class Constrain2tTest extends TestCase
     }
 
 
-    public void testRootForm()
+    public void testRootFormDispatch()
             throws Exception
     {
         _context.setContextPath("/");
         _security.setAuthenticator(new SessionCachingAuthenticator(
-                new FormAuthenticator("/testLoginPage","/testErrorPage")));
+                new FormAuthenticator("/testLoginPage","/testErrorPage",true)));
         _security.setStrict(false);
         _server.start();
 
@@ -130,8 +130,6 @@ public class Constrain2tTest extends TestCase
 
         _connector.reopen();
         response = _connector.getResponses("GET /auth.html HTTP/1.0\r\n\r\n");
-        // assertTrue(response.indexOf(" 302 Found") > 0);
-        // assertTrue(response.indexOf("/ctx/testLoginPage") > 0);
         assertTrue(response.indexOf("Cache-Control: no-cache") > 0);
         assertTrue(response.indexOf("Expires") > 0);
         assertTrue(response.indexOf("URI=/testLoginPage") > 0);
@@ -145,7 +143,6 @@ public class Constrain2tTest extends TestCase
                 "Content-Length: 31\r\n" +
                 "\r\n" +
         "j_username=user&j_password=wrong\r\n");
-        //assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("testErrorPage") > 0);
 
 
@@ -167,6 +164,58 @@ public class Constrain2tTest extends TestCase
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         
     }
+
+
+    public void testRootFormRedirect()
+            throws Exception
+    {
+        _context.setContextPath("/");
+        _security.setAuthenticator(new SessionCachingAuthenticator(
+                new FormAuthenticator("/testLoginPage","/testErrorPage",false)));
+        _security.setStrict(false);
+        _server.start();
+
+        String response;
+
+        _connector.reopen();
+        response = _connector.getResponses("GET /noauth.html HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+
+        _connector.reopen();
+        response = _connector.getResponses("GET /auth.html HTTP/1.0\r\n\r\n");
+        assertTrue(response.indexOf(" 302 Found") > 0);
+        assertTrue(response.indexOf("/testLoginPage") > 0);
+
+        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/"));
+
+        _connector.reopen();
+        response = _connector.getResponses("POST /j_security_check HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: 31\r\n" +
+                "\r\n" +
+        "j_username=user&j_password=wrong\r\n");
+        assertTrue(response.indexOf("Location") > 0);
+
+        _connector.reopen();
+        response = _connector.getResponses("POST /j_security_check HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: 35\r\n" +
+                "\r\n" +
+                "j_username=user&j_password=password\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 302 "));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf("/auth.html") > 0);
+
+        _connector.reopen();
+        response = _connector.getResponses("GET /auth.html HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        
+    }
+
 
     class RequestHandler extends AbstractHandler
     {

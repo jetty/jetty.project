@@ -75,13 +75,14 @@ public class FormAuthenticator extends LoginAuthenticator
     }
 
     /* ------------------------------------------------------------ */
-    public FormAuthenticator(String login,String error)
+    public FormAuthenticator(String login,String error,boolean dispatch)
     {
         this();
         if (login!=null)
             setLoginPage(login);
         if (error!=null)
             setErrorPage(error);
+        _dispatch=dispatch;
     }
     
     /* ------------------------------------------------------------ */
@@ -99,7 +100,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (error!=null)
             setErrorPage(error);
         String dispatch=configuration.getInitParameter(FormAuthenticator.__FORM_DISPATCH);
-        _dispatch=dispatch!=null && Boolean.getBoolean(dispatch);
+        _dispatch = dispatch==null?_dispatch:Boolean.getBoolean(dispatch);
     }
 
     /* ------------------------------------------------------------ */
