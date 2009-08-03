@@ -46,15 +46,14 @@ public class ClientCertAuthenticator extends LoginAuthenticator
     }
     
     /**
-     * TODO what should happen if an insecure page is accessed without a client
-     * cert? Current code requires a client cert always but allows access to
-     * insecure pages if it is not recognized.
-     * 
      * @return
      * @throws ServerAuthException
      */
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
+        if (!mandatory)
+            return _deferred;
+        
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
         X509Certificate[] certs = (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
@@ -72,7 +71,6 @@ public class ClientCertAuthenticator extends LoginAuthenticator
                     if (principal == null) principal = cert.getIssuerDN();
                     final String username = principal == null ? "clientcert" : principal.getName();
 
-                    // TODO no idea if this is correct
                     final char[] credential = B64Code.encode(cert.getSignature());
 
                     UserIdentity user = _loginService.login(username,credential);
@@ -81,13 +79,13 @@ public class ClientCertAuthenticator extends LoginAuthenticator
                 }
             }
                 
-            if (mandatory)
+            if (!_deferred.isDeferred(response))
             {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 return Authentication.SEND_FAILURE;
             }
             
-            return certs==null?Authentication.NOT_CHECKED:Authentication.UNAUTHENTICATED;
+            return Authentication.UNAUTHENTICATED;
         }
         catch (IOException e)
         {

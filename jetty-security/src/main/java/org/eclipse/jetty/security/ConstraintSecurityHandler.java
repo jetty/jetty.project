@@ -250,14 +250,13 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response, Object constraintInfo) throws IOException
     {
         if (constraintInfo == null)
-        {
             return true;
-        }
+        
         RoleInfo roleInfo = (RoleInfo)constraintInfo;
         if (roleInfo.isForbidden())
-        {
             return false;
-        }
+        
+        
         UserDataConstraint dataConstraint = roleInfo.getUserDataConstraint();
         if (dataConstraint == null || dataConstraint == UserDataConstraint.None)
         {
@@ -277,8 +276,11 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                     url += "?" + request.getQueryString();
                 response.setContentLength(0);
                 response.sendRedirect(url);
-                request.setHandled(true);
             }
+            else
+                response.sendError(Response.SC_FORBIDDEN,"!Integral");
+
+            request.setHandled(true);
             return false;
         }
         else if (dataConstraint == UserDataConstraint.Confidential)
@@ -295,8 +297,11 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
                 response.setContentLength(0);
                 response.sendRedirect(url);
-                request.setHandled(true);
             }
+            else
+                response.sendError(Response.SC_FORBIDDEN,"!Confidential");
+            
+            request.setHandled(true);
             return false;
         }
         else

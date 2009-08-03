@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.security;
 
-import org.eclipse.jetty.security.authentication.DelegateAuthenticator;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
@@ -51,23 +50,16 @@ public class UserAuthentication implements Authentication.User
     
     public void logout() 
     {    
-        Authenticator authenticator = _authenticator;
-        while (true)
+        final Authenticator authenticator = _authenticator;
+        if (authenticator instanceof LoginAuthenticator)
         {
-            if (authenticator instanceof LoginAuthenticator)
-            {
-                ((LoginAuthenticator)authenticator).getLoginService().logout(this.getUserIdentity());
-                break;
-            }
-            else if (authenticator instanceof DelegateAuthenticator)
-            {
-                authenticator=((DelegateAuthenticator)authenticator).getDelegate();
-            }
-            else
-                break;
+            IdentityService id_service=((LoginAuthenticator)authenticator).getLoginService().getIdentityService();
+            if (id_service!=null)
+                id_service.disassociate(null); // TODO provide the previous value
         }
     }
     
+    @Override
     public String toString()
     {
         return "{Auth,"+getAuthMethod()+","+_userIdentity+"}";

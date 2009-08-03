@@ -21,8 +21,6 @@ import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.ClientCertAuthenticator;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.security.authentication.DeferredAuthenticator;
-import org.eclipse.jetty.security.authentication.SessionCachingAuthenticator;
 import org.eclipse.jetty.server.Server;
 
 /* ------------------------------------------------------------ */
@@ -56,12 +54,9 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
         else if (Constraint.__DIGEST_AUTH.equalsIgnoreCase(auth))
             authenticator=new DigestAuthenticator();
         else if (Constraint.__FORM_AUTH.equalsIgnoreCase(auth))
-            authenticator=new SessionCachingAuthenticator(new FormAuthenticator());
+            authenticator=new FormAuthenticator();
         if (Constraint.__CERT_AUTH.equalsIgnoreCase(auth)||Constraint.__CERT_AUTH2.equalsIgnoreCase(auth))
             authenticator=new ClientCertAuthenticator();
-        
-        if (configuration.isLazy() && authenticator!=null)
-            authenticator=new DeferredAuthenticator(authenticator);
         
         return authenticator;
     }

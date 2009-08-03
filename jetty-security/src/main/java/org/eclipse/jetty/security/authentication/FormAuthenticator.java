@@ -59,11 +59,11 @@ public class FormAuthenticator extends LoginAuthenticator
     public final static String __FORM_LOGIN_PAGE="org.eclipse.jetty.security.form_login_page";
     public final static String __FORM_ERROR_PAGE="org.eclipse.jetty.security.form_error_page";
     public final static String __FORM_DISPATCH="org.eclipse.jetty.security.dispatch";
-    public final static String __J_URI = "org.eclipse.jetty.util.URI";
-    public final static String __J_AUTHENTICATED = "org.eclipse.jetty.server.Auth";
+    public final static String __J_URI = "org.eclipse.jetty.security.form_URI";
     public final static String __J_SECURITY_CHECK = "/j_security_check";
     public final static String __J_USERNAME = "j_username";
     public final static String __J_PASSWORD = "j_password";
+
     private String _formErrorPage;
     private String _formErrorPath;
     private String _formLoginPage;
@@ -148,25 +148,26 @@ public class FormAuthenticator extends LoginAuthenticator
 
     /* ------------------------------------------------------------ */
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
-    {
+    {   
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
-        HttpSession session = request.getSession(mandatory);
         String uri = request.getRequestURI();
-        
-        // not mandatory or not authenticated
-        if (session == null || isLoginOrErrorPage(uri)) 
-        {
-            return Authentication.NOT_CHECKED;
-        }
-            
+        if (uri==null)
+            uri=URIUtil.SLASH;
 
+        mandatory|=uri.endsWith(__J_SECURITY_CHECK);
+        if (!mandatory)
+            return _deferred;
+        
+        if (isLoginOrErrorPage(uri))
+            return Authentication.NOT_CHECKED;
+            
+        HttpSession session = request.getSession(true);
+            
         try
         {
             // Handle a request for authentication.
-            if (uri==null)
-                uri=URIUtil.SLASH;
-            else if (uri.endsWith(__J_SECURITY_CHECK))
+            if (uri.endsWith(__J_SECURITY_CHECK))
             {
                 final String username = request.getParameter(__J_USERNAME);
                 final String password = request.getParameter(__J_PASSWORD);
@@ -190,6 +191,9 @@ public class FormAuthenticator extends LoginAuthenticator
                     }
                     response.setContentLength(0);   
                     response.sendRedirect(response.encodeRedirectURL(nuri));
+
+                    Authentication cached=new SessionAuthentication(session,this,user);
+                    session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
                     return new FormAuthentication(this,user);
                 }
                 
@@ -216,35 +220,52 @@ public class FormAuthenticator extends LoginAuthenticator
                 return Authentication.SEND_FAILURE;
             }
             
-            if (mandatory) 
+            // Look for cached authentication
+            Authentication authentication = (Authentication) session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
+            if (authentication != null) 
             {
-                // redirect to login page
-                synchronized (session)
-                {
-                    if (session.getAttribute(__J_URI)==null)
-                    {
-                        StringBuffer buf = request.getRequestURL();
-                        if (request.getQueryString() != null)
-                            buf.append("?").append(request.getQueryString());
-                        session.setAttribute(__J_URI, buf.toString());
-                    }
-                }
-
-                if (_dispatch)
-                {
-                    RequestDispatcher dispatcher = request.getRequestDispatcher(_formLoginPage);
-                    response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
-                    response.setDateHeader(HttpHeaders.EXPIRES,1);
-                    dispatcher.forward(new FormRequest(request), new FormResponse(response));
-                }
+                // Has authentication been revoked?
+                if (authentication instanceof Authentication.User && 
+                    _loginService!=null &&
+                    !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
+                
+                    session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
                 else
-                {
-                    response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formLoginPage));
-                }
-                return Authentication.SEND_CONTINUE;
+                    return authentication;
             }
+
+            // remember the current URI
+            synchronized (session)
+            {
+                // TODO is this right?
+                if (session.getAttribute(__J_URI)==null)
+                {
+                    StringBuffer buf = request.getRequestURL();
+                    if (request.getQueryString() != null)
+                        buf.append("?").append(request.getQueryString());
+                    session.setAttribute(__J_URI, buf.toString());
+                }
+            }
+
+            // if we can't send challenge
+            if (_deferred.isDeferred(response))
+                return Authentication.UNAUTHENTICATED; 
+                
+            // send the the challenge
+            if (_dispatch)
+            {
+                RequestDispatcher dispatcher = request.getRequestDispatcher(_formLoginPage);
+                response.setHeader(HttpHeaders.CACHE_CONTROL,"No-cache");
+                response.setDateHeader(HttpHeaders.EXPIRES,1);
+                dispatcher.forward(new FormRequest(request), new FormResponse(response));
+            }
+            else
+            {
+                response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formLoginPage));
+            }
+            return Authentication.SEND_CONTINUE;
             
-            return Authentication.UNAUTHENTICATED;            
+         
         }
         catch (IOException e)
         {
@@ -261,13 +282,7 @@ public class FormAuthenticator extends LoginAuthenticator
     {
         return pathInContext != null && (pathInContext.equals(_formErrorPath) || pathInContext.equals(_formLoginPath));
     }
-
-    /* ------------------------------------------------------------ */
-    public boolean isMandatory(ServletRequest request)
-    {
-        return ((HttpServletRequest)request).getRequestURI().endsWith(__J_SECURITY_CHECK);
-    }
-
+    
     /* ------------------------------------------------------------ */
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {

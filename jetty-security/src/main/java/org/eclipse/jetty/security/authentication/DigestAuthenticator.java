@@ -62,6 +62,9 @@ public class DigestAuthenticator extends LoginAuthenticator
 
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
+        if (mandatory)
+            return _deferred;
+        
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
         String credentials = request.getHeader(HttpHeaders.AUTHORIZATION);
@@ -130,7 +133,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
             }
 
-            if (mandatory)
+            if (!_deferred.isDeferred(response))
             {
                 String domain = request.getContextPath();
                 if (domain == null) 
@@ -147,7 +150,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                 return Authentication.SEND_CONTINUE;
             }
 
-            return credentials==null?Authentication.NOT_CHECKED:Authentication.UNAUTHENTICATED;
+            return Authentication.UNAUTHENTICATED;
         }
         catch (IOException e)
         {

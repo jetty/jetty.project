@@ -129,7 +129,6 @@ public class HashLoginService extends MappedLoginService
     @Override
     protected UserIdentity loadUser(String username)
     {
-        // TODO Auto-generated method stub
         return null;
     }
     

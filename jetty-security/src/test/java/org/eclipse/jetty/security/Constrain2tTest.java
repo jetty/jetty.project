@@ -29,9 +29,7 @@ import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.security.authentication.DeferredAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.security.authentication.SessionCachingAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.LocalConnector;
@@ -117,8 +115,7 @@ public class Constrain2tTest extends TestCase
             throws Exception
     {
         _context.setContextPath("/");
-        _security.setAuthenticator(new SessionCachingAuthenticator(
-                new FormAuthenticator("/testLoginPage","/testErrorPage",true)));
+        _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",true));
         _security.setStrict(false);
         _server.start();
 
@@ -170,8 +167,7 @@ public class Constrain2tTest extends TestCase
             throws Exception
     {
         _context.setContextPath("/");
-        _security.setAuthenticator(new SessionCachingAuthenticator(
-                new FormAuthenticator("/testLoginPage","/testErrorPage",false)));
+        _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
         _security.setStrict(false);
         _server.start();
 

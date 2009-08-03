@@ -213,7 +213,6 @@ public class JDBCLoginService extends MappedLoginService
         return super.login(username,credentials);
     }
 
-
     /* ------------------------------------------------------------ */
     @Override
     protected void loadUsers()

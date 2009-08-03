@@ -29,9 +29,7 @@ import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.security.authentication.DeferredAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.security.authentication.SessionCachingAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.LocalConnector;
@@ -234,8 +232,7 @@ public class ConstraintTest extends TestCase
     public void testFormdispatch()
             throws Exception
     {
-        _security.setAuthenticator(new SessionCachingAuthenticator(
-                new FormAuthenticator("/testLoginPage","/testErrorPage",true)));
+        _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",true));
         _security.setStrict(false);
         _server.start();
 
@@ -251,8 +248,6 @@ public class ConstraintTest extends TestCase
 
         _connector.reopen();
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
-        // assertTrue(response.indexOf(" 302 Found") > 0);
-        // assertTrue(response.indexOf("/ctx/testLoginPage") > 0);
         assertTrue(response.indexOf("Cache-Control: no-cache") > 0);
         assertTrue(response.indexOf("Expires") > 0);
         assertTrue(response.indexOf("URI=/ctx/testLoginPage") > 0);
@@ -266,7 +261,6 @@ public class ConstraintTest extends TestCase
                 "Content-Length: 31\r\n" +
                 "\r\n" +
         "j_username=user&j_password=wrong\r\n");
-        //assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("testErrorPage") > 0);
 
 
@@ -299,8 +293,7 @@ public class ConstraintTest extends TestCase
     public void testFormRedirect()
             throws Exception
     {
-        _security.setAuthenticator(new SessionCachingAuthenticator(
-                new FormAuthenticator("/testLoginPage","/testErrorPage",false)));
+        _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
         _security.setStrict(false);
         _server.start();
 
@@ -431,8 +424,7 @@ public class ConstraintTest extends TestCase
     public void testStrictFormDispatch()
             throws Exception
     {
-        _security.setAuthenticator(new SessionCachingAuthenticator(
-                new FormAuthenticator("/testLoginPage","/testErrorPage",true)));
+        _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",true));
         
         _server.start();
 
@@ -565,8 +557,7 @@ public class ConstraintTest extends TestCase
     public void testStrictFormRedirect()
             throws Exception
     {
-        _security.setAuthenticator(new SessionCachingAuthenticator(
-                new FormAuthenticator("/testLoginPage","/testErrorPage",false)));
+        _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
         
         _server.start();
 
@@ -730,7 +721,7 @@ public class ConstraintTest extends TestCase
     public void testDeferredBasic()
             throws Exception
     {
-        _security.setAuthenticator(new DeferredAuthenticator(new BasicAuthenticator()));
+        _security.setAuthenticator(new BasicAuthenticator());
         _security.setStrict(false);
         _server.start();
 

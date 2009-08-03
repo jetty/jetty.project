@@ -108,8 +108,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
                     for (String key : configuration.getInitParameterNames())
                         map.put(key,configuration.getInitParameter(key));
                     authenticator= new JaspiAuthenticator(serverAuthConfig,map,servletCallbackHandler,
-                                serviceSubject,
-                                configuration.isLazy(), identityService);
+                                serviceSubject,true, identityService);
                 }
             }
         } 

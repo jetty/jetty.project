@@ -25,7 +25,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.security.authentication.DeferredAuthenticator.DeferredAuthentication;
+import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnection;
@@ -57,7 +57,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private boolean _checkWelcomeFiles = false;
     private Authenticator _authenticator;
     private Authenticator.Factory _authenticatorFactory=new DefaultAuthenticatorFactory();
-    private boolean _isLazy=true;
     private String _realmName;
     private String _authMethod;
     private final Map<String,String> _initParameters=new HashMap<String,String>();
@@ -149,27 +148,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         if (isRunning())
             throw new IllegalStateException("running");
         _authenticatorFactory = authenticatorFactory;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return the isLazy
-     */
-    public boolean isLazy()
-    {
-        return _isLazy;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param isLazy the isLazy to set
-     * @throws IllegalStateException if the SecurityHandler is running
-     */
-    public void setLazy(boolean isLazy)
-    {
-        if (isRunning())
-            throw new IllegalStateException("running");
-        _isLazy = isLazy;
     }
 
     /* ------------------------------------------------------------ */
@@ -421,7 +399,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             {
                 if (!baseRequest.isHandled())
                 {
-                    response.sendError(Response.SC_FORBIDDEN,"!data constraint");
+                    response.sendError(Response.SC_FORBIDDEN);
                     baseRequest.setHandled(true);
                 }
                 return;
@@ -429,8 +407,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
             // is Auth mandatory?
             boolean isAuthMandatory = 
-                isAuthMandatory(baseRequest, base_response, constraintInfo) ||
-                authenticator.isMandatory(request);
+                isAuthMandatory(baseRequest, base_response, constraintInfo);
 
             // check authentication
             Object previousIdentity = null;
@@ -472,8 +449,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 }
                 else if (authentication instanceof Authentication.Deferred)
                 {
-                    DeferredAuthentication lazy= (DeferredAuthentication)authentication;
-                    lazy.setIdentityService(_identityService);
+                    DeferredAuthentication deferred= (DeferredAuthentication)authentication;
+                    deferred.setIdentityService(_identityService);
                     baseRequest.setAuthentication(authentication);
 
                     try
@@ -482,9 +459,10 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     }
                     finally
                     {
-                        previousIdentity = lazy.getPreviousAssociation();
-                        lazy.setIdentityService(null);
+                        previousIdentity = deferred.getPreviousAssociation();
+                        deferred.setIdentityService(null);
                     }
+                    
                     Authentication auth=baseRequest.getAuthentication();
                     if (auth instanceof Authentication.User)
                     {
