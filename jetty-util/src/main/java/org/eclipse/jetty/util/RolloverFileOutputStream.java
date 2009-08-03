@@ -42,6 +42,9 @@ public class RolloverFileOutputStream extends FilterOutputStream
     private static Timer __rollover;
     
     final static String YYYY_MM_DD="yyyy_mm_dd";
+    final static String ROLLOVER_FILE_DATE_FORMAT = "yyyy_MM_dd";
+    final static String ROLLOVER_FILE_BACKUP_FORMAT = "HHmmssSSS";
+    final static int ROLLOVER_FILE_RETAIN_DAYS = 31;
 
     private RollTask _rollTask;
     private SimpleDateFormat _fileBackupFormat;
@@ -61,7 +64,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
     public RolloverFileOutputStream(String filename)
         throws IOException
     {
-        this(filename,true,Integer.getInteger("ROLLOVERFILE_RETAIN_DAYS",31).intValue());
+        this(filename,true,ROLLOVER_FILE_RETAIN_DAYS);
     }
     
     /* ------------------------------------------------------------ */
@@ -74,7 +77,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
     public RolloverFileOutputStream(String filename, boolean append)
         throws IOException
     {
-        this(filename,append,Integer.getInteger("ROLLOVERFILE_RETAIN_DAYS",31).intValue());
+        this(filename,append,ROLLOVER_FILE_RETAIN_DAYS);
     }
 
     /* ------------------------------------------------------------ */
@@ -117,10 +120,8 @@ public class RolloverFileOutputStream extends FilterOutputStream
      * which is replaced with the actual date when creating and rolling over the file.
      * @param append If true, existing files will be appended to.
      * @param retainDays The number of days to retain files before deleting them. 0 to retain forever.
-     * @param dateFormat The format for the date file substitution. If null the system property ROLLOVERFILE_DATE_FORMAT is 
-     * used and if that is null, then default is "yyyy_MM_dd". 
-     * @param backupFormat The format for the file extension of backup files. If null the system property
-     * ROLLOVERFILE_BACKUP_FORMAT is used and if that is null, then default is "HHmmssSSS". 
+     * @param dateFormat The format for the date file substitution. The default is "yyyy_MM_dd". 
+     * @param backupFormat The format for the file extension of backup files. The default is "HHmmssSSS". 
      * @throws IOException
      */
     public RolloverFileOutputStream(String filename,
@@ -134,11 +135,11 @@ public class RolloverFileOutputStream extends FilterOutputStream
         super(null);
 
         if (dateFormat==null)
-            dateFormat=System.getProperty("ROLLOVERFILE_DATE_FORMAT","yyyy_MM_dd");
+            dateFormat=ROLLOVER_FILE_DATE_FORMAT;
         _fileDateFormat = new SimpleDateFormat(dateFormat);
         
         if (backupFormat==null)
-            backupFormat=System.getProperty("ROLLOVERFILE_BACKUP_FORMAT","HHmmssSSS");
+            backupFormat=ROLLOVER_FILE_BACKUP_FORMAT;
         _fileBackupFormat = new SimpleDateFormat(backupFormat);
         
         _fileBackupFormat.setTimeZone(zone);

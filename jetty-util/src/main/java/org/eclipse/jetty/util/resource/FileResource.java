@@ -34,26 +34,15 @@ import org.eclipse.jetty.util.log.Log;
  *
  * Handle resources of implied or explicit file type.
  * This class can check for aliasing in the filesystem (eg case
- * insensitivity).  By default this is turned on, or it can be controlled with the
- * "org.eclipse.jetty.util.FileResource.checkAliases" system parameter.
+ * insensitivity).  By default this is turned on, or it can be controlled 
+ * by calling the static method @see FileResource#setCheckAliases(boolean)
  *
  * 
  */
 public class FileResource extends URLResource
 {
-    private static boolean __checkAliases;
-    static
-    {
-        __checkAliases=
-            "true".equalsIgnoreCase
-            (System.getProperty("org.eclipse.jetty.util.FileResource.checkAliases","true"));
- 
-       if (__checkAliases)
-           Log.debug("Checking Resource aliases");
-       else
-           Log.warn("Resource alias checking is disabled");
-    }
-    
+    private static boolean __checkAliases = true;
+
     /* ------------------------------------------------------------ */
     private File _file;
     private transient URL _alias=null;

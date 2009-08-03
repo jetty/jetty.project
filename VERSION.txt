@@ -1,3 +1,6 @@
+jetty-7.0.0.RC3-SNAPSHOT
+ + 277403 remove system properties
+
 jetty-7.0.0.RC2 29 June 2009
  + 283844 Webapp / TLD errors are not clear
  + 283375 improved extensibility of SSL connectors
