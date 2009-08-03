@@ -60,7 +60,7 @@ public class DeferredAuthenticator extends DelegateAuthenticator
      */
     public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
     {
-        if (!(mandatory || _delegate.isMandatory(request)))
+        if (!mandatory)
             return _deferred;
         
         return _delegate.validateRequest(request,response,mandatory);

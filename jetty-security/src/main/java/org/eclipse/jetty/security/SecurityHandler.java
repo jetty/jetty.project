@@ -409,8 +409,10 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         
         if (handler==null)
             return;
+
+        final Authenticator authenticator = _authenticator;
         
-        if (_authenticator!=null && checkSecurity(baseRequest))
+        if (authenticator!=null && checkSecurity(baseRequest))
         {
             Object constraintInfo = prepareConstraintInfo(pathInContext, baseRequest);
             
@@ -419,14 +421,12 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             {
                 if (!baseRequest.isHandled())
                 {
-                    response.sendError(Response.SC_FORBIDDEN);
+                    response.sendError(Response.SC_FORBIDDEN,"!data constraint");
                     baseRequest.setHandled(true);
                 }
                 return;
             }
 
-            final Authenticator authenticator = _authenticator;
-            
             // is Auth mandatory?
             boolean isAuthMandatory = 
                 isAuthMandatory(baseRequest, base_response, constraintInfo) ||

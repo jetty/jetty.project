@@ -51,14 +51,16 @@ public class LikeJettyXml
         mbContainer.addBean(Log.getLog());
 
         
-        // Setup Connectors
+        // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setMaxThreads(100);
         server.setThreadPool(threadPool);
 
-        Connector connector = new SelectChannelConnector();
+        // Setup Connectors
+        SelectChannelConnector connector = new SelectChannelConnector();
         connector.setPort(8080);
         connector.setMaxIdleTime(30000);
+        connector.setConfidentialPort(8443);
         server.setConnectors(new Connector[]
         { connector });
 
