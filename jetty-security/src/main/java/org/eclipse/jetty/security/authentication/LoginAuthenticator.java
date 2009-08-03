@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.security.authentication;
 
+import javax.servlet.ServletRequest;
+
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
@@ -41,4 +43,8 @@ public abstract class LoginAuthenticator implements Authenticator
         return _loginService;
     }
 
+    public boolean isMandatory(ServletRequest request)
+    {
+        return false;
+    }
 }

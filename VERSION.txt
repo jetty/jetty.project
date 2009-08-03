@@ -11,6 +11,7 @@ jetty-7.0.0.RC2 29 June 2009
  + 284981 Implement a cross-origin filter
  + Improved handling of overlays and resourceCollections
  + 285006 fix AbstractConnector NPE during shutdown.
+ + Improved deferred authentication handling
  
 jetty-7.0.0.RC1 15 June 2009
  + JETTY-1066 283357 400 response for bad URIs

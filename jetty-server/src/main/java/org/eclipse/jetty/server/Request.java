@@ -354,7 +354,7 @@ public class Request implements HttpServletRequest
     public String getAuthType()
     {
         if (_authentication instanceof Authentication.Deferred)
-            _authentication = ((Authentication.Deferred)_authentication).authenticate();
+            _authentication = ((Authentication.Deferred)_authentication).authenticate(this);
         
         if (_authentication instanceof Authentication.User)
             return ((Authentication.User)_authentication).getAuthMethod();
@@ -1174,7 +1174,7 @@ public class Request implements HttpServletRequest
     public UserIdentity getUserIdentity()
     {
         if (_authentication instanceof Authentication.Deferred)
-            _authentication = ((Authentication.Deferred)_authentication).authenticate();
+            setAuthentication(((Authentication.Deferred)_authentication).authenticate(this));
         
         if (_authentication instanceof Authentication.User)
             return ((Authentication.User)_authentication).getUserIdentity();
@@ -1194,7 +1194,7 @@ public class Request implements HttpServletRequest
     public Principal getUserPrincipal()
     {
         if (_authentication instanceof Authentication.Deferred)
-            _authentication = ((Authentication.Deferred)_authentication).authenticate();
+            setAuthentication(((Authentication.Deferred)_authentication).authenticate(this));
         
         if (_authentication instanceof Authentication.User)
         {
@@ -1278,7 +1278,7 @@ public class Request implements HttpServletRequest
     public boolean isUserInRole(String role)
     {
         if (_authentication instanceof Authentication.Deferred)
-            _authentication = ((Authentication.Deferred)_authentication).authenticate();
+            setAuthentication(((Authentication.Deferred)_authentication).authenticate(this));
         
         if (_authentication instanceof Authentication.User)
             return ((Authentication.User)_authentication).isUserInRole(_scope,role);
@@ -1296,7 +1296,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     protected void recycle()
     {
-        _authentication=Authentication.NOT_CHECKED;
+        setAuthentication(Authentication.NOT_CHECKED);
     	_async.recycle();
         _asyncSupported=true;
         _handled=false;

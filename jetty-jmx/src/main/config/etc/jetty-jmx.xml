@@ -30,7 +30,7 @@
 
     <!-- Add to the Server as a lifecycle -->
     <!-- Only do this if you know you will only have a single jetty server -->
-    <Call name="addLifeCycle">
+    <Call name="addBean">
       <Arg><Ref id="MBeanContainer"/></Arg>
     </Call>
 

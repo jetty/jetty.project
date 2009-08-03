@@ -34,6 +34,7 @@ import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.server.Authentication.Deferred;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -48,8 +49,9 @@ import org.eclipse.jetty.util.log.Log;
  * to be used together with the {@link SessionCachingAuthenticator} so that the
  * auth results may be associated with the session.
  *  
- * This authenticator implements form authentication using dispatchers unless 
- * the {@link #__FORM_DISPATCH} init parameters is set to false.
+ * This authenticator implements form authentication will use dispatchers to
+ * the login page if the {@link #__FORM_DISPATCH} init parameter is set to true.
+ * Otherwise it will redirect.
  * 
  */
 public class FormAuthenticator extends LoginAuthenticator
@@ -75,6 +77,7 @@ public class FormAuthenticator extends LoginAuthenticator
     /* ------------------------------------------------------------ */
     public FormAuthenticator(String login,String error)
     {
+        this();
         if (login!=null)
             setLoginPage(login);
         if (error!=null)
@@ -96,7 +99,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (error!=null)
             setErrorPage(error);
         String dispatch=configuration.getInitParameter(FormAuthenticator.__FORM_DISPATCH);
-        _dispatch=dispatch==null || Boolean.getBoolean(dispatch);
+        _dispatch=dispatch!=null && Boolean.getBoolean(dispatch);
     }
 
     /* ------------------------------------------------------------ */
@@ -256,6 +259,12 @@ public class FormAuthenticator extends LoginAuthenticator
     public boolean isLoginOrErrorPage(String pathInContext)
     {
         return pathInContext != null && (pathInContext.equals(_formErrorPath) || pathInContext.equals(_formLoginPath));
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isMandatory(ServletRequest request)
+    {
+        return ((HttpServletRequest)request).getRequestURI().endsWith(__J_SECURITY_CHECK);
     }
 
     /* ------------------------------------------------------------ */

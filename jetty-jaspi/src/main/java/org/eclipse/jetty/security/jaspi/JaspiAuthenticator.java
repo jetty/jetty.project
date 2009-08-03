@@ -32,6 +32,7 @@ import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.authentication.DeferredAuthenticator;
+import org.eclipse.jetty.security.authentication.DeferredAuthenticator.DeferredAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.Authentication.User;
@@ -47,6 +48,7 @@ public class JaspiAuthenticator implements Authenticator
     private final Subject _serviceSubject;
     private final boolean _allowLazyAuthentication;
     private final IdentityService _identityService;
+    private final DeferredAuthentication _deferred;
 
     public JaspiAuthenticator(ServerAuthConfig authConfig, Map authProperties, ServletCallbackHandler callbackHandler,
                               Subject serviceSubject, boolean allowLazyAuthentication, IdentityService identityService)
@@ -62,6 +64,7 @@ public class JaspiAuthenticator implements Authenticator
         this._serviceSubject = serviceSubject;
         this._allowLazyAuthentication = allowLazyAuthentication;
         this._identityService = identityService;
+        this._deferred=new DeferredAuthentication(this);
     }
 
 
@@ -78,7 +81,7 @@ public class JaspiAuthenticator implements Authenticator
     public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
     {
         if (_allowLazyAuthentication && !mandatory)
-            return new DeferredAuthenticator.DeferredAuthentication(this,request,response);
+            return _deferred;
         
         JaspiMessageInfo info = new JaspiMessageInfo(request, response, mandatory);
         request.setAttribute("org.eclipse.jetty.security.jaspi.info",info);
@@ -103,7 +106,6 @@ public class JaspiAuthenticator implements Authenticator
 
             AuthStatus authStatus = authContext.validateRequest(messageInfo,clientSubject,_serviceSubject);
 //            String authMethod = (String)messageInfo.getMap().get(JaspiMessageInfo.AUTH_METHOD_KEY);
-
 
             if (authStatus == AuthStatus.SEND_CONTINUE)
                 return Authentication.SEND_CONTINUE;
@@ -171,6 +173,12 @@ public class JaspiAuthenticator implements Authenticator
         {
             throw new ServerAuthException(e);
         }
+    }
+
+
+    public boolean isMandatory(ServletRequest request)
+    {
+        return false;
     }
 
 }

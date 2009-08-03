@@ -55,4 +55,8 @@ public class DelegateAuthenticator implements Authenticator
         return _delegate.secureResponse(req,res, mandatory, validatedUser);
     }
     
+    public boolean isMandatory(ServletRequest request)
+    {
+        return _delegate.isMandatory(request);
+    }
 }

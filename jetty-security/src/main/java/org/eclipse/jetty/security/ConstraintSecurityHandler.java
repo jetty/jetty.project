@@ -340,4 +340,17 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
         return false;
     }
+    
+    /* ------------------------------------------------------------ */
+    protected void dump(StringBuilder b,String indent)
+    {
+        super.dump(b,indent);
+        b.append(indent).append(" +=roles=").append(_roles).append('\n');
+        
+        for (Object path : _constraintMap.keySet())
+        {
+            Object constraint = _constraintMap.get(path);
+            b.append(indent).append(" +=").append(path).append('=').append(constraint).append('\n');
+        }
+    }
 }

@@ -15,6 +15,7 @@ package org.eclipse.jetty.security;
 
 import java.io.IOException;
 import java.security.Principal;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,12 @@ import org.eclipse.jetty.util.log.Log;
  * The Authenticator may either be directly set on the handler
  * or will be create during {@link #start()} with a call to
  * either the default or set AuthenticatorFactory.
+ * <p>
+ * SecurityHandler has a set of initparameters that are used by the 
+ * Authentication.Configuration. At startup, any context init parameters
+ * that start with "org.eclipse.jetty.security." that do not have 
+ * values in the SecurityHandler init parameters, are copied.  
+ * 
  */
 public abstract class SecurityHandler extends HandlerWrapper implements Authenticator.Configuration
 {
@@ -284,6 +291,20 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     protected void doStart()
         throws Exception
     {
+        // copy security init parameters
+        ContextHandler.Context context =ContextHandler.getCurrentContext();
+        if (context!=null)
+        {
+            Enumeration<String> names=context.getInitParameterNames();
+            while (names!=null && names.hasMoreElements())
+            {
+                String name =names.nextElement();
+                if (name.startsWith("org.eclipse.jetty.security.") &&
+                        getInitParameter(name)==null)
+                    setInitParameter(name,context.getInitParameter(name));
+            }
+        }
+        
         // complicated resolution of login and identity service to handle
         // many different ways these can be constructed and injected.
         
@@ -404,14 +425,17 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 return;
             }
 
+            final Authenticator authenticator = _authenticator;
+            
             // is Auth mandatory?
-            boolean isAuthMandatory = isAuthMandatory(baseRequest, base_response, constraintInfo);
+            boolean isAuthMandatory = 
+                isAuthMandatory(baseRequest, base_response, constraintInfo) ||
+                authenticator.isMandatory(request);
 
             // check authentication
             Object previousIdentity = null;
             try
             {
-                final Authenticator authenticator = _authenticator;
                 Authentication authentication = baseRequest.getAuthentication();
                 if (authentication==null || authentication==Authentication.NOT_CHECKED)
                     authentication=authenticator.validateRequest(request, response, isAuthMandatory);
@@ -469,7 +493,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     }
                     else
                         authenticator.secureResponse(request, response, isAuthMandatory, null);
-                    //TODO fish previousIdentity out of something.
                 }
                 else
                 {

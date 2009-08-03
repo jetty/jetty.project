@@ -44,10 +44,13 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class DeferredAuthenticator extends DelegateAuthenticator
 {
+    private final DeferredAuthentication _deferred;
+    
     /* ------------------------------------------------------------ */
     public DeferredAuthenticator(Authenticator delegate)
     {
         super(delegate);
+        _deferred=new DeferredAuthentication(delegate);
     }
 
     /* ------------------------------------------------------------ */
@@ -57,10 +60,9 @@ public class DeferredAuthenticator extends DelegateAuthenticator
      */
     public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
     {
-        if (!mandatory)
-        {
-            return new DeferredAuthentication(_delegate,request,response);
-        }
+        if (!(mandatory || _delegate.isMandatory(request)))
+            return _deferred;
+        
         return _delegate.validateRequest(request,response,mandatory);
     }
 
@@ -70,19 +72,15 @@ public class DeferredAuthenticator extends DelegateAuthenticator
     public static class DeferredAuthentication implements Authentication.Deferred
     {
         protected final Authenticator _authenticator;
-        protected final ServletRequest _request;
-        protected final ServletResponse _response;
 
         private IdentityService _identityService;
         private Object _previousAssociation;
 
-        public DeferredAuthentication(Authenticator authenticator, ServletRequest request, ServletResponse response)
+        public DeferredAuthentication(Authenticator authenticator)
         {
             if (authenticator == null)
                 throw new NullPointerException("No Authenticator");
             this._authenticator = authenticator;
-            this._request = request;
-            this._response = response;
         }
         
         /* ------------------------------------------------------------ */
@@ -107,11 +105,11 @@ public class DeferredAuthenticator extends DelegateAuthenticator
         /**
          * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate()
          */
-        public Authentication authenticate()
+        public Authentication authenticate(ServletRequest request)
         {
             try
             {
-                Authentication authentication = _authenticator.validateRequest(_request,__nullResponse,false);
+                Authentication authentication = _authenticator.validateRequest(request,__nullResponse,false);
                 
                 if (authentication!=null && (authentication instanceof Authentication.User) && !(authentication instanceof Authentication.ResponseSent))
                 {
@@ -135,7 +133,7 @@ public class DeferredAuthenticator extends DelegateAuthenticator
         {
             try
             {
-                Authentication authentication = _authenticator.validateRequest(_request,response,true);
+                Authentication authentication = _authenticator.validateRequest(request,response,true);
                 if (authentication instanceof Authentication.User && _identityService!=null)
                     _previousAssociation=_identityService.associate(((Authentication.User)authentication).getUserIdentity());
                 return authentication;
@@ -328,4 +326,5 @@ public class DeferredAuthenticator extends DelegateAuthenticator
         {
         }
     };
+    
 }

@@ -62,6 +62,15 @@ public interface Authenticator
      */
     Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException;
     
+    /* ------------------------------------------------------------ */
+    /** Ask Authenticator if authentication is mandatory for a specific request.
+     * This allows authenticators like FORM authentication to be called for specific requests like j_security_check,
+     * even if there is not constraint.
+     * 
+     * @param request
+     * @return
+     */
+    boolean isMandatory(ServletRequest request);
     
     /* ------------------------------------------------------------ */
     /**
