@@ -165,6 +165,11 @@ public class WebInfConfiguration implements Configuration
             IO.delete(context.getTempDirectory());
             setTempDirectory(null, context);
         }
+        
+        context.setAttribute(CONTAINER_JAR_RESOURCES, null);
+        context.setAttribute(WEB_INF_JAR_RESOURCES, null);
+        context.setAttribute(TEMPDIR_CREATED, null);
+        context.setAttribute(context.TEMPDIR, null);
     }
 
    

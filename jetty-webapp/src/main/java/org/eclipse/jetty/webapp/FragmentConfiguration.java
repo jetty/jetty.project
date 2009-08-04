@@ -69,13 +69,12 @@ public class FragmentConfiguration implements Configuration
 
     public void deconfigure(WebAppContext context) throws Exception
     {
-        // TODO Auto-generated method stub
+        context.setAttribute(FRAGMENT_RESOURCES, null);
 
     }
 
     public void postConfigure(WebAppContext context) throws Exception
     {
-        // TODO Auto-generated method stub
     }
 
     /* ------------------------------------------------------------------------------- */

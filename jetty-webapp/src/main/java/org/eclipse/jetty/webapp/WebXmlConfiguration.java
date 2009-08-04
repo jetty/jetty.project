@@ -173,7 +173,12 @@ public class WebXmlConfiguration implements Configuration
             ((ErrorPageErrorHandler) 
                     context.getErrorHandler()).setErrorPages(null);
 
-        
+
         // TODO remove classpaths from classloader
+
+        context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, null); 
+        context.setAttribute(WebXmlProcessor.METADATA_COMPLETE, null);
+        context.setAttribute(WebXmlProcessor.WEBXML_VERSION, null);
+        context.setAttribute(WebXmlProcessor.WEBXML_CLASSNAMES, null);
     }
 }
