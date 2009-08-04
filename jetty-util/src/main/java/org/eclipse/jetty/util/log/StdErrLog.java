@@ -59,6 +59,11 @@ public class StdErrLog implements Logger
         _debug=Boolean.parseBoolean(System.getProperty(name+".DEBUG",Boolean.toString(__debug)));
     }
     
+    public String getName()
+    {
+        return _name;
+    }
+    
     public boolean isDebugEnabled()
     {
         return _debug;
@@ -83,14 +88,14 @@ public class StdErrLog implements Logger
     {
         String d=_dateCache.now();
         int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":INFO:  "+msg);
+        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":INFO:"+_name+":"+msg);
     }
 
     public void info(String msg,Object arg0, Object arg1)
     {
         String d=_dateCache.now();
         int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":INFO:  "+format(msg,arg0,arg1));
+        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":INFO:"+_name+":"+format(msg,arg0,arg1));
     }
     
     public void debug(String msg,Throwable th)
@@ -99,7 +104,7 @@ public class StdErrLog implements Logger
         {
             String d=_dateCache.now();
             int ms=_dateCache.lastMs();
-            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":DEBUG: "+msg);
+            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":DBUG:"+_name+":"+msg);
             if (th!=null) 
             {
                 if (_hideStacks)
@@ -116,7 +121,7 @@ public class StdErrLog implements Logger
         {
             String d=_dateCache.now();
             int ms=_dateCache.lastMs();
-            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":DEBUG: "+msg);
+            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":DBUG:"+_name+":"+msg);
         }
     }
     
@@ -126,7 +131,7 @@ public class StdErrLog implements Logger
         {
             String d=_dateCache.now();
             int ms=_dateCache.lastMs();
-            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":DEBUG: "+format(msg,arg0,arg1));
+            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":DBUG:"+_name+":"+format(msg,arg0,arg1));
         }
     }
     
@@ -134,21 +139,21 @@ public class StdErrLog implements Logger
     {
         String d=_dateCache.now();
         int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":WARN:  "+msg);
+        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":WARN:"+_name+":"+msg);
     }
     
     public void warn(String msg,Object arg0, Object arg1)
     {
         String d=_dateCache.now();
         int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":WARN:  "+format(msg,arg0,arg1));
+        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":WARN:"+_name+":"+format(msg,arg0,arg1));
     }
     
     public void warn(String msg, Throwable th)
     {
         String d=_dateCache.now();
         int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":WARN:  "+msg);
+        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":WARN:"+_name+":"+msg);
         if (th!=null) 
         {
             if (_hideStacks)

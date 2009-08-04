@@ -37,4 +37,6 @@ public interface Logger
     public void warn(String msg,Object arg0, Object arg1);
     public void warn(String msg, Throwable th);
     public Logger getLogger(String name);
+    
+    public String getName();
 }

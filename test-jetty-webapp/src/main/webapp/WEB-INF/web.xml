@@ -7,6 +7,11 @@
 
   <display-name>Test WebApp</display-name>
   
+  <context-param>
+    <param-name>org.eclipse.jetty.server.context.ManagedAttributes</param-name>
+    <param-value>org.eclipse.jetty.servlets.ProxyServlet.Logger,org.eclipse.jetty.servlets.ProxyServlet.ThreadPool,org.eclipse.jetty.servlets.ProxyServlet.HttpClient</param-value>
+  </context-param>
+  
   <!-- Declare TestListener, which declares TestFilter -->
   <listener>
     <listener-class>com.acme.TestListener</listener-class>

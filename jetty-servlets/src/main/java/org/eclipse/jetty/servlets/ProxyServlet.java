@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 
 /**
@@ -54,15 +55,24 @@ import org.eclipse.jetty.util.log.Logger;
  * 
  * Forward requests to another server either as a standard web proxy (as defined by
  * RFC2616) or as a transparent proxy.
- * 
+ * <p>
  * This servlet needs the jetty-util and jetty-client classes to be available to
  * the web application.
- * 
- * This servlet has a a logger called "org.eclipse.jetty.servlets.ProxyServlet".
+ * <p>
+ * To facilitate JMX monitoring, the "HttpClient", it's "ThreadPool" and the "Logger"
+ * are set as context attributes prefixed with "org.eclipse.jetty.servlets."+name
+ * (unless otherwise set with attrPrefix). This attribute prefix is also used for the
+ * logger name.
+ * <p>
+ * The following init parameters may be used to configure the servlet: <ul>
+ * <li>name - Name of Proxy servlet (default: "ProxyServlet"
+ * <li>maxThreads - maximum threads
+ * <li>maxConnections - maximum connections per destination
+ * </ul> 
  */
 public class ProxyServlet implements Servlet
 {
-    private static Logger __log = Log.getLogger("org.eclipse.jetty.servlets.ProxyServlet");
+    protected Logger _log; 
     
     HttpClient _client;
 
@@ -79,23 +89,44 @@ public class ProxyServlet implements Servlet
         _DontProxyHeaders.add("upgrade");
     }
 
-    private ServletConfig config;
-    private ServletContext context;
+    protected ServletConfig _config;
+    protected ServletContext _context;
+    protected String _name="ProxyServlet";
 
     /* (non-Javadoc)
      * @see javax.servlet.Servlet#init(javax.servlet.ServletConfig)
      */
     public void init(ServletConfig config) throws ServletException
     {
-        this.config=config;
-        this.context=config.getServletContext();
+        _config=config;
+        _context=config.getServletContext();
 
         _client=new HttpClient();
-        //_client.setConnectorType(HttpClient.CONNECTOR_SOCKET);
         _client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        
         try
         {
+            String t = config.getInitParameter("attrPrefix");
+            if (t!=null)
+                _name=t;
+            _log= Log.getLogger("org.eclipse.jetty.servlets."+_name);
+
+            t = config.getInitParameter("maxThreads");
+            if (t!=null)
+                _client.setThreadPool(new QueuedThreadPool(Integer.parseInt(t)));
+            else
+                _client.setThreadPool(new QueuedThreadPool());
+            ((QueuedThreadPool)_client.getThreadPool()).setName(_name.substring(_name.lastIndexOf('.')+1));
+            
+            t = config.getInitParameter("maxConnections");
+            if (t!=null)
+                _client.setMaxConnectionsPerAddress(Integer.parseInt(t));
+            
             _client.start();
+            
+            _context.setAttribute("org.eclipse.jetty.servlets."+_name+".Logger",_log);
+            _context.setAttribute("org.eclipse.jetty.servlets."+_name+".ThreadPool",_client.getThreadPool());
+            _context.setAttribute("org.eclipse.jetty.servlets."+_name+".HttpClient",_client);
         }
         catch (Exception e)
         {
@@ -108,7 +139,7 @@ public class ProxyServlet implements Servlet
      */
     public ServletConfig getServletConfig()
     {
-        return config;
+        return _config;
     }
 
     /* (non-Javadoc)
@@ -117,7 +148,7 @@ public class ProxyServlet implements Servlet
     public void service(ServletRequest req, ServletResponse res) throws ServletException,
             IOException
     {
-        final int debug=__log.isDebugEnabled()?req.hashCode():0;
+        final int debug=_log.isDebugEnabled()?req.hashCode():0;
         
         final HttpServletRequest request = (HttpServletRequest)req;
         final HttpServletResponse response = (HttpServletResponse)res;
@@ -146,7 +177,7 @@ public class ProxyServlet implements Servlet
 		                         uri);
 		
 		if (debug!=0)
-		    __log.debug(debug+" proxy "+uri+"-->"+url);
+		    _log.debug(debug+" proxy "+uri+"-->"+url);
 		    
 		if (url==null)
 		{
@@ -167,14 +198,14 @@ public class ProxyServlet implements Servlet
                     protected void onResponseComplete() throws IOException
                     {
                         if (debug!=0)
-                            __log.debug(debug+" complete");
+                            _log.debug(debug+" complete");
                         continuation.complete();
                     }
 
                     protected void onResponseContent(Buffer content) throws IOException
                     {
                         if (debug!=0)
-                            __log.debug(debug+" content"+content.length());
+                            _log.debug(debug+" content"+content.length());
                         content.writeTo(out);
                     }
 
@@ -185,7 +216,7 @@ public class ProxyServlet implements Servlet
                     protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
                     {
                         if (debug!=0)
-                            __log.debug(debug+" "+version+" "+status+" "+reason);
+                            _log.debug(debug+" "+version+" "+status+" "+reason);
                         
                         if (reason!=null && reason.length()>0)
                             response.setStatus(status,reason.toString());
@@ -201,12 +232,12 @@ public class ProxyServlet implements Servlet
                             HttpHeaderValues.CLOSE_BUFFER.equals(value)))
                         {
                             if (debug!=0)
-                                __log.debug(debug+" "+name+": "+value);
+                                _log.debug(debug+" "+name+": "+value);
                             
                             response.addHeader(name.toString(),value.toString());
                         }
                         else if (debug!=0)
-                                __log.debug(debug+" "+name+"! "+value);
+                                _log.debug(debug+" "+name+"! "+value);
                     }
 
                     protected void onConnectionFailed(Throwable ex)
@@ -243,7 +274,7 @@ public class ProxyServlet implements Servlet
                 exchange.setVersion(request.getProtocol());
                 
                 if (debug!=0)
-                    __log.debug(debug+" "+request.getMethod()+" "+url+" "+request.getProtocol());
+                    _log.debug(debug+" "+request.getMethod()+" "+url+" "+request.getProtocol());
 
                 // check connection header
                 String connectionHdr = request.getHeader("Connection");
@@ -290,7 +321,7 @@ public class ProxyServlet implements Servlet
                         if (val!=null)
                         {
                             if (debug!=0)
-                                __log.debug(debug+" "+hdr+": "+val);
+                                _log.debug(debug+" "+hdr+": "+val);
 
                             exchange.setRequestHeader(hdr,val);
                         }
@@ -386,7 +417,7 @@ public class ProxyServlet implements Servlet
     /**
      * Transparent Proxy.
      * 
-     * This convenience extension to AsyncProxyServlet configures the servlet
+     * This convenience extension to ProxyServlet configures the servlet
      * as a transparent proxy.   The servlet is configured with init parameter:<ul>
      * <li> ProxyTo - a URI like http://host:80/context to which the request is proxied.
      * <li> Prefix  - a URI prefix that is striped from the start of the forwarded URI.
@@ -410,6 +441,7 @@ public class ProxyServlet implements Servlet
             _proxyTo="http://"+server+":"+port;
         }
 
+        @Override
         public void init(ServletConfig config) throws ServletException
         {
             if (config.getInitParameter("ProxyTo")!=null)
@@ -419,9 +451,10 @@ public class ProxyServlet implements Servlet
             if (_proxyTo==null)
                 throw new UnavailableException("No ProxyTo");
             super.init(config);
-            config.getServletContext().log("Transparent AsyncProxyServlet @ "+(_prefix==null?"-":_prefix)+ " to "+_proxyTo);
+            _log.info(_name+" @ "+(_prefix==null?"-":_prefix)+ " to "+_proxyTo);
         }
         
+        @Override
         protected HttpURI proxyHttpURI(final String scheme, final String serverName, int serverPort, final String uri) throws MalformedURLException
         {
             if (_prefix!=null && !uri.startsWith(_prefix))

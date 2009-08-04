@@ -71,7 +71,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * servlet path, plus setting the context classloader.
  * 
  * <p>
- * If the context init parameter "org.eclipse.jetty.servlet.ManagedAttributes"
+ * If the context init parameter "org.eclipse.jetty.server.context.ManagedAttributes"
  * is set to a coma separated list of names, then they are treated as context
  * attribute names, which if set as attributes are passed to the servers Container
  * so that they may be managed with JMX.
@@ -84,7 +84,7 @@ import org.eclipse.jetty.util.resource.Resource;
 public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful, CompleteHandler
 {
     private static final ThreadLocal<Context> __context=new ThreadLocal<Context>();
-    public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.servlet.ManagedAttributes";
+    public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
     
     /* ------------------------------------------------------------ */
     /** Get the current ServletContext implementation.
@@ -124,7 +124,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     private Object _contextAttributeListeners;
     private Object _requestListeners;
     private Object _requestAttributeListeners;
-    private Set<String> _managedAttributes;
+    private Map<String,Object> _managedAttributes;
 
     private boolean _shutdown=false;
     private boolean _available=true;  
@@ -612,6 +612,23 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     protected void startContext()
     	throws Exception
     {
+        String managedAttributes = _initParams.get(MANAGED_ATTRIBUTES);
+        if (managedAttributes!=null)
+        {
+            _managedAttributes=new HashMap<String,Object>();
+            String[] attributes = managedAttributes.split(",");
+            for (String attribute : attributes)
+                _managedAttributes.put(attribute,null);
+            
+            Enumeration e = _scontext.getAttributeNames();
+            while(e.hasMoreElements())
+            {
+                String name = (String)e.nextElement();
+                Object value = _scontext.getAttribute(name);
+                setManagedAttribute(name,value);
+            }
+        }       
+        
         super.doStart();
 
         if (_errorHandler!=null)
@@ -627,21 +644,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
         }
 
-        String managedAttributes = _initParams.get(MANAGED_ATTRIBUTES);
-        if (managedAttributes!=null)
-        {
-            _managedAttributes=new HashSet<String>();
-            String[] attributes = managedAttributes.split(",");
-            _managedAttributes.addAll(Arrays.asList(attributes));
-
-            Enumeration e = _scontext.getAttributeNames();
-            while(e.hasMoreElements())
-            {
-                String name = (String)e.nextElement();
-                Object value = _scontext.getAttribute(name);
-                setManagedAttribute(name,value);
-            }
-        }       
     }
     
     /* ------------------------------------------------------------ */
@@ -1064,13 +1066,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* ------------------------------------------------------------ */
     private void setManagedAttribute(String name, Object value)
     {   
-        if (_managedAttributes!=null && _managedAttributes.contains(name))
+        if (_managedAttributes!=null && _managedAttributes.containsKey(name))
         {
-            Object o =_scontext.getAttribute(name);
-            if (o!=null)
-                getServer().getContainer().removeBean(o);
+            Object old =_managedAttributes.put(name,value);
+            if (old!=null)
+                getServer().getContainer().removeBean(old);
             if (value!=null)
+            {
+                _logger.info("Managing "+name);
                 getServer().getContainer().addBean(value);
+            }
         }
     }
     
