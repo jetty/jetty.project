@@ -5,13 +5,13 @@
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
 //
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 //
 // The Apache License v2.0 is available at
 // http://www.apache.org/licenses/LICENSE-2.0.txt
 //
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.test.rfcs;
@@ -89,9 +89,9 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         {
             testWorkDir.mkdirs();
         }
-        
+
         System.setProperty("java.io.tmpdir",testWorkDir.getAbsolutePath());
-        
+
         server = getJettyServer();
         server.load();
         server.start();
@@ -805,7 +805,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
 
         assertEquals("Response Count",2,responses.size()); // Should have 2 responses
 
-        response = responses.get(0); // Only interested in first response 
+        response = responses.get(0); // Only interested in first response
         response.assertHeaderExists("9.2 OPTIONS","Allow");
         // Header expected ...
         // Allow: GET, HEAD, POST, TRACE, OPTIONS
@@ -862,7 +862,20 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
             int headResponseLength = rawHeadResponse.length();
             // Only interested in the response header from the GET request above.
             String rawGetResponse = response.getRawResponse().toString().substring(0,headResponseLength);
-            assertEquals("9.4 HEAD equals GET",rawHeadResponse,rawGetResponse);
+
+            // As there is a possibility that the time between GET and HEAD requests
+            // can cross the second mark. (eg: GET at 11:00:00.999 and HEAD at 11:00:01.001)
+            // So with that knowledge, we will remove the 'Date:' header from both sides before comparing.
+            List<String> linesGet = StringUtil.asLines(rawGetResponse);
+            List<String> linesHead = StringUtil.asLines(rawHeadResponse);
+
+            StringUtil.removeStartsWith("Date: ",linesGet);
+            StringUtil.removeStartsWith("Date: ",linesHead);
+
+            // Compare the 2 lists of lines to make sure they contain the same information
+            // Do not worry about order of the headers, as that's not important to test,
+            // just the existence of the same headers
+            StringAssert.assertContainsSame("9.4 HEAD equals GET",linesGet,linesHead);
         }
         finally
         {
@@ -932,8 +945,8 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
 
         response.assertStatus("10.2.7 Partial Content",HttpStatus.PARTIAL_CONTENT_206);
 
-        // (point 1) A 206 response MUST contain either a Content-Range header 
-        // field (section 14.16) indicating the range included with this 
+        // (point 1) A 206 response MUST contain either a Content-Range header
+        // field (section 14.16) indicating the range included with this
         // response, or a multipart/byteranges Content-Type including Content-Range
         // fields for each part. If a Content-Length header field is present
         // in the response, its value MUST match the actual number of OCTETs
@@ -952,7 +965,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         // (point 2) A 206 response MUST contain a Date header
         response.assertHeaderExists("10.2.7 Partial Content / Response / Date","Date");
 
-        // (point 3) A 206 response MUST contain ETag and/or Content-Location, 
+        // (point 3) A 206 response MUST contain ETag and/or Content-Location,
         // if the header would have been sent in a 200 response to the same request
         if (noRangeHasContentLocation)
         {
@@ -963,8 +976,8 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
             response.assertHeaderExists("10.2.7 Partial Content / Content-Location","ETag");
         }
 
-        // (point 4) A 206 response MUST contain Expires, Cache-Control, and/or Vary, 
-        // if the field-value might differ from that sent in any previous response 
+        // (point 4) A 206 response MUST contain Expires, Cache-Control, and/or Vary,
+        // if the field-value might differ from that sent in any previous response
         // for the same variant
 
         // TODO: Not sure how to test this condition.
@@ -1122,7 +1135,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
     @Test
     public void test14_16_NoRange() throws Exception
     {
-        // 
+        //
         // calibrate with normal request (no ranges); if this doesnt
         // work, dont expect ranges to work either
         //
@@ -1141,10 +1154,10 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
 
     private void assertBadContentRange(String rangedef) throws IOException
     {
-        // 
+        //
         // server should ignore all range headers which include
         // at least one syntactically invalid range
-        // 
+        //
 
         StringBuffer req1 = new StringBuffer();
         req1.append("GET /rfc2616-webapp/alpha.txt HTTP/1.1\n");
@@ -1280,7 +1293,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         // should test for combinations of good and syntactically
         // invalid ranges here, but I am not certain what the right
         // behavior is anymore
-        // 
+        //
         // return data for valid ranges while ignoring unsatisfiable
         // ranges
 
@@ -1322,7 +1335,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         // should test for combinations of good and syntactically
         // invalid ranges here, but I am not certain what the right
         // behavior is anymore
-        // 
+        //
         // return data for valid ranges while ignoring unsatisfiable
         // ranges
 
@@ -1361,7 +1374,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         // should test for combinations of good and syntactically
         // invalid ranges here, but I am not certain what the right
         // behavior is anymore
-        // 
+        //
         // return data for valid ranges while ignoring unsatisfiable
         // ranges
 
@@ -1502,7 +1515,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
     @Test
     public void test14_35_Range() throws Exception
     {
-        // 
+        //
         // test various valid range specs that have not been
         // tested yet
         //
@@ -1657,7 +1670,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
     @Test
     public void test14_35_PartialRange() throws Exception
     {
-        // 
+        //
         // test various valid range specs that have not been
         // tested yet
         //

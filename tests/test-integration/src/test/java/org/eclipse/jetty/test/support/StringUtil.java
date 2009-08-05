@@ -5,21 +5,30 @@
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
 //
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 //
 // The Apache License v2.0 is available at
 // http://www.apache.org/licenses/LICENSE-2.0.txt
 //
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.test.support;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
+
+import org.eclipse.jetty.util.IO;
+
 public class StringUtil
 {
     public static final String LN = System.getProperty("line.separator");
-    
+
     public static boolean isBlank(String str)
     {
         if (str == null)
@@ -103,7 +112,7 @@ public class StringUtil
 
         return ret;
     }
-    
+
     /**
      * Utility method to convert "\n" found to "\r\n" if running on windows.
      * 
@@ -131,10 +140,46 @@ public class StringUtil
                         ret.append(LN);
                         linesep = false;
                     }
-                    ret.append(c);
+                ret.append(c);
             }
         }
 
         return ret.toString();
+    }
+
+    public static List<String> asLines(String raw) throws IOException
+    {
+        List<String> lines = new ArrayList<String>();
+        StringReader sreader = null;
+        BufferedReader buf = null;
+        try
+        {
+            sreader = new StringReader(raw);
+            buf = new BufferedReader(sreader);
+            String line;
+            while ((line = buf.readLine()) != null)
+            {
+                lines.add(line);
+            }
+        }
+        finally
+        {
+            IO.close(buf);
+            IO.close(sreader);
+        }
+        return lines;
+    }
+
+    public static void removeStartsWith(String prefix, List<String> lines)
+    {
+        ListIterator<String> it = lines.listIterator();
+        while (it.hasNext())
+        {
+            String line = it.next();
+            if (line.startsWith(prefix))
+            {
+                it.remove();
+            }
+        }
     }
 }
