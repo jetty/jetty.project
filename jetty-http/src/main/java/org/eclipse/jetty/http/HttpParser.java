@@ -1041,7 +1041,7 @@ public class HttpParser implements Parser
                 parseNext();
 
                 // parse until some progress is made (or IOException thrown for timeout)
-                while(_endp.isOpen() && _contentView.length() == 0 && !isState(HttpParser.STATE_END))
+                while(_contentView.length() == 0 && !isState(HttpParser.STATE_END) && _endp.isOpen())
                 {
                     // Try to get more _parser._content
                     parseNext();
@@ -1058,7 +1058,7 @@ public class HttpParser implements Parser
             parseNext();
             
             // parse until some progress is made (or IOException thrown for timeout)
-            while(_endp.isOpen() && _contentView.length() == 0 && !isState(HttpParser.STATE_END))
+            while(_contentView.length() == 0 && !isState(HttpParser.STATE_END) && _endp.isOpen())
             {
                 if (!_endp.blockReadable(maxIdleTime))
                 {
