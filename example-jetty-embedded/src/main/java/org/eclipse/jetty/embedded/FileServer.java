@@ -21,10 +21,13 @@ import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
-/**
+/** Simple Jetty FileServer.
+ * This is a simple example of Jetty configured as a FileServer.
+ * 
  * File server Usage - java org.eclipse.jetty.server.example.FileServer [ port [
  * docroot ]]
  * 
+ * @see FileServerXml for the equivalent example done in XML configuration.
  * @author gregw
  * 
  */
