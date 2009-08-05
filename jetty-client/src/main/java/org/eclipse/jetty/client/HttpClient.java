@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
@@ -86,7 +88,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     private int _connectorType = CONNECTOR_SELECT_CHANNEL;
     private boolean _useDirectBuffers = true;
     private int _maxConnectionsPerAddress = Integer.MAX_VALUE;
-    private Map<Address, HttpDestination> _destinations = new HashMap<Address, HttpDestination>();
+    private ConcurrentMap<Address, HttpDestination> _destinations = new ConcurrentHashMap<Address, HttpDestination>();
     ThreadPool _threadPool;
     Connector _connector;
     private long _idleTimeout = 20000;
@@ -222,22 +224,21 @@ public class HttpClient extends HttpBuffers implements Attributes
         if (remote == null)
             throw new UnknownHostException("Remote socket address cannot be null.");
 
-        synchronized (_destinations)
+        HttpDestination destination = _destinations.get(remote);
+        if (destination == null)
         {
-            HttpDestination destination = _destinations.get(remote);
-            if (destination == null)
+            destination = new HttpDestination(this, remote, ssl, _maxConnectionsPerAddress);
+            if (_proxy != null && (_noProxy == null || !_noProxy.contains(remote.getHost())))
             {
-                destination = new HttpDestination(this, remote, ssl, _maxConnectionsPerAddress);
-                if (_proxy != null && (_noProxy == null || !_noProxy.contains(remote.getHost())))
-                {
-                    destination.setProxy(_proxy);
-                    if (_proxyAuthentication != null)
-                        destination.setProxyAuthentication(_proxyAuthentication);
-                }
-                _destinations.put(remote, destination);
+                destination.setProxy(_proxy);
+                if (_proxyAuthentication != null)
+                    destination.setProxyAuthentication(_proxyAuthentication);
             }
-            return destination;
+            HttpDestination other =_destinations.putIfAbsent(remote, destination);
+            if (other!=null)
+                destination=other;
         }
+        return destination;
     }
 
     /* ------------------------------------------------------------ */

@@ -3,6 +3,7 @@ jetty-7.0.0.RC3-SNAPSHOT
  + JETTY-1074 JMX thread manipulation
  + Improved deferred authentication handling
  + 285697 extract parameters if dispatch has query
+ + 282447 concurrent destinations in HttpClient
 
 jetty-7.0.0.RC2 29 June 2009
  + 283844 Webapp / TLD errors are not clear
