@@ -302,7 +302,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 r = _contextHandler.newResource(u);
             }
            
-            if (Log.isDebugEnabled()) Log.debug("RESOURCE="+r);
+            if (Log.isDebugEnabled()) 
+                Log.debug("RESOURCE "+pathInContext+"="+r);
         }
         catch (IOException e)
         {
@@ -581,7 +582,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         for (int i=0;i<_welcomes.length;i++)
         {
             Resource welcome=getResource(URIUtil.addPaths(pathInContext,_welcomes[i]));
-            if (welcome.exists())
+            if (welcome!=null && welcome.exists())
                 return _welcomes[i];
         }
 

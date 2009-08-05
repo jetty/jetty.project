@@ -601,6 +601,9 @@ public class WebInfConfiguration implements Configuration
         List<Resource> jarResources = new ArrayList<Resource>();
         
         Resource web_inf = context.getWebInf();
+        if (web_inf==null || !web_inf.exists())
+            return null;
+        
         Resource web_inf_lib = web_inf.addPath("/lib");
        
         
