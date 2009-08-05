@@ -51,6 +51,7 @@ public interface IdentityService
     /* ------------------------------------------------------------ */
     /**
      * Associate a runas Token with the current user and thread.
+     * @param user The UserIdentity
      * @param token The runAsToken to associate.
      * @return The previous runAsToken or null.
      */

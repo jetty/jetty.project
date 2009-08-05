@@ -234,6 +234,10 @@ public class FormAuthenticator extends LoginAuthenticator
                     return authentication;
             }
 
+            // if we can't send challenge
+            if (_deferred.isDeferred(response))
+                return Authentication.UNAUTHENTICATED; 
+            
             // remember the current URI
             synchronized (session)
             {
@@ -246,11 +250,7 @@ public class FormAuthenticator extends LoginAuthenticator
                     session.setAttribute(__J_URI, buf.toString());
                 }
             }
-
-            // if we can't send challenge
-            if (_deferred.isDeferred(response))
-                return Authentication.UNAUTHENTICATED; 
-                
+            
             // send the the challenge
             if (_dispatch)
             {

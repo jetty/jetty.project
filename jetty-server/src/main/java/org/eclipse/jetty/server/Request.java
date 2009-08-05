@@ -1168,12 +1168,26 @@ public class Request implements HttpServletRequest
     {
         return _uri;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public UserIdentity getUserIdentity()
     {
         if (_authentication instanceof Authentication.Deferred)
             setAuthentication(((Authentication.Deferred)_authentication).authenticate(this));
         
+        if (_authentication instanceof Authentication.User)
+            return ((Authentication.User)_authentication).getUserIdentity();
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The resolved user Identity, which may be null if the 
+     * {@link Authentication} is not {@link Authentication.User} 
+     * (eg. {@link Authentication.Deferred}).
+     */
+    public UserIdentity getResolvedUserIdentity()
+    {
         if (_authentication instanceof Authentication.User)
             return ((Authentication.User)_authentication).getUserIdentity();
         return null;

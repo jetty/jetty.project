@@ -513,7 +513,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
 
             // Handle run as
             if (_identityService!=null)
-                old_run_as=_identityService.setRunAs(baseRequest.getUserIdentity(),_runAsToken);
+                old_run_as=_identityService.setRunAs(baseRequest.getResolvedUserIdentity(),_runAsToken);
             
             if (!isAsyncSupported())
                 baseRequest.setAsyncSupported(false);
