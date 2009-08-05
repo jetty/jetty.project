@@ -4,6 +4,7 @@ jetty-7.0.0.RC3-SNAPSHOT
  + Improved deferred authentication handling
  + 285697 extract parameters if dispatch has query
  + 282447 concurrent destinations in HttpClient
+ + 283513 Check endp.isOpen when blocking read
 
 jetty-7.0.0.RC2 29 June 2009
  + 283844 Webapp / TLD errors are not clear
