@@ -135,8 +135,8 @@ public class Dispatcher implements RequestDispatcher
         
         // TODO - allow stream or writer????
         
-        DispatcherType old_type = baseRequest.getDispatcherType();
-        Attributes old_attr=baseRequest.getAttributes();
+        final DispatcherType old_type = baseRequest.getDispatcherType();
+        final Attributes old_attr=baseRequest.getAttributes();
         MultiMap old_params=baseRequest.getParameters();
         try
         {
@@ -150,6 +150,13 @@ public class Dispatcher implements RequestDispatcher
                 
                 if (query!=null)
                 {
+                    // force parameter extraction
+                    if (old_params==null)
+                    {
+                        baseRequest.extractParameters();
+                        old_params=baseRequest.getParameters();
+                    }
+                    
                     MultiMap parameters=new MultiMap();
                     UrlEncoded.decodeTo(query,parameters,request.getCharacterEncoding());
                     
@@ -165,7 +172,6 @@ public class Dispatcher implements RequestDispatcher
                             for (int i=0;i<LazyList.size(values);i++)
                                 parameters.add(name, LazyList.get(values, i));
                         }
-                        
                     }
                     baseRequest.setParameters(parameters);
                 }
@@ -205,14 +211,14 @@ public class Dispatcher implements RequestDispatcher
         base_response.fwdReset();
         request.removeAttribute(__JSP_FILE); // TODO remove when glassfish 1044 is fixed
         
-        String old_uri=baseRequest.getRequestURI();
-        String old_context_path=baseRequest.getContextPath();
-        String old_servlet_path=baseRequest.getServletPath();
-        String old_path_info=baseRequest.getPathInfo();
-        String old_query=baseRequest.getQueryString();
-        Attributes old_attr=baseRequest.getAttributes();
+        final String old_uri=baseRequest.getRequestURI();
+        final String old_context_path=baseRequest.getContextPath();
+        final String old_servlet_path=baseRequest.getServletPath();
+        final String old_path_info=baseRequest.getPathInfo();
+        final String old_query=baseRequest.getQueryString();
+        final Attributes old_attr=baseRequest.getAttributes();
+        final DispatcherType old_type=baseRequest.getDispatcherType();
         MultiMap old_params=baseRequest.getParameters();
-        DispatcherType old_type=baseRequest.getDispatcherType();
         
         try
         {
@@ -227,6 +233,13 @@ public class Dispatcher implements RequestDispatcher
                 String query=_dQuery;
                 if (query!=null)
                 {
+                    // force parameter extraction
+                    if (old_params==null)
+                    {
+                        baseRequest.extractParameters();
+                        old_params=baseRequest.getParameters();
+                    }
+                    
                     // extract parameters from dispatch query
                     MultiMap parameters=new MultiMap();
                     UrlEncoded.decodeTo(query,parameters,request.getCharacterEncoding());

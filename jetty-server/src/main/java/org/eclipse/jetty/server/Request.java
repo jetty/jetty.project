@@ -187,10 +187,10 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    /*
+    /**
      * Extract Paramters from query string and/or form _content.
      */
-    private void extractParameters()
+    public void extractParameters()
     {
         if (_baseParameters == null) 
             _baseParameters = new MultiMap(16);
@@ -214,7 +214,6 @@ public class Request implements HttpServletRequest
                 try
                 {
                     _uri.decodeQueryTo(_baseParameters,_queryEncoding);
-
                 }
                 catch (UnsupportedEncodingException e)
                 {
@@ -224,7 +223,6 @@ public class Request implements HttpServletRequest
                         Log.warn(e.toString());
                 }
             }
-
         }
 
         // handle any _content.
