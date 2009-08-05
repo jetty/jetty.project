@@ -683,10 +683,13 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the parameters.
+     * @return Returns the current parameters
+     * @see #getParameterMap();
      */
     public MultiMap getParameters()
     {
+        if (!_paramsExtracted) 
+            extractParameters();
         return _parameters;
     }
 
