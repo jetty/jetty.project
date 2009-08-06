@@ -113,15 +113,25 @@ public class JarResource extends URLResource
         InputStream is = url.openStream();
         return is;
     }
-    
+
     /* ------------------------------------------------------------ */
-    public static void extract(Resource resource, File directory, boolean deleteOnExit)
+    @Deprecated
+    public void extract(File dest, boolean deleteOnExit)
         throws IOException
     {
-        if(Log.isDebugEnabled())Log.debug("Extract "+resource+" to "+directory);
+        if (deleteOnExit)
+            dest.deleteOnExit();
+        copyTo(dest);
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public void copyTo(File directory)
+        throws IOException
+    {
+        if(Log.isDebugEnabled())Log.debug("Extract "+this+" to "+directory);
         
-        
-        String urlString = resource.getURL().toExternalForm().trim();
+        String urlString = this.getURL().toExternalForm().trim();
         int endOfJarUrl = urlString.indexOf("!/");
         int startOfJarUrl = (endOfJarUrl >= 0?4:0);
         
@@ -213,8 +223,6 @@ public class JarResource extends URLResource
                 if (entry.getTime()>=0)
                     file.setLastModified(entry.getTime());
             }
-            if (deleteOnExit)
-                file.deleteOnExit();
         }
         
         if ((subEntryName == null) || (subEntryName != null && subEntryName.equalsIgnoreCase("META-INF/MANIFEST.MF")))
@@ -231,12 +239,12 @@ public class JarResource extends URLResource
             }
         }
         IO.close(jin);
-    }
-    
-    /* ------------------------------------------------------------ */
-    public void extract(File directory, boolean deleteOnExit)
-        throws IOException
-    {
-        extract(this,directory,deleteOnExit);
     }   
+    
+    public static Resource newJarResource(Resource resource) throws IOException
+    {
+        if (resource instanceof JarResource)
+            return resource;
+        return Resource.newResource("jar:" + resource + "!/");
+    }
 }
