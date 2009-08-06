@@ -84,21 +84,21 @@ public class WebAppContext extends ServletContextHandler
     private boolean _parentLoaderPriority= Boolean.getBoolean("org.eclipse.jetty.server.webapp.parentLoaderPriority");
     private PermissionCollection _permissions;
     private String[] _systemClasses = {
-            "java.",
-            "javax.servlet.",
-            "javax.xml.",
-            "org.xml.",
-            "org.w3c.", 
-            "org.apache.commons.logging.", 
-            "org.apache.log4j.",
-            "org.eclipse.jetty.servlet.",      // webapp cannot change default servlets
+            "java.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2) 
+            "javax.",                          // Java SE classes (per servlet spec v2.5 / SRV.9.7.2) 
+            "org.xml.",                        // needed by javax.xml
+            "org.w3c.",                        // needed by javax.xml
+            "org.apache.commons.logging.",     // special case.
             "org.eclipse.jetty.continuation.", // webapp cannot change continuation classes
-            "org.eclipse.jetty.naming."        // webapp cannot change naming classes
+            "org.eclipse.jetty.jndi.",         // webapp cannot change naming classes
+            "org.eclipse.jetty.plus.jaas.",    // webapp cannot change jetty jaas classes
+            "org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
             };
     private String[] _serverClasses = {
-            "-org.eclipse.jetty.jndi.",       // don't hide naming classes
             "-org.eclipse.jetty.continuation.", // don't hide continuation classes
+            "-org.eclipse.jetty.jndi.",         // don't hide naming classes
             "-org.eclipse.jetty.plus.jaas.",    // don't hide jaas modules
+            "-org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
             "org.eclipse.jetty.",               // hide rest of jetty classes
             "org.slf4j."                        // hide slf4j
             }; 
