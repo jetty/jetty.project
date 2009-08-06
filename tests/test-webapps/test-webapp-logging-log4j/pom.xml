@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>7.0.0.RC3</version>
+    <version>7.0.0.RC4-SNAPSHOT</version>
   </parent>
   <artifactId>test-webapp-logging-log4j</artifactId>
   <name>Jetty Tests :: WebApp :: Log4J Logging</name>
