@@ -13,6 +13,7 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -609,6 +610,13 @@ public abstract class Resource implements Serializable
         }
     }    
     
-    
+    /* ------------------------------------------------------------ */
+    public void copyTo(File destination)
+        throws IOException
+    {
+        if (destination.exists())
+            throw new IllegalArgumentException(destination+" exists");
+        writeTo(new FileOutputStream(destination),0,-1);
+    }
    
 }

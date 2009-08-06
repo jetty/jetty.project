@@ -25,6 +25,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.security.Permission;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 
@@ -347,8 +348,26 @@ public class FileResource extends URLResource
     /**
      * @return the hashcode.
      */
+    @Override
     public int hashCode()
     {
        return null == _file ? super.hashCode() : _file.hashCode();
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public void copyTo(File destination)
+        throws IOException
+    {
+        if (isDirectory())
+        {
+            IO.copyDir(getFile(),destination);
+        }
+        else
+        {
+            if (destination.exists())
+                throw new IllegalArgumentException(destination+" exists");
+            IO.copy(getFile(),destination);
+        }
     }
 }
