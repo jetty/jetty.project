@@ -1,4 +1,6 @@
-jetty-7.0.0.RC3-SNAPSHOT
+jetty-7.0.0.RC4-SNAPSHOT
+
+jetty-7.0.0.RC3 7 August 2009
  + 277403 remove system properties
  + JETTY-1074 JMX thread manipulation
  + Improved deferred authentication handling
