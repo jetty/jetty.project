@@ -99,8 +99,7 @@ public class WebAppContext extends ServletContextHandler
             "-org.eclipse.jetty.jndi.",         // don't hide naming classes
             "-org.eclipse.jetty.plus.jaas.",    // don't hide jaas modules
             "-org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
-            "org.eclipse.jetty.",               // hide rest of jetty classes
-            "org.slf4j."                        // hide slf4j
+            "org.eclipse.jetty."                // hide rest of jetty classes
             }; 
     private File _tmpDir;
     private String _war;
