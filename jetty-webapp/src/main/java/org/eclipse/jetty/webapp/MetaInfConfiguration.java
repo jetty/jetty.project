@@ -85,14 +85,14 @@ public class MetaInfConfiguration implements Configuration
 
     public void deconfigure(WebAppContext context) throws Exception
     {
-        context.setAttribute(METAINF_FRAGMENTS, null); 
-        context.setAttribute(METAINF_RESOURCES, null);
-        context.setAttribute(METAINF_TLDS, null);
+ 
     }
 
     public void postConfigure(WebAppContext context) throws Exception
     {
-        
+        context.setAttribute(METAINF_FRAGMENTS, null); 
+        context.setAttribute(METAINF_RESOURCES, null);
+        context.setAttribute(METAINF_TLDS, null);
     }
 
     public void addResource (WebAppContext context, String attribute, Resource jar)

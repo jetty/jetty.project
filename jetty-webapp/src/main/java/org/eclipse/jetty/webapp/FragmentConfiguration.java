@@ -69,12 +69,12 @@ public class FragmentConfiguration implements Configuration
 
     public void deconfigure(WebAppContext context) throws Exception
     {
-        context.setAttribute(FRAGMENT_RESOURCES, null);
-
+       
     }
 
     public void postConfigure(WebAppContext context) throws Exception
     {
+        context.setAttribute(FRAGMENT_RESOURCES, null);
     }
 
     /* ------------------------------------------------------------------------------- */

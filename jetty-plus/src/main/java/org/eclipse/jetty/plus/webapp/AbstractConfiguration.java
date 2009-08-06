@@ -411,6 +411,13 @@ public abstract class AbstractConfiguration implements Configuration
         context.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);  
     }
    
+    public void postConfigure(WebAppContext context) throws Exception
+    {
+        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, null);
+        context.setAttribute(InjectionCollection.INJECTION_COLLECTION, null);
+        context.setAttribute(RunAsCollection.RUNAS_COLLECTION, null); 
+    }
+
     public void configure (WebAppContext context)
     throws Exception
     {

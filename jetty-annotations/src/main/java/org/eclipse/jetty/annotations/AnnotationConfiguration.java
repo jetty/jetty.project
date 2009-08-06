@@ -83,7 +83,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     public void deconfigure(WebAppContext context) throws Exception
     {
-        context.setAttribute(CLASS_INHERITANCE_MAP, null);
+        
     }
 
 
@@ -91,6 +91,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     public void postConfigure(WebAppContext context) throws Exception
     {
+        context.setAttribute(CLASS_INHERITANCE_MAP, null);
     }
   
 }

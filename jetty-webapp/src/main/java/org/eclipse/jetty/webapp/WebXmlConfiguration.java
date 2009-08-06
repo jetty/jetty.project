@@ -123,8 +123,10 @@ public class WebXmlConfiguration implements Configuration
 
     public void postConfigure(WebAppContext context) throws Exception
     {
-        // TODO Auto-generated method stub
-        
+        context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, null); 
+        context.setAttribute(WebXmlProcessor.METADATA_COMPLETE, null);
+        context.setAttribute(WebXmlProcessor.WEBXML_VERSION, null);
+        context.setAttribute(WebXmlProcessor.WEBXML_CLASSNAMES, null); 
     }
 
   
@@ -176,9 +178,5 @@ public class WebXmlConfiguration implements Configuration
 
         // TODO remove classpaths from classloader
 
-        context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, null); 
-        context.setAttribute(WebXmlProcessor.METADATA_COMPLETE, null);
-        context.setAttribute(WebXmlProcessor.WEBXML_VERSION, null);
-        context.setAttribute(WebXmlProcessor.WEBXML_CLASSNAMES, null);
     }
 }

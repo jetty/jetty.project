@@ -282,13 +282,12 @@ public class TagLibConfiguration implements Configuration
 
     public void postConfigure(WebAppContext context) throws Exception
     {
-        // TODO Auto-generated method stub
-        
+        context.setAttribute(TldProcessor.TAGLIB_PROCESSOR, null);
     }
 
     public void deconfigure(WebAppContext context) throws Exception
     {
-        context.setAttribute(TldProcessor.TAGLIB_PROCESSOR, null);
+        
     }
 
 }

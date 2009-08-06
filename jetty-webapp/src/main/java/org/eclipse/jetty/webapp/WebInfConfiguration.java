@@ -112,8 +112,8 @@ public class WebInfConfiguration implements Configuration
     
     public void postConfigure(WebAppContext context) throws Exception
     {
-        // TODO Auto-generated method stub
-
+        context.setAttribute(CONTAINER_JAR_RESOURCES, null);
+        context.setAttribute(WEB_INF_JAR_RESOURCES, null);
     }
     
 
@@ -166,8 +166,7 @@ public class WebInfConfiguration implements Configuration
             setTempDirectory(null, context);
         }
         
-        context.setAttribute(CONTAINER_JAR_RESOURCES, null);
-        context.setAttribute(WEB_INF_JAR_RESOURCES, null);
+
         context.setAttribute(TEMPDIR_CREATED, null);
         context.setAttribute(context.TEMPDIR, null);
     }
