@@ -1,0 +1,18 @@
+<assembly>
+  <id>site-component</id>
+  <formats>
+    <format>jar</format>
+  </formats>
+  <fileSets>
+    <fileSet>
+      <directory>${basedir}/target/dist-src</directory>
+      <outputDirectory>jetty-distribution-${version}-site-component</outputDirectory>
+      <includes>
+        <include>target/site/**</include>
+        <include>README**</include>
+        <include>VERSION**</include>
+        <include>LICENSES/**</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>
