@@ -39,10 +39,12 @@
               </goals>
               <configuration>
                 <tasks>
+		  <mkdir dir="${assembly.directory}/lib"/>
                   <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.servlet_2.5.0.v200806031605.jar"
                        dest="${assembly.directory}/lib/servlet-api-2.5.jar"
                        usetimestamp="true"
                        verbose="true" />
+		  <mkdir dir="${assembly.directory}/lib/jetty-jndi"/>
                   <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.activation_1.1.0.v200905021805.jar"
                        dest="${assembly.directory}/lib/jetty-jndi/activation-1.1.jar"
                        usetimestamp="true"
