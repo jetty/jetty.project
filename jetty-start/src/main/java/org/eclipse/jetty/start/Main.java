@@ -59,7 +59,7 @@ public class Main
     private boolean _dryRun = false;
     private boolean _secure = false;
     private boolean _fromDaemon = false;
-    private Config _config = new Config();
+    private final Config _config = new Config();
 
     private String _jettyHome;
 
@@ -511,7 +511,7 @@ public class Main
         if (_dumpVersions)
         {
             showClasspathWithVersions(classpath);
-            showActiveSecurityPolicies();
+            showActiveSecurityPolicies(cl);
             return;
         }
 
@@ -737,11 +737,49 @@ public class Main
         }
     }
 
-    private void showActiveSecurityPolicies()
+    private void showActiveSecurityPolicies(ClassLoader cl)
     {
-        // System.out.println("Active Security Policies: ");
 
-        // TODO: put security policy dump here
+        initSecurity(cl);
+
+        Policy policy = Policy.getPolicy();
+
+        if (policy != null && policy.getClass().getName().contains("JettyPolicy"))
+        {
+            System.out.println("Active Security Policies: ");
+
+            try
+            {
+                Method m = policy.getClass().getMethod("dump",new Class[]{ PrintStream.class });
+                m.invoke(policy,new Object[]
+                { System.out });
+            }
+            catch (SecurityException e)
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            catch (NoSuchMethodException e)
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            catch (IllegalArgumentException e)
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            catch (IllegalAccessException e)
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            catch (InvocationTargetException e)
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
     }
 
     private String fixPath(String path)
