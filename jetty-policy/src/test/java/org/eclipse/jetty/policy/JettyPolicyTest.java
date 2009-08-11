@@ -30,7 +30,7 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
-public class TestJettyPolicy extends TestCase
+public class JettyPolicyTest extends TestCase
 {
     HashMap<String, String> evaluator = new HashMap<String, String>();
    

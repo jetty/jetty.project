@@ -29,7 +29,7 @@ import org.eclipse.jetty.policy.entry.GrantEntry;
 import org.eclipse.jetty.policy.entry.KeystoreEntry;
 import org.eclipse.jetty.policy.loader.PolicyFileScanner;
 
-public class TestPolicyContext
+public class PolicyContextTest
     extends TestCase
 {
     public static final String __PRINCIPAL = "javax.security.auth.x500.X500Principal \"CN=Jetty Policy,OU=Artifact,O=Jetty Project,L=Earth,ST=Internet,C=US\"";
