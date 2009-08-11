@@ -18,6 +18,8 @@ package org.eclipse.jetty.policy;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.security.CodeSource;
 import java.security.Permission;
 import java.security.PermissionCollection;
@@ -58,12 +60,12 @@ import org.eclipse.jetty.policy.loader.DefaultPolicyLoader;
 public class JettyPolicy extends Policy
 {
     // Policy files that are actively managed by the aggregate policy mechanism
-    private Set<String> _policies;
+    private final Set<String> _policies;
 
-    private Map<ProtectionDomain, PolicyBlock> pdMapping =
+    private final Map<ProtectionDomain, PolicyBlock> pdMapping =
         Collections.synchronizedMap( new HashMap<ProtectionDomain, PolicyBlock>() );
     
-    private PolicyContext _context = new PolicyContext();
+    private final PolicyContext _context = new PolicyContext();
 
     public JettyPolicy( Set<String> policies, Map<String,String> properties )
     {
@@ -74,13 +76,14 @@ public class JettyPolicy extends Policy
         refresh();
     }
 
+    @Override
     public PermissionCollection getPermissions( ProtectionDomain domain )
     {     
         PermissionCollection perms = new Permissions();
 
         for ( Iterator<ProtectionDomain> i = pdMapping.keySet().iterator(); i.hasNext(); )
         {
-            ProtectionDomain pd = (ProtectionDomain) i.next();
+            ProtectionDomain pd = i.next();
             
             if ( pd.getCodeSource() == null || pd.getCodeSource().implies( domain.getCodeSource() ) && pd.getPrincipals() == null || validate( pd.getPrincipals(), domain.getPrincipals() ) )
             {         
@@ -107,13 +110,14 @@ public class JettyPolicy extends Policy
         return perms;
     }
 
+    @Override
     public PermissionCollection getPermissions( CodeSource codesource )
     {
         PermissionCollection perms = new Permissions();
 
         for ( Iterator<ProtectionDomain> i = pdMapping.keySet().iterator(); i.hasNext(); )
         {
-            ProtectionDomain pd = (ProtectionDomain) i.next();
+            ProtectionDomain pd = i.next();
 
             if ( pd.getCodeSource() == null || pd.getCodeSource().implies( codesource ) )
             {
@@ -168,6 +172,7 @@ public class JettyPolicy extends Policy
         return true;
     }
     
+    @Override
     public void refresh()
     {
         try
@@ -189,5 +194,19 @@ public class JettyPolicy extends Policy
         {
             e.printStackTrace();
         }
+    }
+    
+    public void dump( PrintStream out )
+    {
+        PrintWriter write = new PrintWriter( out );
+        write.println("dumping policy settings");
+        
+        for( Iterator<ProtectionDomain> i = pdMapping.keySet().iterator(); i.hasNext(); ) 
+        {
+            ProtectionDomain domain = i.next();
+            PolicyBlock block = pdMapping.get( domain );
+            write.println(domain.toString());   
+        }
+        write.flush();
     }
 }
