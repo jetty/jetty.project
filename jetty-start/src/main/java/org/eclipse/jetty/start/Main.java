@@ -511,6 +511,7 @@ public class Main
         if (_dumpVersions)
         {
             showClasspathWithVersions(classpath);
+            showActiveSecurityPolicies();
             return;
         }
 
@@ -734,6 +735,13 @@ public class Main
             }
             System.out.printf("%2d: %20s | %s\n",i++,getVersion(element),elementPath);
         }
+    }
+
+    private void showActiveSecurityPolicies()
+    {
+        // System.out.println("Active Security Policies: ");
+
+        // TODO: put security policy dump here
     }
 
     private String fixPath(String path)
