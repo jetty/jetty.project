@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
@@ -70,11 +71,10 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class JSON
 {
-    private static JSON __default = new JSON();
+    public final static JSON DEFAULT = new JSON();
 
-    private Map _convertors=new HashMap();
-    private int _stringBufferSize=256;
-    
+    private Map<String,Convertor> _convertors=new ConcurrentHashMap<String,Convertor>();
+    private int _stringBufferSize=256; 
     
     public JSON()
     {
@@ -89,8 +89,6 @@ public class JSON
         return _stringBufferSize;
     }
 
-
-
     /* ------------------------------------------------------------ */
     /**
      * @param stringBufferSize the initial stringBuffer size to use when creating JSON strings (default 256)
@@ -99,10 +97,8 @@ public class JSON
     {
         _stringBufferSize=stringBufferSize;
     }
-    
 
-
-
+    /* ------------------------------------------------------------ */
     /**
      * Register a {@link Convertor} for a class or interface.
      * @param forClass The class or interface that the convertor applies to
@@ -110,58 +106,65 @@ public class JSON
      */
     public static void registerConvertor(Class forClass, Convertor convertor)
     {
-        __default.addConvertor(forClass,convertor);
+        DEFAULT.addConvertor(forClass,convertor);
     }
 
+    /* ------------------------------------------------------------ */
     public static JSON getDefault()
     {
-        return __default;
+        return DEFAULT;
     }
 
+    /* ------------------------------------------------------------ */
+    @Deprecated
     public static void setDefault(JSON json)
     {
-        __default=json;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public static String toString(Object object)
     {
-        StringBuffer buffer=new StringBuffer(__default.getStringBufferSize());
+        StringBuffer buffer=new StringBuffer(DEFAULT.getStringBufferSize());
         synchronized (buffer)
         {
-            __default.append(buffer,object);
+            DEFAULT.append(buffer,object);
             return buffer.toString();
         }
     }
 
+    /* ------------------------------------------------------------ */
     public static String toString(Map object)
     {
-        StringBuffer buffer=new StringBuffer(__default.getStringBufferSize());
+        StringBuffer buffer=new StringBuffer(DEFAULT.getStringBufferSize());
         synchronized (buffer)
         {
-            __default.appendMap(buffer,object);
+            DEFAULT.appendMap(buffer,object);
             return buffer.toString();
         }
     }
 
+    /* ------------------------------------------------------------ */
     public static String toString(Object[] array)
     {
-        StringBuffer buffer=new StringBuffer(__default.getStringBufferSize());
+        StringBuffer buffer=new StringBuffer(DEFAULT.getStringBufferSize());
         synchronized (buffer)
         {
-            __default.appendArray(buffer,array);
+            DEFAULT.appendArray(buffer,array);
             return buffer.toString();
         }
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @param s String containing JSON object or array.
      * @return A Map, Object array or primitive array parsed from the JSON.
      */
     public static Object parse(String s)
     {
-        return __default.parse(new StringSource(s),false);
+        return DEFAULT.parse(new StringSource(s),false);
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @param s String containing JSON object or array.
      * @param stripOuterComment If true, an outer comment around the JSON is ignored.
@@ -169,18 +172,20 @@ public class JSON
      */
     public static Object parse(String s, boolean stripOuterComment)
     {
-        return __default.parse(new StringSource(s),stripOuterComment);
+        return DEFAULT.parse(new StringSource(s),stripOuterComment);
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @param in Reader containing JSON object or array.
      * @return A Map, Object array or primitive array parsed from the JSON.
      */
     public static Object parse(Reader in) throws IOException
     {
-        return __default.parse(new ReaderSource(in),false);
+        return DEFAULT.parse(new ReaderSource(in),false);
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @param s Stream containing JSON object or array.
      * @param stripOuterComment If true, an outer comment around the JSON is ignored.
@@ -188,9 +193,10 @@ public class JSON
      */
     public static Object parse(Reader in, boolean stripOuterComment) throws IOException
     {
-        return __default.parse(new ReaderSource(in),stripOuterComment);
+        return DEFAULT.parse(new ReaderSource(in),stripOuterComment);
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @deprecated use {@link #parse(Reader)}
      * @param in Reader containing JSON object or array.
@@ -198,9 +204,10 @@ public class JSON
      */
     public static Object parse(InputStream in) throws IOException
     {
-        return __default.parse(new StringSource(IO.toString(in)),false);
+        return DEFAULT.parse(new StringSource(IO.toString(in)),false);
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @deprecated use {@link #parse(Reader, boolean)}
      * @param s Stream containing JSON object or array.
@@ -209,7 +216,7 @@ public class JSON
      */
     public static Object parse(InputStream in, boolean stripOuterComment) throws IOException
     {
-        return __default.parse(new StringSource(IO.toString(in)),stripOuterComment);
+        return DEFAULT.parse(new StringSource(IO.toString(in)),stripOuterComment);
     }
 
     /* ------------------------------------------------------------ */
@@ -237,7 +244,8 @@ public class JSON
         Source source = new StringSource(json);
         return parse(source);
     }
-    
+
+    /* ------------------------------------------------------------ */
     /**
      * Append object as JSON to string buffer.
      * @param buffer
@@ -273,11 +281,13 @@ public class JSON
         }
     }
 
+    /* ------------------------------------------------------------ */
     public void appendNull(StringBuffer buffer)
     {
         buffer.append("null");
     }
 
+    /* ------------------------------------------------------------ */
     public void appendJSON(final StringBuffer buffer, final Convertor convertor, final Object object)
     {
         appendJSON(buffer,new Convertible()
@@ -293,6 +303,7 @@ public class JSON
         });
     }
 
+    /* ------------------------------------------------------------ */
     public void appendJSON(final StringBuffer buffer, Convertible converter)
     {
         final char[] c=
@@ -368,11 +379,13 @@ public class JSON
             buffer.append("}");
     }
 
+    /* ------------------------------------------------------------ */
     public void appendJSON(StringBuffer buffer, Generator generator)
     {
         generator.addJSON(buffer);
     }
 
+    /* ------------------------------------------------------------ */
     public void appendMap(StringBuffer buffer, Map object)
     {
         if (object==null)
@@ -396,6 +409,7 @@ public class JSON
         buffer.append('}');
     }
 
+    /* ------------------------------------------------------------ */
     public void appendArray(StringBuffer buffer, Collection collection)
     {
         if (collection==null)
@@ -419,6 +433,7 @@ public class JSON
         buffer.append(']');
     }
 
+    /* ------------------------------------------------------------ */
     public void appendArray(StringBuffer buffer, Object array)
     {
         if (array==null)
@@ -440,6 +455,7 @@ public class JSON
         buffer.append(']');
     }
 
+    /* ------------------------------------------------------------ */
     public void appendBoolean(StringBuffer buffer, Boolean b)
     {
         if (b==null)
@@ -450,6 +466,7 @@ public class JSON
         buffer.append(b.booleanValue()?"true":"false");
     }
 
+    /* ------------------------------------------------------------ */
     public void appendNumber(StringBuffer buffer, Number number)
     {
         if (number==null)
@@ -460,6 +477,7 @@ public class JSON
         buffer.append(number);
     }
 
+    /* ------------------------------------------------------------ */
     public void appendString(StringBuffer buffer, String string)
     {
         if (string==null)
@@ -471,24 +489,21 @@ public class JSON
         QuotedStringTokenizer.quote(buffer,string);
     }
     
-    
-    
-    
-    
-    
-    
     // Parsing utilities
-    
+
+    /* ------------------------------------------------------------ */
     protected String toString(char[] buffer,int offset,int length)
     {
         return new String(buffer,offset,length);
     }
-    
+
+    /* ------------------------------------------------------------ */
     protected Map newMap()
     {
         return new HashMap();
     }
-    
+
+    /* ------------------------------------------------------------ */
     protected Object[] newArray(int size)
     {
         return new Object[size];
@@ -498,12 +513,14 @@ public class JSON
     {
         return this;
     }
-    
+
+    /* ------------------------------------------------------------ */
     protected JSON contextFor(String field)
     {
         return this;
     }
-    
+
+    /* ------------------------------------------------------------ */
     protected Object convertTo(Class type,Map map)
     {
         if (type!=null&&Convertible.class.isAssignableFrom(type))
@@ -529,6 +546,7 @@ public class JSON
     }
 
 
+    /* ------------------------------------------------------------ */
     /**
      * Register a {@link Convertor} for a class or interface.
      * @param forClass The class or interface that the convertor applies to
@@ -536,9 +554,10 @@ public class JSON
      */
     public void addConvertor(Class forClass, Convertor convertor)
     {
-        _convertors.put(forClass,convertor);
+        _convertors.put(forClass.getName(),convertor);
     }
-    
+
+    /* ------------------------------------------------------------ */
     /**
      * Lookup a convertor for a class.
      * <p>
@@ -549,28 +568,54 @@ public class JSON
      */
     protected Convertor getConvertor(Class forClass)
     {
-        Class c=forClass;
-        Convertor convertor=(Convertor)_convertors.get(c);
-        if (convertor==null && this!=__default)
-            convertor=__default.getConvertor(forClass);
+        Class cls=forClass;
+        Convertor convertor=(Convertor)_convertors.get(cls.getName());
+        if (convertor==null && this!=DEFAULT)
+            convertor=DEFAULT.getConvertor(cls);
         
-        while (convertor==null&&c!=null&&c!=Object.class)
+        while (convertor==null&&cls!=null&&cls!=Object.class)
         {
-            Class[] ifs=c.getInterfaces();
+            Class[] ifs=cls.getInterfaces();
             int i=0;
             while (convertor==null&&ifs!=null&&i<ifs.length)
-                convertor=(Convertor)_convertors.get(ifs[i++]);
+                convertor=(Convertor)_convertors.get(ifs[i++].getName());
             if (convertor==null)
             {
-                c=c.getSuperclass();
-                convertor=(Convertor)_convertors.get(c);
+                cls=cls.getSuperclass();
+                convertor=(Convertor)_convertors.get(cls.getName());
             }
         }
         return convertor;
     }
 
-    
+    /* ------------------------------------------------------------ */
+    /**
+     * Register a {@link Convertor} for a named class or interface.
+     * @param name name of a class or an interface that the convertor applies to
+     * @param convertor the convertor
+     */
+    public void addConvertorFor(String name, Convertor convertor)
+    {
+        _convertors.put(name,convertor);
+    }   
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Lookup a convertor for a named class.
+     *
+     * @param name name of the class
+     * @return a {@link Convertor} or null if none were found.
+     */
+    public Convertor getConvertorFor(String name)
+    {
+        String clsName=name;
+        Convertor convertor=(Convertor)_convertors.get(clsName);
+        if (convertor==null && this!=DEFAULT)
+            convertor=DEFAULT.getConvertorFor(clsName);
+        return convertor;
+    }   
+
+    /* ------------------------------------------------------------ */
     public Object parse(Source source, boolean stripOuterComment)
     {
         int comment_state=0; // 0=no comment, 1="/", 2="/*", 3="/* *" -1="//"
@@ -658,7 +703,8 @@ public class JSON
         return o;
     }
 
-    
+
+    /* ------------------------------------------------------------ */
     public Object parse(Source source)
     {
         int comment_state=0; // 0=no comment, 1="/", 2="/*", 3="/* *" -1="//"
@@ -754,12 +800,14 @@ public class JSON
 
         return null;
     }
-    
+
+    /* ------------------------------------------------------------ */
     protected Object handleUnknown(Source source, char c)
     {
         throw new IllegalStateException("unknown char '"+c+"'("+(int)c+") in "+source);
     }
 
+    /* ------------------------------------------------------------ */
     protected Object parseObject(Source source)
     {
         if (source.next()!='{')
@@ -807,7 +855,7 @@ public class JSON
         return map;
     }
     
-
+    /* ------------------------------------------------------------ */
     protected Object parseArray(Source source)
     {
         if (source.next()!='[')
@@ -875,6 +923,7 @@ public class JSON
     }
     
 
+    /* ------------------------------------------------------------ */
     protected String parseString(Source source)
     {
         if (source.next()!='"')
@@ -1025,6 +1074,7 @@ public class JSON
         }
     }
 
+    /* ------------------------------------------------------------ */
     public Number parseNumber(Source source)
     {
         boolean minus=false;
@@ -1111,6 +1161,7 @@ public class JSON
 
     }
 
+    /* ------------------------------------------------------------ */
     protected void seekTo(char seek, Source source)
     {
         while (source.hasNext())
@@ -1127,6 +1178,7 @@ public class JSON
         throw new IllegalStateException("Expected '"+seek+"'");
     }
 
+    /* ------------------------------------------------------------ */
     protected char seekTo(String seek, Source source)
     {
         while (source.hasNext())
@@ -1145,6 +1197,7 @@ public class JSON
         throw new IllegalStateException("Expected one of '"+seek+"'");
     }
 
+    /* ------------------------------------------------------------ */
     protected static void complete(String seek, Source source)
     {
         int i=0;
@@ -1159,7 +1212,8 @@ public class JSON
             throw new IllegalStateException("Expected \""+seek+"\"");
     }
 
-    
+
+    /* ------------------------------------------------------------ */
     public interface Source
     {
         boolean hasNext();
@@ -1171,6 +1225,7 @@ public class JSON
         char[] scratchBuffer();
     }
 
+    /* ------------------------------------------------------------ */
     public static class StringSource implements Source
     {
         private final String string;
@@ -1213,6 +1268,7 @@ public class JSON
         }
     }
 
+    /* ------------------------------------------------------------ */
     public static class ReaderSource implements Source
     {
         private Reader _reader;
