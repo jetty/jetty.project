@@ -26,7 +26,7 @@ import java.util.HashMap;
 
 import junit.framework.TestCase;
 
-public class TestJettyPolicyRuntime extends TestCase
+public class JettyPolicyRuntimeTest extends TestCase
 {
     HashMap evaluator = new HashMap();
     
