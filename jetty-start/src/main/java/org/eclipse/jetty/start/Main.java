@@ -459,13 +459,6 @@ public class Main
         // Setup Start / Stop Monitoring
         startMonitor();
 
-        // Add mandatory options for secure mode
-        if (_secure)
-        {
-            _config.addActiveOption("secure");
-            _config.addActiveOption("security");
-        }
-
         // Default XMLs (if not specified)
         if (xmls.isEmpty())
         {
@@ -480,6 +473,13 @@ public class Main
 
         // Initialize the Config (start.config)
         initConfig(xmls);
+
+        // Add mandatory options for secure mode
+        if (_secure)
+        {
+            _config.addActiveOption("secure");
+            _config.addActiveOption("security");
+        }
 
         // Normalize the XML config options passed on the command line.
         xmls = resolveXmlConfigs(xmls);
