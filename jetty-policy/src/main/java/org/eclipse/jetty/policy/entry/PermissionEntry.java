@@ -56,7 +56,7 @@ public class PermissionEntry extends AbstractEntry
     {
         try
         {
-            Class clazz = Class.forName( klass );
+            Class<?> clazz = Class.forName(klass);
             
             if ( signerArray != null && !validate( signerArray, (Certificate[])clazz.getSigners() ) )
             {
@@ -71,12 +71,14 @@ public class PermissionEntry extends AbstractEntry
             }
             else if ( name != null && actions == null )
             {
-                Constructor c = clazz.getConstructor( new Class[] { String.class } );
+                Constructor<?> c = clazz.getConstructor(new Class[]
+                { String.class });
                 permission = (Permission) c.newInstance( name );
             }
             else if ( name != null && actions != null )
             {
-                Constructor c = clazz.getConstructor( new Class[] { String.class, String.class } );
+                Constructor<?> c = clazz.getConstructor(new Class[]
+                { String.class, String.class });
                 permission = (Permission) c.newInstance( name, actions );
             }
           
@@ -88,6 +90,7 @@ public class PermissionEntry extends AbstractEntry
         }
     }
     
+    @Override
     public void expand( PolicyContext context ) throws PolicyException
     {
         if ( name != null )
