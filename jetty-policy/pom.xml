@@ -71,7 +71,8 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${jetty.test.policy.loc}</outputDirectory>
+                  <outputDirectory>${jetty.test.policy.loc}</outputDirectory>                
+                  <destFileName>jetty-test-policy.jar</destFileName>
                 </artifactItem>
               </artifactItems>
             </configuration>

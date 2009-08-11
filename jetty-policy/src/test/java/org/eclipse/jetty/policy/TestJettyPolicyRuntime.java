@@ -162,17 +162,22 @@ public class TestJettyPolicyRuntime extends TestCase
     {
         if ( !_runningOnWindows ) //temporary, create alternate file to load for windows
         {   
+
+            System.out.println( "test" );
         JettyPolicy ap =
             new JettyPolicy( Collections.singleton( getWorkingDirectory()
             + "/src/test/resources/jetty-certificate.policy" ), evaluator );
 
+
+    //    ap.dump( System.out ); 
+        
         ap.refresh();
         
         Policy.setPolicy( ap );
         
         System.setSecurityManager( new SecurityManager() );
      
-        URL url = new URL("file://" + getWorkingDirectory() + "/target/test-policy/jetty-test-policy-1.0.jar");
+        URL url = new URL("file://" + getWorkingDirectory() + "/target/test-policy/jetty-test-policy.jar");
         
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )
@@ -227,12 +232,16 @@ public class TestJettyPolicyRuntime extends TestCase
     public void testBadCertificateLoader()
     throws Exception
     {
+
         if ( !_runningOnWindows ) //temporary, create alternate file to load for windows
         {
+
         JettyPolicy ap =
             new JettyPolicy( Collections.singleton( getWorkingDirectory()
             + "/src/test/resources/jetty-bad-certificate.policy" ), evaluator );
 
+        
+        
         ap.refresh();
         
         Policy.setPolicy( ap );
