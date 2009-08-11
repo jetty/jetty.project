@@ -61,6 +61,7 @@ public class KeystoreEntry extends AbstractEntry
         return keystore; 
     }
     
+    @Override
     public void expand( PolicyContext context ) throws PolicyException
     {
         url = context.evaluate( url );

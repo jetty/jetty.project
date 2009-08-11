@@ -41,10 +41,21 @@ public class MavenTestingUtils
 
             if (cwd == null)
             {
+                // System property not set.
+
+                // Use CWD.
                 cwd = System.getProperty("user.dir");
+                basedir = new File(cwd);
+
+                // Set the System property.
+                System.setProperty("basedir",basedir.getAbsolutePath());
+            }
+            else
+            {
+                // Has system property, use it.
+                basedir = new File(cwd);
             }
 
-            basedir = new File(cwd);
             baseURI = basedir.toURI();
         }
 
@@ -193,6 +204,6 @@ public class MavenTestingUtils
 
     public static URL toTargetURL(String path) throws MalformedURLException
     {
-        return getBaseURI().resolve(path).toURL();
+        return getBaseURI().resolve("target/" + path).toURL();
     }
 }

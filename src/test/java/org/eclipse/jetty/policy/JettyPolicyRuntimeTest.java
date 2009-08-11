@@ -88,12 +88,11 @@ public class JettyPolicyRuntimeTest extends TestCase
             File test3 = new File( "/tmp/foo/bar/do" );
             test3.mkdirs();
             test3.delete();
-            assertTrue( "Under AllPermission we are allowed", true );
         }
         catch ( AccessControlException ace )
         {
-            //ace.printStackTrace();
-            assertFalse( "Exception was thrown which it shouldn't have been", true );
+            ace.printStackTrace(System.err);
+            fail("Should NOT have thrown an AccessControlException");
         }
         
         JettyPolicy ap2 = new JettyPolicy(getSinglePolicy("global-file-read-only-tmp-permission.policy"),evaluator);
@@ -102,17 +101,17 @@ public class JettyPolicyRuntimeTest extends TestCase
         
         Policy.setPolicy( ap2 );
 
-        // Test that the new policy does replace the old one and we are now now allowed
+        // Test that the new policy does replace the old one and we are now not allowed
         try
         {
             File test3 = new File( "/tmp/foo/bar/do" );
             test3.mkdirs();
-            assertFalse( "We should be restricted and not get here.", true );
+
+            fail("Should have thrown an AccessControlException");
         }
         catch ( AccessControlException ace )
         {
-            //ace.printStackTrace();
-            assertTrue( "Exception was thrown as it should be.", true );
+            // Expected Path
         }
               
     }
@@ -143,14 +142,14 @@ public class JettyPolicyRuntimeTest extends TestCase
         
         try
         {
-            File test3 = new File( "/tmp/foo/bar/do" );
+            File test3 = new File("/tmp/foo/bar/do");
             test3.mkdirs();
-            assertTrue( "we should not get here", false );
+
+            fail("Should have thrown an AccessControlException");
         }
-        catch ( AccessControlException ace )
+        catch (AccessControlException ace)
         {
-            //ace.printStackTrace();
-            assertTrue( "Exception was thrown", true );
+            // Expected Path
         }
     }
     
@@ -163,8 +162,6 @@ public class JettyPolicyRuntimeTest extends TestCase
             // skip run
             return;
         }
-
-        System.out.println("test");
 
         JettyPolicy ap = new JettyPolicy(getSinglePolicy("jetty-certificate.policy"),evaluator);
 
@@ -192,37 +189,23 @@ public class JettyPolicyRuntimeTest extends TestCase
         
         ap.refresh();
         
-        try
-        {
-            Class<?> clazz = loader.loadClass("org.eclipse.jetty.toolchain.test.policy.Tester");
-              
-            Method m = clazz.getMethod( "testEcho", new Class[] {String.class} );
-            
-            String foo = (String)m.invoke( clazz.newInstance(), new Object[] {"foo"} );                    
-            
-            assertEquals("foo", foo );
-            
-            Method m2 = clazz.getMethod( "testReadSystemProperty", new Class[] {String.class} );
-            
-            m2.invoke( clazz.newInstance(), new Object[] {"foo"} );                    
-            
-            assertTrue( "system property access was granted", true );
-        }
-        catch ( ClassNotFoundException e )
-        {
-            e.printStackTrace();
-            assertFalse( "should not have got here", true );
-        }
-        catch ( SecurityException e )
-        {
-            e.printStackTrace();            
-            assertFalse( "should not have got here", true );
-        }
-        catch ( IllegalAccessException e )
-        {
-            e.printStackTrace();
-            assertFalse( "should not have got here", true );
-        }
+        Class<?> clazz = loader.loadClass("org.eclipse.jetty.toolchain.test.policy.Tester");
+
+        Method m = clazz.getMethod("testEcho",new Class[]
+        { String.class });
+
+        String foo = (String)m.invoke(clazz.newInstance(),new Object[]
+        { "foo" });
+
+        assertEquals("foo",foo);
+
+        Method m2 = clazz.getMethod("testReadSystemProperty",new Class[]
+        { String.class });
+
+        m2.invoke(clazz.newInstance(),new Object[]
+        { "foo" });
+
+        assertTrue("system property access was granted",true);
     }
     
     
@@ -260,8 +243,6 @@ public class JettyPolicyRuntimeTest extends TestCase
         
         ap.refresh();
         
-        boolean excepted = false;
-        
         try
         {
             Class<?> clazz = loader.loadClass("org.eclipse.jetty.toolchain.test.policy.Tester");
@@ -274,27 +255,15 @@ public class JettyPolicyRuntimeTest extends TestCase
             
             Method m2 = clazz.getMethod( "testReadSystemProperty", new Class[] {String.class} );
             
-            m2.invoke( clazz.newInstance(), new Object[] {"foobar"} );                    
-            
-        }
-        catch ( ClassNotFoundException e )
-        {
-            e.printStackTrace();
-            assertFalse( "should not have got here", true );
+            m2.invoke(clazz.newInstance(),new Object[]
+            { "foobar" });
+
+            fail("Should have thrown an InvocationTargetException");
         }
         catch ( InvocationTargetException e )
         {
             assertTrue(e.getCause().getMessage().contains( "access denied" ));
-            
-            excepted = true; // we hope to get here
         }
-        catch ( IllegalAccessException e )
-        {           
-            e.printStackTrace();
-            assertFalse( "should not have got here", true );
-        }
-        
-        assertTrue( "checking that we through a security exception", excepted );
     }
 
     private Set<String> getSinglePolicy(String name)

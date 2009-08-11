@@ -38,7 +38,7 @@
         <executions>
           <execution>
             <id>unpack</id>
-            <phase>generate-resources</phase>
+            <phase>generate-test-resources</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -58,7 +58,7 @@
           </execution>
           <execution>
             <id>copy</id>
-            <phase>generate-resources</phase>
+            <phase>generate-test-resources</phase>
             <goals>
               <goal>copy</goal>
             </goals>
