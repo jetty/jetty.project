@@ -59,7 +59,6 @@ public class Main
     private boolean _dryRun = false;
     private boolean _secure = false;
     private boolean _fromDaemon = false;
-    private List<String> _activeOptions = new ArrayList<String>();
     private Config _config = new Config();
 
     private String _jettyHome;
@@ -98,8 +97,8 @@ public class Main
 
                 if ("--stop".equals(arg))
                 {
-                    int port = Integer.parseInt(_config.getProperty("STOP.PORT","-1"));
-                    String key = _config.getProperty("STOP.KEY",null);
+                    int port = Integer.parseInt(System.getProperty("STOP.PORT","-1"));
+                    String key = System.getProperty("STOP.KEY",null);
                     stop(port,key);
                     return;
                 }
@@ -185,12 +184,8 @@ public class Main
                     String ids[] = prop[1].split(",");
                     for (String id : ids)
                     {
-                        if (!_activeOptions.contains(id))
-                        {
-                            _activeOptions.add(id);
-                        }
+                        _config.addActiveOption(id);
                     }
-                    _activeOptions.addAll(Arrays.asList(ids));
                 }
                 else
                 {
@@ -464,18 +459,11 @@ public class Main
         // Setup Start / Stop Monitoring
         startMonitor();
 
-        // Default options (if not specified)
-        if (_activeOptions.isEmpty())
-        {
-            _activeOptions.add("default");
-            _activeOptions.add("*");
-        }
-
         // Add mandatory options for secure mode
         if (_secure)
         {
-            addMandatoryOption("secure");
-            addMandatoryOption("security");
+            _config.addActiveOption("secure");
+            _config.addActiveOption("security");
         }
 
         // Default XMLs (if not specified)
@@ -497,7 +485,7 @@ public class Main
         xmls = resolveXmlConfigs(xmls);
 
         // Get Desired Classpath based on user provided Active Options.
-        Classpath classpath = _config.getCombinedClasspath(_activeOptions);
+        Classpath classpath = _config.getActiveClasspath();
 
         System.setProperty("java.class.path",classpath.toString());
         ClassLoader cl = classpath.getClassLoader();
@@ -593,14 +581,6 @@ public class Main
         }
 
         throw new FileNotFoundException("Unable to find XML Config: " + xmlFilename);
-    }
-
-    private void addMandatoryOption(String id)
-    {
-        if (!_activeOptions.contains(id))
-        {
-            _activeOptions.add(id);
-        }
     }
 
     private void showDryRun(Classpath classpath, List<String> xmls)
@@ -732,7 +712,7 @@ public class Main
         // Iterate through active classpath, and fetch Implementation Version from each entry (if present)
         // to dump to end user.
 
-        System.out.println("Active Options: " + _activeOptions);
+        System.out.println("Active Options: " + _config.getActiveOptions());
 
         if (classpath.count() == 0)
         {
@@ -833,7 +813,7 @@ public class Main
             _config.setArgCount(xmls.size());
 
             // What start.config should we use?
-            String cfgName = _config.getProperty("START","org/eclipse/jetty/start/start.config");
+            String cfgName = System.getProperty("START","org/eclipse/jetty/start/start.config");
             Config.debug("config=" + cfgName);
 
             // Look up config as resource first.
@@ -866,8 +846,8 @@ public class Main
 
     private void startMonitor()
     {
-        int port = Integer.parseInt(_config.getProperty("STOP.PORT","-1"));
-        String key = _config.getProperty("STOP.KEY",null);
+        int port = Integer.parseInt(System.getProperty("STOP.PORT","-1"));
+        String key = System.getProperty("STOP.KEY",null);
 
         Monitor.monitor(port,key);
     }

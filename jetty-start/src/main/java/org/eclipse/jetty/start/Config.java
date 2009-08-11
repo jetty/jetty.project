@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -164,6 +165,22 @@ public class Config
     private List<String> _xml = new ArrayList<String>();
     private Set<String> _policies = new HashSet<String>();
     private String _classname = null;
+    private Set<String> _activeOptions = new TreeSet<String>(new Comparator<String>()
+    {
+        // Make sure "*" is always at the end of the list
+        public int compare(String o1, String o2)
+        {
+            if ("*".equals(o1))
+            {
+                return 1;
+            }
+            if ("*".equals(o2))
+            {
+                return -1;
+            }
+            return o1.compareTo(o2);
+        }
+    });
     private Map<String, String> _properties = new HashMap<String, String>();
     private int argCount = 0;
 
@@ -336,6 +353,17 @@ public class Config
     }
 
     /**
+     * Get the active classpath, as dictated by OPTIONS= entries.
+     * 
+     * @return the Active classpath
+     * @see #getCombinedClasspath(Collection)
+     */
+    public Classpath getActiveClasspath()
+    {
+        return getCombinedClasspath(_activeOptions);
+    }
+
+    /**
      * Get the combined classpath representing the default classpath plus all named sections.
      * 
      * NOTE: the default classpath will be prepended, and the '*' classpath will be appended.
@@ -434,7 +462,7 @@ public class Config
         }
         catch (ClassNotFoundException e)
         {
-            debug(e);
+            debug("ClassNotFoundException (parent class loader): " + classname);
         }
 
         // Try section classloaders instead
@@ -462,7 +490,7 @@ public class Config
             }
             catch (ClassNotFoundException e)
             {
-                debug(e);
+                debug("ClassNotFoundException (section class loader: " + sectionId + "): " + classname);
             }
         }
         return false;
@@ -644,115 +672,123 @@ public class Config
                         String value = fixPath(file.substring(i + 2));
                         debug("  " + property + "~=" + value);
                         setProperty(property,value);
+                        continue;
                     }
-                    else
-                        // Setting of start property with canonical path
-                        if (subject.indexOf("/=") > 0)
+
+                    // Setting of start property with canonical path
+                    if (subject.indexOf("/=") > 0)
+                    {
+                        int i = file.indexOf("/=");
+                        String property = file.substring(0,i);
+                        String value = fixPath(file.substring(i + 2));
+                        String canonical = new File(value).getCanonicalPath();
+                        debug("  " + property + "/=" + value + "==" + canonical);
+                        setProperty(property,canonical);
+                        continue;
+                    }
+
+                    // Setting of system property
+                    if (subject.indexOf("=") > 0)
+                    {
+                        int i = file.indexOf("=");
+                        String property = file.substring(0,i);
+                        String value = fixPath(file.substring(i + 1));
+                        debug("  " + property + "=" + value);
+                        System.setProperty(property,value);
+                        continue;
+                    }
+
+                    // Add all unconsidered JAR and ZIP files to classpath
+                    if (subject.endsWith("/*"))
+                    {
+                        // directory of JAR files - only add jars and zips within the directory
+                        File dir = new File(fixPath(file.substring(0,file.length() - 1)));
+                        addJars(sections,dir,false);
+                        continue;
+                    }
+
+                    // Recursively add all unconsidered JAR and ZIP files to classpath
+                    if (subject.endsWith("/**"))
+                    {
+                        //directory hierarchy of jar files - recursively add all jars and zips in the hierarchy
+                        File dir = new File(fixPath(file.substring(0,file.length() - 2)));
+                        addJars(sections,dir,true);
+                        continue;
+                    }
+
+                    // Add raw classpath directory to classpath
+                    if (subject.endsWith("/"))
+                    {
+                        // class directory
+                        File cd = new File(fixPath(file));
+                        String d = cd.getCanonicalPath();
+                        boolean added = addClasspathComponent(sections,d);
+                        debug((added?"  CLASSPATH+=":"  !") + d);
+                        continue;
+                    }
+
+                    // Add XML configuration
+                    if (subject.toLowerCase().endsWith(".xml"))
+                    {
+                        // Config file
+                        File f = new File(fixPath(file));
+                        if (f.exists())
+                            _xml.add(f.getCanonicalPath());
+                        debug("  ARGS+=" + f);
+                        continue;
+                    }
+
+                    // Set the main class to execute (overrides any previously set)
+                    if (subject.toLowerCase().endsWith(".class"))
+                    {
+                        // Class
+                        String cn = expand(subject.substring(0,subject.length() - 6));
+                        if (cn != null && cn.length() > 0)
                         {
-                            int i = file.indexOf("/=");
-                            String property = file.substring(0,i);
-                            String value = fixPath(file.substring(i + 2));
-                            String canonical = new File(value).getCanonicalPath();
-                            debug("  " + property + "/=" + value + "==" + canonical);
-                            setProperty(property,canonical);
+                            debug("  CLASS=" + cn);
+                            _classname = cn;
                         }
-                        else
-                            // Setting of system property
-                            if (subject.indexOf("=") > 0)
-                            {
-                                int i = file.indexOf("=");
-                                String property = file.substring(0,i);
-                                String value = fixPath(file.substring(i + 1));
-                                debug("  " + property + "=" + value);
-                                System.setProperty(property,value);
-                            }
-                            else
-                                // Add all unconsidered JAR and ZIP files to classpath
-                                if (subject.endsWith("/*"))
-                                {
-                                    // directory of JAR files - only add jars and zips within the directory
-                                    File dir = new File(fixPath(file.substring(0,file.length() - 1)));
-                                    addJars(sections,dir,false);
-                                }
-                                else
-                                    // Recursively add all unconsidered JAR and ZIP files to classpath
-                                    if (subject.endsWith("/**"))
-                                    {
-                                        //directory hierarchy of jar files - recursively add all jars and zips in the hierarchy
-                                        File dir = new File(fixPath(file.substring(0,file.length() - 2)));
-                                        addJars(sections,dir,true);
-                                    }
-                                    else
-                                        // Add raw classpath directory to classpath
-                                        if (subject.endsWith("/"))
-                                        {
-                                            // class directory
-                                            File cd = new File(fixPath(file));
-                                            String d = cd.getCanonicalPath();
-                                            boolean added = addClasspathComponent(sections,d);
-                                            debug((added?"  CLASSPATH+=":"  !") + d);
-                                        }
-                                        else
-                                            // Add XML configuration
-                                            if (subject.toLowerCase().endsWith(".xml"))
-                                            {
-                                                // Config file
-                                                File f = new File(fixPath(file));
-                                                if (f.exists())
-                                                    _xml.add(f.getCanonicalPath());
-                                                debug("  ARGS+=" + f);
-                                            }
-                                            else
-                                                // Set the main class to execute (overrides any previously set)
-                                                if (subject.toLowerCase().endsWith(".class"))
-                                                {
-                                                    // Class
-                                                    String cn = expand(subject.substring(0,subject.length() - 6));
-                                                    if (cn != null && cn.length() > 0)
-                                                    {
-                                                        debug("  CLASS=" + cn);
-                                                        _classname = cn;
-                                                    }
-                                                }
-                                                else
-                                                    // Add raw classpath entry
-                                                    if (subject.toLowerCase().endsWith(".path"))
-                                                    {
-                                                        // classpath (jetty.class.path?) to add to runtime classpath
-                                                        String cn = expand(subject.substring(0,subject.length() - 5));
-                                                        if (cn != null && cn.length() > 0)
-                                                        {
-                                                            debug("  PATH=" + cn);
-                                                            addClasspathPath(sections,cn);
-                                                        }
-                                                    }
-                                                    else
-                                                        // Add Security Policy file reference
-                                                        if (subject.toLowerCase().endsWith(".policy"))
-                                                        {
-                                                            //policy file to parse
-                                                            String cn = expand(subject.substring(0,subject.length()));
-                                                            if (cn != null && cn.length() > 0)
-                                                            {
-                                                                debug("  POLICY=" + cn);
-                                                                _policies.add(fixPath(cn));
-                                                            }
-                                                        }
-                                                        else
-                                                        {
-                                                            // single JAR file
-                                                            File f = new File(fixPath(file));
-                                                            if (f.exists())
-                                                            {
-                                                                String d = f.getCanonicalPath();
-                                                                boolean added = addClasspathComponent(sections,d);
-                                                                if (!added)
-                                                                {
-                                                                    added = addClasspathPath(sections,expand(subject));
-                                                                }
-                                                                debug((added?"  CLASSPATH+=":"  !") + d);
-                                                            }
-                                                        }
+                        continue;
+                    }
+
+                    // Add raw classpath entry
+                    if (subject.toLowerCase().endsWith(".path"))
+                    {
+                        // classpath (jetty.class.path?) to add to runtime classpath
+                        String cn = expand(subject.substring(0,subject.length() - 5));
+                        if (cn != null && cn.length() > 0)
+                        {
+                            debug("  PATH=" + cn);
+                            addClasspathPath(sections,cn);
+                        }
+                        continue;
+                    }
+
+                    // Add Security Policy file reference
+                    if (subject.toLowerCase().endsWith(".policy"))
+                    {
+                        //policy file to parse
+                        String cn = expand(subject.substring(0,subject.length()));
+                        if (cn != null && cn.length() > 0)
+                        {
+                            debug("  POLICY=" + cn);
+                            _policies.add(fixPath(cn));
+                        }
+                        continue;
+                    }
+
+                    // single JAR file
+                    File f = new File(fixPath(file));
+                    if (f.exists())
+                    {
+                        String d = f.getCanonicalPath();
+                        boolean added = addClasspathComponent(sections,d);
+                        if (!added)
+                        {
+                            added = addClasspathPath(sections,expand(subject));
+                        }
+                        debug((added?"  CLASSPATH+=":"  !") + d);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -800,6 +836,15 @@ public class Config
         {
             DEBUG = Boolean.parseBoolean(value);
         }
+        if (name.equals("OPTIONS"))
+        {
+            _activeOptions.clear();
+            String ids[] = value.split(",");
+            for (String id : ids)
+            {
+                _activeOptions.add(id);
+            }
+        }
         _properties.put(name,value);
     }
 
@@ -817,5 +862,43 @@ public class Config
         }
 
         throw new ClassCastException("Unable to cast to " + Policy.class.getName() + " : " + policyClass.getClass().getName());
+    }
+
+    public void addActiveOption(String option)
+    {
+        _activeOptions.add(option);
+        setProperty("OPTIONS",join(_activeOptions,","));
+    }
+
+    public Set<String> getActiveOptions()
+    {
+        if (!_activeOptions.isEmpty())
+        {
+            _activeOptions.add("*");
+        }
+        return _activeOptions;
+    }
+
+    public void removeActiveOption(String option)
+    {
+        _activeOptions.remove(option);
+        setProperty("OPTIONS",join(_activeOptions,","));
+    }
+
+    private String join(Collection<?> coll, String delim)
+    {
+        StringBuffer buf = new StringBuffer();
+
+        Iterator<?> i = coll.iterator();
+        boolean hasNext = i.hasNext();
+        while (hasNext)
+        {
+            buf.append(String.valueOf(i.next()));
+            hasNext = i.hasNext();
+            if (hasNext)
+                buf.append(delim);
+        }
+
+        return buf.toString();
     }
 }
