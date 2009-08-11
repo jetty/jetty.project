@@ -87,13 +87,5 @@
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
-    <!--
-    <dependency>  
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-policy</artifactId>
-      <version>${jetty.test.policy}</version>
-      <scope>test</scope>
-    </dependency>
-    -->
   </dependencies>
 </project>
