@@ -30,7 +30,7 @@ public class StdErrLog implements Logger
 {    
     private static DateCache _dateCache;
     
-    private final static boolean __debug = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.DEBUG","false"));
+    private final static boolean __debug = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.stderr.DEBUG","false"));
     private boolean _debug = __debug;
     private String _name;
     private boolean _hideStacks=false;
@@ -183,6 +183,7 @@ public class StdErrLog implements Logger
         return new StdErrLog(_name==null||_name.length()==0?name:_name+"."+name);
     }
     
+    @Override
     public String toString()
     {
         return "StdErrLog:"+_name+":DEBUG="+_debug;

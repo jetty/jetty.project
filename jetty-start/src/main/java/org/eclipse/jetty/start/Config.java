@@ -883,6 +883,11 @@ public class Config
         if (name.equals("DEBUG"))
         {
             DEBUG = Boolean.parseBoolean(value);
+            if (DEBUG)
+            {
+                System.setProperty("org.eclipse.jetty.util.log.stderr.DEBUG","true");
+                System.setProperty("org.eclipse.jetty.start.DEBUG","true");
+            }
         }
         if (name.equals("OPTIONS"))
         {
