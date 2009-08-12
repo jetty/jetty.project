@@ -18,6 +18,7 @@ package org.eclipse.jetty.start;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -117,6 +118,11 @@ import java.util.TreeSet;
  * 
  * <p>
  * The configuration file may be divided into sections with option names like: [ssl,default]
+ * </p>
+ * 
+ * <p>
+ * Note: a special discovered section identifier <code>[=path_to_directory/*]</code> is allowed to auto-create section
+ * IDs, based on directory names found in the path specified in the "path_to_directory/" part of the identifier.
  * </p>
  * 
  * <p>
@@ -554,15 +560,26 @@ public class Config
                 // handle options
                 if (trim.startsWith("[") && trim.endsWith("]"))
                 {
-                    sections = Arrays.asList(trim.substring(1,trim.length() - 1).split(","));
-                    // Ensure section classpaths exist
-                    for (String sectionId : sections)
+                    String identifier = trim.substring(1,trim.length() - 1);
+                    if (identifier.charAt(0) == '=')
                     {
-                        if (!_classpaths.containsKey(sectionId))
+                        // Special case: dynamic/discovered option section identifier.
+                        processDynamicSectionIdentifier(identifier.substring(1));
+                    }
+                    else
+                    {
+                        // Normal case: section identifier (possibly separated by commas)
+                        sections = Arrays.asList(identifier.split(","));
+                        // Ensure section classpaths exist
+                        for (String sectionId : sections)
                         {
-                            _classpaths.put(sectionId,new Classpath());
+                            if (!_classpaths.containsKey(sectionId))
+                            {
+                                _classpaths.put(sectionId,new Classpath());
+                            }
                         }
                     }
+                    continue;
                 }
 
                 try
@@ -803,6 +820,37 @@ public class Config
         }
     }
 
+    private void processDynamicSectionIdentifier(String dynamicPathId) throws IOException
+    {
+        if (!dynamicPathId.endsWith("/*"))
+        {
+            String msg = "Dynamic Section IDs must end in \"/*\" to work.  Ignoring: [=" + dynamicPathId + "]";
+            System.err.println(msg);
+            throw new IOException(msg);
+        }
+
+        String rawPath = fixPath(dynamicPathId.substring(0,dynamicPathId.length() - 1));
+        File parentDir = new File(expand(rawPath));
+        debug("Adding dynamic section entries based on path: " + parentDir);
+        File dirs[] = parentDir.listFiles(new FileFilter()
+        {
+            public boolean accept(File path)
+            {
+                return path.isDirectory();
+            }
+        });
+
+        List<String> sections = new ArrayList<String>();
+        for (File dir : dirs)
+        {
+            sections.clear();
+            sections.add("All");
+            String id = dir.getName();
+            sections.add(id);
+            addJars(sections,dir,false);
+        }
+    }
+
     private String fixPath(String path)
     {
         return path.replace('/',File.separatorChar);
@@ -842,7 +890,7 @@ public class Config
             String ids[] = value.split(",");
             for (String id : ids)
             {
-                _activeOptions.add(id);
+                addActiveOption(id);
             }
         }
         _properties.put(name,value);
@@ -866,23 +914,22 @@ public class Config
 
     public void addActiveOption(String option)
     {
-        _activeOptions.add(option);
-        setProperty("OPTIONS",join(_activeOptions,","));
+        if (!_activeOptions.contains(option))
+        {
+            _activeOptions.add(option);
+        }
+        _properties.put("OPTIONS",join(_activeOptions,","));
     }
 
     public Set<String> getActiveOptions()
     {
-        if (!_activeOptions.isEmpty())
-        {
-            _activeOptions.add("*");
-        }
         return _activeOptions;
     }
 
     public void removeActiveOption(String option)
     {
         _activeOptions.remove(option);
-        setProperty("OPTIONS",join(_activeOptions,","));
+        _properties.put("OPTIONS",join(_activeOptions,","));
     }
 
     private String join(Collection<?> coll, String delim)
