@@ -31,7 +31,7 @@ grant codeBase "file:${jetty.home}/start.jar" {
      
    permission java.util.PropertyPermission "main.class", "read";  
    permission java.util.PropertyPermission "ISO_8859_1", "read";	 
-	permission javax.security.auth.AuthPermission "modifyPrincipals";
+   permission javax.security.auth.AuthPermission "modifyPrincipals";
 	 
 	permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
 	permission javax.security.auth.AuthPermission "setReadOnly"; 	 
@@ -52,11 +52,11 @@ grant codeBase "file:${jetty.home}/lib/-" {
    permission java.util.PropertyPermission "ROLLOVERFILE_BACKUP_FORMAT", "read";
 	 
    permission java.util.PropertyPermission "org.eclipse.jetty.server.webapp.parentLoaderPriority", "read";
-	 permission java.util.PropertyPermission "org.eclipse.jetty.server.Request.maxFormContentSize", "read";
+   permission java.util.PropertyPermission "org.eclipse.jetty.server.Request.maxFormContentSize", "read";
 	 
-	 permission javax.security.auth.AuthPermission "modifyPrincipals";	 
-	 permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
-	 permission javax.security.auth.AuthPermission "setReadOnly";
+   permission javax.security.auth.AuthPermission "modifyPrincipals";	 
+   permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
+   permission javax.security.auth.AuthPermission "setReadOnly";
   
    permission java.io.FilePermission "${jetty.home}${/}-", "read";
    permission java.io.FilePermission "${java.io.tmpdir}", "read, write";
@@ -121,8 +121,8 @@ grant codeBase "file:${jetty.home}/lib/-" {
    // method that takes no argument.
    permission java.lang.RuntimePermission "stopThread";    
    
-    // jsp support
-	 permission java.net.SocketPermission "java.sun.com:80", "connect,resolve";
+    // jsp support   
+   permission java.net.SocketPermission "java.sun.com:80", "connect,resolve";
 	 
 };
 
