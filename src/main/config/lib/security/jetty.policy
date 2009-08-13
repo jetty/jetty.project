@@ -123,7 +123,6 @@ grant codeBase "file:${jetty.home}/lib/-" {
    
     // jsp support
 	 permission java.net.SocketPermission "java.sun.com:80", "connect,resolve";
-	 permission java.util.PropertyPermission "foo.DEBUG", "read";
 	 
 };
 
@@ -134,8 +133,6 @@ grant codeBase "file:${jetty.home}/lib/-" {
 // the tmp directory is where webapps are unpacked by default so setup their restricted permissions
 //
 grant codeBase "file:${java.io.tmpdir}/-" {
-
-permission java.util.PropertyPermission "foo.DEBUG", "read";
 
 permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";   
