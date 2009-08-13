@@ -394,7 +394,7 @@ public class Main
         }
         catch (ClassNotFoundException e)
         {
-            //ignored
+            e.printStackTrace();
         }
 
         if (Config.isDebug() || invoked_class == null)
@@ -419,7 +419,6 @@ public class Main
         Method main = invoked_class.getDeclaredMethod("main",method_param_types);
         Object[] method_params = new Object[]
                                             { argArray };
-
         main.invoke(null,method_params);
     }
 
@@ -481,7 +480,7 @@ public class Main
         // Add mandatory options for secure mode
         if (_secure)
         {
-            _config.addActiveOption("secure");
+            _config.addActiveOption("policy");
             _config.addActiveOption("security");
         }
 
@@ -830,6 +829,7 @@ public class Main
             {
                 Policy.setPolicy(_config.getPolicyInstance(cl));
                 System.setSecurityManager(new SecurityManager());
+                // Policy.getPolicy().refresh();
             }
             else
             {
