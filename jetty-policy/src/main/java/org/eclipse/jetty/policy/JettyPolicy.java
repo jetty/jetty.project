@@ -67,12 +67,15 @@ public class JettyPolicy extends Policy
     
     private final PolicyContext _context = new PolicyContext();
 
+    // private final Scanner scanner = new Scanner();
+
+    private boolean initialized = false;
+
     public JettyPolicy( Set<String> policies, Map<String,String> properties )
     {
         _policies = policies;
         _context.setProperties( properties );
-        
-        // we have the policies we need and an evaluator to reference, lets refresh and save the user a call.
+
         refresh();
     }
 
@@ -85,26 +88,24 @@ public class JettyPolicy extends Policy
         {
             ProtectionDomain pd = i.next();
             
-            if ( pd.getCodeSource() == null || pd.getCodeSource().implies( domain.getCodeSource() ) && pd.getPrincipals() == null || validate( pd.getPrincipals(), domain.getPrincipals() ) )
+            // System.out.println("----START----");
+            // System.out.println("PDCS: " + pd.getCodeSource());
+            // System.out.println("CS: " + domain.getCodeSource());
+
+            if (pd.getCodeSource() == null || pd.getCodeSource().implies(domain.getCodeSource()) && pd.getPrincipals() == null || pd.getCodeSource().implies(domain.getCodeSource()) && validate(pd.getPrincipals(),domain.getPrincipals()))
             {         
                 // gather dynamic permissions
                 if ( pdMapping.get( pd ) != null )
                 {
                     for ( Enumeration<Permission> e = pdMapping.get( pd ).getPermissions().elements(); e.hasMoreElements(); )
                     {
-                        perms.add( e.nextElement() );
-                    }
-                }
-                
-                // gather static permissions
-                if ( pd.getPermissions() != null )
-                {
-                    for ( Enumeration<Permission> e = pd.getPermissions().elements(); e.hasMoreElements(); )
-                    {
-                        perms.add( e.nextElement() );
+                        Permission perm = e.nextElement();
+                        // System.out.println("D: " + perm);
+                        perms.add(perm);
                     }
                 }
             }
+            // System.out.println("----STOP----");
         }
         
         return perms;
@@ -121,23 +122,22 @@ public class JettyPolicy extends Policy
 
             if ( pd.getCodeSource() == null || pd.getCodeSource().implies( codesource ) )
             {
+
+                // System.out.println("----START----");
+                // System.out.println("PDCS: " + pd.getCodeSource());
+                // System.out.println("CS: " + codesource);
+
                 // gather dynamic permissions
                 if ( pdMapping.get( pd ) != null )
                 {
                     for ( Enumeration<Permission> e = pdMapping.get( pd ).getPermissions().elements(); e.hasMoreElements(); )
                     {
-                        perms.add( e.nextElement() );
+                        Permission perm = e.nextElement();
+                        // System.out.println("D: " + perm);
+                        perms.add(perm);
                     }
                 }
-
-                // gather static permissions
-                if ( pd.getPermissions() != null )
-                {
-                    for ( Enumeration<Permission> e = pd.getPermissions().elements(); e.hasMoreElements(); )
-                    {
-                        perms.add( e.nextElement() );
-                    }
-                }
+                // System.out.println("----STOP----");
             }
         }
 
@@ -175,8 +175,16 @@ public class JettyPolicy extends Policy
     @Override
     public void refresh()
     {
+
         try
         {
+            if (!initialized)
+            {
+                initialize();
+            }
+
+            System.out.println("refreshing policy files");
+
             pdMapping.clear();
 
             for ( Iterator<String> i = _policies.iterator(); i.hasNext(); )
@@ -185,10 +193,16 @@ public class JettyPolicy extends Policy
                 pdMapping.putAll( DefaultPolicyLoader.load( new FileInputStream( policyFile ), _context ) );
             }
             
-            //for ( Iterator<ProtectionDomain> i = pdMapping.keySet().iterator(); i.hasNext();)
-            //{
-            //    System.out.println(i.next().toString());
-            //}
+            // System.setSecurityManager(null);
+            // Policy.setPolicy(null);
+
+            // Policy.setPolicy(this);
+            // System.setSecurityManager(new SecurityManager());
+
+            // for (Iterator<ProtectionDomain> i = pdMapping.keySet().iterator(); i.hasNext();)
+            // {
+            // System.out.println(i.next().toString());
+            // }
         }
         catch ( Exception e )
         {
@@ -196,6 +210,33 @@ public class JettyPolicy extends Policy
         }
     }
     
+    /**
+     * TODO make this optional
+     */
+    private void initialize() throws Exception
+    {
+        /*
+         * List scanDirs = new ArrayList();
+         * 
+         * for (Iterator<String> i = _policies.iterator(); i.hasNext();) { File policyFile = new File(i.next()); scanDirs.add(policyFile.getParentFile()); }
+         * 
+         * scanner.addListener(new Scanner.DiscreteListener() {
+         * 
+         * public void fileRemoved(String filename) throws Exception { // TODO Auto-generated method stub
+         * 
+         * }
+         * 
+         * public void fileChanged(String filename) throws Exception { refresh(); }
+         * 
+         * public void fileAdded(String filename) throws Exception { // TODO Auto-generated method stub
+         * 
+         * } });
+         * 
+         * scanner.setScanDirs(scanDirs); scanner.start(); scanner.setScanInterval(10);
+         */
+        initialized = true;
+    }
+
     public void dump( PrintStream out )
     {
         PrintWriter write = new PrintWriter( out );
