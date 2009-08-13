@@ -183,7 +183,7 @@ public class JettyPolicy extends Policy
                 initialize();
             }
 
-            System.out.println("refreshing policy files");
+            // System.out.println("refreshing policy files");
 
             pdMapping.clear();
 
