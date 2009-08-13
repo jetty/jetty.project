@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Set;
 
-
 import junit.framework.TestCase;
 
 public class JettyPolicyRuntimeTest extends TestCase
@@ -45,6 +44,7 @@ public class JettyPolicyRuntimeTest extends TestCase
         super.setUp();
         
         evaluator.put("jetty.home",MavenTestingUtils.getBasedir().getAbsolutePath());
+        evaluator.put("basedir",MavenTestingUtils.getBasedir().getAbsolutePath());
     }
     
     @Override
@@ -165,15 +165,16 @@ public class JettyPolicyRuntimeTest extends TestCase
 
         JettyPolicy ap = new JettyPolicy(getSinglePolicy("jetty-certificate.policy"),evaluator);
 
-        // ap.dump( System.out ); 
-        
         ap.refresh();
         
         Policy.setPolicy( ap );
         
         System.setSecurityManager( new SecurityManager() );
      
+        
         URL url = MavenTestingUtils.toTargetURL("test-policy/jetty-test-policy.jar");
+        
+        System.out.println( "IN HERE: " + url.toString());
         
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )
@@ -206,6 +207,8 @@ public class JettyPolicyRuntimeTest extends TestCase
         { "foo" });
 
         assertTrue("system property access was granted",true);
+
+        ap.dump(System.out);
     }
     
     
