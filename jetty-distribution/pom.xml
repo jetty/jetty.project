@@ -44,13 +44,13 @@
                        dest="${assembly.directory}/lib/servlet-api-2.5.jar"
                        usetimestamp="true"
                        verbose="true" />
-		  <mkdir dir="${assembly.directory}/lib/jetty-jndi"/>
+		  <mkdir dir="${assembly.directory}/lib/jndi"/>
                   <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.activation_1.1.0.v200905021805.jar"
-                       dest="${assembly.directory}/lib/jetty-jndi/activation-1.1.jar"
+                       dest="${assembly.directory}/lib/jndi/activation-1.1.jar"
                        usetimestamp="true"
                        verbose="true" />
                   <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.mail_1.4.0.v200905040518.jar"
-                       dest="${assembly.directory}/lib/jetty-jndi/mail-1.4.jar"
+                       dest="${assembly.directory}/lib/jndi/mail-1.4.jar"
                        usetimestamp="true"
                        verbose="true" />
                 </tasks>
@@ -341,7 +341,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib/security</outputDirectory>
+                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -384,7 +384,8 @@
               </artifactItems>
             </configuration>
           </execution>
-            <execution>
+	  <!--
+          <execution>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy</goal>
@@ -392,45 +393,34 @@
             <configuration>
               <artifactItems>
                <artifactItem>
-                  <groupId>javax.mail</groupId>
-                  <artifactId>mail</artifactId>
-                  <version>${mail-version}</version>
-                  <outputDirectory>${assembly.directory}/lib/jetty-jndi</outputDirectory>
-               </artifactItem>
-               <artifactItem>
-                  <groupId>javax.activation</groupId>
-                  <artifactId>activation</artifactId>
-                  <version>${activation-version}</version>
-                  <outputDirectory>${assembly.directory}/lib/jetty-jndi</outputDirectory>
-               </artifactItem>
-               <artifactItem>
                   <groupId>org.apache.geronimo.specs</groupId>
                   <artifactId>geronimo-annotation_1.0_spec</artifactId>
                   <version>1.1.1</version>
-                  <outputDirectory>${assembly.directory}/lib/jetty-annotations</outputDirectory>
+                  <outputDirectory>${assembly.directory}/lib/annotations</outputDirectory>
               </artifactItem>
               <artifactItem>
                   <groupId>asm</groupId>
                   <artifactId>asm-commons</artifactId>
                   <version>3.1</version>
-                  <outputDirectory>${assembly.directory}/lib/jetty-annotations</outputDirectory>
+                  <outputDirectory>${assembly.directory}/lib/annotations</outputDirectory>
               </artifactItem>
               <artifactItem>
                   <groupId>asm</groupId>
                   <artifactId>asm</artifactId>
                   <version>3.1</version>
-                  <outputDirectory>${assembly.directory}/lib/jetty-annotations</outputDirectory>
+                  <outputDirectory>${assembly.directory}/lib/annotations</outputDirectory>
               </artifactItem>
               <artifactItem>
                   <groupId>asm</groupId>
                   <artifactId>asm-tree</artifactId>
                   <version>3.1</version>
-                  <outputDirectory>${assembly.directory}/lib/jetty-annotations</outputDirectory>
+                  <outputDirectory>${assembly.directory}/lib/annotations</outputDirectory>
               </artifactItem>
               </artifactItems>
             </configuration>
           </execution>
-          </executions>
+	  -->
+        </executions>
       </plugin>     
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

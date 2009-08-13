@@ -196,9 +196,7 @@ public class Config
         {
             Classpath cp = _classpaths.get(section);
             if (cp == null)
-            {
                 cp = new Classpath();
-            }
 
             boolean added = cp.addComponent(component);
             _classpaths.put(section,cp);
@@ -247,8 +245,11 @@ public class Config
 
         for (File entry : entries)
         {
-            if (entry.isDirectory() && recurse)
-                addJars(sections,entry,recurse);
+            if (entry.isDirectory())
+            {
+                if (recurse)
+                    addJars(sections,entry,recurse);
+            }
             else
             {
                 String name = entry.getName().toLowerCase();
@@ -561,24 +562,35 @@ public class Config
                 if (trim.startsWith("[") && trim.endsWith("]"))
                 {
                     String identifier = trim.substring(1,trim.length() - 1);
-                    if (identifier.charAt(0) == '=')
+
+                    // Normal case: section identifier (possibly separated by commas)
+                    sections = Arrays.asList(identifier.split(","));
+                    List<String> section_ids=new ArrayList<String>();
+                    
+                    // Ensure section classpaths exist
+                    for (String sectionId : sections)
                     {
-                        // Special case: dynamic/discovered option section identifier.
-                        processDynamicSectionIdentifier(identifier.substring(1));
+                        if (sectionId.charAt(0) == '=')
+                            continue;
+
+                        if (!_classpaths.containsKey(sectionId))
+                            _classpaths.put(sectionId,new Classpath());
+                        
+                        section_ids.add(sectionId);
                     }
-                    else
+                    
+
+                    // Process Dynamic
+                    for (String sectionId : sections)
                     {
-                        // Normal case: section identifier (possibly separated by commas)
-                        sections = Arrays.asList(identifier.split(","));
-                        // Ensure section classpaths exist
-                        for (String sectionId : sections)
-                        {
-                            if (!_classpaths.containsKey(sectionId))
-                            {
-                                _classpaths.put(sectionId,new Classpath());
-                            }
-                        }
+                        if (sectionId.charAt(0) != '=')
+                            continue;
+                        
+                        section_ids = processDynamicSectionIdentifier(sectionId.substring(1),section_ids);
                     }
+                    
+                    sections = section_ids;
+                    
                     continue;
                 }
 
@@ -820,19 +832,42 @@ public class Config
         }
     }
 
-    private void processDynamicSectionIdentifier(String dynamicPathId) throws IOException
+    private List<String> processDynamicSectionIdentifier(String dynamicPathId,List<String> sections) throws IOException
     {
-        if (!dynamicPathId.endsWith("/*"))
+        String section=null;
+        String rawPath;
+        boolean deep;
+        
+        if (dynamicPathId.endsWith("/*"))
         {
-            String msg = "Dynamic Section IDs must end in \"/*\" to work.  Ignoring: [=" + dynamicPathId + "]";
-            System.err.println(msg);
+            deep=false;
+            rawPath = fixPath(dynamicPathId.substring(0,dynamicPathId.length() - 1));
+        }
+        else if (dynamicPathId.endsWith("/**"))
+        {
+            deep=true;
+            rawPath = fixPath(dynamicPathId.substring(0,dynamicPathId.length() - 2));
+        }
+        else if (dynamicPathId.indexOf('/')>1 && !dynamicPathId.endsWith("/"))
+        {
+            section=dynamicPathId.substring(dynamicPathId.lastIndexOf('/')+1);
+            rawPath=dynamicPathId.substring(0,dynamicPathId.lastIndexOf('/'));
+            deep=true;
+        }
+        else 
+        {
+            String msg = "Illegal dynamic path [" + dynamicPathId + "]";
             throw new IOException(msg);
         }
-
-        String rawPath = fixPath(dynamicPathId.substring(0,dynamicPathId.length() - 1));
+        
         File parentDir = new File(expand(rawPath));
-        debug("Adding dynamic section entries based on path: " + parentDir);
-        File dirs[] = parentDir.listFiles(new FileFilter()
+        if (!parentDir.exists())
+            return sections;
+        debug("dynamic: " + parentDir);
+        
+        File dirs[] = section!=null
+        ?new File[]{new File(parentDir,section)}   
+        :parentDir.listFiles(new FileFilter()
         {
             public boolean accept(File path)
             {
@@ -840,15 +875,28 @@ public class Config
             }
         });
 
-        List<String> sections = new ArrayList<String>();
+        List<String> dyn_sections = new ArrayList<String>();
+        List<String> super_sections = new ArrayList<String>();
+        if (sections!=null)
+            super_sections.addAll(sections);
+        
         for (File dir : dirs)
         {
-            sections.clear();
-            sections.add("All");
             String id = dir.getName();
-            sections.add(id);
-            addJars(sections,dir,false);
+            if (_classpaths.keySet().contains(id))
+                continue;
+            _classpaths.put(id,new Classpath());
+            
+            dyn_sections.clear();
+            if (sections!=null)
+                dyn_sections.addAll(sections);
+            dyn_sections.add(id);
+            super_sections.add(id);
+            debug("dynamic: " + dyn_sections);
+            addJars(dyn_sections,dir,deep);
         }
+        
+        return super_sections;
     }
 
     private String fixPath(String path)

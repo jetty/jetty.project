@@ -81,8 +81,12 @@ public class Main
         try
         {
             List<String> arguments = new ArrayList<String>();
-            arguments.addAll(Arrays.asList(args)); // Add Arguments on Command Line
-            arguments.addAll(loadStartIni()); // Add Arguments from start.ini (if it exists)
+            
+            if (args.length>0)
+                arguments.addAll(Arrays.asList(args)); // Add Arguments on Command Line
+            else
+                // if no command line args
+                arguments.addAll(loadStartIni()); // Add Arguments from start.ini (if it exists)
 
             // The XML Configuration Files to initialize with
             List<String> xmls = new ArrayList<String>();
