@@ -227,6 +227,17 @@ public class IO
                 out.write(buffer,0,len);
             }
         }
+        else if (out instanceof PrintWriter)
+        {
+            PrintWriter pout=(PrintWriter)out;
+            while (!pout.checkError())
+            {
+                len=in.read(buffer,0,bufferSize);
+                if (len==-1)
+                    break;
+                out.write(buffer,0,len);
+            }
+        }
         else
         {
             while (true)
