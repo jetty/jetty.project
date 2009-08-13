@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util.log;
 
+import java.security.AccessControlException;
+
 import org.eclipse.jetty.util.DateCache;
 
 /*-----------------------------------------------------------------------*/
@@ -32,7 +34,7 @@ public class StdErrLog implements Logger
     
     private final static boolean __debug = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.stderr.DEBUG","false"));
     private boolean _debug = __debug;
-    private String _name;
+    private final String _name;
     private boolean _hideStacks=false;
     
     static
@@ -56,7 +58,15 @@ public class StdErrLog implements Logger
     public StdErrLog(String name)
     {    
         this._name=name==null?"":name;
-        _debug=Boolean.parseBoolean(System.getProperty(name+".DEBUG",Boolean.toString(__debug)));
+
+        try
+        {
+            _debug = Boolean.parseBoolean(System.getProperty(name + ".DEBUG",Boolean.toString(__debug)));
+        }
+        catch (AccessControlException ace)
+        {
+            _debug = __debug;
+        }
     }
     
     public String getName()
