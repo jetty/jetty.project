@@ -6,3 +6,8 @@ grant codeBase "file:///bar.jar" {
   permission java.io.FilePermission "/tmp/*", "read,write";
   permission java.io.FilePermission "/usr/*", "read";
 }
+
+grant {
+
+  permission java.util.PropertyPermission "main.class", "read";
+}
