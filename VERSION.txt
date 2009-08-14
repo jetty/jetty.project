@@ -2,6 +2,7 @@ jetty-7.0.0.RC4-SNAPSHOT
  + 286185 Implement ability for JSON implementation to automatically register convertors
  + Added discoverable start options
  + 286535 ContentExchange status code
+ + JETTY-1079
 
 jetty-7.0.0.RC3 7 August 2009
  + 277403 remove system properties
