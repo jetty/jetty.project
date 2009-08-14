@@ -194,6 +194,12 @@ public class JarResource extends URLResource
                 
            
             File file=new File(directory,entryName);
+
+            if(!file.getCanonicalPath().regionMatches(0,directory.getCanonicalPath()+"/",0,directory.getCanonicalPath().length()+1)) {
+                if (Log.isDebugEnabled()) Log.debug("Invalid entry: " + entryName);
+                continue;
+            } 
+            
             if (entry.isDirectory())
             {
                 // Make directory

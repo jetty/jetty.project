@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.File;
 import java.io.FilePermission;
+import java.io.FilenameFilter;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.jar.JarInputStream;
@@ -272,6 +273,61 @@ public class ResourceTest extends junit.framework.TestCase
         assertFalse(jarFileResource.isContainedIn(container));
     }
 
+    /* ------------------------------------------------------------ */
+    public void testJarFileCopyToDirectoryTraversal () throws Exception
+    {
+        String s = "jar:"+__userURL+"TestData/extract.zip!/";
+        Resource r = Resource.newResource(s);
+
+        assertTrue(r instanceof JarResource);
+        JarResource jarResource = (JarResource)r;
+
+        File destParent = File.createTempFile("copyjar", null);
+        if (destParent.exists())
+            destParent.delete();
+        destParent.mkdir();
+        destParent.deleteOnExit();
+        
+        File dest = new File(destParent.getCanonicalPath()+"/extract");
+        if(dest.exists())
+            dest.delete();
+        dest.mkdir();
+        dest.deleteOnExit();
+
+        jarResource.copyTo(dest);
+
+        // dest contains only the valid entry; dest.getParent() contains only the dest directory
+        assertEquals(1, dest.listFiles().length);
+        assertEquals(1, dest.getParentFile().listFiles().length);
+
+        FilenameFilter dotdotFilenameFilter = new FilenameFilter() {
+            public boolean accept(File directory, String name)
+            {
+                return name.equals("dotdot.txt");
+            }
+        };        
+        assertEquals(0, dest.listFiles(dotdotFilenameFilter).length);
+        assertEquals(0, dest.getParentFile().listFiles(dotdotFilenameFilter).length);
+
+        FilenameFilter extractfileFilenameFilter = new FilenameFilter() {
+            public boolean accept(File directory, String name)
+            {
+                return name.equals("extract-filenotdir");
+            }
+        };
+        assertEquals(0, dest.listFiles(extractfileFilenameFilter).length);
+        assertEquals(0, dest.getParentFile().listFiles(extractfileFilenameFilter).length);
+
+        FilenameFilter currentDirectoryFilenameFilter = new FilenameFilter() {
+            public boolean accept(File directory, String name)
+            {
+                return name.equals("current.txt");
+            }
+        };
+        assertEquals(1, dest.listFiles(currentDirectoryFilenameFilter).length);
+        assertEquals(0, dest.getParentFile().listFiles(currentDirectoryFilenameFilter).length);        
+    }
+    
     /**
      * Test a class path resource for existence.
      */
