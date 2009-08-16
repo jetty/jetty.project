@@ -14,6 +14,8 @@
 
 package org.eclipse.jetty.security.authentication;
 
+import java.io.Serializable;
+
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
@@ -22,8 +24,10 @@ import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.UserIdentity;
 
-class SessionAuthentication extends UserAuthentication implements HttpSessionAttributeListener
+class SessionAuthentication extends UserAuthentication implements HttpSessionAttributeListener, Serializable
 {
+    private static final long serialVersionUID = -4643200685888258706L;
+
     public final static String __J_AUTHENTICATED="org.eclipse.jetty.security.UserIdentity";
     
     HttpSession _session;
