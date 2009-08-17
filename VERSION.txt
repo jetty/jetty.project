@@ -4,6 +4,7 @@ jetty-7.0.0.RC4-SNAPSHOT
  + 286535 ContentExchange status code
  + 285891 SessionAuthentication is serializable
  + JETTY-1079 ResourceCollection.toString
+ + 279820 Fixed HotSwapHandler
 
 jetty-7.0.0.RC3 7 August 2009
  + 277403 remove system properties

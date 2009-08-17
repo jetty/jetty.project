@@ -68,9 +68,6 @@ public class HotSwapHandler extends AbstractHandlerContainer
     {
         try
         {
-            if (isRunning())
-                throw new IllegalStateException(RUNNING);
-
             Handler old_handler = _handler;
 
             if (getServer()!=null)
@@ -137,11 +134,13 @@ public class HotSwapHandler extends AbstractHandlerContainer
     /* ------------------------------------------------------------ */
     public void setServer(Server server)
     {
+        Server old_server=getServer();
+        if (server==old_server)
+            return;
+        
         if (isRunning())
             throw new IllegalStateException(RUNNING);
             
-        Server old_server=getServer();
-        
         super.setServer(server);
         
         Handler h=getHandler();

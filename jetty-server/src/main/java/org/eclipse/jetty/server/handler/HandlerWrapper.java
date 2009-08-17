@@ -105,9 +105,6 @@ public class HandlerWrapper extends AbstractHandlerContainer
     }
     
     /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.server.server.EventHandler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (_handler!=null && isStarted())
@@ -118,12 +115,15 @@ public class HandlerWrapper extends AbstractHandlerContainer
     
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setServer(Server server)
     {
+        Server old_server=getServer();
+        if (server==old_server)
+            return;
+        
         if (isStarted())
             throw new IllegalStateException(STARTED);
-            
-        Server old_server=getServer();
         
         super.setServer(server);
         
@@ -137,6 +137,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     
 
     /* ------------------------------------------------------------ */
+    @Override
     protected Object expandChildren(Object list, Class byClass)
     {
         return expandHandler(_handler,list,byClass);
