@@ -5,7 +5,8 @@ jetty-7.0.0.RC4-SNAPSHOT
  + 285891 SessionAuthentication is serializable
  + JETTY-1079 ResourceCollection.toString
  + 279820 Fixed HotSwapHandler
-
+ + JETTY-1080 Ignore files that would be extracted outside the destination directory when unpacking WARs
+ 
 jetty-7.0.0.RC3 7 August 2009
  + 277403 remove system properties
  + JETTY-1074 JMX thread manipulation
