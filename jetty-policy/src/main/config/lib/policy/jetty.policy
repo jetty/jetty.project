@@ -134,6 +134,8 @@ grant codeBase "file:${jetty.home}/lib/-" {
 //
 grant codeBase "file:${java.io.tmpdir}/-" {
 
+   permission java.io.FilePermission "${jetty.home}${/}webapps${/}-", "read"; // Ought to go up a specific codebase
+
 permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";   
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.IGNORED", "read";   
