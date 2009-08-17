@@ -31,7 +31,7 @@ grant codeBase "file:${jetty.home}/start.jar" {
      
    permission java.util.PropertyPermission "main.class", "read";  
    permission java.util.PropertyPermission "ISO_8859_1", "read";	 
-	permission javax.security.auth.AuthPermission "modifyPrincipals";
+   permission javax.security.auth.AuthPermission "modifyPrincipals";
 	 
 	permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
 	permission javax.security.auth.AuthPermission "setReadOnly"; 	 
@@ -52,11 +52,11 @@ grant codeBase "file:${jetty.home}/lib/-" {
    permission java.util.PropertyPermission "ROLLOVERFILE_BACKUP_FORMAT", "read";
 	 
    permission java.util.PropertyPermission "org.eclipse.jetty.server.webapp.parentLoaderPriority", "read";
-	 permission java.util.PropertyPermission "org.eclipse.jetty.server.Request.maxFormContentSize", "read";
+   permission java.util.PropertyPermission "org.eclipse.jetty.server.Request.maxFormContentSize", "read";
 	 
-	 permission javax.security.auth.AuthPermission "modifyPrincipals";	 
-	 permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
-	 permission javax.security.auth.AuthPermission "setReadOnly";
+   permission javax.security.auth.AuthPermission "modifyPrincipals";	 
+   permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
+   permission javax.security.auth.AuthPermission "setReadOnly";
   
    permission java.io.FilePermission "${jetty.home}${/}-", "read";
    permission java.io.FilePermission "${java.io.tmpdir}", "read, write";
@@ -77,9 +77,9 @@ grant codeBase "file:${jetty.home}/lib/-" {
    permission java.lang.RuntimePermission "accessDeclaredMembers";
      
    // jetty specific properties
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.DEBUG", "read";
+   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";
+   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";
    permission java.util.PropertyPermission "START", "read";
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.VERBOSE", "read";
    permission java.util.PropertyPermission "STOP.PORT", "read";
    permission java.util.PropertyPermission "STOP.KEY", "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.IGNORED", "read";      
@@ -99,7 +99,7 @@ grant codeBase "file:${jetty.home}/lib/-" {
    permission java.util.PropertyPermission "jetty.host", "read";
    permission java.util.PropertyPermission "jetty.port", "read";
      
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";
+   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.class", "read";
    		
    permission java.util.PropertyPermission "org.eclipse.jetty.util.URI.charset", "read";
    		
@@ -121,8 +121,9 @@ grant codeBase "file:${jetty.home}/lib/-" {
    // method that takes no argument.
    permission java.lang.RuntimePermission "stopThread";    
    
-    // jsp support
-	 permission java.net.SocketPermission "java.sun.com:80", "connect,resolve";
+    // jsp support   
+   permission java.net.SocketPermission "java.sun.com:80", "connect,resolve";
+	 
 };
 
 
@@ -132,11 +133,11 @@ grant codeBase "file:${jetty.home}/lib/-" {
 // the tmp directory is where webapps are unpacked by default so setup their restricted permissions
 //
 grant codeBase "file:${java.io.tmpdir}/-" {
+
 permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";   
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.IGNORED", "read";   
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.DEBUG", "read";  
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.VERBOSE", "read";
+   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";  
 };
 
 //
@@ -146,8 +147,7 @@ grant codeBase "file:/private${java.io.tmpdir}/-" {
 
 permission java.io.FilePermission "/private/${java.io.tmpdir}/-", "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";  
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.DEBUG", "read";  
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.VERBOSE", "read";   
+   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";  
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.IGNORED", "read";
    
 };
@@ -160,8 +160,7 @@ grant codeBase "file:${jetty.home}/work/-" {
 
    permission java.io.FilePermission "${jetty.home}${/}work${/}-", "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";  
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.DEBUG", "read";  
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.VERBOSE", "read";     
+   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";  
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.IGNORED", "read";
    
 };
@@ -176,6 +175,9 @@ grant codeBase "file:${jetty.home}/work/-" {
 grant { 
    // allows anyone to listen on un-privileged ports
    permission java.net.SocketPermission "localhost:1024-", "listen";
+   permission java.net.SocketPermission "localhost:1024-", "accept";
+
+   permission java.util.PropertyPermission "org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD", "read, write";
 
    // "standard" properties that can be read by anyone
    permission java.util.PropertyPermission "java.version", "read";
