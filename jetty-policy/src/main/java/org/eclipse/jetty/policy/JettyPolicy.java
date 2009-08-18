@@ -29,9 +29,9 @@ import java.security.Policy;
 import java.security.Principal;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +39,7 @@ import java.util.Set;
 
 import org.eclipse.jetty.policy.loader.DefaultPolicyLoader;
 import org.eclipse.jetty.util.Scanner;
+
 
 /**
  * Policy implementation that will load a set of policy files and manage the mapping of permissions and protection domains
@@ -60,7 +61,9 @@ public class JettyPolicy extends Policy
     // Policy files that are actively managed by the aggregate policy mechanism
     private final Set<String> _policies;
 
-    private final Map<ProtectionDomain, PolicyBlock> pdMapping = Collections.synchronizedMap(new HashMap<ProtectionDomain, PolicyBlock>());
+    private final Set<PolicyBlock> _grants = new HashSet<PolicyBlock>();
+
+    private final Map<Object, PermissionCollection> _cache = new HashMap<Object, PermissionCollection>();
 
     private final PolicyContext _context = new PolicyContext();
 
@@ -90,44 +93,52 @@ public class JettyPolicy extends Policy
     {
         if (!initialized)
         {
-            synchronized (this)
-            {
-                refresh();
-            }
+
+            refresh();
         }
 
-        PermissionCollection perms = new Permissions();
-
-        synchronized (pdMapping)
+        if (_cache.containsKey(domain))
         {
-            for (Iterator<ProtectionDomain> i = pdMapping.keySet().iterator(); i.hasNext();)
+            return _cache.get(domain);
+        }
+
+        synchronized (_cache)
+        {
+            // check if it was added in since we obtained lock
+            if (_cache.containsKey(domain))
             {
-                ProtectionDomain pd = i.next();
+                return _cache.get(domain);
+            }
+
+            PermissionCollection perms = new Permissions();
+
+            for (Iterator<PolicyBlock> i = _grants.iterator(); i.hasNext();)
+            {
+                PolicyBlock policyBlock = i.next();
+                ProtectionDomain grantPD = policyBlock.toProtectionDomain();
 
                 if (__DEBUG)
                 {
                     System.out.println("----START----");
-                    System.out.println("PDCS: " + pd.getCodeSource());
+                    System.out.println("PDCS: " + policyBlock.getCodeSource());
                     System.out.println("CS: " + domain.getCodeSource());
                 }
 
                 // 1) if protection domain codesource is null, it is the global permissions (grant {})
                 // 2) if protection domain codesource implies target codesource and there are no prinicpals
                 // 2) if protection domain codesource implies target codesource and principals align
-                if (pd.getCodeSource() == null || pd.getCodeSource().implies(domain.getCodeSource()) && pd.getPrincipals() == null || pd.getCodeSource().implies(domain.getCodeSource()) && validate(pd.getPrincipals(),domain.getPrincipals()))
+                if (grantPD.getCodeSource() == null || grantPD.getCodeSource().implies(domain.getCodeSource()) && grantPD.getPrincipals() == null || grantPD.getCodeSource().implies(domain.getCodeSource())
+                        && validate(grantPD.getPrincipals(),domain.getPrincipals()))
                 {
-                    // gather dynamic permissions
-                    if (pdMapping.get(pd) != null)
+
+                    for (Enumeration<Permission> e = policyBlock.getPermissions().elements(); e.hasMoreElements();)
                     {
-                        for (Enumeration<Permission> e = pdMapping.get(pd).getPermissions().elements(); e.hasMoreElements();)
+                        Permission perm = e.nextElement();
+                        if (__DEBUG)
                         {
-                            Permission perm = e.nextElement();
-                            if (__DEBUG)
-                            {
-                                System.out.println("D: " + perm);
-                            }
-                            perms.add(perm);
+                            System.out.println("D: " + perm);
                         }
+                        perms.add(perm);
                     }
                 }
                 if (__DEBUG)
@@ -135,10 +146,11 @@ public class JettyPolicy extends Policy
                     System.out.println("----STOP----");
                 }
             }
+
+            _cache.put(domain,perms);
+
+            return perms;
         }
-
-        return perms;
-
     }
 
     @Override
@@ -152,45 +164,56 @@ public class JettyPolicy extends Policy
             }
         }
 
-        PermissionCollection perms = new Permissions();
-
-        synchronized (pdMapping)
+        if (_cache.containsKey(codesource))
         {
-            for (Iterator<ProtectionDomain> i = pdMapping.keySet().iterator(); i.hasNext();)
-            {
-                ProtectionDomain pd = i.next();
+            return _cache.get(codesource);
+        }
 
-                if (pd.getCodeSource() == null || pd.getCodeSource().implies(codesource))
+        synchronized (_cache)
+        {
+            // check if it was added in since we obtained lock
+            if (_cache.containsKey(codesource))
+            {
+                return _cache.get(codesource);
+            }
+
+            PermissionCollection perms = new Permissions();
+
+            for (Iterator<PolicyBlock> i = _grants.iterator(); i.hasNext();)
+            {
+                PolicyBlock policyBlock = i.next();
+                ProtectionDomain grantPD = policyBlock.toProtectionDomain();
+
+                if (grantPD.getCodeSource() == null || grantPD.getCodeSource().implies(codesource))
                 {
                     if (__DEBUG)
                     {
                         System.out.println("----START----");
-                        System.out.println("PDCS: " + pd.getCodeSource());
+                        System.out.println("PDCS: " + grantPD.getCodeSource());
                         System.out.println("CS: " + codesource);
                     }
-                    // gather dynamic permissions
-                    if (pdMapping.get(pd) != null)
+
+                    for (Enumeration<Permission> e = policyBlock.getPermissions().elements(); e.hasMoreElements();)
                     {
-                        for (Enumeration<Permission> e = pdMapping.get(pd).getPermissions().elements(); e.hasMoreElements();)
+                        Permission perm = e.nextElement();
+                        if (__DEBUG)
                         {
-                            Permission perm = e.nextElement();
-                            if (__DEBUG)
-                            {
-                                System.out.println("D: " + perm);
-                            }
-                            perms.add(perm);
+                            System.out.println("D: " + perm);
                         }
+                        perms.add(perm);
                     }
+
                     if (__DEBUG)
                     {
                         System.out.println("----STOP----");
                     }
                 }
             }
+
+            _cache.put(codesource,perms);
+
+            return perms;
         }
-
-        return perms;
-
     }
 
     private static boolean validate(Principal[] permCerts, Principal[] classCerts)
@@ -222,7 +245,7 @@ public class JettyPolicy extends Policy
     }
 
     @Override
-    public void refresh()
+    public synchronized void refresh()
     {
 
         try
@@ -237,38 +260,43 @@ public class JettyPolicy extends Policy
                 System.out.println("refreshing policy files");
             }
 
-            synchronized (pdMapping)
+            Set<PolicyBlock> clean = new HashSet<PolicyBlock>();
+
+            for (Iterator<String> i = _policies.iterator(); i.hasNext();)
             {
-                pdMapping.clear();
+                File policyFile = new File(i.next());
 
-                for (Iterator<String> i = _policies.iterator(); i.hasNext();)
-                {
-                    File policyFile = new File(i.next());
-                    pdMapping.putAll(DefaultPolicyLoader.load(new FileInputStream(policyFile),_context));
-                }
-
-                if (__DEBUG)
-                {
-                    System.out.println("resetting policies");
-
-                    System.setSecurityManager(null);
-                    Policy.setPolicy(null);
-                    Policy.setPolicy(this);
-                    System.setSecurityManager(new SecurityManager());
-
-                    // System.setSecurityManager(null);
-                    // Policy.setPolicy(null);
-                    // Policy.setPolicy(this);
-                    // System.setSecurityManager(new SecurityManager());
-
-                    // for (Iterator<ProtectionDomain> i = pdMapping.keySet().iterator(); i.hasNext();)
-                    // {
-                    // System.out.println(i.next().toString());
-                    // }
-
-                    System.out.println("finished reloading policies");
-                }
+                clean.addAll(DefaultPolicyLoader.load(new FileInputStream(policyFile),_context));
             }
+
+            synchronized (_cache)
+            {
+                _grants.clear();
+                _grants.addAll(clean);
+
+                //for (Iterator<PermissionCollection> i = _cache.values().iterator(); i.hasNext();)
+                //{
+                //    i.next().toString();
+                //}
+
+                _cache.clear();
+            }
+
+            if (__DEBUG)
+            {
+                // System.setSecurityManager(null);
+                // Policy.setPolicy(null);
+                // Policy.setPolicy(this);
+                // System.setSecurityManager(new SecurityManager());
+
+                // System.setSecurityManager(null);
+                // Policy.setPolicy(null);
+                // Policy.setPolicy(this);
+                // System.setSecurityManager(new SecurityManager());
+
+                System.out.println("finished reloading policies");
+            }
+
         }
         catch (Exception e)
         {
@@ -277,10 +305,16 @@ public class JettyPolicy extends Policy
     }
 
     /**
-     * TODO make this optional
+     * TODO make this optional MUST be only called from refresh or race condition
      */
-    private void initialize() throws Exception
+    private synchronized void initialize() throws Exception
     {
+
+        // if we have been initialized since we got lock, return
+        if (initialized)
+        {
+            return;
+        }
 
         List scanDirs = new ArrayList();
 
@@ -300,7 +334,10 @@ public class JettyPolicy extends Policy
 
             public void fileChanged(String filename) throws Exception
             {
-                refresh();
+                if (filename.endsWith("policy"))
+                {
+                    refresh();
+                }
             }
 
             public void fileAdded(String filename) throws Exception
@@ -321,13 +358,12 @@ public class JettyPolicy extends Policy
         PrintWriter write = new PrintWriter(out);
         write.println("dumping policy settings");
 
-        synchronized (pdMapping)
+        synchronized (_cache)
         {
-            for (Iterator<ProtectionDomain> i = pdMapping.keySet().iterator(); i.hasNext();)
+            for (Iterator<Object> i = _cache.keySet().iterator(); i.hasNext();)
             {
-                ProtectionDomain domain = i.next();
-                PolicyBlock block = pdMapping.get(domain);
-                write.println(domain.toString());
+                Object o = i.next();
+                write.println(o.toString());
             }
         }
         write.flush();

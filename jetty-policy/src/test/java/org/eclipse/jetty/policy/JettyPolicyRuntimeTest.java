@@ -174,7 +174,7 @@ public class JettyPolicyRuntimeTest extends TestCase
         
         URL url = MavenTestingUtils.toTargetURL("test-policy/jetty-test-policy.jar");
         
-        System.out.println( "IN HERE: " + url.toString());
+        // System.out.println( "IN HERE: " + url.toString());
         
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )
