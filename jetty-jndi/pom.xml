@@ -5,9 +5,9 @@
     <version>7.0.0.RC4-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-setuid</artifactId>
-  <name>Jetty :: SetUID</name>
-  <description>SetUID Support for using reserved ports and dropping privileges on startup</description>
+  <artifactId>jetty-jndi</artifactId>
+  <name>Jetty :: JNDI Naming</name>
+  <description>JNDI spi impl for java namespace.</description>
   <build>
     <plugins>
       <plugin>
@@ -35,49 +35,45 @@
           </archive>
         </configuration>
       </plugin>
-	  <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>config.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
-  <dependencies>  
+  <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>net.java.dev.jna</groupId>
-      <artifactId>jna</artifactId>
-      <version>${jna-version}</version>
-      <type>jar</type>
-      <optional>false</optional>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
+      <artifactId>jetty-webapp</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>javax.mail</groupId>
+      <artifactId>mail</artifactId>
+      <version>${mail-version}</version>
+	  <exclusions>
+	    <exclusion>
+		  <groupId>javax.activation</groupId>
+		  <artifactId>activation</artifactId>
+		</exclusion>
+	  </exclusions>
     </dependency>
   </dependencies>
-  <repositories>
-    <repository>
-      <id>java-net-repo</id>
-      <name>Java.net Repository</name>
-      <url>http://download.java.net/maven/2</url>
-    </repository>
-  </repositories>
+  <profiles>
+    <profile>
+      <id>below-jdk1.6</id>
+      <activation>
+        <jdk>!1.6</jdk>
+      </activation>
+      <dependencies>
+		<dependency>
+		  <groupId>javax.activation</groupId>
+		  <artifactId>activation</artifactId>
+		  <version>${activation-version}</version>
+		</dependency>	  
+      </dependencies>
+    </profile>
+  </profiles>  
 </project>
