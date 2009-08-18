@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.0.0.RC4-SNAPSHOT</version>
+    <version>7.0.0.RC4</version>
   </parent>
   <artifactId>jetty-distribution</artifactId>
   <name>Jetty :: Distribution Assemblies</name>
@@ -39,20 +39,11 @@
               </goals>
               <configuration>
                 <tasks>
-		  <mkdir dir="${assembly.directory}/lib"/>
-                  <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.servlet_2.5.0.v200806031605.jar"
-                       dest="${assembly.directory}/lib/servlet-api-2.5.jar"
-                       usetimestamp="true"
-                       verbose="true" />
-		  <mkdir dir="${assembly.directory}/lib/jndi"/>
-                  <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.activation_1.1.0.v200905021805.jar"
-                       dest="${assembly.directory}/lib/jndi/activation-1.1.jar"
-                       usetimestamp="true"
-                       verbose="true" />
-                  <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.mail_1.4.0.v200905040518.jar"
-                       dest="${assembly.directory}/lib/jndi/mail-1.4.jar"
-                       usetimestamp="true"
-                       verbose="true" />
+		  <mkdir dir="${assembly.directory}/lib" />
+                  <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.servlet_2.5.0.v200806031605.jar" dest="${assembly.directory}/lib/servlet-api-2.5.jar" usetimestamp="true" verbose="true" />
+		  <mkdir dir="${assembly.directory}/lib/jndi" />
+                  <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.activation_1.1.0.v200905021805.jar" dest="${assembly.directory}/lib/jndi/activation-1.1.jar" usetimestamp="true" verbose="true" />
+                  <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.mail_1.4.0.v200905040518.jar" dest="${assembly.directory}/lib/jndi/mail-1.4.jar" usetimestamp="true" verbose="true" />
                 </tasks>
               </configuration>
             </execution>
@@ -506,4 +497,3 @@
     </dependency>
   </dependencies>
 </project>
-
