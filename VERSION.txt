@@ -1,4 +1,4 @@
-jetty-7.0.0.RC4-SNAPSHOT 
+jetty-7.0.0.RC4 18 August 2009
  + 286185 Implement ability for JSON implementation to automatically register convertors
  + Added discoverable start options
  + 286535 ContentExchange status code
