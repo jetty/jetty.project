@@ -6,7 +6,6 @@ jetty-7.0.0.RC4-SNAPSHOT
  + JETTY-1079 ResourceCollection.toString
  + 279820 Fixed HotSwapHandler
  + JETTY-1080 Ignore files that would be extracted outside the destination directory when unpacking WARs
- + 286242 Ported jetty-setuid from jetty-6
  
 jetty-7.0.0.RC3 7 August 2009
  + 277403 remove system properties

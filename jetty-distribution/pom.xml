@@ -179,16 +179,6 @@
                   <includes>**</includes>
                   <outputDirectory>${assembly.directory}</outputDirectory>
                 </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-setuid</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly.directory}</outputDirectory>
-                </artifactItem>
               </artifactItems>
             </configuration>
           </execution>                 
@@ -391,15 +381,6 @@
                   <outputDirectory>${assembly.directory}</outputDirectory>
                   <destFileName>start.jar</destFileName>
                 </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-setuid</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
-                </artifactItem>
               </artifactItems>
             </configuration>
           </execution>
@@ -410,12 +391,6 @@
             </goals>
             <configuration>
               <artifactItems>
-              <artifactItem>
-                  <groupId>net.java.dev.jna</groupId>
-                  <artifactId>jna</artifactId>
-                  <version>${jna-version}</version>
-                  <outputDirectory>${assembly.directory}/lib/setuid</outputDirectory>
-              </artifactItem>
               <!--
                <artifactItem>
                   <groupId>org.apache.geronimo.specs</groupId>
@@ -527,11 +502,6 @@
     <dependency>
     	<groupId>org.eclipse.jetty</groupId>
     	<artifactId>jetty-policy</artifactId>
-    	<version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-    	<artifactId>jetty-setuid</artifactId>
     	<version>${project.version}</version>
     </dependency>
   </dependencies>
