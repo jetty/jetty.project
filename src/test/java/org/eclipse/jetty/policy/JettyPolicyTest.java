@@ -132,7 +132,7 @@ public class JettyPolicyTest extends TestCase
     
     public void testSCLoader() throws Exception
     {
-        JettyPolicy ap = new JettyPolicy(Collections.singleton(getWorkingDirectory() + "/src/main/config/lib/security/jetty.policy"),evaluator);
+        JettyPolicy ap = new JettyPolicy(Collections.singleton(getWorkingDirectory() + "/src/main/config/lib/policy"),evaluator);
 
         ap.refresh();
         ap.dump(System.out);
