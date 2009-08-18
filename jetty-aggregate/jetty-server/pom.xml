@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.aggregate</groupId>
     <artifactId>jetty-aggregate-project</artifactId>
-    <version>7.0.0.RC4</version>
+    <version>7.0.0.RC5-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.aggregate</groupId>
