@@ -384,6 +384,7 @@
               </artifactItems>
             </configuration>
           </execution>
+          <!--
           <execution>
             <phase>generate-resources</phase>
             <goals>
@@ -391,7 +392,6 @@
             </goals>
             <configuration>
               <artifactItems>
-              <!--
                <artifactItem>
                   <groupId>org.apache.geronimo.specs</groupId>
                   <artifactId>geronimo-annotation_1.0_spec</artifactId>
@@ -416,10 +416,10 @@
                   <version>3.1</version>
                   <outputDirectory>${assembly.directory}/lib/annotations</outputDirectory>
               </artifactItem>
-              -->
               </artifactItems>
             </configuration>
           </execution>
+          -->
         </executions>
       </plugin>     
       <plugin>

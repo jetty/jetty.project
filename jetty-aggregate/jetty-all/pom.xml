@@ -172,18 +172,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-setuid</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>net.java.dev.jna</groupId>
-          <artifactId>jna</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
       <scope>compile</scope>
@@ -220,12 +208,6 @@
       <artifactId>asm-commons</artifactId>
       <scope>compile</scope>
       <version>3.1</version>
-    </dependency>
-    <dependency>
-      <groupId>net.java.dev.jna</groupId>
-      <artifactId>jna</artifactId>
-      <scope>compile</scope>
-      <version>${jna-version}</version>
     </dependency>
   </dependencies>
 </project>
