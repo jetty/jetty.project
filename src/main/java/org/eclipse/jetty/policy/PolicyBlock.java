@@ -45,7 +45,9 @@ public class PolicyBlock
             // }
             // else
             // {
-                protectionDomain = new ProtectionDomain( codesource, permissions, Thread.currentThread().getContextClassLoader(), principals );
+            protectionDomain = new ProtectionDomain(codesource,null,Thread.currentThread().getContextClassLoader(),principals);
+
+            // protectionDomain = new ProtectionDomain( codesource, permissions, Thread.currentThread().getContextClassLoader(), principals );
             // }
         }
         
