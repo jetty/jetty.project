@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Log;
  * <li>The filter is mapped to a matching path</li>
  * <li>The response status code is >=200 and <300
  * <li>The content length is unknown or more than the <code>minGzipSize</code> initParameter or the minGzipSize is 0(default)</li>
- * <li>The content-type is in the coma separated list of mimeTypes set in the <code>mimeTypes</code> initParameter or
+ * <li>The content-type is in the comma separated list of mimeTypes set in the <code>mimeTypes</code> initParameter or
  * if no mimeTypes are defined the content-type is not "application/gzip"</li>
  * <li>No content-encoding is specified by the resource</li>
  * </ul>
@@ -190,13 +190,17 @@ public class GzipFilter extends UserAgentFilter
         public void setContentType(String ct)
         {
             super.setContentType(ct);
-            int colon=ct.indexOf(";");
-            if (colon>0)
-                ct=ct.substring(0,colon);
+
+            if (ct!=null)
+            {
+                int colon=ct.indexOf(";");
+                if (colon>0)
+                    ct=ct.substring(0,colon);
+            }
 
             if ((_gzStream==null || _gzStream._out==null) && 
                 (_mimeTypes==null && "application/gzip".equalsIgnoreCase(ct) ||
-                 _mimeTypes!=null && !_mimeTypes.contains(StringUtil.asciiToLowerCase(ct))))
+                 _mimeTypes!=null && (ct==null||!_mimeTypes.contains(StringUtil.asciiToLowerCase(ct)))))
             {
                 noGzip();
             }
