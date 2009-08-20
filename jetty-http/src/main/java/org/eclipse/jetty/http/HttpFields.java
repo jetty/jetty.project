@@ -1079,7 +1079,10 @@ public class HttpFields
             for (int i = _fields.size(); i-- > 0;)
             {
                 Field field = _fields.get(i);
-                if (field != null) field.destroy();
+                if (field != null) {
+                    _bufferMap.remove(field.getNameBuffer());
+                    field.destroy();
+                }
             }
             _fields.clear();
         }
