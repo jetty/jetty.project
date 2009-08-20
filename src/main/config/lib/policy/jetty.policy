@@ -134,9 +134,8 @@ grant codeBase "file:${jetty.home}/lib/-" {
 //
 grant codeBase "file:${java.io.tmpdir}/-" {
 
-   permission java.io.FilePermission "${jetty.home}${/}webapps${/}-", "read"; // Ought to go up a specific codebase
-
-permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read";
+   permission java.io.FilePermission "${jetty.home}${/}webapps${/}-", "read"; // Ought to go up a specific codebases
+   permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";   
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.IGNORED", "read";   
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";  
@@ -147,7 +146,8 @@ permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read";
 //
 grant codeBase "file:/private${java.io.tmpdir}/-" {
 
-permission java.io.FilePermission "/private/${java.io.tmpdir}/-", "read";
+   permission java.io.FilePermission "${jetty.home}${/}webapps${/}-", "read"; // Ought to go up a specific codebase
+   permission java.io.FilePermission "/private/${java.io.tmpdir}/-", "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";  
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";  
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.IGNORED", "read";
@@ -159,7 +159,7 @@ permission java.io.FilePermission "/private/${java.io.tmpdir}/-", "read";
 // permissions as the tmp directory
 //
 grant codeBase "file:${jetty.home}/work/-" {
-
+   permission java.io.FilePermission "${jetty.home}${/}webapps${/}-", "read"; // Ought to go up a specific codebase
    permission java.io.FilePermission "${jetty.home}${/}work${/}-", "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";  
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";  
@@ -178,6 +178,12 @@ grant {
    // allows anyone to listen on un-privileged ports
    permission java.net.SocketPermission "localhost:1024-", "listen";
    permission java.net.SocketPermission "localhost:1024-", "accept";
+   
+   permission java.util.PropertyPermission "entityExpansionLimit", "read";
+   permission java.util.PropertyPermission "maxOccurLimit", "read";
+   permission java.util.PropertyPermission "elementAttributeLimit", "read";
+   permission java.lang.RuntimePermission "shutdownHooks";
+  
 
    permission java.util.PropertyPermission "org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD", "read, write";
 
