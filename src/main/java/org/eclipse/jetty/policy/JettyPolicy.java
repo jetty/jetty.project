@@ -216,6 +216,37 @@ public class JettyPolicy extends Policy
         }
     }
 
+    public boolean implies(ProtectionDomain domain, Permission permission) {
+        PermissionCollection pc;
+
+        if (_cache == null) {
+            synchronized (_cache)
+            {
+                refresh();
+            }
+        }
+
+        synchronized (_cache) {
+            pc = (PermissionCollection)_cache.get(domain);
+        }
+
+        if (pc != null) {
+            return pc.implies(permission);
+        } 
+        
+        pc = getPermissions(domain);
+        if (pc == null) {
+            return false;
+        }
+
+        synchronized (_cache) {
+            // cache it 
+            _cache.put(domain, pc);
+        }
+        
+        return pc.implies(permission);
+    }
+    
     private static boolean validate(Principal[] permCerts, Principal[] classCerts)
     {
         if (classCerts == null)

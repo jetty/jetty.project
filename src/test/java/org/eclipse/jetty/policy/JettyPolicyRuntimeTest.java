@@ -171,7 +171,6 @@ public class JettyPolicyRuntimeTest extends TestCase
         
         System.setSecurityManager( new SecurityManager() );
      
-        
         URL url = MavenTestingUtils.toTargetURL("test-policy/jetty-test-policy.jar");
         
         // System.out.println( "IN HERE: " + url.toString());
@@ -208,7 +207,7 @@ public class JettyPolicyRuntimeTest extends TestCase
 
         assertTrue("system property access was granted",true);
 
-        ap.dump(System.out);
+       // ap.dump(System.out);
     }
     
     
