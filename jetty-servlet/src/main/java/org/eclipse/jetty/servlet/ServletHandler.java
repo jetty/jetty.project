@@ -38,6 +38,7 @@ import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
@@ -439,6 +440,10 @@ public class ServletHandler extends ScopedHandler
         {
             throw e;
         }
+        catch(ContinuationThrowable e)
+        {   
+            throw e;
+        }
         catch(Exception e)
         {
             if (!(DispatcherType.REQUEST.equals(type) || DispatcherType.ASYNC.equals(type)))
@@ -461,7 +466,14 @@ public class ServletHandler extends ScopedHandler
             {
                 Log.debug(th);
                 Throwable cause=((ServletException)th).getRootCause();
-                if (cause!=th && cause!=null)
+                if (cause!=null)
+                    th=cause;
+            }
+            else if (th instanceof RuntimeIOException)
+            {
+                Log.debug(th);
+                Throwable cause=(IOException)((RuntimeIOException)th).getCause();
+                if (cause!=null)
                     th=cause;
             }
 
@@ -477,7 +489,7 @@ public class ServletHandler extends ScopedHandler
             }
             else if (th instanceof IOException || th instanceof UnavailableException)
             {
-                Log.warn(request.getRequestURI()+": "+th);
+                Log.debug(request.getRequestURI(),th);
             }
             else
             {
@@ -502,10 +514,9 @@ public class ServletHandler extends ScopedHandler
             }
             else
                 if(Log.isDebugEnabled())Log.debug("Response already committed for handling "+th);
-        }
-        catch(ContinuationThrowable e)
-        {   
-            throw e;
+            
+            if (th instanceof IOException)
+                throw (IOException)th;
         }
         catch(Error e)
         {   

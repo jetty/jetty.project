@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -172,7 +173,15 @@ public class GzipFilter extends UserAgentFilter
     {
         return new GZIPResponseWrapper(request,response);
     }
-
+    
+    /*
+     * Allows derived implementations to replace PrintWriter implementation
+     */
+    protected PrintWriter newWriter(OutputStream out,String encoding) throws UnsupportedEncodingException
+    {
+        return encoding==null?new PrintWriter(out):new PrintWriter(new OutputStreamWriter(out,encoding));
+    }
+    
     public class GZIPResponseWrapper extends HttpServletResponseWrapper
     {
         HttpServletRequest _request;
@@ -361,8 +370,7 @@ public class GzipFilter extends UserAgentFilter
                     return getResponse().getWriter();
                 
                 _gzStream=newGzipStream(_request,(HttpServletResponse)getResponse(),_contentLength,_bufferSize,_minGzipSize);
-                String encoding = getCharacterEncoding();
-                _writer=encoding==null?new PrintWriter(_gzStream):new PrintWriter(new OutputStreamWriter(_gzStream,encoding));
+                _writer=newWriter(_gzStream,getCharacterEncoding());
             }
             return _writer;   
         }
@@ -385,7 +393,7 @@ public class GzipFilter extends UserAgentFilter
         
         void finish() throws IOException
         {
-            if (_writer!=null)
+            if (_writer!=null && !_gzStream._closed)
                 _writer.flush();
             if (_gzStream!=null)
                 _gzStream.finish();

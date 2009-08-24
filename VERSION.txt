@@ -1,6 +1,7 @@
 jetty-7.0.0-SNAPSHOT
  + 286911 Clean out cache when recycling HTTP fields
  + JETTY-1081 Handle null content type in GzipFilter
+ + JETTY-1086 Added UncheckedPrintWriter to avoid ignored EOFs
 
 jetty-7.0.0.RC4 18 August 2009
  + 286185 Implement ability for JSON implementation to automatically register convertors
