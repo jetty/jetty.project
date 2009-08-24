@@ -176,6 +176,19 @@
     <url-pattern>/chat/*</url-pattern>
   </servlet-mapping>
   
+  
+  <servlet>
+    <servlet-name>SecureMode</servlet-name>
+    <servlet-class>com.acme.SecureModeServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>SecureMode</servlet-name>
+    <url-pattern>/secureMode/*</url-pattern>
+  </servlet-mapping>
+  
+  
   <servlet>
     <servlet-name>TransparentProxy</servlet-name>
     <servlet-class>org.eclipse.jetty.servlets.ProxyServlet$Transparent</servlet-class>

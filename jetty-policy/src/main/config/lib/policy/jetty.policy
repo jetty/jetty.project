@@ -123,6 +123,10 @@ grant codeBase "file:${jetty.home}/lib/-" {
    
     // jsp support   
    permission java.net.SocketPermission "java.sun.com:80", "connect,resolve";
+   
+   // TEST WEBAPP PERMISSIONS
+   permission java.util.PropertyPermission "__ALLOWED_READ_PROPERTY", "read";   
+   permission java.util.PropertyPermission "__ALLOWED_WRITE_PROPERTY", "read, write";
 	 
 };
 
@@ -138,7 +142,11 @@ grant codeBase "file:${java.io.tmpdir}/-" {
    permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";   
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.IGNORED", "read";   
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";  
+   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";
+   
+   // TEST WEBAPP PERMISSIONS
+   permission java.util.PropertyPermission "__ALLOWED_READ_PROPERTY", "read";   
+   permission java.util.PropertyPermission "__ALLOWED_WRITE_PROPERTY", "read, write";  
 };
 
 //
