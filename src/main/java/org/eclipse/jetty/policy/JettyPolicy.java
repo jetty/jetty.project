@@ -216,6 +216,7 @@ public class JettyPolicy extends Policy
         }
     }
 
+    @Override
     public boolean implies(ProtectionDomain domain, Permission permission) {
         PermissionCollection pc;
 
@@ -227,7 +228,7 @@ public class JettyPolicy extends Policy
         }
 
         synchronized (_cache) {
-            pc = (PermissionCollection)_cache.get(domain);
+            pc = _cache.get(domain);
         }
 
         if (pc != null) {
@@ -247,6 +248,7 @@ public class JettyPolicy extends Policy
         return pc.implies(permission);
     }
     
+
     private static boolean validate(Principal[] permCerts, Principal[] classCerts)
     {
         if (classCerts == null)
@@ -285,6 +287,12 @@ public class JettyPolicy extends Policy
             {
                 initialize();
             }
+            
+            for (Iterator<Object> i = _cache.keySet().iterator(); i.hasNext();)
+            {
+                System.out.println(i.next().toString());
+            }
+            
 
             if (__DEBUG)
             {
@@ -304,27 +312,11 @@ public class JettyPolicy extends Policy
             {
                 _grants.clear();
                 _grants.addAll(clean);
-
-                //for (Iterator<PermissionCollection> i = _cache.values().iterator(); i.hasNext();)
-                //{
-                //    i.next().toString();
-                //}
-
                 _cache.clear();
             }
 
             if (__DEBUG)
             {
-                // System.setSecurityManager(null);
-                // Policy.setPolicy(null);
-                // Policy.setPolicy(this);
-                // System.setSecurityManager(new SecurityManager());
-
-                // System.setSecurityManager(null);
-                // Policy.setPolicy(null);
-                // Policy.setPolicy(this);
-                // System.setSecurityManager(new SecurityManager());
-
                 System.out.println("finished reloading policies");
             }
 
@@ -347,7 +339,7 @@ public class JettyPolicy extends Policy
             return;
         }
 
-        List scanDirs = new ArrayList();
+        List<File> scanDirs = new ArrayList<File>();
 
         for (Iterator<String> i = _policies.iterator(); i.hasNext();)
         {
