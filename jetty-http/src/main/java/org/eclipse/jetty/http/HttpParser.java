@@ -1060,6 +1060,9 @@ public class HttpParser implements Parser
             // parse until some progress is made (or IOException thrown for timeout)
             while(_contentView.length() == 0 && !isState(HttpParser.STATE_END) && _endp.isOpen())
             {
+                if (_endp.isBufferingInput() && parseNext()>0)
+                    continue;
+                
                 if (!_endp.blockReadable(maxIdleTime))
                 {
                     _endp.close();
