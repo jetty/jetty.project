@@ -117,7 +117,7 @@ public class ErrorHandler extends AbstractHandler
         writer.write("<h2>HTTP ERROR ");
         writer.write(Integer.toString(code));
         writer.write("</h2>\n<p>Problem accessing ");
-        writer.write(uri);
+        writer.write(deScript(uri));
         writer.write(". Reason:\n<pre>    ");
         writer.write(deScript(message));
         writer.write("</pre></p>");

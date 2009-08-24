@@ -10,6 +10,7 @@ jetty-7.0.0.RC4 18 August 2009
  + JETTY-1079 ResourceCollection.toString
  + 279820 Fixed HotSwapHandler
  + JETTY-1080 Ignore files that would be extracted outside the destination directory when unpacking WARs
+ + JETTY-1057 XSS error page
  
 jetty-7.0.0.RC3 7 August 2009
  + 277403 remove system properties
