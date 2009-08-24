@@ -183,19 +183,19 @@ grant codeBase "file:${jetty.home}/work/-" {
 //
 //
 grant { 
+   permission java.io.FilePermission "${jetty.home}${/}lib${/}policy${/}-", "read";
+
    // allows anyone to listen on un-privileged ports
    permission java.net.SocketPermission "localhost:1024-", "listen";
-   permission java.net.SocketPermission "localhost:1024-", "accept";
-   
-   permission java.util.PropertyPermission "entityExpansionLimit", "read";
-   permission java.util.PropertyPermission "maxOccurLimit", "read";
-   permission java.util.PropertyPermission "elementAttributeLimit", "read";
-   permission java.lang.RuntimePermission "shutdownHooks";
-  
+   permission java.net.SocketPermission "localhost:1024-", "accept"; 
 
+   permission java.security.SecurityPermission "putProviderProperty.SunJCE";
    permission java.util.PropertyPermission "org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD", "read, write";
 
    // "standard" properties that can be read by anyone
+   permission java.util.PropertyPermission "entityExpansionLimit", "read";
+   permission java.util.PropertyPermission "elementAttributeLimit", "read";
+   permission java.util.PropertyPermission "maxOccurLimit", "read";
    permission java.util.PropertyPermission "java.version", "read";
    permission java.util.PropertyPermission "java.vendor", "read";
    permission java.util.PropertyPermission "java.vendor.url", "read";
@@ -211,13 +211,16 @@ grant {
    permission java.util.PropertyPermission "java.specification.version", "read";
    permission java.util.PropertyPermission "java.specification.vendor", "read";
    permission java.util.PropertyPermission "java.specification.name", "read";
-
+ 
    permission java.util.PropertyPermission "java.vm.specification.version", "read";
    permission java.util.PropertyPermission "java.vm.specification.vendor", "read";
    permission java.util.PropertyPermission "java.vm.specification.name", "read";
    permission java.util.PropertyPermission "java.vm.version", "read";
    permission java.util.PropertyPermission "java.vm.vendor", "read";
    permission java.util.PropertyPermission "java.vm.name", "read";
+
+   // TEST WEBAPP PERMISSIONS
+   permission java.util.PropertyPermission "user.dir", "read";  
 };
 
 
