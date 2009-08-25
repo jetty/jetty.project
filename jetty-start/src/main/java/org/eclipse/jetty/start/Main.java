@@ -579,7 +579,7 @@ public class Main
     private String resolveXmlConfig(String xmlFilename) throws FileNotFoundException
     {
         File xml = new File(xmlFilename);
-        if (xml.exists() && xml.isFile())
+        if (xml.exists() && xml.isFile() && xml.isAbsolute())
         {
             return xml.getAbsolutePath();
         }
