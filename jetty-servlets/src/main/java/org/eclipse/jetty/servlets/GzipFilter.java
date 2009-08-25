@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -112,7 +113,7 @@ public class GzipFilter extends UserAgentFilter
 
         String ae = request.getHeader("accept-encoding");
         if (ae != null && ae.indexOf("gzip")>=0 && !response.containsHeader("Content-Encoding")
-                && !"HEAD".equals(request.getMethod()))
+                && !HttpMethods.HEAD.equalsIgnoreCase(request.getMethod()))
         {
             if (_excluded!=null)
             {
