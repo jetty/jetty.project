@@ -32,6 +32,8 @@ public class WebInfConfiguration implements Configuration
      */
     public static final String RESOURCE_URLS = "org.eclipse.jetty.resources";
     
+    protected Resource _preUnpackBaseResource;
+    
     
     
     
@@ -169,6 +171,9 @@ public class WebInfConfiguration implements Configuration
 
         context.setAttribute(TEMPDIR_CREATED, null);
         context.setAttribute(context.TEMPDIR, null);
+        
+        //reset the base resource back to what it was before we did any unpacking of resources
+        context.setBaseResource(_preUnpackBaseResource);
     }
 
    
@@ -442,13 +447,15 @@ public class WebInfConfiguration implements Configuration
                 Log.debug("webapp=" + web_app);
         }
         
+        _preUnpackBaseResource = context.getBaseResource();
+        
         // Do we need to extract WEB-INF/lib?
         Resource web_inf= web_app.addPath("WEB-INF/");
         if (web_inf instanceof ResourceCollection ||
             web_inf.exists() && 
             web_inf.isDirectory() && 
             (web_inf.getFile()==null || !web_inf.getFile().isDirectory()))
-        {
+        {       
             File extractedWebInfDir= new File(context.getTempDirectory(), "webinf");
             if (extractedWebInfDir.exists())
                 extractedWebInfDir.delete();
