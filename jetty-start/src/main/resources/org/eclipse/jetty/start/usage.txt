@@ -7,15 +7,32 @@ Common Options:
   --stop           Stop the running Jetty instance.
 
 Advanced Options:
+                   
+  --list-options   List available options, then exit.
+                   (see OPTION property in section below)
+                   
+  --dry-run        Print the command line that the start.jar generates,
+                   then exit. This may be used to generate command lines
+                   when the start.ini includes -X or -D arguments.
+                   On unix, the resulting command line can be run with 
+                     eval $(java -jar start.jar --dry-run)
+                   This is more efficient than the --exec option, which
+                   creates a second JVM instance
+                   
+  --exec           Run the generated command line (see --dry-run) in 
+                   a sub processes.  This can be used when start.ini
+                   contains -X or -D arguments, but creates an extra
+                   JVM instance.
+                   
   --secure         Enable Security:
                      * JVM Security Manager
                      * Security Policies
                      * Secure Logging
                      * Audit Logging
-  --dry-run        Print the command line that the start.jar generates,
-                   then exit.
-  --list-options   List available options, then exit.
-                   (see OPTION property in section below)
+                   
+
+If the file start.ini exists in the working directory, then it's each line
+of it's contents is prepended to the as an argument to the command line.
 
 Properties:
 Execution properties, similar in scope to JVM Properties.
@@ -50,6 +67,7 @@ NOTE: Not all properties are listed here.
       just the direct dependencies of the option (eg jsp includes just jetty-jsp 
       module and it's dependencies).
       (default: "default,*")
+      
 @OPTIONS@
 
 Configs:

@@ -45,3 +45,5 @@ cd ..
 cd webapps
 ln -s ../test-jetty-webapp/target/*.war test.war
 cd ..
+
+ln -s jetty-distribution/src/main/resources/start.ini .

@@ -33,6 +33,7 @@ import java.security.Policy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
@@ -57,9 +58,12 @@ public class Main
     private boolean _dumpVersions = false;
     private boolean _listOptions = false;
     private boolean _dryRun = false;
+    private boolean _exec = false;
     private boolean _secure = false;
     private boolean _fromDaemon = false;
     private final Config _config = new Config();
+    private Set<String> _sysProps = new HashSet<String>();
+    private List<String> _xArgs = new ArrayList<String>();
 
     private String _jettyHome;
 
@@ -81,13 +85,11 @@ public class Main
         try
         {
             List<String> arguments = new ArrayList<String>();
-            
+
+            arguments.addAll(loadStartIni()); // Add Arguments from start.ini (if it exists)
             if (args.length>0)
                 arguments.addAll(Arrays.asList(args)); // Add Arguments on Command Line
-            else
-                // if no command line args
-                arguments.addAll(loadStartIni()); // Add Arguments from start.ini (if it exists)
-
+            
             // The XML Configuration Files to initialize with
             List<String> xmls = new ArrayList<String>();
 
@@ -125,6 +127,12 @@ public class Main
                     continue;
                 }
 
+                if ("--exec".equals(arg))
+                {
+                    _exec = true;
+                    continue;
+                }
+
                 // Special internal indicator that jetty was started by the jetty.sh Daemon
                 if ("--fromDaemon".equals(arg))
                 {
@@ -141,10 +149,46 @@ public class Main
                     continue;
                 }
 
-                // Process property spec
-                if (arg.indexOf('=') >= 0)
+                if (arg.startsWith("-X"))
                 {
-                    processProperty(arg);
+                    _xArgs.add(arg);
+                    continue;
+                }
+                
+                if (arg.startsWith("-D"))
+                {
+                    String[] assign = arg.substring(2).split("=",2);
+                    _sysProps.add(assign[0]);
+                    switch(assign.length)
+                    {
+                        case 2:
+                            System.setProperty(assign[0],assign[1]);
+                            break;
+                        case 1:
+                            System.setProperty(assign[0],"");
+                            break;
+                        default:
+                            break;
+                    }
+                    continue;
+                }
+
+                // Is this a Property?
+                else if (arg.indexOf('=') >= 0)
+                {
+                    String[] assign = arg.split("=",2);
+
+                    switch(assign.length)
+                    {
+                        case 2:
+                            this._config.setProperty(assign[0],assign[1]);
+                            break;
+                        case 1:
+                            this._config.setProperty(assign[0],null);
+                            break;
+                        default:
+                            break;
+                    }
                     continue;
                 }
 
@@ -152,6 +196,15 @@ public class Main
                 xmls.add(arg);
             }
 
+            // Special case for OPTIONS property
+            String options = _config.getProperty("OPTIONS");
+            if (options!=null)
+            {
+                String ids[] = options.split(",");
+                for (String id : ids)
+                    _config.addActiveOption(id);
+            }
+            
             start(xmls);
         }
         catch (Throwable t)
@@ -161,55 +214,14 @@ public class Main
         }
     }
 
-    private void processProperty(String arg)
-    {
-        String[] prop = arg.split("=",2);
-
-        if (prop[0].startsWith("-D"))
-        {
-            // Process System Property
-            if (prop.length == 2)
-            {
-                setSystemProperty(prop[0].substring(2),prop[1]);
-            }
-            else
-            {
-                System.err.println("Unable to set value-less System Property: " + prop[0]);
-            }
-        }
-        else
-        {
-            // Process Startup Property
-            if (prop.length == 2)
-            {
-                // Special case (the Config section id options)
-                if ("OPTIONS".equals(prop[0]))
-                {
-                    String ids[] = prop[1].split(",");
-                    for (String id : ids)
-                    {
-                        _config.addActiveOption(id);
-                    }
-                }
-                else
-                {
-                    _config.setProperty(prop[0],prop[1]);
-                }
-            }
-            else
-            {
-                _config.setProperty(prop[0],null);
-            }
-        }
-    }
-
     /**
      * If a start.ini is present in the CWD, then load it into the argument list.
      */
     private List<String> loadStartIni()
     {
-        File startIniFile = new File("start.ini");
-        if (!startIniFile.exists())
+        String jettyHome=System.getProperty("jetty.home");
+        File startIniFile = (jettyHome!=null)?  new File(jettyHome,"start.ini"):new File("start.ini");
+        if (!startIniFile.exists() || !startIniFile.canRead())
         {
             // No start.ini found, skip load.
             return Collections.emptyList();
@@ -227,43 +239,10 @@ public class Main
             String arg;
             while ((arg = buf.readLine()) != null)
             {
-                // Is this a Property?
-                if (arg.indexOf('=') >= 0)
-                {
-                    // A System Property?
-                    if (arg.startsWith("-D"))
-                    {
-                        String[] assign = arg.substring(2).split("=",2);
-
-                        if (assign.length == 2)
-                        {
-                            System.setProperty(assign[0],assign[1]);
-                        }
-                        else
-                        {
-                            System.err.printf("Unable to set System Property '%s', no value provided%n",assign[0]);
-                        }
-                    }
-                    else
-                        // Nah, it's a normal property
-                    {
-                        String[] assign = arg.split("=",2);
-
-                        if (assign.length == 2)
-                        {
-                            this._config.setProperty(assign[0],assign[1]);
-                        }
-                        else
-                        {
-                            this._config.setProperty(assign[0],null);
-                        }
-                    }
-                }
-                else
-                    // A normal argument
-                {
-                    args.add(arg);
-                }
+                arg=arg.trim();
+                if (arg.length()==0 || arg.startsWith("#"))
+                    continue;
+                args.add(arg);
             }
         }
         catch (IOException e)
@@ -277,11 +256,6 @@ public class Main
         }
 
         return args;
-    }
-
-    private void setSystemProperty(String key, String value)
-    {
-        _config.setProperty(key,value);
     }
 
     private void usage()
@@ -413,12 +387,10 @@ public class Main
 
         String argArray[] = args.toArray(new String[0]);
 
-        Class<?>[] method_param_types = new Class[]
-                                                  { argArray.getClass() };
+        Class<?>[] method_param_types = new Class[] { argArray.getClass() };
 
         Method main = invoked_class.getDeclaredMethod("main",method_param_types);
-        Object[] method_params = new Object[]
-                                            { argArray };
+        Object[] method_params = new Object[] { argArray };
         main.invoke(null,method_params);
     }
 
@@ -457,7 +429,7 @@ public class Main
     }
 
     /* ------------------------------------------------------------ */
-    public void start(List<String> xmls) throws FileNotFoundException
+    public void start(List<String> xmls) throws FileNotFoundException,IOException,InterruptedException
     {
         // Setup Start / Stop Monitoring
         startMonitor();
@@ -528,9 +500,24 @@ public class Main
         // Show Command Line to execute Jetty
         if (_dryRun)
         {
-            showDryRun(classpath,xmls);
+            System.out.println(buildCommandLine(classpath,xmls));
             return;
         }
+        
+        // Show Command Line to execute Jetty
+        if (_exec)
+        {
+            String cmd = buildCommandLine(classpath,xmls);
+            Process process = Runtime.getRuntime().exec(cmd);
+            copyInThread(process.getErrorStream(),System.err);
+            copyInThread(process.getInputStream(),System.out);
+            copyInThread(System.in,process.getOutputStream());
+            process.waitFor();
+            return;
+        }
+        
+        if (_xArgs.size()>0 || _sysProps.size()>0)
+            System.err.println("WARNING: System properties and/or JVM args set.  Consider using --dry-run or --exec");
 
         // Set current context class loader to what is selected.
         Thread.currentThread().setContextClassLoader(cl);
@@ -564,6 +551,31 @@ public class Main
         }
     }
 
+    private void copyInThread(final InputStream in,final OutputStream out)
+    {
+        new Thread(new Runnable()
+        {
+            public void run()
+            {
+                try
+                {
+                    byte[] buf=new byte[1024];
+                    int len=in.read(buf);
+                    while(len>0)
+                    {
+                        out.write(buf,0,len); 
+                        len=in.read(buf);
+                    }
+                }
+                catch(IOException e)
+                {
+                    e.printStackTrace();
+                }   
+            }
+            
+        }).start();
+    }
+    
     private String resolveXmlConfig(String xmlFilename) throws FileNotFoundException
     {
         File xml = new File(xmlFilename);
@@ -587,20 +599,28 @@ public class Main
         throw new FileNotFoundException("Unable to find XML Config: " + xmlFilename);
     }
 
-    private void showDryRun(Classpath classpath, List<String> xmls)
+    private String buildCommandLine(Classpath classpath, List<String> xmls)
     {
-        StringBuffer cmd = new StringBuffer();
-
+        StringBuilder cmd = new StringBuilder();
         cmd.append(findJavaBin());
-        cmd.append(" -cp ").append(classpath.toString());
+        for (String x:_xArgs)
+            cmd.append(' ').append(x);
         cmd.append(" -Djetty.home=").append(_jettyHome);
-        cmd.append(" ").append(_config.getMainClassname());
+        for (String p:_sysProps)
+        {
+            cmd.append(" -D").append(p);
+            String v=System.getProperty(p);
+            if (v!=null)
+                cmd.append('=').append(v);
+        }
+        cmd.append(" -cp ").append(classpath.toString());
+        cmd.append(' ').append(_config.getMainClassname());
         for (String xml : xmls)
         {
-            cmd.append(" ").append(xml);
+            cmd.append(' ').append(xml);
         }
 
-        System.out.println(cmd);
+        return cmd.toString();
     }
 
     private String findJavaBin()
