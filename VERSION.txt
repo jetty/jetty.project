@@ -1,5 +1,6 @@
 jetty-7.0.0-SNAPSHOT
  + 286911 Clean out cache when recycling HTTP fields
+ + JETTY-874 Better header full warnings
  + JETTY-960 Support for ldaps
  + JETTY-1081 Handle null content type in GzipFilter
  + JETTY-1084 Disable GzipFilter for HEAD requests
@@ -8,7 +9,6 @@ jetty-7.0.0-SNAPSHOT
  + JETTY-1087 Chunked SSL non blocking input
  + 287496 Use start.ini always and added --exec
  + 287632 FilterContinuations for blocking jetty6
- 
 
 jetty-7.0.0.RC4 18 August 2009
  + 286185 Implement ability for JSON implementation to automatically register convertors
