@@ -131,7 +131,7 @@ public class SessionHandler extends HandlerWrapper
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {
-        setRequestedId(request);
+        setRequestedId(baseRequest,request);
 
         SessionManager old_session_manager=null;
         HttpSession old_session=null;
@@ -198,17 +198,15 @@ public class SessionHandler extends HandlerWrapper
      * @param request
      * @param dispatch
      */
-    protected void setRequestedId(HttpServletRequest request)
+    protected void setRequestedId(Request baseRequest, HttpServletRequest request)
     {
-        Request baseRequest = (request instanceof Request) ? (Request)request:HttpConnection.getCurrentConnection().getRequest();
         String requested_session_id=request.getRequestedSessionId();
         if (!DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()) || requested_session_id!=null)
-        {
             return;
-        }
 
         SessionManager sessionManager = getSessionManager();
         boolean requested_session_id_from_cookie=false;
+        HttpSession session=null;
 
         // Look for session id cookie
         if (_sessionManager.isUsingCookies())
@@ -232,26 +230,33 @@ public class SessionHandler extends HandlerWrapper
                         requested_session_id=cookies[i].getValue();
                         requested_session_id_from_cookie = true;
                         if(Log.isDebugEnabled())Log.debug("Got Session ID "+requested_session_id+" from cookie");
+                        
+                        session=sessionManager.getHttpSession(requested_session_id);
+                        if (session!=null)
+                            baseRequest.setSession(session);
                     }
                 }
             }
         }
 
-        if (requested_session_id==null)
+        if (requested_session_id==null || session==null)
         {
             String uri = request.getRequestURI();
 
             int semi = uri.lastIndexOf(';');
             if (semi>=0)
             {
-                String path_params=uri.substring(semi+1);
-
                 // check if there is a url encoded session param.
                 String param=sessionManager.getSessionIdPathParameterName();
-                if (param!=null && path_params!=null && path_params.startsWith(param))
+                if (param!=null)
                 {
-                    requested_session_id = path_params.substring(sessionManager.getSessionIdPathParameterName().length()+1);
-                    if(Log.isDebugEnabled())Log.debug("Got Session ID "+requested_session_id+" from URL");
+                    int p=uri.indexOf(param,semi+1);
+                    if (p>0)
+                    {
+                        requested_session_id = uri.substring(p+param.length()+1);
+                        requested_session_id_from_cookie = false;
+                        if(Log.isDebugEnabled())Log.debug("Got Session ID "+requested_session_id+" from URL");
+                    }
                 }
             }
         }

@@ -355,6 +355,14 @@ public class Dump extends HttpServlet
             return;
         }
 
+        // Handle a extra headers 
+        String headers= request.getParameter("headers");
+        if (headers != null && headers.length() > 0)
+        {
+            long h=Long.parseLong(headers);
+            for (int i=0;i<h;i++)
+                response.addHeader("Header"+i,"Value"+i);
+        }
 
         String buffer= request.getParameter("buffer");
         if (buffer != null && buffer.length() > 0)

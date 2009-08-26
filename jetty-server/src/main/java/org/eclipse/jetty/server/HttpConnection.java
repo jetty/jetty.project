@@ -660,7 +660,26 @@ public class HttpConnection implements Connection
         if (!_generator.isCommitted())
         {
             _generator.setResponse(_response.getStatus(), _response.getReason());
-            _generator.completeHeader(_responseFields, last);
+            try
+            {
+                _generator.completeHeader(_responseFields, last);
+            }
+            catch(IOException io)
+            {
+                throw io;
+            }
+            catch(RuntimeException e)
+            {
+                Log.warn("header full: "+e);
+                Log.debug(e);
+                
+                _response.reset();
+                _generator.reset(true);
+                _generator.setResponse(HttpStatus.INTERNAL_SERVER_ERROR_500,null);
+                _generator.completeHeader(_responseFields,HttpGenerator.LAST);
+                throw new HttpException(HttpStatus.INTERNAL_SERVER_ERROR_500);
+            }
+            
         }
         if (last) 
             _generator.complete();
@@ -672,7 +691,25 @@ public class HttpConnection implements Connection
         if (!_generator.isCommitted())
         {
             _generator.setResponse(_response.getStatus(), _response.getReason());
-            _generator.completeHeader(_responseFields, HttpGenerator.LAST);
+            try
+            {
+                _generator.completeHeader(_responseFields, HttpGenerator.LAST);
+            }
+            catch(IOException io)
+            {
+                throw io;
+            }
+            catch(RuntimeException e)
+            {
+                Log.warn("header full: "+e);
+                Log.debug(e);
+                
+                _response.reset();
+                _generator.reset(true);
+                _generator.setResponse(HttpStatus.INTERNAL_SERVER_ERROR_500,null);
+                _generator.completeHeader(_responseFields,HttpGenerator.LAST);
+                throw new HttpException(HttpStatus.INTERNAL_SERVER_ERROR_500);
+            }
         }
 
         _generator.complete();

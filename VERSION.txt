@@ -3,6 +3,7 @@ jetty-7.0.0-SNAPSHOT
  + JETTY-960 Support for ldaps
  + JETTY-1081 Handle null content type in GzipFilter
  + JETTY-1084 Disable GzipFilter for HEAD requests
+ + JETTY-1085 Allow url sessionID if cookie invalid 
  + JETTY-1086 Added UncheckedPrintWriter to avoid ignored EOFs
  + JETTY-1087 Chunked SSL non blocking input
  + 287496 Use start.ini always and added --exec
