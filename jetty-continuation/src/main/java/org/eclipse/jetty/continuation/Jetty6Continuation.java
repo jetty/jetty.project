@@ -14,7 +14,7 @@ import javax.servlet.ServletResponseWrapper;
  * when it detects that the application is deployed in a jetty-6 server.
  * This continuation requires the {@link ContinuationFilter} to be deployed.
  */
-public class Jetty6Continuation implements ContinuationFilter.PartialContinuation
+public class Jetty6Continuation implements ContinuationFilter.FilteredContinuation
 {
     // Exception reused for all continuations
     // Turn on debug in ContinuationFilter to see real stack trace.
@@ -195,8 +195,9 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
     }
 
     /* ------------------------------------------------------------ */
-    public boolean enter()
+    public boolean enter(ServletResponse response)
     {
+        _response=response;
         _expired=!_j6Continuation.isResumed();
 
         if (_initial)
@@ -218,7 +219,8 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
         return true;
     }
 
-    public void exit()
+    /* ------------------------------------------------------------ */
+    public boolean exit()
     {
         _initial=false;
 
@@ -236,5 +238,7 @@ public class Jetty6Continuation implements ContinuationFilter.PartialContinuatio
             for (ContinuationListener l: _listeners)
                 l.onComplete(this);
         }
+        
+        return true;
     }
 }

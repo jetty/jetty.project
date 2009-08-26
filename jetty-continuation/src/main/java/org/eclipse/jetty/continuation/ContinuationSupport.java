@@ -19,6 +19,8 @@ import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
 
+import org.mortbay.util.ajax.WaitingContinuation;
+
 /* ------------------------------------------------------------ */
 /** ContinuationSupport.
  *
@@ -30,6 +32,7 @@ public class ContinuationSupport
 {
     static final boolean __jetty6;
     static final boolean __servlet3;
+    static final Class<?> __waitingContinuation;
     static final Constructor<? extends Continuation> __newServlet3Continuation;
     static final Constructor<? extends Continuation> __newJetty6Continuation;
     static
@@ -53,8 +56,7 @@ public class ContinuationSupport
             __servlet3=servlet3Support;
             __newServlet3Continuation=s3cc;
         }
-
-
+        
         boolean jetty6Support=false;
         Constructor<? extends Continuation>j6cc=null;
         try
@@ -74,6 +76,19 @@ public class ContinuationSupport
         {
             __jetty6=jetty6Support;
             __newJetty6Continuation=j6cc;
+        }
+        
+        Class<?> waiting=null;
+        try
+        {
+            waiting=ContinuationSupport.class.getClassLoader().loadClass("org.mortbay.util.ajax.WaitingContinuation");
+        }
+        catch (Exception e)
+        {
+        }
+        finally
+        {
+            __waitingContinuation=waiting;
         }
     }
 
@@ -116,7 +131,10 @@ public class ContinuationSupport
             Object c=request.getAttribute("org.mortbay.jetty.ajax.Continuation");
             try
             {
-                continuation= __newJetty6Continuation.newInstance(request,c);
+                if (c==null || __waitingContinuation==null || __waitingContinuation.isInstance(c))
+                    continuation=new FauxContinuation(request);
+                else
+                    continuation= __newJetty6Continuation.newInstance(request,c);
                 request.setAttribute(Continuation.ATTRIBUTE,continuation);
                 return continuation;
             }

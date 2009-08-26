@@ -19,6 +19,7 @@ import java.io.InputStream;
 import org.eclipse.jetty.continuation.test.ContinuationBase;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
+import org.mortbay.jetty.bio.SocketConnector;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.FilterHolder;
@@ -31,13 +32,15 @@ public class Jetty6ContinuationTest extends ContinuationBase
 {
     protected Server _server = new Server();
     protected ServletHandler _servletHandler;
-    protected SelectChannelConnector _connector;
+    protected SelectChannelConnector _selectChannelConnector;
+    protected SocketConnector _socketConnector;
     FilterHolder _filter;
 
     protected void setUp() throws Exception
     {
-        _connector = new SelectChannelConnector();
-        _server.setConnectors(new Connector[]{ _connector });
+        _selectChannelConnector = new SelectChannelConnector();
+        _socketConnector = new SocketConnector();
+        _server.setConnectors(new Connector[]{ _selectChannelConnector,_socketConnector });
         Context servletContext = new Context(Context.NO_SECURITY|Context.NO_SESSIONS);
         _server.setHandler(servletContext);
         _servletHandler=servletContext.getServletHandler();
@@ -51,23 +54,43 @@ public class Jetty6ContinuationTest extends ContinuationBase
         _server.stop();
     }
 
-    public void testJetty6() throws Exception
+    public void testJetty6Nio() throws Exception
     {
         _filter.setInitParameter("debug","true");
         //_filter.setInitParameter("faux","false");
         _server.start();
-        _port=_connector.getLocalPort();
         
+        _port=_selectChannelConnector.getLocalPort();
         doit("Jetty6Continuation");
     }
 
-    public void testFaux() throws Exception
+    public void testFauxNio() throws Exception
     {
         _filter.setInitParameter("debug","true");
         _filter.setInitParameter("faux","true");
         _server.start();
-        _port=_connector.getLocalPort();
         
+        _port=_selectChannelConnector.getLocalPort();
+        doit("FauxContinuation");
+    }
+
+    public void testJetty6Bio() throws Exception
+    {
+        _filter.setInitParameter("debug","true");
+        //_filter.setInitParameter("faux","false");
+        _server.start();
+        
+        _port=_socketConnector.getLocalPort();
+        doit("FauxContinuation");
+    }
+
+    public void testFauxBio() throws Exception
+    {
+        _filter.setInitParameter("debug","true");
+        _filter.setInitParameter("faux","true");
+        _server.start();
+        
+        _port=_socketConnector.getLocalPort();
         doit("FauxContinuation");
     }
     

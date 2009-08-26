@@ -6,6 +6,7 @@ jetty-7.0.0-SNAPSHOT
  + JETTY-1086 Added UncheckedPrintWriter to avoid ignored EOFs
  + JETTY-1087 Chunked SSL non blocking input
  + 287496 Use start.ini always and added --exec
+ + 287632 FilterContinuations for blocking jetty6
  
 
 jetty-7.0.0.RC4 18 August 2009

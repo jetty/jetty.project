@@ -20,6 +20,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
 
+import org.eclipse.jetty.continuation.ContinuationFilter.FilteredContinuation;
+
 
 /* ------------------------------------------------------------ */
 /**
@@ -27,7 +29,7 @@ import javax.servlet.ServletResponseWrapper;
  * This implementation of Continuation is used by the {@link ContinuationFilter}
  * when there are is no native or asynchronous continuation type available. 
  */
-class FauxContinuation implements Continuation
+class FauxContinuation implements FilteredContinuation
 {
     // common exception used for all continuations.  
     // Turn on debug in ContinuationFilter to see real stack trace.
@@ -255,9 +257,10 @@ class FauxContinuation implements Continuation
     /**
      * @see org.eclipse.jetty.continuation.Continuation#getServletResponse()
      */
-    void setServletResponse(ServletResponse response)
+    public boolean enter(ServletResponse response)
     {
         _response=response;
+        return true;
     }
 
     /* ------------------------------------------------------------ */
@@ -305,7 +308,7 @@ class FauxContinuation implements Continuation
     /**
      * @return true if handling is complete
      */
-    public boolean handleSuspension()
+    public boolean exit()
     {
         synchronized (this)
         {
@@ -313,6 +316,7 @@ class FauxContinuation implements Continuation
             {
                 case __HANDLING:
                     _state=__COMPLETE;
+                    onComplete();
                     return true;
 
                 case __SUSPENDING:
@@ -320,7 +324,10 @@ class FauxContinuation implements Continuation
                     _state=__SUSPENDED;
                     fauxSuspend(); // could block and change state.
                     if (_state==__SUSPENDED || _state==__COMPLETING)
+                    {
+                        onComplete();
                         return true;
+                    }
                     
                     _initial=false;
                     _state=__HANDLING;
@@ -334,6 +341,7 @@ class FauxContinuation implements Continuation
                 case __COMPLETING:
                     _initial=false;
                     _state=__COMPLETE;
+                    onComplete();
                     return true;
 
                 case __SUSPENDED:

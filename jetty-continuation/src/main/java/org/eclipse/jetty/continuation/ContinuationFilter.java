@@ -20,7 +20,7 @@ import javax.servlet.ServletResponse;
  * that is neither Jetty (>=6.1) nor a Servlet3.0 container.
  * The following init parameters may be used to configure the filter (these are mostly for testing):<dl>
  * <dt>debug</dt><dd>Boolean controlling debug output</dd>
- * <dt>partial</dt><dd>Boolean to force support for partial continuation implementations (eg jetty 6)</dd>
+ * <dt>jetty6</dt><dd>Boolean to force support for jetty 6 continuations)</dd>
  * <dt>faux</dt><dd>Boolean to force support for faux continuations</dd>
  * </dl>
  */
@@ -28,7 +28,8 @@ public class ContinuationFilter implements Filter
 {
     static boolean __debug; // shared debug status
     private boolean _faux;
-    private boolean _partial;
+    private boolean _jetty6;
+    private boolean _filtered;
     ServletContext _context;
     private boolean _debug;
 
@@ -42,41 +43,52 @@ public class ContinuationFilter implements Filter
         if (_debug)
             __debug=true;
         
-        param=filterConfig.getInitParameter("partial");
+        param=filterConfig.getInitParameter("jetty6");
+        if (param==null)
+            param=filterConfig.getInitParameter("partial");
         if (param!=null)
-            _partial=Boolean.parseBoolean(param);
+            _jetty6=Boolean.parseBoolean(param);
         else
-            _partial=ContinuationSupport.__jetty6 && !jetty_7_or_greater;
+            _jetty6=ContinuationSupport.__jetty6 && !jetty_7_or_greater;
 
         param=filterConfig.getInitParameter("faux");
         if (param!=null)
             _faux=Boolean.parseBoolean(param);
         else
-            _faux=!(jetty_7_or_greater || _partial || _context.getMajorVersion()>=3);
+            _faux=!(jetty_7_or_greater || _jetty6 || _context.getMajorVersion()>=3);
         
+        _filtered=_faux||_jetty6;
         if (_debug)
             _context.log("ContinuationFilter "+
                     " jetty="+jetty_7_or_greater+
-                    " partial="+_partial+
-                    " jetty6="+ContinuationSupport.__jetty6+
+                    " jetty6="+_jetty6+
                     " faux="+_faux+
+                    " filtered="+_filtered+
                     " servlet3="+ContinuationSupport.__servlet3);
     }
 
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
-        if (_faux)
+        if (_filtered)
         {
-            final FauxContinuation fc = new FauxContinuation(request);
-            request.setAttribute(Continuation.ATTRIBUTE,fc);
+
+            Continuation c = (Continuation) request.getAttribute(Continuation.ATTRIBUTE);
+            FilteredContinuation fc;
+            if (_faux && (c==null || !(c instanceof FauxContinuation)))
+            {
+                fc = new FauxContinuation(request);
+                request.setAttribute(Continuation.ATTRIBUTE,fc);
+            }
+            else
+                fc=(FilteredContinuation)c;
+
             boolean complete=false;
-      
             while (!complete)
             {
                 try
                 {
-                    fc.setServletResponse(response);
-                    chain.doFilter(request,response);
+                    if (fc==null || ((FilteredContinuation)fc).enter(response))
+                        chain.doFilter(request,response);
                 }
                 catch (ContinuationThrowable e)
                 {
@@ -84,25 +96,11 @@ public class ContinuationFilter implements Filter
                 }
                 finally
                 {
-                    complete=fc.handleSuspension();
+                    if (fc==null)
+                        fc = (FilteredContinuation) request.getAttribute(Continuation.ATTRIBUTE);
+
+                    complete=fc==null || ((FilteredContinuation)fc).exit();
                 }
-            }
-            fc.onComplete();
-        }
-        else if (_partial)
-        {
-            Continuation c = (Continuation) request.getAttribute(Continuation.ATTRIBUTE);
-            try
-            {
-                if (c==null || !(c instanceof PartialContinuation) || ((PartialContinuation)c).enter())
-                    chain.doFilter(request,response);
-            }
-            finally
-            {
-                if (c==null)
-                    c = (Continuation) request.getAttribute(Continuation.ATTRIBUTE);
-                if (c!=null && c instanceof PartialContinuation)
-                    ((PartialContinuation)c).exit();
             }
         }
         else
@@ -141,9 +139,9 @@ public class ContinuationFilter implements Filter
     {
     }
 
-    public interface PartialContinuation extends Continuation
+    public interface FilteredContinuation extends Continuation
     {
-        boolean enter();
-        void exit();
+        boolean enter(ServletResponse response);
+        boolean exit();
     }
 }
