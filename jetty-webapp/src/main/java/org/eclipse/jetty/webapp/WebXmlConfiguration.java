@@ -29,14 +29,10 @@ import org.eclipse.jetty.util.resource.Resource;
 /**
  * Configure by parsing default web.xml and web.xml
  * 
- * 
  */
 public class WebXmlConfiguration implements Configuration
 {
     
-    
-  
-   
     /* ------------------------------------------------------------------------------- */
     /**
      * Process webdefaults.xml
@@ -86,7 +82,6 @@ public class WebXmlConfiguration implements Configuration
     /**
      * Process web.xml, web-fragment.xml(s), override-web.xml
      * 
-     * 
      */
     public void configure (WebAppContext context) throws Exception
     {
@@ -106,7 +101,6 @@ public class WebXmlConfiguration implements Configuration
 
         //process web.xml (the effective web.xml???)
         processor.processWebXml();
-     
         
         //process override-web.xml
         String overrideDescriptor = context.getOverrideDescriptor();
@@ -119,7 +113,6 @@ public class WebXmlConfiguration implements Configuration
             processor.processOverride();
         }
     }
-    
 
     public void postConfigure(WebAppContext context) throws Exception
     {
@@ -128,8 +121,6 @@ public class WebXmlConfiguration implements Configuration
         context.setAttribute(WebXmlProcessor.WEBXML_VERSION, null);
         context.setAttribute(WebXmlProcessor.WEBXML_CLASSNAMES, null); 
     }
-
-  
 
     /* ------------------------------------------------------------------------------- */
     protected Resource findWebXml(WebAppContext context) throws IOException, MalformedURLException

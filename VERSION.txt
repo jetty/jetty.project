@@ -1,5 +1,6 @@
 jetty-7.0.0-SNAPSHOT
  + 286911 Clean out cache when recycling HTTP fields
+ + JETTY-838 Don't log and throw
  + JETTY-874 Better header full warnings
  + JETTY-960 Support for ldaps
  + JETTY-1081 Handle null content type in GzipFilter

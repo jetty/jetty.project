@@ -77,7 +77,8 @@ public class Holder extends AbstractLifeCycle
             }
             catch (Exception e)
             {
-                Log.warn(e);
+                Log.warn(e.toString());
+                Log.debug(e);
                 throw new UnavailableException(e.getMessage(), -1);
             }
         }

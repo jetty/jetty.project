@@ -755,7 +755,6 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
                     }
                     catch(ThreadDeath e)
                     {
-                        Log.warn(e);
                         throw e;
                     }
                     catch(Throwable e)

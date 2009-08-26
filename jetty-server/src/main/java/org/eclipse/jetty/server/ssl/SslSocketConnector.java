@@ -472,8 +472,9 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         }
         catch (Exception e)
         {
-            Log.warn(Log.EXCEPTION, e);
-            throw new IOException("Could not create JsseListener: " + e.toString());
+            Log.warn(e.toString());
+            Log.debug(e);
+            throw new IOException("!JsseListener: " + e);
         }
         return socket;
     }

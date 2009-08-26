@@ -1169,7 +1169,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            Log.warn(e.toString());
+            Log.debug(e);
             throw new IllegalArgumentException(resourceBase);
         }
     }
