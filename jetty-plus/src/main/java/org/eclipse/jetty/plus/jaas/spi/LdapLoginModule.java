@@ -54,6 +54,7 @@ import org.eclipse.jetty.util.log.Log;
  * ldaploginmodule {
  *    org.eclipse.jetty.server.server.plus.jaas.spi.LdapLoginModule required
  *    debug="true"
+ *    useLdaps="false"
  *    contextFactory="com.sun.jndi.ldap.LdapCtxFactory"
  *    hostname="ldap.example.com"
  *    port="389"
@@ -164,6 +165,11 @@ public class LdapLoginModule extends AbstractLoginModule
      * login checks, set this to true
      */
     private boolean _forceBindingLogin = false;
+    
+    /**
+     * When true changes the protocol to ldaps
+     */
+    private boolean _useLdaps = false;
 
     private DirContext _rootContext;
 
@@ -189,10 +195,6 @@ public class LdapLoginModule extends AbstractLoginModule
         }
 
         pwdCredential = convertCredentialLdapToJetty(pwdCredential);
-
-        //String md5Credential = Credential.MD5.digest("foo");
-        //byte[] ba = digestMD5("foo");
-        //System.out.println(md5Credential + "  " + ba );
         Credential credential = Credential.getCredential(pwdCredential);
         List roles = getUserRoles(_rootContext, username);
 
@@ -474,9 +476,7 @@ public class LdapLoginModule extends AbstractLoginModule
         List roles = getUserRolesByDn(dirContext, userDn);
 
         UserInfo userInfo = new UserInfo(username, null, roles);
-
         setCurrentUser(new JAASUserInfo(userInfo));
-
         setAuthenticated(true);
 
         return true;
@@ -525,7 +525,6 @@ public class LdapLoginModule extends AbstractLoginModule
                            Map sharedState,
                            Map options)
     {
-
         super.initialize(subject, callbackHandler, sharedState, options);
 
         _hostname = (String) options.get("hostname");
@@ -543,7 +542,12 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             _forceBindingLogin = Boolean.parseBoolean((String) options.get("forceBindingLogin"));
         }
-
+        
+        if (options.containsKey("useLdaps"))
+        {
+            _useLdaps = Boolean.parseBoolean((String) options.get("useLdaps"));
+        }     
+        
         _userObjectClass = getOption(options, "userObjectClass", _userObjectClass);
         _userRdnAttribute = getOption(options, "userRdnAttribute", _userRdnAttribute);
         _userIdAttribute = getOption(options, "userIdAttribute", _userIdAttribute);
@@ -562,35 +566,36 @@ public class LdapLoginModule extends AbstractLoginModule
             throw new IllegalStateException("Unable to establish root context", ex);
         }
     }
-      
-	public boolean commit() throws LoginException {
-		
-		try 
-		{
-			_rootContext.close();
-		} 
-		catch (NamingException e) 
-		{
-			throw new LoginException( "error closing root context: " + e.getMessage() );
-		}
-		
-		return super.commit();
-	}
-	
-	public boolean abort() throws LoginException {
-		try 
-		{
-			_rootContext.close();
-		} 
-		catch (NamingException e) 
-		{
-			throw new LoginException( "error closing root context: " + e.getMessage() );
-		}
-		
-		return super.abort();
-	}
 
-	private String getOption(Map options, String key, String defaultValue)
+    public boolean commit() throws LoginException 
+    {
+        try 
+        {
+            _rootContext.close();
+        } 
+        catch (NamingException e) 
+        {
+            throw new LoginException( "error closing root context: " + e.getMessage() );
+        }
+
+        return super.commit();
+    }
+
+    public boolean abort() throws LoginException 
+    {
+        try 
+        {
+            _rootContext.close();
+        } 
+        catch (NamingException e) 
+        {
+            throw new LoginException( "error closing root context: " + e.getMessage() );
+        }
+
+        return super.abort();
+    }
+
+    private String getOption(Map options, String key, String defaultValue)
     {
         Object value = options.get(key);
 
@@ -615,14 +620,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
         if (_hostname != null)
         {
-            if (_port != 0)
-            {
-                env.put(Context.PROVIDER_URL, "ldap://" + _hostname + ":" + _port + "/");
-            }
-            else
-            {
-                env.put(Context.PROVIDER_URL, "ldap://" + _hostname + "/");
-            }
+            env.put(Context.PROVIDER_URL, (_useLdaps?"ldaps://":"ldap://") + _hostname + (_port==0?"":":"+_port) +"/");
         }
 
         if (_authenticationMethod != null)

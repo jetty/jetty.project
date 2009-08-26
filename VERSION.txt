@@ -1,5 +1,6 @@
 jetty-7.0.0-SNAPSHOT
  + 286911 Clean out cache when recycling HTTP fields
+ + JETTY-960 Support for ldaps
  + JETTY-1081 Handle null content type in GzipFilter
  + JETTY-1084 Disable GzipFilter for HEAD requests
  + JETTY-1086 Added UncheckedPrintWriter to avoid ignored EOFs
