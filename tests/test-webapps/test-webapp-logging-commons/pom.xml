@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>7.0.0.RC5-SNAPSHOT</version>
+    <version>7.0.0.RC5</version>
   </parent>
   <artifactId>test-webapp-logging-commons</artifactId>
   <name>Jetty Tests :: WebApp :: Commons Logging</name>
