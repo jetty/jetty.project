@@ -197,6 +197,8 @@ public class WebdavListener extends HttpEventListenerWrapper
     /**
      * walk through the steps to try and resolve missing parent collection issues via webdav
      *
+     * TODO this really ought to use URI itself for this resolution
+     *
      * @return
      * @throws IOException
      */
@@ -209,7 +211,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         int rewind = 0;
 
         String parentUri = URIUtil.parentPath( uri );
-        while ( !checkExists( parentUri ) )
+        while ( parentUri != null && !checkExists(parentUri) )
         {
             ++rewind;
             parentUri = URIUtil.parentPath( parentUri );
@@ -235,6 +237,12 @@ public class WebdavListener extends HttpEventListenerWrapper
 
     private boolean checkExists( String uri ) throws IOException
     {
+        if (uri == null)
+        {
+            System.out.println("have failed miserably");
+            return false;
+        }
+        
         PropfindExchange propfindExchange = new PropfindExchange();
         propfindExchange.setAddress( _exchange.getAddress() );
         propfindExchange.setMethod( HttpMethods.GET ); // PROPFIND acts wonky, just use get
