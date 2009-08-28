@@ -1,3 +1,6 @@
+jetty-7.0.0.RC6-SNAPSHOT
+ + JETTY-1090 resolve potential infinite loop with webdav listener
+
 jetty-7.0.0.RC5 27 August 2009
  + 286911 Clean out cache when recycling HTTP fields
  + JETTY-838 Don't log and throw
