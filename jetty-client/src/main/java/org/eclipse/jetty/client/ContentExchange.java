@@ -33,7 +33,7 @@ public class ContentExchange extends CachedExchange
 {
     int _contentLength = 1024;
     String _encoding = "utf-8";
-    ByteArrayOutputStream _responseContent;
+    protected ByteArrayOutputStream _responseContent;
 
     File _fileForUpload;
 
