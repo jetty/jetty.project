@@ -120,6 +120,7 @@ public class WebdavListener extends HttpEventListenerWrapper
                     else
                     {
                         // admit defeat but retry because someone else might have 
+                        setDelegationResult(false);
                         setDelegatingRequests( true );
                         setDelegatingResponses(true);
                         super.onResponseComplete();
