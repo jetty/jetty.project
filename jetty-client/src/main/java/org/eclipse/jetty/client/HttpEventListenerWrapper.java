@@ -23,7 +23,7 @@ public class HttpEventListenerWrapper implements HttpEventListener
     HttpEventListener _listener;
     boolean _delegatingRequests;
     boolean _delegatingResponses;
-    boolean _delegationResult;
+    boolean _delegationResult = true;
     private Buffer _version;
     private int _status;
     private Buffer _reason;
