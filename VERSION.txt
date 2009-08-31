@@ -1,4 +1,6 @@
 jetty-7.0.0.RC6-SNAPSHOT
+ + 288055 jetty-client fails to resolve failed resolution attempts correctly
+ + 288153 jetty-client resend doesn't reset exchange
  + JETTY-1090 resolve potential infinite loop with webdav listener
 
 jetty-7.0.0.RC5 27 August 2009
