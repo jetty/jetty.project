@@ -44,6 +44,7 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -576,6 +577,11 @@ public class HttpConnection implements Connection
                     Log.debug(e);
                     error=true;
                 }
+                catch (RuntimeIOException e)
+                {
+                    Log.debug(e);
+                    error=true;
+                }
                 catch (HttpException e)
                 {
                     Log.debug(e);
@@ -655,7 +661,26 @@ public class HttpConnection implements Connection
         if (!_generator.isCommitted())
         {
             _generator.setResponse(_response.getStatus(), _response.getReason());
-            _generator.completeHeader(_responseFields, last);
+            try
+            {
+                _generator.completeHeader(_responseFields, last);
+            }
+            catch(IOException io)
+            {
+                throw io;
+            }
+            catch(RuntimeException e)
+            {
+                Log.warn("header full: "+e);
+                Log.debug(e);
+                
+                _response.reset();
+                _generator.reset(true);
+                _generator.setResponse(HttpStatus.INTERNAL_SERVER_ERROR_500,null);
+                _generator.completeHeader(_responseFields,HttpGenerator.LAST);
+                throw new HttpException(HttpStatus.INTERNAL_SERVER_ERROR_500);
+            }
+            
         }
         if (last) 
             _generator.complete();
@@ -667,7 +692,25 @@ public class HttpConnection implements Connection
         if (!_generator.isCommitted())
         {
             _generator.setResponse(_response.getStatus(), _response.getReason());
-            _generator.completeHeader(_responseFields, HttpGenerator.LAST);
+            try
+            {
+                _generator.completeHeader(_responseFields, HttpGenerator.LAST);
+            }
+            catch(IOException io)
+            {
+                throw io;
+            }
+            catch(RuntimeException e)
+            {
+                Log.warn("header full: "+e);
+                Log.debug(e);
+                
+                _response.reset();
+                _generator.reset(true);
+                _generator.setResponse(HttpStatus.INTERNAL_SERVER_ERROR_500,null);
+                _generator.completeHeader(_responseFields,HttpGenerator.LAST);
+                throw new HttpException(HttpStatus.INTERNAL_SERVER_ERROR_500);
+            }
         }
 
         _generator.complete();

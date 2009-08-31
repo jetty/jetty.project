@@ -65,7 +65,7 @@ public interface Authentication
          * non-manditory authentication.
          * @return The new Authentication state.
          */
-        Authentication authenticate();
+        Authentication authenticate(ServletRequest request);
 
         /* ------------------------------------------------------------ */
         /** Authenticate and possibly send a challenge.

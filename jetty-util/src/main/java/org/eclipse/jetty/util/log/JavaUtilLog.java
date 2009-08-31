@@ -35,7 +35,7 @@ import java.util.logging.Level;
  */
 public class JavaUtilLog implements Logger
 {
-    private java.util.logging.Logger logger;
+    private java.util.logging.Logger _logger;
 
     public JavaUtilLog()
     {
@@ -44,26 +44,31 @@ public class JavaUtilLog implements Logger
 
     public JavaUtilLog(String name)
     {
-        logger = java.util.logging.Logger.getLogger(name);
+        _logger = java.util.logging.Logger.getLogger(name);
         if (Boolean.getBoolean("org.eclipse.jetty.util.log.DEBUG"))
         {
-            logger.setLevel(Level.FINE);
+            _logger.setLevel(Level.FINE);
         }
+    }
+    
+    public String getName()
+    {
+        return _logger.getName();
     }
 
     public void debug(String msg)
     {
-        logger.log(Level.FINE,msg);
+        _logger.log(Level.FINE,msg);
     }
 
     public void debug(String msg, Throwable th)
     {
-        logger.log(Level.FINE,msg,th);
+        _logger.log(Level.FINE,msg,th);
     }
 
     public void debug(String msg, Object arg0, Object arg1)
     {
-        logger.log(Level.FINE,format(msg,arg0,arg1));
+        _logger.log(Level.FINE,format(msg,arg0,arg1));
     }
 
     public Logger getLogger(String name)
@@ -73,37 +78,37 @@ public class JavaUtilLog implements Logger
 
     public void info(String msg)
     {
-        logger.log(Level.INFO,msg);
+        _logger.log(Level.INFO,msg);
     }
 
     public void info(String msg, Object arg0, Object arg1)
     {
-        logger.log(Level.INFO,format(msg,arg0,arg1));
+        _logger.log(Level.INFO,format(msg,arg0,arg1));
     }
 
     public boolean isDebugEnabled()
     {
-        return logger.isLoggable(Level.FINE);
+        return _logger.isLoggable(Level.FINE);
     }
 
     public void setDebugEnabled(boolean enabled)
     {
-        logger.setLevel(Level.FINE);
+        _logger.setLevel(Level.FINE);
     }
 
     public void warn(String msg)
     {
-        logger.log(Level.WARNING,msg);
+        _logger.log(Level.WARNING,msg);
     }
 
     public void warn(String msg, Object arg0, Object arg1)
     {
-        logger.log(Level.WARNING,format(msg,arg0,arg1));
+        _logger.log(Level.WARNING,format(msg,arg0,arg1));
     }
 
     public void warn(String msg, Throwable th)
     {
-        logger.log(Level.WARNING,msg,th);
+        _logger.log(Level.WARNING,msg,th);
     }
 
     private String format(String msg, Object arg0, Object arg1)

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 
 import junit.framework.TestCase;
@@ -62,11 +63,37 @@ public class ResourceCollectionTest extends TestCase
         assertEquals("3 - three", getContent(rc, "3.txt"));  
     }
     
-    static String getContent(ResourceCollection rc, String path) throws Exception
+    public void testCopyTo() throws Exception
+    {
+        ResourceCollection rc = new ResourceCollection(new String[]{
+                "src/test/resources/org/eclipse/jetty/util/resource/one/",
+                "src/test/resources/org/eclipse/jetty/util/resource/two/",
+                "src/test/resources/org/eclipse/jetty/util/resource/three/"
+        });
+        
+        File dest = File.createTempFile("copyto",null);
+        if (dest.exists())
+            dest.delete();
+        dest.mkdir();
+        dest.deleteOnExit();
+        rc.copyTo(dest);
+        
+        Resource r = Resource.newResource(dest.toURI());
+        assertEquals("1 - one", getContent(r, "1.txt"));
+        assertEquals("2 - two", getContent(r, "2.txt"));
+        assertEquals("3 - three", getContent(r, "3.txt"));  
+        r = r.addPath("dir");
+        assertEquals("1 - one", getContent(r, "1.txt"));
+        assertEquals("2 - two", getContent(r, "2.txt"));
+        assertEquals("3 - three", getContent(r, "3.txt")); 
+        
+    }
+    
+    static String getContent(Resource r, String path) throws Exception
     {
         StringBuilder buffer = new StringBuilder();
         String line = null;
-        BufferedReader br = new BufferedReader(new InputStreamReader(rc.addPath(path).getURL().openStream()));
+        BufferedReader br = new BufferedReader(new InputStreamReader(r.addPath(path).getURL().openStream()));
         while((line=br.readLine())!=null)
             buffer.append(line);
         br.close();        

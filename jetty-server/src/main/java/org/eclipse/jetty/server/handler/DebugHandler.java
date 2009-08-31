@@ -61,6 +61,7 @@ public class DebugHandler extends HandlerWrapper
         else
             retry=true;
         
+        String ex=null;
         try
         {
             final String d=_date.now();
@@ -74,6 +75,26 @@ public class DebugHandler extends HandlerWrapper
             
             getHandler().handle(target,baseRequest,request,response);
         }
+        catch(IOException ioe)
+        {
+            ex=ioe.toString();
+            throw ioe;
+        }
+        catch(ServletException se)
+        {
+            ex=se.toString()+":"+se.getCause();
+            throw se;
+        }
+        catch(RuntimeException rte)
+        {
+            ex=rte.toString();
+            throw rte;
+        }
+        catch(Error e)
+        {
+            ex=e.toString();
+            throw e;
+        }
         finally
         {
             thread.setName(old_name);
@@ -86,7 +107,9 @@ public class DebugHandler extends HandlerWrapper
                 _print.println(d+(ms>99?".":(ms>9?".0":".00"))+ms+":"+name+" SUSPEND");
             }
             else
-                _print.println(d+(ms>99?".":(ms>9?".0":".00"))+ms+":"+name+" "+base_response.getStatus()+" "+base_response.getContentType()+" "+base_response.getContentCount());
+                _print.println(d+(ms>99?".":(ms>9?".0":".00"))+ms+":"+name+" "+base_response.getStatus()+
+		        (ex==null?"":("/"+ex))+
+		        " "+base_response.getContentType()+" "+base_response.getContentCount());
         }
     }
 

@@ -659,7 +659,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     /* ------------------------------------------------------------ */
     protected KeyManager[] getKeyManagers() throws Exception
     {
-        KeyStore keyStore = getKeyStore(_keystorePath, _keystoreType, _password.toString());
+        KeyStore keyStore = getKeyStore(_keystorePath, _keystoreType, _password==null?null:_password.toString());
         
         KeyManagerFactory keyManagerFactory=KeyManagerFactory.getInstance(_sslKeyManagerFactoryAlgorithm);
         keyManagerFactory.init(keyStore,_keyPassword==null?(_password==null?null:_password.toString().toCharArray()):_keyPassword.toString().toCharArray());
@@ -677,7 +677,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
             _sslTrustManagerFactoryAlgorithm = _sslKeyManagerFactoryAlgorithm;
         }
         
-        KeyStore trustStore = getKeyStore(_truststorePath, _truststoreType, _trustPassword.toString());
+        KeyStore trustStore = getKeyStore(_truststorePath, _truststoreType, _trustPassword==null?null:_trustPassword.toString());
 
         TrustManagerFactory trustManagerFactory=TrustManagerFactory.getInstance(_sslTrustManagerFactoryAlgorithm);
         trustManagerFactory.init(trustStore);

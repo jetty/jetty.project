@@ -15,6 +15,7 @@ package org.eclipse.jetty.security;
 
 import java.io.IOException;
 import java.security.Principal;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +25,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.security.authentication.DeferredAuthenticator.DeferredAuthentication;
+import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -42,6 +43,12 @@ import org.eclipse.jetty.util.log.Log;
  * The Authenticator may either be directly set on the handler
  * or will be create during {@link #start()} with a call to
  * either the default or set AuthenticatorFactory.
+ * <p>
+ * SecurityHandler has a set of initparameters that are used by the 
+ * Authentication.Configuration. At startup, any context init parameters
+ * that start with "org.eclipse.jetty.security." that do not have 
+ * values in the SecurityHandler init parameters, are copied.  
+ * 
  */
 public abstract class SecurityHandler extends HandlerWrapper implements Authenticator.Configuration
 {
@@ -49,7 +56,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private boolean _checkWelcomeFiles = false;
     private Authenticator _authenticator;
     private Authenticator.Factory _authenticatorFactory=new DefaultAuthenticatorFactory();
-    private boolean _isLazy=true;
     private String _realmName;
     private String _authMethod;
     private final Map<String,String> _initParameters=new HashMap<String,String>();
@@ -141,27 +147,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         if (isRunning())
             throw new IllegalStateException("running");
         _authenticatorFactory = authenticatorFactory;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return the isLazy
-     */
-    public boolean isLazy()
-    {
-        return _isLazy;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param isLazy the isLazy to set
-     * @throws IllegalStateException if the SecurityHandler is running
-     */
-    public void setLazy(boolean isLazy)
-    {
-        if (isRunning())
-            throw new IllegalStateException("running");
-        _isLazy = isLazy;
     }
 
     /* ------------------------------------------------------------ */
@@ -283,6 +268,20 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     protected void doStart()
         throws Exception
     {
+        // copy security init parameters
+        ContextHandler.Context context =ContextHandler.getCurrentContext();
+        if (context!=null)
+        {
+            Enumeration<String> names=context.getInitParameterNames();
+            while (names!=null && names.hasMoreElements())
+            {
+                String name =names.nextElement();
+                if (name.startsWith("org.eclipse.jetty.security.") &&
+                        getInitParameter(name)==null)
+                    setInitParameter(name,context.getInitParameter(name));
+            }
+        }
+        
         // complicated resolution of login and identity service to handle
         // many different ways these can be constructed and injected.
         
@@ -387,8 +386,10 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         
         if (handler==null)
             return;
+
+        final Authenticator authenticator = _authenticator;
         
-        if (_authenticator!=null && checkSecurity(baseRequest))
+        if (authenticator!=null && checkSecurity(baseRequest))
         {
             Object constraintInfo = prepareConstraintInfo(pathInContext, baseRequest);
             
@@ -404,13 +405,13 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             }
 
             // is Auth mandatory?
-            boolean isAuthMandatory = isAuthMandatory(baseRequest, base_response, constraintInfo);
+            boolean isAuthMandatory = 
+                isAuthMandatory(baseRequest, base_response, constraintInfo);
 
             // check authentication
             Object previousIdentity = null;
             try
             {
-                final Authenticator authenticator = _authenticator;
                 Authentication authentication = baseRequest.getAuthentication();
                 if (authentication==null || authentication==Authentication.NOT_CHECKED)
                     authentication=authenticator.validateRequest(request, response, isAuthMandatory);
@@ -447,8 +448,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 }
                 else if (authentication instanceof Authentication.Deferred)
                 {
-                    DeferredAuthentication lazy= (DeferredAuthentication)authentication;
-                    lazy.setIdentityService(_identityService);
+                    DeferredAuthentication deferred= (DeferredAuthentication)authentication;
+                    deferred.setIdentityService(_identityService);
                     baseRequest.setAuthentication(authentication);
 
                     try
@@ -457,9 +458,10 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     }
                     finally
                     {
-                        previousIdentity = lazy.getPreviousAssociation();
-                        lazy.setIdentityService(null);
+                        previousIdentity = deferred.getPreviousAssociation();
+                        deferred.setIdentityService(null);
                     }
+                    
                     Authentication auth=baseRequest.getAuthentication();
                     if (auth instanceof Authentication.User)
                     {
@@ -468,7 +470,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     }
                     else
                         authenticator.secureResponse(request, response, isAuthMandatory, null);
-                    //TODO fish previousIdentity out of something.
                 }
                 else
                 {

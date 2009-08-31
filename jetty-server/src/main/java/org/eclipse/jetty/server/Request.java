@@ -215,10 +215,10 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    /*
+    /**
      * Extract Paramters from query string and/or form _content.
      */
-    private void extractParameters()
+    public void extractParameters()
     {
         if (_baseParameters == null) 
             _baseParameters = new MultiMap(16);
@@ -242,7 +242,6 @@ public class Request implements HttpServletRequest
                 try
                 {
                     _uri.decodeQueryTo(_baseParameters,_queryEncoding);
-
                 }
                 catch (UnsupportedEncodingException e)
                 {
@@ -252,7 +251,6 @@ public class Request implements HttpServletRequest
                         Log.warn(e.toString());
                 }
             }
-
         }
 
         // handle any _content.
@@ -388,7 +386,7 @@ public class Request implements HttpServletRequest
     public String getAuthType()
     {
         if (_authentication instanceof Authentication.Deferred)
-            _authentication = ((Authentication.Deferred)_authentication).authenticate();
+            _authentication = ((Authentication.Deferred)_authentication).authenticate(this);
         
         if (_authentication instanceof Authentication.User)
             return ((Authentication.User)_authentication).getAuthMethod();
@@ -1203,12 +1201,26 @@ public class Request implements HttpServletRequest
     {
         return _uri;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public UserIdentity getUserIdentity()
     {
         if (_authentication instanceof Authentication.Deferred)
-            _authentication = ((Authentication.Deferred)_authentication).authenticate();
+            setAuthentication(((Authentication.Deferred)_authentication).authenticate(this));
         
+        if (_authentication instanceof Authentication.User)
+            return ((Authentication.User)_authentication).getUserIdentity();
+        return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The resolved user Identity, which may be null if the 
+     * {@link Authentication} is not {@link Authentication.User} 
+     * (eg. {@link Authentication.Deferred}).
+     */
+    public UserIdentity getResolvedUserIdentity()
+    {
         if (_authentication instanceof Authentication.User)
             return ((Authentication.User)_authentication).getUserIdentity();
         return null;
@@ -1227,7 +1239,7 @@ public class Request implements HttpServletRequest
     public Principal getUserPrincipal()
     {
         if (_authentication instanceof Authentication.Deferred)
-            _authentication = ((Authentication.Deferred)_authentication).authenticate();
+            setAuthentication(((Authentication.Deferred)_authentication).authenticate(this));
         
         if (_authentication instanceof Authentication.User)
         {
@@ -1311,7 +1323,7 @@ public class Request implements HttpServletRequest
     public boolean isUserInRole(String role)
     {
         if (_authentication instanceof Authentication.Deferred)
-            _authentication = ((Authentication.Deferred)_authentication).authenticate();
+            setAuthentication(((Authentication.Deferred)_authentication).authenticate(this));
         
         if (_authentication instanceof Authentication.User)
             return ((Authentication.User)_authentication).isUserInRole(_scope,role);
@@ -1329,7 +1341,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     protected void recycle()
     {
-        _authentication=Authentication.NOT_CHECKED;
+        setAuthentication(Authentication.NOT_CHECKED);
     	_async.recycle();
         _asyncSupported=true;
         _handled=false;
@@ -1846,7 +1858,7 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public Iterable<Part> getParts()
+    public Collection<Part> getParts()
     {
         // TODO Auto-generated method stub
         return null;

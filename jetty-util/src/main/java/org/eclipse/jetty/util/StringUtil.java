@@ -34,25 +34,7 @@ public class StringUtil
     public static final String __LINE_SEPARATOR=
         System.getProperty("line.separator","\n");
        
-    public static final String __ISO_8859_1;
-    static
-    {
-        String iso=System.getProperty("ISO_8859_1");
-        if (iso==null)
-        {
-            try{
-                new String(new byte[]{(byte)20},"ISO-8859-1");
-                iso="ISO-8859-1";
-            }
-            catch(java.io.UnsupportedEncodingException e)
-            {
-                iso="ISO8859_1";
-            }        
-        }
-        __ISO_8859_1=iso;
-    }
-    
-    
+    public static final String __ISO_8859_1="ISO-8859-1";
     public final static String __UTF8="UTF-8";
     public final static String __UTF8Alt="UTF8";
     public final static String __UTF16="UTF-16";

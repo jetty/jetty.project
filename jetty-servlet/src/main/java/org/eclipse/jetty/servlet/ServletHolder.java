@@ -16,6 +16,7 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -274,7 +275,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
         {       
             try
             {
-                if (_identityService!=null && _runAsToken!=null)
+                if (_identityService!=null)
                     old_run_as=_identityService.setRunAs(_identityService.getSystemUserIdentity(),_runAsToken);
 
                 destroyInstance(_servlet);
@@ -285,7 +286,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
             }
             finally
             {
-                if (_identityService!=null && _runAsToken!=null)
+                if (_identityService!=null)
                     _identityService.unsetRunAs(old_run_as);
             }
         }
@@ -415,7 +416,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
                 _servlet = getServletHandler().customizeServlet(_servlet);
             
             // Handle run as
-            if (_identityService!=null && _runAsToken!=null)
+            if (_identityService!=null)
             {
                 old_run_as=_identityService.setRunAs(_identityService.getSystemUserIdentity(),_runAsToken);
             }
@@ -446,7 +447,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
         finally
         {
             // pop run-as role
-            if (_identityService!=null && _runAsToken!=null)
+            if (_identityService!=null)
                 _identityService.unsetRunAs(old_run_as);
         }
     }
@@ -523,8 +524,8 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
                 request.setAttribute("org.apache.catalina.jsp_file",_forcedPath);
 
             // Handle run as
-            if (_identityService!=null && _runAsToken!=null)
-                old_run_as=_identityService.setRunAs(baseRequest.getUserIdentity(),_runAsToken);
+            if (_identityService!=null)
+                old_run_as=_identityService.setRunAs(baseRequest.getResolvedUserIdentity(),_runAsToken);
             
             if (!isAsyncSupported())
                 baseRequest.setAsyncSupported(false);
@@ -542,7 +543,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
             baseRequest.setAsyncSupported(suspendable);
             
             // pop run-as role
-            if (_identityService!=null && _runAsToken!=null)
+            if (_identityService!=null)
                 _identityService.unsetRunAs(old_run_as);
 
             // Handle error params.
@@ -595,7 +596,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
             return Collections.emptySet();
         }
 
-        public Iterable<String> getMappings()
+        public Collection<String> getMappings()
         {
             ServletMapping[] mappings =_servletHandler.getServletMappings();
             List<String> patterns=new ArrayList<String>();

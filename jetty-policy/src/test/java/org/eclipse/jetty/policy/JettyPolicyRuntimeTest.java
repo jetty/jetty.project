@@ -22,13 +22,13 @@ import java.security.AccessControlException;
 import java.security.Policy;
 import java.util.Collections;
 import java.util.HashMap;
-
+import java.util.Set;
 
 import junit.framework.TestCase;
 
-public class TestJettyPolicyRuntime extends TestCase
+public class JettyPolicyRuntimeTest extends TestCase
 {
-    HashMap evaluator = new HashMap();
+    HashMap<String, String> evaluator = new HashMap<String, String>();
     
     private boolean _runningOnWindows;
     
@@ -36,15 +36,16 @@ public class TestJettyPolicyRuntime extends TestCase
     @Override
     protected void setUp() throws Exception
     {
-        
+        System.setSecurityManager(null);
+        Policy.setPolicy(null);
+
         _runningOnWindows = System.getProperty( "os.name" ).startsWith( "Windows" );
         
         super.setUp();
         
-        evaluator.put( "jetty.home", getWorkingDirectory() );
+        evaluator.put("jetty.home",MavenTestingUtils.getBasedir().getAbsolutePath());
+        evaluator.put("basedir",MavenTestingUtils.getBasedir().getAbsolutePath());
     }
-    
-    
     
     @Override
     protected void tearDown() throws Exception
@@ -55,13 +56,10 @@ public class TestJettyPolicyRuntime extends TestCase
         Policy.setPolicy( null );
     }
 
-
-
     public void testSimplePolicyReplacement() throws Exception
     {   
         
-        JettyPolicy ap =
-            new JettyPolicy( Collections.singleton( getWorkingDirectory() + "/src/test/resources/global-all-permission.policy" ), evaluator );
+        JettyPolicy ap = new JettyPolicy(getSinglePolicy("global-all-permission.policy"),evaluator);
 
         ap.refresh();
         
@@ -76,8 +74,7 @@ public class TestJettyPolicyRuntime extends TestCase
     
     public void testRepeatedPolicyReplacement() throws Exception
     {       
-        JettyPolicy ap =
-            new JettyPolicy( Collections.singleton( getWorkingDirectory() + "/src/test/resources/global-all-permission.policy" ), evaluator );
+        JettyPolicy ap = new JettyPolicy(getSinglePolicy("global-all-permission.policy"),evaluator);
 
         ap.refresh();
         
@@ -91,43 +88,44 @@ public class TestJettyPolicyRuntime extends TestCase
             File test3 = new File( "/tmp/foo/bar/do" );
             test3.mkdirs();
             test3.delete();
-            assertTrue( "Under AllPermission we are allowed", true );
         }
         catch ( AccessControlException ace )
         {
-            //ace.printStackTrace();
-            assertFalse( "Exception was thrown which it shouldn't have been", true );
+            ace.printStackTrace(System.err);
+            fail("Should NOT have thrown an AccessControlException");
         }
         
-        JettyPolicy ap2 =
-            new JettyPolicy( Collections.singleton( getWorkingDirectory() + "/src/test/resources/global-file-read-only-tmp-permission.policy" ), evaluator );
+        JettyPolicy ap2 = new JettyPolicy(getSinglePolicy("global-file-read-only-tmp-permission.policy"),evaluator);
         
         ap2.refresh();
         
         Policy.setPolicy( ap2 );
 
-        // Test that the new policy does replace the old one and we are now now allowed
+        // Test that the new policy does replace the old one and we are now not allowed
         try
         {
             File test3 = new File( "/tmp/foo/bar/do" );
             test3.mkdirs();
-            assertFalse( "We should be restricted and not get here.", true );
+
+            fail("Should have thrown an AccessControlException");
         }
         catch ( AccessControlException ace )
         {
-            //ace.printStackTrace();
-            assertTrue( "Exception was thrown as it should be.", true );
+            // Expected Path
         }
               
     }
 
-
     public void testPolicyRestrictive() throws Exception
     {
-        if ( !_runningOnWindows ) //temporary, create alternate file to load for windows
-        { 
-        JettyPolicy ap =
-            new JettyPolicy( Collections.singleton( getWorkingDirectory() + "/src/test/resources/global-file-read-only-tmp-permission.policy" ), evaluator );
+        // TODO - temporary, create alternate file to load for windows
+        if (_runningOnWindows)
+        {
+            // skip run
+            return;
+        }
+
+        JettyPolicy ap = new JettyPolicy(getSinglePolicy("global-file-read-only-tmp-permission.policy"),evaluator);
         
         ap.refresh();
         
@@ -144,27 +142,28 @@ public class TestJettyPolicyRuntime extends TestCase
         
         try
         {
-            File test3 = new File( "/tmp/foo/bar/do" );
+            File test3 = new File("/tmp/foo/bar/do");
             test3.mkdirs();
-            assertTrue( "we should not get here", false );
-        }
-        catch ( AccessControlException ace )
-        {
-            //ace.printStackTrace();
-            assertTrue( "Exception was thrown", true );
-        }
-        }
 
+            fail("Should have thrown an AccessControlException");
+        }
+        catch (AccessControlException ace)
+        {
+            // Expected Path
+        }
     }
     
     public void testCertificateLoader()
     throws Exception
     {
-        if ( !_runningOnWindows ) //temporary, create alternate file to load for windows
-        {   
-        JettyPolicy ap =
-            new JettyPolicy( Collections.singleton( getWorkingDirectory()
-            + "/src/test/resources/jetty-certificate.policy" ), evaluator );
+        // TODO - temporary, create alternate file to load for windows
+        if (_runningOnWindows)
+        {
+            // skip run
+            return;
+        }
+
+        JettyPolicy ap = new JettyPolicy(getSinglePolicy("jetty-certificate.policy"),evaluator);
 
         ap.refresh();
         
@@ -172,7 +171,9 @@ public class TestJettyPolicyRuntime extends TestCase
         
         System.setSecurityManager( new SecurityManager() );
      
-        URL url = new URL("file://" + getWorkingDirectory() + "/target/test-policy/jetty-test-policy-1.0.jar");
+        URL url = MavenTestingUtils.toTargetURL("test-policy/jetty-test-policy.jar");
+        
+        // System.out.println( "IN HERE: " + url.toString());
         
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )
@@ -188,50 +189,39 @@ public class TestJettyPolicyRuntime extends TestCase
         
         ap.refresh();
         
-        try
-        {
-            Class clazz = loader.loadClass( "org.eclipse.jetty.toolchain.test.policy.Tester" );
-              
-            Method m = clazz.getMethod( "testEcho", new Class[] {String.class} );
-            
-            String foo = (String)m.invoke( clazz.newInstance(), new Object[] {"foo"} );                    
-            
-            assertEquals("foo", foo );
-            
-            Method m2 = clazz.getMethod( "testReadSystemProperty", new Class[] {String.class} );
-            
-            m2.invoke( clazz.newInstance(), new Object[] {"foo"} );                    
-            
-            assertTrue( "system property access was granted", true );
-        }
-        catch ( ClassNotFoundException e )
-        {
-            e.printStackTrace();
-            assertFalse( "should not have got here", true );
-        }
-        catch ( SecurityException e )
-        {
-            e.printStackTrace();            
-            assertFalse( "should not have got here", true );
-        }
-        catch ( IllegalAccessException e )
-        {
-            e.printStackTrace();
-            assertFalse( "should not have got here", true );
-        }
-        }
-             
+        Class<?> clazz = loader.loadClass("org.eclipse.jetty.toolchain.test.policy.Tester");
+
+        Method m = clazz.getMethod("testEcho",new Class[]
+        { String.class });
+
+        String foo = (String)m.invoke(clazz.newInstance(),new Object[]
+        { "foo" });
+
+        assertEquals("foo",foo);
+
+        Method m2 = clazz.getMethod("testReadSystemProperty",new Class[]
+        { String.class });
+
+        m2.invoke(clazz.newInstance(),new Object[]
+        { "foo" });
+
+        assertTrue("system property access was granted",true);
+
+       // ap.dump(System.out);
     }
     
     
     public void testBadCertificateLoader()
     throws Exception
     {
-        if ( !_runningOnWindows ) //temporary, create alternate file to load for windows
+        // TODO - temporary, create alternate file to load for windows
+        if (_runningOnWindows)
         {
-        JettyPolicy ap =
-            new JettyPolicy( Collections.singleton( getWorkingDirectory()
-            + "/src/test/resources/jetty-bad-certificate.policy" ), evaluator );
+            // skip run
+            return;
+        }
+
+        JettyPolicy ap = new JettyPolicy(getSinglePolicy("jetty-bad-certificate.policy"),evaluator);
 
         ap.refresh();
         
@@ -239,7 +229,7 @@ public class TestJettyPolicyRuntime extends TestCase
         
         System.setSecurityManager( new SecurityManager() );
      
-        URL url = new URL("file://" + getWorkingDirectory() + "/target/test-policy/jetty-test-policy.jar");
+        URL url = MavenTestingUtils.toTargetURL("test-policy/jetty-test-policy.jar");
         
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )
@@ -255,11 +245,9 @@ public class TestJettyPolicyRuntime extends TestCase
         
         ap.refresh();
         
-        boolean excepted = false;
-        
         try
         {
-            Class clazz = loader.loadClass( "org.eclipse.jetty.toolchain.test.policy.Tester" );
+            Class<?> clazz = loader.loadClass("org.eclipse.jetty.toolchain.test.policy.Tester");
             
             Method m = clazz.getMethod( "testEcho", new Class[] {String.class} );
             
@@ -269,39 +257,19 @@ public class TestJettyPolicyRuntime extends TestCase
             
             Method m2 = clazz.getMethod( "testReadSystemProperty", new Class[] {String.class} );
             
-            m2.invoke( clazz.newInstance(), new Object[] {"foobar"} );                    
-            
-        }
-        catch ( ClassNotFoundException e )
-        {
-            e.printStackTrace();
-            assertFalse( "should not have got here", true );
+            m2.invoke(clazz.newInstance(),new Object[]
+            { "foobar" });
+
+            fail("Should have thrown an InvocationTargetException");
         }
         catch ( InvocationTargetException e )
         {
             assertTrue(e.getCause().getMessage().contains( "access denied" ));
-            
-            excepted = true; // we hope to get here
-        }
-        catch ( IllegalAccessException e )
-        {           
-            e.printStackTrace();
-            assertFalse( "should not have got here", true );
-        }
-        
-        assertTrue( "checking that we through a security exception", excepted );
         }
     }
-    
-    
-    private String getWorkingDirectory()
+
+    private Set<String> getSinglePolicy(String name)
     {
-        String cwd = System.getProperty( "basedir" );
-        
-        if ( cwd == null )
-        {
-            cwd = System.getProperty( "user.dir" );
-        }
-        return cwd;
+        return Collections.singleton(MavenTestingUtils.getTestResourceFile(name).getAbsolutePath());
     }
 }

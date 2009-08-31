@@ -53,7 +53,7 @@ public class TagLibConfiguration implements Configuration
     
     public class TldProcessor
     {
-        public static final String __taglib_processor = "org.eclipse.jetty.tagLibProcessor";
+        public static final String TAGLIB_PROCESSOR = "org.eclipse.jetty.tagLibProcessor";
         XmlParser _parser;
         WebAppContext _context;
         List<XmlParser.Node> _roots = new ArrayList<XmlParser.Node>();
@@ -230,7 +230,7 @@ public class TagLibConfiguration implements Configuration
             {
                 if (contents[i]!=null && contents[i].toLowerCase().endsWith(".tld"))
                 {
-                    Resource l=context.getWebInf().addPath(contents[i]);
+                    Resource l=web_inf.addPath(contents[i]);
                     tlds.add(l);
                 }
             }
@@ -246,7 +246,7 @@ public class TagLibConfiguration implements Configuration
         
         // Create a processor for the tlds and save it
         TldProcessor processor = new TldProcessor (context);
-        context.setAttribute(TldProcessor.__taglib_processor, processor);
+        context.setAttribute(TldProcessor.TAGLIB_PROCESSOR, processor);
         
         // Parse the tlds into memory
         Resource tld = null;
@@ -269,7 +269,7 @@ public class TagLibConfiguration implements Configuration
 
     public void configure (WebAppContext context) throws Exception
     {         
-        TldProcessor processor = (TldProcessor)context.getAttribute(TldProcessor.__taglib_processor); 
+        TldProcessor processor = (TldProcessor)context.getAttribute(TldProcessor.TAGLIB_PROCESSOR); 
         if (processor == null)
         {
             Log.warn("No TldProcessor configured, skipping tld processing");
@@ -282,13 +282,11 @@ public class TagLibConfiguration implements Configuration
 
     public void postConfigure(WebAppContext context) throws Exception
     {
-        // TODO Auto-generated method stub
-        
+        context.setAttribute(TldProcessor.TAGLIB_PROCESSOR, null);
     }
 
     public void deconfigure(WebAppContext context) throws Exception
     {
-        // TODO Auto-generated method stub
         
     }
 

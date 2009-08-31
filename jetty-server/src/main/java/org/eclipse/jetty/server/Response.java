@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
 
@@ -486,10 +487,10 @@ public class Response implements HttpServletResponse
 
 
     /* ------------------------------------------------------------ */
-    public Iterable<String> getHeaderNames()
+    public Collection<String> getHeaderNames()
     {
         final HttpFields fields=_connection.getResponseFields();
-        return fields.getIterableFieldNames();
+        return fields.getFieldNamesCollection();
     }
     
     /* ------------------------------------------------------------ */
@@ -503,10 +504,10 @@ public class Response implements HttpServletResponse
     /* ------------------------------------------------------------ */
     /*
      */
-    public Iterable<String> getHeaders(String name)
+    public Collection<String> getHeaders(String name)
     {
         final HttpFields fields=_connection.getResponseFields();
-        Iterable<String> i = fields.getIterableValues(name);
+        Collection<String> i = fields.getValuesCollection(name);
         if (i==null)
             return Collections.EMPTY_LIST;
         return i;

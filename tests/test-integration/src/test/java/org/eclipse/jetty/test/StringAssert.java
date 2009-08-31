@@ -5,16 +5,18 @@
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
 //
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 //
 // The Apache License v2.0 is available at
 // http://www.apache.org/licenses/LICENSE-2.0.txt
 //
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.test;
+
+import java.util.List;
 
 import junit.framework.Assert;
 import junit.framework.AssertionFailedError;
@@ -163,6 +165,26 @@ public class StringAssert
             buf.append(idx).append(" in \"").append(haystack.substring(offset)).append("\"");
             System.err.println(buf);
             throw new AssertionFailedError(buf.toString());
+        }
+    }
+
+    /**
+     * Asserts that the list of String lines contains the same lines (without a regard for the order of those lines)
+     * 
+     * @param msg
+     *            the assertion message
+     * @param linesExpected
+     *            the list of expected lines
+     * @param linesActual
+     *            the list of actual lines
+     */
+    public static void assertContainsSame(String msg, List<String> linesExpected, List<String> linesActual)
+    {
+        Assert.assertEquals(msg + " line count",linesExpected.size(),linesActual.size());
+
+        for (String expected : linesExpected)
+        {
+            Assert.assertTrue(msg + ": expecting to see line <" + expected + ">",linesActual.contains(expected));
         }
     }
 }

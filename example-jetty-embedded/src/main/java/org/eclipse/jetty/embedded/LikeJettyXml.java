@@ -13,8 +13,14 @@
 
 package org.eclipse.jetty.embedded;
 
+import java.lang.management.ManagementFactory;
+
+import javax.management.MBeanConstructorInfo;
+import javax.management.MBeanServer;
+
 import org.eclipse.jetty.deploy.ContextDeployer;
 import org.eclipse.jetty.deploy.WebAppDeployer;
+import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -26,24 +32,35 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class LikeJettyXml
 {
     public static void main(String[] args) throws Exception
     {
-        String jetty_home = System.getProperty("jetty.home","../jetty-distribution/target/distribution");
+        String jetty_home = System.getProperty("jetty.home","..");
         System.setProperty("jetty.home",jetty_home);
 
         Server server = new Server();
+        
+        // Setup JMX
+        MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        server.getContainer().addEventListener(mbContainer);
+        server.addBean(mbContainer);
+        mbContainer.addBean(Log.getLog());
 
+        
+        // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setMaxThreads(100);
         server.setThreadPool(threadPool);
 
-        Connector connector = new SelectChannelConnector();
+        // Setup Connectors
+        SelectChannelConnector connector = new SelectChannelConnector();
         connector.setPort(8080);
         connector.setMaxIdleTime(30000);
+        connector.setConfidentialPort(8443);
         server.setConnectors(new Connector[]
         { connector });
 
@@ -63,6 +80,9 @@ public class LikeJettyXml
         { contexts, new DefaultHandler(), requestLogHandler });
         server.setHandler(handlers);
 
+        
+        // Setup deployers
+        
         ContextDeployer deployer0 = new ContextDeployer();
         deployer0.setContexts(contexts);
         deployer0.setConfigurationDir(jetty_home + "/contexts");

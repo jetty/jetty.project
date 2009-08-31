@@ -106,6 +106,14 @@ class BadResource extends URLResource
     }
 
     /* ------------------------------------------------------------ */
+    @Override
+    public void copyTo(File destination)
+        throws IOException
+    {
+        throw new SecurityException(_message);
+    }
+    
+    /* ------------------------------------------------------------ */
     public String toString()
     {
         return super.toString()+"; BadResource="+_message;

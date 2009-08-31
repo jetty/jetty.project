@@ -24,8 +24,8 @@
     <slf4j-version>1.5.6</slf4j-version>
     <eclipse-compiler-version>3.1.1</eclipse-compiler-version>
     <cometd-version>1.0.beta4</cometd-version>
-  	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	</properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
   <scm>
     <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/branches/jetty-8</connection>
     <developerConnection>scm:svn:svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/branches/jetty-8</developerConnection>
@@ -151,8 +151,8 @@
     <module>jetty-aggregate</module>
     <module>example-jetty-embedded</module>
     <module>example-async-rest</module>
-    <module>jetty-distribution</module>
     <module>tests</module>
+    <module>jetty-distribution</module>
   </modules>
   <dependencyManagement>
     <dependencies>

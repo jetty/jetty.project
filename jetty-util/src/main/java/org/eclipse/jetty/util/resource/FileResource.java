@@ -25,6 +25,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.security.Permission;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 
@@ -34,26 +35,15 @@ import org.eclipse.jetty.util.log.Log;
  *
  * Handle resources of implied or explicit file type.
  * This class can check for aliasing in the filesystem (eg case
- * insensitivity).  By default this is turned on, or it can be controlled with the
- * "org.eclipse.jetty.util.FileResource.checkAliases" system parameter.
+ * insensitivity).  By default this is turned on, or it can be controlled 
+ * by calling the static method @see FileResource#setCheckAliases(boolean)
  *
  * 
  */
 public class FileResource extends URLResource
 {
-    private static boolean __checkAliases;
-    static
-    {
-        __checkAliases=
-            "true".equalsIgnoreCase
-            (System.getProperty("org.eclipse.jetty.util.FileResource.checkAliases","true"));
- 
-       if (__checkAliases)
-           Log.debug("Checking Resource aliases");
-       else
-           Log.warn("Resource alias checking is disabled");
-    }
-    
+    private static boolean __checkAliases = true;
+
     /* ------------------------------------------------------------ */
     private File _file;
     private transient URL _alias=null;
@@ -358,8 +348,26 @@ public class FileResource extends URLResource
     /**
      * @return the hashcode.
      */
+    @Override
     public int hashCode()
     {
        return null == _file ? super.hashCode() : _file.hashCode();
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public void copyTo(File destination)
+        throws IOException
+    {
+        if (isDirectory())
+        {
+            IO.copyDir(getFile(),destination);
+        }
+        else
+        {
+            if (destination.exists())
+                throw new IllegalArgumentException(destination+" exists");
+            IO.copy(getFile(),destination);
+        }
     }
 }

@@ -25,6 +25,7 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.HashMap;
@@ -989,6 +990,10 @@ public class XmlConfiguration
                                 lc.start();
                         }
                     }
+                }
+                catch (AccessControlException ace)
+                {
+                    ace.printStackTrace(System.err);
                 }
                 catch ( Exception e )
                 {

@@ -43,9 +43,9 @@ import org.eclipse.jetty.util.URIUtil;
  * <LI>default.
  * </NL>
  * Multiple path specifications can be mapped by providing a list of
- * specifications.  The list is separated by the characters specified
- * in the "org.eclipse.http.PathMap.separators" System property, which
- * defaults to :
+ * specifications.  By default this class uses characters ":," as path
+ * separators, unless configured differently by calling the static 
+ * method @see PathMap#setPathSpecSeparators(String) 
  * <P>
  * Special characters within paths such as '?� and ';' are not treated specially
  * as it is assumed they would have been either encoded in the original URL or 
@@ -59,15 +59,13 @@ import org.eclipse.jetty.util.URIUtil;
 public class PathMap extends HashMap implements Externalizable
 {
     /* ------------------------------------------------------------ */
-    private static String __pathSpecSeparators =
-        System.getProperty("org.eclipse.http.PathMap.separators",":,");
+    private static String __pathSpecSeparators = ":,";
     
     /* ------------------------------------------------------------ */
     /** Set the path spec separator.
      * Multiple path specification may be included in a single string
      * if they are separated by the characters set in this string.
-     * The default value is ":," or whatever has been set by the
-     * system property org.eclipse.http.PathMap.separators
+     * By default this class uses ":," characters as path separators.
      * @param s separators
      */
     public static void setPathSpecSeparators(String s)

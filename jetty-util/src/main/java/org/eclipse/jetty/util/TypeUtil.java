@@ -160,16 +160,40 @@ public class TypeUtil
     private static Class[] stringArg = { java.lang.String.class };
     
     /* ------------------------------------------------------------ */
-    private static int intCacheSize=
-        Integer.getInteger("org.eclipse.jetty.util.TypeUtil.IntegerCacheSize",600).intValue();
+    private static int intCacheSize = 600;
     private static Integer[] integerCache = new Integer[intCacheSize];
     private static String[] integerStrCache = new String[intCacheSize];
     private static Integer minusOne = new Integer(-1);
-    private static int longCacheSize=
-        Integer.getInteger("org.eclipse.jetty.util.TypeUtil.LongCacheSize",64).intValue();
+    private static int longCacheSize = 64;
     private static Long[] longCache = new Long[longCacheSize];
     private static Long minusOneL = new Long(-1);
     
+    public static void setIntCacheSize(int size)
+    {
+        if (size > intCacheSize) {
+            Integer[] intCache = new Integer[size];
+            System.arraycopy(integerCache,0,intCache,0,intCacheSize);
+            
+            String [] strCache = new String[size];
+            System.arraycopy(integerStrCache,0,strCache,0,intCacheSize);
+            
+            intCacheSize = size;
+            integerCache = intCache;
+            integerStrCache = strCache;
+        }
+    }
+    
+    public static void setLongCacheSize(int size)
+    {
+        if (size > longCacheSize) {
+            Long[] lnCache = new Long[size];
+            System.arraycopy(longCache,0,lnCache,0,longCacheSize);
+            
+            longCacheSize = size;
+            longCache = lnCache;
+        }
+    }
+
     /* ------------------------------------------------------------ */
     /** Class from a canonical name for a type.
      * @param name A class or type name.

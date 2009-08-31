@@ -223,28 +223,31 @@ public class WebAppDeployer extends AbstractLifeCycle
                 Handler[] installed=_contexts.getChildHandlersByClass(ContextHandler.class);
                 for (int i=0; i<installed.length; i++)
                 {
-                    ContextHandler c=(ContextHandler)installed[i];
+                    ContextHandler c = (ContextHandler)installed[i];
 
                     if (context.equals(c.getContextPath()))
                         continue files;
-                    
-                   try
-                   {
-                       String path=null;
-                       if (c instanceof WebAppContext)
-                           path = Resource.newResource(((WebAppContext)c).getWar()).getFile().getAbsolutePath();
-                       else if (c.getBaseResource()!=null)
-                           path = c.getBaseResource().getFile().getAbsolutePath();
 
-                       if (path!=null && path.equals(app.getFile().getAbsolutePath()))
-                           continue files;
-                   }
-                   catch (Exception e)
-                   {
-                       Log.ignore(e);
-                   }
-                   
-   
+                    
+                    try
+                    {
+                        String path = null;
+                        if (c instanceof WebAppContext)
+                            path = Resource.newResource(((WebAppContext)c).getWar()).getFile().getCanonicalPath();
+                        else if (c.getBaseResource() != null)
+                            path = c.getBaseResource().getFile().getCanonicalPath();
+
+                        if (path != null && path.equals(app.getFile().getCanonicalPath()))
+                        {
+                            Log.debug("Already deployed:"+path);
+                            continue files;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Log.ignore(e);
+                    }
+
                 }
             }
 

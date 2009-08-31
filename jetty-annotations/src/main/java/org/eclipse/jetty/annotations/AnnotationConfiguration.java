@@ -115,6 +115,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     public void deconfigure(WebAppContext context) throws Exception
     {
+        
     }
 
 
@@ -157,12 +158,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
                     }
                 }
               
-               
-                
                 
                 //Otherwise, we go about constructing a security-constraint that satisfies all of the annotations for this class
             }
         }
+        context.setAttribute(CLASS_INHERITANCE_MAP, null);
     }
     
 

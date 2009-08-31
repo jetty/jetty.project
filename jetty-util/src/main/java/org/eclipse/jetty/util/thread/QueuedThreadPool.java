@@ -491,4 +491,77 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
             }
         }
     };
+    
+    public String dump()
+    {
+        StringBuilder buf = new StringBuilder();
+        
+        for (Thread thread: _threads)
+        {
+            buf.append(thread.getId()).append(" ").append(thread.getName()).append(" ").append(thread.getState()).append(":\n");
+            for (StackTraceElement element : thread.getStackTrace())
+                buf.append("  at ").append(element.toString()).append('\n');
+        }
+        
+        return buf.toString();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param id The thread ID to stop.
+     * @return true if the thread was found and stopped.
+     * @Deprecated Use {@link #interruptThread(long)} in preference
+     */
+    @SuppressWarnings("deprecation")
+    public boolean stopThread(long id)
+    {
+        for (Thread thread: _threads)
+        {
+            if (thread.getId()==id)
+            {
+                thread.stop();
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param id The thread ID to interrupt.
+     * @return true if the thread was found and interrupted.
+     */
+    public boolean interruptThread(long id)
+    {
+        for (Thread thread: _threads)
+        {
+            if (thread.getId()==id)
+            {
+                thread.interrupt();
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param id The thread ID to interrupt.
+     * @return true if the thread was found and interrupted.
+     */
+    public String dumpThread(long id)
+    {
+        for (Thread thread: _threads)
+        {
+            if (thread.getId()==id)
+            {
+                StringBuilder buf = new StringBuilder();
+                buf.append(thread.getId()).append(" ").append(thread.getName()).append(" ").append(thread.getState()).append(":\n");
+                for (StackTraceElement element : thread.getStackTrace())
+                    buf.append("  at ").append(element.toString()).append('\n');
+                return buf.toString();
+            }
+        }
+        return null;
+    }
 }

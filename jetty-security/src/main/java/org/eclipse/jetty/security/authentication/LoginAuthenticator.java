@@ -19,6 +19,7 @@ import org.eclipse.jetty.security.LoginService;
 
 public abstract class LoginAuthenticator implements Authenticator
 {
+    protected final DeferredAuthentication _deferred=new DeferredAuthentication(this);
     protected LoginService _loginService;
     protected IdentityService _identityService;
 
@@ -40,5 +41,4 @@ public abstract class LoginAuthenticator implements Authenticator
     {
         return _loginService;
     }
-
 }

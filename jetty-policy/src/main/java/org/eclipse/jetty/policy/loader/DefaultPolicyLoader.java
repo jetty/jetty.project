@@ -22,16 +22,15 @@ package org.eclipse.jetty.policy.loader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.KeyStore;
-import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
-import org.eclipse.jetty.policy.PolicyContext;
 import org.eclipse.jetty.policy.PolicyBlock;
+import org.eclipse.jetty.policy.PolicyContext;
 import org.eclipse.jetty.policy.PolicyException;
 import org.eclipse.jetty.policy.entry.GrantEntry;
 import org.eclipse.jetty.policy.entry.KeystoreEntry;
@@ -43,9 +42,9 @@ import org.eclipse.jetty.policy.entry.KeystoreEntry;
 public class DefaultPolicyLoader
 {
     
-    public static Map<ProtectionDomain, PolicyBlock> load( InputStream policyStream, PolicyContext context ) throws PolicyException
+    public static Set<PolicyBlock> load( InputStream policyStream, PolicyContext context ) throws PolicyException
     {
-        Map<ProtectionDomain, PolicyBlock> policies = new HashMap<ProtectionDomain, PolicyBlock>();
+        Set<PolicyBlock> policies = new HashSet<PolicyBlock>();
         KeyStore keystore = null;
         
         try
@@ -83,7 +82,7 @@ public class DefaultPolicyLoader
                 policy.setPrincipals( grant.getPrincipals() );
                 policy.setPermissions( grant.getPermissions() );
                 
-                policies.put( policy.toProtectionDomain(), policy );                                        
+                policies.add(policy);
             }      
             
             return policies;

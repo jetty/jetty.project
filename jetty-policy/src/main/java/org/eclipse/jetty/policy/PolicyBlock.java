@@ -39,14 +39,16 @@ public class PolicyBlock
     {
         if ( protectionDomain == null )
         {
-            if ( codesource == null )
-            {
-                protectionDomain = new ProtectionDomain( null, permissions );
-            }
-            else
-            {   
-                protectionDomain = new ProtectionDomain( codesource, permissions, Thread.currentThread().getContextClassLoader(), principals );
-            }
+            // if ( codesource == null )
+            // {
+            // protectionDomain = new ProtectionDomain( null, permissions );
+            // }
+            // else
+            // {
+            protectionDomain = new ProtectionDomain(codesource,null,Thread.currentThread().getContextClassLoader(),principals);
+
+            // protectionDomain = new ProtectionDomain( codesource, permissions, Thread.currentThread().getContextClassLoader(), principals );
+            // }
         }
         
         return protectionDomain;

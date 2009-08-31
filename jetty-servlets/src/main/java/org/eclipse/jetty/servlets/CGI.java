@@ -127,8 +127,7 @@ public class CGI extends HttpServlet
       	    String os = System.getProperty("os.name");
             if (os!=null && os.toLowerCase().indexOf("windows")!=-1)
             {
-        	String windir = System.getProperty("windir");
-        	_env.set("SystemRoot", windir!=null ? windir : "C:\\WINDOWS"); 
+        	_env.set("SystemRoot", "C:\\WINDOWS"); 
             }
         }   
       

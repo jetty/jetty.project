@@ -16,6 +16,7 @@ package org.eclipse.jetty.policy;
 //========================================================================
 
 
+@SuppressWarnings("serial")
 public class PolicyException extends Exception 
 {
 

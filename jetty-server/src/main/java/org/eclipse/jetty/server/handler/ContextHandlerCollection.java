@@ -278,7 +278,7 @@ public class ContextHandlerCollection extends HandlerCollection
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            Log.debug(e);
             throw new Error(e);
         }
     }

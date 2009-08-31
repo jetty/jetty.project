@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util.log;
 
+import java.security.AccessControlException;
+
 import org.eclipse.jetty.util.DateCache;
 
 /*-----------------------------------------------------------------------*/
@@ -30,9 +32,9 @@ public class StdErrLog implements Logger
 {    
     private static DateCache _dateCache;
     
-    private final static boolean __debug = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.DEBUG","false"));
+    private final static boolean __debug = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.stderr.DEBUG","false"));
     private boolean _debug = __debug;
-    private String _name;
+    private final String _name;
     private boolean _hideStacks=false;
     
     static
@@ -56,7 +58,20 @@ public class StdErrLog implements Logger
     public StdErrLog(String name)
     {    
         this._name=name==null?"":name;
-        _debug=Boolean.parseBoolean(System.getProperty(name+".DEBUG",Boolean.toString(__debug)));
+
+        try
+        {
+            _debug = Boolean.parseBoolean(System.getProperty(name + ".DEBUG",Boolean.toString(__debug)));
+        }
+        catch (AccessControlException ace)
+        {
+            _debug = __debug;
+        }
+    }
+    
+    public String getName()
+    {
+        return _name;
     }
     
     public boolean isDebugEnabled()
@@ -83,14 +98,14 @@ public class StdErrLog implements Logger
     {
         String d=_dateCache.now();
         int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":INFO:  "+msg);
+        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":INFO:"+_name+":"+msg);
     }
 
     public void info(String msg,Object arg0, Object arg1)
     {
         String d=_dateCache.now();
         int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":INFO:  "+format(msg,arg0,arg1));
+        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":INFO:"+_name+":"+format(msg,arg0,arg1));
     }
     
     public void debug(String msg,Throwable th)
@@ -99,7 +114,7 @@ public class StdErrLog implements Logger
         {
             String d=_dateCache.now();
             int ms=_dateCache.lastMs();
-            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":DEBUG: "+msg);
+            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":DBUG:"+_name+":"+msg);
             if (th!=null) 
             {
                 if (_hideStacks)
@@ -116,7 +131,7 @@ public class StdErrLog implements Logger
         {
             String d=_dateCache.now();
             int ms=_dateCache.lastMs();
-            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":DEBUG: "+msg);
+            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":DBUG:"+_name+":"+msg);
         }
     }
     
@@ -126,7 +141,7 @@ public class StdErrLog implements Logger
         {
             String d=_dateCache.now();
             int ms=_dateCache.lastMs();
-            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":DEBUG: "+format(msg,arg0,arg1));
+            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":DBUG:"+_name+":"+format(msg,arg0,arg1));
         }
     }
     
@@ -134,21 +149,21 @@ public class StdErrLog implements Logger
     {
         String d=_dateCache.now();
         int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":WARN:  "+msg);
+        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":WARN:"+_name+":"+msg);
     }
     
     public void warn(String msg,Object arg0, Object arg1)
     {
         String d=_dateCache.now();
         int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":WARN:  "+format(msg,arg0,arg1));
+        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":WARN:"+_name+":"+format(msg,arg0,arg1));
     }
     
     public void warn(String msg, Throwable th)
     {
         String d=_dateCache.now();
         int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":"+_name+":WARN:  "+msg);
+        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":WARN:"+_name+":"+msg);
         if (th!=null) 
         {
             if (_hideStacks)
@@ -178,6 +193,7 @@ public class StdErrLog implements Logger
         return new StdErrLog(_name==null||_name.length()==0?name:_name+"."+name);
     }
     
+    @Override
     public String toString()
     {
         return "StdErrLog:"+_name+":DEBUG="+_debug;

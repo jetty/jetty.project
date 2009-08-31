@@ -21,13 +21,19 @@ package org.eclipse.jetty.server.ssl;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.net.URL;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.servlet.ServletException;
@@ -262,6 +268,113 @@ public class SSLEngineTest extends TestCase
             {
                 out.close();
             }
+        }
+    }
+    
+    
+    public final static int BODY_SIZE=300;
+    
+    public void testServletPost() throws Exception
+    {
+        Server server=new Server();
+        SslSelectChannelConnector connector=new SslSelectChannelConnector();
+
+        String keystore = System.getProperty("user.dir")+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator+"keystore";
+        
+        connector.setPort(0);
+        connector.setKeystore(keystore);
+        connector.setPassword("storepwd");
+        connector.setKeyPassword("keypwd");
+        connector.setTruststore(keystore);
+        connector.setTrustPassword("storepwd");
+
+        server.setConnectors(new Connector[]
+        { connector });
+
+        StreamHandler handler = new StreamHandler();
+        server.setHandler(handler);
+        
+        try
+        {
+            SSLContext context = SSLContext.getInstance("SSL");
+            context.init(null,s_dummyTrustManagers,new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
+
+            server.start();
+
+            URL url = new URL("https://localhost:"+connector.getLocalPort()+"/test");
+
+            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            if (conn instanceof HttpsURLConnection)
+            {
+                ((HttpsURLConnection)conn).setHostnameVerifier(new HostnameVerifier()
+                {
+                    public boolean verify(String urlHostName, SSLSession session)
+                    {
+                        return true;
+                    }
+                });
+            }
+
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(100000);
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type","text/plain"); //$NON-NLS-1$
+            conn.setChunkedStreamingMode(128);
+            conn.connect();
+            byte[] b = new byte[BODY_SIZE];
+            for (int i = 0; i < BODY_SIZE; i++)
+            {
+                b[i] = 'x';
+            }
+            OutputStream os = conn.getOutputStream();
+            os.write(b);
+            os.flush();
+            int rc = conn.getResponseCode();
+
+            int len = 0;
+            InputStream is = conn.getInputStream();
+            int bytes=0;
+            while ((len = is.read(b)) > -1)
+                bytes+=len;
+            is.close();
+
+            assertEquals(BODY_SIZE,handler.bytes);
+            assertEquals(BODY_SIZE,bytes);
+            
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
+    public static class StreamHandler extends AbstractHandler
+    {
+        public int bytes=0;
+        
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            response.setContentType("text/plain");
+            response.setBufferSize(128);
+            byte[] b = new byte[BODY_SIZE];
+            int len = 0;
+            InputStream is = request.getInputStream();
+
+            while ((len = is.read(b)) > -1)
+            {
+                bytes+=len;
+            }
+
+            OutputStream os = response.getOutputStream();
+            for (int i = 0; i < BODY_SIZE; i++)
+            {
+                b[i] = 'x';
+            }
+            os.write(b);
+            response.flushBuffer();
         }
     }
 }

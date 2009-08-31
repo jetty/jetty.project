@@ -273,6 +273,21 @@ public class HttpFieldsTest extends TestCase
         assertEquals(false, e.hasMoreElements());
     }
     
+    public void testDestroy()
+        throws Exception
+    {
+        HttpFields header = new HttpFields();
+        
+        header.put(new ByteArrayBuffer("name0"), new View(new ByteArrayBuffer("value0")));
+        assertTrue(header.getFieldNames().hasMoreElements());
+        assertNotNull(header.getStringField("name0"));
+        assertNull(header.getStringField("name1"));
+        
+        header.destroy();
+    
+        assertNull(header.getStringField("name0"));
+    }
+
     public void testCase()
     throws Exception
     {
@@ -359,6 +374,11 @@ public class HttpFieldsTest extends TestCase
         fields.clear();
         fields.addSetCookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,2);
         assertEquals("\"ev erything\"=\"va lue\";Version=2;Comment=\"co mment\";Path=\"pa th\";Domain=\"do main\";Max-Age=1;Secure;HttpOnly",fields.getStringField("Set-Cookie"));
+
+        fields.clear();
+        fields.addSetCookie("json","{\"services\":[\"cwa\", \"aa\"]}",null,null,-1,null,false,false,-1);
+        assertEquals("json=\"{\\\"services\\\":[\\\"cwa\\\", \\\"aa\\\"]}\"",fields.getStringField("Set-Cookie"));
+    
     }
     
     private Set enum2set(Enumeration e)

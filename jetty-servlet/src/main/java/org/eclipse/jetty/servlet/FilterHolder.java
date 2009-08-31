@@ -15,6 +15,7 @@ package org.eclipse.jetty.servlet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -173,7 +174,7 @@ public class FilterHolder extends Holder
                 _servletHandler.prependFilterMapping(mapping);
         }
 
-        public Iterable<String> getServletNameMappings()
+        public Collection<String> getServletNameMappings()
         {
             FilterMapping[] mappings =_servletHandler.getFilterMappings();
             List<String> names=new ArrayList<String>();
@@ -188,7 +189,7 @@ public class FilterHolder extends Holder
             return names;
         }
 
-        public Iterable<String> getUrlPatternMappings()
+        public Collection<String> getUrlPatternMappings()
         {
             FilterMapping[] mappings =_servletHandler.getFilterMappings();
             List<String> patterns=new ArrayList<String>();

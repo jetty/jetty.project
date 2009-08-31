@@ -264,11 +264,12 @@ public class ObjectMBean implements DynamicMBean
                                 if (!defined.contains(key))
                                 {
                                     defined.add(key);
-                                    attributes=LazyList.add(attributes,defineAttribute(key, value));
+                                    MBeanAttributeInfo info=defineAttribute(key, value);
+                                    if (info!=null)
+                                        attributes=LazyList.add(attributes,info);
                                 }
                             }
                         }
-
                     }
                     catch(MissingResourceException e)
                     {
@@ -555,10 +556,16 @@ public class ObjectMBean implements DynamicMBean
             if (methods[m].getName().equals("get" + uName) && methods[m].getParameterTypes().length == 0)
             {
                 if (getter != null)
-                    throw new IllegalArgumentException("Multiple getters for attr " + name+ " in "+oClass);
+                {
+		    Log.warn("Multiple mbean getters for attr " + name+ " in "+oClass);
+		    continue;
+		}
                 getter = methods[m];
                 if (type != null && !type.equals(methods[m].getReturnType()))
-                    throw new IllegalArgumentException("Type conflict for attr " + name+ " in "+oClass);
+                {
+		    Log.warn("Type conflict for mbean attr " + name+ " in "+oClass);
+		    continue;
+		}
                 type = methods[m].getReturnType();
             }
 
@@ -566,10 +573,16 @@ public class ObjectMBean implements DynamicMBean
             if (methods[m].getName().equals("is" + uName) && methods[m].getParameterTypes().length == 0)
             {
                 if (getter != null)
-                    throw new IllegalArgumentException("Multiple getters for attr " + name+ " in "+oClass);
+                {
+		    Log.warn("Multiple mbean getters for attr " + name+ " in "+oClass);
+		    continue;
+		}
                 getter = methods[m];
                 if (type != null && !type.equals(methods[m].getReturnType()))
-                    throw new IllegalArgumentException("Type conflict for attr " + name+ " in "+oClass);
+                {
+		    Log.warn("Type conflict for mbean attr " + name+ " in "+oClass);
+		    continue;
+		}
                 type = methods[m].getReturnType();
             }
 
@@ -577,10 +590,16 @@ public class ObjectMBean implements DynamicMBean
             if (writable && methods[m].getName().equals("set" + uName) && methods[m].getParameterTypes().length == 1)
             {
                 if (setter != null)
-                    throw new IllegalArgumentException("Multiple setters for attr " + name+ " in "+oClass);
+                {
+		    Log.warn("Multiple setters for mbean attr " + name+ " in "+oClass);
+		    continue;
+		}
                 setter = methods[m];
                 if (type != null && !type.equals(methods[m].getParameterTypes()[0]))
-                    throw new IllegalArgumentException("Type conflict for attr " + name+ " in "+oClass);
+                {
+		    Log.warn("Type conflict for mbean attr " + name+ " in "+oClass);
+		    continue;
+		}
                 type = methods[m].getParameterTypes()[0];
             }
         }
@@ -588,22 +607,29 @@ public class ObjectMBean implements DynamicMBean
         if (convert)
         {
             if (type==null)
-                throw new IllegalArgumentException("No type for " + name+" on "+_managed.getClass());
+            {
+	        Log.warn("No mbean type for " + name+" on "+_managed.getClass());
+		return null;
+	    }
                 
             if (type.isPrimitive() && !type.isArray())
-                throw new IllegalArgumentException("Cannot convert primative " + name);
+            {
+	        Log.warn("Cannot convert mbean primative " + name);
+		return null;
+	    }
         }
 
         if (getter == null && setter == null)
-            throw new IllegalArgumentException("No getter or setters found for " + name+ " in "+oClass);
+        {
+	    Log.warn("No mbean getter or setters found for " + name+ " in "+oClass);
+	    return null;
+	}
 
         try
         {
             // Remember the methods
             _getters.put(name, getter);
             _setters.put(name, setter);
-
-
 
             MBeanAttributeInfo info=null;
             if (convert)

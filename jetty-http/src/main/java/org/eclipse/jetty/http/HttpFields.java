@@ -18,6 +18,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.GregorianCalendar;
@@ -294,57 +295,19 @@ public class HttpFields
 
     /* -------------------------------------------------------------- */
     /**
-     * Get enumeration of header _names. Returns an enumeration of strings representing the header
-     * _names for this request.
+     * Get Collection of header names. 
      */
-    public Iterable<String> getIterableFieldNames()
+    public Collection<String> getFieldNamesCollection()
     {
+        final List<String> list = new ArrayList<String>(_fields.size());
         final int revision=_revision;
-        
 
-        return new Iterable<String>()
-        {
-            public Iterator<String> iterator()
-            {
-
-                return new Iterator<String>()
-                {
-                    int i = 0;
-                    Field field = null;
-
-                    public boolean hasNext()
-                    {
-                        if (field != null) return true;
-                        while (i < _fields.size())
-                        {
-                            Field f = (Field) _fields.get(i++);
-                            if (f != null && f._prev == null && f._revision == revision)
-                            {
-                                field = f;
-                                return true;
-                            }
-                        }
-                        return false;
-                    }
-
-                    public String next()
-                    {
-                        if (field != null || hasNext())
-                        {
-                            String n = BufferUtil.to8859_1_String(field._name);
-                            field = null;
-                            return n;
-                        }
-                        throw new NoSuchElementException();
-                    }
-                    
-                    public void remove()
-                    {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            }
-        };
+	for (Field f : _fields)
+	{
+	    if (f!=null && f._prev==null && f._revision==revision)
+	        list.add(BufferUtil.to8859_1_String(f._name));
+	}
+	return list;
     }
     
     /* -------------------------------------------------------------- */
@@ -486,49 +449,24 @@ public class HttpFields
      * @return Enumeration of the values, or null if no such header.
      * @param name the case-insensitive field name
      */
-    public Iterable<String> getIterableValues(String name)
+    public Collection<String> getValuesCollection(String name)
     {
-        final Field field = getField(name);
-        if (field == null) 
-            return null;
+        Field field = getField(name);
+	if (field==null)
+	    return null;
+
         final int revision=_revision;
+        final List<String> list = new ArrayList<String>();
 
-        return new Iterable<String>()
-        {
-            public Iterator<String> iterator()
-            {
-                return new Iterator<String>()
-                {
-                    Field f=field;
-
-                    public boolean hasNext()
-                    {
-                        while (f != null && f._revision != revision)
-                            f = f._next;
-                        return f != null;
-                    }
-
-                    public String next()
-                    {
-                        if (f == null) throw new NoSuchElementException();
-                        Field n = f;
-                        do
-                            f = f._next;
-                        while (f != null && f._revision != revision);
-                        return n.getValue();
-                    }
-
-                    public void remove()
-                    {
-                        throw new UnsupportedOperationException();
-                    }
-                    
-                };
-            }
-            
-        };
+	while(field!=null)
+	{
+	    if (field._revision==revision)
+	        list.add(field.getValue());
+	    field=field._next;
+	}
+	return list;
     }
-    
+
     /* -------------------------------------------------------------- */
     /**
      * Get multi headers
@@ -1186,7 +1124,10 @@ public class HttpFields
             for (int i = _fields.size(); i-- > 0;)
             {
                 Field field = _fields.get(i);
-                if (field != null) field.destroy();
+                if (field != null) {
+                    _bufferMap.remove(field.getNameBuffer());
+                    field.destroy();
+                }
             }
             _fields.clear();
         }

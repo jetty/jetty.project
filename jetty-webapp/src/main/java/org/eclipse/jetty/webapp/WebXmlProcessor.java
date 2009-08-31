@@ -343,7 +343,8 @@ public class WebXmlProcessor
     public void processWebXml ()
     throws Exception
     {
-        _webXmlRoot.process();
+        if (_webXmlRoot!=null)
+            _webXmlRoot.process();
     }
     
     public void processFragments ()

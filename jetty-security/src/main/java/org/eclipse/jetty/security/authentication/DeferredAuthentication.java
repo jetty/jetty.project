@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2009-2009 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -11,10 +11,13 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
+
 package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Locale;
 
 import javax.servlet.ServletOutputStream;
@@ -30,143 +33,111 @@ import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 
-/**
- * Deferred Authentictor
- * <p>
- * Authenticator that defers non manditory authentication by
- * returning a {@link Authentication.Deferred} instance that 
- * defers authentication until a call
- * to {@link Authentication.Deferred#authenticate()} or
- * {@link Authentication.Deferred#authenticate(ServletRequest, ServletResponse)}.
- * 
- * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
- */
-public class DeferredAuthenticator extends DelegateAuthenticator
+public class DeferredAuthentication implements Authentication.Deferred
 {
-    /* ------------------------------------------------------------ */
-    public DeferredAuthenticator(Authenticator delegate)
+    protected final Authenticator _authenticator;
+
+    private IdentityService _identityService;
+    private Object _previousAssociation;
+
+    public DeferredAuthentication(Authenticator authenticator)
     {
-        super(delegate);
+        if (authenticator == null)
+            throw new NullPointerException("No Authenticator");
+        this._authenticator = authenticator;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Get the identityService.
+     * @return the identityService
+     */
+    public IdentityService getIdentityService()
+    {
+        return _identityService;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the identityService.
+     * @param identityService the identityService to set
+     */
+    public void setIdentityService(IdentityService identityService)
+    {
+        _identityService = identityService;
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.security.Authenticator#validateRequest(ServletRequest,
-     *      ServletResponse, boolean)
+     * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate()
      */
-    public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
+    public Authentication authenticate(ServletRequest request)
     {
-        if (!mandatory)
+        try
         {
-            return new DeferredAuthentication(_delegate,request,response);
-        }
-        return _delegate.validateRequest(request,response,mandatory);
-    }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    public static class DeferredAuthentication implements Authentication.Deferred
-    {
-        protected final Authenticator _authenticator;
-        protected final ServletRequest _request;
-        protected final ServletResponse _response;
-
-        private IdentityService _identityService;
-        private Object _previousAssociation;
-
-        public DeferredAuthentication(Authenticator authenticator, ServletRequest request, ServletResponse response)
-        {
-            if (authenticator == null)
-                throw new NullPointerException("No Authenticator");
-            this._authenticator = authenticator;
-            this._request = request;
-            this._response = response;
-        }
-        
-        /* ------------------------------------------------------------ */
-        /** Get the identityService.
-         * @return the identityService
-         */
-        public IdentityService getIdentityService()
-        {
-            return _identityService;
-        }
-
-        /* ------------------------------------------------------------ */
-        /** Set the identityService.
-         * @param identityService the identityService to set
-         */
-        public void setIdentityService(IdentityService identityService)
-        {
-            _identityService = identityService;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate()
-         */
-        public Authentication authenticate()
-        {
-            try
+            Authentication authentication = _authenticator.validateRequest(request,__deferredResponse,true);
+            
+            if (authentication!=null && (authentication instanceof Authentication.User) && !(authentication instanceof Authentication.ResponseSent))
             {
-                Authentication authentication = _authenticator.validateRequest(_request,__nullResponse,false);
-                
-                if (authentication!=null && (authentication instanceof Authentication.User) && !(authentication instanceof Authentication.ResponseSent))
-                {
-                    if (_identityService!=null)
-                        _previousAssociation=_identityService.associate(((Authentication.User)authentication).getUserIdentity());
-                    return authentication;
-                }
-            }
-            catch (ServerAuthException e)
-            {
-                Log.debug(e);
-            }
-            return Authentication.UNAUTHENTICATED;
-        }
-        
-        /* ------------------------------------------------------------ */
-        /**
-         * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
-         */
-        public Authentication authenticate(ServletRequest request, ServletResponse response)
-        {
-            try
-            {
-                Authentication authentication = _authenticator.validateRequest(_request,response,true);
-                if (authentication instanceof Authentication.User && _identityService!=null)
+                if (_identityService!=null)
                     _previousAssociation=_identityService.associate(((Authentication.User)authentication).getUserIdentity());
                 return authentication;
             }
-            catch (ServerAuthException e)
-            {
-                Log.debug(e);
-            }
-            return Authentication.UNAUTHENTICATED;
         }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @see org.eclipse.jetty.server.Authentication.Deferred#login(java.lang.String, java.lang.String)
-         */
-        public Authentication login(String username, String password)
+        catch (ServerAuthException e)
         {
-            return null; // TODO implement
+            Log.debug(e);
         }
-
-        /* ------------------------------------------------------------ */
-        public Object getPreviousAssociation()
-        {
-            return _previousAssociation;
-        }
+        return Authentication.UNAUTHENTICATED;
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
+     */
+    public Authentication authenticate(ServletRequest request, ServletResponse response)
+    {
+        try
+        {
+            Authentication authentication = _authenticator.validateRequest(request,response,true);
+            if (authentication instanceof Authentication.User && _identityService!=null)
+                _previousAssociation=_identityService.associate(((Authentication.User)authentication).getUserIdentity());
+            return authentication;
+        }
+        catch (ServerAuthException e)
+        {
+            Log.debug(e);
+        }
+        return Authentication.UNAUTHENTICATED;
+    }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.Authentication.Deferred#login(java.lang.String, java.lang.String)
+     */
+    public Authentication login(String username, String password)
+    {
+        return null; // TODO implement
+    }
+
+    /* ------------------------------------------------------------ */
+    public Object getPreviousAssociation()
+    {
+        return _previousAssociation;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param response
+     * @return true if this response is from a deferred call to {@link #authenticate(ServletRequest)}
+     */
+    public boolean isDeferred(HttpServletResponse response)
+    {
+        return response==__deferredResponse;
+    }
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private static HttpServletResponse __nullResponse = new HttpServletResponse()
+    /* ------------------------------------------------------------ */
+    static HttpServletResponse __deferredResponse = new HttpServletResponse()
     {
         public void addCookie(Cookie cookie)
         {
@@ -308,25 +279,28 @@ public class DeferredAuthenticator extends DelegateAuthenticator
         {
         }
 
-        public String getHeader(String name)
-        {
-            return null;
-        }
+	public Collection<String> getHeaderNames()
+	{
+	    return Collections.emptyList();
+	}
 
-        public Iterable<String> getHeaderNames()
-        {
-            return null;
-        }
+	@Override
+	public String getHeader(String arg0)
+	{
+	    return null;
+	}
 
-        public Iterable<String> getHeaders(String name)
-        {
-            return null;
-        }
+	@Override
+	public Collection<String> getHeaders(String arg0)
+	{
+            return Collections.emptyList();
+	}
 
-        public int getStatus()
-        {
-            return 0;
-        }
+	@Override
+	public int getStatus()
+	{
+	    return 0;
+	}
 
     };
 
@@ -347,4 +321,6 @@ public class DeferredAuthenticator extends DelegateAuthenticator
         {
         }
     };
+
+    
 }

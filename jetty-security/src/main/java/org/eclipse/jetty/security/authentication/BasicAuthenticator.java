@@ -64,6 +64,9 @@ public class BasicAuthenticator extends LoginAuthenticator
 
         try
         {
+            if (!mandatory)
+                return _deferred;
+                
             if (credentials != null)
             {                  
                 credentials = credentials.substring(credentials.indexOf(' ')+1);
@@ -77,13 +80,12 @@ public class BasicAuthenticator extends LoginAuthenticator
                     return new UserAuthentication(this,user);
             }
 
-            if (mandatory) 
-            {
-                response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "basic realm=\"" + _loginService.getName() + '"');
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-                return Authentication.SEND_CONTINUE;
-            }
-            return credentials==null?Authentication.NOT_CHECKED:Authentication.UNAUTHENTICATED;
+            if (_deferred.isDeferred(response))
+                return Authentication.UNAUTHENTICATED;
+            
+            response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "basic realm=\"" + _loginService.getName() + '"');
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return Authentication.SEND_CONTINUE;
         }
         catch (IOException e)
         {
@@ -91,7 +93,6 @@ public class BasicAuthenticator extends LoginAuthenticator
         }
     }
 
-    // TODO most likely validatedUser is not needed here ??
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;

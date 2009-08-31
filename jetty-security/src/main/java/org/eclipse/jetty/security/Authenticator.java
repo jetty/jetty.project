@@ -62,7 +62,6 @@ public interface Authenticator
      */
     Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException;
     
-    
     /* ------------------------------------------------------------ */
     /**
      * @param request
@@ -85,7 +84,6 @@ public interface Authenticator
     {
         String getAuthMethod();
         String getRealmName();
-        boolean isLazy();
         String getInitParameter(String key);
         Set<String> getInitParameterNames();
         LoginService getLoginService();

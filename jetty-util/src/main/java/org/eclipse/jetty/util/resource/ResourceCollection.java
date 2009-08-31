@@ -20,6 +20,7 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.StringTokenizer;
 
@@ -405,7 +406,9 @@ public class ResourceCollection extends Resource
             for(String s : r.list())
                 set.add(s);
         }
-        return set.toArray(new String[set.size()]);
+        String[] result=set.toArray(new String[set.size()]);
+        Arrays.sort(result);
+        return result;
     }
     
     /* ------------------------------------------------------------ */
@@ -419,19 +422,30 @@ public class ResourceCollection extends Resource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public boolean renameTo(Resource dest) throws SecurityException
     {
         throw new UnsupportedOperationException();
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void copyTo(File destination)
+        throws IOException
+    {
+        for (int r=_resources.length;r-->0;)
+            _resources[r].copyTo(destination);
     }
     
     /* ------------------------------------------------------------ */
     /**
      * @return the list of resources separated by a path separator
      */
+    @Override
     public String toString()
     {
         if(_resources==null)
-            throw new IllegalStateException("*resources* not set.");
+            return "";
         
         StringBuilder buffer = new StringBuilder();
         for(Resource r : _resources)
@@ -439,7 +453,8 @@ public class ResourceCollection extends Resource
         return buffer.toString();
     }
 
-
+    /* ------------------------------------------------------------ */
+    @Override
     public boolean isContainedIn(Resource r) throws MalformedURLException
     {
         // TODO could look at implementing the semantic of is this collection a subset of the Resource r?

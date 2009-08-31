@@ -179,7 +179,13 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
         UserIdentity identity=_identityService.newUserIdentity(subject,userPrincipal,roles);
         _users.put(userName,identity);
         return identity;
-    }    
+    } 
+    
+    /* ------------------------------------------------------------ */
+    public void removeUser(String username)
+    {
+        _users.remove(username);
+    }   
 
     /* ------------------------------------------------------------ */
     /**
@@ -202,9 +208,15 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
     }
 
     /* ------------------------------------------------------------ */
-    public void logout(UserIdentity user)
+    public boolean validate(UserIdentity user)
     {
-        // TODO maybe clear cache?
+        if (_users.containsKey(user.getUserPrincipal().getName()))
+            return true;
+        
+        if (loadUser(user.getUserPrincipal().getName())!=null)
+            return true;
+                
+        return false;
     }
     
     /* ------------------------------------------------------------ */

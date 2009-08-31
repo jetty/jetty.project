@@ -30,7 +30,7 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
-public class TestJettyPolicy extends TestCase
+public class JettyPolicyTest extends TestCase
 {
     HashMap<String, String> evaluator = new HashMap<String, String>();
    
@@ -40,8 +40,9 @@ public class TestJettyPolicy extends TestCase
         throws Exception
     {
         super.setUp();
-        
-        evaluator.put( "jetty.home", getWorkingDirectory() );
+
+        evaluator.put("jetty.home",MavenTestingUtils.getBasedir().getAbsolutePath());
+        evaluator.put("basedir",MavenTestingUtils.getBasedir().getAbsolutePath());
     }
 
     public void testGlobalAllPermissionLoader()
@@ -100,6 +101,8 @@ public class TestJettyPolicy extends TestCase
 
         ap.refresh();
         
+        // ap.dump(System.out);
+
         URL url = new URL( "file:///bar.jar" ); 
         CodeSource cs = new CodeSource( url, new Certificate[0]);
         
@@ -123,8 +126,17 @@ public class TestJettyPolicy extends TestCase
                 + "/src/test/resources/multiple-codebase-mixed-permission.policy" ), evaluator );
 
         ap.refresh();
+
+        // ap.dump(System.out);
     }
     
+    public void testSCLoader() throws Exception
+    {
+        JettyPolicy ap = new JettyPolicy(Collections.singleton(getWorkingDirectory() + "/src/main/config/lib/policy/jetty.policy"),evaluator);
+
+        ap.refresh();
+        ap.dump(System.out);
+    }
 
     public void testMultipleFilePermissionLoader()
         throws Exception

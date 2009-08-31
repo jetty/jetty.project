@@ -1,0 +1,29 @@
+<HTML>
+  <HEAD>
+    <TITLE>Powered By Jetty - Auth Links</TITLE>
+    <META http-equiv="Pragma" content="no-cache">
+    <META http-equiv="Cache-Control" content="no-cache,no-store">
+  </HEAD>
+<BODY>
+<A HREF="http://jetty.eclipse.org"><IMG SRC="jetty_banner.gif"></A>
+<h1>Jetty 7 Authentication Links</h1>
+<p>
+This page contains several links to test the authentication constraints:
+<ul>
+<li><a href="auth/file.txt">auth/file.txt</a> - Forbidden</li>
+<li><a href="auth/relax.txt">auth/relax.txt</a> - Allowed</li>
+<li><a href="dump/auth/noaccess/info">dump/auth/noaccess/*</a> - Forbidden</li>
+<li><a href="dump/auth/relax/info">dump/auth/relax/*</a> - Allowed</li>
+<li><a href="dump/auth/info">dump/auth/*</a> - Authenticated any user</li>
+<li><a href="dump/auth/admin/info">dump/auth/admin/*</a> - Authenticated admin role (<a href="session/?Action=Invalidate">click</a> to invalidate session)</li>
+<li><a href="dump/auth/ssl/info">dump/auth/ssl/*</a> - Confidential</li>
+</ul>
+<p/>
+<p>
+Usernames/Passwords are jetty/jetty admin/admin & user/password	
+</p>
+<p>
+Return to <a href=".">main menu</a>.
+</p>
+</BODY>
+</HTML>

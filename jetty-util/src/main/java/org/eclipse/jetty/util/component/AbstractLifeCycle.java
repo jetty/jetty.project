@@ -51,21 +51,17 @@ public abstract class AbstractLifeCycle implements LifeCycle
             {
                 if (_state == __STARTED || _state == __STARTING)
                     return;
-                Log.debug("Starting {}",this);
                 setStarting();
                 doStart();
-                Log.debug(STARTED+" {}",this);
                 setStarted();
             }
             catch (Exception e)
             {
-                Log.debug(FAILED+" " + this,e);
                 setFailed(e);
                 throw e;
             }
             catch (Error e)
             {
-                Log.debug(FAILED+" " + this,e);
                 setFailed(e);
                 throw e;
             }
@@ -82,18 +78,15 @@ public abstract class AbstractLifeCycle implements LifeCycle
                     return;
                 setStopping();
                 doStop();
-                Log.debug(STOPPED+" {}",this);
                 setStopped();
             }
             catch (Exception e)
             {
-                Log.debug(FAILED+" " + this,e);
                 setFailed(e);
                 throw e;
             }
             catch (Error e)
             {
-                Log.debug(FAILED+" " + this,e);
                 setFailed(e);
                 throw e;
             }
@@ -155,6 +148,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
 
     private void setStarted()
     {
+        Log.debug(STARTED+" {}",this);
         _state = __STARTED;
         if (_listeners != null)
         {
@@ -167,6 +161,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
 
     private void setStarting()
     {
+        Log.debug("Starting {}",this);
         _state = __STARTING;
         if (_listeners != null)
         {
@@ -191,6 +186,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
 
     private void setStopped()
     {
+        Log.debug(STOPPED+" {}",this);
         _state = __STOPPED;
         if (_listeners != null)
         {
@@ -201,14 +197,16 @@ public abstract class AbstractLifeCycle implements LifeCycle
         }
     }
 
-    private void setFailed(Throwable error)
+    private void setFailed(Throwable th)
     {
+        Log.warn(FAILED+" " + this+": "+th);
+        Log.debug(th);
         _state = __FAILED;
         if (_listeners != null)
         {
             for (int i = 0; i < _listeners.length; i++)
             {
-                _listeners[i].lifeCycleFailure(this,error);
+                _listeners[i].lifeCycleFailure(this,th);
             }
         }
     }

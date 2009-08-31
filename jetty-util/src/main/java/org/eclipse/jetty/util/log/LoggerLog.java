@@ -51,6 +51,12 @@ public class LoggerLog implements Logger
             throw new IllegalStateException(e);
         }
     }
+
+    
+    public String getName()
+    {
+        return _logger.toString();
+    }
     
     public void debug(String msg, Throwable th)
     {

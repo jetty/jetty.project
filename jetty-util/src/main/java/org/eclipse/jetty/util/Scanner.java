@@ -43,11 +43,11 @@ public class Scanner
 {
     private static int __scannerId=0;
     private int _scanInterval;
-    private List _listeners = Collections.synchronizedList(new ArrayList());
-    private Map _prevScan = new HashMap();
-    private Map _currentScan = new HashMap();
+    private final List _listeners = Collections.synchronizedList(new ArrayList());
+    private final Map _prevScan = new HashMap();
+    private final Map _currentScan = new HashMap();
     private FilenameFilter _filter;
-    private List _scanDirs;
+    private List<File> _scanDirs;
     private volatile boolean _running = false;
     private boolean _reportExisting = true;
     private Timer _timer;
@@ -110,6 +110,7 @@ public class Scanner
      * @param dir
      * @deprecated use setScanDirs(List dirs) instead
      */
+    @Deprecated
     public void setScanDir (File dir)
     {
         _scanDirs = new ArrayList();
@@ -121,6 +122,7 @@ public class Scanner
      * @return
      * @deprecated use getScanDirs() instead
      */
+    @Deprecated
     public File getScanDir ()
     {
         return (_scanDirs==null?null:(File)_scanDirs.get(0));
@@ -228,6 +230,7 @@ public class Scanner
     {
         return new TimerTask()
         {
+            @Override
             public void run() { scan(); }
         };
     }
@@ -291,10 +294,10 @@ public class Scanner
             return;
         
         _currentScan.clear();
-        Iterator itor = _scanDirs.iterator();
+        Iterator<File> itor = _scanDirs.iterator();
         while (itor.hasNext())
         {
-            File dir = (File)itor.next();
+            File dir = itor.next();
             
             if ((dir != null) && (dir.exists()))
                 scanFile(dir, _currentScan);

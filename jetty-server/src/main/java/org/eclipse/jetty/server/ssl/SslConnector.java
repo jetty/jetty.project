@@ -25,7 +25,7 @@ public interface SslConnector extends Connector
     public static final String KEYPASSWORD_PROPERTY = "org.eclipse.jetty.ssl.keypassword";
     
     /** String name of keystore password property. */
-    public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.jetty.ssl.password";
+    public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
 
     
     /* ------------------------------------------------------------ */

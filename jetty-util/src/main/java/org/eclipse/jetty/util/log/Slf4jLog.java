@@ -20,7 +20,7 @@ package org.eclipse.jetty.util.log;
  */
 public class Slf4jLog implements Logger
 {
-    private org.slf4j.Logger logger;
+    private org.slf4j.Logger _logger;
 
 
     public Slf4jLog() throws Exception
@@ -30,16 +30,20 @@ public class Slf4jLog implements Logger
     
     public Slf4jLog(String name)
     {
-        logger = org.slf4j.LoggerFactory.getLogger( name );
+        _logger = org.slf4j.LoggerFactory.getLogger( name );
     }
     
+    public String getName()
+    {
+        return _logger.getName();
+    }
     /* ------------------------------------------------------------ */
     /* 
      * @see org.eclipse.log.Log#doDebug(java.lang.String)
      */
     public void debug(String msg)
     {
-        logger.debug(msg);
+        _logger.debug(msg);
     }
     
     /* ------------------------------------------------------------ */
@@ -48,7 +52,7 @@ public class Slf4jLog implements Logger
      */
     public void debug(String msg, Object arg0, Object arg1)
     {
-        logger.debug(msg, arg0, arg1);
+        _logger.debug(msg, arg0, arg1);
     }
 
     /* ------------------------------------------------------------ */
@@ -57,7 +61,7 @@ public class Slf4jLog implements Logger
      */
     public void debug(String msg, Throwable th)
     {
-        logger.debug(msg, th);
+        _logger.debug(msg, th);
     }
 
     /* ------------------------------------------------------------ */
@@ -66,7 +70,7 @@ public class Slf4jLog implements Logger
      */
     public boolean isDebugEnabled()
     {
-        return logger.isDebugEnabled();
+        return _logger.isDebugEnabled();
     }
 
 
@@ -76,7 +80,7 @@ public class Slf4jLog implements Logger
      */
     public void info(String msg)
     {
-        logger.info(msg);
+        _logger.info(msg);
     }
     
     /* ------------------------------------------------------------ */
@@ -85,7 +89,7 @@ public class Slf4jLog implements Logger
      */
     public void info(String msg, Object arg0, Object arg1)
     {
-        logger.info(msg, arg0, arg1);
+        _logger.info(msg, arg0, arg1);
     }
 
 
@@ -95,7 +99,7 @@ public class Slf4jLog implements Logger
      */
     public void warn(String msg)
     {
-        logger.warn(msg);
+        _logger.warn(msg);
     }
     
     /* ------------------------------------------------------------ */
@@ -104,7 +108,7 @@ public class Slf4jLog implements Logger
      */
     public void warn(String msg, Object arg0, Object arg1)
     {
-        logger.warn(msg, arg0, arg1);
+        _logger.warn(msg, arg0, arg1);
     }
 
     /* ------------------------------------------------------------ */
@@ -115,9 +119,9 @@ public class Slf4jLog implements Logger
     {
 
         if (th instanceof RuntimeException || th instanceof Error)
-            logger.error(msg, th);
+            _logger.error(msg, th);
         else
-            logger.warn(msg,th);
+            _logger.warn(msg,th);
 
     }
 
@@ -131,7 +135,7 @@ public class Slf4jLog implements Logger
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return logger.toString();
+        return _logger.toString();
     }
 
     /* ------------------------------------------------------------ */

@@ -154,38 +154,7 @@ public class WebAppClassLoader extends URLClassLoader
                 // Add resource or expand jar/
                 if (!resource.isDirectory() && file == null)
                 {
-                    InputStream in= resource.getInputStream();
-                    File tmp_dir=_context.getTempDirectory();
-                    if (tmp_dir==null)
-                    {
-                        tmp_dir = File.createTempFile("jetty.cl.lib",null);
-                        tmp_dir.mkdir();
-                        tmp_dir.deleteOnExit();
-                    }
-                    File lib= new File(tmp_dir, "lib");
-                    if (!lib.exists())
-                    {
-                        lib.mkdir();
-                        lib.deleteOnExit();
-                    }
-                    File jar= File.createTempFile("Jetty-", ".jar", lib);
-                    
-                    jar.deleteOnExit();
-                    if (Log.isDebugEnabled())
-                        Log.debug("Extract " + resource + " to " + jar);
-                    FileOutputStream out = null;
-                    try
-                    {
-                        out= new FileOutputStream(jar);
-                        IO.copy(in, out);
-                    }
-                    finally
-                    {
-                        IO.close(out);
-                    }
-                    
-                    URL url= jar.toURL();
-                    addURL(url);
+                    throw new IllegalArgumentException("!file: "+resource);
                 }
                 else
                 {

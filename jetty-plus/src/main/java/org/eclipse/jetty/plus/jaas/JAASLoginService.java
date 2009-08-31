@@ -102,8 +102,6 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         _realmName = name;
     }
 
-
-
     /* ------------------------------------------------------------ */
     /** Get the identityService.
      * @return the identityService
@@ -113,7 +111,6 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         return _identityService;
     }
 
-
     /* ------------------------------------------------------------ */
     /** Set the identityService.
      * @param identityService the identityService to set
@@ -122,7 +119,6 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     {
         _identityService = identityService;
     }
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -135,7 +131,6 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     {
         _loginModuleName = name;
     }
-
 
     /* ------------------------------------------------------------ */
     public void setCallbackHandlerClass (String classname)
@@ -226,6 +221,13 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
            Log.warn(e);
         }
         return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean validate(UserIdentity user)
+    {
+        // TODO optionally check user is still valid
+        return true;
     }
 
     /* ------------------------------------------------------------ */

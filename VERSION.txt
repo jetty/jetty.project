@@ -1,21 +1,41 @@
 jetty-8.0.0.M0-SNAPSHOT
- + Merged jetty-7-to-jetty-8-base-20090406-1
- + Merged jetty-7-to-jetty-8-base-20090406-2
- + Updated servlet 3.0 spec 20090406
- + Merged jetty-7-to-jetty-8-base-20090417-1
  + Updated servlet 3.0 spec 20090417
- + Merged jetty-7-to-jetty-8-base-20090422-1
- + Merged 273767
- + Merged jetty-7-to-jetty-8-base-20090524-1
- + Use PFD servlet API from 25/5/2009
- + Merged jetty-7-to-jetty-8-base-20090527-1
- + Merged jetty-7-to-jetty-8-base-20090528-1
- + Merged jetty-7-to-jetty-8-base-20090721-1
- + Merged jetty-7-to-jetty-8-base-20090728-1
+ + Merged 7.0.0.RC5
 
-jetty-7.0.0.M3-SNAPSHOT
+jetty-7.0.0.RC5 27 August 2009
+ + 286911 Clean out cache when recycling HTTP fields
+ + JETTY-838 Don't log and throw
+ + JETTY-874 Better header full warnings
+ + JETTY-960 Support for ldaps
+ + JETTY-1081 Handle null content type in GzipFilter
+ + JETTY-1084 Disable GzipFilter for HEAD requests
+ + JETTY-1085 Allow url sessionID if cookie invalid 
+ + JETTY-1086 Added UncheckedPrintWriter to avoid ignored EOFs
+ + JETTY-1087 Chunked SSL non blocking input
+ + 287496 Use start.ini always and added --exec
+ + 287632 FilterContinuations for blocking jetty6
 
-jetty-7.0.0.RC2-SNAPSHOT
+jetty-7.0.0.RC4 18 August 2009
+ + 286185 Implement ability for JSON implementation to automatically register convertors
+ + Added discoverable start options
+ + 286535 ContentExchange status code
+ + 285891 SessionAuthentication is serializable
+ + JETTY-1079 ResourceCollection.toString
+ + 279820 Fixed HotSwapHandler
+ + JETTY-1080 Ignore files that would be extracted outside the destination directory when unpacking WARs
+ + JETTY-1057 XSS error page
+ 
+jetty-7.0.0.RC3 7 August 2009
+ + 277403 remove system properties
+ + JETTY-1074 JMX thread manipulation
+ + Improved deferred authentication handling
+ + 285697 extract parameters if dispatch has query
+ + 282447 concurrent destinations in HttpClient
+ + 283172 fix Windows build, broken on directory creation with the DefaultServlet
+ + 283375 additional error-checking on SSL connector passwords to prevent NPE
+ + 283513 Check endp.isOpen when blocking read
+
+jetty-7.0.0.RC2 29 June 2009
  + 283844 Webapp / TLD errors are not clear
  + 283375 improved extensibility of SSL connectors
  + 283818 fixed merge of forward parameters
@@ -24,7 +44,11 @@ jetty-7.0.0.RC2-SNAPSHOT
  + 284510 Enhance jetty-start for diagnosis and unit testing
  + 284475 update jetty.sh for new OPTIONS syntax
  + Added DebugHandler
-
+ + Added JavaUtilLog for Jetty logging to java.util.logging framework
+ + 284981 Implement a cross-origin filter
+ + Improved handling of overlays and resourceCollections
+ + 285006 fix AbstractConnector NPE during shutdown.
+ 
 jetty-7.0.0.RC1 15 June 2009
  + JETTY-1066 283357 400 response for bad URIs
  + JETTY-1068 Avoid busy flush of async SSL
@@ -72,7 +96,7 @@ jetty-7.0.0.M3 20 June 2009
 jetty-7.0.0.M2 18 May 2009
  + JETTY-937 Work around Sun JVM bugs
  + JETTY-941 Linux chkconfig hint
- + JETTY-959 CGI servlet doesn't kill the CGI in case the client disconnects 
+ + JETTY-959 CGI servlet doesn't kill the CGI in case the client disconnects
  + JETTY-980 Fixed ResourceHandler ? handling, and bad URI creation in listings
  + JETTY-996 Make start-stop-daemon optional
  + 273767 Update to use geronimo annotations spec 1.1.1
@@ -80,7 +104,7 @@ jetty-7.0.0.M2 18 May 2009
  + JETTY-1004 CERT VU#402580 Canonical path handling includes ? in path segment
  + JETTY-1013 MySql Error with JDBCUserRealm
  + JETTY-1014 Enable start-stop-daemon by default on jetty.sh (START_STOP_DAEMON=1)
- + JETTY-1015 Reduce BayeuxClient and HttpClient lock contention 
+ + JETTY-1015 Reduce BayeuxClient and HttpClient lock contention
  + JETTY-1020 ZipException in org.mortbay.jetty.webapp.TagLibConfiguration prevents all contexts from being loaded
  + 275396 Added ScopedHandler to set servlet scope before security handler
  + 275396 Added Authentication.Wrapped to allow JSAPI wrapping
