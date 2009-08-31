@@ -59,6 +59,7 @@ public class ContentExchange extends CachedExchange
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void onResponseHeader(Buffer name, Buffer value) throws IOException
     {
         super.onResponseHeader(name,value);
@@ -77,6 +78,7 @@ public class ContentExchange extends CachedExchange
         }
     }
 
+    @Override
     protected void onResponseContent(Buffer content) throws IOException
     {
         super.onResponseContent( content );
@@ -85,18 +87,26 @@ public class ContentExchange extends CachedExchange
         content.writeTo(_responseContent);
     }
 
+    @Override
     protected void onRetry() throws IOException
     {
-        if ( _fileForUpload != null  )
+        if (_fileForUpload != null)
         {
             _requestContent = null;
-            _requestContentSource =  getInputStream();
+            _requestContentSource = getInputStream();
         }
-        else if ( _requestContentSource != null )
+        else if (_requestContentSource != null)
         {
-            throw new IOException("Unsupported Retry attempt, no registered file for upload.");
+            if (_requestContentSource.markSupported())
+            {
+                _requestContent = null;
+                _requestContentSource.reset();
+            }
+            else
+            {
+                throw new IOException("Unsupported retry attempt");
+            }
         }
-
         super.onRetry();
     }
 
