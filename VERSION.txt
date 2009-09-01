@@ -3,6 +3,7 @@ jetty-7.0.0.RC6-SNAPSHOT
  + 288153 jetty-client resend doesn't reset exchange
  + 288182 PUT request fails during retry
  + JETTY-1090 resolve potential infinite loop with webdav listener
+ + JETTY-1093 Request.toString throws exception when size exceeds 4k
 
 jetty-7.0.0.RC5 27 August 2009
  + 286911 Clean out cache when recycling HTTP fields
