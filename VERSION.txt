@@ -2,6 +2,7 @@ jetty-7.0.0.RC6-SNAPSHOT
  + 288055 jetty-client fails to resolve failed resolution attempts correctly
  + 288153 jetty-client resend doesn't reset exchange
  + 288182 PUT request fails during retry
+ + JETTY-1086 Use UncheckedPrintWriter
  + JETTY-1090 resolve potential infinite loop with webdav listener
  + JETTY-1093 Request.toString throws exception when size exceeds 4k
 

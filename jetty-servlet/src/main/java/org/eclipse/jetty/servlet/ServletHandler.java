@@ -479,9 +479,12 @@ public class ServletHandler extends ScopedHandler
 
             // handle or log exception
             if (th instanceof HttpException)
-            {
                 throw (HttpException)th;
-            }
+            else if (th instanceof RuntimeIOException)
+                throw (RuntimeIOException)th;
+            else if (th instanceof EofException)
+                throw (EofException)th;
+
             else if (Log.isDebugEnabled())
             {
                 Log.warn(request.getRequestURI(), th); 

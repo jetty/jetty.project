@@ -44,6 +44,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.UncheckedPrintWriter;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -343,26 +344,7 @@ public class HttpConnection implements Connection
         if (_writer==null)
         {
             _writer=new OutputWriter();
-            _printWriter=new PrintWriter(_writer)
-            {
-                /* ------------------------------------------------------------ */
-                /* 
-                 * @see java.io.PrintWriter#close()
-                 */
-                public void close() 
-                {
-                    try
-                    {
-                        out.close();
-                    }
-                    catch(IOException e)
-                    {
-                        Log.debug(e);
-                        setError();
-                    }
-                }
-                
-            };
+            _printWriter=new UncheckedPrintWriter(_writer);
         }
         _writer.setCharacterEncoding(encoding);
         return _printWriter;
