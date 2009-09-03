@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 /*
@@ -24,7 +24,6 @@ import java.util.Enumeration;
 import java.util.List;
 
 import junit.framework.TestCase;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -32,8 +31,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 
 /**
- * 
- * 
+ *
+ *
  */
 public class RFC2616Test extends TestCase
 {
@@ -42,7 +41,7 @@ public class RFC2616Test extends TestCase
 
     /**
      * Constructor for RFC2616Test.
-     * 
+     *
      * @param arg0
      */
     public RFC2616Test(String arg0)
@@ -124,15 +123,12 @@ public class RFC2616Test extends TestCase
             int offset=0;
 
             // Chunk last
-            offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Transfer-Encoding: chunked,identity\n"+"Content-Type: text/plain\n"
                     +"\015\012"+"5;\015\012"+"123\015\012\015\012"+"0;\015\012\015\012");
             checkContains(response,offset,"HTTP/1.1 400 Bad","Chunked last");
 
             // Chunked
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Transfer-Encoding: chunked\n"+"Content-Type: text/plain\n"+"\n"+"2;\n"
                     +"12\n"+"3;\n"+"345\n"+"0;\n\n"+
 
@@ -148,7 +144,6 @@ public class RFC2616Test extends TestCase
 
             // Chunked
             offset=0;
-            connector.reopen();
             response=connector.getResponses("POST /R1 HTTP/1.1\n"+"Host: localhost\n"+"Transfer-Encoding: chunked\n"+"Content-Type: text/plain\n"+"\n"+"3;\n"
                     +"fgh\n"+"3;\n"+"Ijk\n"+"0;\n\n"+
 
@@ -165,7 +160,6 @@ public class RFC2616Test extends TestCase
 
             // Chunked and keep alive
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Transfer-Encoding: chunked\n"+"Content-Type: text/plain\n"
                     +"Connection: keep-alive\n"+"\n"+"3;\n"+"123\n"+"3;\n"+"456\n"+"0;\n\n"+
 
@@ -215,12 +209,10 @@ public class RFC2616Test extends TestCase
 
             String response;
             int offset=0;
-            connector.reopen();
 
             // 2
             // If _content length not used, second request will not be read.
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Transfer-Encoding: identity\n"+"Content-Type: text/plain\n"
                     +"Content-Length: 5\n"+"\n"+"123\015\012"+
 
@@ -234,7 +226,6 @@ public class RFC2616Test extends TestCase
             // _content length is ignored, as chunking is used. If it is
             // not ignored, the second request wont be seen.
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Transfer-Encoding: chunked\n"+"Content-Type: text/plain\n"
                     +"Content-Length: 100\n"+"\n"+"3;\n"+"123\n"+"3;\n"+"456\n"+"0;\n"+"\n"+
 
@@ -278,11 +269,9 @@ public class RFC2616Test extends TestCase
     {
         String response;
         int offset=0;
-        connector.reopen();
 
         // Default Host
         offset=0;
-        connector.reopen();
         response=connector.getResponses("GET /path/R1 HTTP/1.1\n"+"Host: localhost\n"+"\n");
 
         offset=checkContains(response,offset,"HTTP/1.1 200","Default host")+1;
@@ -291,7 +280,6 @@ public class RFC2616Test extends TestCase
 
         // Virtual Host
         offset=0;
-        connector.reopen();
         response=connector.getResponses("GET /path/R1 HTTP/1.1\n"+"Host: VirtualHost\n"+"\n");
         offset=checkContains(response,offset,"HTTP/1.1 200","2. virtual host field")+1;
         offset=checkContains(response,offset,"Virtual Dump","2. virtual host field")+1;
@@ -299,7 +287,6 @@ public class RFC2616Test extends TestCase
 
         // Virtual Host case insensitive
         offset=0;
-        connector.reopen();
         response=connector.getResponses("GET /path/R1 HTTP/1.1\n"+"Host: ViRtUalhOst\n"+"\n");
         offset=checkContains(response,offset,"HTTP/1.1 200","2. virtual host field")+1;
         offset=checkContains(response,offset,"Virtual Dump","2. virtual host field")+1;
@@ -307,7 +294,6 @@ public class RFC2616Test extends TestCase
 
         // Virtual Host
         offset=0;
-        connector.reopen();
         response=connector.getResponses("GET /path/R1 HTTP/1.1\n"+"\n");
         offset=checkContains(response,offset,"HTTP/1.1 400","3. no host")+1;
 
@@ -320,16 +306,13 @@ public class RFC2616Test extends TestCase
         {
             String response;
             int offset=0;
-            connector.reopen();
 
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"\n");
             offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","8.1.2 default")+10;
             checkContains(response,offset,"Content-Length: ","8.1.2 default");
 
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"\n"+
 
             "GET /R2 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n"+
@@ -358,10 +341,8 @@ public class RFC2616Test extends TestCase
         {
             String response;
             int offset=0;
-            connector.reopen();
             // No Expect 100
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+
                                             "Host: localhost\n"+
                                             "Content-Type: text/plain\n"+
@@ -369,20 +350,23 @@ public class RFC2616Test extends TestCase
                                             "\n",true);
 
             assertTrue("8.2.3 no expect 100",response==null || response.length()==0);
-            response=connector.getResponses("AbCdEf\015\012");
+            response=connector.getResponses("GET /R1 HTTP/1.1\n"+
+                                            "Host: localhost\n"+
+                                            "Content-Type: text/plain\n"+
+                                            "Content-Length: 8\n"+
+                                            "\n"+
+                                            "AbCdEf\015\012",true);
             offset=checkContains(response,offset,"HTTP/1.1 200","8.2.3 no expect 100")+1;
             offset=checkContains(response,offset,"AbCdEf","8.2.3 no expect 100")+1;
-            
+
             // Expect Failure
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Expect: unknown\n"+"Content-Type: text/plain\n"+"Content-Length: 8\n"
                     +"\n");
             offset=checkContains(response,offset,"HTTP/1.1 417","8.2.3 expect failure")+1;
 
             // Expect with body
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Expect: 100-continue\n"+"Content-Type: text/plain\n"
                     +"Content-Length: 8\n"+"Connection: close\n"+"\n"+"123456\015\012");
             checkNotContained(response,offset,"HTTP/1.1 100 ","8.2.3 expect 100");
@@ -391,7 +375,6 @@ public class RFC2616Test extends TestCase
             // Expect 100
             ((StdErrLog)Log.getLog()).setHideStacks(true);
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+
                                             "Host: localhost\n"+
                                             "Connection: close\n"+
@@ -441,14 +424,12 @@ public class RFC2616Test extends TestCase
     {
         try
         {
-
             String get=connector.getResponses("GET /R1 HTTP/1.0\n"+"Host: localhost\n"+"\n");
 
             checkContains(get,0,"HTTP/1.1 200","GET");
             checkContains(get,0,"Content-Type: text/html","GET _content");
             checkContains(get,0,"<html>","GET body");
 
-            connector.reopen();
             String head=connector.getResponses("HEAD /R1 HTTP/1.0\n"+"Host: localhost\n"+"\n");
             checkContains(head,0,"HTTP/1.1 200","HEAD");
             checkContains(head,0,"Content-Type: text/html","HEAD _content");
@@ -484,27 +465,27 @@ public class RFC2616Test extends TestCase
     {
         // TODO
         /*
-         * 
+         *
          * try { TestListener listener = new TestListener(); String response;
          * int offset=0; connector.reopen();
          *  // check to see if corresponging GET w/o range would return // a)
          * ETag // b) Content-Location // these same headers will be required
          * for corresponding // sub range requests
-         * 
+         *
          * response=connector.getResponses("GET /" +
          * TestRFC2616.testFiles[0].name + " HTTP/1.1\n"+ "Host: localhost\n"+
          * "Connection: close\n"+ "\n");
-         * 
+         *
          * boolean noRangeHasContentLocation =
          * (response.indexOf("\r\nContent-Location: ") != -1);
-         * 
+         *
          *  // now try again for the same resource but this time WITH range
          * header
-         * 
+         *
          * response=connector.getResponses("GET /" +
          * TestRFC2616.testFiles[0].name + " HTTP/1.1\n"+ "Host: localhost\n"+
          * "Connection: close\n"+ "Range: bytes=1-3\n"+ "\n");
-         * 
+         *
          * offset=0; connector.reopen(); offset=checkContains(response,offset,
          * "HTTP/1.1 206 Partial Content\r\n", "1. proper 206 status code");
          * offset=checkContains(response,offset, "Content-Type: text/plain", "2.
@@ -513,22 +494,22 @@ public class RFC2616Test extends TestCase
          * correct resource mod date");
          *  // if GET w/o range had Content-Location, then the corresponding //
          * response for the a GET w/ range must also have that same header
-         * 
+         *
          * offset=checkContains(response,offset, "Content-Range: bytes 1-3/26",
          * "4. _content range") + 2;
-         * 
+         *
          * if (noRangeHasContentLocation) {
          * offset=checkContains(response,offset, "Content-Location: ", "5.
          * Content-Location header as with 200"); } else { // no need to check
          * for Conten-Location header in 206 response // spec does not require
          * existence or absence if these want any // header for the get w/o
          * range }
-         * 
+         *
          * String expectedData = TestRFC2616.testFiles[0].data.substring(1,
          * 3+1); offset=checkContains(response,offset, expectedData, "6.
          * subrange data: \"" + expectedData + "\""); } catch(Exception e) {
          * e.printStackTrace(); assertTrue(false); }
-         * 
+         *
          */
     }
 
@@ -546,7 +527,7 @@ public class RFC2616Test extends TestCase
          * checkContains(response,offset, "Location: /dump", "redirected");
          * checkContains(response,offset, "Connection: close", "Connection:
          * close");
-         * 
+         *
          *  // HTTP/1.1 offset=0; connector.reopen();
          * response=connector.getResponses("GET /redirect HTTP/1.1\n"+ "Host:
          * localhost\n"+ "\n"+ "GET /redirect HTTP/1.1\n"+ "Host: localhost\n"+
@@ -554,7 +535,7 @@ public class RFC2616Test extends TestCase
          * "HTTP/1.1 302","302")+1; checkContains(response,offset, "Location:
          * /dump", "redirected"); checkContains(response,offset,
          * "Transfer-Encoding: chunked", "Transfer-Encoding: chunked");
-         * 
+         *
          * offset=checkContains(response,offset, "HTTP/1.1 302","302")+1;
          * checkContains(response,offset, "Location: /dump", "redirected");
          * checkContains(response,offset, "Connection: close", "closed");
@@ -573,12 +554,12 @@ public class RFC2616Test extends TestCase
          * checkContains(response,offset, "Location: /dump", "redirected");
          * checkContains(response,offset, "Transfer-Encoding: chunked", "chunked
          * _content length");
-         * 
+         *
          * offset=checkContains(response,offset, "HTTP/1.1 302","302")+1;
          * checkContains(response,offset, "Location: /dump", "redirected");
          * checkContains(response,offset, "Connection: close", "closed");
          *  } catch(Exception e) { e.printStackTrace(); assertTrue(false); }
-         * 
+         *
          */
     }
 
@@ -590,7 +571,6 @@ public class RFC2616Test extends TestCase
         {
             String response;
             int offset=0;
-            connector.reopen();
 
             String byteRangeHeader="";
             if (reqRanges!=null)
@@ -643,33 +623,33 @@ public class RFC2616Test extends TestCase
         // TODO
         /*
          * try { TestListener listener = new TestListener();
-         * 
+         *
          * int id = 0;
-         * 
+         *
          *  // // calibrate with normal request (no ranges); if this doesnt //
          * work, dont expect ranges to work either //
          * connector.checkContentRange( t, Integer.toString(id++),
          * TestRFC2616.testFiles[0].name, null, 200, null,
          * TestRFC2616.testFiles[0].data );
-         * 
+         *
          *  // // server should ignore all range headers which include // at
          * least one syntactically invalid range // String [] totallyBadRanges = {
          * "bytes=a-b", "bytes=-1-2", "bytes=-1-2,2-3", "bytes=-", "bytes=-1-",
          * "bytes=a-b,-1-1-1", "doublehalfwords=1-2", };
-         * 
+         *
          * for (int i = 0; i < totallyBadRanges.length; i++) {
          * connector.checkContentRange( t, "BadRange"+i,
          * TestRFC2616.testFiles[0].name, totallyBadRanges[i], 416, null,
          * TestRFC2616.testFiles[0].data ); }
-         * 
+         *
          *  // // should test for combinations of good and syntactically //
          * invalid ranges here, but I am not certain what the right // behavior
          * is abymore // // a) Range: bytes=a-b,5-8 // // b) Range:
          * bytes=a-b,bytes=5-8 // // c) Range: bytes=a-b // Range: bytes=5-8 //
-         * 
+         *
          *  // // return data for valid ranges while ignoring unsatisfiable //
          * ranges //
-         * 
+         *
          * connector.checkContentRange( t, "bytes=5-8",
          * TestRFC2616.testFiles[0].name, "bytes=5-8", 206, "5-8/26",
          * TestRFC2616.testFiles[0].data.substring(5,8+1) );
@@ -683,9 +663,9 @@ public class RFC2616Test extends TestCase
          *  // 416 as none are satisfiable connector.checkContentRange( t,
          * "bytes=50-60", TestRFC2616.testFiles[0].name, "bytes=50-60", 416,
          * "*REMOVE_THIS/26", null );
-         * 
+         *
          *  }
-         * 
+         *
          * catch(Exception e) { e.printStackTrace(); assertTrue(false); }
          */
     }
@@ -698,26 +678,21 @@ public class RFC2616Test extends TestCase
 
             String response;
             int offset=0;
-            connector.reopen();
 
             // HTTP/1.0 OK with no host
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.0\n"+"\n");
             offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
 
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+"\n");
             offset=checkContains(response,offset,"HTTP/1.1 400","400")+1;
 
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"\n");
             offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
 
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host:\n"+"\n");
             offset=checkContains(response,offset,"HTTP/1.1 200","200")+1;
 
@@ -737,32 +712,32 @@ public class RFC2616Test extends TestCase
          * try { TestListener listener = new TestListener();
          *  // // test various valid range specs that have not been // tested
          * yet //
-         * 
+         *
          * connector.checkContentRange( t, "bytes=0-2",
          * TestRFC2616.testFiles[0].name, "bytes=0-2", 206, "0-2/26",
          * TestRFC2616.testFiles[0].data.substring(0,2+1) );
-         * 
+         *
          * connector.checkContentRange( t, "bytes=23-",
          * TestRFC2616.testFiles[0].name, "bytes=23-", 206, "23-25/26",
          * TestRFC2616.testFiles[0].data.substring(23,25+1) );
-         * 
+         *
          * connector.checkContentRange( t, "bytes=23-42",
          * TestRFC2616.testFiles[0].name, "bytes=23-42", 206, "23-25/26",
          * TestRFC2616.testFiles[0].data.substring(23,25+1) );
-         * 
+         *
          * connector.checkContentRange( t, "bytes=-3",
          * TestRFC2616.testFiles[0].name, "bytes=-3", 206, "23-25/26",
          * TestRFC2616.testFiles[0].data.substring(23,25+1) );
-         * 
+         *
          * connector.checkContentRange( t, "bytes=23-23,-2",
          * TestRFC2616.testFiles[0].name, "bytes=23-23,-2", 206, "23-23/26",
          * TestRFC2616.testFiles[0].data.substring(23,23+1) );
-         * 
+         *
          * connector.checkContentRange( t, "bytes=-1,-2,-3",
          * TestRFC2616.testFiles[0].name, "bytes=-1,-2,-3", 206, "25-25/26",
          * TestRFC2616.testFiles[0].data.substring(25,25+1) );
          *  }
-         * 
+         *
          * catch(Exception e) { e.printStackTrace(); assertTrue(false); }
          */}
 
@@ -796,22 +771,19 @@ public class RFC2616Test extends TestCase
 
             String response;
             int offset=0;
-            connector.reopen();
 
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.0\n"+"\n");
             offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","19.6.2 default close")+10;
             checkNotContained(response,offset,"Connection: close","19.6.2 not assumed");
 
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.0\n"+"Host: localhost\n"+"Connection: keep-alive\n"+"\n"+
 
             "GET /R2 HTTP/1.0\n"+"Host: localhost\n"+"Connection: close\n"+"\n"+
 
             "GET /R3 HTTP/1.0\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
-            
+
             offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","19.6.2 Keep-alive 1")+1;
             offset=checkContains(response,offset,"Connection: keep-alive","19.6.2 Keep-alive 1")+1;
 
@@ -826,7 +798,6 @@ public class RFC2616Test extends TestCase
             assertEquals("19.6.2 closed",-1,response.indexOf("/R3"));
 
             offset=0;
-            connector.reopen();
             response=connector.getResponses("GET /R1 HTTP/1.0\n"+"Host: localhost\n"+"Connection: keep-alive\n"+"Content-Length: 10\n"+"\n"+"1234567890\n"+
 
             "GET /RA HTTP/1.0\n"+"Host: localhost\n"+"Connection: keep-alive\n"+"Content-Length: 10\n"+"\n"+"ABCDEFGHIJ\n"+

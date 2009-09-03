@@ -6,7 +6,6 @@ import java.io.IOException;
 
 import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
-
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
@@ -21,7 +20,7 @@ public class DefaultServletTest extends TestCase
     protected void setUp() throws Exception
     {
         _runningOnWindows = System.getProperty( "os.name" ).startsWith( "Windows" );
-        
+
         super.setUp();
 
         server = new Server();
@@ -48,7 +47,7 @@ public class DefaultServletTest extends TestCase
             server.stop();
         }
     }
-    
+
     public void testListingWithSession() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class,"/*");
@@ -58,7 +57,7 @@ public class DefaultServletTest extends TestCase
 
         File testDir = new File("target/tests/" + getName());
         prepareEmptyTestDir(testDir);
-        
+
         /* create some content in the docroot */
         File resBase = new File(testDir, "docroot");
         resBase.mkdirs();
@@ -92,7 +91,7 @@ public class DefaultServletTest extends TestCase
 
         File testDir = new File("target/tests/" + getName());
         prepareEmptyTestDir(testDir);
-        
+
         /* create some content in the docroot */
         File resBase = new File(testDir, "docroot");
         resBase.mkdirs();
@@ -102,7 +101,7 @@ public class DefaultServletTest extends TestCase
         if ( !_runningOnWindows )
         {
             assertTrue("Creating dir 'f??r' (Might not work in Windows)", new File(resBase, "f??r").mkdir());
-       
+
             String resBasePath = resBase.getAbsolutePath();
             defholder.setInitParameter( "resourceBase", resBasePath );
 
@@ -125,7 +124,7 @@ public class DefaultServletTest extends TestCase
             assertResponseNotContains( "<script>", response );
         }
     }
-    
+
     public void testListingProperUrlEncoding() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class,"/*");
@@ -135,13 +134,13 @@ public class DefaultServletTest extends TestCase
 
         File testDir = new File("target/tests/" + getName());
         prepareEmptyTestDir(testDir);
-        
+
         /* create some content in the docroot */
         File resBase = new File(testDir, "docroot");
         resBase.mkdirs();
         File wackyDir = new File(resBase, "dir;"); // this should not be double-encoded.
         assertTrue(wackyDir.mkdirs());
-        
+
         new File(wackyDir, "four").mkdir();
         new File(wackyDir, "five").mkdir();
         new File(wackyDir, "six").mkdir();
@@ -154,32 +153,30 @@ public class DefaultServletTest extends TestCase
          *         |-- four
          *         `-- six
          */
-        
+
         String resBasePath = resBase.getAbsolutePath();
         defholder.setInitParameter("resourceBase",resBasePath);
 
         // First send request in improper, unencoded way.
         String response = connector.getResponses("GET /context/dir;/ HTTP/1.0\r\n\r\n");
-        
+
         assertResponseContains("HTTP/1.1 404 Not Found", response);
-        
-        
+
+
         // Now send request in proper, encoded format.
-        connector.reopen();
-        StringBuffer req2 = new StringBuffer();
         response = connector.getResponses("GET /context/dir%3B/ HTTP/1.0\r\n\r\n");
-        
+
         // Should not see double-encoded ";"
         // First encoding: ";" -> "%3b"
         // Second encoding: "%3B" -> "%253B" (BAD!)
         assertResponseNotContains("%253B",response);
-        
+
         assertResponseContains("/dir%3B/",response);
         assertResponseContains("/dir%3B/four/",response);
         assertResponseContains("/dir%3B/five/",response);
         assertResponseContains("/dir%3B/six/",response);
     }
-    
+
     public void testListingContextBreakout() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class,"/*");
@@ -190,20 +187,20 @@ public class DefaultServletTest extends TestCase
 
         File testDir = new File("target/tests/" + getName());
         prepareEmptyTestDir(testDir);
-        
+
         /* create some content in the docroot */
         File resBase = new File(testDir, "docroot");
         resBase.mkdirs();
 
         File index = new File(resBase, "index.html");
         createFile(index, "<h>Hello Index</h1>");
-        
+
         File wackyDir = new File(resBase, "dir?");
         if ( !_runningOnWindows )
         {
             assertTrue(wackyDir.mkdirs());
         }
-            
+
         wackyDir = new File(resBase, "dir;");
         assertTrue(wackyDir.mkdirs());
 
@@ -212,7 +209,7 @@ public class DefaultServletTest extends TestCase
         sekret.mkdirs();
         File pass = new File(sekret, "pass");
         createFile(pass, "Sssh, you shouldn't be seeing this");
-        
+
         /* At this point we have the following
          * testListingContextBreakout/
          * |-- docroot
@@ -222,87 +219,66 @@ public class DefaultServletTest extends TestCase
          * `-- sekret
          *     `-- pass
          */
-        
+
         String resBasePath = resBase.getAbsolutePath();
         defholder.setInitParameter("resourceBase",resBasePath);
 
         String response;
 
-        connector.reopen();
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("Directory: /context/<",response);
 
-        connector.reopen();
         response= connector.getResponses("GET /context/dir?/ HTTP/1.0\r\n\r\n");
         assertResponseContains("404",response);
 
-        connector.reopen();
-        
         if ( !_runningOnWindows )
         {
             response= connector.getResponses("GET /context/dir%3F/ HTTP/1.0\r\n\r\n");
             assertResponseContains("Directory: /context/dir?/<",response);
-
-            connector.reopen();
         }
-            
+
         response= connector.getResponses("GET /context/index.html HTTP/1.0\r\n\r\n");
         assertResponseContains("Hello Index",response);
 
-        connector.reopen();
         response= connector.getResponses("GET /context/dir%3F/../index.html HTTP/1.0\r\n\r\n");
         assertResponseContains("Hello Index",response);
 
-        connector.reopen();
         response= connector.getResponses("GET /context/dir%3F/../../ HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Directory: ",response);
 
-        connector.reopen();
         response= connector.getResponses("GET /context/dir%3F/../../sekret/pass HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Sssh",response);
 
-        connector.reopen();
         response= connector.getResponses("GET /context/dir?/../../ HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Directory: ",response);
 
-        connector.reopen();
         response= connector.getResponses("GET /context/dir?/../../sekret/pass HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Sssh",response);
 
-
-        connector.reopen();
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("Directory: /context/<",response);
 
-        connector.reopen();
         response= connector.getResponses("GET /context/dir;/ HTTP/1.0\r\n\r\n");
         assertResponseContains("404",response);
 
-        connector.reopen();
         response= connector.getResponses("GET /context/dir%3B/ HTTP/1.0\r\n\r\n");
         assertResponseContains("Directory: /context/dir;/<",response);
 
-        connector.reopen();
         response= connector.getResponses("GET /context/index.html HTTP/1.0\r\n\r\n");
         assertResponseContains("Hello Index",response);
 
-        connector.reopen();
         response= connector.getResponses("GET /context/dir%3B/../index.html HTTP/1.0\r\n\r\n");
         assertResponseContains("Hello Index",response);
 
-        connector.reopen();
         response= connector.getResponses("GET /context/dir%3B/../../ HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Directory: ",response);
 
-        connector.reopen();
         response= connector.getResponses("GET /context/dir%3B/../../sekret/pass HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Sssh",response);
 
-        connector.reopen();
         response= connector.getResponses("GET /context/dir;/../../ HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Directory: ",response);
 
-        connector.reopen();
         response= connector.getResponses("GET /context/dir;/../../sekret/pass HTTP/1.0\r\n\r\n");
         assertResponseNotContains("Sssh",response);
     }

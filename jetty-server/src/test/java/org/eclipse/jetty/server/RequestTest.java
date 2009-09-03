@@ -4,32 +4,29 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
-
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 
 /**
- * 
+ *
  *
  * To change the template for this generated type comment go to
  * Window - Preferences - Java - Code Generation - Code and Comments
@@ -39,18 +36,18 @@ public class RequestTest extends TestCase
     Server _server = new Server();
     LocalConnector _connector = new LocalConnector();
     RequestHandler _handler = new RequestHandler();
-    
+
     {
         _connector.setHeaderBufferSize(512);
         _connector.setRequestBufferSize(1024);
         _connector.setResponseBufferSize(2048);
     }
-    
+
     public RequestTest(String arg0)
     {
         super(arg0);
         _server.setConnectors(new Connector[]{_connector});
-        
+
         _server.setHandler(_handler);
     }
 
@@ -65,7 +62,7 @@ public class RequestTest extends TestCase
     protected void setUp() throws Exception
     {
         super.setUp();
-        
+
         _server.start();
     }
 
@@ -77,8 +74,8 @@ public class RequestTest extends TestCase
         super.tearDown();
         _server.stop();
     }
-    
-    
+
+
     public void testContentTypeEncoding()
     	throws Exception
     {
@@ -90,55 +87,55 @@ public class RequestTest extends TestCase
                 results.add(request.getContentType());
                 results.add(request.getCharacterEncoding());
                 return true;
-            }  
+            }
         };
-        
+
         _connector.getResponses(
                 "GET / HTTP/1.1\n"+
                 "Host: whatever\n"+
                 "Content-Type: text/test\n"+
                 "\n"+
-               
+
                 "GET / HTTP/1.1\n"+
                 "Host: whatever\n"+
                 "Content-Type: text/html;charset=utf8\n"+
                 "\n"+
-                
+
                 "GET / HTTP/1.1\n"+
                 "Host: whatever\n"+
                 "Content-Type: text/html; charset=\"utf8\"\n"+
                 "\n"+
-                
+
                 "GET / HTTP/1.1\n"+
                 "Host: whatever\n"+
                 "Content-Type: text/html; other=foo ; blah=\"charset=wrong;\" ; charset =   \" x=z; \"   ; more=values \n"+
                 "\n"
                 );
-        
+
         int i=0;
         assertEquals("text/test",results.get(i++));
         assertEquals(null,results.get(i++));
-        
+
         assertEquals("text/html;charset=utf8",results.get(i++));
         assertEquals("utf8",results.get(i++));
-        
+
         assertEquals("text/html; charset=\"utf8\"",results.get(i++));
         assertEquals("utf8",results.get(i++));
-        
+
         assertTrue(((String)results.get(i++)).startsWith("text/html"));
         assertEquals(" x=z; ",results.get(i++));
-        
-        
-    }
-    
 
-    
+
+    }
+
+
+
     public void testContent()
         throws Exception
     {
-      
+
         final int[] length=new int[1];
-        
+
         _handler._checker = new RequestTester()
         {
             public boolean check(HttpServletRequest request,HttpServletResponse response)
@@ -146,11 +143,11 @@ public class RequestTest extends TestCase
                 assertEquals(request.getContentLength(), ((Request)request).getContentRead());
                 length[0]=request.getContentLength();
                 return true;
-            }  
+            }
         };
-        
+
         String content="";
-        
+
         for (int l=0;l<1025;l++)
         {
             String request="POST / HTTP/1.1\r\n"+
@@ -159,8 +156,7 @@ public class RequestTest extends TestCase
             "Content-Length: "+l+"\r\n"+
             "Connection: close\r\n"+
             "\r\n"+
-            content;           
-            _connector.reopen();
+            content;
             String response = _connector.getResponses(request);
             assertEquals(l,length[0]);
             if (l>0)
@@ -180,10 +176,9 @@ public class RequestTest extends TestCase
             {
                 response.getOutputStream().println("Hello World");
                 return true;
-            }  
+            }
         };
 
-        _connector.reopen();
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
@@ -192,8 +187,7 @@ public class RequestTest extends TestCase
         assertTrue(response.indexOf("200")>0);
         assertFalse(response.indexOf("Connection: close")>0);
         assertTrue(response.indexOf("Hello World")>0);
-        
-        _connector.reopen();
+
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
@@ -203,8 +197,7 @@ public class RequestTest extends TestCase
         assertTrue(response.indexOf("200")>0);
         assertTrue(response.indexOf("Connection: close")>0);
         assertTrue(response.indexOf("Hello World")>0);
-        
-        _connector.reopen();
+
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
@@ -215,10 +208,9 @@ public class RequestTest extends TestCase
         assertTrue(response.indexOf("200")>0);
         assertTrue(response.indexOf("Connection: close")>0);
         assertTrue(response.indexOf("Hello World")>0);
-        
-        
 
-        _connector.reopen();
+
+
         response=_connector.getResponses(
                     "GET / HTTP/1.0\n"+
                     "Host: whatever\n"+
@@ -227,8 +219,7 @@ public class RequestTest extends TestCase
         assertTrue(response.indexOf("200")>0);
         assertFalse(response.indexOf("Connection: close")>0);
         assertTrue(response.indexOf("Hello World")>0);
-        
-        _connector.reopen();
+
         response=_connector.getResponses(
                     "GET / HTTP/1.0\n"+
                     "Host: whatever\n"+
@@ -239,7 +230,6 @@ public class RequestTest extends TestCase
         assertTrue(response.indexOf("Connection: close")>0);
         assertTrue(response.indexOf("Hello World")>0);
 
-        _connector.reopen();
         response=_connector.getResponses(
                     "GET / HTTP/1.0\n"+
                     "Host: whatever\n"+
@@ -249,9 +239,9 @@ public class RequestTest extends TestCase
         assertTrue(response.indexOf("200")>0);
         assertTrue(response.indexOf("Connection: keep-alive")>0);
         assertTrue(response.indexOf("Hello World")>0);
-        
-        
-        
+
+
+
 
         _handler._checker = new RequestTester()
         {
@@ -261,10 +251,9 @@ public class RequestTest extends TestCase
                 response.addHeader("Connection","Other");
                 response.getOutputStream().println("Hello World");
                 return true;
-            }  
+            }
         };
-        
-        _connector.reopen();
+
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
@@ -273,8 +262,7 @@ public class RequestTest extends TestCase
         assertTrue(response.indexOf("200")>0);
         assertTrue(response.indexOf("Connection: TE,Other")>0);
         assertTrue(response.indexOf("Hello World")>0);
-        
-        _connector.reopen();
+
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
                     "Host: whatever\n"+
@@ -285,8 +273,8 @@ public class RequestTest extends TestCase
         assertTrue(response.indexOf("Connection: close")>0);
         assertTrue(response.indexOf("Hello World")>0);
     }
-    
-    
+
+
     public void testCookies() throws Exception
     {
         final ArrayList cookies = new ArrayList();
@@ -300,11 +288,10 @@ public class RequestTest extends TestCase
                     cookies.addAll(Arrays.asList(ca));
                 response.getOutputStream().println("Hello World");
                 return true;
-            }  
+            }
         };
 
         String response;
-        _connector.reopen();
 
         cookies.clear();
         response=_connector.getResponses(
@@ -314,7 +301,7 @@ public class RequestTest extends TestCase
                     );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertEquals(0,cookies.size());
-        
+
 
         cookies.clear();
         response=_connector.getResponses(
@@ -420,32 +407,32 @@ public class RequestTest extends TestCase
         assertEquals("",((Cookie)cookies.get(6)).getValue());
         assertEquals("name7",((Cookie)cookies.get(7)).getName());
         assertEquals("value7",((Cookie)cookies.get(7)).getValue());
-        
+
     }
-    
+
     public void testCookieLeak()
         throws Exception
     {
-      
+
         final String[] cookie=new String[10];
-        
+
         _handler._checker = new RequestTester()
         {
             public boolean check(HttpServletRequest request,HttpServletResponse response)
             {
                 for (int i=0;i<cookie.length; i++)
                     cookie[i]=null;
-                
+
                 Cookie[] cookies = request.getCookies();
                 for (int i=0;cookies!=null && i<cookies.length; i++)
                 {
                     cookie[i]=cookies[i].getValue();
                 }
                 return true;
-            }  
+            }
         };
-        
-        
+
+
         String request="POST / HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Cookie: other=cookie\r\n"+
@@ -457,12 +444,11 @@ public class RequestTest extends TestCase
         "Connection: close\r\n"+
         "\r\n";
 
-        _connector.reopen();
         _connector.getResponses(request);
 
         assertEquals("value",cookie[0]);
         assertEquals(null,cookie[1]);
-        
+
         request="POST / HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Cookie: name=value\r\n"+
@@ -474,12 +460,11 @@ public class RequestTest extends TestCase
         "Connection: close\r\n"+
         "\r\n";
 
-        _connector.reopen();
         _connector.getResponses(request);
         assertEquals(null,cookie[0]);
         assertEquals(null,cookie[1]);
-        
-        
+
+
         request="POST / HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Cookie: name=value\r\n"+
@@ -493,42 +478,41 @@ public class RequestTest extends TestCase
         "Connection: close\r\n"+
         "\r\n";
 
-        _connector.reopen();
         _connector.getResponses(request);
-        
+
         assertEquals("value",cookie[0]);
         assertEquals(null,cookie[1]);
-        
-        
+
+
     }
-    
-    
-    
-    
+
+
+
+
     interface RequestTester
     {
         boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException;
     }
-    
+
     class RequestHandler extends AbstractHandler
     {
         RequestTester _checker;
         String _content;
-        
+
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             ((Request)request).setHandled(true);
-            
+
             if (request.getContentLength()>0)
                 _content=IO.toString(request.getInputStream());
-            
+
             if (_checker!=null && _checker.check(request,response))
                 response.setStatus(200);
             else
-                response.sendError(500); 
-            
-            
-        }   
+                response.sendError(500);
+
+
+        }
     }
 
 }

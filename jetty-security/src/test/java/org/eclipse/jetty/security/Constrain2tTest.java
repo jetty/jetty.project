@@ -4,45 +4,36 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.security;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
-
-import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.http.security.Password;
-import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
 
 /**
- * 
+ *
  */
 public class Constrain2tTest extends TestCase
 {
@@ -54,7 +45,7 @@ public class Constrain2tTest extends TestCase
     SessionHandler _session = new SessionHandler();
     ConstraintSecurityHandler _security = new ConstraintSecurityHandler();
     HashLoginService _loginService = new HashLoginService(TEST_REALM);
-                                                      
+
     RequestHandler _handler = new RequestHandler();
 
     {
@@ -64,13 +55,13 @@ public class Constrain2tTest extends TestCase
         _context.setHandler(_session);
         _session.setHandler(_security);
         _security.setHandler(_handler);
-        
+
         _loginService.putUser("user",new Password("password"));
         _loginService.putUser("user2",new Password("password"), new String[] {"user"});
         _loginService.putUser("admin",new Password("password"), new String[] {"user","administrator"});
         _server.addBean(_loginService);
     }
-    
+
     public Constrain2tTest(String arg0)
     {
         super(arg0);
@@ -81,11 +72,11 @@ public class Constrain2tTest extends TestCase
         ConstraintMapping mapping0 = new ConstraintMapping();
         mapping0.setPathSpec("/auth.html");
         mapping0.setConstraint(constraint0);
-        
+
         Set<String> knownRoles=new HashSet<String>();
         knownRoles.add("user");
         knownRoles.add("administrator");
-        
+
         _security.setConstraintMappings(new ConstraintMapping[]
                 {
                         mapping0
@@ -121,11 +112,9 @@ public class Constrain2tTest extends TestCase
 
         String response;
 
-        _connector.reopen();
         response = _connector.getResponses("GET /noauth.html HTTP/1.0\r\n\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
 
-        _connector.reopen();
         response = _connector.getResponses("GET /auth.html HTTP/1.0\r\n\r\n");
         assertTrue(response.indexOf("Cache-Control: no-cache") > 0);
         assertTrue(response.indexOf("Expires") > 0);
@@ -133,7 +122,6 @@ public class Constrain2tTest extends TestCase
 
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/"));
 
-        _connector.reopen();
         response = _connector.getResponses("POST /j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
@@ -142,8 +130,6 @@ public class Constrain2tTest extends TestCase
         "j_username=user&j_password=wrong\r\n");
         assertTrue(response.indexOf("testErrorPage") > 0);
 
-
-        _connector.reopen();
         response = _connector.getResponses("POST /j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
@@ -154,12 +140,10 @@ public class Constrain2tTest extends TestCase
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("/auth.html") > 0);
 
-        _connector.reopen();
         response = _connector.getResponses("GET /auth.html HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        
     }
 
 
@@ -173,18 +157,15 @@ public class Constrain2tTest extends TestCase
 
         String response;
 
-        _connector.reopen();
         response = _connector.getResponses("GET /noauth.html HTTP/1.0\r\n\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
 
-        _connector.reopen();
         response = _connector.getResponses("GET /auth.html HTTP/1.0\r\n\r\n");
         assertTrue(response.indexOf(" 302 Found") > 0);
         assertTrue(response.indexOf("/testLoginPage") > 0);
 
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/"));
 
-        _connector.reopen();
         response = _connector.getResponses("POST /j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
@@ -193,7 +174,6 @@ public class Constrain2tTest extends TestCase
         "j_username=user&j_password=wrong\r\n");
         assertTrue(response.indexOf("Location") > 0);
 
-        _connector.reopen();
         response = _connector.getResponses("POST /j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
@@ -204,12 +184,10 @@ public class Constrain2tTest extends TestCase
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("/auth.html") > 0);
 
-        _connector.reopen();
         response = _connector.getResponses("GET /auth.html HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        
     }
 
 

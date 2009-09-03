@@ -6,6 +6,7 @@ jetty-7.0.0.RC6-SNAPSHOT
  + JETTY-1090 resolve potential infinite loop with webdav listener
  + JETTY-1093 Request.toString throws exception when size exceeds 4k
  + 288514 AbstractConnector does not handle InterruptedExceptions on shutdown
+ + 288466 LocalConnector is not thread safe
 
 jetty-7.0.0.RC5 27 August 2009
  + 286911 Clean out cache when recycling HTTP fields

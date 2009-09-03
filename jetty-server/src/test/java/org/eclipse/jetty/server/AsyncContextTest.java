@@ -4,24 +4,22 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.InputStream;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
-
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -48,7 +46,7 @@ public class AsyncContextTest extends TestCase
     public void testSuspendResume() throws Exception
     {
         String response;
-        
+
         _handler.setRead(0);
         _handler.setSuspendFor(1000);
         _handler.setResumeAfter(-1);
@@ -56,56 +54,56 @@ public class AsyncContextTest extends TestCase
         check("TIMEOUT",process(null));
 
         _handler.setSuspendFor(10000);
-        
+
         _handler.setResumeAfter(0);
         _handler.setCompleteAfter(-1);
         check("RESUMED",process(null));
-        
+
         _handler.setResumeAfter(100);
         _handler.setCompleteAfter(-1);
         check("RESUMED",process(null));
-        
+
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(0);
         check("COMPLETED",process(null));
-        
+
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(200);
-        check("COMPLETED",process(null));   
+        check("COMPLETED",process(null));
 
         _handler.setRead(-1);
-        
+
         _handler.setResumeAfter(0);
         _handler.setCompleteAfter(-1);
         check("RESUMED",process("wibble"));
-        
+
         _handler.setResumeAfter(100);
         _handler.setCompleteAfter(-1);
         check("RESUMED",process("wibble"));
-        
+
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(0);
         check("COMPLETED",process("wibble"));
-        
+
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(100);
         check("COMPLETED",process("wibble"));
-        
+
 
         _handler.setRead(6);
-        
+
         _handler.setResumeAfter(0);
         _handler.setCompleteAfter(-1);
         check("RESUMED",process("wibble"));
-        
+
         _handler.setResumeAfter(100);
         _handler.setCompleteAfter(-1);
         check("RESUMED",process("wibble"));
-        
+
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(0);
         check("COMPLETED",process("wibble"));
-        
+
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(100);
         check("COMPLETED",process("wibble"));
@@ -116,31 +114,29 @@ public class AsyncContextTest extends TestCase
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         assertTrue(response.contains(content));
     }
-    
+
     public synchronized String process(String content) throws Exception
     {
         String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n";
-        
+
         if (content==null)
             request+="\r\n";
         else
             request+="Content-Length: "+content.length()+"\r\n" + "\r\n" + content;
 
-        _connector.reopen();
-        String response = _connector.getResponses(request);
-        return response;
+        return _connector.getResponses(request);
     }
-    
+
     private static class SuspendHandler extends HandlerWrapper
     {
         private int _read;
         private long _suspendFor=-1;
         private long _resumeAfter=-1;
         private long _completeAfter=-1;
-        
+
         public SuspendHandler()
         {}
-        
+
 
         public int getRead()
         {
@@ -185,7 +181,7 @@ public class AsyncContextTest extends TestCase
 
 
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
-        {            
+        {
             if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
             {
                 if (_read>0)
@@ -205,7 +201,7 @@ public class AsyncContextTest extends TestCase
                     baseRequest.setAsyncTimeout(_suspendFor);
                 baseRequest.addEventListener(__asyncListener);
                 final AsyncContext asyncContext = baseRequest.startAsync();
-                
+
                 if (_completeAfter>0)
                 {
                     new Thread() {
@@ -233,7 +229,7 @@ public class AsyncContextTest extends TestCase
                     baseRequest.setHandled(true);
                     asyncContext.complete();
                 }
-                
+
                 if (_resumeAfter>0)
                 {
                     new Thread() {
@@ -270,9 +266,9 @@ public class AsyncContextTest extends TestCase
             }
         }
     }
-    
-    
-    private static ContinuationListener __asyncListener = 
+
+
+    private static ContinuationListener __asyncListener =
         new ContinuationListener()
     {
         public void onComplete(Continuation continuation)
@@ -284,6 +280,6 @@ public class AsyncContextTest extends TestCase
             continuation.setAttribute("TIMEOUT",Boolean.TRUE);
             continuation.resume();
         }
-        
+
     };
 }

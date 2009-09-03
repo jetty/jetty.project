@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.testing;
@@ -31,8 +31,8 @@ import org.eclipse.jetty.util.Attributes;
 
 /* ------------------------------------------------------------ */
 /** Testing support for servlets and filters.
- * 
- * Allows a programatic setup of a context with servlets and filters for 
+ *
+ * Allows a programatic setup of a context with servlets and filters for
  * testing.  Raw HTTP requests may be sent to the context and responses received.
  * To avoid handling raw HTTP see {@link org.eclipse.jetty.testing.HttpTester}.
  * <pre>
@@ -43,9 +43,9 @@ import org.eclipse.jetty.util.Attributes;
  *      tester.start();
  *      String response = tester.getResponses("GET /context/servlet/info HTTP/1.0\r\n\r\n");
  * </pre>
- * 
+ *
  * @see org.eclipse.jetty.testing.HttpTester
- * 
+ *
  *
  */
 public class ServletTester
@@ -83,7 +83,7 @@ public class ServletTester
     {
         _server.start();
     }
-    
+
     /* ------------------------------------------------------------ */
     public void stop() throws Exception
     {
@@ -95,7 +95,7 @@ public class ServletTester
     {
         return _context;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get raw HTTP responses from raw HTTP requests.
      * Multiple requests and responses may be handled, but only if
@@ -106,9 +106,7 @@ public class ServletTester
      */
     public String getResponses(String rawRequests) throws Exception
     {
-        _connector.reopen();
-        String responses = _connector.getResponses(rawRequests);
-        return responses;
+        return _connector.getResponses(rawRequests);
     }
 
     /* ------------------------------------------------------------ */
@@ -122,11 +120,9 @@ public class ServletTester
      */
     public String getResponses(String rawRequests, LocalConnector connector) throws Exception
     {
-        connector.reopen();
-        String responses = connector.getResponses(rawRequests);
-        return responses;
+        return connector.getResponses(rawRequests);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get raw HTTP responses from raw HTTP requests.
      * Multiple requests and responses may be handled, but only if
@@ -137,25 +133,7 @@ public class ServletTester
      */
     public ByteArrayBuffer getResponses(ByteArrayBuffer rawRequests) throws Exception
     {
-        _connector.reopen();
-        ByteArrayBuffer responses = _connector.getResponses(rawRequests,false);
-        return responses;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get raw HTTP responses from raw HTTP requests.
-     * Multiple requests and responses may be handled, but only if
-     * persistent connections conditions apply.
-     * @param rawRequests String of raw HTTP requests
-     * @param connector The connector to handle the responses
-     * @return String of raw HTTP responses
-     * @throws Exception
-     */
-    public ByteArrayBuffer getResponses(ByteArrayBuffer rawRequests, LocalConnector connector) throws Exception
-    {
-        connector.reopen();
-        ByteArrayBuffer responses = connector.getResponses(rawRequests,false);
-        return responses;
+        return _connector.getResponses(rawRequests,false);
     }
 
     /* ------------------------------------------------------------ */
@@ -204,7 +182,7 @@ public class ServletTester
                 connector.open();
 
             return "http://"+(localhost?"127.0.0.1":
-                InetAddress.getLocalHost().getHostAddress()    
+                InetAddress.getLocalHost().getHostAddress()
             )+":"+connector.getLocalPort();
         }
     }
@@ -222,10 +200,10 @@ public class ServletTester
         {
             LocalConnector connector = new LocalConnector();
             _server.addConnector(connector);
-            
+
             if (_server.isStarted())
                 connector.start();
-            
+
             return connector;
         }
    }
@@ -381,5 +359,5 @@ public class ServletTester
     {
         _context.setResourceBase(resourceBase);
     }
-    
+
 }

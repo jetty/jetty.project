@@ -4,25 +4,22 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
-
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -33,12 +30,12 @@ public class StatisticsHandlerTest extends TestCase
     protected LocalConnector _connector;
 
     private StatisticsHandler _statsHandler;
-    
+
     protected void setUp() throws Exception
     {
         _statsHandler = new StatisticsHandler();
         _server.setHandler(_statsHandler);
-        
+
         _connector = new LocalConnector();
         _server.setConnectors(new Connector[]{ _connector });
         _server.start();
@@ -68,17 +65,17 @@ public class StatisticsHandlerTest extends TestCase
     // {
     // process(new ActiveHandler(_lock));
     // process(new ActiveHandler(_lock));
-    //        
+    //
     // assertEquals(2, _statsHandler.getRequests());
     // assertEquals(2, _statsHandler.getRequestsActive());
     // assertEquals(2, _statsHandler.getRequestsActiveMax());
     // assertEquals(0, _statsHandler.getRequestsActiveMin());
-    //        
+    //
     // _statsHandler.statsReset();
     // assertEquals(2, _statsHandler.getRequestsActive());
     // assertEquals(2, _statsHandler.getRequestsActiveMax());
     // assertEquals(2, _statsHandler.getRequestsActiveMin());
-    //        
+    //
     // process();
     // assertEquals(1, _statsHandler.getRequests());
     // assertEquals(2, _statsHandler.getRequestsActive());
@@ -143,7 +140,7 @@ public class StatisticsHandlerTest extends TestCase
 
         process(new SuspendHandler(1));
         assertEquals(3,_statsHandler.getResponses2xx());
-        
+
     }
     */
 
@@ -152,13 +149,13 @@ public class StatisticsHandlerTest extends TestCase
     {
         int initialDelay = 200;
         int completeDuration = 500;
-        
-        
+
+
         synchronized(_server)
         {
             process(new SuspendCompleteHandler(initialDelay, completeDuration, _server));
-            
-            try 
+
+            try
             {
                 _server.wait();
             }
@@ -166,14 +163,14 @@ public class StatisticsHandlerTest extends TestCase
             {
             }
         }
-        
+
         isApproximately(initialDelay,_statsHandler.getRequestsActiveDurationTotal());
         // fails; twice the expected value
         //TODO failed in jaspi branch
 //        isApproximately(initialDelay + completeDuration,_statsHandler.getRequestsDurationTotal());
     }
     */
-    
+
     public void process() throws Exception
     {
         process(null);
@@ -184,10 +181,9 @@ public class StatisticsHandlerTest extends TestCase
         _statsHandler.stop();
         _statsHandler.setHandler(customHandler);
         _statsHandler.start();
-        
+
         String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Length: 6\r\n" + "\r\n" + "test\r\n";
 
-        _connector.reopen();
         _connector.getResponses(request);
         _statsHandler.stop();
         _statsHandler.setHandler(null);
@@ -333,7 +329,7 @@ public class StatisticsHandlerTest extends TestCase
         }
 
     }
-    
+
     private class SuspendCompleteHandler extends HandlerWrapper
     {
         private long _initialDuration;
@@ -345,9 +341,9 @@ public class StatisticsHandlerTest extends TestCase
             _completeDuration = completeDuration;
             _lock = lock;
         }
-        
+
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {            
+        {
             if(!baseRequest.isAsyncStarted())
             {
                 try
@@ -356,11 +352,11 @@ public class StatisticsHandlerTest extends TestCase
                 } catch (InterruptedException e1)
                 {
                 }
-                
+
                 baseRequest.setAsyncTimeout(_completeDuration*10);
-                
+
                 baseRequest.startAsync();
-                
+
                 (new Thread() {
                     public void run()
                     {
@@ -368,7 +364,7 @@ public class StatisticsHandlerTest extends TestCase
                         {
                             Thread.sleep(_completeDuration);
                             baseRequest.getAsyncContext().complete();
-                            
+
                             synchronized(_lock)
                             {
                                 _lock.notify();
@@ -381,6 +377,6 @@ public class StatisticsHandlerTest extends TestCase
                 }).start();
             }
         }
-   
+
     }
 }
