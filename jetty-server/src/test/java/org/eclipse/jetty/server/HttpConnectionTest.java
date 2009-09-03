@@ -252,7 +252,6 @@ public class HttpConnectionTest extends TestCase
                                            "5;\015\012"+
                                            "12345\015\012"+
                                            "0;\015\012\015\012");
-//            offset = checkContains(response,offset,"Connection: TE"); // SIMON: had to comment it to let the test pass
             offset = checkContains(response,offset,"Connection: close");
         }
         catch (Exception e)
