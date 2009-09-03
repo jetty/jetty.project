@@ -1456,6 +1456,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public class Context implements ServletContext
     {
+        protected int _majorVersion = 3;
+        protected int _minorVersion = 0;
+
+        
         /* ------------------------------------------------------------ */
         protected Context()
         {
@@ -1506,6 +1510,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         {
             return 3;
         }
+      
 
         /* ------------------------------------------------------------ */
         /* 
@@ -2067,15 +2072,25 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         @Override
         public int getEffectiveMajorVersion()
         {
-            return 3;
+            return _majorVersion;
         }
 
         @Override
         public int getEffectiveMinorVersion()
         {
-            return 0;
+            return _minorVersion;
         }
 
+        
+        public void setEffectiveMajorVersion (int v)
+        {
+            _majorVersion = v;
+        }
+        
+        public void setEffectiveMinorVersion (int v)
+        {
+            _minorVersion = v;
+        }
         @Override
         public JspConfigDescriptor getJspConfigDescriptor()
         {

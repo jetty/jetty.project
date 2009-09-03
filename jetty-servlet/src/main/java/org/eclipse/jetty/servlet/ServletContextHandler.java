@@ -347,7 +347,7 @@ public class ServletContextHandler extends ContextHandler
     /* ------------------------------------------------------------ */
     public class Context extends ContextHandler.Context
     {
-
+   
         /* ------------------------------------------------------------ */
         /* 
          * @see javax.servlet.ServletContext#getNamedDispatcher(java.lang.String)
@@ -644,19 +644,6 @@ public class ServletContextHandler extends ContextHandler
             }
         }
 
-        @Override
-        public int getEffectiveMajorVersion()
-        {
-            // TODO
-            return 3;
-        }
-
-        @Override
-        public int getEffectiveMinorVersion()
-        {
-            // TODO
-            return 0;
-        }
 
         @Override
         public JspConfigDescriptor getJspConfigDescriptor()
@@ -664,6 +651,8 @@ public class ServletContextHandler extends ContextHandler
             // TODO
             return null;
         }
+      
+     
     }
     
     public interface Injector

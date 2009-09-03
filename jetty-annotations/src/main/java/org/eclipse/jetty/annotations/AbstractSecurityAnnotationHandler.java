@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.plus.annotation.AbstractAccessControl;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -32,6 +31,24 @@ public abstract class AbstractSecurityAnnotationHandler implements AnnotationHan
     
     protected WebAppContext _context;
     protected HashMap<String,List<AbstractAccessControl>> _discoveredAccessControls = new HashMap<String, List<AbstractAccessControl>>();
+    
+    public static boolean isHttpMethod (String methodName)
+    {
+        if ("doGet".equals(methodName) ||
+                "doPost".equals(methodName) ||
+                "doDelete".equals(methodName) ||
+                "doHead".equals(methodName) ||
+                "doOptions".equals(methodName) ||
+                "doPut".equals(methodName) ||
+                "doTrace".equals(methodName))
+        {
+            return true;
+        }
+
+        return false;
+    }
+    
+    
     
     public AbstractSecurityAnnotationHandler(WebAppContext context)
     {
@@ -99,20 +116,6 @@ public abstract class AbstractSecurityAnnotationHandler implements AnnotationHan
         return exists;
     }
     
-    public boolean isHttpMethod (String methodName)
-    {
-        if ("doGet".equals(methodName) ||
-                "doPost".equals(methodName) ||
-                "doDelete".equals(methodName) ||
-                "doHead".equals(methodName) ||
-                "doOptions".equals(methodName) ||
-                "doPut".equals(methodName) ||
-                "doTrace".equals(methodName))
-        {
-            return true;
-        }
-
-        return false;
-    }
+  
 
 }

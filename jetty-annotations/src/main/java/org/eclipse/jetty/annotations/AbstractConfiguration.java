@@ -31,7 +31,6 @@ public abstract class AbstractConfiguration implements Configuration
 {
     public static final String CONTAINER_JAR_RESOURCES = WebInfConfiguration.CONTAINER_JAR_RESOURCES;
     public static final String WEB_INF_JAR_RESOURCES = WebInfConfiguration.WEB_INF_JAR_RESOURCES;
-    public static final String WEBXML_VERSION = WebXmlProcessor.WEBXML_VERSION;
     public static final String METADATA_COMPLETE = WebXmlProcessor.METADATA_COMPLETE;
     public static final String WEBXML_CLASSNAMES = WebXmlProcessor.WEBXML_CLASSNAMES;
 

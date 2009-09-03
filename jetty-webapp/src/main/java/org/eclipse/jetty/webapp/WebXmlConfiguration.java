@@ -118,7 +118,6 @@ public class WebXmlConfiguration implements Configuration
     {
         context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, null); 
         context.setAttribute(WebXmlProcessor.METADATA_COMPLETE, null);
-        context.setAttribute(WebXmlProcessor.WEBXML_VERSION, null);
         context.setAttribute(WebXmlProcessor.WEBXML_CLASSNAMES, null); 
     }
 

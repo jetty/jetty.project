@@ -6,7 +6,9 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.server.Connector;
@@ -96,6 +98,7 @@ public class WebInfConfiguration implements Configuration
             }      
         };
         List<Resource> jars = findJars(context);
+       
         //Convert to uris for matching
         URI[] uris = null;
         if (jars != null)

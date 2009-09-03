@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.net.URI;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -24,6 +22,7 @@ import java.util.ServiceLoader;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
 
+import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.plus.annotation.AbstractAccessControl;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.plus.annotation.DenyAll;
@@ -34,17 +33,12 @@ import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
-import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
-import org.eclipse.jetty.webapp.WebXmlProcessor;
-import org.eclipse.jetty.webapp.WebXmlProcessor.Descriptor;
 
 /**
- * Configuration
+ * Configuration for Annotations
  *
  *
  */
@@ -61,8 +55,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
        Boolean b = (Boolean)context.getAttribute(METADATA_COMPLETE);
        boolean metadataComplete = (b != null && b.booleanValue());
-       Integer i = (Integer)context.getAttribute(WEBXML_VERSION);
-       int webxmlVersion = (i == null? 0 : i.intValue());
+      
       
         if (metadataComplete)
         {
@@ -93,9 +86,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
             parser.registerClassHandler(classHandler);
             registerServletContainerInitializerAnnotationHandlers(context, parser);
             
-            if (webxmlVersion >= 30 || context.isConfigurationDiscovered())
+            if (context.getServletContext().getEffectiveMajorVersion() >= 3 || context.isConfigurationDiscovered())
             {
-                if (Log.isDebugEnabled()) Log.debug("Scanning all classses for annotations: webxmlVersion="+webxmlVersion+" configurationDiscovered="+context.isConfigurationDiscovered());
+                if (Log.isDebugEnabled()) Log.debug("Scanning all classses for annotations: webxmlVersion="+context.getServletContext().getEffectiveMajorVersion()+" configurationDiscovered="+context.isConfigurationDiscovered());
                 parseContainerPath(context, parser);
                 parseWebInfLib (context, parser);
                 parseWebInfClasses(context, parser);
@@ -129,39 +122,101 @@ public class AnnotationConfiguration extends AbstractConfiguration
             return;
         }
         ConstraintAware securityHandler = (ConstraintAware)context.getSecurityHandler();
-        ConstraintMapping[] constraintMappings = securityHandler.getConstraintMappings();
-        ServletMapping[] mappings = context.getServletHandler().getServletMappings();
+        List<ConstraintMapping> constraintMappings = LazyList.array2List(securityHandler.getConstraintMappings());
         
-        //process Security Annotations class by class
+        //process Security Annotations
+        
+        /* GregW proposed spec wording for section 13.4
+         * 
+         * "When a security-constraint in the portable deployment descriptor includes a
+         * url-pattern that exactly matches a pattern specified either in a @WebServlet
+         * annotation or in a servlet-mapping descriptor, then any associated security
+         * annotations described in this section MUST have no effect on the access
+         * policy enforced by the container."
+         */
+        
+        //This would mean that:
+        // We search the Constraints already defined from web.xml.
+        // If the pathSpec of the Constraint exactly matches a ServletMapping pathSpec,
+        // then we skip the annotation.
+        // Otherwise, we make a new Constraint. We add a pathSpec to it for each ServletMapping.pathSpec
+        // that matches the class that was annotated. Then we add an auth-constraint clause for every
+        // RolesAllowed and DenyAll annotation (PermitAll has no auth-constraint associated with it).
+        // For TransportProtected we add a user-data-constraint. If there are any method-level
+        // security annotations, then we add http-omission clauses corresponding to the doX method
+        // that they are specified on.
+        //
+        // Then for each method-level security annotation, we add a separate Constraint, with the same
+        // set of pathSpecs derived from the ServletMapping.pathSpecs, but with http-method clauses in 
+        // it.
+        
+        
         Map<String, List<AbstractAccessControl>> securityAnnotations = (Map<String, List<AbstractAccessControl>>) context.getAttribute(AbstractSecurityAnnotationHandler.SECURITY_ANNOTATIONS);
         for (Map.Entry<String, List<AbstractAccessControl>> e: securityAnnotations.entrySet())
         {
-            //Find all url-patterns that have been mapped to this class and convert to <security-constraints>
-          
-            for (ServletMapping mapping : mappings)
-            {
-              //Check the name of the servlet that this mapping applies to, and then find the ServletHolder for it to find it's class
-                ServletHolder holder = context.getServletHandler().getServlet(mapping.getServletName());
-                if (!holder.getClassName().equals(e.getKey()))
-                    continue;
-                
-                //If the class is the same as one on the securityAnnotation then get its url mappings
+            boolean matched = false;
+
+            //Get the servlet-mappings that match the annotated classname
+            List<ServletMapping> servletMappings = getServletMappingsForServlet(context, e.getKey());
+            //Check to see if the path spec on each constraint mapping matches a pathSpec in the servlet mappings.
+            //If it does, then we should ignore the security annotations.
+            for (ServletMapping mapping : servletMappings)
+            {  
+                //Get its url mappings
                 String[] pathSpecs = mapping.getPathSpecs();
+                if (pathSpecs == null)
+                    continue;
+
+
+                //If at least one of the url patterns for the servlet-mappings for the servlet class
+                //is in a security constraint, then we ignore all security annotations for this class.
+               for (int i=0; constraintMappings != null && i < constraintMappings.size() && !matched; i++)
+               {
+                   for (int j=0; j < pathSpecs.length; j++)
+                   {
+                       if (pathSpecs[j].equals(constraintMappings.get(i).getPathSpec()))
+                       {
+                           matched = true;
+                           break;
+                       }
+                   }
+               }
+            }
+
+            if (!matched)
+            { 
+                List<AbstractAccessControl> aacList = e.getValue();
                 
-                //Now that we have the set of url mappings, see if there are any security constraints that would
-                //already apply, in which case we ignore this annotation
-                if (constraintMappings != null)
+                //Divide into class-targeted and method-targeted annotations
+                List<AbstractAccessControl> classAacList = new ArrayList<AbstractAccessControl>();
+                Map<String, List<AbstractAccessControl>> methodAacMap = new HashMap<String,List<AbstractAccessControl>>();
+                
+                for (AbstractAccessControl a : aacList)
                 {
-                    for (ConstraintMapping constraintMapping : constraintMappings)
+                    if (a.getMethodName() != null)
                     {
-                       //TODO
+                        List<AbstractAccessControl> methodList = methodAacMap.get(a.getMethodName());
+                        if (methodList == null)
+                        {
+                            methodList = new ArrayList<AbstractAccessControl>();
+                            methodAacMap.put(a.getMethodName(), methodList);
+                        }
+                        methodList.add(a);
                     }
+                    else
+                        classAacList.add(a);
                 }
-              
-                
-                //Otherwise, we go about constructing a security-constraint that satisfies all of the annotations for this class
+
+                //There will only be at most 2 elements in this list: one of RolesAllowed,PermitAll,DenyAll and 
+                //then optionally the TransportProtected annotation.
+                Constraint classConstraint = new Constraint();
+                configureConstraint (classConstraint, classAacList);
+                constraintMappings.addAll(makeConstraintMappings(context, classConstraint, servletMappings, methodAacMap));
             }
         }
+
+        //Set up all of the constraint mappings representing web-resource-collections
+        securityHandler.setConstraintMappings((ConstraintMapping[]) LazyList.toArray(constraintMappings,ConstraintMapping.class),securityHandler.getRoles());
         context.setAttribute(CLASS_INHERITANCE_MAP, null);
     }
     
@@ -202,10 +257,123 @@ public class AnnotationConfiguration extends AbstractConfiguration
                         }
                     }
                     else
-                        System.err.println("No classes in HandlesTypes on initializer "+i.getClass());
+                        Log.info("No classes in HandlesTypes on initializer "+i.getClass());
                 }
                 else
-                    System.err.println("No annotation on initializer "+i.getClass());
+                    Log.info("No annotation on initializer "+i.getClass());
+            }
+        }
+    }
+    
+    protected List<ServletMapping> getServletMappingsForServlet(WebAppContext context, String className)
+    {
+        List<ServletMapping> results = new ArrayList<ServletMapping>();
+        ServletMapping[] mappings = context.getServletHandler().getServletMappings();
+        for (ServletMapping mapping : mappings)
+        {
+            //Check the name of the servlet that this mapping applies to, and then find the ServletHolder for it to find it's class
+            ServletHolder holder = context.getServletHandler().getServlet(mapping.getServletName());
+            if (holder.getClassName().equals(className))
+              results.add(mapping);
+        }
+        return results;
+    }
+    
+    
+    /**
+     * Given a set of ServletMappings (url-patterns) make ConstraintMappings (web-resource-collections)
+     * for the security contraint.
+     * @param context
+     * @param classConstraint
+     * @param servletMappings
+     * @param methodAacMap
+     * @return
+     */
+    protected List<ConstraintMapping> makeConstraintMappings (WebAppContext context, Constraint classConstraint, List<ServletMapping> servletMappings, Map<String, List<AbstractAccessControl>> methodAacMap)
+    {
+        List<ConstraintMapping> constraintMappings = new ArrayList<ConstraintMapping>();
+        
+        //for each servlet mapping, add a constraint mapping
+        for (ServletMapping sm : servletMappings)
+        {
+            for (String url : sm.getPathSpecs())
+            {
+                ConstraintMapping mapping = new ConstraintMapping();
+                mapping.setConstraint(classConstraint);
+                mapping.setPathSpec(url);
+                List<String> omissions = new ArrayList<String>();
+                if (!methodAacMap.isEmpty())
+                {
+                    //Process the method-level annotations which will require http-method-omission
+                    //statements
+                    for (String method: methodAacMap.keySet())
+                    {
+                        omissions.add(method);
+                       
+                        //Make a new Constraint that matches the security annotation (PermitAll, DenyAll, RolesAllowed)
+                        //on the method (which may also optionally have the TransportProtected annotation)
+                        Constraint methodConstraint = new Constraint(); 
+                        configureConstraint (methodConstraint, methodAacMap.get(method));    
+
+                        //Add a new constraint mapping for the same url as part of the web-resource-collection, but set the
+                        //method-name
+                        ConstraintMapping methodMapping = new ConstraintMapping();
+                        methodMapping.setConstraint(methodConstraint);
+                        methodMapping.setPathSpec(url);
+                        methodMapping.setMethod(method);
+                        constraintMappings.add(methodMapping);
+
+                        //If the security annotations on the method do not include @TransportProtected
+                        //then inherit the setting from the class level
+                        if (methodConstraint.getDataConstraint() == Constraint.DC_UNSET)
+                            methodConstraint.setDataConstraint(classConstraint.getDataConstraint());
+                    }
+                }
+                //Add the constraint mapping for the class-level annotation
+                constraintMappings.add(mapping);
+                //Add a http-method-omission on the Constraint for the class-level annotation
+                if (!omissions.isEmpty())
+                    mapping.setMethodOmissions(omissions.toArray(new String[0]));
+            }
+        }
+        return constraintMappings;
+    }
+    
+    /**
+     * Set up the Constraint to represent the auth-constraint and user-data-constraint.
+     * 
+     * @param constraint
+     * @param aacList
+     */
+    protected void configureConstraint (Constraint constraint, List<AbstractAccessControl> aacList)
+    {
+        if (aacList != null)
+        {
+            for (AbstractAccessControl aac: aacList)
+            {
+                if (aac instanceof RolesAllowed)
+                {
+                    //Equivalent to <auth-constraint> with list of <role-name>s
+                    constraint.setAuthenticate(true);
+                    constraint.setRoles(((RolesAllowed)aac).getRoles());
+                    constraint.setName(aac.getClass().getName()+"-"+(aac.getMethodName()==null?"":aac.getMethodName())+"-RolesAllowed");
+                }
+                else if (aac instanceof PermitAll)
+                {
+                    //Equivalent to no <auth-constraint>
+                    constraint.setAuthenticate(false);
+                    constraint.setName(aac.getClass().getName()+"-"+(aac.getMethodName()==null?"":aac.getMethodName())+"-PermitAll");
+                }
+                else if (aac instanceof DenyAll)
+                {
+                    //Equivalent to <auth-constraint> with no roles
+                    constraint.setName(aac.getClass().getName()+"-"+(aac.getMethodName()==null?"":aac.getMethodName())+"-DenyAll");
+                    constraint.setAuthenticate(true);
+                }
+                else if (aac instanceof TransportProtected)
+                {
+                    constraint.setDataConstraint(((TransportProtected)aac).getValue()?Constraint.DC_CONFIDENTIAL:Constraint.DC_NONE);
+                }
             }
         }
     }

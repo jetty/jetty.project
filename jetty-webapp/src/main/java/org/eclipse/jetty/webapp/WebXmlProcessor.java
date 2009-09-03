@@ -59,7 +59,8 @@ public class WebXmlProcessor
 {
     public static final String WEB_PROCESSOR = "org.eclipse.jetty.webProcessor";
     public static final String METADATA_COMPLETE = "org.eclipse.jetty.metadataComplete";
-    public static final String WEBXML_VERSION = "org.eclipse.jetty.webXmlVersion";
+    public static final String WEBXML_MAJOR_VERSION = "org.eclipse.jetty.webXmlMajorVersion";
+    public static final String WEBXML_MINOR_VERSION = "org.eclipse.jetty.webXmlMinorVersion";
     public static final String WEBXML_CLASSNAMES = "org.eclipse.jetty.webXmlClassNames";
     
     protected WebAppContext _context;
@@ -92,8 +93,10 @@ public class WebXmlProcessor
         protected XmlParser.Node _root;
         protected boolean _metadataComplete;
         protected boolean _hasOrdering;
-        protected int _version;
+        protected int _majorVersion = 3; //default to container version
+        protected int _minorVersion = 0;
         protected ArrayList<String> _classNames;
+        protected String _name;
         
         public Descriptor (Resource xml)
         {
@@ -111,6 +114,16 @@ public class WebXmlProcessor
             }
         }
         
+        public void setName (String name)
+        {
+            _name = name;
+        }
+        
+        public String getName ()
+        {
+            return _name;
+        }
+        
         public boolean isMetaDataComplete()
         {
             return _metadataComplete;
@@ -122,9 +135,14 @@ public class WebXmlProcessor
             return _root;
         }
         
-        public int getVersion ()
+        public int getMajorVersion ()
         {
-            return _version;
+            return _majorVersion;
+        }
+        
+        public int getMinorVersion()
+        {
+            return _minorVersion;
         }
         
         public Resource getResource ()
@@ -135,26 +153,34 @@ public class WebXmlProcessor
         public void process()
         throws Exception
         {
-            WebXmlProcessor.this.process(_root);
+            WebXmlProcessor.this.process(this);
         }
         
         private void processVersion ()
         {
             String version = _root.getAttribute("version", "DTD");
-            if ("2.5".equals(version))
-                _version = 25;
-            else if ("2.4".equals(version))
-                _version = 24;
-            else if ("3.0".equals(version))
-                _version = 30;
-            else if ("DTD".equals(version))
+            if ("DTD".equals(version))
             {
-                _version = 23;
+                _majorVersion = 2;
+                _minorVersion = 3;
                 String dtd = _xmlParser.getDTD();
-                if (dtd != null && dtd.indexOf("web-app_2_2") >= 0) _version = 22;
+                if (dtd != null && dtd.indexOf("web-app_2_2") >= 0)
+                {
+                    _majorVersion = 2;
+                    _minorVersion = 2;
+                }
             }
-
-            if (_version < 25)
+            else 
+            {
+               int dot = version.indexOf(".");
+               if (dot > 0)
+               {
+                   _majorVersion = Integer.parseInt(version.substring(0,dot));
+                   _minorVersion = Integer.parseInt(version.substring(dot+1));
+               }
+            }
+         
+            if (_majorVersion < 2 && _minorVersion < 5)
                 _metadataComplete = true; // does not apply before 2.5
             else
                 _metadataComplete = Boolean.valueOf((String)_root.getAttribute("metadata-complete", "false")).booleanValue();
@@ -165,6 +191,7 @@ public class WebXmlProcessor
         private void processOrdering ()
         {
             //TODO
+            //When ordering is implemented, need to set the ServletContext attribute ORDEREDLIBS
         }
         
         private void processClassNames ()
@@ -308,7 +335,8 @@ public class WebXmlProcessor
         _webXmlRoot.parse();
         _webXmlRoot.processClassNames();
         _context.setAttribute(METADATA_COMPLETE, Boolean.valueOf(_webXmlRoot.isMetaDataComplete()));
-        _context.setAttribute(WEBXML_VERSION, Integer.valueOf(_webXmlRoot.getVersion()));
+        _context.getServletContext().setEffectiveMajorVersion(_webXmlRoot.getMajorVersion());
+        _context.getServletContext().setEffectiveMinorVersion(_webXmlRoot.getMinorVersion());
         _context.setAttribute(WEBXML_CLASSNAMES, _webXmlRoot.getClassNames());
     }
     
@@ -383,9 +411,11 @@ public class WebXmlProcessor
     }
     
     
-    public void process (XmlParser.Node config)
+    public void process (Descriptor descriptor)
     throws Exception
     {
+        
+        XmlParser.Node config = descriptor.getRoot();
        
         //Get the current objects from the context
         _servletHandler = _context.getServletHandler();
@@ -417,7 +447,7 @@ public class WebXmlProcessor
                 if (!(o instanceof XmlParser.Node)) continue;
                 node = (XmlParser.Node) o;
                 String name = node.getTag();
-                initWebXmlElement(name, node);
+                initWebXmlElement(descriptor, name, node);
             }
             catch (ClassNotFoundException e)
             {
@@ -455,18 +485,21 @@ public class WebXmlProcessor
     /* ------------------------------------------------------------ */
     /**
      * Handle web.xml element. This method is called for each top level element
-     * within the web.xml file. It may be specialized by derived WebAppHandlers
-     * to provide additional configuration and handling.
+     * within the web.xml file.
      * 
      * @param element The element name
      * @param node The node containing the element.
      */
-    protected void initWebXmlElement(String element, XmlParser.Node node) throws Exception
+    protected void initWebXmlElement(Descriptor descriptor, String element, XmlParser.Node node) throws Exception
     {
         if ("display-name".equals(element))
             initDisplayName(node);
         else if ("description".equals(element))
         {
+        }
+        else if ("name".equals(element))
+        {
+            descriptor.setName(node.toString(false, true));
         }
         else if ("context-param".equals(element))
             initContextParam(node);
@@ -508,7 +541,12 @@ public class WebXmlProcessor
             initDistributable(node);
         else if ("web-fragment".equals(element))
         {
+            //TODO
         }
+        else if ("absolute-ordering".equals(element))
+        {
+            //TODO
+        }    
         else
         {
             if (Log.isDebugEnabled())

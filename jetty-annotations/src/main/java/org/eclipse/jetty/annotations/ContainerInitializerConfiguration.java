@@ -75,6 +75,10 @@ public class ContainerInitializerConfiguration extends AbstractConfiguration
             //instantiate ServletContainerInitializers, call doStart
             i.callStartup(context.getServletContext());
         }
+        
+        //TODO Email from Jan Luehe 18 August: after all ServletContainerInitializers have been
+        //called, need to check to see if there are any ServletRegistrations remaining
+        //that are "preliminary" and fail the deployment if so.
     }
 
     public void deconfigure(WebAppContext context) throws Exception

@@ -13,14 +13,9 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServlet;
-
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
 
