@@ -1,0 +1,1 @@
+webapps/dummy-servlet24-webapp.war

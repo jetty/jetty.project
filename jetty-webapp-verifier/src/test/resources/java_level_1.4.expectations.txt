@@ -1,0 +1,4 @@
+ERROR|WEB-INF/classes/org/eclipse/jetty/testcase/verifier/DummyLatestLib.class|Class is compiled for java version [1.5] which is over supported java version [1.4]
+ERROR|WEB-INF/classes/org/eclipse/jetty/testcase/verifier/DummyModernLib.class|Class is compiled for java version [1.6] which is over supported java version [1.4]
+ERROR|WEB-INF/lib/dummy-java15-lib-1.0-SNAPSHOT.jar!/org/eclipse/jetty/testcase/verifier/DummyLatestLib.class|Class is compiled for java version [1.5] which is over supported java version [1.4]
+ERROR|WEB-INF/lib/dummy-java16-lib-1.0-SNAPSHOT.jar!/org/eclipse/jetty/testcase/verifier/DummyModernLib.class|Class is compiled for java version [1.6] which is over supported java version [1.4]

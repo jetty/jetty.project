@@ -1,0 +1,4 @@
+ERROR|dummy.groovy|Groovy scripting not allowed
+ERROR|other/lib.groovy|Groovy scripting not allowed
+ERROR|WEB-INF/lib/dummy-groovy-lib-1.0-SNAPSHOT.jar!/org/codehaus/groovy/GroovyException.class|Groovy dependencies are not allowed
+ERROR|WEB-INF/lib/dummy-groovy-lib-1.0-SNAPSHOT.jar!/org/codehaus/groovy/jsr223/GroovyScriptEngineFactory.class|Groovy dependencies are not allowed
