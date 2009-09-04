@@ -132,6 +132,7 @@
     <module>jetty-jaspi</module>
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
+    <module>jetty-webapp-verifier</module>
     <module>jetty-servlets</module>
     <module>jetty-deploy</module>
     <module>jetty-ajp</module>

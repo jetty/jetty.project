@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.0.0.RC3-SNAPSHOT</version>
+    <version>7.0.1-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-webapp-verifier</artifactId>
@@ -65,25 +65,27 @@
       <artifactId>jetty-xml</artifactId>
       <version>${version}</version>
     </dependency>
-     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-webapp</artifactId>
-      <version>${version}</version>
-    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
+    <!--
+    * 
+    * Dependencies that should be provided should their respected verifiers be used
+    *
+    *-->
     <dependency>
       <groupId>asm</groupId>
       <artifactId>asm</artifactId>
       <version>3.1</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>asm</groupId>
       <artifactId>asm-tree</artifactId>
       <version>3.1</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
   <reporting>

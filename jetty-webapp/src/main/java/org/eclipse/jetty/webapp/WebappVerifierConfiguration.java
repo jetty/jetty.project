@@ -10,15 +10,13 @@
 // http://www.opensource.org/licenses/apache2.0.php
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
-package org.eclipse.jetty.webapp.verifier.config;
+package org.eclipse.jetty.webapp;
 
 import java.io.File;
 import java.net.URI;
 import java.util.Collection;
 
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.verifier.RuleSet;
 import org.eclipse.jetty.webapp.verifier.Severity;
 import org.eclipse.jetty.webapp.verifier.Violation;
