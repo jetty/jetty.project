@@ -79,13 +79,13 @@
       <groupId>asm</groupId>
       <artifactId>asm</artifactId>
       <version>3.1</version>
-      <scope>provided</scope>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>asm</groupId>
       <artifactId>asm-tree</artifactId>
       <version>3.1</version>
-      <scope>provided</scope>
+      <optional>true</optional>
     </dependency>
   </dependencies>
   <reporting>
