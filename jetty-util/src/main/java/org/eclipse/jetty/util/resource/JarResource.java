@@ -24,6 +24,7 @@ import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 
 
@@ -148,6 +149,7 @@ public class JarResource extends URLResource
         JarInputStream jin = new JarInputStream(is);
         JarEntry entry;
         boolean shouldExtract;
+        String directoryCanonicalPath = directory.getCanonicalPath()+"/";
         while((entry=jin.getNextJarEntry())!=null)
         {
             String entryName = entry.getName();
@@ -192,14 +194,16 @@ public class JarResource extends URLResource
                 continue;
             }
                 
-           
-            File file=new File(directory,entryName);
-
-            if(!file.getCanonicalPath().regionMatches(0,directory.getCanonicalPath()+"/",0,directory.getCanonicalPath().length()+1)) {
-                if (Log.isDebugEnabled()) Log.debug("Invalid entry: " + entryName);
+            String dotCheck = entryName.replace('\\', '/');   
+            dotCheck = URIUtil.canonicalPath(dotCheck);
+            if (dotCheck == null)
+            {
+                if (Log.isDebugEnabled()) Log.debug("Invalid entry: "+entryName);
                 continue;
-            } 
-            
+            }
+
+            File file=new File(directory,entryName);
+     
             if (entry.isDirectory())
             {
                 // Make directory
