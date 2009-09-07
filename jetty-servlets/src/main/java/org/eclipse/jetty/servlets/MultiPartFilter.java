@@ -172,7 +172,12 @@ public class MultiPartFilter implements Filter
                 {
                     continue;
                 }
-                if(name==null||name.length()==0)
+                //It is valid for reset and submit buttons to have an empty name.
+                //If no name is supplied, the browser skips sending the info for that field.
+                //However, if you supply the empty string as the name, the browser sends the
+                //field, with name as the empty string. So, only continue this loop if we
+                //have not yet seen a name field.
+                if(name==null)
                 {
                     continue;
                 }
