@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 package org.eclipse.jetty.client;
 
@@ -30,8 +30,8 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.log.Log;
 
 /**
- * 
- * 
+ *
+ *
  */
 public class HttpDestination
 {
@@ -159,7 +159,7 @@ public class HttpDestination
                     starting = true;
                 }
             }
-            
+
             if (!starting)
             {
                 try
@@ -192,7 +192,7 @@ public class HttpDestination
         }
         return connection;
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     public HttpConnection reserveConnection(long timeout) throws IOException
     {
@@ -221,7 +221,7 @@ public class HttpDestination
                 if (_idle.size() > 0)
                     connection = _idle.remove(_idle.size()-1);
             }
-            
+
             if (connection==null)
                 return null;
 
@@ -267,6 +267,7 @@ public class HttpDestination
             {
                 HttpExchange ex = _queue.removeFirst();
                 ex.getEventListener().onConnectionFailed(throwable);
+                ex.setStatus(HttpExchange.STATUS_EXCEPTED);
             }
         }
 
@@ -342,7 +343,7 @@ public class HttpDestination
     {
         if (connection.isReserved())
             connection.setReserved(false);
-        
+
         if (close)
         {
             try
