@@ -1,3 +1,7 @@
+jetty-7.0.1-SNAPSHOT
+ + Promoted Jetty WebApp Verifier from Sandbox
+ + Promoted Jetty Centralized Logging from Sandbox
+
 jetty-7.0.0.RC6-SNAPSHOT
  + 288055 jetty-client fails to resolve failed resolution attempts correctly
  + 288153 jetty-client resend doesn't reset exchange
