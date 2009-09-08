@@ -1,0 +1,36 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-project</artifactId>
+    <version>7.0.0.RC3-SNAPSHOT</version>
+  </parent>
+  <groupId>org.eclipse.jetty.tests</groupId>
+  <artifactId>jetty-webapp-verifier-artifacts</artifactId>
+  <name>Jetty :: Webapp Verifier :: Artifacts Parent</name>
+  <packaging>pom</packaging>
+  <modules>
+    <module>dummy-jruby-lib</module>
+    <module>dummy-jython-lib</module>
+    <module>dummy-groovy-lib</module>
+    <module>dummy-jruby-webapp</module>
+    <module>dummy-jython-webapp</module>
+    <module>dummy-groovy-webapp</module>
+    <module>dummy-shellscripts-webapp</module>
+    <module>dummy-nativeaccess-webapp</module>
+    <module>dummy-java11-lib</module>
+    <module>dummy-java12-lib</module>
+    <module>dummy-java13-lib</module>
+    <module>dummy-java14-lib</module>
+    <module>dummy-java15-lib</module>
+    <module>dummy-java16-lib</module>
+    <module>dummy-javaversions-webapp</module>
+    <module>dummy-scm-lib</module>
+    <module>dummy-scm-webapp</module>
+    <module>dummy-servlet23-webapp</module>
+    <module>dummy-servlet24-webapp</module>
+    <module>dummy-servlet25-webapp</module>
+    <module>dummy-servletmixed1-webapp</module>
+    <module>dummy-servletmixed2-webapp</module>
+  </modules>
+</project>

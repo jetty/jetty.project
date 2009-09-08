@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.webapp;
@@ -19,6 +19,7 @@ import java.net.MalformedURLException;
 import java.security.PermissionCollection;
 import java.util.EventListener;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpSessionActivationListener;
@@ -49,28 +50,29 @@ import org.eclipse.jetty.util.resource.Resource;
  * {@link org.eclipse.jetty.security.ConstraintSecurityHandler}, {@link org.eclipse.jetty.server.session.SessionHandler}
  * and {@link org.eclipse.jetty.servlet.ServletHandler}.
  * The handlers are configured by pluggable configuration classes, with
- * the default being  {@link org.eclipse.jetty.server.server.webapp.WebXmlConfiguration} and 
+ * the default being  {@link org.eclipse.jetty.server.server.webapp.WebXmlConfiguration} and
  * {@link org.eclipse.jetty.server.server.webapp.JettyWebXmlConfiguration}.
- *      
+ * 
  * @org.apache.xbean.XBean description="Creates a servlet web application at a given context from a resource base"
  * 
  * 
  *
  */
 public class WebAppContext extends ServletContextHandler
-{   
+{
     public static final String TEMPDIR = "javax.servlet.context.tempdir";
     public final static String WEB_DEFAULTS_XML="org/eclipse/jetty/webapp/webdefault.xml";
     public final static String ERROR_PAGE="org.eclipse.jetty.server.error_page";
+    public final static String SERVER_CONFIG = "org.eclipse.jetty.webapp.configuration";
     
-    private static String[] __dftConfigurationClasses =  
-    { 
-        "org.eclipse.jetty.webapp.WebInfConfiguration", 
-        "org.eclipse.jetty.webapp.WebXmlConfiguration", 
+    private static String[] __dftConfigurationClasses =
+    {
+        "org.eclipse.jetty.webapp.WebInfConfiguration",
+        "org.eclipse.jetty.webapp.WebXmlConfiguration",
         "org.eclipse.jetty.webapp.MetaInfConfiguration",
         "org.eclipse.jetty.webapp.FragmentConfiguration",
         "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-        "org.eclipse.jetty.webapp.TagLibConfiguration" 
+        "org.eclipse.jetty.webapp.TagLibConfiguration"
     } ;
     private String[] _configurationClasses=__dftConfigurationClasses;
     private Configuration[] _configurations;
@@ -84,8 +86,8 @@ public class WebAppContext extends ServletContextHandler
     private boolean _parentLoaderPriority= Boolean.getBoolean("org.eclipse.jetty.server.webapp.parentLoaderPriority");
     private PermissionCollection _permissions;
     private String[] _systemClasses = {
-            "java.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2) 
-            "javax.",                          // Java SE classes (per servlet spec v2.5 / SRV.9.7.2) 
+            "java.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
+            "javax.",                          // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
             "org.xml.",                        // needed by javax.xml
             "org.w3c.",                        // needed by javax.xml
             "org.apache.commons.logging.",     // special case.
@@ -100,7 +102,7 @@ public class WebAppContext extends ServletContextHandler
             "-org.eclipse.jetty.plus.jaas.",    // don't hide jaas modules
             "-org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
             "org.eclipse.jetty."                // hide rest of jetty classes
-            }; 
+            };
     private File _tmpDir;
     private String _war;
     private String _extraClasspath;
@@ -117,9 +119,9 @@ public class WebAppContext extends ServletContextHandler
         {
             ContextHandler handler = context.getContextHandler();
             if (handler instanceof WebAppContext)
-                return (ContextHandler)handler;
+                return handler;
         }
-        return null;   
+        return null;
     }
     
     /* ------------------------------------------------------------ */
@@ -162,12 +164,13 @@ public class WebAppContext extends ServletContextHandler
         super(null,sessionHandler,securityHandler,servletHandler,errorHandler);
         
         setErrorHandler(errorHandler!=null?errorHandler:new ErrorPageErrorHandler());
-    }    
+    }
 
     /* ------------------------------------------------------------ */
     /**
      * @param servletContextName The servletContextName to set.
      */
+    @Override
     public void setDisplayName(String servletContextName)
     {
         super.setDisplayName(servletContextName);
@@ -190,9 +193,9 @@ public class WebAppContext extends ServletContextHandler
     /** Set Resource Alias.
      * Resource aliases map resource uri's within a context.
      * They may optionally be used by a handler when looking for
-     * a resource.  
-     * @param alias 
-     * @param uri 
+     * a resource.
+     * @param alias
+     * @param uri
      */
     public void setResourceAlias(String alias, String uri)
     {
@@ -235,6 +238,7 @@ public class WebAppContext extends ServletContextHandler
     /* (non-Javadoc)
      * @see org.eclipse.jetty.server.server.handler.ContextHandler#setClassLoader(java.lang.ClassLoader)
      */
+    @Override
     public void setClassLoader(ClassLoader classLoader)
     {
         super.setClassLoader(classLoader);
@@ -243,6 +247,7 @@ public class WebAppContext extends ServletContextHandler
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public Resource getResource(String uriInContext) throws MalformedURLException
     {
         IOException ioe= null;
@@ -299,14 +304,15 @@ public class WebAppContext extends ServletContextHandler
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         try
         {
-            // Setup configurations 
+            // Setup configurations
             loadConfigurations();
 
             
@@ -319,14 +325,14 @@ public class WebAppContext extends ServletContextHandler
                 _ownClassLoader=true;
             }
 
-            if (Log.isDebugEnabled()) 
+            if (Log.isDebugEnabled())
             {
                 ClassLoader loader = getClassLoader();
                 Log.debug("Thread Context class loader is: " + loader);
                 loader=loader.getParent();
                 while(loader!=null)
                 {
-                    Log.debug("Parent class loader is: " + loader); 
+                    Log.debug("Parent class loader is: " + loader);
                     loader=loader.getParent();
                 }
             }
@@ -344,7 +350,7 @@ public class WebAppContext extends ServletContextHandler
                 _configurations[i].postConfigure(this);
 
 
-            if (isLogUrlOnStart()) 
+            if (isLogUrlOnStart())
                 dumpUrl();
         }
         catch (Exception e)
@@ -360,10 +366,10 @@ public class WebAppContext extends ServletContextHandler
     /*
      * Dumps the current web app name and URL to the log
      */
-    public void dumpUrl() 
+    public void dumpUrl()
     {
         Connector[] connectors = getServer().getConnectors();
-        for (int i=0;i<connectors.length;i++) 
+        for (int i=0;i<connectors.length;i++)
         {
             String connectorName = connectors[i].getName();
             String displayName = getDisplayName();
@@ -375,9 +381,10 @@ public class WebAppContext extends ServletContextHandler
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         super.doStop();
@@ -458,6 +465,23 @@ public class WebAppContext extends ServletContextHandler
         return _serverClasses;
     }
     
+    public void addServerClass(String classname)
+    {
+        for (int i = 0, n = _serverClasses.length; i < n; i++)
+        {
+            if (_serverClasses[i].equals(classname))
+            {
+                // Already present.
+                return;
+            }
+        }
+
+        int len = _serverClasses.length + 1;
+        String sysclass[] = new String[len];
+        System.arraycopy(_serverClasses,0,sysclass,0,len - 1);
+        sysclass[len - 1] = classname;
+        _serverClasses = sysclass;
+    }
     
     /* ------------------------------------------------------------ */
     /**
@@ -469,7 +493,23 @@ public class WebAppContext extends ServletContextHandler
         return _systemClasses;
     }
     
+    public void addSystemClass(String classname)
+    {
+        for (int i = 0, n = _systemClasses.length; i < n; i++)
+        {
+            if (_systemClasses[i].equals(classname))
+            {
+                // Already present.
+                return;
+            }
+        }
 
+        int len = _systemClasses.length + 1;
+        String sysclass[] = new String[len];
+        System.arraycopy(_systemClasses,0,sysclass,0,len - 1);
+        sysclass[len - 1] = classname;
+        _systemClasses = sysclass;
+    }
     
     /* ------------------------------------------------------------ */
     public boolean isServerClass(String name)
@@ -602,7 +642,7 @@ public class WebAppContext extends ServletContextHandler
     }
     
     /* ------------------------------------------------------------ */
-    protected void loadConfigurations() 
+    protected void loadConfigurations()
     	throws Exception
     {
         if (_configurations!=null)
@@ -610,14 +650,33 @@ public class WebAppContext extends ServletContextHandler
         if (_configurationClasses==null)
             _configurationClasses=__dftConfigurationClasses;
         
-        _configurations = new Configuration[_configurationClasses.length];
-        for (int i=0;i<_configurations.length;i++)
+        int configsLen = _configurationClasses.length;
+
+        @SuppressWarnings("unchecked")
+        List<Configuration> serverConfigs = (List<Configuration>)getServer().getAttribute(SERVER_CONFIG);
+        if (serverConfigs != null)
+        {
+            configsLen += serverConfigs.size();
+        }
+
+        _configurations = new Configuration[configsLen];
+        for (int i = 0; i < _configurationClasses.length; i++)
         {
             _configurations[i]=(Configuration)Loader.loadClass(this.getClass(), _configurationClasses[i]).newInstance();
+        }
+
+        if (serverConfigs != null)
+        {
+            int offset = _configurationClasses.length;
+            for (int i = 0, n = serverConfigs.size(); i < n; i++)
+            {
+                _configurations[i + offset] = serverConfigs.get(i);
+            }
         }
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     protected boolean isProtectedTarget(String target)
     {
         while (target.startsWith("//"))
@@ -628,6 +687,7 @@ public class WebAppContext extends ServletContextHandler
     
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return super.toString()+(_war==null?"":(","+_war));
@@ -656,7 +716,7 @@ public class WebAppContext extends ServletContextHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * The default descriptor is a web.xml format file that is applied to the context before the standard WEB-INF/web.xml
      * @param defaultsDescriptor The defaultsDescriptor to set.
      */
@@ -703,6 +763,7 @@ public class WebAppContext extends ServletContextHandler
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setEventListeners(EventListener[] eventListeners)
     {
         if (_sessionHandler!=null)
@@ -731,9 +792,10 @@ public class WebAppContext extends ServletContextHandler
      * Conveniance method that calls {@link #setEventListeners(EventListener[])}
      * @param listener
      */
+    @Override
     public void addEventListener(EventListener listener)
     {
-        setEventListeners((EventListener[])LazyList.addToArray(getEventListeners(), listener, EventListener.class));   
+        setEventListeners((EventListener[])LazyList.addToArray(getEventListeners(), listener, EventListener.class));
     }
 
     
@@ -775,12 +837,12 @@ public class WebAppContext extends ServletContextHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Set the server classes patterns.
      * <p>
      * Server classes/packages are classes used to implement the server and are hidden
      * from the context.  If the context needs to load these classes, it must have its
-     * own copy of them in WEB-INF/lib or WEB-INF/classes. 
+     * own copy of them in WEB-INF/lib or WEB-INF/classes.
      * A class pattern is a string of one of the forms:<dl>
      * <dt>org.package.Classname</dt><dd>Match a specific class</dd>
      * <dt>org.package.</dt><dd>Match a specific package hierarchy</dd>
@@ -789,7 +851,7 @@ public class WebAppContext extends ServletContextHandler
      * </dl>
      * @param serverClasses The serverClasses to set.
      */
-    public void setServerClasses(String[] serverClasses) 
+    public void setServerClasses(String[] serverClasses)
     {
         _serverClasses = serverClasses==null?null:(String[])serverClasses.clone();
     }
@@ -882,7 +944,7 @@ public class WebAppContext extends ServletContextHandler
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isLogUrlOnStart() 
+    public boolean isLogUrlOnStart()
     {
         return _logUrlOnStart;
     }
@@ -893,12 +955,13 @@ public class WebAppContext extends ServletContextHandler
      *
      * @param logOnStart whether or not the log message is created
      */
-    public void setLogUrlOnStart(boolean logOnStart) 
+    public void setLogUrlOnStart(boolean logOnStart)
     {
         this._logUrlOnStart = logOnStart;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void startContext()
         throws Exception
     {
@@ -911,5 +974,4 @@ public class WebAppContext extends ServletContextHandler
         
         super.startContext();
     }
-
 }

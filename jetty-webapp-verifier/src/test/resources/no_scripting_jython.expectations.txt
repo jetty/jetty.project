@@ -1,0 +1,6 @@
+ERROR|dummy.py|Jython and Python scripting not allowed
+ERROR|dummy.pyc|Jython and Python scripting not allowed
+ERROR|other/lib.py|Jython and Python scripting not allowed
+ERROR|WEB-INF/lib/dummy-jython-lib-1.0-SNAPSHOT.jar!/org/python/util/Generic.class|Jython dependencies are not allowed
+ERROR|WEB-INF/lib/dummy-jython-lib-1.0-SNAPSHOT.jar!/org/python/Version.class|Jython dependencies are not allowed
+ERROR|WEB-INF/lib/dummy-jython-lib-1.0-SNAPSHOT.jar!/org/python/core/JythonInitializer.class|Jython dependencies are not allowed

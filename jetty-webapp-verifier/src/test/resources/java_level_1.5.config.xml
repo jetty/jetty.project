@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configure id="basicRuleSet"
+  class="org.eclipse.jetty.webapp.verifier.RuleSet">
+  <Set name="rules">
+    <Array type="org.eclipse.jetty.webapp.verifier.Rule">
+      <Item>
+        <New class="org.eclipse.jetty.webapp.verifier.rules.JavaSupportLevelRule">
+          <Set name="supportedVersion">1.5</Set>
+        </New>
+      </Item>
+    </Array>
+  </Set>
+</Configure>

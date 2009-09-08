@@ -1,0 +1,14 @@
+ERROR|target/testing/dummy-servletmixed1-webapp/WEB-INF/web.xml|Found 2 versions defined [2.3, 2.4], expected 1
+ERROR|target/testing/dummy-servletmixed1-webapp/WEB-INF/web.xml|Invalid schemaLocation value <web-app xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd">
+ERROR|target/testing/dummy-servletmixed1-webapp/WEB-INF/web.xml|Specified servlet version 2.3 of DOCTYPE Public ID is over the configured supported servlet version 2.1
+ERROR|target/testing/dummy-servletmixed1-webapp/WEB-INF/web.xml|Specified servlet version 2.3 of DOCTYPE System ID is over the configured supported servlet version 2.1
+ERROR|target/testing/dummy-servletmixed1-webapp/WEB-INF/web.xml|Specified servlet version 2.4 of version attribute is over the configured supported servlet version 2.1
+ERROR|target/testing/dummy-servletmixed1-webapp/WEB-INF/web.xml|Specified servlet version 2.4 of XML Namespace is over the configured supported servlet version 2.1
+ERROR|target/testing/dummy-servletmixed1-webapp/WEB-INF/web.xml|version 2.3 of DOCTYPE Public ID conflicts with version 2.4 of version attribute
+ERROR|target/testing/dummy-servletmixed1-webapp/WEB-INF/web.xml|version 2.3 of DOCTYPE Public ID conflicts with version 2.4 of XML Namespace
+ERROR|target/testing/dummy-servletmixed1-webapp/WEB-INF/web.xml|version 2.3 of DOCTYPE System ID conflicts with version 2.4 of version attribute
+ERROR|target/testing/dummy-servletmixed1-webapp/WEB-INF/web.xml|version 2.3 of DOCTYPE System ID conflicts with version 2.4 of XML Namespace
+ERROR|target/testing/dummy-servletmixed1-webapp/WEB-INF/web.xml|version 2.4 of version attribute conflicts with version 2.3 of DOCTYPE Public ID
+ERROR|target/testing/dummy-servletmixed1-webapp/WEB-INF/web.xml|version 2.4 of version attribute conflicts with version 2.3 of DOCTYPE System ID
+ERROR|target/testing/dummy-servletmixed1-webapp/WEB-INF/web.xml|version 2.4 of XML Namespace conflicts with version 2.3 of DOCTYPE Public ID
+ERROR|target/testing/dummy-servletmixed1-webapp/WEB-INF/web.xml|version 2.4 of XML Namespace conflicts with version 2.3 of DOCTYPE System ID

@@ -1,0 +1,84 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.eclipse.jetty.tests</groupId>
+  <artifactId>dummy-scm-lib</artifactId>
+  <packaging>pom</packaging>
+  <version>1.0-SNAPSHOT</version>
+  <name>Jetty :: Webapp Verifier :: Dummy SCM Lib</name>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>create-scm-files</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <!-- Generating these resources, as they cannot be checked
+                   in reliably. duh. ;-) -->
+              <tasks>
+                <property name="outdir" value="${project.build.directory}/generated-scm-resources" />
+                <mkdir dir="${outdir}/CVS" />
+                <touch file="${outdir}/.cvsignore" />
+                <mkdir dir="${outdir}/.svn" />
+                <mkdir dir="${outdir}/_svn" />
+                <mkdir dir="${outdir}/.git" />
+                <touch file="${outdir}/.gitignore" />
+                <mkdir dir="${outdir}/RCS" />
+                <mkdir dir="${outdir}/SCCS" />
+                <touch file="${outdir}/vssver.scc" />
+                <mkdir dir="${outdir}/.arch-ids" />
+                <mkdir dir="${outdir}/.bzr" />
+                <touch file="${outdir}/.MySCMServerInfo" />
+                <mkdir dir="${outdir}/.hg" />
+                <mkdir dir="${outdir}/BitKeeper" />
+                <mkdir dir="${outdir}/ChangeSet" />
+                <mkdir dir="${outdir}/_darcs" />
+                <mkdir dir="${outdir}/.darcs" />
+                <mkdir dir="${outdir}/.darcsrepo" />
+                <touch file="${outdir}/.darcs-temp-mail" />
+                <copy file="${basedir}/src/main/resources/README.txt"
+                      todir="${outdir}" />
+
+                <!-- Generating JAR file here as Maven is too smart and
+                     won't allow you to create JAR files with SCM content in it.
+                  -->
+                <jar destfile="${project.build.directory}/${project.artifactId}-${project.version}.jar"
+                     basedir="${outdir}"
+                     includes="**/*"
+                     defaultexcludes="false"
+                     />
+              </tasks>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-scm-lib</id>
+            <phase>package</phase>
+            <goals>
+              <goal>attach-artifact</goal>
+            </goals>
+            <configuration>
+              <artifacts>
+                <artifact>
+                  <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
+                  <type>jar</type>
+                </artifact>
+              </artifacts>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

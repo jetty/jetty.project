@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configure id="basicRuleSet"
+  class="org.eclipse.jetty.webapp.verifier.RuleSet">
+  <Set name="rules">
+    <Array type="org.eclipse.jetty.webapp.verifier.Rule">
+      <Item>
+        <New class="org.eclipse.jetty.webapp.verifier.rules.NoNativeRule" />
+      </Item>
+    </Array>
+  </Set>
+</Configure>

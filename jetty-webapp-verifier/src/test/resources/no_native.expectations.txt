@@ -1,0 +1,6 @@
+ERROR|dummy.exe|Native code is forbidden
+ERROR|dummy.o|Native code is forbidden
+ERROR|dummy.so|Native code is forbidden
+ERROR|other/lib.dll|Native code is forbidden
+ERROR|other/lib.o|Native code is forbidden
+ERROR|other/lib.so|Native code is forbidden

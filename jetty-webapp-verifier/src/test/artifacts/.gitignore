@@ -1,0 +1,11 @@
+target/
+.classpath
+.project
+.settings/
+*.tar.gz
+*.zip
+bsh*
+jruby*
+jython*
+groovy*
+*.swp
