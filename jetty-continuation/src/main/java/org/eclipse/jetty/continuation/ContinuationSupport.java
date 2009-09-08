@@ -45,7 +45,7 @@ public class ContinuationSupport
             if (servlet3)
             {
                 Class<? extends Continuation> s3c = ContinuationSupport.class.getClassLoader().loadClass("org.eclipse.jetty.continuation.Servlet3Continuation").asSubclass(Continuation.class);
-                s3cc=s3c.getConstructor(ServletRequest.class, ServletResponse.class);
+                s3cc=s3c.getConstructor(ServletRequest.class);
                 servlet3Support=true;
             }
         }
