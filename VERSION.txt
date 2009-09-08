@@ -3,16 +3,17 @@ jetty-7.0.0.RC6-SNAPSHOT
  + 288153 jetty-client resend doesn't reset exchange
  + 288182 PUT request fails during retry
  + JETTY-1080 modify previous fix to work on windows
- + JETTY-1084 HEAD command not setting content-type in response under certain circumstances 
+ + JETTY-1084 HEAD command not setting content-type in response under certain circumstances
  + JETTY-1086 Use UncheckedPrintWriter
  + JETTY-1090 resolve potential infinite loop with webdav listener
  + JETTY-1092 MultiPartFilter can be pushed into infinite loop
  + JETTY-1093 Request.toString throws exception when size exceeds 4k
- + JETTY-1098 Default form encoding is UTF8 
+ + JETTY-1098 Default form encoding is UTF8
  + JETTY-1101 Updated servlet3 continuation constructor
  + 288514 AbstractConnector does not handle InterruptedExceptions on shutdown
  + 288466 LocalConnector is not thread safe
  + 288772 Failure to connect does not set status to EXCEPTED
+ + 280723 Add non blocking statistics handler
 
 jetty-6.1.20 27 August 2009
  + JETTY-838 Don't log and throw
