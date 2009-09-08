@@ -78,6 +78,12 @@ public class LocalConnector extends AbstractConnector
         return -1;
     }
 
+    public void executeRequest(String rawRequest) throws IOException
+    {
+        Request request = new Request(new ByteArrayBuffer(rawRequest, "UTF-8"), true, null);
+        requests.add(request);
+    }
+
     private class Request implements Runnable
     {
         private final ByteArrayBuffer requestsBuffer;
@@ -115,7 +121,8 @@ public class LocalConnector extends AbstractConnector
                 if (!leaveOpen)
                     connectionClosed(connection);
                 responsesBuffer = endPoint.getOut();
-                latch.countDown();
+                if (latch != null)
+                    latch.countDown();
             }
         }
 
