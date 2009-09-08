@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+// ========================================================================
+// Copyright (c) Webtide LLC
+// 
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+//
+// The Eclipse Public License is available at 
+// http://www.eclipse.org/legal/epl-v10.html
+//
+// The Apache License v2.0 is available at
+// http://www.apache.org/licenses/LICENSE-2.0.txt
+//
+// You may elect to redistribute this code under either of these licenses. 
+// ========================================================================
+ -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-project</artifactId>
+    <version>7.0.1-SNAPSHOT</version>
+  </parent>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-centralized-logging</artifactId>
+  <name>Jetty :: Centralized Logging</name>
+  <packaging>jar</packaging>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>config.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-deploy</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.5.6</version>
+    </dependency>
+    <!-- 
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>1.5.6</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
+      <version>1.5.6</version>
+    </dependency>
+     -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>1.5.6</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>log4j-over-slf4j</artifactId>
+      <version>1.5.6</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jxr-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>cobertura-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </reporting>
+
+  <profiles>
+    <profile>
+      <id>copy-fresh-webapps</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-testing-wars</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.eclipse.jetty.tests</groupId>
+                      <artifactId>dummy-webapp-logging-commons</artifactId>
+                      <version>${project.version}</version>
+                      <type>war</type>
+                    </artifactItem>
+                    <artifactItem>
+                      <groupId>org.eclipse.jetty.tests</groupId>
+                      <artifactId>dummy-webapp-logging-java</artifactId>
+                      <version>${project.version}</version>
+                      <type>war</type>
+                    </artifactItem>
+                    <artifactItem>
+                      <groupId>org.eclipse.jetty.tests</groupId>
+                      <artifactId>dummy-webapp-logging-log4j</artifactId>
+                      <version>${project.version}</version>
+                      <type>war</type>
+                    </artifactItem>
+                    <artifactItem>
+                      <groupId>org.eclipse.jetty.tests</groupId>
+                      <artifactId>dummy-webapp-logging-slf4j</artifactId>
+                      <version>${project.version}</version>
+                      <type>war</type>
+                    </artifactItem>
+                  </artifactItems>
+                  <outputDirectory>${basedir}/src/test/resources/webapps</outputDirectory>
+                  <overWriteIfNewer>true</overWriteIfNewer>
+                  <stripVersion>true</stripVersion>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

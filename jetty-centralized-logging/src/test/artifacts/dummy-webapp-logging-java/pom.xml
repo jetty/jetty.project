@@ -18,17 +18,29 @@
  -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.eclipse.jetty.tests</groupId>
-    <artifactId>tests-parent</artifactId>
-    <version>7.0.1-SNAPSHOT</version>
-  </parent>
-  <artifactId>test-webapps-parent</artifactId>
-  <name>Jetty Tests :: WebApps :: Parent</name>
-  <packaging>pom</packaging>
+  <groupId>org.eclipse.jetty.tests</groupId>
+  <artifactId>dummy-webapp-logging-java</artifactId>
+  <version>7.0.1-SNAPSHOT</version>
+  <name>Jetty :: Centralized Logging :: Dummy Webapp for Java Util Logging</name>
+  <packaging>war</packaging>
   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.5</source>
+          <target>1.5</target>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
-  <modules>
-    <module>test-webapp-rfc2616</module>
-  </modules>
+  <dependencies>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <version>2.5</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
 </project>

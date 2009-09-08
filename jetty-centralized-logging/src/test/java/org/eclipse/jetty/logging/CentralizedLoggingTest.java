@@ -1,0 +1,84 @@
+// ========================================================================
+// Copyright (c) Webtide LLC
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+//
+// The Eclipse Public License is available at
+// http://www.eclipse.org/legal/epl-v10.html
+//
+// The Apache License v2.0 is available at
+// http://www.apache.org/licenses/LICENSE-2.0.txt
+//
+// You may elect to redistribute this code under either of these licenses.
+// ========================================================================
+package org.eclipse.jetty.logging;
+
+import java.io.IOException;
+
+import junit.framework.TestCase;
+
+import org.eclipse.jetty.logging.impl.CentralLoggerConfig;
+import org.eclipse.jetty.logging.impl.Severity;
+import org.eclipse.jetty.logging.impl.TestAppender;
+import org.eclipse.jetty.logging.impl.TestAppender.LogEvent;
+
+public class CentralizedLoggingTest extends TestCase
+{
+    private XmlConfiguredJetty jetty;
+
+    private void assertContainsLogEvents(TestAppender capturedEvents, LogEvent[] expectedLogs)
+    {
+        for (LogEvent expectedEvent : expectedLogs)
+        {
+            assertTrue("LogEvent not found: " + expectedEvent,capturedEvents.contains(expectedEvent));
+        }
+    }
+
+    @Override
+    protected void setUp() throws Exception
+    {
+        super.setUp();
+
+        jetty = new XmlConfiguredJetty(this);
+        jetty.addConfiguration("jetty.xml");
+        jetty.addConfiguration("jetty-centralized-logging.xml");
+
+        jetty.load();
+
+        jetty.start();
+    }
+
+    @Override
+    protected void tearDown() throws Exception
+    {
+        jetty.stop();
+
+        super.tearDown();
+    }
+
+    public void testAllRouting() throws IOException
+    {
+        CentralLoggerConfig root = CentralizedWebAppLoggingConfiguration.getLoggerRoot();
+        TestAppender testAppender = (TestAppender)root.findAppender(TestAppender.class);
+        assertNotNull("Should have found TestAppender in configuration",testAppender);
+
+        SimpleRequest.get(jetty,"/dummy-webapp-logging-log4j/logging");
+        SimpleRequest.get(jetty,"/dummy-webapp-logging-slf4j/logging");
+        SimpleRequest.get(jetty,"/dummy-webapp-logging-commons/logging");
+        SimpleRequest.get(jetty,"/dummy-webapp-logging-java/logging");
+
+        TestAppender.LogEvent expectedLogs[] =
+        { new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(log4j) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(log4j) GET requested",null),
+                new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(slf4j) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(slf4j) GET requested",null),
+                new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(commons-logging) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(commons-logging) GET requested",null),
+                new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(java) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(java) GET requested",null) };
+
+        assertContainsLogEvents(testAppender,expectedLogs);
+    }
+}

@@ -19,16 +19,18 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty.tests</groupId>
-    <artifactId>tests-parent</artifactId>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-project</artifactId>
     <version>7.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>test-webapps-parent</artifactId>
-  <name>Jetty Tests :: WebApps :: Parent</name>
+  <groupId>org.eclipse.jetty.tests</groupId>
+  <artifactId>centralized-logging-test-artifacts-parent</artifactId>
+  <name>Jetty :: Centralized Logging :: Dummy Webapps Parent</name>
   <packaging>pom</packaging>
-  <build>
-  </build>
   <modules>
-    <module>test-webapp-rfc2616</module>
+    <module>dummy-webapp-logging-commons</module>
+    <module>dummy-webapp-logging-log4j</module>
+    <module>dummy-webapp-logging-java</module>
+    <module>dummy-webapp-logging-slf4j</module>
   </modules>
 </project>
