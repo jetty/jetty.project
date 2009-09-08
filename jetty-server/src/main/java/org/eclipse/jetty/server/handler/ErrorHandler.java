@@ -50,7 +50,7 @@ public class ErrorHandler extends AbstractHandler
         HttpConnection connection = HttpConnection.getCurrentConnection();
         connection.getRequest().setHandled(true);
         String method = request.getMethod();
-        if(!method.equals(HttpMethods.GET) && !method.equals(HttpMethods.POST))
+        if(!method.equals(HttpMethods.GET) && !method.equals(HttpMethods.POST) && !method.equals(HttpMethods.HEAD))
             return;
         response.setContentType(MimeTypes.TEXT_HTML_8859_1);        
         response.setHeader(HttpHeaders.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
