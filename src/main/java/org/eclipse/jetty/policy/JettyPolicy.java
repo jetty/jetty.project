@@ -73,6 +73,8 @@ public class JettyPolicy extends Policy
 
     public JettyPolicy(Set<String> policies, Map<String, String> properties)
     {
+    	System.out.println("Activating the JettyPolicy");
+    	
         try
         {
             __DEBUG = Boolean.getBoolean("org.eclipse.jetty.policy.DEBUG");
@@ -288,11 +290,13 @@ public class JettyPolicy extends Policy
                 initialize();
             }
             
-            for (Iterator<Object> i = _cache.keySet().iterator(); i.hasNext();)
+            synchronized (_cache)
             {
-                System.out.println(i.next().toString());
+                for (Iterator<Object> i = _cache.keySet().iterator(); i.hasNext();)
+                {
+                    System.out.println(i.next().toString());
+                }
             }
-            
 
             if (__DEBUG)
             {
