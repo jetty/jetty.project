@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.security.PermissionCollection;
-import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
@@ -64,6 +63,7 @@ public class WebAppContext extends ServletContextHandler
     public static final String TEMPDIR = "javax.servlet.context.tempdir";
     public final static String WEB_DEFAULTS_XML="org/eclipse/jetty/webapp/webdefault.xml";
     public final static String ERROR_PAGE="org.eclipse.jetty.server.error_page";
+    public final static String SERVER_CONFIG = "org.eclipse.jetty.webapp.configuration";
     
     private static String[] __dftConfigurationClasses =
     {
@@ -76,7 +76,6 @@ public class WebAppContext extends ServletContextHandler
     } ;
     private String[] _configurationClasses=__dftConfigurationClasses;
     private Configuration[] _configurations;
-    private List<Configuration> _extraConfigurations;
     private String _defaultsDescriptor=WEB_DEFAULTS_XML;
     private String _descriptor=null;
     private String _overrideDescriptor=null;
@@ -652,9 +651,12 @@ public class WebAppContext extends ServletContextHandler
             _configurationClasses=__dftConfigurationClasses;
         
         int configsLen = _configurationClasses.length;
-        if (_extraConfigurations != null)
+
+        @SuppressWarnings("unchecked")
+        List<Configuration> serverConfigs = (List<Configuration>)getServer().getAttribute(SERVER_CONFIG);
+        if (serverConfigs != null)
         {
-            configsLen += _extraConfigurations.size();
+            configsLen += serverConfigs.size();
         }
 
         _configurations = new Configuration[configsLen];
@@ -663,12 +665,12 @@ public class WebAppContext extends ServletContextHandler
             _configurations[i]=(Configuration)Loader.loadClass(this.getClass(), _configurationClasses[i]).newInstance();
         }
 
-        if (_extraConfigurations != null)
+        if (serverConfigs != null)
         {
             int offset = _configurationClasses.length;
-            for (int i = 0, n = _extraConfigurations.size(); i < n; i++)
+            for (int i = 0, n = serverConfigs.size(); i < n; i++)
             {
-                _configurations[i + offset] = _extraConfigurations.get(i);
+                _configurations[i + offset] = serverConfigs.get(i);
             }
         }
     }
@@ -971,14 +973,5 @@ public class WebAppContext extends ServletContextHandler
 
         
         super.startContext();
-    }
-
-    public void addConfiguration(Configuration configuration)
-    {
-        if (_extraConfigurations == null)
-        {
-            _extraConfigurations = new ArrayList<Configuration>();
-        }
-        _extraConfigurations.add(configuration);
     }
 }
