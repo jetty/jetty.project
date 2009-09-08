@@ -7,6 +7,7 @@ jetty-7.0.0.RC6-SNAPSHOT
  + JETTY-1090 resolve potential infinite loop with webdav listener
  + JETTY-1092 MultiPartFilter can be pushed into infinite loop
  + JETTY-1093 Request.toString throws exception when size exceeds 4k
+ + JETTY-1098 Default form encoding is UTF8 
  + 288514 AbstractConnector does not handle InterruptedExceptions on shutdown
  + 288466 LocalConnector is not thread safe
  + 288772 Failure to connect does not set status to EXCEPTED

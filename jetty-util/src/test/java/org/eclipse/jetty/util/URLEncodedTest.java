@@ -152,7 +152,7 @@ public class URLEncodedTest extends junit.framework.TestCase
     {
         String [][] charsets = new String[][]
         {
-           {StringUtil.__ISO_8859_1,null},
+           {StringUtil.__UTF8,null},
            {StringUtil.__ISO_8859_1,StringUtil.__ISO_8859_1},
            {StringUtil.__UTF8,StringUtil.__UTF8},
            {StringUtil.__UTF16,StringUtil.__UTF16},
