@@ -29,45 +29,46 @@
         </executions>      
       </plugin>   
       <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-antrun-plugin</artifactId>
-          <executions>
-            <execution>
-	      <phase>generate-resources</phase>
-	      <goals>
-		<goal>run</goal>
-              </goals>
-              <configuration>
-                <tasks>
-		  <mkdir dir="${assembly.directory}/lib" />
-                  <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.servlet_2.5.0.v200806031605.jar" dest="${assembly.directory}/lib/servlet-api-2.5.jar" usetimestamp="true" verbose="true" />
-		  <mkdir dir="${assembly.directory}/lib/jndi" />
-                  <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.activation_1.1.0.v200905021805.jar" dest="${assembly.directory}/lib/jndi/activation-1.1.jar" usetimestamp="true" verbose="true" />
-                  <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.mail_1.4.0.v200905040518.jar" dest="${assembly.directory}/lib/jndi/mail-1.4.jar" usetimestamp="true" verbose="true" />
-                </tasks>
-              </configuration>
-            </execution>
-          </executions>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <property name="orbit.base.url" value="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles" />
+                <mkdir dir="${assembly.directory}/lib" />
+                <get src="${orbit.base.url}/javax.servlet_2.5.0.v200806031605.jar" dest="${assembly.directory}/lib/servlet-api-2.5.jar" usetimestamp="true" verbose="true" />
+                <mkdir dir="${assembly.directory}/lib/jndi" />
+                <get src="${orbit.base.url}/javax.activation_1.1.0.v200905021805.jar" dest="${assembly.directory}/lib/jndi/activation-1.1.jar" usetimestamp="true" verbose="true" />
+                <get src="${orbit.base.url}/javax.mail_1.4.0.v200905040518.jar" dest="${assembly.directory}/lib/jndi/mail-1.4.jar" usetimestamp="true" verbose="true" />
+              </tasks>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-remote-resources-plugin</artifactId>
-          <executions>
-            <execution>
-              <phase>generate-resources</phase>
-              <goals>
-                <goal>process</goal>
-              </goals>
-              <configuration>
-                <resourceBundles>
-                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0</resourceBundle>
-                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-distribution-remote-resources:1.1</resourceBundle>
-                </resourceBundles>
-                <outputDirectory>${assembly.directory}</outputDirectory>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-remote-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>process</goal>
+            </goals>
+            <configuration>
+              <resourceBundles>
+                <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0</resourceBundle>
+                <resourceBundle>org.eclipse.jetty.toolchain:jetty-distribution-remote-resources:1.1</resourceBundle>
+              </resourceBundles>
+              <outputDirectory>${assembly.directory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <version>2.1</version>
@@ -152,6 +153,16 @@
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-centralized-logging</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly.directory}</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-plus</artifactId>
                   <version>${project.version}</version>
                   <classifier>config</classifier>
@@ -182,7 +193,7 @@
                 </artifactItem>
               </artifactItems>
             </configuration>
-          </execution>                 
+          </execution>
           <execution>
             <id>copy</id>
             <phase>generate-resources</phase>
@@ -190,7 +201,7 @@
               <goal>copy</goal>
             </goals>
             <configuration>
-              <artifactItems>             
+              <artifactItems>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-util</artifactId>
@@ -272,7 +283,7 @@
                   <includes>**</includes>
                   <outputDirectory>${assembly.directory}/lib</outputDirectory>
                 </artifactItem>
-                 <artifactItem>
+                <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-webapp-verifier</artifactId>
                   <version>${project.version}</version>
@@ -283,13 +294,22 @@
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-centralized-logging</artifactId>
+                  <version>${project.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly.directory}/lib/centralized-logging</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-deploy</artifactId>
                   <version>${project.version}</version>
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
                   <outputDirectory>${assembly.directory}/lib</outputDirectory>
-                </artifactItem>              
+                </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-jmx</artifactId>
@@ -298,7 +318,7 @@
                   <overWrite>true</overWrite>
                   <includes>**</includes>
                   <outputDirectory>${assembly.directory}/lib</outputDirectory>
-                </artifactItem>            
+                </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-rewrite</artifactId>
@@ -334,7 +354,7 @@
                   <overWrite>true</overWrite>
                   <includes>**</includes>
                   <outputDirectory>${assembly.directory}/lib</outputDirectory>
-                </artifactItem>             
+                </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-jndi</artifactId>
@@ -361,7 +381,7 @@
                   <overWrite>true</overWrite>
                   <includes>**</includes>
                   <outputDirectory>${assembly.directory}/lib</outputDirectory>
-                </artifactItem>  
+                </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-continuation</artifactId>
@@ -370,7 +390,7 @@
                   <overWrite>true</overWrite>
                   <includes>**</includes>
                   <outputDirectory>${assembly.directory}/lib</outputDirectory>
-                </artifactItem>  
+                </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>test-jetty-webapp</artifactId>
@@ -431,7 +451,7 @@
           </execution>
           -->
         </executions>
-      </plugin>     
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -455,34 +475,34 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-deploy</artifactId>
-        <version>${project.version}</version>
+      <artifactId>jetty-deploy</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-    	<artifactId>jetty-rewrite</artifactId>
-    	<version>${project.version}</version>
+      <artifactId>jetty-rewrite</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-    	<artifactId>jetty-ajp</artifactId>
-    	<version>${project.version}</version>
+      <artifactId>jetty-ajp</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-    	<artifactId>jetty-annotations</artifactId>
-    	<version>${project.version}</version>
+      <artifactId>jetty-annotations</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-        <artifactId>test-jetty-webapp</artifactId>
-        <type>war</type>
-        <version>${project.version}</version>
+      <artifactId>test-jetty-webapp</artifactId>
+      <type>war</type>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-    	<artifactId>jetty-jmx</artifactId>
-    	<version>${project.version}</version>
+      <artifactId>jetty-jmx</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -491,28 +511,28 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-    	<artifactId>jetty-plus</artifactId>
-    	<version>${project.version}</version>
+      <artifactId>jetty-plus</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
-    	<groupId>org.eclipse.jetty</groupId>
-    	<artifactId>jetty-client</artifactId>
-    	<version>${project.version}</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
-    	<groupId>org.eclipse.jetty</groupId>
-    	<artifactId>jetty-continuation</artifactId>
-    	<version>${project.version}</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-continuation</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
-    	<groupId>org.eclipse.jetty</groupId>
-    	<artifactId>jetty-start</artifactId>
-    	<version>${project.version}</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-start</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
-    	<groupId>org.eclipse.jetty</groupId>
-    	<artifactId>jetty-policy</artifactId>
-    	<version>${project.version}</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-policy</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 </project>

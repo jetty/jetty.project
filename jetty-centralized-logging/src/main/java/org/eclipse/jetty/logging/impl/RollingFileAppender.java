@@ -15,10 +15,13 @@
 // ========================================================================
 package org.eclipse.jetty.logging.impl;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.TimeZone;
 
+import org.eclipse.jetty.logging.PropertyExpansion;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 
 /**
@@ -28,6 +31,7 @@ public class RollingFileAppender implements Appender
 {
     private RolloverFileOutputStream out;
     private String filename;
+    private File file;
     private boolean append = true;
     private int retainDays = 31;
     private TimeZone zone = TimeZone.getDefault();
@@ -98,9 +102,27 @@ public class RollingFileAppender implements Appender
         return append;
     }
 
+    public File getFile()
+    {
+        return file;
+    }
+
     public void open() throws IOException
     {
-        out = new RolloverFileOutputStream(filename,append,retainDays,zone,dateFormat,backupFormat);
+        file = new File(PropertyExpansion.expand(filename));
+
+        File logDir = file.getParentFile();
+        if (!logDir.exists())
+        {
+            throw new FileNotFoundException("Logging directory does not exist: " + logDir);
+        }
+
+        if (!logDir.isDirectory())
+        {
+            throw new FileNotFoundException("Logging path exist, but is not a directory: " + logDir);
+        }
+
+        out = new RolloverFileOutputStream(file.getAbsolutePath(),append,retainDays,zone,dateFormat,backupFormat);
     }
 
     public void setAppend(boolean append)

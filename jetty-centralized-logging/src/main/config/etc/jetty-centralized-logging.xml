@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<!-- =============================================================== -->
+<!-- Enable Centralized Logging in the Jetty Server                  -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.logging.CentralizedLogging">
+        <Set name="server"><Ref id="Server" /></Set>
+        <Set name="configurationFilename"><SystemProperty name="jetty.home" default="."/>/etc/centralized-logging/logging.properties</Set>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

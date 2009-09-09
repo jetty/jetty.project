@@ -127,12 +127,13 @@ public class ConfiguredLoggerTest extends TestCase
 
         File testLoggingDir = new File(MavenTestingUtils.getTargetTestingDir(this),"logs");
         testLoggingDir.mkdirs();
-        File logFile = new File(testLoggingDir,"rolling.log");
+
+        System.setProperty("test.dir",testLoggingDir.getAbsolutePath());
 
         props.setProperty("root.level","DEBUG");
         props.setProperty("root.appenders","roll");
         props.setProperty("appender.roll.class",RollingFileAppender.class.getName());
-        props.setProperty("appender.roll.filename",logFile.getAbsolutePath());
+        props.setProperty("appender.roll.filename","${test.dir}/rolling.log");
         props.setProperty("appender.roll.append","true");
         props.setProperty("appender.roll.retainDays","120");
         props.setProperty("appender.roll.zone","GMT");
@@ -144,8 +145,10 @@ public class ConfiguredLoggerTest extends TestCase
         assertSeverityLevel(root,Severity.DEBUG);
         assertAppenders(root,RollingFileAppender.class);
 
+        File logFile = new File(testLoggingDir,"rolling.log");
+
         RollingFileAppender actualAppender = (RollingFileAppender)root.getAppenders().get(0);
-        assertEquals("RollingFileAppender.filename",logFile.getAbsolutePath(),actualAppender.getFilename());
+        assertEquals("RollingFileAppender.filename",logFile.getAbsolutePath(),actualAppender.getFile().getAbsolutePath());
         assertEquals("RollingFileAppender.append",true,actualAppender.isAppend());
         assertEquals("RollingFileAppender.retainDays",120,actualAppender.getRetainDays());
         assertEquals("RollingFileAppender.zone","GMT",actualAppender.getZone().getID());
