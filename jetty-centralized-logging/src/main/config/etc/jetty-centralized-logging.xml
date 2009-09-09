@@ -10,7 +10,7 @@
     <Arg>
       <New class="org.eclipse.jetty.logging.CentralizedLogging">
         <Set name="server"><Ref id="Server" /></Set>
-        <Set name="configurationFilename"><SystemProperty name="jetty.home" default="."/>/etc/centralized-logging/logging.properties</Set>
+        <Set name="configurationFilename"><SystemProperty name="jetty.home" default="."/>/etc/jetty-centralized-logging.properties</Set>
       </New>
     </Arg>
   </Call>
