@@ -551,16 +551,18 @@ public class HttpConnection implements Connection
                 }
                 catch (ContinuationThrowable e)
                 {
-                    Log.debug(e);
+                    Log.ignore(e);
                 }
                 catch (EofException e)
                 {
                     Log.debug(e);
+                    _request.setHandled(true);
                     error=true;
                 }
                 catch (RuntimeIOException e)
                 {
                     Log.debug(e);
+                    _request.setHandled(true);
                     error=true;
                 }
                 catch (HttpException e)

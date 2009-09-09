@@ -440,6 +440,10 @@ public class ServletHandler extends ScopedHandler
         {
             throw e;
         }
+        catch(RuntimeIOException e)
+        {
+            throw e;
+        }
         catch(ContinuationThrowable e)
         {   
             throw e;
