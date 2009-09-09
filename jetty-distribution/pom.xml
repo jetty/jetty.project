@@ -10,6 +10,7 @@
   <packaging>pom</packaging>
   <properties>
     <assembly.directory>target/distribution</assembly.directory>
+    <slf4j.version>1.5.6</slf4j.version>
   </properties>
    <build>
     <plugins>
@@ -26,8 +27,8 @@
               <goal>resources</goal>
             </goals>
           </execution>
-        </executions>      
-      </plugin>   
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
@@ -301,6 +302,35 @@
                   <includes>**</includes>
                   <outputDirectory>${assembly.directory}/lib/centralized-logging</outputDirectory>
                 </artifactItem>
+                <!-- SLF4J Dependencies (that jetty-centralized-logging needs) -->
+                <artifactItem>
+                  <groupId>org.slf4j</groupId>
+                  <artifactId>slf4j-api</artifactId>
+                  <version>${slf4j.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly.directory}/lib/centralized-logging</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.slf4j</groupId>
+                  <artifactId>jcl-over-slf4j</artifactId>
+                  <version>${slf4j.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly.directory}/lib/centralized-logging</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.slf4j</groupId>
+                  <artifactId>log4j-over-slf4j</artifactId>
+                  <version>${slf4j.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly.directory}/lib/centralized-logging</outputDirectory>
+                </artifactItem>
+                <!-- Jetty Deploy -->
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-deploy</artifactId>
