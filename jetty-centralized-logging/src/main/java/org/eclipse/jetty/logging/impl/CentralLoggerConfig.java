@@ -232,6 +232,7 @@ public class CentralLoggerConfig
         root.appenders = getAppenders(props,"root.appenders",declaredAppenders);
         if (root.appenders == null)
         {
+            root.appenders = new ArrayList<Appender>();
             // Default (if not specified for root)
             root.appenders.add(new ConsoleAppender());
         }
