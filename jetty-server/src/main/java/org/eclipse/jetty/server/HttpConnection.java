@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -40,12 +39,12 @@ import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Parser;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
@@ -580,13 +579,13 @@ public class HttpConnection implements Connection
                     error=true;
                     if (info==null)
                     {
-                        Log.warn(_uri+": "+e);
+                        Log.debug(_uri+": "+e);
                         _request.setHandled(true);
                         _generator.sendError(400, null, null, true);
                     }
                     else
                     {
-                        Log.warn(""+_uri,e);
+                        Log.debug(""+_uri,e);
                         _request.setHandled(true);
                         _generator.sendError(500, null, null, true);
                     }
@@ -813,7 +812,6 @@ public class HttpConnection implements Connection
             }
             catch (Exception e)
             {
-                Log.warn(method+" "+uri+" "+version+": "+e);
                 Log.debug(e);
                 throw new HttpException(HttpStatus.BAD_REQUEST_400,null,e);
             }
