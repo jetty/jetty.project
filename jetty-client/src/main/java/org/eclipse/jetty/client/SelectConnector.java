@@ -79,10 +79,14 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         _selectorManager.start();
         
         SSLEngine sslEngine=_selectorManager.newSslEngine();
-        SSLSession ssl_session=sslEngine.getSession();
-        
-        ThreadLocalBuffers buffers = new ThreadLocalBuffers()
+        final SSLSession ssl_session=sslEngine.getSession();
+        ThreadLocalBuffers ssl_buffers = new ThreadLocalBuffers()
         {
+            {
+                super.setBufferSize(ssl_session.getApplicationBufferSize());
+                super.setHeaderSize(ssl_session.getApplicationBufferSize());    
+            }
+            
             @Override
             protected Buffer newBuffer(int size)
             {
@@ -100,10 +104,18 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             {
                 return true;
             }
+            
+            @Override
+            public void setBufferSize(int size)
+            {
+            }
+            
+            @Override
+            public void setHeaderSize(int size)
+            {
+            }
         };
-        buffers.setBufferSize(ssl_session.getApplicationBufferSize());
-        buffers.setHeaderSize(ssl_session.getPacketBufferSize());
-        _sslBuffers=buffers;
+        _sslBuffers=ssl_buffers;
         
         _httpClient._threadPool.dispatch(this);
     }
@@ -147,34 +159,42 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     /* ------------------------------------------------------------ */
     class Manager extends SelectorManager
     {
+        @Override
         protected SocketChannel acceptChannel(SelectionKey key) throws IOException
         {
             throw new IllegalStateException();
         }
 
+        @Override
         public boolean dispatch(Runnable task)
         {
             return SelectConnector.this._httpClient._threadPool.dispatch(task);
         }
 
+        @Override
         protected void endPointOpened(SelectChannelEndPoint endpoint)
         {
         }
 
+        @Override
         protected void endPointClosed(SelectChannelEndPoint endpoint)
         {
         }
 
+        @Override
         protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
         {
+            if (endpoint instanceof SslSelectChannelEndPoint)
+                return new HttpConnection(_sslBuffers,_sslBuffers,endpoint);
+            
             return new HttpConnection(_httpClient.getRequestBuffers(),_httpClient.getResponseBuffers(),endpoint);
         }
 
+        @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
         {
             // key should have destination at this point (will be replaced by endpoint after this call)
             HttpDestination dest=(HttpDestination)key.attachment();
-
 
             SelectChannelEndPoint ep=null;
 

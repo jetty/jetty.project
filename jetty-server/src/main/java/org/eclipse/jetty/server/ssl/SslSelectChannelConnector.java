@@ -632,7 +632,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
             }
         };
         buffers.setBufferSize(ssl_session.getApplicationBufferSize());
-        buffers.setHeaderSize(ssl_session.getPacketBufferSize());
+        buffers.setHeaderSize(ssl_session.getApplicationBufferSize());
         _sslBuffers=buffers;
         
         if (getRequestHeaderSize()<ssl_session.getApplicationBufferSize())

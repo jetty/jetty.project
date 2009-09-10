@@ -29,6 +29,7 @@ import junit.framework.TestCase;
 import org.eclipse.jetty.client.security.ProxyAuthorization;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EofException;
@@ -241,6 +242,20 @@ public class HttpExchangeTest extends TestCase
             assertEquals(HttpExchange.STATUS_COMPLETED, status);
             Thread.sleep(5);
         }
+    }
+
+    public void testSun() throws Exception
+    {
+            ContentExchange httpExchange=new ContentExchange();
+            httpExchange.setURL(_scheme+"www.sun.com/");
+            httpExchange.setMethod(HttpMethods.GET);
+            _httpClient.send(httpExchange);
+            int status = httpExchange.waitForDone();
+            String result=httpExchange.getResponseContent();
+            assertTrue(result.indexOf("<title>Sun Microsystems</title>")>0);
+            assertEquals(HttpExchange.STATUS_COMPLETED, status);
+            assertEquals(HttpStatus.OK_200,httpExchange.getResponseStatus());
+            
     }
 
     public void testProxy() throws Exception
