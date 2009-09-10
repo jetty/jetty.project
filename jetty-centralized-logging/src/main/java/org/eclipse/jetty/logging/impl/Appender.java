@@ -22,6 +22,10 @@ import java.io.IOException;
  */
 public interface Appender
 {
+    void setId(String id);
+
+    String getId();
+
     void append(String date, int ms, Severity severity, String name, String message, Throwable t) throws IOException;
 
     void setProperty(String key, String value) throws Exception;

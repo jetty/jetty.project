@@ -26,6 +26,7 @@ import org.eclipse.jetty.logging.impl.TestAppender.LogEvent;
 
 public class CentralizedLoggingTest extends TestCase
 {
+    private static final String LOGGING_SERVLET_ID = "org.eclipse.jetty.tests.webapp.LoggingServlet";
     private XmlConfiguredJetty jetty;
 
     private void assertContainsLogEvents(TestAppender capturedEvents, LogEvent[] expectedLogs)
@@ -74,14 +75,14 @@ public class CentralizedLoggingTest extends TestCase
         SimpleRequest.get(jetty,"/dummy-webapp-logging-java/logging");
 
         TestAppender.LogEvent expectedLogs[] =
-        { new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(log4j) initialized",null),
-                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(log4j) GET requested",null),
-                new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(slf4j) initialized",null),
-                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(slf4j) GET requested",null),
-                new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(commons-logging) initialized",null),
-                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(commons-logging) GET requested",null),
-                new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(java) initialized",null),
-                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(java) GET requested",null) };
+        { new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(log4j) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(log4j) GET requested",null),
+                new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) GET requested",null),
+                new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) GET requested",null),
+                new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(java) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(java) GET requested",null) };
 
         assertContainsLogEvents(testAppender,expectedLogs);
     }

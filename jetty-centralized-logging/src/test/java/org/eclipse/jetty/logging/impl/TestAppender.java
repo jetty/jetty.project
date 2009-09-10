@@ -56,13 +56,25 @@ public class TestAppender implements Appender
     }
 
     private List<LogEvent> events = new ArrayList<LogEvent>();
+    private String id;
+
+    public String getId()
+    {
+        return id;
+    }
+
+    public void setId(String id)
+    {
+        this.id = id;
+    }
 
     public void append(String date, int ms, Severity severity, String name, String message, Throwable t)
     {
-        if (name.equals("log")) // standard jetty logger
+        if (name.equals("org.eclipse.jetty.util.log")) // standard jetty logger
         {
             if (t != null)
             {
+                // Still interested in seeing throwables (HACK)
                 t.printStackTrace(System.err);
             }
             return; // skip storing it.

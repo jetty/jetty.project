@@ -59,6 +59,63 @@ public class ConfiguredLoggerTest extends TestCase
         }
     }
 
+    private void assertAppendersById(CentralLoggerConfig logger, String... ids)
+    {
+        assertNotNull("Appenders should not be null",logger.getAppenders());
+        assertTrue("Should have appenders",logger.getAppenders().size() >= 1);
+
+        List<String> expectedAppenders = new ArrayList<String>();
+        List<String> actualAppenders = new ArrayList<String>();
+
+        for (String id : ids)
+        {
+            expectedAppenders.add(id);
+        }
+
+        for (Appender appender : logger.getAppenders())
+        {
+            actualAppenders.add(appender.getId());
+        }
+
+        // Sort
+        Collections.sort(expectedAppenders);
+        Collections.sort(actualAppenders);
+
+        boolean same = true;
+
+        // Same Size?
+        if (expectedAppenders.size() != actualAppenders.size())
+        {
+            same = false;
+        }
+
+        // Same Content?
+        for (int i = 0, n = expectedAppenders.size(); i < n; i++)
+        {
+            if (!expectedAppenders.get(i).equals(actualAppenders.get(i)))
+            {
+                same = false;
+                break;
+            }
+        }
+
+        if (!same)
+        {
+            System.out.println("/* Actual */");
+            for (String id : actualAppenders)
+            {
+                System.out.println(id);
+            }
+            System.out.println("/* Expected */");
+            for (String id : expectedAppenders)
+            {
+                System.out.println(id);
+            }
+            fail("Not the same appender id list.");
+        }
+
+    }
+
     private void assertSeverityLevel(CentralLoggerConfig logger, Severity severity)
     {
         assertEquals("Severity",severity,logger.getLevel());
@@ -183,5 +240,43 @@ public class ConfiguredLoggerTest extends TestCase
         assertEquals("Jetty Logging Impl Logger.name","org.eclipse.jetty.logging.impl",implLogger.getName());
         assertSeverityLevel(implLogger,Severity.WARN);
         assertAppenders(implLogger,ConsoleAppender.class,TestAppender.class);
+    }
+
+    public void testGetConfiguredLoggerNegativeAppender() throws IOException
+    {
+        File testLoggingDir = new File(MavenTestingUtils.getTargetTestingDir(this),"logs");
+        testLoggingDir.mkdirs();
+
+        System.setProperty("test.dir",testLoggingDir.getAbsolutePath());
+
+        Properties props = new Properties();
+        props.setProperty("root.level","DEBUG");
+        props.setProperty("root.appenders","console,rollLog");
+        props.setProperty("logger.AUDIT.level","INFO");
+        props.setProperty("logger.AUDIT.appenders","-rollLog,auditLog");
+
+        props.setProperty("appender.console.class",ConsoleAppender.class.getName());
+        props.setProperty("appender.rollLog.class",RollingFileAppender.class.getName());
+        props.setProperty("appender.rollLog.filename","${test.dir}/rolling.log");
+        props.setProperty("appender.auditLog.class",RollingFileAppender.class.getName());
+        props.setProperty("appender.auditLog.filename","${test.dir}/audit.log");
+
+        CentralLoggerConfig root = CentralLoggerConfig.load(props);
+        assertNotNull("Root Logger should not be null",root);
+        assertEquals("Root Logger.name",Logger.ROOT_LOGGER_NAME,root.getName());
+        assertSeverityLevel(root,Severity.DEBUG);
+        assertAppendersById(root,"console","rollLog");
+
+        CentralLoggerConfig jettyLogger = root.getConfiguredLogger("AUDIT");
+        assertNotNull("Jetty Logger should not be null",jettyLogger);
+        assertEquals("Jetty Logger.name","AUDIT",jettyLogger.getName());
+        assertSeverityLevel(jettyLogger,Severity.INFO);
+        assertAppendersById(jettyLogger,"console","auditLog");
+
+        CentralLoggerConfig implLogger = root.getConfiguredLogger("AUDIT.some.thing.else");
+        assertNotNull("Jetty Logging Impl Logger should not be null",implLogger);
+        assertEquals("Jetty Logging Impl Logger.name","AUDIT.some.thing.else",implLogger.getName());
+        assertSeverityLevel(implLogger,Severity.INFO);
+        assertAppendersById(implLogger,"console","auditLog");
     }
 }

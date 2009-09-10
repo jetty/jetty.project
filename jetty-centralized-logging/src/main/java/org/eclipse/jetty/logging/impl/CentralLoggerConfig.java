@@ -23,6 +23,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -48,6 +49,8 @@ public class CentralLoggerConfig
 
     private static void configureAppender(Properties props, String id, Appender appender)
     {
+        appender.setId(id);
+
         // Collect configuration fields for appender id
         Pattern appenderIdRegex = Pattern.compile("^appender\\." + id + "\\.([^\\.]*)$");
         Matcher match;
@@ -88,7 +91,9 @@ public class CentralLoggerConfig
         out.printf("%sAppenders: ",prefix);
         for (Iterator<Appender> it = cl.getAppenders().iterator(); it.hasNext();)
         {
-            out.print(it.next().getClass().getSimpleName());
+            Appender ap = it.next();
+            // out.printf("(%s) %s",ap.getClass().getSimpleName(),ap);
+            out.print(ap);
             if (it.hasNext())
             {
                 out.print(", ");
@@ -111,26 +116,38 @@ public class CentralLoggerConfig
         }
     }
 
-    private static List<Appender> getAppenders(Properties props, String key, Map<String, Appender> declaredAppenders)
+    private static Set<String> getAppenderIds(Properties props, String key)
     {
+        Set<String> ids = new TreeSet<String>();
+
         String value = props.getProperty(key);
         if (value == null)
         {
-            return null;
+            return ids;
         }
 
-        String ids[] = value.split(",");
-        List<Appender> appenders = new ArrayList<Appender>();
-        // ensure ids exist as declared as well.
-        for (int i = 0, n = ids.length; i < n; i++)
+        String parts[] = value.split(",");
+        for (int i = 0, n = parts.length; i < n; i++)
         {
-            if (declaredAppenders.containsKey(ids[i]))
+            ids.add(parts[i].trim());
+        }
+
+        return ids;
+    }
+
+    private static List<Appender> getAppenders(Properties props, String key, Map<String, Appender> declaredAppenders)
+    {
+        Set<String> ids = getAppenderIds(props,key);
+        List<Appender> appenders = new ArrayList<Appender>();
+        for (String id : ids)
+        {
+            if (declaredAppenders.containsKey(id))
             {
-                appenders.add(declaredAppenders.get(ids[i]));
+                appenders.add(declaredAppenders.get(id));
             }
             else
             {
-                System.err.println("No such Appender: " + ids[i]);
+                System.err.println("No such Appender: " + id);
             }
         }
 
@@ -230,9 +247,8 @@ public class CentralLoggerConfig
         Map<String, Appender> declaredAppenders = getDeclaredAppenders(props);
 
         root.appenders = getAppenders(props,"root.appenders",declaredAppenders);
-        if (root.appenders == null)
+        if (root.appenders.isEmpty())
         {
-            root.appenders = new ArrayList<Appender>();
             // Default (if not specified for root)
             root.appenders.add(new ConsoleAppender());
         }
@@ -265,10 +281,29 @@ public class CentralLoggerConfig
         // Set loggers & levels of OTHER nodes
         for (String id : ids)
         {
-            System.out.println("Processing child id: " + id);
             CentralLoggerConfig childlog = root.getConfiguredLogger(id);
             childlog.level = Severity.valueOf(props.getProperty("logger." + id + ".level","INFO"));
-            childlog.addAppenders(getAppenders(props,"logger." + id + ".appenders",declaredAppenders));
+            Set<String> appenderIds = getAppenderIds(props,"logger." + id + ".appenders");
+            for (String appenderId : appenderIds)
+            {
+                if (appenderId.startsWith("-"))
+                {
+                    // Remove an appender
+                    childlog.removeAppenderById(appenderId.substring(1));
+                }
+                else
+                {
+                    // Add an appender
+                    if (declaredAppenders.containsKey(appenderId))
+                    {
+                        childlog.addAppender(declaredAppenders.get(appenderId));
+                    }
+                    else
+                    {
+                        System.err.println("No such Appender: " + appenderId);
+                    }
+                }
+            }
         }
 
         return root;
@@ -293,7 +328,7 @@ public class CentralLoggerConfig
 
         this.appenders.addAll(copyLogger.appenders);
         this.level = copyLogger.level;
-        this.logger = new CentralLogger(name,appenders.toArray(new Appender[] {}),level);
+        this.logger = new CentralLogger(this.name,appenders.toArray(new Appender[] {}),level);
     }
 
     private CentralLoggerConfig(String name)
@@ -301,14 +336,22 @@ public class CentralLoggerConfig
         this.name = name;
     }
 
-    private void addAppenders(List<Appender> moreAppenders)
+    private void addAppender(Appender appender)
     {
-        if (moreAppenders == null)
+        getAppenders().add(appender);
+    }
+
+    private void removeAppenderById(String id)
+    {
+        ListIterator<Appender> it = appenders.listIterator();
+        while (it.hasNext())
         {
-            return;
+            Appender appender = it.next();
+            if (id.equals(appender.getId()))
+            {
+                it.remove();
+            }
         }
-        getAppenders().addAll(moreAppenders);
-        this.logger = new CentralLogger(name,appenders.toArray(new Appender[] {}),level);
     }
 
     public void dumpTree(PrintStream out)

@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
  */
 public class RollingFileAppender implements Appender
 {
+    private static final byte[] LN = System.getProperty("line.separator","\n").getBytes();
     private RolloverFileOutputStream out;
     private String filename;
     private File file;
@@ -37,6 +38,17 @@ public class RollingFileAppender implements Appender
     private TimeZone zone = TimeZone.getDefault();
     private String dateFormat = "yyyy_MM_dd";
     private String backupFormat = "HHmmssSSS";
+    private String id;
+
+    public String getId()
+    {
+        return id;
+    }
+
+    public void setId(String id)
+    {
+        this.id = id;
+    }
 
     public void append(String date, int ms, Severity severity, String name, String message, Throwable t) throws IOException
     {
@@ -60,9 +72,11 @@ public class RollingFileAppender implements Appender
         buf.append(':').append(message);
 
         out.write(buf.toString().getBytes());
+        out.write(LN);
         if (t != null)
         {
             t.printStackTrace(new PrintStream(out));
+            out.write(LN);
         }
         out.flush();
     }
@@ -194,5 +208,11 @@ public class RollingFileAppender implements Appender
     public void setZone(TimeZone zone)
     {
         this.zone = zone;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "RollingFileAppender[" + id + "|" + filename + "]";
     }
 }

@@ -22,6 +22,18 @@ import java.io.IOException;
  */
 public class ConsoleAppender implements Appender
 {
+    private String id;
+
+    public String getId()
+    {
+        return id;
+    }
+
+    public void setId(String id)
+    {
+        this.id = id;
+    }
+
     public void append(String date, int ms, Severity severity, String name, String message, Throwable t)
     {
         StringBuffer buf = new StringBuffer();
@@ -64,5 +76,11 @@ public class ConsoleAppender implements Appender
     public void close() throws IOException
     {
         /* nothing to do here */
+    }
+
+    @Override
+    public String toString()
+    {
+        return "ConsoleAppender[" + id + "]";
     }
 }

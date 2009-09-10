@@ -38,6 +38,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class EmbeddedCentralizedLoggingTest extends TestCase
 {
+    private static final String LOGGING_SERVLET_ID = "org.eclipse.jetty.tests.webapp.LoggingServlet";
     private TestAppender testAppender;
 
     private void assertContainsLogEvents(TestAppender capturedEvents, LogEvent[] expectedLogs)
@@ -146,14 +147,14 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
         server.stop();
 
         TestAppender.LogEvent expectedLogs[] =
-        { new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(log4j) initialized",null),
-                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(log4j) GET requested",null),
-                new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(slf4j) initialized",null),
-                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(slf4j) GET requested",null),
-                new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(commons-logging) initialized",null),
-                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(commons-logging) GET requested",null),
-                new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(java) initialized",null),
-                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(java) GET requested",null) };
+        { new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(log4j) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(log4j) GET requested",null),
+                new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) GET requested",null),
+                new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) GET requested",null),
+                new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(java) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(java) GET requested",null) };
 
         assertContainsLogEvents(testAppender,expectedLogs);
     }
@@ -169,8 +170,8 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
         server.stop();
 
         TestAppender.LogEvent expectedLogs[] =
-        { new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(commons-logging) initialized",null),
-                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(commons-logging) GET requested",null) };
+        { new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) GET requested",null) };
 
         assertContainsLogEvents(testAppender,expectedLogs);
     }
@@ -186,8 +187,8 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
         server.stop();
 
         TestAppender.LogEvent expectedLogs[] =
-        { new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(java) initialized",null),
-                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(java) GET requested",null) };
+        { new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(java) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(java) GET requested",null) };
 
         assertContainsLogEvents(testAppender,expectedLogs);
     }
@@ -203,8 +204,8 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
         server.stop();
 
         TestAppender.LogEvent expectedLogs[] =
-        { new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(log4j) initialized",null),
-                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(log4j) GET requested",null) };
+        { new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(log4j) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(log4j) GET requested",null) };
 
         assertContainsLogEvents(testAppender,expectedLogs);
     }
@@ -220,8 +221,8 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
         server.stop();
 
         TestAppender.LogEvent expectedLogs[] =
-        { new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(slf4j) initialized",null),
-                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(slf4j) GET requested",null) };
+        { new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) GET requested",null) };
 
         assertContainsLogEvents(testAppender,expectedLogs);
     }
