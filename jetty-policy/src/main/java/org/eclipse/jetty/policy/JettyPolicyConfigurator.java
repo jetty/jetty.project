@@ -51,6 +51,7 @@ public class JettyPolicyConfigurator
         System.out.println("Initializing Jetty Policy");
         
         JettyPolicy jpolicy = new JettyPolicy( _policies, _properties );
+        jpolicy.refresh();
         Policy.setPolicy(jpolicy);
         System.setSecurityManager(new SecurityManager());
     }

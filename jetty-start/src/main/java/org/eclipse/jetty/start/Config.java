@@ -153,9 +153,9 @@ public class Config
     /**
      * Natural language sorting for key names.
      */
-    private Comparator<String> keySorter = new Comparator<String>()
+    private final Comparator<String> keySorter = new Comparator<String>()
     {
-        private Collator collator = Collator.getInstance();
+        private final Collator collator = Collator.getInstance();
 
         public int compare(String o1, String o2)
         {
@@ -167,11 +167,11 @@ public class Config
 
     private static final String _version;
     private static boolean DEBUG = false;
-    private Map<String, Classpath> _classpaths = new HashMap<String, Classpath>();
-    private List<String> _xml = new ArrayList<String>();
-    private Set<String> _policies = new HashSet<String>();
+    private final Map<String, Classpath> _classpaths = new HashMap<String, Classpath>();
+    private final List<String> _xml = new ArrayList<String>();
+    private final Set<String> _policies = new HashSet<String>();
     private String _classname = null;
-    private Set<String> _activeOptions = new TreeSet<String>(new Comparator<String>()
+    private final Set<String> _activeOptions = new TreeSet<String>(new Comparator<String>()
     {
         // Make sure "*" is always at the end of the list
         public int compare(String o1, String o2)
@@ -187,7 +187,7 @@ public class Config
             return o1.compareTo(o2);
         }
     });
-    private Map<String, String> _properties = new HashMap<String, String>();
+    private final Map<String, String> _properties = new HashMap<String, String>();
     private int argCount = 0;
 
     private boolean addClasspathComponent(List<String> sections, String component)
@@ -959,6 +959,8 @@ public class Config
 
         if (policyClass instanceof Policy)
         {
+            Policy p = (Policy)policyClass;
+            p.refresh();
             return (Policy)policyClass;
         }
 
