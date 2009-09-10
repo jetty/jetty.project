@@ -24,7 +24,7 @@ import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 
-public class StatisticsHandler extends HandlerWrapper implements CompleteHandler
+public class StatisticsHandler extends HandlerWrapper
 {
     private transient final AtomicLong _statsStartedAt = new AtomicLong();
     private transient final AtomicInteger _requests = new AtomicInteger();
@@ -342,10 +342,5 @@ public class StatisticsHandler extends HandlerWrapper implements CompleteHandler
     public long getSuspendedTimeTotal()
     {
         return _suspendTotalTime.get();
-    }
-
-    public void complete(Request request)
-    {
-        updateResponse(request);
     }
 }

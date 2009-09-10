@@ -81,7 +81,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * 
  *
  */
-public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful, CompleteHandler
+public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful
 {
     private static final ThreadLocal<Context> __context=new ThreadLocal<Context>();
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
@@ -1430,12 +1430,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             return host.substring( 0, host.length() -1);
       
             return host;
-    }
-
-    public void complete(Request request)
-    {
-        // TODO Auto-generated method stub
-        
     }
     
     /* ------------------------------------------------------------ */

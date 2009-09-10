@@ -334,6 +334,8 @@ public class ByteArrayBuffer extends AbstractBuffer
      */
     public void wrap(byte[] b, int off, int len)
     {
+        if (b==null)
+            throw new IllegalArgumentException();
         if (isReadOnly()) throw new IllegalStateException(__READONLY);
         if (isImmutable()) throw new IllegalStateException(__IMMUTABLE);
         _bytes=b;
