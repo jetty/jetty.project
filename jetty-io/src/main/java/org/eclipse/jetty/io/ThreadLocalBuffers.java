@@ -176,6 +176,13 @@ public abstract class ThreadLocalBuffers implements Buffers
     }
 
     /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
+    {
+        return "{{"+getHeaderSize()+","+getBufferSize()+"}}";
+    }
+    
+    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     protected static class ThreadBuffers
     {

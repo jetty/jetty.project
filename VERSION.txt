@@ -19,6 +19,7 @@ jetty-7.0.0.RC6-SNAPSHOT
  + 288772 Failure to connect does not set status to EXCEPTED
  + 280723 Add non blocking statistics handler
  + 283357 org.eclipse.jetty.server.HttpConnectionTest exceptions
+ + 282543 HttpClient SSL buffer size fix
 
 jetty-6.1.20 27 August 2009
  + JETTY-838 Don't log and throw
