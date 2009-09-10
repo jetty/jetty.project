@@ -17,7 +17,6 @@ import java.io.File;
 
 public class ExternalKeyStoreAsyncSslHttpExchangeTest extends SslHttpExchangeTest
 {
-
     protected void setUp() throws Exception
     {
         _scheme="https://";
@@ -35,4 +34,8 @@ public class ExternalKeyStoreAsyncSslHttpExchangeTest extends SslHttpExchangeTes
         _httpClient.start();
     }
 
+    @Override
+    public void testSun() throws Exception
+    {
+    }
 }
