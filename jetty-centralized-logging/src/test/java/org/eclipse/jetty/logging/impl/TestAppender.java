@@ -27,21 +27,24 @@ public class TestAppender implements Appender
     public static class LogEvent
     {
         String date;
-        int ms;
         Severity severity;
         String name;
         String message;
         Throwable t;
 
-        public LogEvent(String date, int ms, Severity severity, String name, String message, Throwable t)
+        public LogEvent(String date, Severity severity, String name, String message, Throwable t)
         {
             super();
             this.date = date;
-            this.ms = ms;
             this.severity = severity;
             this.name = name;
             this.message = message;
             this.t = t;
+        }
+
+        public LogEvent(Severity severity, String name, String message)
+        {
+            this(null,severity,name,message,null);
         }
 
         @Override
@@ -68,7 +71,7 @@ public class TestAppender implements Appender
         this.id = id;
     }
 
-    public void append(String date, int ms, Severity severity, String name, String message, Throwable t)
+    public void append(String date, Severity severity, String name, String message, Throwable t)
     {
         if (name.equals("org.eclipse.jetty.util.log")) // standard jetty logger
         {
@@ -79,7 +82,7 @@ public class TestAppender implements Appender
             }
             return; // skip storing it.
         }
-        events.add(new LogEvent(date,ms,severity,name,message,t));
+        events.add(new LogEvent(date,severity,name,message,t));
     }
 
     public void close() throws IOException

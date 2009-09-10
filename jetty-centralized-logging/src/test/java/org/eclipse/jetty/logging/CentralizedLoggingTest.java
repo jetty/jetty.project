@@ -85,22 +85,22 @@ public class CentralizedLoggingTest extends TestCase
         if (isSurefireExecuting)
         {
             expectedLogs = new LogEvent[]
-            { new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) initialized",null),
-                    new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) GET requested",null),
-                    new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(java) initialized",null),
-                    new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(java) GET requested",null) };
+            { new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) initialized"),
+                    new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) GET requested"),
+                    new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(java) initialized"),
+                    new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(java) GET requested") };
         }
         else
         {
             expectedLogs = new LogEvent[]
-            { new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(log4j) initialized",null),
-                    new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(log4j) GET requested",null),
-                    new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) initialized",null),
-                    new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) GET requested",null),
-                    new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) initialized",null),
-                    new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) GET requested",null),
-                    new LogEvent(null,-1,Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(java) initialized",null),
-                    new LogEvent(null,-1,Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(java) GET requested",null) };
+            { new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(log4j) initialized"),
+                    new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(log4j) GET requested"),
+                    new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) initialized"),
+                    new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) GET requested"),
+                    new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) initialized"),
+                    new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) GET requested"),
+                    new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(java) initialized"),
+                    new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(java) GET requested") };
         }
 
         assertContainsLogEvents(testAppender,expectedLogs);

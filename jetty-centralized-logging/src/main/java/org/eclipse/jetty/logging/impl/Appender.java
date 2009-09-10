@@ -26,7 +26,7 @@ public interface Appender
 
     String getId();
 
-    void append(String date, int ms, Severity severity, String name, String message, Throwable t) throws IOException;
+    void append(String date, Severity severity, String name, String message, Throwable t) throws IOException;
 
     void setProperty(String key, String value) throws Exception;
 

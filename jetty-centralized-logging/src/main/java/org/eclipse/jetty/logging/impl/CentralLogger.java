@@ -16,8 +16,9 @@
 package org.eclipse.jetty.logging.impl;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
-import org.eclipse.jetty.util.DateCache;
 import org.slf4j.helpers.MarkerIgnoringBase;
 import org.slf4j.helpers.MessageFormatter;
 
@@ -27,22 +28,10 @@ import org.slf4j.helpers.MessageFormatter;
 public class CentralLogger extends MarkerIgnoringBase
 {
     private static final long serialVersionUID = 385001265755850685L;
-    private static DateCache dateCache;
+    private static final String dateFormat = "yyyy-MM-dd HH:mm:ss.SSS";
     private Severity level = Severity.INFO;
     private String name;
     private Appender appenders[];
-
-    static
-    {
-        try
-        {
-            dateCache = new DateCache("yyyy-MM-dd HH:mm:ss");
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace(System.err);
-        }
-    }
 
     protected CentralLogger(String name, Appender appenders[], Severity severity)
     {
@@ -53,14 +42,13 @@ public class CentralLogger extends MarkerIgnoringBase
 
     private void log(Severity severity, String message, Throwable t)
     {
-        String now = dateCache.now();
-        int ms = dateCache.lastMs();
+        String now = new SimpleDateFormat(dateFormat).format(new Date());
 
         for (Appender appender : appenders)
         {
             try
             {
-                appender.append(now,ms,severity,name,message,t);
+                appender.append(now,severity,name,message,t);
             }
             catch (IOException e)
             {

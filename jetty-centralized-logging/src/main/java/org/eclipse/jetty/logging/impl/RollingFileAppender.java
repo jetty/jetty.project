@@ -50,23 +50,10 @@ public class RollingFileAppender implements Appender
         this.id = id;
     }
 
-    public void append(String date, int ms, Severity severity, String name, String message, Throwable t) throws IOException
+    public void append(String date, Severity severity, String name, String message, Throwable t) throws IOException
     {
         StringBuffer buf = new StringBuffer();
         buf.append(date);
-        if (ms > 99)
-        {
-            buf.append(".");
-        }
-        else if (ms > 0)
-        {
-            buf.append(".0");
-        }
-        else
-        {
-            buf.append(".00");
-        }
-        buf.append(ms);
         buf.append(':').append(severity.name()).append(':');
         buf.append(name);
         buf.append(':').append(message);
