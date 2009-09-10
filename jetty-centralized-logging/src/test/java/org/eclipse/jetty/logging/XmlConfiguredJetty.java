@@ -183,6 +183,10 @@ public class XmlConfiguredJetty
         }
 
         Assert.assertTrue("Server Port is between 1 and 65535. Actually <" + serverPort + ">",(1 <= this.serverPort) && (this.serverPort <= 65535));
+
+        // Uncomment to have server start and continue to run (without exiting)
+        // System.out.printf("Listening to port %d%n",this.serverPort);
+        // server.join();
     }
 
     public int getServerPort()

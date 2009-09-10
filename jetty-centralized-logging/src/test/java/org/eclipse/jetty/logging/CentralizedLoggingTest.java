@@ -32,7 +32,11 @@ public class CentralizedLoggingTest extends TestCase
     {
         for (LogEvent expectedEvent : expectedLogs)
         {
-            assertTrue("LogEvent not found: " + expectedEvent,capturedEvents.contains(expectedEvent));
+            if (!capturedEvents.contains(expectedEvent))
+            {
+                capturedEvents.dump();
+                fail("LogEvent not found: " + expectedEvent);
+            }
         }
     }
 

@@ -22,8 +22,6 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URI;
 
-import junit.framework.Assert;
-
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
@@ -33,6 +31,8 @@ import org.eclipse.jetty.util.IO;
  */
 public class SimpleRequest
 {
+    private static final boolean CONN_TRACE = false;
+
     /**
      * Issue an HTTP GET to the server, on the path specified.
      * 
@@ -81,34 +81,57 @@ public class SimpleRequest
     {
         System.out.println("GET: " + fullUri.toASCIIString());
 
+        trace("Opening Connection ...");
         HttpURLConnection conn = (HttpURLConnection)fullUri.toURL().openConnection();
         conn.setRequestMethod("GET");
         conn.setUseCaches(false);
         conn.setAllowUserInteraction(false);
+        conn.setConnectTimeout(5000);
+        conn.setReadTimeout(5000);
 
+        trace("Connecting ...");
         conn.connect();
-
-        Assert.assertEquals(fullUri.toASCIIString() + " Response Code (200 OK)",200,conn.getResponseCode());
+        trace("Connected.");
 
         InputStream in = null;
         InputStreamReader reader = null;
         try
         {
+            trace("Getting InputStream ...");
             in = conn.getInputStream();
+            trace("Got InputStream.");
             reader = new InputStreamReader(in);
 
+            trace("Reading InputStream to String ...");
             String response = IO.toString(reader);
 
+            trace("Checking Response Code ...");
             if (conn.getResponseCode() != 200)
+            {
+                System.out.printf("Got HTTP Response %d, expecting %d.%n",conn.getResponseCode(),200);
+                System.out.println(response);
+            }
+            else if ((response != null) && (response.trim().length() > 0))
             {
                 System.out.println(response);
             }
+
+            trace("Returning response.");
             return response;
         }
         finally
         {
             IO.close(reader);
             IO.close(in);
+        }
+    }
+
+    private static void trace(String format, Object... args)
+    {
+        if (CONN_TRACE)
+        {
+            System.out.printf(format,args);
+            System.out.println();
         }
     }
 }

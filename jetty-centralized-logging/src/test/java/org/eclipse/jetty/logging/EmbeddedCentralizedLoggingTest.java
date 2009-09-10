@@ -26,7 +26,9 @@ import org.eclipse.jetty.logging.impl.Severity;
 import org.eclipse.jetty.logging.impl.TestAppender;
 import org.eclipse.jetty.logging.impl.TestAppender.LogEvent;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -42,8 +44,23 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
     {
         for (LogEvent expectedEvent : expectedLogs)
         {
-            assertTrue("LogEvent not found: " + expectedEvent,capturedEvents.contains(expectedEvent));
+            if (!capturedEvents.contains(expectedEvent))
+            {
+                capturedEvents.dump();
+                fail("LogEvent not found: " + expectedEvent);
+            }
         }
+    }
+
+    private Handler createWebapp(String contextPath, String webappName)
+    {
+        File webappFile = MavenTestingUtils.getTestResourceFile("webapps/" + webappName);
+
+        WebAppContext webapp = new WebAppContext();
+        webapp.setContextPath(contextPath);
+        webapp.setWar(webappFile.getAbsolutePath());
+
+        return webapp;
     }
 
     protected Server createWebAppServer(String contextPath, String webappName) throws Exception
@@ -89,36 +106,54 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
         System.setProperty("java.io.tmpdir",testTmpDir.getAbsolutePath());
     }
 
-    public void testEmbeddedWebappLog4j() throws Exception
+    public void testEmbeddedAll() throws Exception
     {
-        Server server = createWebAppServer("/log4j","dummy-webapp-logging-log4j.war");
+        if (!CentralizedWebAppLoggingConfiguration.isLoggerConfigured())
+        {
+            String loggerConfigFilename = MavenTestingUtils.getTestResourceFile("logger/testing.properties").getAbsolutePath();
+            CentralizedWebAppLoggingConfiguration.setLoggerConfigurationFilename(loggerConfigFilename);
+        }
+
+        CentralLoggerConfig root = CentralizedWebAppLoggingConfiguration.getLoggerRoot();
+        testAppender = (TestAppender)root.findAppender(TestAppender.class);
+        testAppender.reset();
+
+        Server server = new Server();
+        List<Configuration> serverConfigs = new ArrayList<Configuration>();
+        serverConfigs.add(new CentralizedWebAppLoggingConfiguration());
+        server.setAttribute(WebAppContext.SERVER_CONFIG,serverConfigs);
+
+        Connector connector = new SelectChannelConnector();
+        connector.setPort(0);
+        server.setConnectors(new Connector[]
+        { connector });
+
+        ContextHandlerCollection handlers = new ContextHandlerCollection();
+        handlers.addHandler(createWebapp("/log4j","dummy-webapp-logging-log4j.war"));
+        handlers.addHandler(createWebapp("/slf4j","dummy-webapp-logging-slf4j.war"));
+        handlers.addHandler(createWebapp("/clogging","dummy-webapp-logging-commons.war"));
+        handlers.addHandler(createWebapp("/javalogging","dummy-webapp-logging-java.war"));
+
+        server.setHandler(handlers);
 
         server.start();
 
         SimpleRequest.get(server,"/log4j/logging");
+        SimpleRequest.get(server,"/slf4j/logging");
+        SimpleRequest.get(server,"/clogging/logging");
+        SimpleRequest.get(server,"/javalogging/logging");
 
         server.stop();
 
         TestAppender.LogEvent expectedLogs[] =
         { new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(log4j) initialized",null),
-                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(log4j) GET requested",null) };
-
-        assertContainsLogEvents(testAppender,expectedLogs);
-    }
-
-    public void testEmbeddedWebappSlf4j() throws Exception
-    {
-        Server server = createWebAppServer("/slf4j","dummy-webapp-logging-slf4j.war");
-
-        server.start();
-
-        SimpleRequest.get(server,"/slf4j/logging");
-
-        server.stop();
-
-        TestAppender.LogEvent expectedLogs[] =
-        { new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(slf4j) initialized",null),
-                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(slf4j) GET requested",null) };
+                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(log4j) GET requested",null),
+                new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(slf4j) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(slf4j) GET requested",null),
+                new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(commons-logging) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(commons-logging) GET requested",null),
+                new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(java) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(java) GET requested",null) };
 
         assertContainsLogEvents(testAppender,expectedLogs);
     }
@@ -153,6 +188,40 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
         TestAppender.LogEvent expectedLogs[] =
         { new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(java) initialized",null),
                 new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(java) GET requested",null) };
+
+        assertContainsLogEvents(testAppender,expectedLogs);
+    }
+
+    public void testEmbeddedWebappLog4j() throws Exception
+    {
+        Server server = createWebAppServer("/log4j","dummy-webapp-logging-log4j.war");
+
+        server.start();
+
+        SimpleRequest.get(server,"/log4j/logging");
+
+        server.stop();
+
+        TestAppender.LogEvent expectedLogs[] =
+        { new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(log4j) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(log4j) GET requested",null) };
+
+        assertContainsLogEvents(testAppender,expectedLogs);
+    }
+
+    public void testEmbeddedWebappSlf4j() throws Exception
+    {
+        Server server = createWebAppServer("/slf4j","dummy-webapp-logging-slf4j.war");
+
+        server.start();
+
+        SimpleRequest.get(server,"/slf4j/logging");
+
+        server.stop();
+
+        TestAppender.LogEvent expectedLogs[] =
+        { new LogEvent(null,-1,Severity.DEBUG,"LoggingServlet","LoggingServlet(slf4j) initialized",null),
+                new LogEvent(null,-1,Severity.INFO,"LoggingServlet","LoggingServlet(slf4j) GET requested",null) };
 
         assertContainsLogEvents(testAppender,expectedLogs);
     }

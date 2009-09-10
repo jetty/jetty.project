@@ -61,6 +61,10 @@ public class TestAppender implements Appender
     {
         if (name.equals("log")) // standard jetty logger
         {
+            if (t != null)
+            {
+                t.printStackTrace(System.err);
+            }
             return; // skip storing it.
         }
         events.add(new LogEvent(date,ms,severity,name,message,t));
@@ -111,5 +115,14 @@ public class TestAppender implements Appender
     public void setProperty(String key, String value) throws Exception
     {
         /* nothing to do here */
+    }
+
+    public void dump()
+    {
+        System.out.printf("Captured %s event(s)%n",events.size());
+        for (LogEvent event : events)
+        {
+            System.out.println(event);
+        }
     }
 }
