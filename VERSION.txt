@@ -21,7 +21,8 @@ jetty-7.0.0.RC6-SNAPSHOT
  + 280723 Add non blocking statistics handler
  + 283357 org.eclipse.jetty.server.HttpConnectionTest exceptions
  + 282543 HttpClient SSL buffer size fix
- + 289145 formalize reload policy functionality
+ + 289146 formalize reload policy functionality
+ + 289156 jetty-client: no longer throw runtime exception for bad authn details
 
 jetty-6.1.20 27 August 2009
  + JETTY-838 Don't log and throw

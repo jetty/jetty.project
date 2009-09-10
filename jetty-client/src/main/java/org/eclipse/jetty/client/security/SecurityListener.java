@@ -90,7 +90,10 @@ public class SecurityListener extends HttpEventListenerWrapper
         
         while ( strtok.hasMoreTokens() )
         {
-            String[] pair = strtok.nextToken().split( "=" );
+            String token = strtok.nextToken();
+            String[] pair = token.split( "=" );
+            
+            // authentication details ought to come in two parts, if not then just skip
             if ( pair.length == 2 )
             {
                 String itemName = pair[0].trim();
@@ -99,11 +102,11 @@ public class SecurityListener extends HttpEventListenerWrapper
                 itemValue = StringUtil.unquote( itemValue );
                 
                 authenticationDetails.put( itemName, itemValue );
-            }
+            }    
             else
             {
-                throw new IllegalArgumentException( "unable to process authentication details" );
-            }      
+                Log.debug("SecurityListener: missed scraping authentication details - " + token );
+            }
         }
         return authenticationDetails;
     }
