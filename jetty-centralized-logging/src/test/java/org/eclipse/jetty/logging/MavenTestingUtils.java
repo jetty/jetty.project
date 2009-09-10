@@ -18,7 +18,6 @@ package org.eclipse.jetty.logging;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.util.IO;
@@ -31,6 +30,7 @@ public class MavenTestingUtils
     private static File basedir;
     private static File testResourcesDir;
     private static File targetDir;
+    private static Boolean surefireRunning;
 
     public static File getBasedir()
     {
@@ -174,5 +174,23 @@ public class MavenTestingUtils
         {
             IO.close(reader);
         }
+    }
+
+    public static boolean isSurefireExecuting()
+    {
+        if (surefireRunning == null)
+        {
+            String val = System.getProperty("surefire.test.class.path");
+            if (val != null)
+            {
+                surefireRunning = Boolean.TRUE;
+            }
+            else
+            {
+                surefireRunning = Boolean.FALSE;
+            }
+        }
+        
+        return surefireRunning;
     }
 }
