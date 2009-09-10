@@ -15,7 +15,11 @@
 // ========================================================================
 package org.slf4j.impl;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.Properties;
 
 import org.eclipse.jetty.logging.impl.CentralLoggerConfig;
@@ -29,6 +33,8 @@ import org.slf4j.spi.LoggerFactoryBinder;
  */
 public class StaticLoggerBinder implements LoggerFactoryBinder
 {
+    private static final String SYSPROP_CONFIG_KEY = "org.eclipse.jetty.logging.config.file";
+
     /**
      * Required by {@link org.slf4j.LoggerFactory}
      */
@@ -57,10 +63,7 @@ public class StaticLoggerBinder implements LoggerFactoryBinder
         if(root == null) {
             try
             {
-                Properties props = new Properties();
-                props.setProperty("root.level","DEBUG");
-                props.setProperty("root.appenders","console");
-                props.setProperty("appender.console.class",ConsoleAppender.class.getName());
+                Properties props = getConfigurationProperties();
                 root = CentralLoggerConfig.load(props);
             }
             catch (IOException e)
@@ -69,6 +72,89 @@ public class StaticLoggerBinder implements LoggerFactoryBinder
             }
         }
         return root;
+    }
+
+    private Properties getConfigurationProperties()
+    {
+        String propertyFilename = System.getProperty(SYSPROP_CONFIG_KEY);
+        if (propertyFilename != null)
+        {
+            System.out.printf("Found centralized-logging system property %s=%s%n",SYSPROP_CONFIG_KEY,propertyFilename);
+            File file = new File(propertyFilename);
+            if (file.exists() && file.isFile())
+            {
+                System.out.println("Loading centralized-logging configuration from file: " + file.getAbsolutePath());
+                Properties props = new Properties();
+                FileInputStream stream = null;
+                try
+                {
+                    stream = new FileInputStream(file);
+                    props.load(stream);
+                    return props;
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace(System.err);
+                }
+                finally
+                {
+                    closeStream(stream);
+                }
+            }
+            else
+            {
+                System.out.println("Cannot find file: " + file.getAbsolutePath());
+            }
+        }
+
+        URL resourceUrl = this.getClass().getResource("centralized-logging.properties");
+        if (resourceUrl != null)
+        {
+            System.out.println("Loading centralized-logging configuration from resource URL: " + resourceUrl.toExternalForm());
+            InputStream stream = null;
+            try
+            {
+                stream = resourceUrl.openStream();
+                Properties props = new Properties();
+                props.load(stream);
+                return props;
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace(System.err);
+            }
+            finally
+            {
+                closeStream(stream);
+            }
+        }
+
+        System.out.println("Using default centralized-logging configuration");
+        return getDefaultProperties();
+    }
+
+    private void closeStream(InputStream stream)
+    {
+        if (stream != null)
+        {
+            try
+            {
+                stream.close();
+            }
+            catch (Throwable ignore)
+            {
+                /* ignore */
+            }
+        }
+    }
+
+    private Properties getDefaultProperties()
+    {
+        Properties props = new Properties();
+        props.setProperty("root.level","DEBUG");
+        props.setProperty("root.appenders","console");
+        props.setProperty("appender.console.class",ConsoleAppender.class.getName());
+        return props;
     }
 
     public void setRoot(CentralLoggerConfig root)
