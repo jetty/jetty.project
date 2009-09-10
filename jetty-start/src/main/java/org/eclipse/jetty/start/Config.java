@@ -959,7 +959,9 @@ public class Config
 
         if (policyClass instanceof Policy)
         {
-            return (Policy)policyClass;
+            Policy p = (Policy)policyClass;
+            p.refresh();
+            return p;
         }
 
         throw new ClassCastException("Unable to cast to " + Policy.class.getName() + " : " + policyClass.getClass().getName());
