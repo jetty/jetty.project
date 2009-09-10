@@ -17,6 +17,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import org.eclipse.jetty.util.IntrospectionUtil;
+import org.eclipse.jetty.util.Loader;
 
 
 
@@ -30,6 +31,8 @@ public abstract class LifeCycleCallback
     public static final Object[] __EMPTY_ARGS = new Object[] {};
     private Method _target;
     private Class _targetClass;
+    private String _className;
+    private String _methodName;
     
     
     public LifeCycleCallback()
@@ -44,16 +47,16 @@ public abstract class LifeCycleCallback
     {
         return _targetClass;
     }
-
-
-    /**
-     * @param name the class to set
-     */
-    public void setTargetClass(Class clazz)
+    
+    public String getTargetClassName()
     {
-        _targetClass = clazz;
+        return _className;
     }
     
+    public String getMethodName()
+    {
+        return _methodName;
+    }
     
     /**
      * @return the target
@@ -62,17 +65,13 @@ public abstract class LifeCycleCallback
     {
         return _target;
     }
-
-    /**
-     * @param target the target to set
-     */
-    public void setTarget(Method target)
+    
+    
+    public void setTarget (String className, String methodName)
     {
-        this._target = target;
+        _className = className;
+        _methodName = methodName;
     }
-    
-    
-    
 
     public void setTarget (Class clazz, String methodName)
     {
@@ -82,6 +81,8 @@ public abstract class LifeCycleCallback
             validate(clazz, method);
             _target = method;
             _targetClass = clazz;
+            _className = clazz.getCanonicalName();
+            _methodName = methodName;
         }
         catch (NoSuchMethodException e)
         {
@@ -95,12 +96,20 @@ public abstract class LifeCycleCallback
     public void callback (Object instance)
     throws Exception
     {
-        if (getTarget() != null)
+        if (_target == null)
+        {
+            if (_targetClass == null)
+                _targetClass = Loader.loadClass(null, _className);
+            _target = _targetClass.getDeclaredMethod(_methodName, new Class[]{}); //TODO
+        }
+        
+        if (_target != null)
         {
             boolean accessibility = getTarget().isAccessible();
             getTarget().setAccessible(true);
             getTarget().invoke(instance, __EMPTY_ARGS);
             getTarget().setAccessible(accessibility);
+            System.err.println("Calling callback on "+_className+"."+_methodName);
         }
     }
 

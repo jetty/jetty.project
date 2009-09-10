@@ -54,12 +54,23 @@ public class TestServletAnnotations extends TestCase
                 assertNotNull (values);
                 assertNotNull (annotation);
                 assertTrue (annotation.endsWith("Resource"));
-                assertEquals (1, values.size());
-                Value anv = values.get(0);
-                assertEquals ("mappedName", anv.getName());
-                assertEquals ("foo", anv.getValue());
-                System.err.print(annotation+": ");
-                System.err.println(anv);
+                
+                for (Value v :values)
+                {
+                    if (v.getName().equals("mappedName"))
+                        assertEquals ("foo", v.getValue());
+                    else if (v.getName().equals("type"))
+                    {
+                        try
+                        { 
+                            assertEquals(fieldType, ((org.objectweb.asm.Type)v.getValue()).getDescriptor());
+                        }
+                        catch (Exception e)
+                        {
+                            fail(e.getMessage());
+                        }
+                    }
+                }
             }
 
             public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
@@ -76,7 +87,7 @@ public class TestServletAnnotations extends TestCase
                                     List<Value> values)
             {}
 
-            public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
+            public void handleMethod(String className, String methodName, int access, String desc, String signature, String[] exceptions, String annotation,
                                      List<Value> values)
             {
                 assertEquals ("org.eclipse.jetty.annotations.ServletC", className);
@@ -91,8 +102,12 @@ public class TestServletAnnotations extends TestCase
                     assertTrue(annotation.endsWith("PostConstruct"));
                     assertTrue(values.isEmpty());
                 }
-                System.err.println(annotation+": "+methodName);   
-                  
+                
+                assertEquals (org.objectweb.asm.Type.VOID_TYPE, org.objectweb.asm.Type.getReturnType(desc));
+                assertEquals(0,  org.objectweb.asm.Type.getArgumentTypes(desc).length);
+                int isstatic = access & org.objectweb.asm.Opcodes.ACC_STATIC;
+               
+                assertTrue (isstatic == 0);  
             }
             public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
                                     List<Value> values)
@@ -108,9 +123,7 @@ public class TestServletAnnotations extends TestCase
                 assertEquals(1, values.size());
                 Value anv = values.get(0);
                 assertEquals("value", anv.getName());
-                assertEquals("admin", anv.getValue());
-                System.err.print(annotation+": ");
-                System.err.println(anv);    
+                assertEquals("admin", anv.getValue());    
             }
             
             public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
@@ -121,9 +134,45 @@ public class TestServletAnnotations extends TestCase
             {}
         }
         
+        
+        class ResourcesAnnotationHandler implements AnnotationHandler
+        {
+            public void handleClass (String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
+                    List<Value> values)
+            {
+                assertNotNull (values);
+                for (Value v : values)
+                {
+                    List list = (List)(v.getValue());
+                    for (Object o : list)
+                    {
+                        AnnotationParser.ListValue lv = (AnnotationParser.ListValue)o;
+                        List<Value> theValues = lv.getList();
+                        for (Value vv : theValues)
+                        {
+                            if ("name".equals((String)vv.getName()))
+                            {
+                                if (!"apple".equals((String)vv.getValue()) && !"banana".equals((String)vv.getValue()))
+                                    fail("Wrong name "+vv.getName());
+                            }
+                            else if ("mappedName".equals((String)vv.getName()))
+                                assertEquals("foo", (String)vv.getValue());
+                                    
+                        }           
+                    }
+                }  
+            }
+            public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
+                    List<Value> values)
+            {}
+            public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
+                    List<Value> values)
+            {}
+        }
+        
       
      
- 
+        parser.registerAnnotationHandler("javax.annotation.Resources", new ResourcesAnnotationHandler());
         parser.registerAnnotationHandler("javax.annotation.Resource", new ResourceAnnotationHandler ());
         parser.registerAnnotationHandler("javax.annotation.PostConstruct", new CallbackAnnotationHandler());
         parser.registerAnnotationHandler("javax.annotation.PreDestroy", new CallbackAnnotationHandler());

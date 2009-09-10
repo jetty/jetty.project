@@ -17,6 +17,7 @@ import java.lang.reflect.Array;
 import java.util.List;
 
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.TypeUtil;
 import org.objectweb.asm.Type;
 
 /**
@@ -26,9 +27,14 @@ import org.objectweb.asm.Type;
  */
 public class Util
 { 
-    private static Class[] __envEntryTypes = 
+    private static Class[] __envEntryClassTypes = 
         new Class[] {String.class, Character.class, Integer.class, Boolean.class, Double.class, Byte.class, Short.class, Long.class, Float.class};
+    
 
+    private static String[] __envEntryTypes = 
+        new String[] { Type.getDescriptor(String.class), Type.getDescriptor(Character.class), Type.getDescriptor(Integer.class), Type.getDescriptor(Boolean.class),
+                       Type.getDescriptor(Double.class), Type.getDescriptor(Byte.class), Type.getDescriptor(Short.class), Type.getDescriptor(Long.class), Type.getDescriptor(Float.class)};
+    
     /**
      * Check if the presented method belongs to a class that is one
      * of the classes with which a servlet container should be concerned.
@@ -55,9 +61,19 @@ public class Util
     public static boolean isEnvEntryType (Class type)
     {
         boolean result = false;
+        for (int i=0;i<__envEntryClassTypes.length && !result;i++)
+        {
+            result = (type.equals(__envEntryClassTypes[i]));
+        }
+        return result;
+    }
+    
+    public static boolean isEnvEntryType (String desc)
+    {
+        boolean result = false;
         for (int i=0;i<__envEntryTypes.length && !result;i++)
         {
-            result = (type.equals(__envEntryTypes[i]));
+            result = (desc.equals(__envEntryTypes[i]));
         }
         return result;
     }
@@ -152,4 +168,59 @@ public class Util
         
     }
   
+    public static String asCanonicalName (Type t)
+    {
+        if (t == null)
+            return null;
+        
+        switch (t.getSort())
+        {
+            case Type.BOOLEAN:
+            {
+                return TypeUtil.toName(Boolean.TYPE);
+            }
+            case Type.ARRAY:
+            {
+                return  t.getElementType().getClassName();
+            }
+            case Type.BYTE:
+            {
+                return TypeUtil.toName(Byte.TYPE);
+            }
+            case Type.CHAR:
+            {
+                return TypeUtil.toName(Character.TYPE);
+            }
+            case Type.DOUBLE:
+            {
+                return TypeUtil.toName(Double.TYPE);
+            }
+            case Type.FLOAT:
+            {
+                 return TypeUtil.toName(Float.TYPE);
+            }
+            case Type.INT:
+            {
+                return TypeUtil.toName(Integer.TYPE);
+            }
+            case Type.LONG:
+            {
+                return TypeUtil.toName(Long.TYPE);
+            }
+            case Type.OBJECT:
+            {
+                return t.getClassName();
+            }
+            case Type.SHORT:
+            {
+                return TypeUtil.toName(Short.TYPE);
+            }
+            case Type.VOID:
+            {
+                return null;
+            }
+            default:
+                return null;
+        }
+    }
 }

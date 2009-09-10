@@ -15,13 +15,11 @@ package org.eclipse.jetty.annotations;
 
 import java.util.List;
 
-import javax.annotation.Resource;
-import javax.annotation.Resources;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.ListValue;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -38,54 +36,42 @@ public class ResourcesAnnotationHandler implements AnnotationHandler
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
                             List<Value> values)
     {
-        Class clazz = null;
-        try
+        if (values != null && values.size() == 1)
         {
-            clazz = Loader.loadClass(null,className);
-        }
-        catch (Exception e)
-        {
-            Log.warn(e);
-            return;
-        }
-        if (!Util.isServletType(clazz))
-        {
-            Log.debug("@Resources annotation ignored on on-servlet type class "+clazz.getName());
-            return;
-        }
-        //Handle Resources annotation - add namespace entries
-        Resources resources = (Resources)clazz.getAnnotation(Resources.class);
-        if (resources == null)
-            return;
-
-        Resource[] resArray = resources.value();
-        if (resArray==null||resArray.length==0)
-            return;
-
-        for (int j=0;j<resArray.length;j++)
-        {
-            String name = resArray[j].name();
-            String mappedName = resArray[j].mappedName();
-            Resource.AuthenticationType auth = resArray[j].authenticationType();
-            Class type = resArray[j].type();
-            boolean shareable = resArray[j].shareable();
-
-            if (name==null || name.trim().equals(""))
+            List<ListValue> list = (List<ListValue>)(values.get(0).getValue());
+            for (ListValue resource : list)
             {
-               Log.warn ("@Resource annotations on classes must contain a name (Common Annotations Spec Section 2.3)");
-               break;
+                List<Value> resourceValues = resource.getList();
+                String name = null;
+                String mappedName = null;
+                for (Value v:resourceValues)
+                {
+                    if ("name".equals(v.getName()))
+                        name = (String)v.getValue();
+                    else if ("mappedName".equals(v.getName()))
+                        mappedName = (String)v.getValue();
+                }
+                if (name == null)
+                    Log.warn ("Skipping Resources(Resource) annotation with no name on class "+className);
+                else
+                {
+                    try
+                    {
+                        //TODO don't ignore the shareable, auth etc etc
+                        if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac, name, mappedName))
+                            if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac.getServer(), name, mappedName))
+                               Log.warn("Skipping Resources(Resource) annotation on "+className+" for name "+name+": No resource bound at "+(mappedName==null?name:mappedName));
+                    }
+                    catch (NamingException e)
+                    {
+                        Log.warn(e);
+                    }
+                } 
             }
-            try
-            {
-                //TODO don't ignore the shareable, auth etc etc
-                if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac, name, mappedName))
-                    if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac.getServer(), name, mappedName))
-                        throw new IllegalStateException("No resource bound at "+(mappedName==null?name:mappedName));
-            }
-            catch (NamingException e)
-            {
-                Log.warn(e);
-            }
+        }
+        else
+        {
+            Log.warn("Skipping empty or incorrect Resources annotation on "+className);
         }
     }
 

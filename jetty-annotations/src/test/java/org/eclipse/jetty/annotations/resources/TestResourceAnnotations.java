@@ -2,6 +2,7 @@ package org.eclipse.jetty.annotations.resources;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.naming.Context;
@@ -78,29 +79,32 @@ public class TestResourceAnnotations extends TestCase
         //we should have Injections
         assertNotNull(injections);
         
-        List<Injection> fieldInjections = injections.getFieldInjections(ResourceB.class);
-        assertNotNull(fieldInjections);
+        List<Injection> resBInjections = injections.getInjections(ResourceB.class.getCanonicalName());
+        assertNotNull(resBInjections);
       
         //only 1 field injection because the other has no Resource mapping
-        assertEquals(1, fieldInjections.size());
+        assertEquals(1, resBInjections.size());
+        Injection fi = resBInjections.get(0);
+        assertEquals ("f", fi.getFieldName());
         
-        Injection fi = fieldInjections.get(0);
-        assertEquals ("f", fi.getTarget().getName());
-        
-        fieldInjections = injections.getFieldInjections(ResourceA.class);
-        assertNotNull(fieldInjections);
-        assertEquals(4, fieldInjections.size());
-        
-        
-        //no method injections on class ResourceB
-        List<Injection> methodInjections = injections.getMethodInjections(ResourceB.class);    
-        assertNotNull(methodInjections);
-        assertEquals(0, methodInjections.size());
-        
-        //3 method injections on class ResourceA
-        methodInjections = injections.getMethodInjections(ResourceA.class);
-        assertNotNull(methodInjections);
-        assertEquals(3, methodInjections.size());
+        //3 method injections on class ResourceA, 4 field injections
+        List<Injection> resAInjections = injections.getInjections(ResourceA.class.getCanonicalName());
+        assertNotNull(resAInjections);
+        assertEquals(7, resAInjections.size());
+        int fieldCount = 0;
+        int methodCount = 0;
+        Iterator<Injection> itor = resAInjections.iterator();
+        while (itor.hasNext())
+        {
+            Injection x = itor.next();
+            if (x.isField())
+                fieldCount++;
+            else 
+                methodCount++;
+        }
+        assertEquals(4, fieldCount);
+        assertEquals(3, methodCount);
+     
         
         //test injection
         ResourceB binst = new ResourceB();
@@ -166,8 +170,8 @@ public class TestResourceAnnotations extends TestCase
             }       
         });
   
-        assertEquals(resourceA.getObjectToBind(), env.lookup("fluff"));
-        assertEquals(resourceB.getObjectToBind(), env.lookup("stuff"));
+        assertEquals(resourceA.getObjectToBind(), env.lookup("peach"));
+        assertEquals(resourceB.getObjectToBind(), env.lookup("pear"));
     }
 
 }

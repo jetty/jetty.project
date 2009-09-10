@@ -25,21 +25,21 @@ import org.eclipse.jetty.servlet.ServletHolder;
  */
 public class RunAs
 {
-    private Class _targetClass;
+    private String _className;
     private String _roleName;
 
     public RunAs()
     {}
 
 
-    public void setTargetClass (Class clazz)
+    public void setTargetClassName (String className)
     {
-        _targetClass=clazz;
+        _className = className;
     }
-
-    public Class getTargetClass ()
+    
+    public String getTargetClassName()
     {
-        return _targetClass;
+        return _className;
     }
 
     public void setRoleName (String roleName)
@@ -58,16 +58,9 @@ public class RunAs
     {
         if (holder == null)
             return;
-        String className = getServletClassNameForHolder(holder);
+        String className = holder.getClassName();
 
-        if (className.equals(_targetClass.getName()))
+        if (className.equals(_className))
             holder.setRunAsRole(_roleName);
     }
-
-    public static String getServletClassNameForHolder (ServletHolder holder)
-    throws ServletException
-    {
-        return holder.getClassName();
-    }
-
 }

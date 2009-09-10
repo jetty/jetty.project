@@ -374,7 +374,6 @@ public abstract class AbstractConfiguration implements Configuration
                 {
                     Class clazz = _context.loadClass(targetClassName);
                     Injection injection = new Injection();
-                    injection.setTargetClass(clazz);
                     injection.setJndiName(jndiName);
                     injection.setTarget(clazz, targetName, valueClass);
                      injections.add(injection);
