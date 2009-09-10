@@ -17,6 +17,7 @@ import java.io.IOException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import javax.annotation.Resources;
 import javax.annotation.security.RunAs;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -26,11 +27,14 @@ import javax.servlet.http.HttpServletResponse;
 
 
 
-
+@Resources({
+    @Resource(name="apple", mappedName="foo"),
+    @Resource(name="banana", mappedName="foo")
+})
 @RunAs("admin")
 public class ServletC extends HttpServlet
 {
-    @Resource (mappedName="foo")
+    @Resource (mappedName="foo", type=Double.class)
     private Double foo;
     
     @PreDestroy

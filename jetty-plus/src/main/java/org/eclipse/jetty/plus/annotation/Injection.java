@@ -21,6 +21,8 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.util.IntrospectionUtil;
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 
 /**
@@ -37,6 +39,11 @@ public class Injection
     private String _jndiName;
     private String _mappingName;
     private Member _target;
+    private String _className;
+    private String _fieldName;
+    private String _methodName;
+    private String _paramCanonicalName;
+    private String _annotationResourceType;
     
     
     public Injection ()
@@ -51,13 +58,35 @@ public class Injection
         return _targetClass;
     }
 
-
-    /**
-     * @param name the _className to set
-     */
-    public void setTargetClass(Class clazz)
+    
+    public String getTargetClassName()
     {
-        _targetClass = clazz;
+        return _className;
+    }
+
+    public String getFieldName ()
+    {
+        return _fieldName;
+    }
+    
+    public String getMethodName ()
+    {
+        return _methodName;
+    }
+    
+    public String getParamCanonicalName ()
+    {
+        return _paramCanonicalName;
+    }
+    
+    public boolean isField ()
+    {
+        return (_fieldName != null);
+    }
+    
+    public boolean isMethod ()
+    {
+        return (_methodName != null);
     }
     
     /**
@@ -97,15 +126,28 @@ public class Injection
         return _target;
     }
     
+ 
+ 
     /**
-     * @param target the target to set
+     * Set up an injection target that is a field
+     * @param className
+     * @param fieldName
      */
-    public void setTarget(Member target)
+    public void setTarget (String className, String fieldName, String annotationResourceType)
     {
-        this._target = target;
+        _className = className;
+        _fieldName = fieldName;
+        _annotationResourceType = annotationResourceType;
     }
-
-    //TODO: define an equals method
+    
+    public void setTarget (String className, String methodName, String paramCanonicalName, String annotationResourceType)
+    {
+        _className = className;
+        _methodName = methodName;
+        _paramCanonicalName = paramCanonicalName;
+        _annotationResourceType = annotationResourceType;
+    }
+    
     
     public void setTarget (Class clazz, String targetName, Class targetType)
     {
@@ -116,6 +158,9 @@ public class Injection
             Log.debug("Looking for method for setter: "+setter+" with arg "+targetType);
             _target = IntrospectionUtil.findMethod(clazz, setter, new Class[] {targetType}, true, false); 
             _targetClass = clazz;
+            _className = clazz.getCanonicalName();
+            _methodName = targetName;
+            _paramCanonicalName = targetType.getCanonicalName();
         }
         catch (NoSuchMethodException me)
         {
@@ -123,7 +168,9 @@ public class Injection
             try
             {
                 _target = IntrospectionUtil.findField(clazz, targetName, targetType, true, false);
-                _targetClass = clazz;
+                _targetClass = clazz;   
+                _className = clazz.getCanonicalName();
+                _fieldName = targetName;
             }
             catch (NoSuchFieldException fe)
             {
@@ -139,16 +186,29 @@ public class Injection
      * @throws Exception
      */
     public void inject (Object injectable)
-    {
-        Member theTarget = getTarget(); 
-        if (theTarget instanceof Field)
+    { 
+        try
         {
-            injectField((Field)theTarget, injectable);
+            if (_target == null)
+                loadField();
+
+            if (_target == null)
+                loadMethod();
         }
-        else if (theTarget instanceof Method)
+        catch (Exception e)
         {
-            injectMethod((Method)theTarget, injectable);
+            throw new IllegalStateException (e);
         }
+
+        if (_target != null)
+        {
+            if (_target instanceof Field)
+                injectField((Field)_target, injectable);
+            else
+                injectMethod((Method)_target, injectable);
+        }
+        else
+            throw new IllegalStateException ("No method or field to inject with "+getJndiName());
     }
 
     
@@ -171,66 +231,135 @@ public class Injection
      * @param field
      * @param injectable
      */
-    public void injectField (Field field, Object injectable)
-    {           
-        try
+    protected void injectField (Field field, Object injectable)
+    {   
+        if (validateInjection())
         {
-            //validateInjection(field, injectable);
-            boolean accessibility = field.isAccessible();
-            field.setAccessible(true);
-            field.set(injectable, lookupInjectedValue());
-            field.setAccessible(accessibility);
+            try
+            {
+                System.err.println("Value to inject="+lookupInjectedValue());
+                boolean accessibility = field.isAccessible();
+                field.setAccessible(true);
+                field.set(injectable, lookupInjectedValue());
+                field.setAccessible(accessibility);
+                System.err.println("Injected field "+_fieldName+" of class "+_className);
+            }
+            catch (Exception e)
+            {
+                Log.warn(e);
+                throw new IllegalStateException("Inject failed for field "+field.getName());
+            }
         }
-        catch (Exception e)
-        {
-            Log.warn(e);
-            throw new IllegalStateException("Inject failed for field "+field.getName());
-        }
+        else
+            throw new IllegalStateException ("Invalid injection for "+_className+"."+_fieldName);
     }
-    
+
     /**
      * Inject value from jndi into a setter method of an instance
      * @param method
      * @param injectable
      */
-    public void injectMethod (Method method, Object injectable)
+    protected void injectMethod (Method method, Object injectable)
     {
-        //validateInjection(method, injectable);
-        try
+        if (validateInjection())
         {
-            boolean accessibility = method.isAccessible();
-            method.setAccessible(true);
-            method.invoke(injectable, new Object[] {lookupInjectedValue()});
-            method.setAccessible(accessibility);
+            try
+            {
+                System.err.println("Value to inject="+lookupInjectedValue());
+                boolean accessibility = method.isAccessible();
+                method.setAccessible(true);
+                method.invoke(injectable, new Object[] {lookupInjectedValue()});
+                method.setAccessible(accessibility);
+                System.err.println("Injected method "+_methodName+" of class "+_className);
+            }
+            catch (Exception e)
+            {
+                Log.warn(e);
+                throw new IllegalStateException("Inject failed for method "+method.getName());
+            }
         }
-        catch (Exception e)
-        {
-            Log.warn(e);
-            throw new IllegalStateException("Inject failed for method "+method.getName());
-        }
+        else
+        throw new IllegalStateException("Invalid injection for "+_className+"."+_methodName);
+    }
+
+
+
+    protected void loadField()
+    throws ClassNotFoundException, NoSuchFieldException
+    {
+        if (_fieldName == null || _className == null)
+            return;
+        
+        if (_targetClass == null)
+            _targetClass = Loader.loadClass(null, _className);
+        
+        _target = _targetClass.getDeclaredField(_fieldName);
     }
     
-  
-
     
-    private void validateInjection (Method method, Object injectable)
-    throws NoSuchMethodException
+    /**
+     * Load the target class and method.
+     * A valid injection target method only has 1 argument.
+     * @throws ClassNotFoundException
+     * @throws NoSuchMethodException
+     */
+    protected void loadMethod ()
+    throws ClassNotFoundException, NoSuchMethodException
     {
-        if ((injectable==null) || (method==null))
+        if (_methodName == null || _className == null)
             return;
-        //check the injection target actually has a matching method
-        //TODO: think about this, they have to be assignable
-        injectable.getClass().getMethod(method.getName(), method.getParameterTypes());    
+
+        if (_targetClass == null)
+            _targetClass = Loader.loadClass(null, _className);
+        System.err.println("Loaded target class "+_targetClass.getName());
+
+        System.err.println("Looking for method "+_methodName +" with argument of type "+_paramCanonicalName+" on class "+_className);
+        Class arg =  TypeUtil.fromName(_paramCanonicalName);
+        
+        if (arg == null)
+            arg = Loader.loadClass(null, _paramCanonicalName);
+        System.err.println("Loaded type: "+arg.getName());
+        _target = _targetClass.getDeclaredMethod(_methodName, new Class[] {arg}); 
     }
     
-    private void validateInjection (Field field, Object injectable) 
-    throws NoSuchFieldException
+    
+    private boolean validateInjection ()
     {
-        if ((field==null) || (injectable==null))
-            return;
+   
+        //check that if the injection came from an annotation, the type specified in the annotation
+        //is compatible with the field or method to inject
+        //JavaEE spec sec 5.2.4
+        if (_annotationResourceType != null)
+        {
+            System.err.println("Validating against annotationResourceType="+_annotationResourceType);
+            if (_target == null)
+                return false;
+            
+            try
+            {
+                Class<?> annotationType = TypeUtil.fromName(_annotationResourceType);
+                if (annotationType == null)
+                    annotationType = Loader.loadClass(null, _annotationResourceType);
 
-        Field f = injectable.getClass().getField(field.getName());
-        if (!f.getType().isAssignableFrom(field.getType()))
-            throw new NoSuchFieldException("Mismatching type of field: "+f.getType().getName()+" v "+field.getType().getName());
-    }   
+                if (_target instanceof Field)
+                {
+                    return ((Field)_target).getType().isAssignableFrom(annotationType);
+                }
+                else if (_target instanceof Method)
+                {
+                    Class<?>[] args = ((Method)_target).getParameterTypes();
+                    return args[0].isAssignableFrom(annotationType);
+                }
+
+                return false;
+            }
+            catch (Exception e)
+            {
+                Log.warn("Unable to verify injection for "+_className+"."+ (_fieldName==null?_methodName:_fieldName));
+                return false;
+            }
+        }
+        else
+            return true;
+    }
 }

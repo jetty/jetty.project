@@ -21,8 +21,8 @@ import javax.annotation.Resources;
  *
  */
 @Resources({
-    @Resource(name="fluff", mappedName="resA"),
-    @Resource(name="stuff", mappedName="resB")
+    @Resource(name="peach", mappedName="resA"),
+    @Resource(name="pear", mappedName="resB")
 })
 public class ResourceB extends ResourceA
 {

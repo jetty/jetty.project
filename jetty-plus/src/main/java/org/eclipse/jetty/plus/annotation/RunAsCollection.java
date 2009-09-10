@@ -35,12 +35,12 @@ public class RunAsCollection
     
     public void add (RunAs runAs)
     {
-        if ((runAs==null) || (runAs.getTargetClass()==null)) 
+        if ((runAs==null) || (runAs.getTargetClassName()==null)) 
             return;
         
         if (Log.isDebugEnabled())
-            Log.debug("Adding run-as for class="+runAs.getTargetClass());
-        _runAsMap.put(runAs.getTargetClass().getName(), runAs);
+            Log.debug("Adding run-as for class="+runAs.getTargetClassName());
+        _runAsMap.put(runAs.getTargetClassName(), runAs);
     }
 
     public RunAs getRunAs (Object o)
@@ -54,7 +54,7 @@ public class RunAsCollection
 
         ServletHolder holder = (ServletHolder)o;
 
-        String className = RunAs.getServletClassNameForHolder(holder);
+        String className = holder.getClassName();
         return (RunAs)_runAsMap.get(className);
     }
     
@@ -69,7 +69,7 @@ public class RunAsCollection
 
         ServletHolder holder = (ServletHolder)o;
 
-        String className = RunAs.getServletClassNameForHolder(holder);
+        String className = holder.getClassName();
         RunAs runAs = (RunAs)_runAsMap.get(className);
         if (runAs == null)
             return;

@@ -6,6 +6,7 @@ jetty-7.0.0.RC6-SNAPSHOT
  + 288055 jetty-client fails to resolve failed resolution attempts correctly
  + 288153 jetty-client resend doesn't reset exchange
  + 288182 PUT request fails during retry
+ + JETTY-780 CNFE during startup of webapp with spring-context >= 2.5.1
  + JETTY-1080 modify previous fix to work on windows
  + JETTY-1084 HEAD command not setting content-type in response under certain circumstances
  + JETTY-1086 Use UncheckedPrintWriter
