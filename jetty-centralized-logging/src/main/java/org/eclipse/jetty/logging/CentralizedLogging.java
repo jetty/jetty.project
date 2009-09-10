@@ -32,11 +32,6 @@ public class CentralizedLogging extends AbstractLifeCycle
     private CentralizedWebAppLoggingConfiguration webAppConfiguration;
     private String configurationFilename;
 
-    public CentralizedLogging()
-    {
-        System.err.println(CentralizedLogging.class.getName() + " <init>");
-    }
-
     public String getConfigurationFilename()
     {
         return configurationFilename;
@@ -60,7 +55,10 @@ public class CentralizedLogging extends AbstractLifeCycle
     @Override
     protected void doStart() throws Exception
     {
-        CentralizedWebAppLoggingConfiguration.setLoggerConfigurationFilename(configurationFilename);
+        if (configurationFilename != null)
+        {
+            CentralizedWebAppLoggingConfiguration.setLoggerConfigurationFilename(configurationFilename);
+        }
         webAppConfiguration = new CentralizedWebAppLoggingConfiguration();
 
         @SuppressWarnings("unchecked")
