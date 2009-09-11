@@ -13,14 +13,14 @@
 //
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
-package org.eclipse.jetty.logging;
+package org.eclipse.jetty.webapp.logging;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import org.eclipse.jetty.logging.impl.io.LogIO;
-
 import junit.framework.TestCase;
+
+import org.eclipse.jetty.util.IO;
 
 /**
  * Common utility methods for working with JUnit tests cases in a maven friendly way.
@@ -30,6 +30,8 @@ public class MavenTestingUtils
     private static File basedir;
     private static File testResourcesDir;
     private static File targetDir;
+
+    // private static Boolean surefireRunning;
 
     public static File getBasedir()
     {
@@ -167,11 +169,31 @@ public class MavenTestingUtils
         try
         {
             reader = new FileReader(file);
-            return LogIO.toString(reader);
+            return IO.toString(reader);
         }
         finally
         {
-            LogIO.close(reader);
+            IO.close(reader);
         }
     }
+
+    /*
+    public static boolean isSurefireExecuting()
+    {
+        if (surefireRunning == null)
+        {
+            String val = System.getProperty("surefire.test.class.path");
+            if (val != null)
+            {
+                surefireRunning = Boolean.TRUE;
+            }
+            else
+            {
+                surefireRunning = Boolean.FALSE;
+            }
+        }
+        
+        return surefireRunning;
+    }
+    */
 }

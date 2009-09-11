@@ -13,7 +13,7 @@
 //
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
-package org.eclipse.jetty.logging;
+package org.eclipse.jetty.webapp.logging;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -23,8 +23,6 @@ import junit.framework.TestCase;
 
 import org.eclipse.jetty.logging.impl.CentralLoggerConfig;
 import org.eclipse.jetty.logging.impl.Severity;
-import org.eclipse.jetty.logging.impl.TestAppender;
-import org.eclipse.jetty.logging.impl.TestAppender.LogEvent;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -32,6 +30,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.logging.TestAppender.LogEvent;
 
 /**
  * Test centralized logging in an embedded scenario

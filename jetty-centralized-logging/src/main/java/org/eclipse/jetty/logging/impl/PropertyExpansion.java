@@ -13,7 +13,7 @@
 //
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
-package org.eclipse.jetty.logging;
+package org.eclipse.jetty.logging.impl;
 
 /**
  * Basic System Property string expansion "${user.home}"

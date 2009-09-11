@@ -33,6 +33,7 @@ public class CentralLoggerFactory implements ILoggerFactory
     {
         this.root = root;
         this.loggers = new HashMap<String, CentralLogger>();
+        JavaUtilLoggingRouting.init();
     }
 
     public void setRoot(CentralLoggerConfig root)

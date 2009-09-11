@@ -25,11 +25,18 @@
     <version>7.0.1-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-centralized-logging</artifactId>
-  <name>Jetty :: Centralized Logging</name>
+  <artifactId>jetty-webapp-logging</artifactId>
+  <name>Jetty :: Centralized WebApp Logging</name>
   <packaging>jar</packaging>
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <forkMode>always</forkMode>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -51,19 +58,19 @@
   </build>
   <dependencies>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>1.5.6</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-centralized-logging</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jcl-over-slf4j</artifactId>
-      <version>1.5.6</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>log4j-over-slf4j</artifactId>
-      <version>1.5.6</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-deploy</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

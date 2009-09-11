@@ -13,7 +13,7 @@
 //
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
-package org.eclipse.jetty.logging.impl;
+package org.eclipse.jetty.webapp.logging;
 
 import java.io.IOException;
 import java.util.ArrayList;

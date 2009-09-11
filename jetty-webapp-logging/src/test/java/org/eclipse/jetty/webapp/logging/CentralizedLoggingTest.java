@@ -13,7 +13,7 @@
 //
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
-package org.eclipse.jetty.logging;
+package org.eclipse.jetty.webapp.logging;
 
 import java.io.IOException;
 
@@ -21,8 +21,7 @@ import junit.framework.TestCase;
 
 import org.eclipse.jetty.logging.impl.CentralLoggerConfig;
 import org.eclipse.jetty.logging.impl.Severity;
-import org.eclipse.jetty.logging.impl.TestAppender;
-import org.eclipse.jetty.logging.impl.TestAppender.LogEvent;
+import org.eclipse.jetty.webapp.logging.TestAppender.LogEvent;
 
 public class CentralizedLoggingTest extends TestCase
 {
@@ -69,39 +68,20 @@ public class CentralizedLoggingTest extends TestCase
         TestAppender testAppender = (TestAppender)root.findAppender(TestAppender.class);
         assertNotNull("Should have found TestAppender in configuration",testAppender);
 
-        boolean isSurefireExecuting = MavenTestingUtils.isSurefireExecuting();
-
-        // HACK: causes failures within surefire.
-        if (!isSurefireExecuting)
-        {
-            SimpleRequest.get(jetty,"/dummy-webapp-logging-log4j/logging");
-            SimpleRequest.get(jetty,"/dummy-webapp-logging-commons/logging");
-        }
-
+        SimpleRequest.get(jetty,"/dummy-webapp-logging-log4j/logging");
+        SimpleRequest.get(jetty,"/dummy-webapp-logging-commons/logging");
         SimpleRequest.get(jetty,"/dummy-webapp-logging-slf4j/logging");
         SimpleRequest.get(jetty,"/dummy-webapp-logging-java/logging");
 
-        TestAppender.LogEvent expectedLogs[];
-        if (isSurefireExecuting)
-        {
-            expectedLogs = new LogEvent[]
-            { new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) initialized"),
-                    new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) GET requested"),
-                    new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(java) initialized"),
-                    new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(java) GET requested") };
-        }
-        else
-        {
-            expectedLogs = new LogEvent[]
-            { new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(log4j) initialized"),
-                    new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(log4j) GET requested"),
-                    new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) initialized"),
-                    new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) GET requested"),
-                    new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) initialized"),
-                    new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) GET requested"),
-                    new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(java) initialized"),
-                    new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(java) GET requested") };
-        }
+        TestAppender.LogEvent expectedLogs[] =
+        { new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(log4j) initialized"),
+                new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(log4j) GET requested"),
+                new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) initialized"),
+                new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) GET requested"),
+                new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) initialized"),
+                new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) GET requested"),
+                new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(java) initialized"),
+                new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(java) GET requested") };
 
         assertContainsLogEvents(testAppender,expectedLogs);
     }

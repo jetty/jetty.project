@@ -21,8 +21,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.TimeZone;
 
-import org.eclipse.jetty.logging.PropertyExpansion;
-import org.eclipse.jetty.util.RolloverFileOutputStream;
+import org.eclipse.jetty.logging.impl.io.RolloverFileOutputStream;
 
 /**
  * Rolling File Appender
