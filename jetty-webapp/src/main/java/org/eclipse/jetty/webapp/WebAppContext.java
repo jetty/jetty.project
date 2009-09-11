@@ -72,7 +72,8 @@ public class WebAppContext extends ServletContextHandler
         "org.eclipse.jetty.webapp.MetaInfConfiguration",
         "org.eclipse.jetty.webapp.FragmentConfiguration",
         "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-        "org.eclipse.jetty.webapp.TagLibConfiguration"
+        "org.eclipse.jetty.webapp.TagLibConfiguration",
+        "org.eclipse.jetty.webapp.WebappVerifierConfiguration"
     } ;
     private String[] _configurationClasses=__dftConfigurationClasses;
     private Configuration[] _configurations;
