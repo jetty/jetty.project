@@ -47,7 +47,7 @@ public class CentralizedLoggingTest extends TestCase
 
         jetty = new XmlConfiguredJetty(this);
         jetty.addConfiguration("jetty.xml");
-        jetty.addConfiguration("jetty-centralized-logging.xml");
+        jetty.addConfiguration("jetty-webapp-logging.xml");
 
         jetty.load();
 
