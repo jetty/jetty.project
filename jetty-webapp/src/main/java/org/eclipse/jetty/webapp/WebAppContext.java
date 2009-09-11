@@ -125,7 +125,8 @@ public class WebAppContext extends ServletContextHandler
     /* ------------------------------------------------------------ */
     public WebAppContext()
     {
-        super(SESSIONS|SECURITY);
+        super(SESSIONS|SECURITY); 
+        setErrorHandler(new ErrorPageErrorHandler());
     }
     
     /* ------------------------------------------------------------ */
