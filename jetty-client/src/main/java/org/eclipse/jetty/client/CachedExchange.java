@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 package org.eclipse.jetty.client;
 
@@ -18,51 +18,47 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Buffer;
 
 /**
- * An exchange that caches response status and fields for later use.
- * 
- * 
- *
+ * An exchange that retains response status and response headers for later use.
  */
 public class CachedExchange extends HttpExchange
 {
-    int _responseStatus;
-    HttpFields _responseFields;
+    private final HttpFields _responseFields;
+    private volatile int _responseStatus;
 
-    public CachedExchange(boolean cacheFields)
+    /**
+     * Creates a new CachedExchange.
+     *
+     * @param cacheHeaders true to cache response headers, false to not cache them
+     */
+    public CachedExchange(boolean cacheHeaders)
     {
-        if (cacheFields)
-            _responseFields = new HttpFields();
+        _responseFields = cacheHeaders ? new HttpFields() : null;
     }
 
-    /* ------------------------------------------------------------ */
     public int getResponseStatus()
     {
-        if (_status < HttpExchange.STATUS_PARSING_HEADERS)
-            throw new IllegalStateException("Response not received");
+        if (getStatus() < HttpExchange.STATUS_PARSING_HEADERS)
+            throw new IllegalStateException("Response not received yet");
         return _responseStatus;
     }
 
-    /* ------------------------------------------------------------ */
     public HttpFields getResponseFields()
     {
-        if (_status < HttpExchange.STATUS_PARSING_CONTENT)
-            throw new IllegalStateException("Headers not complete");
+        if (getStatus() < HttpExchange.STATUS_PARSING_CONTENT)
+            throw new IllegalStateException("Headers not completely received yet");
         return _responseFields;
     }
 
-    /* ------------------------------------------------------------ */
     protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
     {
         _responseStatus = status;
-        super.onResponseStatus(version,status,reason);
+        super.onResponseStatus(version, status, reason);
     }
 
-    /* ------------------------------------------------------------ */
     protected void onResponseHeader(Buffer name, Buffer value) throws IOException
     {
         if (_responseFields != null)
-            _responseFields.add(name,value);
-        super.onResponseHeader(name,value);
+            _responseFields.add(name, value);
+        super.onResponseHeader(name, value);
     }
-
 }

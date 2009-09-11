@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.client;
@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 
 import org.eclipse.jetty.client.security.Authorization;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeaderValues;
 import org.eclipse.jetty.http.HttpHeaders;
@@ -34,30 +35,26 @@ import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 
-
 /**
- * 
- * 
- * 
+ *
+ * @version $Revision: 879 $ $Date: 2009-09-11 16:13:28 +0200 (Fri, 11 Sep 2009) $
  */
 public class HttpConnection implements Connection
 {
-    HttpDestination _destination;
-    EndPoint _endp;
-    HttpGenerator _generator;
-    HttpParser _parser;
-    boolean _http11 = true;
-    Buffer _connectionHeader;
-    Buffer _requestContentChunk;
-    long _last;
-    boolean _requestComplete;
-    public String _message;
-    public Throwable _throwable;
-    public boolean _reserved;
-
-    /* The current exchange waiting for a response */
-    volatile HttpExchange _exchange;
-    HttpExchange _pipeline;
+    private HttpDestination _destination;
+    private EndPoint _endp;
+    private HttpGenerator _generator;
+    private HttpParser _parser;
+    private boolean _http11 = true;
+    private Buffer _connectionHeader;
+    private Buffer _requestContentChunk;
+    private long _last;
+    private boolean _requestComplete;
+    private boolean _reserved;
+    // The current exchange waiting for a response
+    private volatile HttpExchange _exchange;
+    private HttpExchange _pipeline;
+    private final Timeout.Task _timeout = new TimeoutTask();
 
     public void dump() throws IOException
     {
@@ -69,45 +66,6 @@ public class HttpConnection implements Connection
             ((SslSelectChannelEndPoint)_endp).dump();
     }
 
-    Timeout.Task _timeout = new Timeout.Task()
-    {
-        public void expired()
-        {
-            HttpExchange ex = null;
-            try
-            {
-                synchronized (HttpConnection.this)
-                {
-                    ex = _exchange;
-                    _exchange = null;
-                    if (ex != null)
-                        _destination.returnConnection(HttpConnection.this,true);
-                }
-            }
-            catch (Exception e)
-            {
-                Log.debug(e);
-            }
-            finally
-            {
-                try
-                {
-                    _endp.close();
-                }
-                catch (IOException e)
-                {
-                    Log.ignore(e);
-                }
-
-                if (ex!=null && ex.getStatus() < HttpExchange.STATUS_COMPLETED)
-                {
-                    ex.setStatus(HttpExchange.STATUS_EXPIRED);
-                }
-            }
-        }
-    };
-
-    /* ------------------------------------------------------------ */
     HttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
     {
         _endp = endp;
@@ -119,31 +77,24 @@ public class HttpConnection implements Connection
     {
         _reserved = reserved;
     }
-    
+
     public boolean isReserved()
     {
         return _reserved;
     }
-    
-    /* ------------------------------------------------------------ */
+
     public HttpDestination getDestination()
     {
         return _destination;
     }
 
-    /* ------------------------------------------------------------ */
     public void setDestination(HttpDestination destination)
     {
         _destination = destination;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean send(HttpExchange ex) throws IOException
     {
-        // _message =
-        // Thread.currentThread().getName()+": Generator instance="+_generator
-        // .hashCode()+" state= "+_generator.getState()+" _exchange="+_exchange;
-        _throwable = new Throwable();
         synchronized (this)
         {
             if (_exchange != null)
@@ -157,167 +108,80 @@ public class HttpConnection implements Connection
             if (!_endp.isOpen())
                 return false;
 
-            ex.setStatus(HttpExchange.STATUS_WAITING_FOR_COMMIT);
             _exchange = ex;
+            _exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_COMMIT);
 
             if (_endp.isBlocking())
+            {
                 this.notify();
+            }
             else
             {
                 SelectChannelEndPoint scep = (SelectChannelEndPoint)_endp;
                 scep.scheduleWrite();
-            }
-
-            if (!_endp.isBlocking())
                 _destination.getHttpClient().schedule(_timeout);
+            }
 
             return true;
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void handle() throws IOException
     {
-        int no_progress = 0;
-        long flushed = 0;
+        if (_exchange != null)
+            _exchange.associate(this);
 
-        boolean failed = false;
-        while (_endp.isBufferingInput() || _endp.isOpen())
+        try
         {
-            synchronized (this)
+            int no_progress = 0;
+            long flushed = 0;
+
+            boolean failed = false;
+            while (_endp.isBufferingInput() || _endp.isOpen())
             {
-                while (_exchange == null)
+                synchronized (this)
                 {
-                    if (_endp.isBlocking())
+                    while (_exchange == null)
                     {
-                        try
+                        if (_endp.isBlocking())
                         {
-                            this.wait();
-                        }
-                        catch (InterruptedException e)
-                        {
-                            throw new InterruptedIOException();
-                        }
-                    }
-                    else
-                    {
-                        // Hopefully just space?
-                        _parser.fill();
-                        _parser.skipCRLF();
-                        if (_parser.isMoreInBuffer())
-                        {
-                            Log.warn("unexpected data");
-                            _endp.close();
-                        }
-
-                        return;
-                    }
-                }
-            }
-            if (_exchange.getStatus() == HttpExchange.STATUS_WAITING_FOR_COMMIT)
-            {
-                no_progress = 0;
-                commitRequest();
-            }
-
-            try
-            {
-                long io = 0;
-                _endp.flush();
-
-                if (_generator.isComplete())
-                {
-                    if (!_requestComplete)
-                    {
-                        _requestComplete = true;
-                        _exchange.getEventListener().onRequestComplete();
-                    }
-                }
-                else
-                {
-                    // Write as much of the request as possible
-                    synchronized (this)
-                    {
-                        if (_exchange == null)
-                            continue;
-                        flushed = _generator.flushBuffer();
-                        io += flushed;
-                    }
-
-                    if (!_generator.isComplete())
-                    {
-                        InputStream in = _exchange.getRequestContentSource();
-                        if (in != null)
-                        {
-                            if (_requestContentChunk == null || _requestContentChunk.length() == 0)
+                            try
                             {
-                                _requestContentChunk = _exchange.getRequestContentChunk();
-                                if (_requestContentChunk != null)
-                                    _generator.addContent(_requestContentChunk,false);
-                                else
-                                    _generator.complete();
-                                io += _generator.flushBuffer();
+                                this.wait();
+                            }
+                            catch (InterruptedException e)
+                            {
+                                throw new InterruptedIOException();
                             }
                         }
                         else
-                            _generator.complete();
+                        {
+                            // Hopefully just space?
+                            _parser.fill();
+                            _parser.skipCRLF();
+                            if (_parser.isMoreInBuffer())
+                            {
+                                Log.warn("Unexpected data received but no request sent");
+                                close();
+                            }
+                            return;
+                        }
                     }
+                    if (!_exchange.isAssociated())
+                        _exchange.associate(this);
                 }
-                
 
-                // If we are not ended then parse available
-                if (!_parser.isComplete() && _generator.isCommitted())
+                if (_exchange.getStatus() == HttpExchange.STATUS_WAITING_FOR_COMMIT)
                 {
-                    long filled = _parser.parseAvailable();
-                    io += filled;
-                }
-
-                if (io > 0)
                     no_progress = 0;
-                else if (no_progress++ >= 2 && !_endp.isBlocking())
-                {
-                    // SSL may need an extra flush as it may have made "no progress" while actually doing a handshake.
-                    if (_endp instanceof SslSelectChannelEndPoint && !_generator.isComplete() && !_generator.isEmpty())
-                    {
-                        if (_generator.flushBuffer()>0)
-                            continue;
-                    }
-                    return;
+                    commitRequest();
                 }
-            }
-            catch (Throwable e)
-            {                
-                if (e instanceof ThreadDeath)
-                    throw (ThreadDeath)e;
-                
-                synchronized (this)
+
+                try
                 {
-                    if (_exchange != null)
-                    {
-                        _exchange.getEventListener().onException(e);
-                        _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
-                    }
-                }
-                Log.warn("IOE on "+_exchange);
-                failed = true;
-                if (e instanceof IOException)
-                    throw (IOException)e;
- 
-                if (e instanceof Error)
-                    throw (Error)e;
-                
-                if (e instanceof RuntimeException)
-                    throw (RuntimeException)e;
-                
-               throw new RuntimeException(e);
-            }
-            finally
-            {
-                boolean complete = false;
-                boolean close = failed; // always close the connection on error
-                if (!failed)
-                {
-                    // are we complete?
+                    long io = 0;
+                    _endp.flush();
+
                     if (_generator.isComplete())
                     {
                         if (!_requestComplete)
@@ -325,62 +189,173 @@ public class HttpConnection implements Connection
                             _requestComplete = true;
                             _exchange.getEventListener().onRequestComplete();
                         }
-
-                        // we need to return the HttpConnection to a state that
-                        // it can be reused or closed out
-                        if (_parser.isComplete())
-                        {
-                            _destination.getHttpClient().cancel(_timeout);
-                            complete = true;
-                        }
                     }
-                }
-
-                if (complete || failed)
-                {
-                    synchronized (this)
+                    else
                     {
-                        if (!close)
-                            close = shouldClose();
-                            
-                        reset(true);
-                        no_progress = 0;
-                        flushed = -1;
-                        if (_exchange != null)
+                        // Write as much of the request as possible
+                        synchronized (this)
                         {
-                            _exchange = null;
+                            if (_exchange == null)
+                                continue;
+                            flushed = _generator.flushBuffer();
+                            io += flushed;
+                        }
 
-                            if (_pipeline == null)
+                        if (!_generator.isComplete())
+                        {
+                            InputStream in = _exchange.getRequestContentSource();
+                            if (in != null)
                             {
-                                if (!isReserved())
-                                    _destination.returnConnection(this,close);
-                                if (close)
-                                    return;
+                                if (_requestContentChunk == null || _requestContentChunk.length() == 0)
+                                {
+                                    _requestContentChunk = _exchange.getRequestContentChunk();
+                                    if (_requestContentChunk != null)
+                                        _generator.addContent(_requestContentChunk,false);
+                                    else
+                                        _generator.complete();
+                                    io += _generator.flushBuffer();
+                                }
                             }
                             else
+                                _generator.complete();
+                        }
+                    }
+
+                    if (_generator.isComplete() && !_requestComplete)
+                    {
+                        _requestComplete = true;
+                        _exchange.getEventListener().onRequestComplete();
+                    }
+
+                    // If we are not ended then parse available
+                    if (!_parser.isComplete() && _generator.isCommitted())
+                    {
+                        long filled = _parser.parseAvailable();
+                        io += filled;
+                    }
+
+                    if (io > 0)
+                        no_progress = 0;
+                    else if (no_progress++ >= 2 && !_endp.isBlocking())
+                    {
+                        // SSL may need an extra flush as it may have made "no progress" while actually doing a handshake.
+                        if (_endp instanceof SslSelectChannelEndPoint && !_generator.isComplete() && !_generator.isEmpty())
+                        {
+                            if (_generator.flushBuffer()>0)
+                                continue;
+                        }
+                        return;
+                    }
+                }
+                catch (Throwable e)
+                {
+                    Log.debug("Failure on " + _exchange, e);
+
+                    if (e instanceof ThreadDeath)
+                        throw (ThreadDeath)e;
+
+                    synchronized (this)
+                    {
+                        if (_exchange != null)
+                        {
+                            // Cancelling the exchange causes an exception as we close the connection,
+                            // but we don't report it as it is normal cancelling operation
+                            if (_exchange.getStatus() != HttpExchange.STATUS_CANCELLING)
                             {
-                                if (close)
+                                _exchange.getEventListener().onException(e);
+                                _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
+                            }
+                        }
+                    }
+
+                    failed = true;
+                    if (e instanceof IOException)
+                        throw (IOException)e;
+
+                    if (e instanceof Error)
+                        throw (Error)e;
+
+                    if (e instanceof RuntimeException)
+                        throw (RuntimeException)e;
+
+                    throw new RuntimeException(e);
+                }
+                finally
+                {
+                    boolean complete = false;
+                    boolean close = failed; // always close the connection on error
+                    if (!failed)
+                    {
+                        // are we complete?
+                        if (_generator.isComplete())
+                        {
+                            if (!_requestComplete)
+                            {
+                                _requestComplete = true;
+                                _exchange.getEventListener().onRequestComplete();
+                            }
+
+                            // we need to return the HttpConnection to a state that
+                            // it can be reused or closed out
+                            if (_parser.isComplete())
+                            {
+                                _destination.getHttpClient().cancel(_timeout);
+                                complete = true;
+                            }
+                        }
+                    }
+
+                    if (complete || failed)
+                    {
+                        synchronized (this)
+                        {
+                            if (!close)
+                                close = shouldClose();
+
+                            reset(true);
+
+                            no_progress = 0;
+                            if (_exchange != null)
+                            {
+                                _exchange.disassociate(this);
+                                _exchange = null;
+
+                                if (_pipeline == null)
                                 {
                                     if (!isReserved())
-                                        _destination.returnConnection(this,close);
-                                    _destination.send(_pipeline);
-                                    _pipeline = null;
-                                    return;
+                                        _destination.returnConnection(this, close);
                                 }
+                                else
+                                {
+                                    if (close)
+                                    {
+                                        if (!isReserved())
+                                            _destination.returnConnection(this,close);
 
-                                HttpExchange ex = _pipeline;
-                                _pipeline = null;
-
-                                send(ex);
+                                        HttpExchange exchange = _pipeline;
+                                        _pipeline = null;
+                                        _destination.send(exchange);
+                                    }
+                                    else
+                                    {
+                                        HttpExchange exchange = _pipeline;
+                                        _pipeline = null;
+                                        send(exchange);
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
         }
+        finally
+        {
+            if (_exchange != null && _exchange.isAssociated())
+                _exchange.disassociate(this);
+        }
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
         synchronized (this)
@@ -388,8 +363,7 @@ public class HttpConnection implements Connection
             return _exchange == null;
         }
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @see org.eclipse.jetty.io.Connection#isSuspended()
      */
@@ -398,13 +372,11 @@ public class HttpConnection implements Connection
         return false;
     }
 
-    /* ------------------------------------------------------------ */
     public EndPoint getEndPoint()
     {
         return _endp;
     }
 
-    /* ------------------------------------------------------------ */
     private void commitRequest() throws IOException
     {
         synchronized (this)
@@ -413,9 +385,9 @@ public class HttpConnection implements Connection
                 throw new IllegalStateException();
 
             _exchange.setStatus(HttpExchange.STATUS_SENDING_REQUEST);
-            _generator.setVersion(_exchange._version);
+            _generator.setVersion(_exchange.getVersion());
 
-            String uri = _exchange._uri;
+            String uri = _exchange.getURI();
             if (_destination.isProxied() && uri.startsWith("/"))
             {
                 // TODO suppress port 80 or 443
@@ -426,50 +398,49 @@ public class HttpConnection implements Connection
                     auth.setCredentials(_exchange);
             }
 
-            _generator.setRequest(_exchange._method,uri);
+            _generator.setRequest(_exchange.getMethod(), uri);
 
-            if (_exchange._version >= HttpVersions.HTTP_1_1_ORDINAL)
+            HttpFields requestHeaders = _exchange.getRequestFields();
+            if (_exchange.getVersion() >= HttpVersions.HTTP_1_1_ORDINAL)
             {
-                if (!_exchange._requestFields.containsKey(HttpHeaders.HOST_BUFFER))
-                    _exchange._requestFields.add(HttpHeaders.HOST_BUFFER,_destination.getHostHeader());
+                if (!requestHeaders.containsKey(HttpHeaders.HOST_BUFFER))
+                    requestHeaders.add(HttpHeaders.HOST_BUFFER,_destination.getHostHeader());
             }
 
-            if (_exchange._requestContent != null)
+            Buffer requestContent = _exchange.getRequestContent();
+            if (requestContent != null)
             {
-                _exchange._requestFields.putLongField(HttpHeaders.CONTENT_LENGTH,_exchange._requestContent.length());
-                _generator.completeHeader(_exchange._requestFields,false);
-                _generator.addContent(_exchange._requestContent,true);
-            }
-            else if (_exchange._requestContentSource != null)
-            {
-                _generator.completeHeader(_exchange._requestFields,false);
-                int available = _exchange._requestContentSource.available();
-                if (available > 0)
-                {
-                    // TODO deal with any known content length
-
-                    // TODO reuse this buffer!
-                    byte[] buf = new byte[available];
-                    int length = _exchange._requestContentSource.read(buf);
-                    _generator.addContent(new ByteArrayBuffer(buf,0,length),false);
-                }
+                requestHeaders.putLongField(HttpHeaders.CONTENT_LENGTH, requestContent.length());
+                _generator.completeHeader(requestHeaders,false);
+                _generator.addContent(requestContent,true);
             }
             else
             {
-                _exchange._requestFields.remove(HttpHeaders.CONTENT_LENGTH); // TODO
-                // :
-                // should
-                // not
-                // be
-                // needed
-                _generator.completeHeader(_exchange._requestFields,true);
+                InputStream requestContentStream = _exchange.getRequestContentSource();
+                if (requestContentStream != null)
+                {
+                    _generator.completeHeader(requestHeaders, false);
+                    int available = requestContentStream.available();
+                    if (available > 0)
+                    {
+                        // TODO deal with any known content length
+                        // TODO reuse this buffer!
+                        byte[] buf = new byte[available];
+                        int length = requestContentStream.read(buf);
+                        _generator.addContent(new ByteArrayBuffer(buf, 0, length), false);
+                    }
+                }
+                else
+                {
+                    requestHeaders.remove(HttpHeaders.CONTENT_LENGTH);
+                    _generator.completeHeader(requestHeaders, true);
+                }
             }
 
             _exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_RESPONSE);
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected void reset(boolean returnBuffers) throws IOException
     {
         _requestComplete = false;
@@ -479,7 +450,6 @@ public class HttpConnection implements Connection
         _http11 = true;
     }
 
-    /* ------------------------------------------------------------ */
     private boolean shouldClose()
     {
         if (_connectionHeader!=null)
@@ -492,7 +462,6 @@ public class HttpConnection implements Connection
         return !_http11;
     }
 
-    /* ------------------------------------------------------------ */
     private class Handler extends HttpParser.EventHandler
     {
         @Override
@@ -556,19 +525,16 @@ public class HttpConnection implements Connection
         }
     }
 
-    /* ------------------------------------------------------------ */
     public String toString()
     {
         return "HttpConnection@" + hashCode() + "//" + _destination.getAddress().getHost() + ":" + _destination.getAddress().getPort();
     }
 
-    /* ------------------------------------------------------------ */
     public String toDetailString()
     {
         return toString() + " ex=" + _exchange + " " + _timeout.getAge();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return the last
      */
@@ -577,7 +543,6 @@ public class HttpConnection implements Connection
         return _last;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param last
      *            the last to set
@@ -587,10 +552,49 @@ public class HttpConnection implements Connection
         _last = last;
     }
 
-    /* ------------------------------------------------------------ */
     public void close() throws IOException
     {
         _endp.close();
     }
 
+    private class TimeoutTask extends Timeout.Task
+    {
+        public void expired()
+        {
+            HttpExchange ex = null;
+            try
+            {
+                synchronized (HttpConnection.this)
+                {
+                    ex = _exchange;
+                    _exchange = null;
+                    if (ex != null)
+                    {
+                        ex.disassociate(HttpConnection.this);
+                        _destination.returnConnection(HttpConnection.this, true);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.debug(e);
+            }
+            finally
+            {
+                try
+                {
+                    close();
+                }
+                catch (IOException e)
+                {
+                    Log.ignore(e);
+                }
+
+                if (ex != null && ex.getStatus() < HttpExchange.STATUS_COMPLETED)
+                {
+                    ex.setStatus(HttpExchange.STATUS_EXPIRED);
+                }
+            }
+        }
+    }
 }

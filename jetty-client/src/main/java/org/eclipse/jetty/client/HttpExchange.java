@@ -4,18 +4,17 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
@@ -24,42 +23,42 @@ import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.log.Log;
 
 
 /**
- * An HTTP client API that encapsulates Exchange with a HTTP server.
+ * <p>An HTTP client API that encapsulates an exchange (a request and its response) with a HTTP server.</p>
  *
- * This object encapsulates:<ul>
- * <li>The HTTP server. (see {@link #setAddress(InetSocketAddress)} or {@link #setURL(String)})
+ * This object encapsulates:
+ * <ul>
+ * <li>The HTTP server address, see {@link #setAddress(Address)} or {@link #setURL(String)})
  * <li>The HTTP request method, URI and HTTP version (see {@link #setMethod(String)}, {@link #setURI(String)}, and {@link #setVersion(int)}
- * <li>The Request headers (see {@link #addRequestHeader(String, String)} or {@link #setRequestHeader(String, String)})
- * <li>The Request content (see {@link #setRequestContent(Buffer)} or {@link #setRequestContentSource(InputStream)})
+ * <li>The request headers (see {@link #addRequestHeader(String, String)} or {@link #setRequestHeader(String, String)})
+ * <li>The request content (see {@link #setRequestContent(Buffer)} or {@link #setRequestContentSource(InputStream)})
  * <li>The status of the exchange (see {@link #getStatus()})
  * <li>Callbacks to handle state changes (see the onXxx methods such as {@link #onRequestComplete()} or {@link #onResponseComplete()})
  * <li>The ability to intercept callbacks (see {@link #setEventListener(HttpEventListener)}
  * </ul>
  *
- * The HttpExchange class is intended to be used by a developer wishing to have close asynchronous
- * interaction with the the exchange.  Typically a developer will extend the HttpExchange class with a derived
- * class that implements some or all of the onXxx callbacks.  There are also some predefined HttpExchange subtypes
- * that can be used as a basis (see {@link ContentExchange} and {@link CachedExchange}.
+ * <p>The HttpExchange class is intended to be used by a developer wishing to have close asynchronous
+ * interaction with the the exchange.<br />
+ * Typically a developer will extend the HttpExchange class with a derived
+ * class that overrides some or all of the onXxx callbacks. <br />
+ * There are also some predefined HttpExchange subtypes that can be used as a basis,
+ * see {@link org.eclipse.jetty.client.ContentExchange} and {@link org.eclipse.jetty.client.CachedExchange}.</p>
  *
- * <p>Typically the HttpExchange is passed to a the {@link HttpClient#send(HttpExchange)} method, which in
- * turn selects a {@link HttpDestination} and calls it's {@link HttpDestination#send(HttpExchange), which
+ * <p>Typically the HttpExchange is passed to the {@link HttpClient#send(HttpExchange)} method, which in
+ * turn selects a {@link HttpDestination} and calls its {@link HttpDestination#send(HttpExchange), which
  * then creates or selects a {@link HttpConnection} and calls its {@link HttpConnection#send(HttpExchange).
  * A developer may wish to directly call send on the destination or connection if they wish to bypass
- * some handling provided (eg Cookie handling in the HttpDestination).
+ * some handling provided (eg Cookie handling in the HttpDestination).</p>
  *
  * <p>In some circumstances, the HttpClient or HttpDestination may wish to retry a HttpExchange (eg. failed
  * pipeline request, authentication retry or redirection).  In such cases, the HttpClient and/or HttpDestination
  * may insert their own HttpExchangeListener to intercept and filter the call backs intended for the
- * HttpExchange.
- *
- * 
- * 
+ * HttpExchange.</p>
  */
 public class HttpExchange
 {
@@ -73,43 +72,39 @@ public class HttpExchange
     public static final int STATUS_COMPLETED = 7;
     public static final int STATUS_EXPIRED = 8;
     public static final int STATUS_EXCEPTED = 9;
+    public static final int STATUS_CANCELLING = 10;
+    public static final int STATUS_CANCELLED = 11;
 
-    Address _address;
-    String _method = HttpMethods.GET;
-    Buffer _scheme = HttpSchemes.HTTP_BUFFER;
-    int _version = HttpVersions.HTTP_1_1_ORDINAL;
-    String _uri;
-    int _status = STATUS_START;
-    HttpFields _requestFields = new HttpFields();
-    Buffer _requestContent;
-    InputStream _requestContentSource;
-    Buffer _requestContentChunk;
-    boolean _retryStatus = false;
+    // HTTP protocol fields
+    private String _method = HttpMethods.GET;
+    private Buffer _scheme = HttpSchemes.HTTP_BUFFER;
+    private String _uri;
+    private int _version = HttpVersions.HTTP_1_1_ORDINAL;
+    private Address _address;
+    private final HttpFields _requestFields = new HttpFields();
+    private Buffer _requestContent;
+    private InputStream _requestContentSource;
 
-
-    /**
-     * boolean controlling if the exchange will have listeners autoconfigured by
-     * the destination
-     */
-    boolean _configureListeners = true;
-
-
+    private int _status = STATUS_START;
+    private Buffer _requestContentChunk;
+    private boolean _retryStatus = false;
+    // controls if the exchange will have listeners autoconfigured by the destination
+    private boolean _configureListeners = true;
     private HttpEventListener _listener = new Listener();
+    private volatile HttpConnection connection;
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    // methods to build request
-
-    /* ------------------------------------------------------------ */
     public int getStatus()
     {
-        return _status;
+        synchronized (this)
+        {
+            return _status;
+        }
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @deprecated
+     * @param status the status to wait for
+     * @throws InterruptedException if the waiting thread is interrupted
+     * @deprecated Use {@link #waitForDone()} instead
      */
     public void waitForStatus(int status) throws InterruptedException
     {
@@ -122,94 +117,213 @@ public class HttpExchange
         }
     }
 
-
-    public int waitForDone () throws InterruptedException
+    public int waitForDone() throws InterruptedException
     {
         synchronized (this)
         {
             while (!isDone(_status))
                 this.wait();
+            return _status;
         }
-        return _status;
     }
 
-
-
-
-    /* ------------------------------------------------------------ */
     public void reset()
     {
         setStatus(STATUS_START);
     }
 
-    /* ------------------------------------------------------------ */
     void setStatus(int status)
     {
-        synchronized (this)
+        try
         {
-            _status = status;
-            this.notifyAll();
-
-            try
+            synchronized (this)
             {
-                switch (status)
+                // Wakeup any waiter, no matter if the status is really changed
+                notifyAll();
+
+                // State machine: from which old status you can go into which new status
+                switch (_status)
                 {
+                    case STATUS_START:
+                        switch (status)
+                        {
+                            case STATUS_WAITING_FOR_CONNECTION:
+                            case STATUS_WAITING_FOR_COMMIT:
+                            case STATUS_CANCELLING:
+                                _status = status;
+                                break;
+                            default:
+                                throw new IllegalStateException(_status + " => " + status);
+                        }
+                        break;
                     case STATUS_WAITING_FOR_CONNECTION:
+                        switch (status)
+                        {
+                            case STATUS_WAITING_FOR_COMMIT:
+                            case STATUS_CANCELLING:
+                            case STATUS_EXCEPTED:
+                                _status = status;
+                                break;
+                            default:
+                                throw new IllegalStateException(_status + " => " + status);
+                        }
                         break;
-
                     case STATUS_WAITING_FOR_COMMIT:
+                        switch (status)
+                        {
+                            case STATUS_SENDING_REQUEST:
+                            case STATUS_CANCELLING:
+                            case STATUS_EXCEPTED:
+                                _status = status;
+                                break;
+                            case STATUS_EXPIRED:
+                                _status = status;
+                                getEventListener().onExpire();
+                                break;
+                            default:
+                                throw new IllegalStateException(_status + " => " + status);
+                        }
                         break;
-
                     case STATUS_SENDING_REQUEST:
+                        switch (status)
+                        {
+                            case STATUS_WAITING_FOR_RESPONSE:
+                                _status = status;
+                                getEventListener().onRequestCommitted();
+                                break;
+                            case STATUS_CANCELLING:
+                            case STATUS_EXCEPTED:
+                                _status = status;
+                                break;
+                            case STATUS_EXPIRED:
+                                _status = status;
+                                getEventListener().onExpire();
+                                break;
+                            default:
+                                throw new IllegalStateException(_status + " => " + status);
+                        }
                         break;
-
-                    case HttpExchange.STATUS_WAITING_FOR_RESPONSE:
-                        getEventListener().onRequestCommitted();
+                    case STATUS_WAITING_FOR_RESPONSE:
+                        switch (status)
+                        {
+                            case STATUS_PARSING_HEADERS:
+                            case STATUS_CANCELLING:
+                            case STATUS_EXCEPTED:
+                                _status = status;
+                                break;
+                            case STATUS_EXPIRED:
+                                _status = status;
+                                getEventListener().onExpire();
+                                break;
+                            default:
+                                throw new IllegalStateException(_status + " => " + status);
+                        }
                         break;
-
                     case STATUS_PARSING_HEADERS:
+                        switch (status)
+                        {
+                            case STATUS_PARSING_CONTENT:
+                                _status = status;
+                                getEventListener().onResponseHeaderComplete();
+                                break;
+                            case STATUS_CANCELLING:
+                            case STATUS_EXCEPTED:
+                                _status = status;
+                                break;
+                            case STATUS_EXPIRED:
+                                _status = status;
+                                getEventListener().onExpire();
+                                break;
+                            default:
+                                throw new IllegalStateException(_status + " => " + status);
+                        }
                         break;
-
                     case STATUS_PARSING_CONTENT:
-                        getEventListener().onResponseHeaderComplete();
+                        switch (status)
+                        {
+                            case STATUS_COMPLETED:
+                                _status = status;
+                                getEventListener().onResponseComplete();
+                                break;
+                            case STATUS_CANCELLING:
+                            case STATUS_EXCEPTED:
+                                _status = status;
+                                break;
+                            case STATUS_EXPIRED:
+                                _status = status;
+                                getEventListener().onExpire();
+                                break;
+                            default:
+                                throw new IllegalStateException(_status + " => " + status);
+                        }
                         break;
-
                     case STATUS_COMPLETED:
-                        getEventListener().onResponseComplete();
+                        switch (status)
+                        {
+                            case STATUS_START:
+                                _status = status;
+                                break;
+                            case STATUS_CANCELLING:
+                            case STATUS_EXPIRED:
+                                // Don't change the status, it's too late
+                                break;
+                            default:
+                                throw new IllegalStateException(_status + " => " + status);
+                        }
                         break;
-
+                    case STATUS_CANCELLING:
+                        switch (status)
+                        {
+                            case STATUS_CANCELLED:
+                                _status = status;
+                                break;
+                            default:
+                                // Ignore other statuses, we're cancelling
+                                break;
+                        }
+                        break;
+                    case STATUS_EXCEPTED:
                     case STATUS_EXPIRED:
-                        getEventListener().onExpire();
+                    case STATUS_CANCELLED:
+                        switch (status)
+                        {
+                            case STATUS_START:
+                                _status = status;
+                                break;
+                            default:
+                                throw new IllegalStateException(_status + " => " + status);
+                        }
                         break;
-
+                    default:
+                        // Here means I allowed to set a state that I don't recognize
+                        throw new AssertionError(_status + " => " + status);
                 }
             }
-            catch (IOException e)
-            {
-                Log.warn(e);
-            }
+        }
+        catch (IOException x)
+        {
+            Log.warn(x);
         }
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isDone (int status)
     {
-        return ((status == STATUS_COMPLETED) || (status == STATUS_EXPIRED) || (status == STATUS_EXCEPTED));
+        return status == STATUS_COMPLETED ||
+               status == STATUS_EXPIRED ||
+               status == STATUS_EXCEPTED ||
+               status == STATUS_CANCELLED;
     }
 
-    /* ------------------------------------------------------------ */
     public HttpEventListener getEventListener()
     {
         return _listener;
     }
 
-    /* ------------------------------------------------------------ */
     public void setEventListener(HttpEventListener listener)
     {
         _listener=listener;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param url Including protocol, host and port
      */
@@ -236,56 +350,53 @@ public class HttpExchange
         String completePath = uri.getCompletePath();
         if (completePath == null)
             completePath = "/";
-        
+
         setURI(completePath);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param address
+     * @param address the address of the server
      */
     public void setAddress(Address address)
     {
         _address = address;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the address of the server
      */
     public Address getAddress()
     {
         return _address;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param scheme
+     * @param scheme the scheme of the URL (for example 'http')
      */
     public void setScheme(Buffer scheme)
     {
         _scheme = scheme;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the scheme of the URL
      */
     public Buffer getScheme()
     {
         return _scheme;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param version as integer, 9, 10 or 11 for 0.9, 1.0 or 1.1
+     * @param version the HTTP protocol version as integer, 9, 10 or 11 for 0.9, 1.0 or 1.1
      */
     public void setVersion(int version)
     {
         _version = version;
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * @param version the HTTP protocol version as string
+     */
     public void setVersion(String version)
     {
         CachedBuffer v = HttpVersions.CACHE.get(version);
@@ -295,139 +406,127 @@ public class HttpExchange
             _version = v.getOrdinal();
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the HTTP protocol version as integer
+     * @see #setVersion(int)
      */
     public int getVersion()
     {
         return _version;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param method
+     * @param method the HTTP method (for example 'GET')
      */
     public void setMethod(String method)
     {
         _method = method;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the HTTP method
      */
     public String getMethod()
     {
         return _method;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the path of the URL
      */
     public String getURI()
     {
         return _uri;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param uri
+     * @param uri the path of the URL (for example '/foo/bar?a=1')
      */
     public void setURI(String uri)
     {
         _uri = uri;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param name
-     * @param value
+     * Adds the specified request header
+     * @param name the header name
+     * @param value the header value
      */
     public void addRequestHeader(String name, String value)
     {
         getRequestFields().add(name,value);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param name
-     * @param value
+     * Adds the specified request header
+     * @param name the header name
+     * @param value the header value
      */
     public void addRequestHeader(Buffer name, Buffer value)
     {
         getRequestFields().add(name,value);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param name
-     * @param value
+     * Sets the specified request header
+     * @param name the header name
+     * @param value the header value
      */
     public void setRequestHeader(String name, String value)
     {
         getRequestFields().put(name,value);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param name
-     * @param value
+     * Sets the specified request header
+     * @param name the header name
+     * @param value the header value
      */
     public void setRequestHeader(Buffer name, Buffer value)
     {
         getRequestFields().put(name,value);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param value
+     * @param value the content type of the request
      */
     public void setRequestContentType(String value)
     {
         getRequestFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,value);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the request headers
      */
     public HttpFields getRequestFields()
     {
         return _requestFields;
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    // methods to commit and/or send the request
-
-    /* ------------------------------------------------------------ */
     /**
-     * @param requestContent
+     * @param requestContent the request content
      */
     public void setRequestContent(Buffer requestContent)
     {
         _requestContent = requestContent;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param in
+     * @param stream the request content as a stream
      */
-    public void setRequestContentSource(InputStream in)
+    public void setRequestContentSource(InputStream stream)
     {
-        _requestContentSource = in;
+        _requestContentSource = stream;
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * @return the request content as a stream
+     */
     public InputStream getRequestContentSource()
     {
         return _requestContentSource;
     }
 
-    /* ------------------------------------------------------------ */
     public Buffer getRequestContentChunk() throws IOException
     {
         synchronized (this)
@@ -452,126 +551,182 @@ public class HttpExchange
         }
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * @return the request content
+     */
     public Buffer getRequestContent()
     {
         return _requestContent;
     }
 
+    /**
+     * @return whether a retry will be attempted or not
+     */
     public boolean getRetryStatus()
     {
         return _retryStatus;
     }
 
-    public void setRetryStatus( boolean retryStatus )
+    /**
+     * @param retryStatus whether a retry will be attempted or not
+     */
+    public void setRetryStatus(boolean retryStatus)
     {
         _retryStatus = retryStatus;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Cancel this exchange
-     * Currently this implementation does nothing.
+    /**
+     * Initiates the cancelling of this exchange.
+     * The status of the exchange is set to {@link #STATUS_CANCELLING}.
+     * Cancelling the exchange is an asynchronous operation with respect to the request/response,
+     * and as such checking the request/response status of a cancelled exchange may return undefined results
+     * (for example it may have only some of the response headers being sent by the server).
+     * The cancelling of the exchange is completed when the exchange status (see {@link #getStatus()}) is
+     * {@link #STATUS_CANCELLED}, and this can be waited using {@link #waitForDone()}.
      */
     public void cancel()
     {
-
+        setStatus(STATUS_CANCELLING);
+        abort();
     }
 
-    /* ------------------------------------------------------------ */
+    private void abort()
+    {
+        HttpConnection httpConnection = this.connection;
+        if (httpConnection != null)
+        {
+            try
+            {
+                // Closing the connection here will cause the connection
+                // to be returned in HttpConnection.handle()
+                httpConnection.close();
+            }
+            catch (IOException x)
+            {
+                Log.debug(x);
+            }
+        }
+    }
+
+    void associate(HttpConnection connection)
+    {
+        this.connection = connection;
+        if (getStatus() == STATUS_CANCELLING)
+            abort();
+    }
+
+    boolean isAssociated()
+    {
+        return this.connection != null;
+    }
+
+    HttpConnection disassociate(HttpConnection connection)
+    {
+        HttpConnection result = this.connection;
+        this.connection = null;
+        if (getStatus() == STATUS_CANCELLING)
+            setStatus(STATUS_CANCELLED);
+        return result;
+    }
+
     public String toString()
     {
-        return "HttpExchange@" + hashCode() + "=" + _method + "//" + _address.getHost() + ":" + _address.getPort() + _uri + "#" + _status;
+        return getClass().getSimpleName() + "@" + hashCode() + "=" + _method + "//" + _address + _uri + "#" + getStatus();
     }
 
-
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    // methods to handle response
-    
     /**
-     * Called when the request headers has been sent
-     * @throws IOException
+     * Callback called when the request headers have been sent to the server.
+     * This implementation does nothing.
+     * @throws IOException allowed to be thrown by overriding code
      */
     protected void onRequestCommitted() throws IOException
     {
     }
 
     /**
-     * Called when the request and it's body have been sent.
-     * @throws IOException
+     * Callback called when the request and its body have been sent to the server.
+     * This implementation does nothing.
+     * @throws IOException allowed to be thrown by overriding code
      */
     protected void onRequestComplete() throws IOException
     {
     }
 
     /**
-     * Called when a response status line has been received.
-     * @param version HTTP version
-     * @param status HTTP status code
-     * @param reason HTTP status code reason string
-     * @throws IOException
+     * Callback called when a response status line has been received from the server.
+     * This implementation does nothing.
+     * @param version the HTTP version
+     * @param status the HTTP status code
+     * @param reason the HTTP status reason string
+     * @throws IOException allowed to be thrown by overriding code
      */
     protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
     {
     }
 
     /**
-     * Called for each response header received
-     * @param name header name
-     * @param value header value
-     * @throws IOException
+     * Callback called for each response header received from the server.
+     * This implementation does nothing.
+     * @param name the header name
+     * @param value the header value
+     * @throws IOException allowed to be thrown by overriding code
      */
     protected void onResponseHeader(Buffer name, Buffer value) throws IOException
     {
     }
 
     /**
-     * Called when the response header has been completely received.
-     * @throws IOException
+     * Callback called when the response headers have been completely received from the server.
+     * This implementation does nothing.
+     * @throws IOException allowed to be thrown by overriding code
      */
     protected void onResponseHeaderComplete() throws IOException
     {
     }
 
     /**
-     * Called for each chunk of the response content received.
-     * @param content
-     * @throws IOException
+     * Callback called for each chunk of the response content received from the server.
+     * This implementation does nothing.
+     * @param content the buffer holding the content chunk
+     * @throws IOException allowed to be thrown by overriding code
      */
     protected void onResponseContent(Buffer content) throws IOException
     {
     }
 
     /**
-     * Called when the entire response has been received
-     * @throws IOException
+     * Callback called when the entire response has been received from the server
+     * This implementation does nothing.
+     * @throws IOException allowed to be thrown by overriding code
      */
     protected void onResponseComplete() throws IOException
     {
     }
 
     /**
-     * Called when an exception was thrown during an attempt to open a connection
-     * @param ex
+     * Callback called when an exception was thrown during an attempt to establish the connection
+     * with the server (for example the server is not listening).
+     * This implementation logs a warning.
+     * @param x the exception thrown attempting to establish the connection with the server
      */
-    protected void onConnectionFailed(Throwable ex)
+    protected void onConnectionFailed(Throwable x)
     {
-        Log.warn("CONNECTION FAILED on " + this,ex);
+        Log.warn("CONNECTION FAILED " + this,x);
     }
 
     /**
-     * Called when any other exception occurs during handling for the exchange
-     * @param ex
+     * Callback called when any other exception occurs during the handling of this exchange.
+     * This implementation logs a warning.
+     * @param x the exception thrown during the handling of this exchange
      */
-    protected void onException(Throwable ex)
+    protected void onException(Throwable x)
     {
-        Log.warn("EXCEPTION on " + this,ex);
+        Log.warn("EXCEPTION " + this,x);
     }
 
     /**
-     * Called when no response has been received within the timeout.
+     * Callback called when no response has been received within the timeout.
+     * This implementation logs a warning.
      */
     protected void onExpire()
     {
@@ -579,27 +734,29 @@ public class HttpExchange
     }
 
     /**
-     * Called when the request is retried (due to failures or authentication).
-     * Implementations may need to reset any consumable content that needs to
-     * be sent.
-     * @throws IOException
+     * Callback called when the request is retried (due to failures or authentication).
+     * Implementations may need to reset any consumable content that needs to be sent.
+     * This implementation does nothing.
+     * @throws IOException allowed to be thrown by overriding code
      */
     protected void onRetry() throws IOException
-    {}
+    {
+    }
 
     /**
-     * true of the exchange should have listeners configured for it by the destination
-     *
+     * @return true if the exchange should have listeners configured for it by the destination,
      * false if this is being managed elsewhere
-     *
-     * @return
+     * @see #setConfigureListeners(boolean)
      */
     public boolean configureListeners()
     {
         return _configureListeners;
     }
 
-    public void setConfigureListeners(boolean autoConfigure )
+    /**
+     * @param autoConfigure whether the listeners are configured by the destination or elsewhere
+     */
+    public void setConfigureListeners(boolean autoConfigure)
     {
         this._configureListeners = autoConfigure;
     }
@@ -665,14 +822,13 @@ public class HttpExchange
             }
             catch (IOException e)
             {
-                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                Log.debug(e);
             }
         }
     }
 
     /**
-     * @deprecated use {@link org.eclipse.jetty.client.CachedExchange}
-     *
+     * @deprecated use {@link org.eclipse.jetty.client.CachedExchange} instead
      */
     public static class CachedExchange extends org.eclipse.jetty.client.CachedExchange
     {
@@ -683,14 +839,9 @@ public class HttpExchange
     }
 
     /**
-     * @deprecated use {@link org.eclipse.jetty.client.ContentExchange}
-     *
+     * @deprecated use {@link org.eclipse.jetty.client.ContentExchange} instead
      */
     public static class ContentExchange extends org.eclipse.jetty.client.ContentExchange
     {
-
     }
-
-
-
 }

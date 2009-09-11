@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.client;
@@ -26,29 +26,25 @@ import org.eclipse.jetty.io.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
- * A CachedExchange that retains all content for later use.
- *
+ * A exchange that retains response content for later use.
  */
 public class ContentExchange extends CachedExchange
 {
-    int _contentLength = 1024;
-    String _encoding = "utf-8";
-    protected ByteArrayOutputStream _responseContent;
-
-    File _fileForUpload;
+    private int _contentLength = 1024;
+    private String _encoding = "utf-8";
+    private ByteArrayOutputStream _responseContent;
+    private File _fileForUpload;
 
     public ContentExchange()
     {
         super(false);
     }
-    
-    /* ------------------------------------------------------------ */
+
     public ContentExchange(boolean cacheFields)
     {
         super(cacheFields);
-    }    
-    
-    /* ------------------------------------------------------------ */
+    }
+
     public String getResponseContent() throws UnsupportedEncodingException
     {
         if (_responseContent != null)
@@ -58,11 +54,10 @@ public class ContentExchange extends CachedExchange
         return null;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     protected void onResponseHeader(Buffer name, Buffer value) throws IOException
     {
-        super.onResponseHeader(name,value);
+        super.onResponseHeader(name, value);
         int header = HttpHeaders.CACHE.getOrdinal(name);
         switch (header)
         {
@@ -81,7 +76,7 @@ public class ContentExchange extends CachedExchange
     @Override
     protected void onResponseContent(Buffer content) throws IOException
     {
-        super.onResponseContent( content );
+        super.onResponseContent(content);
         if (_responseContent == null)
             _responseContent = new ByteArrayOutputStream(_contentLength);
         content.writeTo(_responseContent);
@@ -92,19 +87,23 @@ public class ContentExchange extends CachedExchange
     {
         if (_fileForUpload != null)
         {
-            _requestContent = null;
-            _requestContentSource = getInputStream();
+            setRequestContent(null);
+            setRequestContentSource(getInputStream());
         }
-        else if (_requestContentSource != null)
+        else
         {
-            if (_requestContentSource.markSupported())
+            InputStream requestContentStream = getRequestContentSource();
+            if (requestContentStream != null)
             {
-                _requestContent = null;
-                _requestContentSource.reset();
-            }
-            else
-            {
-                throw new IOException("Unsupported retry attempt");
+                if (requestContentStream.markSupported())
+                {
+                    setRequestContent(null);
+                    requestContentStream.reset();
+                }
+                else
+                {
+                    throw new IOException("Unsupported retry attempt");
+                }
             }
         }
         super.onRetry();
@@ -112,7 +111,7 @@ public class ContentExchange extends CachedExchange
 
     private InputStream getInputStream() throws IOException
     {
-        return new FileInputStream( _fileForUpload );
+        return new FileInputStream(_fileForUpload);
     }
 
     public File getFileForUpload()
@@ -123,6 +122,6 @@ public class ContentExchange extends CachedExchange
     public void setFileForUpload(File fileForUpload) throws IOException
     {
         this._fileForUpload = fileForUpload;
-        _requestContentSource = getInputStream();
+        setRequestContentSource(getInputStream());
     }
 }
