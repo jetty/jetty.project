@@ -24,6 +24,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 
+import org.eclipse.jetty.http.Parser;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.nio.NIOBuffer;
@@ -237,53 +238,89 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /** Fill the buffer with unencrypted bytes.
+     * Called by a {@link Parser} instance when more data is 
+     * needed to continue parsing a request or a response.
      */
+    @Override
     public int fill(Buffer buffer) throws IOException
     {
+        // This end point only works on NIO buffer type (director
+        // or indirect), so extract the NIO buffer that is wrapped
+        // by the passed jetty Buffer.
         final ByteBuffer bbuf=extractInputBuffer(buffer);
+        
+        // remember the original size of the unencrypted buffer
         int size=buffer.length();
+        
         HandshakeStatus initialStatus = _engine.getHandshakeStatus();
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (bbuf)
         {
             try
             {
+                // Call the SSLEngine unwrap method to process data in
+                // the inBuffer.  If there is no data in the inBuffer, then
+                // super.fill is called to read encrypted bytes.
                 unwrap(bbuf);
 
+                // Loop through the SSL engine state machine
+                
                 int wraps=0;
                 loop: while (true)
                 {
+                    // If we have encrypted data in output buffer
                     if (isBufferingOutput())
                     {
+                        // we must flush it, as the other end might be
+                        // waiting for that outgoing data before sending 
+                        // more incoming data
                         flush();
+                        
+                        // If we were unable to flush all the data, then 
+                        // we should break the loop and wait for the call
+                        // back to handle when the SelectSet detects that
+                        // the channel is writable again.
                         if (isBufferingOutput())
                             break loop;
                     }
 
+                    // handle the current hand share status
                     switch(_engine.getHandshakeStatus())
                     {
                         case FINISHED:
                         case NOT_HANDSHAKING:
+                            // If we are closing, then unwrap must have CLOSED result,
+                            // so return -1 to signal upwards
                             if (_closing)
                                 return -1;
+                            
+                            // otherwise we break loop with the data we have unwrapped.
                             break loop;
 
                         case NEED_UNWRAP:
+                            // Need more data to be unwrapped so try another call to unwrap
                             if (!unwrap(bbuf) && _engine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP)
                             {
+                                // If the unwrap call did not make any progress and we are still in
+                                // NEED_UNWRAP, then we should break the loop and wait for more data to
+                                // arrive.
                                 break loop;
                             }
+                            // progress was made so continue the loop.
                             break;
 
                         case NEED_TASK:
                         {
+                            // A task needs to be run, so run it!
+                            
                             Runnable task;
                             while ((task=_engine.getDelegatedTask())!=null)
                             {
                                 task.run();
                             }
                             
+                            // Detect SUN JVM Bug!!!
                             if(initialStatus==HandshakeStatus.NOT_HANDSHAKING && 
                                _engine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP && wraps==0)
                             {
@@ -299,11 +336,15 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
                         case NEED_WRAP:
                         {
+                            // The SSL needs to send some handshake data to the other side,
+                            // so let fill become a flush for a little bit.
                             wraps++;
                             synchronized(_outBuffer)
                             {
                                 try
                                 {
+                                    // call wrap with empty application buffers, so it can
+                                    // generate required handshake messages into _outNIOBuffer
                                     _outNIOBuffer.compact();
                                     int put=_outNIOBuffer.putIndex();
                                     _outBuffer.position();
@@ -327,6 +368,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                                 }
                             }
 
+                            // flush the encrypted outNIOBuffer
                             flush();
 
                             break;
@@ -342,15 +384,19 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             }
             finally
             {
+                // reset the Buffers
                 buffer.setPutIndex(bbuf.position());
                 bbuf.position(0);
             }
         }
+        
+        // return the number of unencrypted bytes filled.
         return buffer.length()-size; 
 
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public int flush(Buffer buffer) throws IOException
     {
         return flush(buffer,null,null);
@@ -360,6 +406,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     /* ------------------------------------------------------------ */
     /*     
      */
+    @Override
     public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
     {   
         int consumed=0;
@@ -482,6 +529,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void flush() throws IOException
     {
         int len=_outNIOBuffer.length();
@@ -491,6 +539,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             if (_debug) __log.debug(_session+" Flushed "+flushed+"/"+len);
             if (isBufferingOutput())
             {
+                // Try again after yield.... cheaper than a reschedule.
                 Thread.yield();
                 flushed=super.flush(_outNIOBuffer);
                 if (_debug) __log.debug(_session+" flushed "+flushed+"/"+len);
@@ -520,12 +569,16 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             _inNIOBuffer.clear();
 
         int total_filled=0;
+        
+        // loop filling as much encrypted data as we can into the buffer
         while (_inNIOBuffer.space()>0 && super.isOpen())
         {
             try
             {
                 int filled=super.fill(_inNIOBuffer);
                 if (_debug) __log.debug(_session+" unwrap filled "+filled);
+                // break the loop if no progress is made (we have read everything
+                // there is to read).
                 if (filled<=0)
                     break;
                 total_filled+=filled;
@@ -538,40 +591,58 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             }
         }
         
+        // If we have no data
         if (_inNIOBuffer.length()==0)
         {
+            // Check for EOF
+            // TODO - the EOF is delayed so that unwrappable data in the 
+            // buffer is processed before the EoF.  But what if there is
+            // insufficient data in the buffer to do an unwrap? Will EoF 
+            // be totally ignored, or will it be thrown elsewhere????
             if(!isOpen())
                 throw new org.eclipse.jetty.io.EofException();
             return false;
         }
 
+        // We have some in data, so try to unwrap it.
         try
         {
+            // inBuffer is the NIO buffer inside the _inNIOBuffer,
+            // so update its position and limit from the inNIOBuffer.
             _inBuffer.position(_inNIOBuffer.getIndex());
             _inBuffer.limit(_inNIOBuffer.putIndex());
             _result=null;
+            
+            // Do the unwrap
             _result=_engine.unwrap(_inBuffer,buffer);
             if (_debug) __log.debug(_session+" unwrap unwrap "+_result);
+            
+            // skip the bytes consumed
             _inNIOBuffer.skip(_result.bytesConsumed());
         }
         finally
         {
+            // reset the buffer so it can be managed by the _inNIOBuffer again.
             _inBuffer.position(0);
             _inBuffer.limit(_inBuffer.capacity());
         }
 
+        // handle the unwrap results
         switch(_result.getStatus())
         {
             case BUFFER_OVERFLOW:
                 throw new IllegalStateException(_result.toString());
                 
             case BUFFER_UNDERFLOW:
+                // Not enough data, so return and it will be tried again
+                // later when more data arriving causes another dispatch.
                 if (Log.isDebugEnabled()) Log.debug("unwrap {}",_result);
                 return (total_filled > 0);
                 
             case CLOSED:
                 _closing=true;
             case OK:
+                // return true is some bytes somewhere were moved about.
                 return total_filled>0 ||_result.bytesConsumed()>0 || _result.bytesProduced()>0;
             default:
                 Log.warn("unwrap "+_result);
