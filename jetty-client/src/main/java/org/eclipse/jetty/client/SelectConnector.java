@@ -78,6 +78,8 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
 
         _selectorManager.start();
         
+        final boolean direct=_httpClient.getUseDirectBuffers();
+        
         SSLEngine sslEngine=_selectorManager.newSslEngine();
         final SSLSession ssl_session=sslEngine.getSession();
         ThreadLocalBuffers ssl_buffers = new ThreadLocalBuffers()
@@ -90,14 +92,12 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             @Override
             protected Buffer newBuffer(int size)
             {
-                // TODO indirect?
-                return new DirectNIOBuffer(size);
+                return direct?new DirectNIOBuffer(size):new IndirectNIOBuffer(size);
             }
             @Override
             protected Buffer newHeader(int size)
             {
-                // TODO indirect?
-                return new DirectNIOBuffer(size);
+                return direct?new DirectNIOBuffer(size):new IndirectNIOBuffer(size);
             }
             @Override
             protected boolean isHeader(Buffer buffer)
