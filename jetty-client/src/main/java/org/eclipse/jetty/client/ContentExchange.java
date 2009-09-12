@@ -48,9 +48,14 @@ public class ContentExchange extends CachedExchange
     public String getResponseContent() throws UnsupportedEncodingException
     {
         if (_responseContent != null)
-        {
             return _responseContent.toString(_encoding);
-        }
+        return null;
+    }
+
+    public byte[] getResponseContentBytes()
+    {
+        if (_responseContent != null)
+            return _responseContent.toByteArray();
         return null;
     }
 
