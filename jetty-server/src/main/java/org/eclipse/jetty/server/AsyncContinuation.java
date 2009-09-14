@@ -712,6 +712,8 @@ public class AsyncContinuation implements AsyncContext, Continuation
             {
                 case __IDLE:
                 case __DISPATCHED:
+                case __UNCOMPLETED:
+                case __COMPLETED:
                     return false;
 
                 default:
