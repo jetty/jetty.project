@@ -26,39 +26,39 @@ import org.eclipse.jetty.io.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
- * A CachedExchange that retains all content for later use.
- *
+ * A exchange that retains response content for later use.
  */
 public class ContentExchange extends CachedExchange
 {
-    int _contentLength = 1024;
-    String _encoding = "utf-8";
-    protected ByteArrayOutputStream _responseContent;
-
-    File _fileForUpload;
+    private int _contentLength = 1024;
+    private String _encoding = "utf-8";
+    private ByteArrayOutputStream _responseContent;
+    private File _fileForUpload;
 
     public ContentExchange()
     {
         super(false);
     }
     
-    /* ------------------------------------------------------------ */
     public ContentExchange(boolean cacheFields)
     {
         super(cacheFields);
     }    
     
-    /* ------------------------------------------------------------ */
     public String getResponseContent() throws UnsupportedEncodingException
     {
         if (_responseContent != null)
-        {
             return _responseContent.toString(_encoding);
-        }
         return null;
     }
 
-    /* ------------------------------------------------------------ */
+    public byte[] getResponseContentBytes()
+    {
+        if (_responseContent != null)
+            return _responseContent.toByteArray();
+        return null;
+    }
+
     @Override
     protected void onResponseHeader(Buffer name, Buffer value) throws IOException
     {
@@ -92,19 +92,23 @@ public class ContentExchange extends CachedExchange
     {
         if (_fileForUpload != null)
         {
-            _requestContent = null;
-            _requestContentSource = getInputStream();
+            setRequestContent(null);
+            setRequestContentSource(getInputStream());
         }
-        else if (_requestContentSource != null)
+        else
         {
-            if (_requestContentSource.markSupported())
+            InputStream requestContentStream = getRequestContentSource();
+            if (requestContentStream != null)
             {
-                _requestContent = null;
-                _requestContentSource.reset();
-            }
-            else
-            {
-                throw new IOException("Unsupported retry attempt");
+                if (requestContentStream.markSupported())
+                {
+                    setRequestContent(null);
+                    requestContentStream.reset();
+                }
+                else
+                {
+                    throw new IOException("Unsupported retry attempt");
+                }
             }
         }
         super.onRetry();
@@ -123,6 +127,6 @@ public class ContentExchange extends CachedExchange
     public void setFileForUpload(File fileForUpload) throws IOException
     {
         this._fileForUpload = fileForUpload;
-        _requestContentSource = getInputStream();
+        setRequestContentSource(getInputStream());
     }
 }

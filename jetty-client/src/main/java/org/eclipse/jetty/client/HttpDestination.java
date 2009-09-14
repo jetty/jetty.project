@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.log.Log;
 
 /**
  *
- *
+ * @version $Revision: 879 $ $Date: 2009-09-11 16:13:28 +0200 (Fri, 11 Sep 2009) $
  */
 public class HttpDestination
 {
@@ -50,7 +50,6 @@ public class HttpDestination
     private PathMap _authorizations;
     private List<HttpCookie> _cookies;
 
-    /* ------------------------------------------------------------ */
     public void dump() throws IOException
     {
         synchronized (this)
@@ -70,7 +69,6 @@ public class HttpDestination
     /* The queue of exchanged for this destination if connections are limited */
     private LinkedList<HttpExchange> _queue = new LinkedList<HttpExchange>();
 
-    /* ------------------------------------------------------------ */
     HttpDestination(HttpClient client, Address address, boolean ssl, int maxConnections)
     {
         _client = client;
@@ -82,31 +80,26 @@ public class HttpDestination
         _hostHeader = new ByteArrayBuffer(addressString);
     }
 
-    /* ------------------------------------------------------------ */
     public Address getAddress()
     {
         return _address;
     }
 
-    /* ------------------------------------------------------------ */
     public Buffer getHostHeader()
     {
         return _hostHeader;
     }
 
-    /* ------------------------------------------------------------ */
     public HttpClient getHttpClient()
     {
         return _client;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isSecure()
     {
         return _ssl;
     }
 
-    /* ------------------------------------------------------------ */
     public void addAuthorization(String pathSpec, Authorization authorization)
     {
         synchronized (this)
@@ -119,7 +112,6 @@ public class HttpDestination
         // TODO query and remove methods
     }
 
-    /* ------------------------------------------------------------------------------- */
     public void addCookie(HttpCookie cookie)
     {
         synchronized (this)
@@ -132,7 +124,6 @@ public class HttpDestination
         // TODO query, remove and age methods
     }
 
-    /* ------------------------------------------------------------------------------- */
     /**
      * Get a connection. We either get an idle connection if one is available, or
      * we make a new connection, if we have not yet reached maxConnections. If we
@@ -193,7 +184,6 @@ public class HttpDestination
         return connection;
     }
 
-    /* ------------------------------------------------------------------------------- */
     public HttpConnection reserveConnection(long timeout) throws IOException
     {
         HttpConnection connection = getConnection(timeout);
@@ -202,7 +192,6 @@ public class HttpDestination
         return connection;
     }
 
-    /* ------------------------------------------------------------------------------- */
     public HttpConnection getIdleConnection() throws IOException
     {
         long now = System.currentTimeMillis();
@@ -232,7 +221,6 @@ public class HttpDestination
         }
     }
 
-    /* ------------------------------------------------------------------------------- */
     protected void startNewConnection()
     {
         try
@@ -245,12 +233,11 @@ public class HttpDestination
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            Log.debug(e);
             onConnectionFailed(e);
         }
     }
 
-    /* ------------------------------------------------------------------------------- */
     public void onConnectionFailed(Throwable throwable)
     {
         Throwable connect_failure = null;
@@ -284,7 +271,6 @@ public class HttpDestination
         }
     }
 
-    /* ------------------------------------------------------------------------------- */
     public void onException(Throwable throwable)
     {
         synchronized (this)
@@ -299,7 +285,6 @@ public class HttpDestination
         }
     }
 
-    /* ------------------------------------------------------------------------------- */
     public void onNewConnection(HttpConnection connection) throws IOException
     {
         HttpConnection q_connection = null;
@@ -338,7 +323,6 @@ public class HttpDestination
         }
     }
 
-    /* ------------------------------------------------------------------------------- */
     public void returnConnection(HttpConnection connection, boolean close) throws IOException
     {
         if (connection.isReserved())
@@ -387,7 +371,6 @@ public class HttpDestination
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void send(HttpExchange ex) throws IOException
     {
         LinkedList<String> listeners = _client.getRegisteredListeners();
@@ -423,7 +406,6 @@ public class HttpDestination
         doSend(ex);
     }
 
-    /* ------------------------------------------------------------ */
     public void resend(HttpExchange ex) throws IOException
     {
         ex.getEventListener().onRetry();
@@ -431,7 +413,6 @@ public class HttpDestination
         doSend(ex);
     }
 
-    /* ------------------------------------------------------------ */
     protected void doSend(HttpExchange ex) throws IOException
     {
         // add cookies
@@ -481,13 +462,11 @@ public class HttpDestination
         }
     }
 
-    /* ------------------------------------------------------------ */
     public synchronized String toString()
     {
         return "HttpDestination@" + hashCode() + "//" + _address.getHost() + ":" + _address.getPort() + "(" + _connections.size() + "," + _idle.size() + "," + _queue.size() + ")";
     }
 
-    /* ------------------------------------------------------------ */
     public synchronized String toDetailString()
     {
         StringBuilder b = new StringBuilder();
@@ -497,13 +476,10 @@ public class HttpDestination
         {
             for (HttpConnection connection : _connections)
             {
-                if (connection._exchange != null)
-                {
-                    b.append(connection.toDetailString());
-                    if (_idle.contains(connection))
-                        b.append(" IDLE");
-                    b.append('\n');
-                }
+                b.append(connection.toDetailString());
+                if (_idle.contains(connection))
+                    b.append(" IDLE");
+                b.append('\n');
             }
         }
         b.append("--");
@@ -512,37 +488,31 @@ public class HttpDestination
         return b.toString();
     }
 
-    /* ------------------------------------------------------------ */
     public void setProxy(Address proxy)
     {
         _proxy = proxy;
     }
 
-    /* ------------------------------------------------------------ */
     public Address getProxy()
     {
         return _proxy;
     }
 
-    /* ------------------------------------------------------------ */
     public Authorization getProxyAuthentication()
     {
         return _proxyAuthentication;
     }
 
-    /* ------------------------------------------------------------ */
     public void setProxyAuthentication(Authorization authentication)
     {
         _proxyAuthentication = authentication;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean isProxied()
     {
         return _proxy != null;
     }
 
-    /* ------------------------------------------------------------ */
     public void close() throws IOException
     {
         synchronized (this)
@@ -553,5 +523,4 @@ public class HttpDestination
             }
         }
     }
-
 }
