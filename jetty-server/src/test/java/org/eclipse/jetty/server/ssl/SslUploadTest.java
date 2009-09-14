@@ -28,6 +28,7 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -37,19 +38,22 @@ import junit.framework.TestCase;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.IO;
 
 /**
  * @version $Revision$ $Date$
  */
 public class SslUploadTest extends TestCase
 {
+    int _total;
+    
     public void test() throws Exception
     {
         Server server = new Server();
         SslConnector connector = new SslSelectChannelConnector();
         server.addConnector(connector);
 
-        String keystorePath = System.getProperty("basedir") + "/src/test/resources/keystore";
+        String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
         connector.setKeystore(keystorePath);
         connector.setPassword("storepwd");
         connector.setKeyPassword("keypwd");
@@ -68,28 +72,11 @@ public class SslUploadTest extends TestCase
             SSLContext sslContext = SSLContext.getInstance("SSL");
             sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
 
-            URL url = new URL("https://localhost:" + connector.getLocalPort() + "/");
-            final HttpsURLConnection connection = (HttpsURLConnection)url.openConnection();
-            connection.setSSLSocketFactory(sslContext.getSocketFactory());
-            connection.setHostnameVerifier(new EmptyHostnameVerifier());
-            connection.setDoInput(true);
-            connection.setDoOutput(true);
-            connection.setRequestMethod("POST");
-            connection.setUseCaches(false);
-            connection.connect();
+            _total=0;
+            final SSLSocket socket =  (SSLSocket)sslContext.getSocketFactory().createSocket("localhost",connector.getLocalPort());
 
-            // 64 MiB
-//            byte[] requestContent = new byte[67108864];
-            // 16 MiB
-            byte[] requestContent = new byte[16777216];
-            Arrays.fill(requestContent, (byte)120);
-
-            OutputStream output = connection.getOutputStream();
-            output.write(requestContent);
-            output.flush();
-
-/*
             // Simulate async close
+            /*
             new Thread()
             {
                 @Override
@@ -97,8 +84,12 @@ public class SslUploadTest extends TestCase
                 {
                     try
                     {
-                        sleep(200);
-                        connection.disconnect();
+                        sleep(100);
+                        socket.close();
+                    }
+                    catch (IOException x)
+                    {
+                        x.printStackTrace();
                     }
                     catch (InterruptedException x)
                     {
@@ -106,19 +97,33 @@ public class SslUploadTest extends TestCase
                     }
                 }
             }.start();
-*/
+            */
 
+            
+            
             long start = System.nanoTime();
-            InputStream input = connection.getInputStream();
+            OutputStream out = socket.getOutputStream();
+            out.write("POST / HTTP/1.1\r\n".getBytes());
+            out.write("Host: localhost\r\n".getBytes());
+            out.write("Content-Length: 16777216\r\n".getBytes());
+            out.write("Content-Type: bytes\r\n".getBytes());
+            out.write("Connection: close\r\n".getBytes());
+            out.write("\r\n".getBytes());
+            out.flush();
+
+            byte[] requestContent = new byte[16777216];
+            Arrays.fill(requestContent, (byte)120);
+            out.write(requestContent);
+            out.flush();
+            
+            InputStream in = socket.getInputStream();
+            String response = IO.toString(in);
+            // System.err.println(response);
+
             long end = System.nanoTime();
             System.out.println("upload time: " + TimeUnit.NANOSECONDS.toMillis(end - start));
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
-            String line;
-            while ((line = reader.readLine()) != null)
-                System.err.println(line);
-
-            connection.disconnect();
+            assertEquals(requestContent.length,_total);
+            
         }
         finally
         {
@@ -126,12 +131,24 @@ public class SslUploadTest extends TestCase
         }
     }
 
-    private static class EmptyHandler extends AbstractHandler
+    private class EmptyHandler extends AbstractHandler
     {
         public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
         {
-            System.out.println("path = " + path);
+            // System.out.println("path = " + path);
             request.setHandled(true);
+            
+            InputStream in = request.getInputStream();
+            byte[] b = new byte[4096*4];
+            int l;
+            
+            while((l=in.read(b))>=0)
+            {
+                // System.out.println("Read "+l);
+                _total+=l;
+            }
+            System.err.println("Read "+_total);
+            
         }
     }
 

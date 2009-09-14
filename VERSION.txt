@@ -17,6 +17,7 @@ jetty-7.0.0.RC6-SNAPSHOT
  + JETTY-1098 Default form encoding is UTF8
  + JETTY-1101 Updated servlet3 continuation constructor
  + JETTY-1105 Custom error pages aren't working
+ + JETTY-1108 SSL EOF detection
  + 288514 AbstractConnector does not handle InterruptedExceptions on shutdown
  + 288466 LocalConnector is not thread safe
  + 288772 Failure to connect does not set status to EXCEPTED

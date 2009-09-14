@@ -27,6 +27,7 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import org.eclipse.jetty.http.Parser;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
@@ -586,21 +587,22 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             catch(IOException e)
             {
                 if (_inNIOBuffer.length()==0)
+                {
+                    _outNIOBuffer.clear();
                     throw e;
+                }
                 break;
             }
         }
         
-        // If we have no data
-        if (_inNIOBuffer.length()==0)
+        // If we have no progress and no data
+        if (total_filled==0 && _inNIOBuffer.length()==0)
         {
-            // Check for EOF
-            // TODO - the EOF is delayed so that unwrappable data in the 
-            // buffer is processed before the EoF.  But what if there is
-            // insufficient data in the buffer to do an unwrap? Will EoF 
-            // be totally ignored, or will it be thrown elsewhere????
             if(!isOpen())
-                throw new org.eclipse.jetty.io.EofException();
+            {
+                _outNIOBuffer.clear();
+                throw new EofException();
+            }
             return false;
         }
 
@@ -634,9 +636,17 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 throw new IllegalStateException(_result.toString());
                 
             case BUFFER_UNDERFLOW:
-                // Not enough data, so return and it will be tried again
+                // Not enough data, 
+                // If we are closed, we will never get more, so EOF
+                // else return and we will be tried again
                 // later when more data arriving causes another dispatch.
                 if (Log.isDebugEnabled()) Log.debug("unwrap {}",_result);
+                if(!isOpen())
+                {
+                    _inNIOBuffer.clear();
+                    _outNIOBuffer.clear();
+                    throw new EofException();
+                }
                 return (total_filled > 0);
                 
             case CLOSED:

@@ -375,6 +375,9 @@ public class HttpConnection implements Connection
                 {
                     if (_request._async.isAsync())
                     {
+                        // TODO - handle the case of input being read for a 
+                        // suspended request.
+                        
                         Log.debug("async request",_request);
                         if (!_request._async.isComplete())
                             handleRequest();
@@ -419,8 +422,8 @@ public class HttpConnection implements Connection
 
                         if (!progress)
                             return;
-                        progress=false;
                     }
+                    progress=false;
                 }
                 catch (HttpException e)
                 {
