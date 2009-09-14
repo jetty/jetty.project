@@ -65,6 +65,11 @@ import org.eclipse.jetty.util.thread.Timeout;
  * a connection. Where appropriate, allocated buffers are also kept associated
  * with the connection via the parser and/or generator.
  * </p>
+ * <p>
+ * The connection state is held by 3 separate state machines: The request state, the 
+ * response state and the continuation state.  All three state machines must be driven
+ * to completion for every request, and all three can complete in any order.
+ * 
  *
  */
 public class HttpConnection implements Connection

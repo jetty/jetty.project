@@ -14,6 +14,8 @@
 
 package org.eclipse.jetty.client;
 
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -26,12 +28,17 @@ public class ConnectionFailedTest extends TestCase
 {
     public void testConnectionFailed() throws Exception
     {
+        ServerSocket socket = new ServerSocket();
+        socket.bind(null);
+        int port=socket.getLocalPort();
+        socket.close();
+        
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
         CountDownLatch latch = new CountDownLatch(1);
         HttpExchange exchange = new ConnectionFailedExchange(latch);
-        exchange.setAddress(new Address("localhost", 8080));
+        exchange.setAddress(new Address("localhost", port)); 
         exchange.setURI("/");
 
         httpClient.send(exchange);
