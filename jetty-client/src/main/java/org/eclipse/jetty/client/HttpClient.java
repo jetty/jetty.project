@@ -38,6 +38,7 @@ import org.eclipse.jetty.client.security.Authorization;
 import org.eclipse.jetty.client.security.RealmResolver;
 import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
@@ -709,38 +710,45 @@ public class HttpClient extends HttpBuffers implements Attributes
         _maxRetries = retries;
     }
 
+    /* ------------------------------------------------------------ */
     public String getTrustStoreLocation()
     {
         return _trustStoreLocation;
     }
 
+    /* ------------------------------------------------------------ */
     public void setTrustStoreLocation(String trustStoreLocation)
     {
         this._trustStoreLocation = trustStoreLocation;
     }
 
+    /* ------------------------------------------------------------ */
     public String getKeyStoreLocation()
     {
         return _keyStoreLocation;
     }
 
+    /* ------------------------------------------------------------ */
     public void setKeyStoreLocation(String keyStoreLocation)
     {
         this._keyStoreLocation = keyStoreLocation;
     }
 
-    public void setKeyStorePassword(String _keyStorePassword)
+    /* ------------------------------------------------------------ */
+    public void setKeyStorePassword(String keyStorePassword)
     {
-        this._keyStorePassword = _keyStorePassword;
+        this._keyStorePassword = new Password(keyStorePassword).toString();
     }
 
-    public void setKeyManagerPassword(String _keyManagerPassword)
+    /* ------------------------------------------------------------ */
+    public void setKeyManagerPassword(String keyManagerPassword)
     {
-        this._keyManagerPassword = _keyManagerPassword;
+        this._keyManagerPassword = new Password(keyManagerPassword).toString();;
     }
 
-    public void setTrustStorePassword(String _trustStorePassword)
+    /* ------------------------------------------------------------ */
+    public void setTrustStorePassword(String trustStorePassword)
     {
-        this._trustStorePassword = _trustStorePassword;
+        this._trustStorePassword = new Password(trustStorePassword).toString();;
     }
 }

@@ -3,6 +3,7 @@ jetty-7.0.1-SNAPSHOT
  + Promoted Jetty Centralized Logging from Sandbox
  + 288401 HttpExchange.cancel() Method Unimplemented
  + 289265 Test harness for async input
+ + 289027 deobfuscate HttpClient SSL passwords
 
 jetty-7.0.0.RC6-SNAPSHOT
  + 288055 jetty-client fails to resolve failed resolution attempts correctly
