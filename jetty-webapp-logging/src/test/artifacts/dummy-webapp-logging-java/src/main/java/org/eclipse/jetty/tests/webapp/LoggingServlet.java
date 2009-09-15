@@ -16,6 +16,7 @@
 
 package org.eclipse.jetty.tests.webapp;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -31,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 public class LoggingServlet extends HttpServlet
 {
     private static final long serialVersionUID = 1L;
+    private static final String LOGID = "LoggingServlet(java)";
     private Logger log = Logger.getLogger(LoggingServlet.class.getName());
 
     /**
@@ -38,7 +40,7 @@ public class LoggingServlet extends HttpServlet
      */
     public LoggingServlet()
     {
-        log.log(Level.FINE,"LoggingServlet(java) initialized");
+        log.log(Level.FINE,LOGID + " initialized");
     }
 
     /**
@@ -47,6 +49,15 @@ public class LoggingServlet extends HttpServlet
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        log.log(Level.INFO,"LoggingServlet(java) GET requested");
+        log.log(Level.INFO,LOGID + " GET requested");
+
+        log.log(Level.WARNING,LOGID + " Slightly warn, with a chance of log events");
+
+        log.log(Level.WARNING,LOGID + " Nothing is (intentionally) being output by this Servlet");
+
+        IOException severe = new FileNotFoundException("A file cannot be found");
+
+        log.log(Level.SEVERE,LOGID + " Whoops (intentionally) causing a Throwable",severe);
+
     }
 }

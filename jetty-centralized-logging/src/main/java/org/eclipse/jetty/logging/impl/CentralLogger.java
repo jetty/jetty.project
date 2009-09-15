@@ -42,6 +42,12 @@ public class CentralLogger extends MarkerIgnoringBase
 
     private void log(Severity severity, String message, Throwable t)
     {
+        if (!level.isEnabled(severity))
+        {
+            // Don't log level
+            return;
+        }
+
         String now = new SimpleDateFormat(dateFormat).format(new Date());
 
         for (Appender appender : appenders)
@@ -59,18 +65,33 @@ public class CentralLogger extends MarkerIgnoringBase
 
     private void logFormatted(Severity severity, String format, Object arg)
     {
+        if (!level.isEnabled(severity))
+        {
+            // Don't log level
+            return;
+        }
         String msg = MessageFormatter.format(format,arg);
         log(severity,msg,null);
     }
 
     private void logFormatted(Severity severity, String format, Object arg1, Object arg2)
     {
+        if (!level.isEnabled(severity))
+        {
+            // Don't log level
+            return;
+        }
         String msg = MessageFormatter.format(format,arg1,arg2);
         log(severity,msg,null);
     }
 
     private void logFormatted(Severity severity, String format, Object[] argArray)
     {
+        if (!level.isEnabled(severity))
+        {
+            // Don't log level
+            return;
+        }
         String msg = MessageFormatter.arrayFormat(format,argArray);
         log(severity,msg,null);
     }

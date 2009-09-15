@@ -16,6 +16,7 @@
 package org.eclipse.jetty.webapp.logging;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +41,7 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
     private static final String LOGGING_SERVLET_ID = "org.eclipse.jetty.tests.webapp.LoggingServlet";
     private TestAppender testAppender;
 
-    private void assertContainsLogEvents(TestAppender capturedEvents, LogEvent[] expectedLogs)
+    private void assertContainsLogEvents(TestAppender capturedEvents, List<LogEvent> expectedLogs)
     {
         for (LogEvent expectedEvent : expectedLogs)
         {
@@ -145,15 +146,35 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
 
         server.stop();
 
-        TestAppender.LogEvent expectedLogs[] =
-        { new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(log4j) initialized"),
-                new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(log4j) GET requested"),
-                new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) initialized"),
-                new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) GET requested"),
-                new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) initialized"),
-                new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) GET requested"),
-                new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(java) initialized"),
-                new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(java) GET requested") };
+        String prefix = "LoggingServlet(commons-logging)";
+        List<LogEvent> expectedLogs = new ArrayList<LogEvent>();
+        // expectedLogs.add(new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,prefix + " initialized"));
+        expectedLogs.add(new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,prefix + " GET requested"));
+        expectedLogs.add(new LogEvent(Severity.WARN,LOGGING_SERVLET_ID,prefix + " Slightly warn, with a chance of log events"));
+        expectedLogs.add(new LogEvent(Severity.ERROR,LOGGING_SERVLET_ID,prefix + " Nothing is (intentionally) being output by this Servlet"));
+        expectedLogs.add(new LogEvent(Severity.ERROR,LOGGING_SERVLET_ID,prefix + " Whoops (intentionally) causing a Throwable")
+                .expectedThrowable(new FileNotFoundException("A file cannot be found")));
+        prefix = "LoggingServlet(log4j)";
+        // expectedLogs.add(new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,prefix + " initialized"));
+        expectedLogs.add(new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,prefix + " GET requested"));
+        expectedLogs.add(new LogEvent(Severity.WARN,LOGGING_SERVLET_ID,prefix + " Slightly warn, with a chance of log events"));
+        expectedLogs.add(new LogEvent(Severity.ERROR,LOGGING_SERVLET_ID,prefix + " Nothing is (intentionally) being output by this Servlet"));
+        expectedLogs.add(new LogEvent(Severity.ERROR,LOGGING_SERVLET_ID,prefix + " Whoops (intentionally) causing a Throwable")
+                .expectedThrowable(new FileNotFoundException("A file cannot be found")));
+        prefix = "LoggingServlet(java)";
+        // expectedLogs.add(new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,prefix + " initialized"));
+        expectedLogs.add(new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,prefix + " GET requested"));
+        expectedLogs.add(new LogEvent(Severity.WARN,LOGGING_SERVLET_ID,prefix + " Slightly warn, with a chance of log events"));
+        expectedLogs.add(new LogEvent(Severity.WARN,LOGGING_SERVLET_ID,prefix + " Nothing is (intentionally) being output by this Servlet"));
+        expectedLogs.add(new LogEvent(Severity.ERROR,LOGGING_SERVLET_ID,prefix + " Whoops (intentionally) causing a Throwable")
+                .expectedThrowable(new FileNotFoundException("A file cannot be found")));
+        prefix = "LoggingServlet(slf4j)";
+        // expectedLogs.add(new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,prefix + " initialized"));
+        expectedLogs.add(new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,prefix + " GET requested"));
+        expectedLogs.add(new LogEvent(Severity.WARN,LOGGING_SERVLET_ID,prefix + " Slightly warn, with a chance of log events"));
+        expectedLogs.add(new LogEvent(Severity.ERROR,LOGGING_SERVLET_ID,prefix + " Nothing is (intentionally) being output by this Servlet"));
+        expectedLogs.add(new LogEvent(Severity.ERROR,LOGGING_SERVLET_ID,prefix + " Whoops (intentionally) causing a Throwable")
+                .expectedThrowable(new FileNotFoundException("A file cannot be found")));
 
         assertContainsLogEvents(testAppender,expectedLogs);
     }
@@ -168,9 +189,14 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
 
         server.stop();
 
-        TestAppender.LogEvent expectedLogs[] =
-        { new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) initialized"),
-                new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(commons-logging) GET requested") };
+        String prefix = "LoggingServlet(commons-logging)";
+        List<LogEvent> expectedLogs = new ArrayList<LogEvent>();
+        // expectedLogs.add(new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,prefix + " initialized"));
+        expectedLogs.add(new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,prefix + " GET requested"));
+        expectedLogs.add(new LogEvent(Severity.WARN,LOGGING_SERVLET_ID,prefix + " Slightly warn, with a chance of log events"));
+        expectedLogs.add(new LogEvent(Severity.ERROR,LOGGING_SERVLET_ID,prefix + " Nothing is (intentionally) being output by this Servlet"));
+        expectedLogs.add(new LogEvent(Severity.ERROR,LOGGING_SERVLET_ID,prefix + " Whoops (intentionally) causing a Throwable")
+                .expectedThrowable(new FileNotFoundException("A file cannot be found")));
 
         assertContainsLogEvents(testAppender,expectedLogs);
     }
@@ -185,9 +211,14 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
 
         server.stop();
 
-        TestAppender.LogEvent expectedLogs[] =
-        { new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(java) initialized"),
-                new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(java) GET requested") };
+        String prefix = "LoggingServlet(java)";
+        List<LogEvent> expectedLogs = new ArrayList<LogEvent>();
+        // expectedLogs.add(new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,prefix + " initialized"));
+        expectedLogs.add(new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,prefix + " GET requested"));
+        expectedLogs.add(new LogEvent(Severity.WARN,LOGGING_SERVLET_ID,prefix + " Slightly warn, with a chance of log events"));
+        expectedLogs.add(new LogEvent(Severity.WARN,LOGGING_SERVLET_ID,prefix + " Nothing is (intentionally) being output by this Servlet"));
+        expectedLogs.add(new LogEvent(Severity.ERROR,LOGGING_SERVLET_ID,prefix + " Whoops (intentionally) causing a Throwable")
+                .expectedThrowable(new FileNotFoundException("A file cannot be found")));
 
         assertContainsLogEvents(testAppender,expectedLogs);
     }
@@ -202,9 +233,14 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
 
         server.stop();
 
-        TestAppender.LogEvent expectedLogs[] =
-        { new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(log4j) initialized"),
-                new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(log4j) GET requested") };
+        String prefix = "LoggingServlet(log4j)";
+        List<LogEvent> expectedLogs = new ArrayList<LogEvent>();
+        // expectedLogs.add(new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,prefix + " initialized"));
+        expectedLogs.add(new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,prefix + " GET requested"));
+        expectedLogs.add(new LogEvent(Severity.WARN,LOGGING_SERVLET_ID,prefix + " Slightly warn, with a chance of log events"));
+        expectedLogs.add(new LogEvent(Severity.ERROR,LOGGING_SERVLET_ID,prefix + " Nothing is (intentionally) being output by this Servlet"));
+        expectedLogs.add(new LogEvent(Severity.ERROR,LOGGING_SERVLET_ID,prefix + " Whoops (intentionally) causing a Throwable")
+                .expectedThrowable(new FileNotFoundException("A file cannot be found")));
 
         assertContainsLogEvents(testAppender,expectedLogs);
     }
@@ -219,9 +255,14 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
 
         server.stop();
 
-        TestAppender.LogEvent expectedLogs[] =
-        { new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) initialized"),
-                new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,"LoggingServlet(slf4j) GET requested") };
+        String prefix = "LoggingServlet(slf4j)";
+        List<LogEvent> expectedLogs = new ArrayList<LogEvent>();
+        // expectedLogs.add(new LogEvent(Severity.DEBUG,LOGGING_SERVLET_ID,prefix + " initialized"));
+        expectedLogs.add(new LogEvent(Severity.INFO,LOGGING_SERVLET_ID,prefix + " GET requested"));
+        expectedLogs.add(new LogEvent(Severity.WARN,LOGGING_SERVLET_ID,prefix + " Slightly warn, with a chance of log events"));
+        expectedLogs.add(new LogEvent(Severity.ERROR,LOGGING_SERVLET_ID,prefix + " Nothing is (intentionally) being output by this Servlet"));
+        expectedLogs.add(new LogEvent(Severity.ERROR,LOGGING_SERVLET_ID,prefix + " Whoops (intentionally) causing a Throwable")
+                .expectedThrowable(new FileNotFoundException("A file cannot be found")));
 
         assertContainsLogEvents(testAppender,expectedLogs);
     }

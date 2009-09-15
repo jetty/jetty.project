@@ -101,7 +101,7 @@
 
   <profiles>
     <profile>
-      <id>copy-fresh-webapps</id>
+      <id>copy-test-webapps</id>
       <build>
         <plugins>
           <plugin>
@@ -109,7 +109,7 @@
             <artifactId>maven-dependency-plugin</artifactId>
             <executions>
               <execution>
-                <id>copy-testing-wars</id>
+                <id>testwarcopy</id>
                 <phase>validate</phase>
                 <goals>
                   <goal>copy</goal>

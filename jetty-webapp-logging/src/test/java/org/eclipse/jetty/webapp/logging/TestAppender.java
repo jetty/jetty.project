@@ -50,6 +50,119 @@ public class TestAppender implements Appender
             this(null,severity,name,message,null);
         }
 
+        public LogEvent expectedThrowable(Throwable t)
+        {
+            this.t = t;
+            return this;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((message == null)?0:message.hashCode());
+            result = prime * result + ((name == null)?0:name.hashCode());
+            result = prime * result + ((severity == null)?0:severity.hashCode());
+            if (t != null)
+            {
+                result = prime * result + t.getClass().hashCode();
+                if (t.getMessage() != null)
+                {
+                    result = prime * result + t.getMessage().hashCode();
+                }
+                else
+                {
+                    result = prime * result + 0;
+                }
+            }
+            else
+            {
+                result = prime * result + 0;
+            }
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            if (this == obj)
+            {
+                return true;
+            }
+            if (obj == null)
+            {
+                return false;
+            }
+            if (getClass() != obj.getClass())
+            {
+                return false;
+            }
+            LogEvent other = (LogEvent)obj;
+            if (message == null)
+            {
+                if (other.message != null)
+                {
+                    return false;
+                }
+            }
+            else if (!message.equals(other.message))
+            {
+                return false;
+            }
+            if (name == null)
+            {
+                if (other.name != null)
+                {
+                    return false;
+                }
+            }
+            else if (!name.equals(other.name))
+            {
+                return false;
+            }
+            if (severity == null)
+            {
+                if (other.severity != null)
+                {
+                    return false;
+                }
+            }
+            else if (!severity.equals(other.severity))
+            {
+                return false;
+            }
+
+            // Throwable
+            if (t == null)
+            {
+                if (other.t != null)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (!t.getClass().equals(other.t.getClass()))
+                {
+                    return false;
+                }
+                if (t.getMessage() == null)
+                {
+                    if (other.t.getMessage() != null)
+                    {
+                        return false;
+                    }
+                }
+                else if (!t.getMessage().equals(other.t.getMessage()))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         @Override
         public String toString()
         {
@@ -57,6 +170,11 @@ public class TestAppender implements Appender
             buf.append(severity.name()).append("|");
             buf.append(name).append("|");
             buf.append(message);
+            if (t != null)
+            {
+                buf.append("|").append(t.getClass().getName());
+                buf.append("(\"").append(t.getMessage()).append("\")");
+            }
             return buf.toString();
         }
     }
@@ -95,6 +213,7 @@ public class TestAppender implements Appender
 
     public boolean contains(LogEvent expectedEvent)
     {
+        /*
         // System.out.println("Looking for: " + expectedEvent);
         for (LogEvent event : events)
         {
@@ -107,12 +226,27 @@ public class TestAppender implements Appender
             {
                 continue; // not a match. skip.
             }
+            if (expectedEvent.t != null)
+            {
+                if (event.t == null)
+                {
+                    continue; // not a match. skip.
+                }
+                if (!event.t.getClass().equals(expectedEvent.t.getClass()))
+                {
+                    continue; // not a match. skip.
+                }
+                if (!event.t.getMessage().equals(expectedEvent.t.getMessage()))
+                {
+                    continue; // not a match. skip.
+                }
+            }
             if (event.message.equals(expectedEvent.message))
             {
                 return true;
             }
-        }
-        return false;
+        }*/
+        return events.contains(expectedEvent);
     }
 
     public List<LogEvent> getEvents()
