@@ -41,25 +41,4 @@ public class BlockingHttpExchangeCancelTest extends AbstractHttpExchangeCancelTe
     {
         return httpClient;
     }
-
-    public void DONTtestHttpExchangeOnExpire() throws Exception
-    {
-        HttpClient httpClient = getHttpClient();
-        httpClient.stop();
-        httpClient.setSoTimeout(2000);
-        httpClient.start();
-
-        TestHttpExchange exchange = new TestHttpExchange();
-        exchange.setAddress(newAddress());
-        exchange.setURI("/?action=wait5000");
-
-        httpClient.send(exchange);
-
-        int status = exchange.waitForDone();
-        assertEquals(HttpExchange.STATUS_EXPIRED, status);
-        assertFalse(exchange.isResponseCompleted());
-        assertFalse(exchange.isFailed());
-        assertTrue(exchange.isExpired());
-        assertFalse(exchange.isAssociated());
-    }
 }

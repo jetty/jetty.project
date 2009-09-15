@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.client;
@@ -16,12 +16,10 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 
-import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.ssl.SslSelectChannelEndPoint;
@@ -77,18 +75,18 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         super.doStart();
 
         _selectorManager.start();
-        
+
         final boolean direct=_httpClient.getUseDirectBuffers();
-        
+
         SSLEngine sslEngine=_selectorManager.newSslEngine();
         final SSLSession ssl_session=sslEngine.getSession();
         ThreadLocalBuffers ssl_buffers = new ThreadLocalBuffers()
         {
             {
                 super.setBufferSize(ssl_session.getApplicationBufferSize());
-                super.setHeaderSize(ssl_session.getApplicationBufferSize());    
+                super.setHeaderSize(ssl_session.getApplicationBufferSize());
             }
-            
+
             @Override
             protected Buffer newBuffer(int size)
             {
@@ -104,19 +102,19 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             {
                 return true;
             }
-            
+
             @Override
             public void setBufferSize(int size)
             {
             }
-            
+
             @Override
             public void setHeaderSize(int size)
             {
             }
         };
         _sslBuffers=ssl_buffers;
-        
+
         _httpClient._threadPool.dispatch(this);
     }
 
@@ -134,7 +132,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         Address address = destination.isProxied() ? destination.getProxy() : destination.getAddress();
         channel.configureBlocking( false );
         channel.connect(address.toSocketAddress());
-        channel.socket().setSoTimeout( _httpClient._soTimeout );
         _selectorManager.register( channel, destination );
     }
 
@@ -186,7 +183,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         {
             if (endpoint instanceof SslSelectChannelEndPoint)
                 return new HttpConnection(_sslBuffers,_sslBuffers,endpoint);
-            
+
             return new HttpConnection(_httpClient.getRequestBuffers(),_httpClient.getResponseBuffers(),endpoint);
         }
 

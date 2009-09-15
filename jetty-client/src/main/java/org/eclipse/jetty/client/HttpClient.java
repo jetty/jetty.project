@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.client;
@@ -74,9 +74,9 @@ import org.eclipse.jetty.util.thread.Timeout;
  * be allocated from a destination, so that multiple request sources are not multiplexed
  * over the same connection.
  *
- * 
- * 
- * 
+ *
+ *
+ *
  * @see {@link HttpExchange}
  * @see {@link HttpDestination}
  */
@@ -93,7 +93,6 @@ public class HttpClient extends HttpBuffers implements Attributes
     Connector _connector;
     private long _idleTimeout = 20000;
     private long _timeout = 320000;
-    int _soTimeout = 10000;
     private Timeout _timeoutQ = new Timeout();
     private Address _proxy;
     private Authorization _proxyAuthentication;
@@ -113,13 +112,13 @@ public class HttpClient extends HttpBuffers implements Attributes
     private String _trustManagerAlgorithm = "SunX509";
 
     private SSLContext _sslContext;
-    
+
     private String _protocol = "TLS";
     private String _provider;
     private String _secureRandomAlgorithm;
 
     private RealmResolver _realmResolver;
-    
+
     private AttributesMap _attributes=new AttributesMap();
 
     /* ------------------------------------------------------------------------------- */
@@ -402,8 +401,8 @@ public class HttpClient extends HttpBuffers implements Attributes
             return buffer instanceof ByteArrayBuffer;
         return buffer instanceof IndirectNIOBuffer;
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     public int getMaxConnectionsPerAddress()
     {
@@ -505,18 +504,18 @@ public class HttpClient extends HttpBuffers implements Attributes
      */
     protected SSLContext getSSLContext() throws IOException
     {
-    	if (_sslContext == null) 
+    	if (_sslContext == null)
     	{
-			if (_keyStoreLocation == null) 
+			if (_keyStoreLocation == null)
 			{
 				_sslContext = getLooseSSLContext();
-			} 
-			else 
+			}
+			else
 			{
 				_sslContext = getStrictSSLContext();
 			}
-		}   	
-    	return _sslContext;    	
+		}
+    	return _sslContext;
     }
 
     protected SSLContext getStrictSSLContext() throws IOException
@@ -626,16 +625,24 @@ public class HttpClient extends HttpBuffers implements Attributes
         _idleTimeout = ms;
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * @return the period in ms that an exchange will wait for a response from the server.
+     * @deprecated use {@link #getTimeout()} instead.
+     */
+    @Deprecated
     public int getSoTimeout()
     {
-        return _soTimeout;
+        return Long.valueOf(getTimeout()).intValue();
     }
 
-    /* ------------------------------------------------------------ */
-    public void setSoTimeout(int so)
+    /**
+     * @deprecated use {@link #setTimeout(long)} instead.
+     * @param timeout the period in ms that an exchange will wait for a response from the server.
+     */
+    @Deprecated
+    public void setSoTimeout(int timeout)
     {
-        _soTimeout = so;
+        setTimeout(timeout);
     }
 
     /* ------------------------------------------------------------ */
@@ -649,11 +656,11 @@ public class HttpClient extends HttpBuffers implements Attributes
 
     /* ------------------------------------------------------------ */
     /**
-     * @param ms the period in ms that an exchange will wait for a response from the server.
+     * @param timeout the period in ms that an exchange will wait for a response from the server.
      */
-    public void setTimeout(long ms)
+    public void setTimeout(long timeout)
     {
-        _timeout = ms;
+        _timeout = timeout;
     }
 
     /* ------------------------------------------------------------ */

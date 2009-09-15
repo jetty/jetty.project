@@ -300,6 +300,27 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         assertFalse(exchange.isAssociated());
     }
 
+    public void testHttpExchangeOnExpire() throws Exception
+    {
+        HttpClient httpClient = getHttpClient();
+        httpClient.stop();
+        httpClient.setTimeout(2000);
+        httpClient.start();
+
+        TestHttpExchange exchange = new TestHttpExchange();
+        exchange.setAddress(newAddress());
+        exchange.setURI("/?action=wait5000");
+
+        httpClient.send(exchange);
+
+        int status = exchange.waitForDone();
+        assertEquals(HttpExchange.STATUS_EXPIRED, status);
+        assertFalse(exchange.isResponseCompleted());
+        assertFalse(exchange.isFailed());
+        assertTrue(exchange.isExpired());
+        assertFalse(exchange.isAssociated());
+    }
+
     protected abstract HttpClient getHttpClient();
 
     protected Address newAddress()
