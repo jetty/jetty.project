@@ -119,8 +119,8 @@ public class HttpConnection implements Connection
             {
                 SelectChannelEndPoint scep = (SelectChannelEndPoint)_endp;
                 scep.scheduleWrite();
-                _destination.getHttpClient().schedule(_timeout);
             }
+            _destination.getHttpClient().schedule(_timeout);
 
             return true;
         }
