@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <Call name="setAttribute">
+      <Arg>org.eclipse.jetty.webapp.configuration</Arg>
+      <Arg>
+        <New class="java.util.ArrayList">
+          <Call name="add">
+            <Arg>
+            <New class="org.eclipse.jetty.webapp.WebappVerifierConfiguration"/>
+            </Arg>
+          </Call>
+        </New>
+      </Arg>
+    </Call>
+
+</Configure>
