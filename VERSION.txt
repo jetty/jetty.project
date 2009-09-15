@@ -29,6 +29,7 @@ jetty-7.0.0.RC6-SNAPSHOT
  + 289146 formalize reload policy functionality
  + 289156 jetty-client: no longer throw runtime exception for bad authn details
  + 288182 PUT request fails during retry
+ + JETTY-719: Document state machine of jetty http client
 
 jetty-6.1.20 27 August 2009
  + JETTY-838 Don't log and throw
