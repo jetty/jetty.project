@@ -6,9 +6,7 @@ jetty-7.0.1-SNAPSHOT
  + 289027 deobfuscate HttpClient SSL passwords
 
 jetty-7.0.0.RC6-SNAPSHOT
- + 288055 jetty-client fails to resolve failed resolution attempts correctly
- + 288153 jetty-client resend doesn't reset exchange
- + 288182 PUT request fails during retry
+ + JETTY-936 274251 Improved servlet matching and optimized'
  + JETTY-780 CNFE during startup of webapp with spring-context >= 2.5.1
  + JETTY-1080 modify previous fix to work on windows
  + JETTY-1084 HEAD command not setting content-type in response under certain circumstances
@@ -20,14 +18,17 @@ jetty-7.0.0.RC6-SNAPSHOT
  + JETTY-1101 Updated servlet3 continuation constructor
  + JETTY-1105 Custom error pages aren't working
  + JETTY-1108 SSL EOF detection
- + 288514 AbstractConnector does not handle InterruptedExceptions on shutdown
- + 288466 LocalConnector is not thread safe
- + 288772 Failure to connect does not set status to EXCEPTED
  + 280723 Add non blocking statistics handler
- + 283357 org.eclipse.jetty.server.HttpConnectionTest exceptions
  + 282543 HttpClient SSL buffer size fix
+ + 283357 org.eclipse.jetty.server.HttpConnectionTest exceptions
+ + 288055 jetty-client fails to resolve failed resolution attempts correctly
+ + 288153 jetty-client resend doesn't reset exchange
+ + 288466 LocalConnector is not thread safe
+ + 288514 AbstractConnector does not handle InterruptedExceptions on shutdown
+ + 288772 Failure to connect does not set status to EXCEPTED
  + 289146 formalize reload policy functionality
  + 289156 jetty-client: no longer throw runtime exception for bad authn details
+ + 288182 PUT request fails during retry
 
 jetty-6.1.20 27 August 2009
  + JETTY-838 Don't log and throw

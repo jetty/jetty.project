@@ -20,6 +20,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -74,7 +75,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *
  *   welcomeServlets  If true, attempt to dispatch to welcome files
  *                    that are servlets, but only after no matching static
- *                    resources could be found.
+ *                    resources could be found. Default is true.
  *                   
  *                    This must be false if you want directory listings,
  *                    but have index.jsp in your welcome file list.
@@ -126,7 +127,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     
     private boolean _acceptRanges=true;
     private boolean _dirAllowed=true;
-    private boolean _welcomeServlets=false;
+    private boolean _welcomeServlets=true;
     private boolean _redirectWelcome=false;
     private boolean _gzip=true;
     
@@ -139,6 +140,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     private boolean _useFileMappedBuffer=false;
     private ByteArrayBuffer _cacheControl;
     private String _relativeResourceBase;
+    private ServletHandler _servletHandler;
+    private ServletHolder _defaultHolder;
     
     
     /* ------------------------------------------------------------ */
@@ -240,6 +243,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             Log.warn(Log.EXCEPTION,e);
             throw new UnavailableException(e.toString()); 
         }
+
+        _servletHandler= (ServletHandler) _contextHandler.getChildHandlerByClass(ServletHandler.class);
+        for (ServletHolder h :_servletHandler.getServlets())
+            if (h.getServletInstance()==this)
+                _defaultHolder=h;
         
         if (Log.isDebugEnabled()) Log.debug("resource base = "+_resourceBase);
     }
@@ -486,28 +494,27 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 // else look for a welcome file
                 else if (null!=(welcome=getWelcomeFile(pathInContext)))
                 {
-                    String ipath=URIUtil.addPaths(pathInContext,welcome);
                     if (_redirectWelcome)
                     {
                         // Redirect to the index
                         response.setContentLength(0);
                         String q=request.getQueryString();
                         if (q!=null&&q.length()!=0)
-                            response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths( _servletContext.getContextPath(),ipath)+"?"+q));
+                            response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths( _servletContext.getContextPath(),welcome)+"?"+q));
                         else
-                            response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths( _servletContext.getContextPath(),ipath)));
+                            response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths( _servletContext.getContextPath(),welcome)));
                     }
                     else
                     {
                         // Forward to the index
-                        RequestDispatcher dispatcher=request.getRequestDispatcher(ipath);
+                        RequestDispatcher dispatcher=request.getRequestDispatcher(welcome);
                         if (dispatcher!=null)
                         {
                             if (included.booleanValue())
                                 dispatcher.include(request,response);
                             else
                             {
-                                request.setAttribute("org.eclipse.jetty.server.welcome",ipath);
+                                request.setAttribute("org.eclipse.jetty.server.welcome",welcome);
                                 dispatcher.forward(request,response);
                             }
                         }
@@ -570,7 +577,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
      * The list of welcome files is read from the {@link ContextHandler} for this servlet, or
      * <code>"index.jsp" , "index.html"</code> if that is <code>null</code>.
      * @param resource
-     * @return The name of the matching welcome file.
+     * @return The path of the matching welcome file in context or null.
      * @throws IOException
      * @throws MalformedURLException
      */
@@ -578,25 +585,23 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     {
         if (_welcomes==null)
             return null;
-
+       
+        String welcome_servlet=null;
         for (int i=0;i<_welcomes.length;i++)
         {
-            Resource welcome=getResource(URIUtil.addPaths(pathInContext,_welcomes[i]));
+            String welcome_in_context=URIUtil.addPaths(pathInContext,_welcomes[i]);
+            Resource welcome=getResource(welcome_in_context);
             if (welcome!=null && welcome.exists())
                 return _welcomes[i];
-        }
-
-        if (_welcomeServlets)
-        {
-            ServletHandler servletHandler = (ServletHandler)_contextHandler.getChildHandlerByClass(ServletHandler.class);
-            for (int i=0;i<_welcomes.length;i++)
+            
+            if (_welcomeServlets && welcome_servlet==null)
             {
-                if (servletHandler.matchesPath(_welcomes[i]))
-                    return _welcomes[i];
+                Map.Entry entry=_servletHandler.getHolderEntry(welcome_in_context);
+                if (entry!=null && entry.getValue()!=_defaultHolder)
+                    welcome_servlet=welcome_in_context;
             }
         }
-
-        return null;
+        return welcome_servlet;
     }
 
     /* ------------------------------------------------------------ */
