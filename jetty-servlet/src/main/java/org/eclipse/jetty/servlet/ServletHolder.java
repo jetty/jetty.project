@@ -318,6 +318,15 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
     }
 
     /* ------------------------------------------------------------ */
+    /** Get the servlet instance (no initialization done).
+     * @return The servlet or null
+     */
+    public Servlet getServletInstance()
+    {
+        return _servlet;
+    }
+        
+    /* ------------------------------------------------------------ */
     /**
      * Check to ensure class of servlet is acceptable.
      * @throws UnavailableException

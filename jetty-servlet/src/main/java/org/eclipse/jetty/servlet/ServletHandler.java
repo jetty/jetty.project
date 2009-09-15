@@ -229,18 +229,8 @@ public class ServletHandler extends ScopedHandler
             return null;
         return _servletPathMap.getMatch(pathInContext);
     }
-    
-    /* ------------------------------------------------------------ */
-	/** Whether there is a ServletHolder that matches this path
- 	* @param pathInContext Path within _context.
- 	* @return whether there is a ServletHolder that matches this path
- 	*/
- 	public boolean matchesPath(String pathInContext)
- 	{
- 	return _servletPathMap.containsMatch(pathInContext);
- 	}
 
- 	/* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     /**
      * @param uriInContext uri to get dispatcher for
      * @return A {@link RequestDispatcher dispatcher} wrapping the resource at <code>uriInContext</code>,
