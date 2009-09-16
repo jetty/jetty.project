@@ -6,8 +6,9 @@ jetty-7.0.1-SNAPSHOT
  + 289027 deobfuscate HttpClient SSL passwords
 
 jetty-7.0.0.RC6-SNAPSHOT
- + JETTY-936 274251 Improved servlet matching and optimized'
+ + JETTY-719 Document state machine of jetty http client
  + JETTY-780 CNFE during startup of webapp with spring-context >= 2.5.1
+ + JETTY-936 274251 Improved servlet matching and optimized'
  + JETTY-1080 modify previous fix to work on windows
  + JETTY-1084 HEAD command not setting content-type in response under certain circumstances
  + JETTY-1086 Use UncheckedPrintWriter
@@ -18,6 +19,7 @@ jetty-7.0.0.RC6-SNAPSHOT
  + JETTY-1101 Updated servlet3 continuation constructor
  + JETTY-1105 Custom error pages aren't working
  + JETTY-1108 SSL EOF detection
+ + JETTY-1112 Response fails if header exceeds buffer size
  + 280723 Add non blocking statistics handler
  + 282543 HttpClient SSL buffer size fix
  + 283357 org.eclipse.jetty.server.HttpConnectionTest exceptions
@@ -29,7 +31,6 @@ jetty-7.0.0.RC6-SNAPSHOT
  + 289146 formalize reload policy functionality
  + 289156 jetty-client: no longer throw runtime exception for bad authn details
  + 288182 PUT request fails during retry
- + JETTY-719 Document state machine of jetty http client
  + 289221 HttpExchange does not timeout when using blocking connector
 
 jetty-6.1.20 27 August 2009
