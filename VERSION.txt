@@ -1,10 +1,11 @@
 jetty-7.0.1-SNAPSHOT
  + Promoted Jetty WebApp Verifier from Sandbox
  + Promoted Jetty Centralized Logging from Sandbox
+ + 274251 DefaultServlet supports exact match mode.
  + 288401 HttpExchange.cancel() Method Unimplemented
  + 289265 Test harness for async input
  + 289027 deobfuscate HttpClient SSL passwords
-
+ 
 jetty-7.0.0.RC6-SNAPSHOT
  + JETTY-719 Document state machine of jetty http client
  + JETTY-780 CNFE during startup of webapp with spring-context >= 2.5.1

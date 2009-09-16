@@ -372,6 +372,51 @@ public class DefaultServletTest extends TestCase
         assertResponseContains("JSP support not configured",response);
 
     }
+
+    public void testWelcomeExactServlet() throws Exception
+    {
+        File testDir = new File("target/tests/" + getName());
+        prepareEmptyTestDir(testDir);
+        File resBase = new File(testDir, "docroot");
+        resBase.mkdirs();
+        File inde = new File(resBase, "index.htm");
+        File index = new File(resBase, "index.html");
+        
+
+        String resBasePath = resBase.getAbsolutePath();
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class,"/");
+        defholder.setInitParameter("dirAllowed","false");
+        defholder.setInitParameter("redirectWelcome","false");
+        defholder.setInitParameter("welcomeServlets","exact");
+        defholder.setInitParameter("gzip","false");
+        defholder.setInitParameter("resourceBase",resBasePath);
+        
+        ServletHolder jspholder = context.addServlet(NoJspServlet.class,"*.jsp");
+        context.addServlet(jspholder,"/index.jsp");
+
+        String response;
+
+        response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("JSP support not configured",response);
+
+        createFile(index, "<h1>Hello Index</h1>");
+        response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("<h1>Hello Index</h1>",response);
+        
+        createFile(inde, "<h1>Hello Inde</h1>");
+        response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("<h1>Hello Index</h1>",response);
+
+        index.delete();
+        response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("<h1>Hello Inde</h1>",response);
+        
+        inde.delete();
+        response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        assertResponseContains("JSP support not configured",response);
+
+    }
     
     private void createFile(File file, String str) throws IOException
     {
