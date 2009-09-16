@@ -69,7 +69,14 @@ public class WebappVerifierConfiguration implements Configuration
                 
         RuleSet suite = RuleSet.load( configurationUri.toURL() );
         
-        WebappVerifier verifier = suite.createWebappVerifier( new URI( context.getWar() ) );
+        String warLocation = context.getWar();
+        
+        if ( !warLocation.startsWith("file:" ) )
+        {
+            warLocation = "file:" + warLocation;
+        }
+        
+        WebappVerifier verifier = suite.createWebappVerifier( new URI( warLocation ) );
         
         verifier.visitAll();
         
