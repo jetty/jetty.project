@@ -4,18 +4,17 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
@@ -136,45 +135,45 @@ public class HttpExchange
         {
             _status = status;
             this.notifyAll();
+        }
 
-            try
+        try
+        {
+            switch (status)
             {
-                switch (status)
-                {
-                    case STATUS_WAITING_FOR_CONNECTION:
-                        break;
+                case STATUS_WAITING_FOR_CONNECTION:
+                    break;
 
-                    case STATUS_WAITING_FOR_COMMIT:
-                        break;
+                case STATUS_WAITING_FOR_COMMIT:
+                    break;
 
-                    case STATUS_SENDING_REQUEST:
-                        break;
+                case STATUS_SENDING_REQUEST:
+                    break;
 
-                    case HttpExchange.STATUS_WAITING_FOR_RESPONSE:
-                        getEventListener().onRequestCommitted();
-                        break;
+                case HttpExchange.STATUS_WAITING_FOR_RESPONSE:
+                    getEventListener().onRequestCommitted();
+                    break;
 
-                    case STATUS_PARSING_HEADERS:
-                        break;
+                case STATUS_PARSING_HEADERS:
+                    break;
 
-                    case STATUS_PARSING_CONTENT:
-                        getEventListener().onResponseHeaderComplete();
-                        break;
+                case STATUS_PARSING_CONTENT:
+                    getEventListener().onResponseHeaderComplete();
+                    break;
 
-                    case STATUS_COMPLETED:
-                        getEventListener().onResponseComplete();
-                        break;
+                case STATUS_COMPLETED:
+                    getEventListener().onResponseComplete();
+                    break;
 
-                    case STATUS_EXPIRED:
-                        getEventListener().onExpire();
-                        break;
+                case STATUS_EXPIRED:
+                    getEventListener().onExpire();
+                    break;
 
-                }
             }
-            catch (IOException e)
-            {
-                Log.warn(e);
-            }
+        }
+        catch (IOException e)
+        {
+            Log.warn(e);
         }
     }
 
@@ -219,7 +218,7 @@ public class HttpExchange
         String completePath = uri.getCompletePath();
         if (completePath == null)
             completePath = "/";
-        
+
         setURI(completePath);
     }
 
