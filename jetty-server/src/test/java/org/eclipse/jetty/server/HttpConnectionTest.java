@@ -19,6 +19,16 @@
  */
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.MimeTypes;
+
 import junit.framework.TestCase;
 
 /**
@@ -288,6 +298,52 @@ public class HttpConnectionTest extends TestCase
 
         }
     }
+    
+    
+    public void testOversizedResponse ()
+    throws Exception
+    {  
+        String str = "thisisastringthatshouldreachover1kbytes";
+        for (int i=0;i<400;i++)
+            str+="xxxxxxxxxxxx";
+        final String longstr = str;
+        String response = null;
+        server.stop();
+        server.setHandler(new DumpHandler()
+        {  
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setHeader(HttpHeaders.CONTENT_TYPE,MimeTypes.TEXT_HTML);
+                response.setHeader("LongStr", longstr);
+                PrintWriter writer = response.getWriter();
+                writer.write("<html><h1>FOO</h1></html>");  
+                writer.flush();
+                writer.close();
+            }
+        });
+        server.start();
+        
+        try 
+        {
+            int offset = 0;
+          
+            response = connector.getResponses("GET / HTTP/1.1\n"+
+                "Host: localhost\n" +
+                "\015\012"
+             );
+          
+            offset = checkContains(response, offset, "HTTP/1.1 500");
+        } 
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            if(response != null)
+                System.err.println(response);
+            fail("Exception");      
+        }
+    }
+    
 
     public void testAsterisk()
     {
