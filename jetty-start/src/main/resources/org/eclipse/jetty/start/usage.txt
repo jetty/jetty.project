@@ -40,15 +40,12 @@ NOTE: Not all properties are listed here.
   org.eclipse.jetty.util.log.class=[class]   
       A Low Level Jetty Logger Implementation to use
       (default: org.eclipse.jetty.util.log.Slf4jLog)
-  org.eclipse.jetty.util.log.DEBUG=[boolean]
-      Debug logs will be produced, along with the default logging levels of
-      INFO, WARN, and ERROR
-      (default: false)
-  org.eclipse.jetty.util.log.VERBOSE=[boolean]
-      Verbose logging is produced, including ignored exceptions
+  org.eclipse.jetty.util.log.stderr.DEBUG=[boolean]
+      Debug logging for the stderr and javautil Loggers. Slf4j
+      and other loggers must be separately configured for debug.
       (default: false)
   org.eclipse.jetty.util.log.IGNORED=[boolean]
-      Ignored exceptions are logged, independent of DEBUG and VERBOSE settings
+      Ignored exceptions are logged, independent of DEBUG settings
       (default: false)
   STOP.PORT=[number]
       The port to use to stop the running Jetty server.
