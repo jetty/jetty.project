@@ -40,7 +40,7 @@ NOTE: Not all properties are listed here.
   org.eclipse.jetty.util.log.class=[class]   
       A Low Level Jetty Logger Implementation to use
       (default: org.eclipse.jetty.util.log.Slf4jLog)
-  org.eclipse.jetty.util.log.stderr.DEBUG=[boolean]
+  org.eclipse.jetty.util.log.DEBUG=[boolean]
       Debug logging for the stderr and javautil Loggers. Slf4j
       and other loggers must be separately configured for debug.
       (default: false)

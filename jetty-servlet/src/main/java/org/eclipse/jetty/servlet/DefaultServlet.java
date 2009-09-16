@@ -75,7 +75,10 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *
  *   welcomeServlets  If true, attempt to dispatch to welcome files
  *                    that are servlets, but only after no matching static
- *                    resources could be found. Default is true.
+ *                    resources could be found. If false, then a welcome 
+ *                    file must exist on disk. If "exact", then exact 
+ *                    servlet matches are supported without an existing file.
+ *                    Default is true.
  *                   
  *                    This must be false if you want directory listings,
  *                    but have index.jsp in your welcome file list.
@@ -128,6 +131,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     private boolean _acceptRanges=true;
     private boolean _dirAllowed=true;
     private boolean _welcomeServlets=true;
+    private boolean _welcomeExactServlets=false;
     private boolean _redirectWelcome=false;
     private boolean _gzip=true;
     
@@ -164,9 +168,16 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         
         _acceptRanges=getInitBoolean("acceptRanges",_acceptRanges);
         _dirAllowed=getInitBoolean("dirAllowed",_dirAllowed);
-        _welcomeServlets=getInitBoolean("welcomeServlets", _welcomeServlets);
         _redirectWelcome=getInitBoolean("redirectWelcome",_redirectWelcome);
         _gzip=getInitBoolean("gzip",_gzip);
+        
+        if ("exact".equals(getInitParameter("welcomeServlets")))
+        {
+            _welcomeExactServlets=true;
+            _welcomeServlets=false;
+        }
+        else
+            _welcomeServlets=getInitBoolean("welcomeServlets", _welcomeServlets);
         
         if (getInitParameter("aliases")!=null)
             _contextHandler.setAliases(getInitBoolean("aliases",false));
@@ -593,12 +604,15 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             Resource welcome=getResource(welcome_in_context);
             if (welcome!=null && welcome.exists())
                 return _welcomes[i];
-            
-            if (_welcomeServlets && welcome_servlet==null)
+
+            if ((_welcomeServlets || _welcomeExactServlets) && welcome_servlet==null)
             {
                 Map.Entry entry=_servletHandler.getHolderEntry(welcome_in_context);
-                if (entry!=null && entry.getValue()!=_defaultHolder)
-                    welcome_servlet=welcome_in_context;
+                if (entry!=null && 
+                        ((_welcomeServlets && entry.getValue()!=_defaultHolder) ||
+                         (_welcomeExactServlets && entry.getKey().equals(pathInContext))))
+                        welcome_servlet=welcome_in_context;
+               
             }
         }
         return welcome_servlet;
