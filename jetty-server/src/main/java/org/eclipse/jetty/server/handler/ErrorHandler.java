@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.HttpStatus.Code;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
@@ -74,7 +75,7 @@ public class ErrorHandler extends AbstractHandler
         throws IOException
     {
         if (message == null)
-            message=HttpStatus.getCode(code).getMessage();
+            message=HttpStatus.getMessage(code);
 
         writer.write("<html>\n<head>\n");
         writeErrorPageHead(request,writer,code,message);

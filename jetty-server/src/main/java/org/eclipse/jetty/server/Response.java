@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.HttpStatus.Code;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -276,7 +277,7 @@ public class Response implements HttpServletResponse
         setStatus(code,message);
 
         if (message==null)
-            message=HttpStatus.getCode(code).getMessage();
+            message=HttpStatus.getMessage(code);
 
         // If we are allowed to have a body
         if (code!=SC_NO_CONTENT &&
@@ -324,7 +325,7 @@ public class Response implements HttpServletResponse
                 writer.write(Integer.toString(code));
                 writer.write(' ');
                 if (message==null)
-                    message=HttpStatus.getCode(code).getMessage();
+                    message=HttpStatus.getMessage(code);
                 writer.write(message);
                 writer.write("</title>\n</head>\n<body>\n<h2>HTTP ERROR: ");
                 writer.write(Integer.toString(code));

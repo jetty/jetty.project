@@ -493,7 +493,6 @@ public class ServletHandler extends ScopedHandler
                 Log.warn(request.getRequestURI(),th);
             }
 
-            // TODO httpResponse.getHttpConnection().forceClose();
             if (!response.isCommitted())
             {
                 request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
@@ -510,10 +509,7 @@ public class ServletHandler extends ScopedHandler
                     response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,th.getMessage());
             }
             else
-                if(Log.isDebugEnabled())Log.debug("Response already committed for handling "+th);
-            
-            if (th instanceof IOException)
-                throw (IOException)th;
+                Log.debug("Response already committed for handling "+th);
         }
         catch(Error e)
         {   
@@ -530,7 +526,7 @@ public class ServletHandler extends ScopedHandler
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,e.getMessage());
             }
             else
-                if(Log.isDebugEnabled())Log.debug("Response already committed for handling ",e);
+                Log.debug("Response already committed for handling ",e);
         }
     }
 
