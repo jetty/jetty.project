@@ -21,6 +21,7 @@ jetty-7.0.0.RC6-SNAPSHOT
  + JETTY-1105 Custom error pages aren't working
  + JETTY-1108 SSL EOF detection
  + JETTY-1112 Response fails if header exceeds buffer size
+ + JETTY-1113 IllegalStateException when adding servlet filters programmatically
  + 280723 Add non blocking statistics handler
  + 282543 HttpClient SSL buffer size fix
  + 283357 org.eclipse.jetty.server.HttpConnectionTest exceptions
