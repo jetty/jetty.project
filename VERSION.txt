@@ -34,6 +34,7 @@ jetty-7.0.0.RC6-SNAPSHOT
  + 288182 PUT request fails during retry
  + 289221 HttpExchange does not timeout when using blocking connector
  + 289285 org.eclipse.jetty.continuation 7.0.0.RC5 imports the org.mortbay.util.ajax package
+ + Tweak DefaultServletTest under windows
 
 jetty-6.1.20 27 August 2009
  + JETTY-838 Don't log and throw
