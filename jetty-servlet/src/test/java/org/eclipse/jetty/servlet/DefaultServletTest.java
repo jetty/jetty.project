@@ -99,30 +99,29 @@ public class DefaultServletTest extends TestCase
         new File(resBase, "two").mkdir();
         new File(resBase, "three").mkdir();
         if ( !_runningOnWindows )
-        {
             assertTrue("Creating dir 'f??r' (Might not work in Windows)", new File(resBase, "f??r").mkdir());
 
-            String resBasePath = resBase.getAbsolutePath();
-            defholder.setInitParameter( "resourceBase", resBasePath );
+        String resBasePath = resBase.getAbsolutePath();
+        defholder.setInitParameter( "resourceBase", resBasePath );
 
-            StringBuffer req1 = new StringBuffer();
-            /*
-             * Intentionally bad request URI. Sending a non-encoded URI with typically encoded characters '<', '>', and
-             * '"'.
-             */
-            req1.append( "GET /context/;<script>window.alert(\"hi\");</script> HTTP/1.1\n" );
-            req1.append( "Host: localhost\n" );
-            req1.append( "\n" );
+        StringBuffer req1 = new StringBuffer();
+        /*
+         * Intentionally bad request URI. Sending a non-encoded URI with typically encoded characters '<', '>', and
+         * '"'.
+         */
+        req1.append( "GET /context/;<script>window.alert(\"hi\");</script> HTTP/1.1\n" );
+        req1.append( "Host: localhost\n" );
+        req1.append( "\n" );
 
-            String response = connector.getResponses( req1.toString() );
+        String response = connector.getResponses( req1.toString() );
 
-            assertResponseContains( "/one/", response );
-            assertResponseContains( "/two/", response );
-            assertResponseContains( "/three/", response );
+        assertResponseContains( "/one/", response );
+        assertResponseContains( "/two/", response );
+        assertResponseContains( "/three/", response );
+        if ( !_runningOnWindows )
             assertResponseContains( "/f%3F%3Fr", response );
 
-            assertResponseNotContains( "<script>", response );
-        }
+        assertResponseNotContains( "<script>", response );
     }
 
     public void testListingProperUrlEncoding() throws Exception
@@ -236,6 +235,8 @@ public class DefaultServletTest extends TestCase
             response= connector.getResponses("GET /context/dir%3F/ HTTP/1.0\r\n\r\n");
             assertResponseContains("Directory: /context/dir?/<",response);
         }
+        else
+            assertResponseContains("404",response);
 
         response= connector.getResponses("GET /context/index.html HTTP/1.0\r\n\r\n");
         assertResponseContains("Hello Index",response);
