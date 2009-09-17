@@ -394,9 +394,9 @@ public abstract class AbstractConfiguration implements Configuration
       //set up our special ServletHandler to remember injections and lifecycle callbacks
         ServletHandler servletHandler = new ServletHandler();
         SecurityHandler securityHandler = context.getSecurityHandler();
-        org.eclipse.jetty.servlet.ServletHandler existingHandler = context.getServletHandler();       
-        servletHandler.setFilterMappings(existingHandler.getFilterMappings());
+        org.eclipse.jetty.servlet.ServletHandler existingHandler = context.getServletHandler(); 
         servletHandler.setFilters(existingHandler.getFilters());
+        servletHandler.setFilterMappings(existingHandler.getFilterMappings());    
         servletHandler.setServlets(existingHandler.getServlets());
         servletHandler.setServletMappings(existingHandler.getServletMappings());
         context.setServletHandler(servletHandler);
