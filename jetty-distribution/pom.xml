@@ -44,6 +44,7 @@
 		  <mkdir dir="${assembly.directory}/lib/jndi" />
                   <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.activation_1.1.0.v200905021805.jar" dest="${assembly.directory}/lib/jndi/activation-1.1.jar" usetimestamp="true" verbose="true" />
                   <get src="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles/javax.mail_1.4.0.v200905040518.jar" dest="${assembly.directory}/lib/jndi/mail-1.4.jar" usetimestamp="true" verbose="true" />
+                  <copy file="../VERSION.txt" todir="${assembly.directory}"/>
                 </tasks>
               </configuration>
             </execution>
