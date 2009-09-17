@@ -132,177 +132,182 @@ public class HttpExchange
         setStatus(STATUS_START);
     }
 
-    void setStatus(int status)
+    void setStatus(int newStatus)
     {
         try
         {
-            synchronized (this)
+            int oldStatus = getStatus();
+        
+            // State machine: from which old status you can go into which new status
+            switch (oldStatus)
             {
-                // Wakeup any waiter, no matter if the status is really changed
-                notifyAll();
-
-                // State machine: from which old status you can go into which new status
-                switch (_status)
-                {
-                    case STATUS_START:
-                        switch (status)
-                        {
-                            case STATUS_WAITING_FOR_CONNECTION:
-                            case STATUS_WAITING_FOR_COMMIT:
-                            case STATUS_CANCELLING:
-                                _status = status;
-                                break;
-                            default:
-                                throw new IllegalStateException(_status + " => " + status);
-                        }
-                        break;
-                    case STATUS_WAITING_FOR_CONNECTION:
-                        switch (status)
-                        {
-                            case STATUS_WAITING_FOR_COMMIT:
-                            case STATUS_CANCELLING:
-                            case STATUS_EXCEPTED:
-                                _status = status;
-                                break;
-                            default:
-                                throw new IllegalStateException(_status + " => " + status);
-                        }
-                        break;
-                    case STATUS_WAITING_FOR_COMMIT:
-                        switch (status)
-                        {
-                            case STATUS_SENDING_REQUEST:
-                            case STATUS_CANCELLING:
-                            case STATUS_EXCEPTED:
-                                _status = status;
-                                break;
-                            case STATUS_EXPIRED:
-                                _status = status;
-                                getEventListener().onExpire();
-                                break;
-                            default:
-                                throw new IllegalStateException(_status + " => " + status);
-                        }
-                        break;
-                    case STATUS_SENDING_REQUEST:
-                        switch (status)
-                        {
-                            case STATUS_WAITING_FOR_RESPONSE:
-                                _status = status;
-                                getEventListener().onRequestCommitted();
-                                break;
-                            case STATUS_CANCELLING:
-                            case STATUS_EXCEPTED:
-                                _status = status;
-                                break;
-                            case STATUS_EXPIRED:
-                                _status = status;
-                                getEventListener().onExpire();
-                                break;
-                            default:
-                                throw new IllegalStateException(_status + " => " + status);
-                        }
-                        break;
-                    case STATUS_WAITING_FOR_RESPONSE:
-                        switch (status)
-                        {
-                            case STATUS_PARSING_HEADERS:
-                            case STATUS_CANCELLING:
-                            case STATUS_EXCEPTED:
-                                _status = status;
-                                break;
-                            case STATUS_EXPIRED:
-                                _status = status;
-                                getEventListener().onExpire();
-                                break;
-                            default:
-                                throw new IllegalStateException(_status + " => " + status);
-                        }
-                        break;
-                    case STATUS_PARSING_HEADERS:
-                        switch (status)
-                        {
-                            case STATUS_PARSING_CONTENT:
-                                _status = status;
-                                getEventListener().onResponseHeaderComplete();
-                                break;
-                            case STATUS_CANCELLING:
-                            case STATUS_EXCEPTED:
-                                _status = status;
-                                break;
-                            case STATUS_EXPIRED:
-                                _status = status;
-                                getEventListener().onExpire();
-                                break;
-                            default:
-                                throw new IllegalStateException(_status + " => " + status);
-                        }
-                        break;
-                    case STATUS_PARSING_CONTENT:
-                        switch (status)
-                        {
-                            case STATUS_COMPLETED:
-                                _status = status;
-                                getEventListener().onResponseComplete();
-                                break;
-                            case STATUS_CANCELLING:
-                            case STATUS_EXCEPTED:
-                                _status = status;
-                                break;
-                            case STATUS_EXPIRED:
-                                _status = status;
-                                getEventListener().onExpire();
-                                break;
-                            default:
-                                throw new IllegalStateException(_status + " => " + status);
-                        }
-                        break;
-                    case STATUS_COMPLETED:
-                        switch (status)
-                        {
-                            case STATUS_START:
-                                _status = status;
-                                break;
-                            case STATUS_CANCELLING:
-                            case STATUS_EXPIRED:
-                                // Don't change the status, it's too late
-                                break;
-                            default:
-                                throw new IllegalStateException(_status + " => " + status);
-                        }
-                        break;
-                    case STATUS_CANCELLING:
-                        switch (status)
-                        {
-                            case STATUS_CANCELLED:
-                                _status = status;
-                                break;
-                            default:
-                                // Ignore other statuses, we're cancelling
-                                break;
-                        }
-                        break;
-                    case STATUS_EXCEPTED:
-                    case STATUS_EXPIRED:
-                    case STATUS_CANCELLED:
-                        switch (status)
-                        {
-                            case STATUS_START:
-                                _status = status;
-                                break;
-                            default:
-                                throw new IllegalStateException(_status + " => " + status);
-                        }
-                        break;
-                    default:
-                        // Here means I allowed to set a state that I don't recognize
-                        throw new AssertionError(_status + " => " + status);
-                }
+                case STATUS_START:
+                    switch (newStatus)
+                    {
+                        case STATUS_WAITING_FOR_CONNECTION:
+                        case STATUS_WAITING_FOR_COMMIT:
+                        case STATUS_CANCELLING:
+                            updateStatus(newStatus);
+                            break;
+                        default:
+                            throw new IllegalStateException(oldStatus + " => " + newStatus);
+                    }
+                    break;
+                case STATUS_WAITING_FOR_CONNECTION:
+                    switch (newStatus)
+                    {
+                        case STATUS_WAITING_FOR_COMMIT:
+                        case STATUS_CANCELLING:
+                        case STATUS_EXCEPTED:
+                            updateStatus(newStatus);
+                            break;
+                        default:
+                            throw new IllegalStateException(oldStatus + " => " + newStatus);
+                    }
+                    break;
+                case STATUS_WAITING_FOR_COMMIT:
+                    switch (newStatus)
+                    {
+                        case STATUS_SENDING_REQUEST:
+                        case STATUS_CANCELLING:
+                        case STATUS_EXCEPTED:
+                            updateStatus(newStatus);
+                            break;
+                        case STATUS_EXPIRED:
+                            updateStatus(newStatus);
+                            getEventListener().onExpire();
+                            break;
+                        default:
+                            throw new IllegalStateException(oldStatus + " => " + newStatus);
+                    }
+                    break;
+                case STATUS_SENDING_REQUEST:
+                    switch (newStatus)
+                    {
+                        case STATUS_WAITING_FOR_RESPONSE:
+                            updateStatus(newStatus);
+                            getEventListener().onRequestCommitted();
+                            break;
+                        case STATUS_CANCELLING:
+                        case STATUS_EXCEPTED:
+                            updateStatus(newStatus);
+                            break;
+                        case STATUS_EXPIRED:
+                            updateStatus(newStatus);
+                            getEventListener().onExpire();
+                            break;
+                        default:
+                            throw new IllegalStateException(oldStatus + " => " + newStatus);
+                    }
+                    break;
+                case STATUS_WAITING_FOR_RESPONSE:
+                    switch (newStatus)
+                    {
+                        case STATUS_PARSING_HEADERS:
+                        case STATUS_CANCELLING:
+                        case STATUS_EXCEPTED:
+                            updateStatus(newStatus);
+                            break;
+                        case STATUS_EXPIRED:
+                            updateStatus(newStatus);
+                            getEventListener().onExpire();
+                            break;
+                        default:
+                            throw new IllegalStateException(oldStatus + " => " + newStatus);
+                    }
+                    break;
+                case STATUS_PARSING_HEADERS:
+                    switch (newStatus)
+                    {
+                        case STATUS_PARSING_CONTENT:
+                            updateStatus(newStatus);
+                            getEventListener().onResponseHeaderComplete();
+                            break;
+                        case STATUS_CANCELLING:
+                        case STATUS_EXCEPTED:
+                            updateStatus(newStatus);
+                            break;
+                        case STATUS_EXPIRED:
+                            updateStatus(newStatus);
+                            getEventListener().onExpire();
+                            break;
+                        default:
+                            throw new IllegalStateException(oldStatus + " => " + newStatus);
+                    }
+                    break;
+                case STATUS_PARSING_CONTENT:
+                    switch (newStatus)
+                    {
+                        case STATUS_COMPLETED:
+                            updateStatus(newStatus);
+                            getEventListener().onResponseComplete();
+                            break;
+                        case STATUS_CANCELLING:
+                        case STATUS_EXCEPTED:
+                            updateStatus(newStatus);
+                            break;
+                        case STATUS_EXPIRED:
+                            updateStatus(newStatus);
+                            getEventListener().onExpire();
+                            break;
+                        default:
+                            throw new IllegalStateException(oldStatus + " => " + newStatus);
+                    }
+                    break;
+                case STATUS_COMPLETED:
+                    switch (newStatus)
+                    {
+                        case STATUS_START:
+                            updateStatus(newStatus);
+                            break;
+                        case STATUS_CANCELLING:
+                        case STATUS_EXPIRED:
+                            // Don't change the status, it's too late
+                            break;
+                        default:
+                            throw new IllegalStateException(oldStatus + " => " + newStatus);
+                    }
+                    break;
+                case STATUS_CANCELLING:
+                    switch (newStatus)
+                    {
+                        case STATUS_CANCELLED:
+                            updateStatus(newStatus);
+                            break;
+                        default:
+                            // Ignore other statuses, we're cancelling
+                            break;
+                    }
+                    break;
+                case STATUS_EXCEPTED:
+                case STATUS_EXPIRED:
+                case STATUS_CANCELLED:
+                    switch (newStatus)
+                    {
+                        case STATUS_START:
+                            updateStatus(newStatus);
+                            break;
+                        default:
+                            throw new IllegalStateException(oldStatus + " => " + newStatus);
+                    }
+                    break;
+                default:
+                    // Here means I allowed to set a state that I don't recognize
+                    throw new AssertionError(oldStatus + " => " + newStatus);
             }
         }
         catch (IOException x)
         {
             Log.warn(x);
+        }
+    }
+
+    private void updateStatus(int newStatus)
+    {
+        synchronized (this)
+        {
+            _status = newStatus;
+            notifyAll();
         }
     }
 

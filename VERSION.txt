@@ -5,7 +5,7 @@ jetty-7.0.1-SNAPSHOT
  + 288401 HttpExchange.cancel() Method Unimplemented
  + 289265 Test harness for async input
  + 289027 deobfuscate HttpClient SSL passwords
- 
+
 jetty-7.0.0.RC6-SNAPSHOT
  + JETTY-719 Document state machine of jetty http client
  + JETTY-780 CNFE during startup of webapp with spring-context >= 2.5.1
@@ -37,6 +37,7 @@ jetty-7.0.0.RC6-SNAPSHOT
  + 289285 org.eclipse.jetty.continuation 7.0.0.RC5 imports the org.mortbay.util.ajax package
  + Tweak DefaultServletTest under windows
  + Copy VERSION.txt to distro
+ + 289686 HttpExchange.setStatus() has too coarse synchronization
 
 jetty-6.1.20 27 August 2009
  + JETTY-838 Don't log and throw
