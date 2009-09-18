@@ -1,4 +1,4 @@
-jetty-7.0.0.RC6-SNAPSHOT
+jetty-7.0.0.RC6 September 18th 2009
  + JETTY-719 Document state machine of jetty http client
  + JETTY-780 CNFE during startup of webapp with spring-context >= 2.5.1
  + JETTY-936 274251 Improved servlet matching and optimized'
