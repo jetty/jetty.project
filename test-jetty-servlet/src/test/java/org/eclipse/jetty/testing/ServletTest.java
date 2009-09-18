@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
 
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.IO;
 
@@ -39,7 +40,9 @@ public class ServletTest extends TestCase
         tester.setContextPath("/context");
         tester.addServlet(TestServlet.class, "/servlet/*");
         tester.addServlet(HelloServlet.class, "/hello/*");
+        tester.addServlet(ExceptServlet.class, "/except/*");
         tester.addServlet("org.eclipse.jetty.servlet.DefaultServlet", "/");
+        
         tester.start();
     }
 
@@ -233,6 +236,36 @@ public class ServletTest extends TestCase
         assertEquals(expected,responses.toString());
     }
 
+    /* ------------------------------------------------------------ */
+    public void testExcept() throws Exception
+    {
+        String request0=
+            "GET /context/except/io HTTP/1.1\r\n"+
+            "Host: whatever\r\n"+
+            "\r\n"+
+            "GET /context/except/http HTTP/1.1\r\n"+
+            "Host: whatever\r\n"+
+            "\r\n";
+        
+        ByteArrayBuffer out = new ByteArrayBuffer(4096);
+        out.put(request0.getBytes("iso8859-1"));
+        String responses = tester.getResponses(out).toString();
+        
+        int offset = responses.indexOf("HTTP/1.1 500");
+        assertTrue(offset>=0);
+        offset = responses.indexOf("Content-Length: ",offset);
+        assertTrue(offset>0);
+        offset = responses.indexOf("<h2>HTTP ERROR 500</h2>",offset);
+        assertTrue(offset>0);
+        offset = responses.indexOf("IOException: testing",offset);
+        assertTrue(offset>0);
+        offset = responses.indexOf("</html>",offset);
+        assertTrue(offset>0);
+        offset = responses.indexOf("HTTP/1.1 499",offset);
+        assertTrue(offset>0);
+        offset = responses.indexOf("Content-Length: ",offset);
+        assertTrue(offset>0);
+    }
     
     /* ------------------------------------------------------------ */
     public static class HelloServlet extends HttpServlet
@@ -285,4 +318,19 @@ public class ServletTest extends TestCase
             response.getWriter().print("<h1>Test Servlet</h1>");
         }
     }
+    
+    public static class ExceptServlet extends HttpServlet
+    {
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            if ("/http".equals(request.getPathInfo()))
+                throw new HttpException(499);
+            if ("/runtime".equals(request.getPathInfo()))
+                throw new RuntimeException("testing");
+            if ("/error".equals(request.getPathInfo()))
+                throw new Error("testing");
+            throw new IOException("testing");
+        }
+    }
+
 }

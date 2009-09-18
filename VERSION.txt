@@ -12,7 +12,7 @@ jetty-7.0.0.RC6-SNAPSHOT
  + JETTY-936 274251 Improved servlet matching and optimized'
  + JETTY-1080 modify previous fix to work on windows
  + JETTY-1084 HEAD command not setting content-type in response under certain circumstances
- + JETTY-1086 Use UncheckedPrintWriter
+ + JETTY-1086 Use UncheckedPrintWriter & cleaned up HttpStatus.Code usage
  + JETTY-1090 resolve potential infinite loop with webdav listener
  + JETTY-1092 MultiPartFilter can be pushed into infinite loop
  + JETTY-1093 Request.toString throws exception when size exceeds 4k
