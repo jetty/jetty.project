@@ -717,7 +717,7 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    public static void main(String[] args)
+    public static void main(String[] args) throws Exception
     {
         System.err.println(getVersion());
     }
