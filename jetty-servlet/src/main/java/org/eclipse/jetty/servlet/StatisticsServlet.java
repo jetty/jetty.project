@@ -39,8 +39,6 @@ public class StatisticsServlet extends HttpServlet
 
     public void init() throws ServletException
     {
-        _memoryBean = ManagementFactory.getMemoryMXBean();
-
         ServletContext context = getServletContext();
         ContextHandler.Context scontext = (ContextHandler.Context) context;
         Server _server = scontext.getContextHandler().getServer();
@@ -53,12 +51,11 @@ public class StatisticsServlet extends HttpServlet
         }
         else
         {
-            Log.info("Installing Statistics Handler");
-            _statsHandler = new StatisticsHandler();
-            _server.setHandler(_statsHandler);
+            Log.warn("Statistics Handler not installed!");
+            return;
         }
-
-
+        
+        _memoryBean = ManagementFactory.getMemoryMXBean();
         _connectors = _server.getConnectors();
 
         if (getInitParameter("restrictToLocalhost") != null)
@@ -75,7 +72,12 @@ public class StatisticsServlet extends HttpServlet
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-
+        if (_statsHandler == null)
+        {
+            Log.warn("Statistics Handler not installed!");
+            resp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            return;
+        }
         if (_restrictToLocalhost)
         {
             if (!"127.0.0.1".equals(req.getRemoteAddr()))

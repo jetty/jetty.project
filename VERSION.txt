@@ -1,3 +1,6 @@
+jetty-7.0.0.RC7-SNAPSHOT
+ + 289958 StatisticsServlet incorrectly adds StatisticsHandler
+
 jetty-7.0.0.RC6 September 18th 2009
  + JETTY-719 Document state machine of jetty http client
  + JETTY-780 CNFE during startup of webapp with spring-context >= 2.5.1
