@@ -109,7 +109,6 @@ public abstract class LifeCycleCallback
             getTarget().setAccessible(true);
             getTarget().invoke(instance, __EMPTY_ARGS);
             getTarget().setAccessible(accessibility);
-            System.err.println("Calling callback on "+_className+"."+_methodName);
         }
     }
 

@@ -1,5 +1,6 @@
 jetty-7.0.0.RC7-SNAPSHOT
  + 289958 StatisticsServlet incorrectly adds StatisticsHandler
+ + Remove printlns from jetty-plus
 
 jetty-7.0.0.RC6 September 18th 2009
  + JETTY-719 Document state machine of jetty http client

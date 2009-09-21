@@ -237,12 +237,10 @@ public class Injection
         {
             try
             {
-                System.err.println("Value to inject="+lookupInjectedValue());
                 boolean accessibility = field.isAccessible();
                 field.setAccessible(true);
                 field.set(injectable, lookupInjectedValue());
                 field.setAccessible(accessibility);
-                System.err.println("Injected field "+_fieldName+" of class "+_className);
             }
             catch (Exception e)
             {
@@ -265,12 +263,10 @@ public class Injection
         {
             try
             {
-                System.err.println("Value to inject="+lookupInjectedValue());
                 boolean accessibility = method.isAccessible();
                 method.setAccessible(true);
                 method.invoke(injectable, new Object[] {lookupInjectedValue()});
                 method.setAccessible(accessibility);
-                System.err.println("Injected method "+_methodName+" of class "+_className);
             }
             catch (Exception e)
             {
@@ -311,14 +307,12 @@ public class Injection
 
         if (_targetClass == null)
             _targetClass = Loader.loadClass(null, _className);
-        System.err.println("Loaded target class "+_targetClass.getName());
-
-        System.err.println("Looking for method "+_methodName +" with argument of type "+_paramCanonicalName+" on class "+_className);
+          
         Class arg =  TypeUtil.fromName(_paramCanonicalName);
         
         if (arg == null)
             arg = Loader.loadClass(null, _paramCanonicalName);
-        System.err.println("Loaded type: "+arg.getName());
+      
         _target = _targetClass.getDeclaredMethod(_methodName, new Class[] {arg}); 
     }
     
@@ -331,7 +325,6 @@ public class Injection
         //JavaEE spec sec 5.2.4
         if (_annotationResourceType != null)
         {
-            System.err.println("Validating against annotationResourceType="+_annotationResourceType);
             if (_target == null)
                 return false;
             
