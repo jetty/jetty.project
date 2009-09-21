@@ -5,6 +5,7 @@ jetty-7.0.1-SNAPSHOT
  + 288401 HttpExchange.cancel() Method Unimplemented
  + 289265 Test harness for async input
  + 289027 deobfuscate HttpClient SSL passwords
+ + 289959 Improved ContextDeployer configuration
 
 jetty-7.0.0
  + 289958 StatisticsServlet incorrectly adds StatisticsHandler

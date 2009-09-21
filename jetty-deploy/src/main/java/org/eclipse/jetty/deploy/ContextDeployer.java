@@ -65,11 +65,10 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class ContextDeployer extends AbstractLifeCycle
 {
-    public final static String NAME="ConfiguredDeployer";
     private int _scanInterval=10;
     private Scanner _scanner;
     private ScannerListener _scannerListener;
-    private Resource _configurationDir;
+    private Resource _contextsDir;
     private Map _currentDeployments=new HashMap();
     private ContextHandlerCollection _contexts;
     private ConfigurationManager _configMgr;
@@ -119,7 +118,7 @@ public class ContextDeployer extends AbstractLifeCycle
      * 
      * @throws Exception
      */
-    public ContextDeployer() throws Exception
+    public ContextDeployer() 
     {
         _scanner=new Scanner();
     }
@@ -168,8 +167,31 @@ public class ContextDeployer extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
+     * @param dir Directory to scan for context descriptors
+     */
+    public void setContextsDir(String dir)
+    {
+        try
+        {
+            _contextsDir=Resource.newResource(dir);
+        }
+        catch(Exception e)
+        {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    public String getContextsDir()
+    {
+        return _contextsDir==null?null:_contextsDir.toString();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
      * @param dir
      * @throws Exception
+     * @deprecated use {@link #setContextsDir(String)}
      */
     public void setConfigurationDir(String dir) throws Exception
     {
@@ -180,6 +202,7 @@ public class ContextDeployer extends AbstractLifeCycle
     /**
      * @param file
      * @throws Exception
+     * @deprecated use {@link #setContextsDir(String)}
      */
     public void setConfigurationDir(File file) throws Exception
     {
@@ -189,26 +212,29 @@ public class ContextDeployer extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @param resource
+     * @deprecated use {@link #setContextsDir(String)}
      */
     public void setConfigurationDir(Resource resource)
     {
         if (isStarted()||isStarting())
             throw new IllegalStateException("Cannot change hot deploy dir after deployer start");
-        _configurationDir=resource;
+        _contextsDir=resource;
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @param directory
+     * @deprecated use {@link #setContextsDir(String)}
      */
     public void setDirectory(String directory) throws Exception
     {
-		setConfigurationDir(directory);
+        setConfigurationDir(directory);
     }
     
     /* ------------------------------------------------------------ */
     /**
      * @return
+     * @deprecated use {@link #setContextsDir(String)}
      */
     public String getDirectory()
     {
@@ -218,10 +244,11 @@ public class ContextDeployer extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @return
+     * @deprecated use {@link #setContextsDir(String)}
      */
     public Resource getConfigurationDir()
     {
-        return _configurationDir;
+        return _contextsDir;
     }
 
     /* ------------------------------------------------------------ */
@@ -242,23 +269,27 @@ public class ContextDeployer extends AbstractLifeCycle
         return _configMgr;
     }
 
-    
+
+    /* ------------------------------------------------------------ */
     public void setRecursive (boolean recursive)
     {
         _recursive=recursive;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public boolean getRecursive ()
     {
         return _recursive;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public boolean isRecursive()
     {
         return _recursive;
     }
     
-    
+
+    /* ------------------------------------------------------------ */
     /**
      * Set a contextAttribute that will be set for every Context deployed by this deployer.
      * @param name
@@ -269,7 +300,8 @@ public class ContextDeployer extends AbstractLifeCycle
         _contextAttributes.setAttribute(name,value);
     }
     
-    
+
+    /* ------------------------------------------------------------ */
     /**
      * Get a contextAttribute that will be set for every Context deployed by this deployer.
      * @param name
@@ -280,7 +312,8 @@ public class ContextDeployer extends AbstractLifeCycle
         return _contextAttributes.getAttribute(name);
     }
     
-    
+
+    /* ------------------------------------------------------------ */
     /**
      * Remove a contextAttribute that will be set for every Context deployed by this deployer.
      * @param name
@@ -328,13 +361,13 @@ public class ContextDeployer extends AbstractLifeCycle
      */
     protected void doStart() throws Exception
     {
-        if (_configurationDir==null)
+        if (_contextsDir==null)
             throw new IllegalStateException("No configuration dir specified");
 
         if (_contexts==null)
             throw new IllegalStateException("No context handler collection specified for deployer");
 
-        _scanner.setScanDir(_configurationDir.getFile());
+        _scanner.setScanDir(_contextsDir.getFile());
         _scanner.setScanInterval(getScanInterval());
         _scanner.setRecursive(_recursive); //only look in the top level for deployment files?
         // Accept changes only in files that could be a deployment descriptor
