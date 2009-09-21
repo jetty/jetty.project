@@ -6,7 +6,10 @@ jetty-7.0.1-SNAPSHOT
  + 289265 Test harness for async input
  + 289027 deobfuscate HttpClient SSL passwords
 
-jetty-7.0.0.RC6-SNAPSHOT
+jetty-7.0.0
+ + 289958 StatisticsServlet incorrectly adds StatisticsHandler
+
+jetty-7.0.0.RC6 September 18th 2009
  + JETTY-719 Document state machine of jetty http client
  + JETTY-780 CNFE during startup of webapp with spring-context >= 2.5.1
  + JETTY-936 274251 Improved servlet matching and optimized'
