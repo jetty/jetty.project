@@ -456,7 +456,13 @@ public class HttpConnection implements Connection
                             more_in_buffer=false;
                         }
 
-                        reset(!more_in_buffer);
+                        if (more_in_buffer)
+                        {
+                            reset(false);
+                            more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput(); 
+                        }
+                        else
+                            reset(true);
                         progress=true;
                     }
 

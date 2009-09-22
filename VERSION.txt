@@ -9,6 +9,7 @@ jetty-7.0.1-SNAPSHOT
 
 jetty-7.0.0
  + 289958 StatisticsServlet incorrectly adds StatisticsHandler
+ + 290081 Eager consume LF after CR
 
 jetty-7.0.0.RC6 September 18th 2009
  + JETTY-719 Document state machine of jetty http client
@@ -39,9 +40,10 @@ jetty-7.0.0.RC6 September 18th 2009
  + 288182 PUT request fails during retry
  + 289221 HttpExchange does not timeout when using blocking connector
  + 289285 org.eclipse.jetty.continuation 7.0.0.RC5 imports the org.mortbay.util.ajax package
+ + 289686 HttpExchange.setStatus() has too coarse synchronization
  + Tweak DefaultServletTest under windows
  + Copy VERSION.txt to distro
- + 289686 HttpExchange.setStatus() has too coarse synchronization
+ + Remove printlns from jetty-plus
 
 jetty-6.1.20 27 August 2009
  + JETTY-838 Don't log and throw
