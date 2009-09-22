@@ -225,7 +225,7 @@ public class WebAppClassLoader extends URLClassLoader
     }
 
     /* ------------------------------------------------------------ */
-    public synchronized URL getResource(String name)
+    public URL getResource(String name)
     {
         URL url= null;
         boolean tried_parent= false;
@@ -264,7 +264,7 @@ public class WebAppClassLoader extends URLClassLoader
 
     /* ------------------------------------------------------------ */
     @Override
-    public synchronized Class<?> loadClass(String name) throws ClassNotFoundException
+    public Class<?> loadClass(String name) throws ClassNotFoundException
     {
         return loadClass(name, false);
     }
