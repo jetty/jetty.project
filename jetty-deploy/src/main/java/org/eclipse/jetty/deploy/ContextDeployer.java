@@ -119,7 +119,7 @@ public class ContextDeployer extends AbstractLifeCycle
      * 
      * @throws Exception
      */
-    public ContextDeployer() throws Exception
+    public ContextDeployer()
     {
         _scanner=new Scanner();
     }
