@@ -7,6 +7,7 @@ jetty-7.0.1-SNAPSHOT
  + 289027 deobfuscate HttpClient SSL passwords
  + 289959 Improved ContextDeployer configuration
  + JETTY-1114 unsynchronised WebAppClassloader.getResource(String)
+ + Fixed XSS issue in CookieDump demo servlet.
 
 jetty-7.0.0
  + 289958 StatisticsServlet incorrectly adds StatisticsHandler
