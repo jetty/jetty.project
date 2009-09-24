@@ -85,7 +85,7 @@ public class CookieDump extends HttpServlet
         
         for (int i=0;cookies!=null && i<cookies.length;i++)
         {
-            out.println("<b>"+cookies[i].getName()+"</b>="+cookies[i].getValue()+"<br/>");
+            out.println("<b>"+deScript(cookies[i].getName())+"</b>="+deScript(cookies[i].getValue())+"<br/>");
         }
         
         out.println("<form action=\""+response.encodeURL(getURI(request))+"\" method=\"post\">"); 
@@ -109,6 +109,17 @@ public class CookieDump extends HttpServlet
         if (uri==null)
             uri=request.getRequestURI();
         return uri;
+    }
+
+    /* ------------------------------------------------------------ */
+    protected String deScript(String string)
+    {
+        if (string==null)
+            return null;
+        string=string.replace("&", "&amp;");
+        string=string.replace( "<", "&lt;");
+        string=string.replace( ">", "&gt;");
+        return string;
     }
     
 }

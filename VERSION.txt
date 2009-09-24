@@ -1,4 +1,5 @@
 jetty-7.0.0.RC7-SNAPSHOT
+ + Fixed XSS issue in CookieDump demo servlet.
  + 289958 StatisticsServlet incorrectly adds StatisticsHandler
  + 290081 Eager consume LF after CR
 
