@@ -434,20 +434,18 @@ public class Main
         // Setup Start / Stop Monitoring
         startMonitor();
 
+        // Initialize the Config (start.config)
+        initConfig(xmls);
+
         // Default XMLs (if not specified)
         if (xmls.isEmpty())
         {
-            // Do not rely on _jettyHome yet, as initConfig(xmls) defines _jettyHome, and
-            // resolveXmlConfigs(xmls) normalizes the xmls based off it.
             if (_fromDaemon)
             {
                 xmls.add("etc/jetty-logging.xml");
             }
             xmls.add("etc/jetty.xml");
         }
-
-        // Initialize the Config (start.config)
-        initConfig(xmls);
 
         // Add mandatory options for secure mode
         if (_secure)
@@ -563,14 +561,14 @@ public class Main
                     int len=in.read(buf);
                     while(len>0)
                     {
-                        out.write(buf,0,len); 
+                        out.write(buf,0,len);
                         len=in.read(buf);
                     }
                 }
                 catch(IOException e)
                 {
                     e.printStackTrace();
-                }   
+                }
             }
             
         }).start();
