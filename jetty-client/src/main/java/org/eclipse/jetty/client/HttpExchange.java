@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.eclipse.jetty.client.security.SecurityListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
@@ -83,19 +84,21 @@ public class HttpExchange
     private Buffer _requestContent;
     private InputStream _requestContentSource;
 
-    private int _status = STATUS_START;
+    private volatile int _status = STATUS_START;
     private Buffer _requestContentChunk;
     private boolean _retryStatus = false;
     // controls if the exchange will have listeners autoconfigured by the destination
     private boolean _configureListeners = true;
     private HttpEventListener _listener = new Listener();
 
+    boolean _onRequestCompleteDone;
+    boolean _onResponseCompleteDone;
+    boolean _onDone; // == onConnectionFail || onException || onExpired || onCancelled || onResponseCompleted && onRequestCompleted
+    
+
     public int getStatus()
     {
-        synchronized (this)
-        {
-            return _status;
-        }
+        return _status;
     }
 
     /**
@@ -105,15 +108,24 @@ public class HttpExchange
      */
     public void waitForStatus(int status) throws InterruptedException
     {
-        synchronized (this)
-        {
-            while (_status < status)
-            {
-                this.wait();
-            }
-        }
+        throw new UnsupportedOperationException();
     }
 
+    /**
+     * Wait until the exchange is "done".  
+     * Done is defined as when a final state has been passed to the 
+     * HttpExchange via the associated onXxx call.  Note that an
+     * exchange can transit a final state when being used as part
+     * of a dialog (eg {@link SecurityListener}.   Done status
+     * is thus defined as:<pre>
+     *   done == onConnectionFailed 
+     *        || onException
+     *        || onExpire
+     *        || onRequestComplete && onResponseComplete
+     * </pre>
+     * @return
+     * @throws InterruptedException
+     */
     public int waitForDone () throws InterruptedException
     {
         synchronized (this)
@@ -126,16 +138,21 @@ public class HttpExchange
 
     public void reset()
     {
-        setStatus(STATUS_START);
+        // TODO - this should do a cancel and wakeup everybody that was waiting.
+        // might need a version number concept 
+        synchronized(this)
+        {
+            _onRequestCompleteDone=false;
+            _onResponseCompleteDone=false;
+            _onDone=false;
+            setStatus(STATUS_START);
+        }
     }
 
     void setStatus(int status)
     {
-        synchronized (this)
-        {
-            _status = status;
-            this.notifyAll();
-        }
+        // _status is volatile
+        _status = status;
 
         try
         {
@@ -179,7 +196,10 @@ public class HttpExchange
 
     public boolean isDone (int status)
     {
-        return ((status == STATUS_COMPLETED) || (status == STATUS_EXPIRED) || (status == STATUS_EXCEPTED));
+        synchronized (this)
+        {
+            return _onDone;
+        }
     }
 
     public HttpEventListener getEventListener()
@@ -584,19 +604,53 @@ public class HttpExchange
 
     private class Listener implements HttpEventListener
     {
+        
         public void onConnectionFailed(Throwable ex)
         {
-            HttpExchange.this.onConnectionFailed(ex);
+            try
+            {
+                HttpExchange.this.onConnectionFailed(ex);
+            }
+            finally
+            {
+                synchronized(HttpExchange.this)
+                {
+                    _onDone=true;
+                    HttpExchange.this.notifyAll();
+                }
+            }
         }
 
         public void onException(Throwable ex)
         {
-            HttpExchange.this.onException(ex);
+            try
+            {
+                HttpExchange.this.onException(ex);
+            }
+            finally
+            {
+                synchronized(HttpExchange.this)
+                {
+                    _onDone=true;
+                    HttpExchange.this.notifyAll();
+                }
+            }
         }
 
         public void onExpire()
         {
-            HttpExchange.this.onExpire();
+            try
+            {
+                HttpExchange.this.onExpire();
+            }
+            finally
+            {
+                synchronized(HttpExchange.this)
+                {
+                    _onDone=true;
+                    HttpExchange.this.notifyAll();
+                }
+            }
         }
 
         public void onRequestCommitted() throws IOException
@@ -606,12 +660,36 @@ public class HttpExchange
 
         public void onRequestComplete() throws IOException
         {
-            HttpExchange.this.onRequestComplete();
+            try
+            {
+                HttpExchange.this.onRequestComplete();
+            }
+            finally
+            {
+                synchronized(HttpExchange.this)
+                {
+                    _onRequestCompleteDone=true;
+                    _onDone=_onResponseCompleteDone;
+                    HttpExchange.this.notifyAll();
+                }
+            }
         }
 
         public void onResponseComplete() throws IOException
         {
-            HttpExchange.this.onResponseComplete();
+            try
+            {
+                HttpExchange.this.onResponseComplete();
+            }
+            finally
+            {
+                synchronized(HttpExchange.this)
+                {
+                    _onResponseCompleteDone=true;
+                    _onDone=_onRequestCompleteDone;
+                    HttpExchange.this.notifyAll();
+                }
+            }
         }
 
         public void onResponseContent(Buffer content) throws IOException
