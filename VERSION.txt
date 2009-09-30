@@ -1,6 +1,7 @@
 jetty-7.0.0.RC7-SNAPSHOT
  + Fixed XSS issue in CookieDump demo servlet.
  + 289958 StatisticsServlet incorrectly adds StatisticsHandler
+ + 289960 start.jar assumes command line args are configs
  + 290081 Eager consume LF after CR
  + 290761 HttpExchange isDone handles intercepted events.
 

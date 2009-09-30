@@ -578,6 +578,12 @@ public class Main
     
     private String resolveXmlConfig(String xmlFilename) throws FileNotFoundException
     {
+        if (!xmlFilename.toLowerCase().endsWith(".xml"))
+        {
+            // Nothing to resolve.
+            return xmlFilename;
+        }
+
         File xml = new File(xmlFilename);
         if (xml.exists() && xml.isFile() && xml.isAbsolute())
         {
