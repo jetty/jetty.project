@@ -6,6 +6,7 @@ jetty-7.0.1-SNAPSHOT
  + 289265 Test harness for async input
  + 289027 deobfuscate HttpClient SSL passwords
  + 289959 Improved ContextDeployer configuration
+ + 289960 start.jar assumes command line args are configs
  + JETTY-1114 unsynchronised WebAppClassloader.getResource(String)
  + Fixed XSS issue in CookieDump demo servlet.
 

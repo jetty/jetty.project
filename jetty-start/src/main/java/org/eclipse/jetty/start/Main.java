@@ -210,7 +210,7 @@ public class Main
         catch (Throwable t)
         {
             t.printStackTrace(System.err);
-            usage();
+            System.out.println("Use java -jar start.jar --help for usage information.");
         }
     }
 
@@ -429,25 +429,25 @@ public class Main
     }
 
     /* ------------------------------------------------------------ */
-    public void start(List<String> xmls) throws FileNotFoundException,IOException,InterruptedException
+    public void start(List<String> xmls) throws FileNotFoundException, IOException, InterruptedException
     {
         // Setup Start / Stop Monitoring
         startMonitor();
 
-        // Default XMLs (if not specified)
-        if (xmls.isEmpty())
+        // Load potential Config (start.config)
+        List<String> configuredXmls = loadConfig(xmls);
+
+        // No XML defined in start.config or command line.  Can't execute.
+        if (configuredXmls.isEmpty())
         {
-            // Do not rely on _jettyHome yet, as initConfig(xmls) defines _jettyHome, and
-            // resolveXmlConfigs(xmls) normalizes the xmls based off it.
-            if (_fromDaemon)
-            {
-                xmls.add("etc/jetty-logging.xml");
-            }
-            xmls.add("etc/jetty.xml");
+            throw new FileNotFoundException("No XML configuration files specified in start.config or command line.");
         }
 
-        // Initialize the Config (start.config)
-        initConfig(xmls);
+        // Add required logging if executed via the daemon.
+        if (_fromDaemon)
+        {
+            configuredXmls.add("etc/jetty-logging.xml");
+        }
 
         // Add mandatory options for secure mode
         if (_secure)
@@ -457,7 +457,7 @@ public class Main
         }
 
         // Normalize the XML config options passed on the command line.
-        xmls = resolveXmlConfigs(xmls);
+        configuredXmls = resolveXmlConfigs(configuredXmls);
 
         // Get Desired Classpath based on user provided Active Options.
         Classpath classpath = _config.getActiveClasspath();
@@ -500,14 +500,14 @@ public class Main
         // Show Command Line to execute Jetty
         if (_dryRun)
         {
-            System.out.println(buildCommandLine(classpath,xmls));
+            System.out.println(buildCommandLine(classpath,configuredXmls));
             return;
         }
         
         // Show Command Line to execute Jetty
         if (_exec)
         {
-            String cmd = buildCommandLine(classpath,xmls);
+            String cmd = buildCommandLine(classpath,configuredXmls);
             Process process = Runtime.getRuntime().exec(cmd);
             copyInThread(process.getErrorStream(),System.err);
             copyInThread(process.getInputStream(),System.out);
@@ -543,7 +543,7 @@ public class Main
 
             Config.debug("main.class=" + classname);
 
-            invokeMain(cl,classname,xmls);
+            invokeMain(cl,classname,configuredXmls);
         }
         catch (Exception e)
         {
@@ -563,14 +563,14 @@ public class Main
                     int len=in.read(buf);
                     while(len>0)
                     {
-                        out.write(buf,0,len); 
+                        out.write(buf,0,len);
                         len=in.read(buf);
                     }
                 }
                 catch(IOException e)
                 {
                     e.printStackTrace();
-                }   
+                }
             }
             
         }).start();
@@ -578,6 +578,12 @@ public class Main
     
     private String resolveXmlConfig(String xmlFilename) throws FileNotFoundException
     {
+        if (!xmlFilename.toLowerCase().endsWith(".xml"))
+        {
+            // Nothing to resolve.
+            return xmlFilename;
+        }
+
         File xml = new File(xmlFilename);
         if (xml.exists() && xml.isFile() && xml.isAbsolute())
         {
@@ -875,11 +881,22 @@ public class Main
         return ret;
     }
 
-    private void initConfig(List<String> xmls)
+    /**
+     * Load Configuration.
+     * 
+     * No specific configuration is real until a {@link Config#getCombinedClasspath(java.util.Collection)} is used to
+     * execute the {@link Class} specified by {@link Config#getMainClassname()} is executed.
+     * 
+     * @param xmls
+     *            the command line specified xml configuration options.
+     * @return the list of xml configurations arriving via command line and start.config choices.
+     */
+    private List<String> loadConfig(List<String> xmls)
     {
         InputStream cfgstream = null;
         try
         {
+            // Pass in xmls.size into Config so that conditions based on "nargs" work.
             _config.setArgCount(xmls.size());
 
             // What start.config should we use?
@@ -895,18 +912,33 @@ public class Main
 
             // parse the config
             _config.parse(cfgstream);
-
+            
             _jettyHome = _config.getProperty("jetty.home");
             if (_jettyHome != null)
             {
                 _jettyHome = new File(_jettyHome).getCanonicalPath();
                 System.setProperty("jetty.home",_jettyHome);
             }
+
+            // Collect the configured xml configurations.
+            List<String> ret = new ArrayList<String>();
+            ret.addAll(xmls); // add command line provided xmls first.
+            for (String xmlconfig : _config.getXmlConfigs())
+            {
+                // add xmlconfigs arriving via start.config
+                if (!ret.contains(xmlconfig))
+                {
+                    ret.add(xmlconfig);
+                }
+            }
+
+            return ret;
         }
         catch (Exception e)
         {
             e.printStackTrace();
             System.exit(1);
+            return null; // never executed (just to satisfy javac compiler)
         }
         finally
         {
