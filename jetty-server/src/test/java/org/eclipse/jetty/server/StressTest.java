@@ -399,8 +399,6 @@ public class StressTest extends TestCase
         else
             doThreads(10,20,false);
     }
-    
-    
 
     public void testPersistent() throws Throwable
     {
@@ -410,7 +408,7 @@ public class StressTest extends TestCase
             doThreads(200,400,true);
         }
         else
-            doThreads(100,100,true);
+            doThreads(20,40,true);
     }
 
     
