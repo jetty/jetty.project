@@ -193,7 +193,42 @@ public class RollingFileAppender implements Appender
             return;
         }
 
-        throw new IllegalArgumentException("No such key \"" + key + "\"");
+        if ("formatter".equals(key))
+        {
+            setFormatter(value);
+            return;
+        }
+    }
+
+    private void setFormatter(String classname)
+    {
+        try
+        {
+            Class<?> clazz = Class.forName(classname);
+            if (Formatter.class.isAssignableFrom(clazz))
+            {
+                setFormatter((Formatter)clazz.newInstance());
+            }
+            else
+            {
+                System.err.println("Does not implement " + Formatter.class.getName() + " : " + classname);
+            }
+        }
+        catch (ClassNotFoundException e)
+        {
+            System.err.println("Cannot find formatter: " + classname);
+            e.printStackTrace(System.err);
+        }
+        catch (InstantiationException e)
+        {
+            System.err.println("Cannot instantiate formatter: " + classname);
+            e.printStackTrace(System.err);
+        }
+        catch (IllegalAccessException e)
+        {
+            System.err.println("Cannot instantiate formatter: " + classname);
+            e.printStackTrace(System.err);
+        }
     }
 
     public void setRetainDays(int retainDays)

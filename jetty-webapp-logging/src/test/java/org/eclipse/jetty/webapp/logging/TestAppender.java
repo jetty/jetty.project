@@ -17,10 +17,16 @@ package org.eclipse.jetty.webapp.logging;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.eclipse.jetty.logging.impl.Appender;
+import org.eclipse.jetty.logging.impl.Formatter;
 import org.eclipse.jetty.logging.impl.Severity;
+import org.slf4j.MDC;
 
 /**
  * Test Appender, records the logging events.
@@ -29,13 +35,15 @@ public class TestAppender implements Appender
 {
     public static class LogEvent
     {
-        String date;
+        Date date;
         Severity severity;
         String name;
         String message;
         Throwable t;
+        String mdc;
 
-        public LogEvent(String date, Severity severity, String name, String message, Throwable t)
+        @SuppressWarnings("unchecked")
+        public LogEvent(Date date, Severity severity, String name, String message, Throwable t)
         {
             super();
             this.date = date;
@@ -43,6 +51,28 @@ public class TestAppender implements Appender
             this.name = name;
             this.message = message;
             this.t = t;
+            this.mdc = "";
+
+            Map<String, String> mdcMap = MDC.getCopyOfContextMap();
+            if (mdcMap != null)
+            {
+                Set<String> keys = new TreeSet<String>();
+                keys.addAll(mdcMap.keySet());
+                boolean delim = false;
+                for (String key : keys)
+                {
+                    if (delim)
+                    {
+                        mdc += ", ";
+                    }
+                    mdc += key + "=" + mdcMap.get(key);
+                    delim = true;
+                }
+                if (mdc.length() > 0)
+                {
+                    System.out.println("mdc: " + mdc);
+                }
+            }
         }
 
         public LogEvent(Severity severity, String name, String message)
@@ -192,7 +222,7 @@ public class TestAppender implements Appender
         this.id = id;
     }
 
-    public void append(String date, Severity severity, String name, String message, Throwable t)
+    public void append(Date date, Severity severity, String name, String message, Throwable t)
     {
         if (name.equals("org.eclipse.jetty.util.log")) // standard jetty logger
         {
@@ -213,39 +243,6 @@ public class TestAppender implements Appender
 
     public boolean contains(LogEvent expectedEvent)
     {
-        /*
-        // System.out.println("Looking for: " + expectedEvent);
-        for (LogEvent event : events)
-        {
-            // System.out.println("Event: " + event);
-            if (!event.name.equals(expectedEvent.name))
-            {
-                continue; // not a match. skip.
-            }
-            if (!event.severity.equals(expectedEvent.severity))
-            {
-                continue; // not a match. skip.
-            }
-            if (expectedEvent.t != null)
-            {
-                if (event.t == null)
-                {
-                    continue; // not a match. skip.
-                }
-                if (!event.t.getClass().equals(expectedEvent.t.getClass()))
-                {
-                    continue; // not a match. skip.
-                }
-                if (!event.t.getMessage().equals(expectedEvent.t.getMessage()))
-                {
-                    continue; // not a match. skip.
-                }
-            }
-            if (event.message.equals(expectedEvent.message))
-            {
-                return true;
-            }
-        }*/
         return events.contains(expectedEvent);
     }
 
@@ -276,5 +273,10 @@ public class TestAppender implements Appender
         {
             System.out.println(event);
         }
+    }
+
+    public void setFormatter(Formatter formatter)
+    {
+        /* nothing to do here */
     }
 }

@@ -91,7 +91,7 @@ public class XmlConfiguredJetty
 
     public void addConfiguration(File xmlConfigFile) throws MalformedURLException
     {
-        xmlConfigurations.add(xmlConfigFile.toURL());
+        xmlConfigurations.add(xmlConfigFile.toURI().toURL());
     }
 
     public void addConfiguration(String testConfigName) throws MalformedURLException

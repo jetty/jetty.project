@@ -135,7 +135,10 @@ public class EmbeddedCentralizedLoggingTest extends TestCase
         handlers.addHandler(createWebapp("/clogging","dummy-webapp-logging-commons.war"));
         handlers.addHandler(createWebapp("/javalogging","dummy-webapp-logging-java.war"));
 
-        server.setHandler(handlers);
+        ContextLogHandler loghandler = new ContextLogHandler();
+        loghandler.setHandler(handlers);
+
+        server.setHandler(loghandler);
 
         server.start();
 

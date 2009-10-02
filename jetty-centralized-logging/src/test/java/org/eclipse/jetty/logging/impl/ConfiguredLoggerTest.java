@@ -165,7 +165,7 @@ public class ConfiguredLoggerTest extends TestCase
         assertAppenders(root,ConsoleAppender.class);
     }
 
-    public void testCapturedAppender() throws Exception
+    public void testTestAppender() throws Exception
     {
         Properties props = new Properties();
         props.setProperty("root.level","DEBUG");
@@ -196,6 +196,7 @@ public class ConfiguredLoggerTest extends TestCase
         props.setProperty("appender.roll.zone","GMT");
         props.setProperty("appender.roll.dateFormat","yyyy-MM-dd");
         props.setProperty("appender.roll.backupFormat","HH-mm-ss.SSS");
+        props.setProperty("appender.roll.formatter",DefaultFormatter.class.getName());
 
         CentralLoggerConfig root = CentralLoggerConfig.load(props);
         assertNotNull("Root Logger should not be null",root);

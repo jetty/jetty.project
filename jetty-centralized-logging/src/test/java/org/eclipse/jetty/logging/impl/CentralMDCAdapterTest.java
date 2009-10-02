@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import org.apache.log4j.MDC;
+import junit.framework.TestCase;
+
 import org.eclipse.jetty.logging.impl.TestAppender.LogEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.slf4j.impl.StaticLoggerBinder;
-
-import junit.framework.TestCase;
 
 public class CentralMDCAdapterTest extends TestCase
 {

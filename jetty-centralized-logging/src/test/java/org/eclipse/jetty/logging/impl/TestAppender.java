@@ -168,4 +168,9 @@ public class TestAppender implements Appender
             System.out.println(event);
         }
     }
+
+    public void setFormatter(Formatter formatter)
+    {
+        /* nothing to do here */
+    }
 }
