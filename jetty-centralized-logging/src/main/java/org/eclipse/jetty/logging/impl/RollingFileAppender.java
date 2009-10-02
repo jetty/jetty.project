@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Date;
 import java.util.TimeZone;
 
 import org.eclipse.jetty.logging.impl.io.RolloverFileOutputStream;
@@ -28,8 +29,8 @@ import org.eclipse.jetty.logging.impl.io.RolloverFileOutputStream;
  */
 public class RollingFileAppender implements Appender
 {
-    private static final byte[] LN = System.getProperty("line.separator","\n").getBytes();
-    private RolloverFileOutputStream out;
+    private RolloverFileOutputStream fileout;
+    private PrintStream out;
     private String filename;
     private File file;
     private boolean append = true;
@@ -38,37 +39,21 @@ public class RollingFileAppender implements Appender
     private String dateFormat = "yyyy_MM_dd";
     private String backupFormat = "HHmmssSSS";
     private String id;
+    private Formatter formatter;
 
-    public String getId()
+    public void append(Date date, Severity severity, String name, String message, Throwable t) throws IOException
     {
-        return id;
-    }
-
-    public void setId(String id)
-    {
-        this.id = id;
-    }
-
-    public void append(String date, Severity severity, String name, String message, Throwable t) throws IOException
-    {
-        StringBuffer buf = new StringBuffer();
-        buf.append(date);
-        buf.append(':').append(severity.name()).append(':');
-        buf.append(name);
-        buf.append(':').append(message);
-
-        out.write(buf.toString().getBytes());
-        out.write(LN);
+        out.println(getFormatter().format(date,severity,name,message));
         if (t != null)
         {
-            t.printStackTrace(new PrintStream(out));
-            out.write(LN);
+            t.printStackTrace(out);
         }
         out.flush();
     }
 
     public void close() throws IOException
     {
+        fileout.close();
         out.close();
     }
 
@@ -82,9 +67,28 @@ public class RollingFileAppender implements Appender
         return dateFormat;
     }
 
+    public File getFile()
+    {
+        return file;
+    }
+
     public String getFilename()
     {
         return filename;
+    }
+
+    public Formatter getFormatter()
+    {
+        if (formatter == null)
+        {
+            formatter = new DefaultFormatter();
+        }
+        return formatter;
+    }
+
+    public String getId()
+    {
+        return id;
     }
 
     public int getRetainDays()
@@ -102,11 +106,6 @@ public class RollingFileAppender implements Appender
         return append;
     }
 
-    public File getFile()
-    {
-        return file;
-    }
-
     public void open() throws IOException
     {
         file = new File(PropertyExpansion.expand(filename));
@@ -122,7 +121,8 @@ public class RollingFileAppender implements Appender
             throw new FileNotFoundException("Logging path exist, but is not a directory: " + logDir);
         }
 
-        out = new RolloverFileOutputStream(file.getAbsolutePath(),append,retainDays,zone,dateFormat,backupFormat);
+        fileout = new RolloverFileOutputStream(file.getAbsolutePath(),append,retainDays,zone,dateFormat,backupFormat);
+        out = new PrintStream(fileout);
     }
 
     public void setAppend(boolean append)
@@ -143,6 +143,16 @@ public class RollingFileAppender implements Appender
     public void setFilename(String filename)
     {
         this.filename = filename;
+    }
+
+    public void setFormatter(Formatter formatter)
+    {
+        this.formatter = formatter;
+    }
+
+    public void setId(String id)
+    {
+        this.id = id;
     }
 
     public void setProperty(String key, String value) throws Exception

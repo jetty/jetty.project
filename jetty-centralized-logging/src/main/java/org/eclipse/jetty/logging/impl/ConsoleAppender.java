@@ -16,33 +16,19 @@
 package org.eclipse.jetty.logging.impl;
 
 import java.io.IOException;
+import java.util.Date;
 
 /**
  * Standard Appender to the STDOUT Console
  */
 public class ConsoleAppender implements Appender
 {
+    private Formatter formatter;
     private String id;
 
-    public String getId()
+    public void append(Date date, Severity severity, String name, String message, Throwable t)
     {
-        return id;
-    }
-
-    public void setId(String id)
-    {
-        this.id = id;
-    }
-
-    public void append(String date, Severity severity, String name, String message, Throwable t)
-    {
-        StringBuffer buf = new StringBuffer();
-        buf.append(date);
-        buf.append(':').append(severity.name()).append(':');
-        buf.append(name);
-        buf.append(':').append(message);
-
-        System.out.println(buf.toString());
+        System.out.println(getFormatter().format(date,severity,name,message));
         if (t != null)
         {
             t.printStackTrace(System.out);
@@ -50,9 +36,23 @@ public class ConsoleAppender implements Appender
         System.out.flush();
     }
 
-    public void setProperty(String key, String value) throws Exception
+    public void close() throws IOException
     {
         /* nothing to do here */
+    }
+
+    public Formatter getFormatter()
+    {
+        if (formatter == null)
+        {
+            formatter = new DefaultFormatter();
+        }
+        return formatter;
+    }
+
+    public String getId()
+    {
+        return id;
     }
 
     public void open() throws IOException
@@ -60,7 +60,17 @@ public class ConsoleAppender implements Appender
         /* nothing to do here */
     }
 
-    public void close() throws IOException
+    public void setFormatter(Formatter formatter)
+    {
+        this.formatter = formatter;
+    }
+
+    public void setId(String id)
+    {
+        this.id = id;
+    }
+
+    public void setProperty(String key, String value) throws Exception
     {
         /* nothing to do here */
     }

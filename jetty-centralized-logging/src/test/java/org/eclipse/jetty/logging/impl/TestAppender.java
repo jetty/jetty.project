@@ -17,10 +17,15 @@ package org.eclipse.jetty.logging.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.eclipse.jetty.logging.impl.Appender;
 import org.eclipse.jetty.logging.impl.Severity;
+import org.slf4j.MDC;
 
 /**
  * Test Appender, records the logging events.
@@ -29,13 +34,15 @@ public class TestAppender implements Appender
 {
     public static class LogEvent
     {
-        String date;
+        Date date;
         Severity severity;
         String name;
         String message;
         Throwable t;
+        String mdc;
 
-        public LogEvent(String date, Severity severity, String name, String message, Throwable t)
+        @SuppressWarnings("unchecked")
+        public LogEvent(Date date, Severity severity, String name, String message, Throwable t)
         {
             super();
             this.date = date;
@@ -43,6 +50,24 @@ public class TestAppender implements Appender
             this.name = name;
             this.message = message;
             this.t = t;
+            this.mdc = "";
+
+            Map<String, String> mdcMap = MDC.getCopyOfContextMap();
+            if (mdcMap != null)
+            {
+                Set<String> keys = new TreeSet<String>();
+                keys.addAll(mdcMap.keySet());
+                boolean delim = false;
+                for (String key : keys)
+                {
+                    if (delim)
+                    {
+                        mdc += ", ";
+                    }
+                    mdc += key + "=" + mdcMap.get(key);
+                    delim = true;
+                }
+            }
         }
 
         public LogEvent(Severity severity, String name, String message)
@@ -74,13 +99,13 @@ public class TestAppender implements Appender
         this.id = id;
     }
 
-    public void append(String date, Severity severity, String name, String message, Throwable t)
+    public void append(Date date, Severity severity, String name, String message, Throwable t)
     {
         if (name.equals("org.eclipse.jetty.util.log")) // standard jetty logger
         {
             if (t != null)
             {
-                // Still interested in seeing throwables (HACK)
+                // Still interested in seeing throwables
                 t.printStackTrace(System.err);
             }
             return; // skip storing it.

@@ -15,7 +15,7 @@
 // ========================================================================
 package org.slf4j.impl;
 
-import org.slf4j.helpers.NOPMakerAdapter;
+import org.eclipse.jetty.logging.impl.CentralMDCAdapter;
 import org.slf4j.spi.MDCAdapter;
 
 /**
@@ -32,11 +32,11 @@ public class StaticMDCBinder
 
     public MDCAdapter getMDCA()
     {
-        return new NOPMakerAdapter();
+        return new CentralMDCAdapter();
     }
 
     public String getMDCAdapterClassStr()
     {
-        return NOPMakerAdapter.class.getName();
+        return CentralMDCAdapter.class.getName();
     }
 }
