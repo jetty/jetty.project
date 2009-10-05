@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.client;
@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 
 /**
- * 
+ *
  * @version $Revision: 879 $ $Date: 2009-09-11 16:13:28 +0200 (Fri, 11 Sep 2009) $
  */
 public class HttpConnection implements Connection
@@ -77,12 +77,12 @@ public class HttpConnection implements Connection
     {
         _reserved = reserved;
     }
-    
+
     public boolean isReserved()
     {
         return _reserved;
     }
-    
+
     public HttpDestination getDestination()
     {
         return _destination;
@@ -212,7 +212,7 @@ public class HttpConnection implements Connection
                             _generator.complete();
                     }
                 }
-                
+
                 if (_generator.isComplete() && !_requestComplete)
                 {
                     _requestComplete = true;
@@ -240,31 +240,31 @@ public class HttpConnection implements Connection
                 }
             }
             catch (Throwable e)
-            {                
+            {
                 Log.debug("Failure on " + _exchange, e);
 
                 if (e instanceof ThreadDeath)
                     throw (ThreadDeath)e;
-                
+
                 synchronized (this)
                 {
                     if (_exchange != null)
                     {
-                        _exchange.getEventListener().onException(e);
                         _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
+                        _exchange.getEventListener().onException(e);
                     }
                 }
 
                 failed = true;
                 if (e instanceof IOException)
                     throw (IOException)e;
- 
+
                 if (e instanceof Error)
                     throw (Error)e;
-                
+
                 if (e instanceof RuntimeException)
                     throw (RuntimeException)e;
-                
+
                throw new RuntimeException(e);
             }
             finally
@@ -298,7 +298,7 @@ public class HttpConnection implements Connection
                     {
                         if (!close)
                             close = shouldClose();
-                            
+
                         reset(true);
 
                         no_progress = 0;
@@ -343,7 +343,7 @@ public class HttpConnection implements Connection
             return _exchange == null;
         }
     }
-    
+
     /**
      * @see org.eclipse.jetty.io.Connection#isSuspended()
      */

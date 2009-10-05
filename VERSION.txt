@@ -1,3 +1,6 @@
+jetty-7.0.0-RC7-SNAPSHOT
+291340 Race condition in onException() notifications
+
 jetty-7.0.0.v20091001 October 1, 2009
 
 jetty-7.0.0.RC6 September 21 2009
