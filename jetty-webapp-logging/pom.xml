@@ -41,6 +41,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
+          <id>package-config</id>
           <execution>
             <phase>package</phase>
             <goals>
@@ -49,6 +50,18 @@
             <configuration>
               <descriptors>
                 <descriptor>config.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+          <execution>
+            <id>package-boot</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/boot.xml</descriptor>
               </descriptors>
             </configuration>
           </execution>
