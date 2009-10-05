@@ -49,7 +49,7 @@ public class ConnectionFailedTest extends TestCase
         long wait = 100;
         long maxWait = 10 * wait;
         long curWait = wait;
-        while (curWait < maxWait && !exchange.isDone(exchange.getStatus()))
+        while (curWait < maxWait && !exchange.isDone())
         {
             Thread.sleep(wait);
             curWait += wait;

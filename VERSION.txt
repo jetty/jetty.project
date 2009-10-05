@@ -14,6 +14,7 @@ jetty-7.0.1-SNAPSHOT
 jetty-7.0.0
  + 289958 StatisticsServlet incorrectly adds StatisticsHandler
  + 290081 Eager consume LF after CR
+ + 290761 HttpExchange isDone handles intercepted events.
 
 jetty-7.0.0.RC6 September 18th 2009
  + JETTY-719 Document state machine of jetty http client
