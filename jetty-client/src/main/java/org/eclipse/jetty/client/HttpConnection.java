@@ -262,8 +262,8 @@ public class HttpConnection implements Connection
                             // but we don't report it as it is normal cancelling operation
                             if (_exchange.getStatus() != HttpExchange.STATUS_CANCELLING)
                             {
-                                _exchange.getEventListener().onException(e);
                                 _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
+                                _exchange.getEventListener().onException(e);
                             }
                         }
                     }

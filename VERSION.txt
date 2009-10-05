@@ -9,6 +9,7 @@ jetty-7.0.1-SNAPSHOT
  + 289960 start.jar assumes command line args are configs
  + JETTY-1114 unsynchronised WebAppClassloader.getResource(String)
  + Fixed XSS issue in CookieDump demo servlet.
+ + 291340 Race condition in onException() notifications
 
 jetty-7.0.0
  + 289958 StatisticsServlet incorrectly adds StatisticsHandler
