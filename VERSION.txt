@@ -7,6 +7,7 @@ jetty-7.0.1-SNAPSHOT
  + 289027 deobfuscate HttpClient SSL passwords
  + 289959 Improved ContextDeployer configuration
  + 289960 start.jar assumes command line args are configs
+ + JETTY-937 More JVM bug work arounds. Insert pause if all else fails
  + JETTY-1114 unsynchronised WebAppClassloader.getResource(String)
  + Fixed XSS issue in CookieDump demo servlet.
  + 291340 Race condition in onException() notifications

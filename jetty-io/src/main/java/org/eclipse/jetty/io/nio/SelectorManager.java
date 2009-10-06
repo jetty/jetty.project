@@ -42,19 +42,18 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public abstract class SelectorManager extends AbstractLifeCycle
 {
-    private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD",128);
-    private static final int __JVMBUG_THRESHHOLD2=__JVMBUG_THRESHHOLD*2;
-    private static final int __JVMBUG_THRESHHOLD1=(__JVMBUG_THRESHHOLD2+__JVMBUG_THRESHHOLD)/2;
+    private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.mortbay.io.nio.JVMBUG_THRESHHOLD",512).intValue();
+    private static final int __MONITOR_PERIOD=Integer.getInteger("org.mortbay.io.nio.MONITOR_PERIOD",1000).intValue();
+    private static final int __MAX_SELECTS=Integer.getInteger("org.mortbay.io.nio.MAX_SELECTS",15000).intValue();
+    private static final int __BUSY_PAUSE=Integer.getInteger("org.mortbay.io.nio.BUSY_PAUSE",50).intValue();
+    
     private long _maxIdleTime;
     private long _lowResourcesConnections;
     private long _lowResourcesMaxIdleTime;
     private transient SelectSet[] _selectSet;
     private int _selectSets=1;
     private volatile int _set;
-    private boolean _jvmBug0;
-    private boolean _jvmBug1;
     
-
     /* ------------------------------------------------------------ */
     /**
      * @param maxIdleTime The maximum period in milli seconds that a connection may be idle before it is closed.
@@ -295,9 +294,18 @@ public abstract class SelectorManager extends AbstractLifeCycle
         private int _change;
         private int _nextSet;
         private Selector _selector;
-        private int _jvmBug;
         private volatile Thread _selecting;
-        private long _lastJVMBug;
+        private int _jvmBug;
+        private int _selects;
+        private long _monitorStart;
+        private long _monitorNext;
+        private boolean _pausing;
+        private SelectionKey _busyKey;
+        private long _log;
+        private int _paused;
+        private int _jvmFix0;
+        private int _jvmFix1;
+        private int _jvmFix2;
         
         /* ------------------------------------------------------------ */
         SelectSet(int acceptorID) throws Exception
@@ -313,6 +321,9 @@ public abstract class SelectorManager extends AbstractLifeCycle
             // create a selector;
             _selector = Selector.open();
             _change=0;
+            _monitorStart=System.currentTimeMillis();
+            _monitorNext=_monitorStart+__MONITOR_PERIOD;
+            _log=_monitorStart+60000;
         }
         
         /* ------------------------------------------------------------ */
@@ -360,7 +371,6 @@ public abstract class SelectorManager extends AbstractLifeCycle
                     _change=_change==0?1:0;
                     selector=_selector;
                 }
-                
 
                 // Make any key changes required
                 final int size=changes.size();
@@ -463,29 +473,85 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 // Do the select.
                 if (wait > 0) 
                 {
+                    // If we are in pausing mode
+                    if (_pausing)
+                    {
+                        try
+                        {
+                            Thread.sleep(__BUSY_PAUSE); // pause to reduce impact of  busy loop
+                        }
+                        catch(InterruptedException e)
+                        {
+                            Log.ignore(e);
+                        }
+                    }
+                        
                     long before=now;
                     int selected=selector.select(wait);
                     now = System.currentTimeMillis();
                     _idleTimeout.setNow(now);
                     _timeout.setNow(now);
-
-                    // Look for JVM bugs
+                    _selects++;
+  
+                    // Look for JVM bugs over a monitor period.
                     // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6403933
-                    if (__JVMBUG_THRESHHOLD>0 && selected==0 && wait>__JVMBUG_THRESHHOLD && (now-before)<(wait/2) )
+                    // http://bugs.sun.com/view_bug.do?bug_id=6693490
+                    if (now>_monitorNext)
                     {
+                        _selects=(int)(_selects*__MONITOR_PERIOD/(now-_monitorStart));
+                        _pausing=_selects>__MAX_SELECTS;
+                        if (_pausing)
+                            _paused++;
+                            
+                        _selects=0;
+                        _jvmBug=0;
+                        _monitorStart=now;
+                        _monitorNext=now+__MONITOR_PERIOD;
+                    }
+                    
+                    if (now>_log)
+                    {
+                        if (_paused>0)  
+                            Log.info(this+" Busy selector - injecting delay "+_paused+" times");
+
+                        if (_jvmFix2>0)
+                            Log.info(this+" JVM BUG(s) - injecting delay"+_jvmFix2+" times");
+
+                        if (_jvmFix1>0)
+                            Log.info(this+" JVM BUG(s) - recreating selector "+_jvmFix1+" times, canceled keys "+_jvmFix0+" times");
+
+                        else if(Log.isDebugEnabled() && _jvmFix0>0)
+                            Log.info(this+" JVM BUG(s) - canceled keys "+_jvmFix0+" times");
+                        _paused=0;
+                        _jvmFix2=0;
+                        _jvmFix1=0;
+                        _jvmFix0=0;
+                        _log=now+60000;
+                    }
+                    
+                    // If we see signature of possible JVM bug, increment count.
+                    if (selected==0 && wait>10 && (now-before)<(wait/2))
+                    {
+                        // Increment bug count and try a work around
                         _jvmBug++;
-                        if (_jvmBug>=(__JVMBUG_THRESHHOLD2))
+                        if (_jvmBug>(__JVMBUG_THRESHHOLD))
+                        {
+                            try
+                            {
+                                if (_jvmBug==__JVMBUG_THRESHHOLD+1)
+                                    _jvmFix2++;
+                                    
+                                Thread.sleep(__BUSY_PAUSE); // pause to avoid busy loop
+                            }
+                            catch(InterruptedException e)
+                            {
+                                Log.ignore(e);
+                            }
+                        }
+                        else if (_jvmBug==__JVMBUG_THRESHHOLD)
                         {
                             synchronized (this)
                             {
-                                _lastJVMBug=now;
-                                if (_jvmBug1)
-                                    Log.debug("seeing JVM BUG(s) - recreating selector");
-                                else
-                                {
-                                    _jvmBug1=true;
-                                    Log.info("seeing JVM BUG(s) - recreating selector");
-                                }
                                 // BLOODY SUN BUG !!!  Try refreshing the entire selector.
                                 final Selector new_selector = Selector.open();
                                 for (SelectionKey k: selector.keys())
@@ -503,37 +569,46 @@ public abstract class SelectorManager extends AbstractLifeCycle
                                 }
                                 _selector.close();
                                 _selector=new_selector;
-                                _jvmBug=0;
                                 return;
                             }
                         }
-                        else if (_jvmBug==__JVMBUG_THRESHHOLD || _jvmBug==__JVMBUG_THRESHHOLD1)
+                        else if (_jvmBug%32==31) // heuristic attempt to cancel key 31,63,95,... loops
                         {
                             // Cancel keys with 0 interested ops
-                            if (_jvmBug0)
-                                Log.debug("seeing JVM BUG(s) - cancelling interestOps==0");
-                            else
-                            {
-                                _jvmBug0=true;
-                                Log.info("seeing JVM BUG(s) - cancelling interestOps==0");
-                            }
+                            int cancelled=0;
                             for (SelectionKey k: selector.keys())
                             {
                                 if (k.isValid()&&k.interestOps()==0)
                                 {
                                     k.cancel();
+                                    cancelled++;
                                 }
                             }
+                            if (cancelled>0)
+                                _jvmFix0++;
+                            
                             return;
                         }
                     }
-                    else
-                        _jvmBug=0;
+                    else if (selected==1 && _selects>__MAX_SELECTS)
+                    {
+                        // Look for busy key
+                        SelectionKey busy = (SelectionKey)selector.selectedKeys().iterator().next();
+                        if (busy==_busyKey)
+                        {
+                            SelectChannelEndPoint endpoint = (SelectChannelEndPoint)busy.attachment();
+                            Log.warn("Busy Key "+busy+" "+endpoint);
+                            busy.cancel();
+                            if (endpoint!=null)
+                                endpoint.close();
+                        }
+                        _busyKey=busy;
+                    }
                 }
                 else 
                 {
                     selector.selectNow();
-                    _jvmBug=0;
+                    _selects++;
                 }
 
                 // have we been destroyed while sleeping
@@ -704,7 +779,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
         {
             return _selector;
         }
-
+        
         /* ------------------------------------------------------------ */
         void stop() throws Exception
         {
@@ -763,7 +838,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
             synchronized (System.err)
             {
                 Selector selector=_selector;
-                Log.info("SelectSet "+_setID+" "+selector.keys().size()+" lastJVMBug="+new Date(_lastJVMBug));
+                Log.info("SelectSet "+_setID+" "+selector.keys().size());
                 for (SelectionKey key: selector.keys())
                 {
                     if (key.isValid())
