@@ -43,7 +43,6 @@ public abstract class AbstractGenerator implements Generator
     public final static int STATE_END = 4;
     
     public static final byte[] NO_BYTES = {};
-    public static final int MAX_OUTPUT_CHARS = 512; 
 
     // data
 
