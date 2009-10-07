@@ -178,6 +178,18 @@
   
   
   <servlet>
+    <servlet-name>Rewrite</servlet-name>
+    <servlet-class>com.acme.RewriteServlet</servlet-class>
+  </servlet>
+  
+  <servlet-mapping>
+    <servlet-name>Rewrite</servlet-name>
+    <url-pattern>/rewritten/*</url-pattern>
+    <url-pattern>/redirected/*</url-pattern>
+  </servlet-mapping>
+  
+  
+  <servlet>
     <servlet-name>SecureMode</servlet-name>
     <servlet-class>com.acme.SecureModeServlet</servlet-class>
     <load-on-startup>1</load-on-startup>

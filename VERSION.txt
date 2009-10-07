@@ -11,6 +11,7 @@ jetty-7.0.1-SNAPSHOT
  + JETTY-1114 unsynchronised WebAppClassloader.getResource(String)
  + Fixed XSS issue in CookieDump demo servlet.
  + 291340 Race condition in onException() notifications
+ + 291589 Update jetty-rewrite demo
 
 jetty-7.0.0
  + 289958 StatisticsServlet incorrectly adds StatisticsHandler
