@@ -13,6 +13,7 @@ jetty-7.0.1-SNAPSHOT
  + Fixed XSS issue in CookieDump demo servlet.
  + 291019 Fix default DEBUG option; "-D.DEBUG=true" now works
  + 291340 Race condition in onException() notifications
+ + 291543 make bin/*.sh scripts executable in distribution
  + 291589 Update jetty-rewrite demo
 
 jetty-7.0.0.v20091005 October 5 2009
