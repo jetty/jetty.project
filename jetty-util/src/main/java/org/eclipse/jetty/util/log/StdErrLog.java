@@ -62,7 +62,7 @@ public class StdErrLog implements Logger
 
         try
         {
-            _debug = Boolean.parseBoolean(System.getProperty(name + ".DEBUG",Boolean.toString(__debug)));
+            _debug = Boolean.parseBoolean(System.getProperty(_name + ".DEBUG",Boolean.toString(__debug)));
         }
         catch (AccessControlException ace)
         {
