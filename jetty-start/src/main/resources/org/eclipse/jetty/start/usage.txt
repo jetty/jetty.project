@@ -1,5 +1,9 @@
 Usage: java -jar start.jar [options] [properties] [configs]
-Run Jetty Server Standalone.
+
+  The start.jar builds a classpath and executes a main java class with
+  a classloader built from that classpath.  By default the start.jar
+  mechanism is configured to start the jetty server, but it can be 
+  configured to start any java main class.
 
 Common Options:
   --help           This help / usage information.
@@ -30,34 +34,47 @@ Advanced Options:
                      * Secure Logging
                      * Audit Logging
                    
+  If the file start.ini exists in the working directory, then it's each line
+  of it's contents is prepended to the as an argument to the command line.
 
-If the file start.ini exists in the working directory, then it's each line
-of it's contents is prepended to the as an argument to the command line.
-
-Properties:
-Execution properties, similar in scope to JVM Properties.
-NOTE: Not all properties are listed here.
-  org.eclipse.jetty.util.log.class=[class]   
+System Properties:
+  These are set with a command line like "java -Dname=value ..." and are
+  accessible via the java.lang.System#getProperty(String) API.
+  Some key system properties are:
+    org.eclipse.jetty.util.log.class=[class]   
       A Low Level Jetty Logger Implementation to use
       (default: org.eclipse.jetty.util.log.Slf4jLog)
-  org.eclipse.jetty.util.log.DEBUG=[boolean]
+    org.eclipse.jetty.util.log.DEBUG=[boolean]
       Debug logging for the stderr and javautil Loggers. Slf4j
       and other loggers must be separately configured for debug.
       (default: false)
-  org.eclipse.jetty.util.log.IGNORED=[boolean]
+    org.eclipse.jetty.util.log.IGNORED=[boolean]
       Ignored exceptions are logged, independent of DEBUG settings
       (default: false)
-  STOP.PORT=[number]
+
+Start Properties:
+  These are set with a command line like "java -jar start.jar name=value"
+  and only affect the start mechanism.  Some of these are defined in the 
+  default start.config and will not be available if another configuration
+  file is used. NOTE: Not all properties are listed here:
+
+    path=[directory]
+      An additional class path element to add to the started class path. Typically
+      this is used to add directories of classes and/or resources
+    lib=[directory]
+      An additional library directory to add to the started class path. This must
+      be a (deep) directory of jars
+    STOP.PORT=[number]
       The port to use to stop the running Jetty server.
       Required along with STOP.KEY if you want to use the --stop option above.
-  STOP.KEY=[alphanumeric]
+    STOP.KEY=[alphanumeric]
       The passphrase defined to stop the server.
       Requried along with STOP.PORT if you want to use the --stop option above.
-  DEBUG=true
-      Enable debug on the start mechanism.  ( Note this is not equivalent
-      to enabling debug on the logging mechanism of the started server).
+    DEBUG=true
+      Enable debug on the start mechanism and sets the
+      org.eclipse.jetty.util.log.stderr.DEBUG system property to true. 
       (default: false)
-  OPTIONS=[option,option,...]
+    OPTIONS=[option,option,...]
       Classpath Options to use.  By convention, option names starting with capitals
       will include associated options (eg Server includes jetty-server, jetty-webapp,
       jetty-deploy, etc). An option starting with a lowercase letter includes 
@@ -68,5 +85,5 @@ NOTE: Not all properties are listed here.
 @OPTIONS@
 
 Configs:
-XML Configurations to use.
+  XML Configurations to use.
 @CONFIGS@

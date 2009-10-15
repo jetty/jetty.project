@@ -103,8 +103,8 @@ public class Main
 
                 if ("--stop".equals(arg))
                 {
-                    int port = Integer.parseInt(System.getProperty("STOP.PORT","-1"));
-                    String key = System.getProperty("STOP.KEY",null);
+                    int port = Integer.parseInt(_config.getProperty("STOP.KEY",System.getProperty("STOP.PORT","-1")));
+                    String key = _config.getProperty("STOP.KETY",System.getProperty("STOP.KEY",null));
                     stop(port,key);
                     return;
                 }
