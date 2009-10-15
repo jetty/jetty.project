@@ -1,4 +1,7 @@
 jetty-7.0.1-SNAPSHOT
+ + Refactored continuation test harnessess
+ + Continuations ISE rather than ignore bad transitions
+ + Improved start.jar usage text for properties
  + Promoted Jetty WebApp Verifier from Sandbox
  + Promoted Jetty Centralized Logging from Sandbox
  + 274251 DefaultServlet supports exact match mode.
@@ -15,14 +18,16 @@ jetty-7.0.1-SNAPSHOT
  + 291340 Race condition in onException() notifications
  + 291543 make bin/*.sh scripts executable in distribution
  + 291589 Update jetty-rewrite demo
+ 
+jetty-7.0.0.v20091005 5 October 2009
+291340 Race condition in onException() notifications
 
-jetty-7.0.0.v20091005 October 5 2009
+jetty-7.0.0.RC6 September 21 2009
+ + Fixed XSS issue in CookieDump demo servlet.
  + 289958 StatisticsServlet incorrectly adds StatisticsHandler
- + Remove printlns from jetty-plus
+ + 289960 start.jar assumes command line args are configs
  + 290081 Eager consume LF after CR
  + 290761 HttpExchange isDone handles intercepted events.
-
-jetty-7.0.0.RC6 September 18th 2009
  + JETTY-719 Document state machine of jetty http client
  + JETTY-780 CNFE during startup of webapp with spring-context >= 2.5.1
  + JETTY-936 274251 Improved servlet matching and optimized'

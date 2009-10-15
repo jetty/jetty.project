@@ -37,122 +37,150 @@ public abstract class ContinuationBase extends TestCase
     protected SuspendServlet _servlet=new SuspendServlet();
     protected int _port;
     
-    protected void doit(String type) throws Exception
+    protected void doNormal(String type) throws Exception
     {
-        String response;
-        
-        response=process(null,null);
+        String response=process(null,null);
         assertContains(type,response);
         assertContains("NORMAL",response);
         assertNotContains("history: onTimeout",response);
         assertNotContains("history: onComplete",response);
+    }
 
-        response=process("sleep=200",null);
+    protected void doSleep() throws Exception
+    {
+        String response=process("sleep=200",null);
         assertContains("SLEPT",response);
         assertNotContains("history: onTimeout",response);
         assertNotContains("history: onComplete",response);
-        
-        response=process("suspend=200",null);
+    }
+
+    protected void doSuspend() throws Exception
+    {
+        String response=process("suspend=200",null);
         assertContains("TIMEOUT",response);
         assertContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
-        
-        response=process("suspend=200&resume=10",null);
+    }
+
+    protected void doSuspendWaitResume() throws Exception
+    {
+        String response=process("suspend=200&resume=10",null);
         assertContains("RESUMED",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
-        
-        response=process("suspend=200&resume=0",null);
+    }
+
+    protected void doSuspendResume() throws Exception
+    {
+        String response=process("suspend=200&resume=0",null);
         assertContains("RESUMED",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
-        
-        response=process("suspend=200&complete=10",null);
+    }
+
+    protected void doSuspendWaitComplete() throws Exception
+    {
+        String response=process("suspend=200&complete=10",null);
         assertContains("COMPLETED",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
-        
-        response=process("suspend=200&complete=0",null);
+    }
+
+    protected void doSuspendComplete() throws Exception
+    {
+        String response=process("suspend=200&complete=0",null);
         assertContains("COMPLETED",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
-        
-        
-        response=process("suspend=1000&resume=10&suspend2=1000&resume2=10",null);
+    }
+
+    protected void doSuspendWaitResumeSuspendWaitResume() throws Exception
+    {
+        String response=process("suspend=1000&resume=10&suspend2=1000&resume2=10",null);
         assertEquals(2,count(response,"history: suspend"));
         assertEquals(2,count(response,"history: resume"));
         assertEquals(0,count(response,"history: onTimeout"));
         assertEquals(1,count(response,"history: onComplete"));
         assertContains("RESUMED",response);
-        
-        response=process("suspend=1000&resume=10&suspend2=1000&resume2=10",null);
-        assertEquals(2,count(response,"history: suspend"));
-        assertEquals(2,count(response,"history: resume"));
-        assertEquals(0,count(response,"history: onTimeout"));
-        assertEquals(1,count(response,"history: onComplete"));
-        assertContains("RESUMED",response);
-        
-        response=process("suspend=1000&resume=10&suspend2=1000&complete2=10",null);
+    }
+    
+    protected void doSuspendWaitResumeSuspendComplete() throws Exception
+    {
+        String response=process("suspend=1000&resume=10&suspend2=1000&complete2=10",null);
         assertEquals(2,count(response,"history: suspend"));
         assertEquals(1,count(response,"history: resume"));
         assertEquals(0,count(response,"history: onTimeout"));
         assertEquals(1,count(response,"history: onComplete"));
         assertContains("COMPLETED",response);
-        
-        response=process("suspend=1000&resume=10&suspend2=10",null);
+    }
+
+    protected void doSuspendWaitResumeSuspend() throws Exception
+    {
+        String response=process("suspend=1000&resume=10&suspend2=10",null);
         assertEquals(2,count(response,"history: suspend"));
         assertEquals(1,count(response,"history: resume"));
         assertEquals(1,count(response,"history: onTimeout"));
         assertEquals(1,count(response,"history: onComplete"));
         assertContains("TIMEOUT",response);
-        
+    }
 
-        
-        response=process("suspend=10&suspend2=1000&resume2=10",null);
+    protected void doSuspendTimeoutSuspendResume() throws Exception
+    {
+        String response=process("suspend=10&suspend2=1000&resume2=10",null);
         assertEquals(2,count(response,"history: suspend"));
         assertEquals(1,count(response,"history: resume"));
         assertEquals(1,count(response,"history: onTimeout"));
         assertEquals(1,count(response,"history: onComplete"));
         assertContains("RESUMED",response);
-        
-        response=process("suspend=10&suspend2=1000&resume2=10",null);
-        assertEquals(2,count(response,"history: suspend"));
-        assertEquals(1,count(response,"history: resume"));
-        assertEquals(1,count(response,"history: onTimeout"));
-        assertEquals(1,count(response,"history: onComplete"));
-        assertContains("RESUMED",response);
-        
-        response=process("suspend=10&suspend2=1000&complete2=10",null);
+    }
+
+    protected void doSuspendTimeoutSuspendComplete() throws Exception
+    {
+        String response=process("suspend=10&suspend2=1000&complete2=10",null);
         assertEquals(2,count(response,"history: suspend"));
         assertEquals(0,count(response,"history: resume"));
         assertEquals(1,count(response,"history: onTimeout"));
         assertEquals(1,count(response,"history: onComplete"));
         assertContains("COMPLETED",response);
-        
-        response=process("suspend=10&suspend2=10",null);
+    }
+
+    protected void doSuspendTimeoutSuspend() throws Exception
+    {
+        String response=process("suspend=10&suspend2=10",null);
         assertEquals(2,count(response,"history: suspend"));
         assertEquals(0,count(response,"history: resume"));
         assertEquals(2,count(response,"history: onTimeout"));
         assertEquals(1,count(response,"history: onComplete"));
         assertContains("TIMEOUT",response);
-        
+    }
 
-        response=process("suspend=200&resume=10&undispatch=true",null);
+    protected void doSuspendThrowResume() throws Exception
+    {
+        String response=process("suspend=200&resume=10&undispatch=true",null);
         assertContains("RESUMED",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
-        
-        response=process("suspend=200&resume=0&undispatch=true",null);
+    }
+
+    protected void doSuspendResumeThrow() throws Exception
+    {
+        String response=process("suspend=200&resume=0&undispatch=true",null);
         assertContains("RESUMED",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
-        
-        response=process("suspend=200&complete=10&undispatch=true",null);
+    }
+
+    protected void doSuspendThrowComplete() throws Exception
+    {
+        String response=process("suspend=200&complete=10&undispatch=true",null);
         assertContains("COMPLETED",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
-        
-        response=process("suspend=200&complete=0&undispatch=true",null);
+    }
+
+    protected void doSuspendCompleteThrow() throws Exception
+    {
+        String response=process("suspend=200&complete=0&undispatch=true",null);
         assertContains("COMPLETED",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
@@ -226,7 +254,7 @@ public abstract class ContinuationBase extends TestCase
         /* ------------------------------------------------------------ */
         protected void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
         {
-            final Continuation continuation = ContinuationSupport.getContinuation(request,response);
+            final Continuation continuation = ContinuationSupport.getContinuation(request);
 
             response.addHeader("history",continuation.getClass().toString());
             
@@ -436,8 +464,7 @@ public abstract class ContinuationBase extends TestCase
     }
     
     
-    private static ContinuationListener __listener = 
-        new ContinuationListener()
+    private static ContinuationListener __listener = new ContinuationListener()
     {
         public void onComplete(Continuation continuation)
         {

@@ -214,12 +214,11 @@ public class AsyncStressTest extends TestCase
 
                 if (suspend_for>=0)
                 {
-                    if (suspend_for>0)
-                        baseRequest.setAsyncTimeout(suspend_for);
-                    baseRequest.addEventListener(__asyncListener);
                     final AsyncContext asyncContext = baseRequest.startAsync();
-                    
-                    
+                    asyncContext.addContinuationListener(__asyncListener);
+                    if (suspend_for>0)
+                        asyncContext.setTimeout(suspend_for);
+                   
                     if (complete_after>0)
                     {
                         TimerTask complete = new TimerTask()
@@ -241,7 +240,6 @@ public class AsyncStressTest extends TestCase
                                     System.err.println(uri+"=="+br.getUri());
                                     System.err.println(asyncContext+"=="+br.getAsyncContinuation());
                                     
-                                    System.err.println(((AsyncContinuation)asyncContext).getHistory());
                                     Log.warn(e);
                                     System.exit(1);
                                 }

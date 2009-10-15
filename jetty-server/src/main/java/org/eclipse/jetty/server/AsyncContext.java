@@ -17,6 +17,8 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
+import org.eclipse.jetty.continuation.ContinuationListener;
+
 /* temporary interface in anticipation of servlet 3.0 */
 public interface AsyncContext 
 {
@@ -34,6 +36,8 @@ public interface AsyncContext
     public void dispatch(ServletContext context, String path);
     public void complete();
     public void start(Runnable run);
+    public void setTimeout(long ms);
+    public void addContinuationListener(ContinuationListener listener);
 }
 
 

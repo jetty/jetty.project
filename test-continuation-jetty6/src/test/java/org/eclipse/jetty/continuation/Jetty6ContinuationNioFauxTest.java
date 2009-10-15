@@ -17,39 +17,41 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.eclipse.jetty.continuation.test.ContinuationBase;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.IO;
+import org.mortbay.jetty.Connector;
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.bio.SocketConnector;
+import org.mortbay.jetty.nio.SelectChannelConnector;
+import org.mortbay.jetty.servlet.Context;
+import org.mortbay.jetty.servlet.FilterHolder;
+import org.mortbay.jetty.servlet.ServletHandler;
+import org.mortbay.jetty.servlet.ServletHolder;
+import org.mortbay.util.IO;
 
 
-public class FauxContinuationTest extends ContinuationBase
+public class Jetty6ContinuationNioFauxTest extends ContinuationBase
 {
     protected Server _server = new Server();
     protected ServletHandler _servletHandler;
-    protected SelectChannelConnector _connector;
+    protected SelectChannelConnector _selectChannelConnector;
+    protected SocketConnector _socketConnector;
     FilterHolder _filter;
 
     protected void setUp() throws Exception
     {
-        _connector = new SelectChannelConnector();
-        _server.setConnectors(new Connector[]{ _connector });
-        ServletContextHandler servletContext = new ServletContextHandler(ServletContextHandler.NO_SECURITY|ServletContextHandler.NO_SESSIONS);
+        _selectChannelConnector = new SelectChannelConnector();
+        _server.setConnectors(new Connector[]{ _selectChannelConnector });
+        Context servletContext = new Context(Context.NO_SECURITY|Context.NO_SESSIONS);
         _server.setHandler(servletContext);
         _servletHandler=servletContext.getServletHandler();
         ServletHolder holder=new ServletHolder(_servlet);
         _servletHandler.addServletWithMapping(holder,"/");
-        
         _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",0);
+
         _filter.setInitParameter("debug","true");
         _filter.setInitParameter("faux","true");
         _server.start();
-        _port=_connector.getLocalPort();
         
+        _port=_selectChannelConnector.getLocalPort();
     }
 
     protected void tearDown() throws Exception
@@ -141,8 +143,6 @@ public class FauxContinuationTest extends ContinuationBase
     {
         doSuspendCompleteThrow();
     }
-    
-    
     
     protected String toString(InputStream in) throws IOException
     {

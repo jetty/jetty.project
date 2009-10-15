@@ -28,25 +28,29 @@ import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.util.IO;
 
 
-public class Jetty6ContinuationTest extends ContinuationBase
+public class Jetty6ContinuationBioFauxTest extends ContinuationBase
 {
     protected Server _server = new Server();
     protected ServletHandler _servletHandler;
-    protected SelectChannelConnector _selectChannelConnector;
     protected SocketConnector _socketConnector;
     FilterHolder _filter;
 
     protected void setUp() throws Exception
     {
-        _selectChannelConnector = new SelectChannelConnector();
         _socketConnector = new SocketConnector();
-        _server.setConnectors(new Connector[]{ _selectChannelConnector,_socketConnector });
+        _server.setConnectors(new Connector[]{ _socketConnector });
         Context servletContext = new Context(Context.NO_SECURITY|Context.NO_SESSIONS);
         _server.setHandler(servletContext);
         _servletHandler=servletContext.getServletHandler();
         ServletHolder holder=new ServletHolder(_servlet);
         _servletHandler.addServletWithMapping(holder,"/");
         _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",0);
+
+        _filter.setInitParameter("debug","true");
+        _filter.setInitParameter("faux","true");
+        _server.start();
+        
+        _port=_socketConnector.getLocalPort();
     }
 
     protected void tearDown() throws Exception
@@ -54,44 +58,89 @@ public class Jetty6ContinuationTest extends ContinuationBase
         _server.stop();
     }
 
-    public void testJetty6Nio() throws Exception
+    public void testContinuation() throws Exception
     {
-        _filter.setInitParameter("debug","true");
-        //_filter.setInitParameter("faux","false");
-        _server.start();
-        
-        _port=_selectChannelConnector.getLocalPort();
-        doit("Jetty6Continuation");
+        doNormal("FauxContinuation");
+    }
+    
+    public void testSleep() throws Exception
+    {
+        doSleep();
     }
 
-    public void testFauxNio() throws Exception
+    public void testSuspend() throws Exception
     {
-        _filter.setInitParameter("debug","true");
-        _filter.setInitParameter("faux","true");
-        _server.start();
-        
-        _port=_selectChannelConnector.getLocalPort();
-        doit("FauxContinuation");
+        doSuspend();
     }
 
-    public void testJetty6Bio() throws Exception
+    public void testSuspendWaitResume() throws Exception
     {
-        _filter.setInitParameter("debug","true");
-        //_filter.setInitParameter("faux","false");
-        _server.start();
-        
-        _port=_socketConnector.getLocalPort();
-        doit("FauxContinuation");
+        doSuspendWaitResume();
     }
 
-    public void testFauxBio() throws Exception
+    public void testSuspendResume() throws Exception
     {
-        _filter.setInitParameter("debug","true");
-        _filter.setInitParameter("faux","true");
-        _server.start();
-        
-        _port=_socketConnector.getLocalPort();
-        doit("FauxContinuation");
+        doSuspendResume();
+    }
+
+    public void testSuspendWaitComplete() throws Exception
+    {
+        doSuspendWaitComplete();
+    }
+
+    public void testSuspendComplete() throws Exception
+    {
+        doSuspendComplete();
+    }
+
+    public void testSuspendWaitResumeSuspendWaitResume() throws Exception
+    {
+        doSuspendWaitResumeSuspendWaitResume();
+    }
+    
+    public void testSuspendWaitResumeSuspendComplete() throws Exception
+    {
+        doSuspendWaitResumeSuspendComplete();
+    }
+
+    public void testSuspendWaitResumeSuspend() throws Exception
+    {
+        doSuspendWaitResumeSuspend();
+    }
+
+    public void testSuspendTimeoutSuspendResume() throws Exception
+    {
+        doSuspendTimeoutSuspendResume();
+    }
+
+    public void testSuspendTimeoutSuspendComplete() throws Exception
+    {
+        doSuspendTimeoutSuspendComplete();
+    }
+
+    public void testSuspendTimeoutSuspend() throws Exception
+    {
+        doSuspendTimeoutSuspend();
+    }
+
+    public void testSuspendThrowResume() throws Exception
+    {
+        doSuspendThrowResume();
+    }
+
+    public void testSuspendResumeThrow() throws Exception
+    {
+        doSuspendResumeThrow();
+    }
+
+    public void testSuspendThrowComplete() throws Exception
+    {
+        doSuspendThrowComplete();
+    }
+
+    public void testSuspendCompleteThrow() throws Exception
+    {
+        doSuspendCompleteThrow();
     }
     
     protected String toString(InputStream in) throws IOException

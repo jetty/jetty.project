@@ -171,19 +171,12 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public void addContinuationListener(ContinuationListener listener)
-    {
-        _async.addContinuationListener(listener);
-    }
-
-    /* ------------------------------------------------------------ */
     public void addEventListener(final EventListener listener) 
     {
         if (listener instanceof ServletRequestAttributeListener)
             _requestAttributeListeners= LazyList.add(_requestAttributeListeners, listener);
         if (listener instanceof ContinuationListener)
-            _async.addContinuationListener((ContinuationListener)listener);
-            
+            throw new IllegalArgumentException();
     }
 
     /* ------------------------------------------------------------ */
@@ -1396,12 +1389,6 @@ public class Request implements HttpServletRequest
     public void setAsyncSupported(boolean supported)
     {
         _asyncSupported=supported;
-    }
-    
-    /* ------------------------------------------------------------ */
-    public void setAsyncTimeout(long timeout)
-    {
-        _async.setAsyncTimeout(timeout);
     }
     
     /* ------------------------------------------------------------ */
