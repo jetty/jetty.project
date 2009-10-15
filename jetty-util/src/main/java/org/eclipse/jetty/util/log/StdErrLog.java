@@ -37,6 +37,7 @@ public class StdErrLog implements Logger
     private boolean _debug = __debug;
     private final String _name;
     private boolean _hideStacks=false;
+    StringBuilder _buffer = new StringBuilder();
     
     static
     {
@@ -99,14 +100,24 @@ public class StdErrLog implements Logger
     {
         String d=_dateCache.now();
         int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":INFO:"+_name+":"+msg);
+        synchronized(_buffer)
+        {
+            tag(d,ms,":INFO:");
+            format(msg);
+            System.err.println(_buffer.toString());
+        }
     }
 
     public void info(String msg,Object arg0, Object arg1)
     {
         String d=_dateCache.now();
         int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":INFO:"+_name+":"+format(msg,arg0,arg1));
+        synchronized(_buffer)
+        {
+            tag(d,ms,":INFO:");
+            format(msg,arg0,arg1);
+            System.err.println(_buffer.toString());
+        }
     }
     
     public void debug(String msg,Throwable th)
@@ -115,13 +126,15 @@ public class StdErrLog implements Logger
         {
             String d=_dateCache.now();
             int ms=_dateCache.lastMs();
-            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":DBUG:"+_name+":"+msg);
-            if (th!=null) 
+            synchronized(_buffer)
             {
+                tag(d,ms,":DBUG:");
+                format(msg);
                 if (_hideStacks)
-                    System.err.println(th);
+                    format(th.toString());
                 else
-                    th.printStackTrace();
+                    format(th);
+                System.err.println(_buffer.toString());
             }
         }
     }
@@ -132,7 +145,12 @@ public class StdErrLog implements Logger
         {
             String d=_dateCache.now();
             int ms=_dateCache.lastMs();
-            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":DBUG:"+_name+":"+msg);
+            synchronized(_buffer)
+            {
+                tag(d,ms,":DBUG:");
+                format(msg);
+                System.err.println(_buffer.toString());
+            }
         }
     }
     
@@ -142,7 +160,12 @@ public class StdErrLog implements Logger
         {
             String d=_dateCache.now();
             int ms=_dateCache.lastMs();
-            System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":DBUG:"+_name+":"+format(msg,arg0,arg1));
+            synchronized(_buffer)
+            {
+                tag(d,ms,":DBUG:");
+                format(msg,arg0,arg1);
+                System.err.println(_buffer.toString());
+            }
         }
     }
     
@@ -150,40 +173,127 @@ public class StdErrLog implements Logger
     {
         String d=_dateCache.now();
         int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":WARN:"+_name+":"+msg);
+        synchronized(_buffer)
+        {
+            tag(d,ms,":WARN:");
+            format(msg);
+            System.err.println(_buffer.toString());
+        }
     }
     
     public void warn(String msg,Object arg0, Object arg1)
     {
         String d=_dateCache.now();
         int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":WARN:"+_name+":"+format(msg,arg0,arg1));
+        synchronized(_buffer)
+        {
+            tag(d,ms,":WARN:");
+            format(msg,arg0,arg1);
+            System.err.println(_buffer.toString());
+        }
     }
     
     public void warn(String msg, Throwable th)
     {
         String d=_dateCache.now();
-        int ms=_dateCache.lastMs();
-        System.err.println(d+(ms>99?".":(ms>0?".0":".00"))+ms+":WARN:"+_name+":"+msg);
-        if (th!=null) 
+        int ms=_dateCache.lastMs();  
+        synchronized(_buffer)
         {
+            tag(d,ms,":WARN:");
+            format(msg);
             if (_hideStacks)
-                System.err.println(th);
+                format(th.toString());
             else
-                th.printStackTrace();
-        }
+                format(th);
+            System.err.println(_buffer.toString());
+        }    
     }
 
-    private String format(String msg, Object arg0, Object arg1)
+    
+    private void tag(String d,int ms,String tag)
+    {
+        _buffer.setLength(0);
+        _buffer.append(d);
+        if (ms>99)
+            _buffer.append('.');
+        else if (ms>9)
+            _buffer.append(".0");
+        else
+            _buffer.append(".00");
+        _buffer.append(ms).append(tag).append(_name).append(':');
+    }
+    
+    private void format(String msg, Object arg0, Object arg1)
     {
         int i0=msg.indexOf("{}");
         int i1=i0<0?-1:msg.indexOf("{}",i0+2);
         
-        if (arg1!=null && i1>=0)
-            msg=msg.substring(0,i1)+arg1+msg.substring(i1+2);
-        if (arg0!=null && i0>=0)
-            msg=msg.substring(0,i0)+arg0+msg.substring(i0+2);
-        return msg;
+        if (i0>=0)
+        {
+            format(msg.substring(0,i0));
+            format(String.valueOf(arg0));
+            
+            if (i1>=0)
+            {
+                format(msg.substring(i0+2,i1));
+                format(String.valueOf(arg1));
+                format(msg.substring(i1+2));
+            }
+            else
+            {
+                format(msg.substring(i1+2));
+                if (arg1!=null)
+                {
+                    _buffer.append(' ');
+                    format(String.valueOf(arg1));
+                }
+            }
+        }
+        else
+        {
+            format(msg);
+            if (arg0!=null)
+            {
+                _buffer.append(' ');
+                format(String.valueOf(arg0));
+            }
+            if (arg1!=null)
+            {
+                _buffer.append(' ');
+                format(String.valueOf(arg1));
+            }
+        }
+    }
+    
+    private void format(String msg)
+    {
+        for (int i=0;i<msg.length();i++)
+        {
+            char c=msg.charAt(i);
+            if (Character.isISOControl(c))
+            {
+                if (c=='\n')
+                    _buffer.append('|');
+                else if (c=='\r')
+                    _buffer.append('<');
+                else
+                    _buffer.append('?');
+            }
+            else
+                _buffer.append(c);
+        }
+    }
+    
+    private void format(Throwable th)
+    {
+        _buffer.append('\n');
+        format(th.toString());
+        StackTraceElement[] elements = th.getStackTrace();
+        for (int i=0;elements!=null && i<elements.length;i++)
+        {
+            _buffer.append("\n\tat ");
+            format(elements[i].toString());
+        }
     }
     
     public Logger getLogger(String name)

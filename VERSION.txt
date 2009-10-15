@@ -13,6 +13,7 @@ jetty-7.0.1-SNAPSHOT
  + JETTY-937 More JVM bug work arounds. Insert pause if all else fails
  + JETTY-1114 unsynchronised WebAppClassloader.getResource(String)
  + JETTY-1122 Handle multi-byte utf that causes buffer overflow
+ + JETTY-1129 Filter control characters out of StdErrLog
  + Fixed XSS issue in CookieDump demo servlet.
  + 291019 Fix default DEBUG option; "-D.DEBUG=true" now works
  + 291340 Race condition in onException() notifications
@@ -21,6 +22,36 @@ jetty-7.0.1-SNAPSHOT
  
 jetty-7.0.0.v20091005 5 October 2009
 291340 Race condition in onException() notifications
+
+jetty-6.1.21 22 September 2009
+ + JETTY-719 Document state machine of jetty http client
+ + JETTY-933 State == HEADER in client
+ + JETTY-936 Improved servlet matching and optimized
+ + JETTY-1038 ChannelId.isParentOf returns the wrong result
+ + JETTY-1061 Catch exceptions from cometd listeners
+ + JETTY-1072 maven plugin handles context path not as documented
+ + JETTY-1080 modified previous fix for windows
+ + JETTY-1084 HEAD command not setting content-type in response under certain circumstances
+ + JETTY-1090 resolve inifinte loop condition for webdav listener
+ + JETTY-1092 MultiPartFilter can be pushed into infinite loop
+ + JETTY-1093 Request.toString throws exception when size exceeds 4k
+ + JETTY-1098 Default form encoding is UTF8
+ + JETTY-1099 Improve cookie handling in BayeuxClient
+ + JETTY-1100 extend setuid feature to allow setting max open file descriptors
+ + JETTY-1102 Wrong usage of deliver() in private chat messages
+ + JETTY-1108 SSL EOF detection
+ + JETTY-1109 Improper handling of cookies in Terracotta tests
+ + JETTY-1112 Response fails if header exceeds buffer size
+ + JETTY-1113 IllegalStateException when adding servlet filters programmatically
+ + JETTY-1114 Unsynchronize webapp classloader getResource
+ + 282543 HttpClient SSL buffer size fix
+ + 288055 fix jetty-client for failed listener state machine
+ + 288153 reset exchange when resending
+ + 288182 PUT request fails during retry
+ + Fix DefaultServletTest for windows
+ + Update Jetty implementation of com.sun.net.httpserver.*
+ + Include tmp directory sweeper in build
+ + Streamline jetty-jboss build, update sar to QueuedThreadPool
 
 jetty-7.0.0.RC6 September 21 2009
  + Fixed XSS issue in CookieDump demo servlet.
