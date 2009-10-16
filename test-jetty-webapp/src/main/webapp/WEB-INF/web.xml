@@ -205,17 +205,17 @@
     <servlet-name>TransparentProxy</servlet-name>
     <servlet-class>org.eclipse.jetty.servlets.ProxyServlet$Transparent</servlet-class>
     <init-param>
-      <param-name>Prefix</param-name><param-value>/jetty</param-value>
+      <param-name>Prefix</param-name><param-value>/google</param-value>
     </init-param>
     <init-param>
-      <param-name>ProxyTo</param-name><param-value>http://jetty.mortbay.org/test</param-value>
+      <param-name>ProxyTo</param-name><param-value>http://www.google.com</param-value>
     </init-param>
     <load-on-startup>1</load-on-startup>
   </servlet>
   
   <servlet-mapping>
     <servlet-name>TransparentProxy</servlet-name>
-    <url-pattern>/jetty/*</url-pattern>
+    <url-pattern>/google/*</url-pattern>
   </servlet-mapping>
   
   <error-page>

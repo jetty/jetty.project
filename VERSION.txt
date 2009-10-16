@@ -13,6 +13,7 @@ jetty-7.0.1-SNAPSHOT
  + JETTY-1114 unsynchronised WebAppClassloader.getResource(String)
  + JETTY-1121 Merge Multipart query parameters 
  + JETTY-1122 Handle multi-byte utf that causes buffer overflow
+ + JETTY-1125 TransparentProxy incorrectly configured for test webapp
  + JETTY-1129 Filter control characters out of StdErrLog
  + Continuations ISE rather than ignore bad transitions
  + Fixed XSS issue in CookieDump demo servlet.
