@@ -1,24 +1,25 @@
 jetty-7.0.1-SNAPSHOT
- + Refactored continuation test harnessess
- + Continuations ISE rather than ignore bad transitions
- + Improved start.jar usage text for properties
- + Promoted Jetty WebApp Verifier from Sandbox
- + Promoted Jetty Centralized Logging from Sandbox
  + 274251 DefaultServlet supports exact match mode.
  + 288401 HttpExchange.cancel() Method Unimplemented
- + 289265 Test harness for async input
  + 289027 deobfuscate HttpClient SSL passwords
+ + 289265 Test harness for async input
  + 289959 Improved ContextDeployer configuration
  + 289960 start.jar assumes command line args are configs
- + JETTY-937 More JVM bug work arounds. Insert pause if all else fails
- + JETTY-1114 unsynchronised WebAppClassloader.getResource(String)
- + JETTY-1122 Handle multi-byte utf that causes buffer overflow
- + JETTY-1129 Filter control characters out of StdErrLog
- + Fixed XSS issue in CookieDump demo servlet.
  + 291019 Fix default DEBUG option; "-D.DEBUG=true" now works
  + 291340 Race condition in onException() notifications
  + 291543 make bin/*.sh scripts executable in distribution
  + 291589 Update jetty-rewrite demo
+ + JETTY-937 More JVM bug work arounds. Insert pause if all else fails
+ + JETTY-1114 unsynchronised WebAppClassloader.getResource(String)
+ + JETTY-1121 Merge Multipart query parameters 
+ + JETTY-1122 Handle multi-byte utf that causes buffer overflow
+ + JETTY-1129 Filter control characters out of StdErrLog
+ + Continuations ISE rather than ignore bad transitions
+ + Fixed XSS issue in CookieDump demo servlet.
+ + Improved start.jar usage text for properties
+ + Promoted Jetty Centralized Logging from Sandbox
+ + Promoted Jetty WebApp Verifier from Sandbox
+ + Refactored continuation test harnessess
  
 jetty-7.0.0.v20091005 5 October 2009
 291340 Race condition in onException() notifications

@@ -740,7 +740,9 @@ public class Dump extends HttpServlet
             pout.write("<br/>");
             
             pout.write("<h2>Form to generate UPLOAD content</h2>");
-            pout.write("<form method=\"POST\" enctype=\"multipart/form-data\" accept-charset=\"utf-8\" action=\""+response.encodeURL(getURI(request))+"\">");
+            pout.write("<form method=\"POST\" enctype=\"multipart/form-data\" accept-charset=\"utf-8\" action=\""+
+                    response.encodeURL(getURI(request))+(request.getQueryString()==null?"":("?"+request.getQueryString()))+
+                    "\">");
             pout.write("TextField: <input type=\"text\" name=\"TextField\" value=\"comment\"/><br/>\n");
             pout.write("File 1: <input type=\"file\" name=\"file1\" /><br/>\n");
             pout.write("File 2: <input type=\"file\" name=\"file2\" /><br/>\n");

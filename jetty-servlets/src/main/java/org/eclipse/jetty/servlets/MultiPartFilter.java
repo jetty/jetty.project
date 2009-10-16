@@ -38,6 +38,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
+import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -101,16 +102,17 @@ public class MultiPartFilter implements Filter
         
         String boundary="--"+value(content_type.substring(content_type.indexOf("boundary=")));
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
-        // cross-container
-        MultiMap params = new MultiMap(request.getParameterMap());
         
-        // jetty-specific but more efficient
-        /*MultiMap params = new MultiMap();
-        if(srequest instanceof org.eclipse.jetty.server.Request)
+        MultiMap params = new MultiMap();
+        for (Iterator i = request.getParameterMap().entrySet().iterator();i.hasNext();)
         {
-            org.eclipse.jetty.server.Request req = ((org.eclipse.jetty.server.Request)srequest);
-            req.getUri().decodeQueryTo(params, req.getQueryEncoding());
-        }*/
+            Map.Entry entry=(Map.Entry)i.next();
+            Object value=entry.getValue();
+            if (value instanceof String[])
+                params.addValues(entry.getKey(),(String[])value);
+            else
+                params.add(entry.getKey(),value);
+        }
         
         try
         {
@@ -193,7 +195,7 @@ public class MultiPartFilter implements Filter
                         if(_fileOutputBuffer>0)
                             out = new BufferedOutputStream(out, _fileOutputBuffer);
                         request.setAttribute(name,file);
-                        params.put(name, filename);
+                        params.add(name, filename);
                         
                         if (_deleteFiles)
                         {
@@ -319,6 +321,7 @@ public class MultiPartFilter implements Filter
             }
         }
     }
+    
     /* ------------------------------------------------------------ */
     private String value(String nameEqualsValue)
     {
@@ -346,11 +349,13 @@ public class MultiPartFilter implements Filter
     public void destroy()
     {
     }
-    
+
+    /* ------------------------------------------------------------------------------- */
+    /* ------------------------------------------------------------------------------- */
     private static class Wrapper extends HttpServletRequestWrapper
     {
-        String encoding="UTF-8";
-        MultiMap map;
+        String _encoding=StringUtil.__UTF8;
+        MultiMap _params;
         
         /* ------------------------------------------------------------------------------- */
         /** Constructor.
@@ -359,13 +364,14 @@ public class MultiPartFilter implements Filter
         public Wrapper(HttpServletRequest request, MultiMap map)
         {
             super(request);
-            this.map=map;
+            this._params=map;
         }
         
         /* ------------------------------------------------------------------------------- */
         /**
          * @see javax.servlet.ServletRequest#getContentLength()
          */
+        @Override
         public int getContentLength()
         {
             return 0;
@@ -375,14 +381,18 @@ public class MultiPartFilter implements Filter
         /**
          * @see javax.servlet.ServletRequest#getParameter(java.lang.String)
          */
+        @Override
         public String getParameter(String name)
         {
-            Object o=map.get(name);
+            Object o=_params.get(name);
+            if (!(o instanceof byte[]) && LazyList.size(o)>0)
+                o=LazyList.get(o,0);
+            
             if (o instanceof byte[])
             {
                 try
                 {
-                    String s=new String((byte[])o,encoding);
+                    String s=new String((byte[])o,_encoding);
                     return s;
                 }
                 catch(Exception e)
@@ -390,13 +400,8 @@ public class MultiPartFilter implements Filter
                     e.printStackTrace();
                 }
             }
-            else if (o instanceof String)
-                return (String)o;
-            else if (o instanceof String[])
-            {
-                String[] s = (String[])o;
-                return s.length>0 ? s[0] : null;
-            }
+            else if (o!=null)
+                return String.valueOf(o);
             return null;
         }
         
@@ -404,27 +409,30 @@ public class MultiPartFilter implements Filter
         /**
          * @see javax.servlet.ServletRequest#getParameterMap()
          */
+        @Override
         public Map getParameterMap()
         {
-            return map;
+            return Collections.unmodifiableMap(_params.toStringArrayMap());
         }
         
         /* ------------------------------------------------------------------------------- */
         /**
          * @see javax.servlet.ServletRequest#getParameterNames()
          */
+        @Override
         public Enumeration getParameterNames()
         {
-            return Collections.enumeration(map.keySet());
+            return Collections.enumeration(_params.keySet());
         }
         
         /* ------------------------------------------------------------------------------- */
         /**
          * @see javax.servlet.ServletRequest#getParameterValues(java.lang.String)
          */
+        @Override
         public String[] getParameterValues(String name)
         {
-            List l=map.getValues(name);
+            List l=_params.getValues(name);
             if (l==null || l.size()==0)
                 return new String[0];
             String[] v = new String[l.size()];
@@ -435,7 +443,7 @@ public class MultiPartFilter implements Filter
                 {
                     try
                     {
-                        v[i]=new String((byte[])o,encoding);
+                        v[i]=new String((byte[])o,_encoding);
                     }
                     catch(Exception e)
                     {
@@ -452,10 +460,11 @@ public class MultiPartFilter implements Filter
         /**
          * @see javax.servlet.ServletRequest#setCharacterEncoding(java.lang.String)
          */
+        @Override
         public void setCharacterEncoding(String enc) 
             throws UnsupportedEncodingException
         {
-            encoding=enc;
+            _encoding=enc;
         }
     }
 }
