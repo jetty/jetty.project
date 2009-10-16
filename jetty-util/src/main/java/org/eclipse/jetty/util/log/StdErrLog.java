@@ -241,7 +241,7 @@ public class StdErrLog implements Logger
             }
             else
             {
-                format(msg.substring(i1+2));
+                format(msg.substring(i0+2));
                 if (arg1!=null)
                 {
                     _buffer.append(' ');
