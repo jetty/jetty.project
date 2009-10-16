@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.util.log.Log;
 
 import junit.framework.TestCase;
 
@@ -313,13 +314,22 @@ public class HttpConnectionTest extends TestCase
         {  
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
-                response.setHeader(HttpHeaders.CONTENT_TYPE,MimeTypes.TEXT_HTML);
-                response.setHeader("LongStr", longstr);
-                PrintWriter writer = response.getWriter();
-                writer.write("<html><h1>FOO</h1></html>");  
-                writer.flush();
-                writer.close();
+                try
+                {
+                    baseRequest.setHandled(true);
+                    response.setHeader(HttpHeaders.CONTENT_TYPE,MimeTypes.TEXT_HTML);
+                    response.setHeader("LongStr", longstr);
+                    PrintWriter writer = response.getWriter();
+                    writer.write("<html><h1>FOO</h1></html>");  
+                    writer.flush();
+                    writer.close();
+                    throw new RuntimeException("SHOULD NOT GET HERE");
+                }
+                catch(ArrayIndexOutOfBoundsException e)
+                {
+                    Log.debug(e);
+                    Log.info("correctly ignored "+e);
+                }
             }
         });
         server.start();

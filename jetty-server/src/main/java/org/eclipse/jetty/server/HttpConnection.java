@@ -668,7 +668,6 @@ public class HttpConnection implements Connection
             catch(RuntimeException e)
             {
                 Log.warn("header full: "+e);
-                Log.debug(e);
 
                 _response.reset();
                 _generator.reset(true);
