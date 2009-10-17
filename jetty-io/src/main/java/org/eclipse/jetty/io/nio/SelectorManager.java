@@ -42,10 +42,12 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public abstract class SelectorManager extends AbstractLifeCycle
 {
+    // TODO Tune these by approx system speed.
     private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.mortbay.io.nio.JVMBUG_THRESHHOLD",512).intValue();
     private static final int __MONITOR_PERIOD=Integer.getInteger("org.mortbay.io.nio.MONITOR_PERIOD",1000).intValue();
     private static final int __MAX_SELECTS=Integer.getInteger("org.mortbay.io.nio.MAX_SELECTS",15000).intValue();
     private static final int __BUSY_PAUSE=Integer.getInteger("org.mortbay.io.nio.BUSY_PAUSE",50).intValue();
+    private static final int __BUSY_KEY=Integer.getInteger("org.mortbay.io.nio.BUSY_KEY",-1).intValue();
     
     private long _maxIdleTime;
     private long _lowResourcesConnections;
@@ -301,6 +303,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
         private long _monitorNext;
         private boolean _pausing;
         private SelectionKey _busyKey;
+        private int _busyKeyCount;
         private long _log;
         private int _paused;
         private int _jvmFix0;
@@ -590,18 +593,23 @@ public abstract class SelectorManager extends AbstractLifeCycle
                             return;
                         }
                     }
-                    else if (selected==1 && _selects>__MAX_SELECTS)
+                    else if (__BUSY_KEY>0 && selected==1 && _selects>__MAX_SELECTS)
                     {
                         // Look for busy key
                         SelectionKey busy = (SelectionKey)selector.selectedKeys().iterator().next();
                         if (busy==_busyKey)
                         {
-                            SelectChannelEndPoint endpoint = (SelectChannelEndPoint)busy.attachment();
-                            Log.warn("Busy Key "+busy+" "+endpoint);
-                            busy.cancel();
-                            if (endpoint!=null)
-                                endpoint.close();
+                            if (++_busyKeyCount>__BUSY_KEY)
+                            {
+                                SelectChannelEndPoint endpoint = (SelectChannelEndPoint)busy.attachment();
+                                Log.warn("Busy Key "+busy+" "+endpoint);
+                                busy.cancel();
+                                if (endpoint!=null)
+                                    endpoint.close();
+                            }
                         }
+                        else
+                            _busyKeyCount=0;
                         _busyKey=busy;
                     }
                 }
