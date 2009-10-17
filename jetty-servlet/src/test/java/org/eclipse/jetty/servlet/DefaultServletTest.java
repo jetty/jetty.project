@@ -9,6 +9,7 @@ import junit.framework.TestCase;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 
 public class DefaultServletTest extends TestCase
 {
@@ -418,13 +419,99 @@ public class DefaultServletTest extends TestCase
         assertResponseContains("JSP support not configured",response);
 
     }
+
+    public void testRangeRequests() throws Exception
+    {
+        File testDir = new File("target/tests/" + getName());
+        prepareEmptyTestDir(testDir);
+        File resBase = new File(testDir, "docroot");
+        resBase.mkdirs();
+        File data = new File(resBase, "data.txt");
+        createFile(data,"01234567890123456789012345678901234567890123456789012345678901234567890123456789");
+        String resBasePath = resBase.getAbsolutePath();
+        
+     
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class,"/");
+        defholder.setInitParameter("acceptRanges","true");
+        defholder.setInitParameter("resourceBase",resBasePath);
+        
+        String response;
+
+        response= connector.getResponses(
+                "GET /context/data.txt HTTP/1.1\r\n"+
+                "Host: localhost\r\n"+
+                "\r\n");
+        assertResponseContains("200 OK",response);
+        assertResponseContains("Accept-Ranges: bytes",response);
+        
+        response= connector.getResponses(
+                "GET /context/data.txt HTTP/1.1\r\n"+
+                "Host: localhost\r\n"+
+                "Range: bytes=0-9\r\n"+
+                "\r\n");
+        assertResponseContains("206 Partial",response);
+        assertResponseContains("Content-Type: text/plain",response);
+        assertResponseContains("Content-Length: 10",response);
+        assertResponseContains("Content-Range: bytes 0-9/80",response);
+
+        response= connector.getResponses(
+                "GET /context/data.txt HTTP/1.1\r\n"+
+                "Host: localhost\r\n"+
+                "Range: bytes=0-9,20-29,40-49\r\n"+
+                "\r\n");
+        int start = response.indexOf("--jetty");
+        String body=response.substring(start);
+        String boundary = body.substring(0,body.indexOf("\r\n"));
+        assertResponseContains("206 Partial",response);
+        assertResponseContains("Content-Type: multipart/byteranges; boundary=",response);
+        assertResponseContains("Content-Range: bytes 0-9/80",response);
+        assertResponseContains("Content-Range: bytes 20-29/80",response);
+        assertResponseContains("Content-Length: "+body.length(),response);
+        assertTrue(body.endsWith(boundary+"--\r\n"));
+
+        response= connector.getResponses(
+                "GET /context/data.txt HTTP/1.1\r\n"+
+                "Host: localhost\r\n"+
+                "Range: bytes=0-9,20-29,40-49,70-79\r\n"+
+                "\r\n");
+        start = response.indexOf("--jetty");
+        body=response.substring(start);
+        boundary = body.substring(0,body.indexOf("\r\n"));
+        assertResponseContains("206 Partial",response);
+        assertResponseContains("Content-Type: multipart/byteranges; boundary=",response);
+        assertResponseContains("Content-Range: bytes 0-9/80",response);
+        assertResponseContains("Content-Range: bytes 20-29/80",response);
+        assertResponseContains("Content-Range: bytes 70-79/80",response);
+        assertResponseContains("Content-Length: "+body.length(),response);
+        assertTrue(body.endsWith(boundary+"--\r\n"));
+        
+        response= connector.getResponses(
+                "GET /context/data.txt HTTP/1.1\r\n"+
+                "Host: localhost\r\n"+
+                "Range: bytes=0-9,20-29,40-49,60-60,70-79\r\n"+
+                "\r\n");
+        start = response.indexOf("--jetty");
+        body=response.substring(start);
+        boundary = body.substring(0,body.indexOf("\r\n"));
+        assertResponseContains("206 Partial",response);
+        assertResponseContains("Content-Type: multipart/byteranges; boundary=",response);
+        assertResponseContains("Content-Range: bytes 0-9/80",response);
+        assertResponseContains("Content-Range: bytes 20-29/80",response);
+        assertResponseContains("Content-Range: bytes 60-60/80",response);
+        assertResponseContains("Content-Range: bytes 70-79/80",response);
+        assertResponseContains("Content-Length: "+body.length(),response);
+        assertTrue(body.endsWith(boundary+"--\r\n"));
+
+    }
+
     
     private void createFile(File file, String str) throws IOException
     {
         FileOutputStream out = null;
         try {
             out = new FileOutputStream(file);
-            out.write(str.getBytes());
+            out.write(str.getBytes(StringUtil.__UTF8));
             out.flush();
         } finally {
             IO.close(out);
@@ -495,7 +582,7 @@ public class DefaultServletTest extends TestCase
         }
     }
 
-    private void assertResponseContains(String expected, String response)
+    private int assertResponseContains(String expected, String response)
     {
         int idx = response.indexOf(expected);
         if (idx == (-1))
@@ -508,5 +595,6 @@ public class DefaultServletTest extends TestCase
             System.err.println(err);
             throw new AssertionFailedError(err.toString());
         }
+        return idx;
     }
 }

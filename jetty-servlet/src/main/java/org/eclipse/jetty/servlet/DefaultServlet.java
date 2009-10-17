@@ -836,12 +836,28 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             InputStream in=resource.getInputStream();
             long pos=0;
             
+            // calculate the content-length
+            int length=0;
+            String[] header = new String[ranges.size()];
             for (int i=0;i<ranges.size();i++)
             {
                 InclusiveByteRange ibr = (InclusiveByteRange) ranges.get(i);
-                String header=HttpHeaders.CONTENT_RANGE+": "+
-                ibr.toHeaderRangeString(content_length);
-                multi.startPart(mimetype,new String[]{header});
+                header[i]=ibr.toHeaderRangeString(content_length);
+                length+=
+                    ((i>0)?2:0)+
+                    2+multi.getBoundary().length()+2+ 
+                    HttpHeaders.CONTENT_TYPE.length()+2+mimetype.length()+2+ 
+                    HttpHeaders.CONTENT_RANGE.length()+2+header[i].length()+2+ 
+                    2+
+                    (ibr.getLast(content_length)-ibr.getFirst(content_length))+1;
+            }
+            length+=2+2+multi.getBoundary().length()+2+2;
+            response.setContentLength(length);
+            
+            for (int i=0;i<ranges.size();i++)
+            {
+                InclusiveByteRange ibr = (InclusiveByteRange) ranges.get(i);
+                multi.startPart(mimetype,new String[]{HttpHeaders.CONTENT_RANGE+": "+header[i]});
                 
                 long start=ibr.getFirst(content_length);
                 long size=ibr.getSize(content_length);
