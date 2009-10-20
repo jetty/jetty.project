@@ -15,6 +15,7 @@ package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.util.ArrayQueue;
 
@@ -80,6 +82,7 @@ public class QoSFilter implements Filter
     long _suspendMs;
     Semaphore _passes;
     Queue<Continuation>[] _queue;
+    ContinuationListener[] _listener;
     String _suspended="QoSFilter@"+this.hashCode();
     
     public void init(FilterConfig filterConfig) 
@@ -90,8 +93,23 @@ public class QoSFilter implements Filter
         if (filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM)!=null)
             max_priority=Integer.parseInt(filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM));
         _queue=new Queue[max_priority+1];
+        _listener = new ContinuationListener[max_priority + 1];
         for (int p=0;p<_queue.length;p++)
-            _queue[p]=new ArrayQueue<Continuation>();
+        {
+            _queue[p]=new ConcurrentLinkedQueue<Continuation>();
+
+            final int priority=p;
+            _listener[p] = new ContinuationListener()
+            {
+                public void onComplete(Continuation continuation)
+                {}
+
+                public void onTimeout(Continuation continuation)
+                {
+                    _queue[priority].remove(continuation);
+                }
+            };
+        }
         
         int passes=__DEFAULT_PASSES;
         if (filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM)!=null)
@@ -125,12 +143,12 @@ public class QoSFilter implements Filter
                 else
                 {
                     request.setAttribute(_suspended,Boolean.TRUE);
-                    Continuation continuation = ContinuationSupport.getContinuation(request,response);
+                    int priority = getPriority(request);
+                    Continuation continuation = ContinuationSupport.getContinuation(request);
                     if (_suspendMs>0)
                         continuation.setTimeout(_suspendMs);
                     continuation.suspend();
-                    
-                    int priority = getPriority(request);
+                    continuation.addContinuationListener(_listener[priority]);
                     _queue[priority].add(continuation);
                     return;
                 }
@@ -160,7 +178,6 @@ public class QoSFilter implements Filter
                     accepted = true;
                 }
             }
-            
 
             if (accepted)
             {
@@ -170,9 +187,6 @@ public class QoSFilter implements Filter
             {
                 ((HttpServletResponse)response).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             }
-            
-            
-            
         }
         catch(InterruptedException e)
         {
@@ -186,7 +200,7 @@ public class QoSFilter implements Filter
                 for (int p=_queue.length;p-->0;)
                 {
                     Continuation continutaion=_queue[p].poll();
-                    if (continutaion!=null)
+                    if (continutaion!=null && continutaion.isSuspended())
                     {
                         continutaion.resume();
                         break;

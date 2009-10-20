@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.Queue;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -35,8 +36,8 @@ import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
 
 import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 
@@ -133,6 +134,7 @@ public class DoSFilter implements Filter
     protected boolean _remotePort;
     protected Semaphore _passes;
     protected Queue<Continuation>[] _queue;
+    protected ContinuationListener[] _listener;
 
     protected int _maxRequestsPerSec;
     protected final ConcurrentHashMap<String, RateTracker> _rateTrackers=new ConcurrentHashMap<String, RateTracker>();
@@ -149,8 +151,23 @@ public class DoSFilter implements Filter
         _context = filterConfig.getServletContext();
 
         _queue = new Queue[getMaxPriority() + 1];
+        _listener = new ContinuationListener[getMaxPriority() + 1];
         for (int p = 0; p < _queue.length; p++)
-            _queue[p] = new ArrayQueue<Continuation>();
+        {
+            _queue[p] = new ConcurrentLinkedQueue<Continuation>();
+            
+            final int priority=p;
+            _listener[p] = new ContinuationListener()
+            {
+                public void onComplete(Continuation continuation)
+                {}
+
+                public void onTimeout(Continuation continuation)
+                {
+                    _queue[priority].remove(continuation);
+                }
+            };
+        }
 
         int baseRateLimit = __DEFAULT_MAX_REQUESTS_PER_SEC;
         if (filterConfig.getInitParameter(MAX_REQUESTS_PER_S_INIT_PARAM) != null)
@@ -328,7 +345,7 @@ public class DoSFilter implements Filter
             if (!accepted)
             {
                 // we were not accepted, so either we suspend to wait,or if we were woken up we insist or we fail
-                final Continuation continuation = ContinuationSupport.getContinuation(request,response);
+                final Continuation continuation = ContinuationSupport.getContinuation(request);
                 
                 Boolean throttled = (Boolean)request.getAttribute(__THROTTLED);
                 if (throttled!=Boolean.TRUE && _throttleMs>0)
@@ -341,6 +358,7 @@ public class DoSFilter implements Filter
                         continuation.setTimeout(_throttleMs);
                     continuation.suspend();
 
+                    continuation.addContinuationListener(_listener[priority]);
                     _queue[priority].add(continuation);
                     return;
                 }
@@ -375,17 +393,13 @@ public class DoSFilter implements Filter
             if (accepted)
             {
                 // wake up the next highest priority request.
-                synchronized (_queue)
+                for (int p = _queue.length; p-- > 0;)
                 {
-                    for (int p = _queue.length; p-- > 0;)
+                    Continuation continuation = _queue[p].poll();
+                    if (continuation != null && continuation.isSuspended())
                     {
-                        Continuation continuation = _queue[p].poll();
-
-                        if (continuation != null)
-                        {
-                            continuation.resume();
-                            break;
-                        }
+                        continuation.resume();
+                        break;
                     }
                 }
                 _passes.release();
