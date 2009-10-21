@@ -72,7 +72,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * 
  * <p>
  * If the context init parameter "org.eclipse.jetty.server.context.ManagedAttributes"
- * is set to a coma separated list of names, then they are treated as context
+ * is set to a comma separated list of names, then they are treated as context
  * attribute names, which if set as attributes are passed to the servers Container
  * so that they may be managed with JMX.
  * 
