@@ -94,6 +94,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     private long _idleTimeout = 20000;
     private long _timeout = 320000;
     private Timeout _timeoutQ = new Timeout();
+    private Timeout _idleTimeoutQ = new Timeout();
     private Address _proxy;
     private Authorization _proxyAuthentication;
     private Set<String> _noProxy;
@@ -244,6 +245,12 @@ public class HttpClient extends HttpBuffers implements Attributes
     public void schedule(Timeout.Task task)
     {
         _timeoutQ.schedule(task);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void scheduleIdle(Timeout.Task task)
+    {
+        _idleTimeoutQ.schedule(task);
     }
 
     /* ------------------------------------------------------------ */
@@ -420,8 +427,10 @@ public class HttpClient extends HttpBuffers implements Attributes
     {
         super.doStart();
 
-        _timeoutQ.setNow();
         _timeoutQ.setDuration(_timeout);
+        _timeoutQ.setNow();
+        _idleTimeoutQ.setDuration(_idleTimeout);
+        _idleTimeoutQ.setNow();
 
         if (_threadPool == null)
         {
@@ -455,11 +464,11 @@ public class HttpClient extends HttpBuffers implements Attributes
             {
                 while (isRunning())
                 {
-                    _timeoutQ.setNow();
-                    _timeoutQ.tick();
+                    _timeoutQ.tick(System.currentTimeMillis());
+                    _idleTimeoutQ.tick(_timeoutQ.getNow());
                     try
                     {
-                        Thread.sleep(1000);
+                        Thread.sleep(200);
                     }
                     catch (InterruptedException e)
                     {
@@ -468,6 +477,12 @@ public class HttpClient extends HttpBuffers implements Attributes
             }
         });
 
+    }
+
+    /* ------------------------------------------------------------ */
+    long getNow()
+    {
+        return _timeoutQ.getNow();
     }
 
     /* ------------------------------------------------------------ */
@@ -485,6 +500,7 @@ public class HttpClient extends HttpBuffers implements Attributes
         }
 
         _timeoutQ.cancelAll();
+        _idleTimeoutQ.cancelAll();
         super.doStop();
     }
 

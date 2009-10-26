@@ -133,7 +133,7 @@ public class TimeoutTest extends TestCase
     /* ------------------------------------------------------------ */
     public void testStress() throws Exception
     {
-        final int LOOP=500;
+        final int LOOP=250;
         final boolean[] running = {true};
         final AtomicIntegerArray count = new AtomicIntegerArray( 3 );
 
@@ -240,9 +240,9 @@ public class TimeoutTest extends TestCase
             running[0]=false;
         }
         // give some time for test to stop
-        Thread.sleep(2000);
-        timeout.tick(System.currentTimeMillis());
         Thread.sleep(1000);
+        timeout.tick(System.currentTimeMillis());
+        Thread.sleep(500);
         
         // check the counts
         assertEquals("count threads", LOOP,count.get( 0 ));

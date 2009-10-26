@@ -2,23 +2,68 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.io.Buffer;
 
+
+/* ------------------------------------------------------------ */
+/** A simple test http client like curl.
+ * <p>
+ * Usage is java -cp $CLASSPATH org.eclipse.jetty.client.Curl [ option | URL ] ...
+ * Options supported are: <ul>
+ * <li>--async   : The following URLs are fetched in parallel (default)
+ * <li>--sync    : The following URLs are fetched in sequence
+ * <li>--dump    : The content is dumped to stdout
+ * <li>--nodump  : The content is suppressed (default)
+ * </ul>
+ */
 public class Curl
 {
     public static void main(String[] args)
         throws Exception
     {
+        if (args.length==0)
+            args=new String[] 
+                 { "--sync", "http://www.sun.com/robots.txt", "http://www.sun.com/favicon.ico" , "--dump", "http://www.sun.com/robots.txt"};
+        
         HttpClient client = new HttpClient();
+        client.setIdleTimeout(2000);
         client.start();
+        boolean async=true;
+        boolean dump= false;
         
         final CountDownLatch latch = new CountDownLatch(args.length);
         
         for (String arg : args)
         {
+            if ("--sync".equals(arg))
+            {
+                async=false;
+                continue;
+            }
+            
+            if ("--async".equals(arg))
+            {
+                async=true;
+                continue;
+            }
+
+            if ("--dump".equals(arg))
+            {
+                dump=true;
+                continue;
+            }
+            
+            if ("--nodump".equals(arg))
+            {
+                dump=false;
+                continue;
+            }
+
+            final boolean d = dump;
             HttpExchange ex = new HttpExchange()
             {
                 AtomicBoolean counted=new AtomicBoolean(false);
@@ -59,6 +104,8 @@ public class Curl
                 protected void onResponseContent(Buffer content) throws IOException
                 {
                     super.onResponseContent(content);
+                    if (d)
+                        System.out.print(content.toString());
                     System.err.println("got "+content.length());
                 }
 
@@ -98,8 +145,17 @@ public class Curl
             
             ex.setMethod(HttpMethods.GET);
             ex.setURL(arg);
-            
+
+            System.err.println("\nSending "+ex);
             client.send(ex);
+            
+            if (!async)
+            {
+                System.err.println("waiting...");
+                ex.waitForDone();
+                System.err.println("Done");
+            }
+            
         }
         
         latch.await();

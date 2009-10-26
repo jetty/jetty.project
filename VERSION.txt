@@ -11,6 +11,7 @@ jetty-7.0.1-SNAPSHOT
  + 291589 Update jetty-rewrite demo
  + 292642 Fix errors in embedded Jetty examples
  + 292825 Continuations ISE rather than ignore bad transitions
+ + 292546 Proactively enforce HttpClient idle timeout
  + JETTY-937 More JVM bug work arounds. Insert pause if all else fails
  + JETTY-983 Send content-length with multipart ranges
  + JETTY-1114 unsynchronised WebAppClassloader.getResource(String)

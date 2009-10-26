@@ -32,7 +32,7 @@ public class Timeout
 {
     private Object _lock;
     private long _duration;
-    private long _now=System.currentTimeMillis();
+    private volatile long _now=System.currentTimeMillis();
     private Task _head=new Task();
 
     /* ------------------------------------------------------------ */
@@ -70,29 +70,19 @@ public class Timeout
     /* ------------------------------------------------------------ */
     public long setNow()
     {
-        synchronized (_lock)
-        {
-            _now=System.currentTimeMillis();
-            return _now; 
-        }
+        return _now=System.currentTimeMillis();
     }
     
     /* ------------------------------------------------------------ */
     public long getNow()
     {
-        synchronized (_lock)
-        {
-            return _now;
-        }
+        return _now;
     }
 
     /* ------------------------------------------------------------ */
     public void setNow(long now)
     {
-        synchronized (_lock)
-        {
-            _now=now;
-        }
+        _now=now;
     }
 
     /* ------------------------------------------------------------ */
@@ -124,9 +114,9 @@ public class Timeout
     }
 
     /* ------------------------------------------------------------ */
-    public void tick(long now)
+    public void tick()
     {
-        long _expiry = -1;
+        final long expiry = _now-_duration;
 
         Task task=null;
         while (true)
@@ -135,15 +125,8 @@ public class Timeout
             {
                 synchronized (_lock)
                 {
-                    if (_expiry==-1)
-                    {
-                        if (now!=-1)
-                            _now=now;
-                        _expiry = _now-_duration;
-                    }
-                        
                     task= _head._next;
-                    if (task==_head || task._timestamp>_expiry)
+                    if (task==_head || task._timestamp>expiry)
                         break;
                     task.unlink();
                     task._expired=true;
@@ -160,9 +143,10 @@ public class Timeout
     }
 
     /* ------------------------------------------------------------ */
-    public void tick()
+    public void tick(long now)
     {
-        tick(-1);
+        _now=now;
+        tick();
     }
 
     /* ------------------------------------------------------------ */
@@ -285,9 +269,13 @@ public class Timeout
         /* ------------------------------------------------------------ */
         public long getAge()
         {
-            Timeout t = _timeout;
-            if (t!=null && t._now!=0 && _timestamp!=0)
-                return t._now-_timestamp;
+            final Timeout t = _timeout;
+            if (t!=null)
+            {
+                final long now=t._now;
+                if (now!=0 && _timestamp!=0)
+                    return now-_timestamp;
+            }
             return 0;
         }
 

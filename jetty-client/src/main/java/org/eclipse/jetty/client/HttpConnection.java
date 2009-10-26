@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.security.Authorization;
 import org.eclipse.jetty.http.HttpFields;
@@ -55,6 +56,7 @@ public class HttpConnection implements Connection
     private volatile HttpExchange _exchange;
     private HttpExchange _pipeline;
     private final Timeout.Task _timeout = new TimeoutTask();
+    private AtomicBoolean _idle = new AtomicBoolean(false);
 
     public void dump() throws IOException
     {
@@ -535,30 +537,39 @@ public class HttpConnection implements Connection
         return toString() + " ex=" + _exchange + " " + _timeout.getAge();
     }
 
-    /**
-     * @return the last
-     */
-    public long getLast()
-    {
-        return _last;
-    }
-
-    /**
-     * @param last
-     *            the last to set
-     */
-    public void setLast(long last)
-    {
-        _last = last;
-    }
-
     public void close() throws IOException
     {
         _endp.close();
     }
 
+    public void setIdleTimeout(long expire)
+    {
+        synchronized (this)
+        {
+            if (_idle.compareAndSet(false,true))
+                _destination.getHttpClient().scheduleIdle(_timeout);
+            else
+                throw new IllegalStateException();
+        }
+    }
+    
+    public boolean cancelIdleTimeout()
+    {
+        synchronized (this)
+        {
+            if (_idle.compareAndSet(true,false))
+            {
+                _destination.getHttpClient().cancel(_timeout);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
     private class TimeoutTask extends Timeout.Task
     {
+        @Override
         public void expired()
         {
             HttpExchange ex = null;
@@ -572,6 +583,10 @@ public class HttpConnection implements Connection
                     {
                         ex.disassociate(HttpConnection.this);
                         _destination.returnConnection(HttpConnection.this, true);
+                    }
+                    else if (_idle.compareAndSet(true,false))
+                    {
+                        _destination.returnIdleConnection(HttpConnection.this);
                     }
                 }
             }
@@ -597,4 +612,5 @@ public class HttpConnection implements Connection
             }
         }
     }
+
 }
