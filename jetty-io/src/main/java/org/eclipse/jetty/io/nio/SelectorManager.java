@@ -440,7 +440,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
                         else
                             throw new IllegalArgumentException(o.toString());
                     }
-                    catch (CancelledKeyException e)
+                    catch (Exception e)
                     {
                         if (isRunning())
                             Log.warn(e);
