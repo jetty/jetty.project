@@ -25,8 +25,8 @@ import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.util.log.Log;
 
 
@@ -110,6 +110,7 @@ public class HttpExchange
      * @throws InterruptedException if the waiting thread is interrupted
      * @deprecated Use {@link #waitForDone()} instead
      */
+    @Deprecated
     public void waitForStatus(int status) throws InterruptedException
     {
         throw new UnsupportedOperationException();
@@ -644,6 +645,7 @@ public class HttpExchange
         return result;
     }
 
+    @Override
     public String toString()
     {
         return getClass().getSimpleName() + "@" + hashCode() + "=" + _method + "//" + _address + _uri + "#" + getStatus();
@@ -891,6 +893,7 @@ public class HttpExchange
     /**
      * @deprecated use {@link org.eclipse.jetty.client.CachedExchange} instead
      */
+    @Deprecated
     public static class CachedExchange extends org.eclipse.jetty.client.CachedExchange
     {
         public CachedExchange(boolean cacheFields)
@@ -902,6 +905,7 @@ public class HttpExchange
     /**
      * @deprecated use {@link org.eclipse.jetty.client.ContentExchange} instead
      */
+    @Deprecated
     public static class ContentExchange extends org.eclipse.jetty.client.ContentExchange
     {
     }

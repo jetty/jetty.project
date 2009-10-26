@@ -300,7 +300,7 @@ public class Ajp13Parser implements Parser
                     _handler.startForwardRequest();
                     break;
                 case Ajp13Packet.CPING_REQUEST_ORDINAL:
-                    ((Ajp13Generator) _generator).sendCPong();
+                    (_generator).sendCPong();
                     
                     if(_header != null)
                     {
@@ -577,7 +577,7 @@ public class Ajp13Parser implements Parser
                         remaining=_buffer.length();
                     }
 
-                    chunk=Ajp13RequestPacket.get(_buffer,(int)remaining);
+                    chunk=Ajp13RequestPacket.get(_buffer,remaining);
                     _contentPosition+=chunk.length();
                     _chunkPosition+=chunk.length();
                     _contentView.update(chunk);
@@ -796,6 +796,7 @@ public class Ajp13Parser implements Parser
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public int read() throws IOException
         {
             int c = -1;
@@ -808,6 +809,7 @@ public class Ajp13Parser implements Parser
         /*
          * @see java.io.InputStream#read(byte[], int, int)
          */
+        @Override
         public int read(byte[] b, int off, int len) throws IOException
         {
             int l = -1;

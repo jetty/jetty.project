@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.ssl;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -158,6 +157,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public void accept(int acceptorID)
         throws IOException, InterruptedException
     {   
@@ -169,6 +169,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     protected void configure(Socket socket)
         throws IOException
     {   
@@ -267,6 +268,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      *        This should be a {@link SocketEndPoint} wrapping a {@link SSLSocket}.
      * @param request HttpRequest to be customised.
      */
+    @Override
     public void customize(EndPoint endpoint, Request request)
         throws IOException
     {
@@ -394,6 +396,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * configured to require client certs providing CONFIDENTIAL, whereas another SSL listener not
      * requiring client certs providing mere INTEGRAL constraints.
      */
+    @Override
     public boolean isConfidential(Request request)
     {
         final int confidentialPort = getConfidentialPort();
@@ -408,6 +411,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * require client certs providing CONFIDENTIAL, whereas another SSL listener not requiring
      * client certs providing mere INTEGRAL constraints.
      */
+    @Override
     public boolean isIntegral(Request request)
     {
         final int integralPort = getIntegralPort();
@@ -427,6 +431,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      */
 
     /* ------------------------------------------------------------ */
+    @Override
     protected ServerSocket newServerSocket(String host, int port,int backlog) throws IOException
     {
         SSLServerSocketFactory factory = null;
@@ -672,6 +677,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
             super(socket);
         }
         
+        @Override
         public void run()
         {
             try

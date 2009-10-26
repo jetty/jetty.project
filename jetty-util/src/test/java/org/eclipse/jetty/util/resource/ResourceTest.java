@@ -112,6 +112,7 @@ public class ResourceTest extends junit.framework.TestCase
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void setUp()
         throws Exception
     {
@@ -190,6 +191,7 @@ public class ResourceTest extends junit.framework.TestCase
 
     
     /* ------------------------------------------------------------ */
+    @Override
     protected void tearDown()
         throws Exception
     {

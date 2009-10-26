@@ -33,6 +33,7 @@ public class ServletTest extends TestCase
     ServletTester tester;
     
     /* ------------------------------------------------------------ */
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
@@ -47,6 +48,7 @@ public class ServletTest extends TestCase
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void tearDown() throws Exception
     {
         tester.stop();
@@ -272,10 +274,12 @@ public class ServletTest extends TestCase
     {
         private static final long serialVersionUID=2779906630657190712L;
 
+        @Override
         protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             doGet(request,response);
         }
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             response.setContentType("text/html");
@@ -289,6 +293,7 @@ public class ServletTest extends TestCase
     {
         private static final long serialVersionUID=2779906630657190712L;
 
+        @Override
         protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             assertEquals("/context",request.getContextPath());
@@ -303,6 +308,7 @@ public class ServletTest extends TestCase
             response.getWriter().print("<h1>Test Servlet</h1>");
         }
         
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             assertEquals("/context",request.getContextPath());
@@ -321,6 +327,7 @@ public class ServletTest extends TestCase
     
     public static class ExceptServlet extends HttpServlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             if ("/http".equals(request.getPathInfo()))

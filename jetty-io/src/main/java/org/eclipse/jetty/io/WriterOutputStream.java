@@ -46,6 +46,7 @@ public class WriterOutputStream extends OutputStream
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void close()
         throws IOException
     {
@@ -53,6 +54,7 @@ public class WriterOutputStream extends OutputStream
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void flush()
         throws IOException
     {
@@ -60,6 +62,7 @@ public class WriterOutputStream extends OutputStream
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void write(byte[] b) 
         throws IOException
     {
@@ -70,6 +73,7 @@ public class WriterOutputStream extends OutputStream
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void write(byte[] b, int off, int len)
         throws IOException
     {
@@ -80,6 +84,7 @@ public class WriterOutputStream extends OutputStream
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public synchronized void write(int b)
         throws IOException
     {

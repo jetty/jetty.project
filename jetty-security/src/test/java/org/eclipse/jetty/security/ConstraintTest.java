@@ -18,11 +18,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
+
 import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.http.security.Password;

@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.ssl.SslSocketConnector;
  */
 public class SslHttpExchangeTest extends HttpExchangeTest
 {
+    @Override
     protected void setUp() throws Exception
     {
         _scheme="https://";
@@ -38,6 +39,7 @@ public class SslHttpExchangeTest extends HttpExchangeTest
         _httpClient.start();
     }
 
+    @Override
     protected void newServer()
     {
         _server = new Server();

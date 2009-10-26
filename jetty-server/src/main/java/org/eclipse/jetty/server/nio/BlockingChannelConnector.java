@@ -80,6 +80,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void accept(int acceptorID)
     	throws IOException, InterruptedException
     {   
@@ -93,6 +94,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
     }
     
     /* ------------------------------------------------------------------------------- */
+    @Override
     public void customize(EndPoint endpoint, Request request)
         throws IOException
     {

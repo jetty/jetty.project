@@ -18,7 +18,6 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
@@ -208,6 +207,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /* ------------------------------------------------------------ */
     /*
      */
+    @Override
     public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
     {
         int l = super.flush(header, buffer, trailer);
@@ -218,6 +218,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /* ------------------------------------------------------------ */
     /*
      */
+    @Override
     public int flush(Buffer buffer) throws IOException
     {
         int l = super.flush(buffer);
@@ -238,6 +239,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /*
      * Allows thread to block waiting for further events.
      */
+    @Override
     public boolean blockReadable(long timeoutMs) throws IOException
     {
         synchronized (this)
@@ -274,6 +276,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /*
      * Allows thread to block waiting for further events.
      */
+    @Override
     public boolean blockWritable(long timeoutMs) throws IOException
     {
         synchronized (this)
@@ -480,6 +483,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /*
      * @see org.eclipse.io.nio.ChannelEndPoint#close()
      */
+    @Override
     public void close() throws IOException
     {
         try
@@ -497,6 +501,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         synchronized(this)
@@ -527,11 +532,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         /*
          * @see org.eclipse.thread.Timeout.Task#expire()
          */
+        @Override
         public void expired()
         {
             idleExpired();
         }
 
+        @Override
         public String toString()
         {
             return "TimeoutTask:" + SelectChannelEndPoint.this.toString();

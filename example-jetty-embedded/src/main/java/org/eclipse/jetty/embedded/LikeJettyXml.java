@@ -15,9 +15,6 @@ package org.eclipse.jetty.embedded;
 
 import java.lang.management.ManagementFactory;
 
-import javax.management.MBeanConstructorInfo;
-import javax.management.MBeanServer;
-
 import org.eclipse.jetty.deploy.ContextDeployer;
 import org.eclipse.jetty.deploy.WebAppDeployer;
 import org.eclipse.jetty.jmx.MBeanContainer;

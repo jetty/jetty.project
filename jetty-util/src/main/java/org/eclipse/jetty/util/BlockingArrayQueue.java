@@ -124,6 +124,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public boolean add(E e)
     {
         return offer(e);
@@ -350,6 +351,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void clear()
     {
         _tailLock.lock();
@@ -374,18 +376,21 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isEmpty()
     {
         return _size.get()==0;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public int size()
     {
         return _size.get();
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public E get(int index)
     {
         _tailLock.lock();
@@ -413,6 +418,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public E remove(int index)
     {
         _tailLock.lock();
@@ -465,6 +471,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public E set(int index, E e)
     {
         if (e == null) 
@@ -499,6 +506,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void add(int index, E e)
     {
         if (e == null) 

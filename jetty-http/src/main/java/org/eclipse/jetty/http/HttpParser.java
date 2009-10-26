@@ -1002,6 +1002,7 @@ public class HttpParser implements Parser
     }
     
     /* ------------------------------------------------------------------------------- */
+    @Override
     public String toString()
     {
         return "state=" + _state + " length=" + _length + " len=" + _contentLength;

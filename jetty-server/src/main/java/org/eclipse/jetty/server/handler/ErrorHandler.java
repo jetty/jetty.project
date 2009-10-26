@@ -23,11 +23,9 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.HttpStatus.Code;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
-import org.eclipse.jetty.util.StringUtil;
 
 
 /* ------------------------------------------------------------ */

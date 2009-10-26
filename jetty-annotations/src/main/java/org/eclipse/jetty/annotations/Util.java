@@ -14,7 +14,6 @@
 package org.eclipse.jetty.annotations;
 
 import java.lang.reflect.Array;
-import java.util.List;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;

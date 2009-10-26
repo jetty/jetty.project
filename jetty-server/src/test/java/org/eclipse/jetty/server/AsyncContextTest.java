@@ -15,11 +15,13 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.InputStream;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
+
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -30,6 +32,7 @@ public class AsyncContextTest extends TestCase
     protected SuspendHandler _handler = new SuspendHandler();
     protected LocalConnector _connector;
 
+    @Override
     protected void setUp() throws Exception
     {
         _connector = new LocalConnector();
@@ -38,6 +41,7 @@ public class AsyncContextTest extends TestCase
         _server.start();
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _server.stop();
@@ -180,6 +184,7 @@ public class AsyncContextTest extends TestCase
 
 
 
+        @Override
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
             if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
@@ -205,6 +210,7 @@ public class AsyncContextTest extends TestCase
                 if (_completeAfter>0)
                 {
                     new Thread() {
+                        @Override
                         public void run()
                         {
                             try
@@ -233,6 +239,7 @@ public class AsyncContextTest extends TestCase
                 if (_resumeAfter>0)
                 {
                     new Thread() {
+                        @Override
                         public void run()
                         {
                             try

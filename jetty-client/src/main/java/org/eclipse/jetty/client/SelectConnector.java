@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -70,6 +71,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStart() throws Exception
     {
         super.doStart();
@@ -119,6 +121,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStop() throws Exception
     {
         _selectorManager.stop();
@@ -237,6 +240,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         /* (non-Javadoc)
          * @see org.eclipse.io.nio.SelectorManager#connectionFailed(java.nio.channels.SocketChannel, java.lang.Throwable, java.lang.Object)
          */
+        @Override
         protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
         {
             if (attachment instanceof HttpDestination)

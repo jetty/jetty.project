@@ -15,12 +15,9 @@ package org.eclipse.jetty.annotations;
 
 import java.util.List;
 
-import javax.annotation.security.RunAs;
-
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
 

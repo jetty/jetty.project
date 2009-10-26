@@ -152,6 +152,7 @@ public class Utf8StringBuffer
         return _buffer;
     }
     
+    @Override
     public String toString()
     {
         if (_more!=0)

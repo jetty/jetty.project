@@ -386,6 +386,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     /**
      * @see org.eclipse.jetty.http.HttpBuffers#newResponseHeader(int)
      */
+    @Override
     protected Buffer newResponseHeader(int size)
     {
         if (_connectorType == CONNECTOR_SOCKET)
@@ -394,6 +395,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected boolean isRequestHeader(Buffer buffer)
     {
         if (_connectorType == CONNECTOR_SOCKET)
@@ -402,6 +404,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected boolean isResponseHeader(Buffer buffer)
     {
         if (_connectorType == CONNECTOR_SOCKET)
@@ -423,6 +426,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStart() throws Exception
     {
         super.doStart();
@@ -486,6 +490,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStop() throws Exception
     {
         _connector.stop();

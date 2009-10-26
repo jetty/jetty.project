@@ -99,6 +99,7 @@ public class SSLEngineTest extends TestCase
     // ~ Methods
     // ----------------------------------------------------------------
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -121,6 +122,7 @@ public class SSLEngineTest extends TestCase
     }
     
     
+    @Override
     public void tearDown() throws Exception
     {
         Thread.sleep(2000);

@@ -604,6 +604,7 @@ public class XmlParser
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void add(int i, Object o)
         {
             if (_list == null)

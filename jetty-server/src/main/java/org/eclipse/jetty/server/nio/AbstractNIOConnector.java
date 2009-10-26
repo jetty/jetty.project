@@ -17,10 +17,8 @@
 package org.eclipse.jetty.server.nio;
 
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
-import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.server.AbstractConnector;
 
 /* ------------------------------------------------------------ */
@@ -49,36 +47,42 @@ public abstract class AbstractNIOConnector extends AbstractConnector implements 
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     public Buffer newRequestBuffer(int size)
     {
         return _useDirectBuffers?new DirectNIOBuffer(size):new IndirectNIOBuffer(size);
     }
     
     /* ------------------------------------------------------------------------------- */
+    @Override
     public Buffer newRequestHeader(int size)
     {
         return new IndirectNIOBuffer(size);
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     public Buffer newResponseBuffer(int size)
     {
         return _useDirectBuffers?new DirectNIOBuffer(size):new IndirectNIOBuffer(size);
     }
     
     /* ------------------------------------------------------------------------------- */
+    @Override
     public Buffer newResponseHeader(int size)
     {
         return new IndirectNIOBuffer(size);
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected boolean isRequestHeader(Buffer buffer)
     {
         return buffer instanceof IndirectNIOBuffer;
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected boolean isResponseHeader(Buffer buffer)
     {
         return buffer instanceof IndirectNIOBuffer;

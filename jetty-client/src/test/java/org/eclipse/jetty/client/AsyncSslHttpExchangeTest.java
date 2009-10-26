@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 public class AsyncSslHttpExchangeTest extends SslHttpExchangeTest
 {
 
+    @Override
     protected void setUp() throws Exception
     {
         _scheme="https://";

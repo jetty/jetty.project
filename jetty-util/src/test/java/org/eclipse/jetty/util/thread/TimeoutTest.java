@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import junit.framework.TestCase;
@@ -28,6 +27,7 @@ public class TimeoutTest extends TestCase
     /* 
      * @see junit.framework.TestCase#setUp()
      */
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
@@ -48,6 +48,7 @@ public class TimeoutTest extends TestCase
     /* 
      * @see junit.framework.TestCase#tearDown()
      */
+    @Override
     protected void tearDown() throws Exception
     {
         super.tearDown();
@@ -144,6 +145,7 @@ public class TimeoutTest extends TestCase
         // Start a ticker thread that will tick over the timer frequently.
         Thread ticker = new Thread()
         {
+            @Override
             public void run()
             {
                 while (running[0])
@@ -174,6 +176,7 @@ public class TimeoutTest extends TestCase
             // 
             Thread th = new Thread()
             { 
+                @Override
                 public void run()
                 {
                     // count how many threads were started (should == LOOP)
@@ -182,6 +185,7 @@ public class TimeoutTest extends TestCase
                     // create a task for this thread
                     Timeout.Task task = new Timeout.Task()
                     {
+                        @Override
                         public void expired()
                         {       
                             // count the number of expires                           

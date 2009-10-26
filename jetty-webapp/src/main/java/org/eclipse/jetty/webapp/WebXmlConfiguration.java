@@ -14,7 +14,6 @@ package org.eclipse.jetty.webapp;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.Collections;
 
 import org.eclipse.jetty.security.ConstraintAware;

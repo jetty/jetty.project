@@ -112,6 +112,7 @@ public class SecurityListener extends HttpEventListenerWrapper
     }
 
   
+    @Override
     public void onResponseStatus( Buffer version, int status, Buffer reason )
         throws IOException
     {
@@ -134,6 +135,7 @@ public class SecurityListener extends HttpEventListenerWrapper
     }
 
 
+    @Override
     public void onResponseHeader( Buffer name, Buffer value )
         throws IOException
     {
@@ -185,6 +187,7 @@ public class SecurityListener extends HttpEventListenerWrapper
     }
     
 
+    @Override
     public void onRequestComplete() throws IOException
     {
         _requestComplete = true;
@@ -217,6 +220,7 @@ public class SecurityListener extends HttpEventListenerWrapper
     }
 
 
+    @Override
     public void onResponseComplete() throws IOException
     {   
         _responseComplete = true;
@@ -248,6 +252,7 @@ public class SecurityListener extends HttpEventListenerWrapper
         }
     }
 
+    @Override
     public void onRetry()
     {
         _attempts++;

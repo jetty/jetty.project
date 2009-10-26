@@ -149,6 +149,7 @@ public abstract class AbstractBuffer implements Buffer
         }
     }
 
+    @Override
     public boolean equals(Object obj)
     {
         if (obj==this)
@@ -274,6 +275,7 @@ public abstract class AbstractBuffer implements Buffer
         return _put > _get;
     }
     
+    @Override
     public int hashCode()
     {
         if (_hash == 0 || _hashGet!=_get || _hashPut!=_put) 
@@ -613,6 +615,7 @@ public abstract class AbstractBuffer implements Buffer
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         if (isImmutable())

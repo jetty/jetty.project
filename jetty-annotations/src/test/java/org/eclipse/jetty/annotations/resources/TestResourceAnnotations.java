@@ -8,6 +8,8 @@ import java.util.List;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
+import junit.framework.TestCase;
+
 import org.eclipse.jetty.annotations.AnnotationParser;
 import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.annotations.ResourceAnnotationHandler;
@@ -16,8 +18,6 @@ import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
-
-import junit.framework.TestCase;
 
 public class TestResourceAnnotations extends TestCase
 {

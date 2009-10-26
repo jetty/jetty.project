@@ -23,8 +23,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.eclipse.jetty.logging.impl.Appender;
-import org.eclipse.jetty.logging.impl.Severity;
 import org.slf4j.MDC;
 
 /**

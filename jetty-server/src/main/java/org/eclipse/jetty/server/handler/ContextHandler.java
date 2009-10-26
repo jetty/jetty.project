@@ -21,7 +21,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -30,7 +29,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.Filter;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
@@ -206,6 +204,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setServer(Server server)
     {
         if (_errorHandler!=null)
@@ -269,6 +268,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /** 
      * @deprecated use {@link #setConnectorNames(String[])} 
      */
+    @Deprecated
     public void setHosts(String[] hosts)
     {
         setConnectorNames(hosts);
@@ -278,6 +278,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /** Get the hosts for the context.
      * @deprecated
      */
+    @Deprecated
     public String[] getHosts()
     {
         return getConnectorNames();
@@ -545,6 +546,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* 
      * @see org.eclipse.thread.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         _availability=__STOPPED;
@@ -650,6 +652,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* 
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         _availability=__STOPPED;
@@ -1283,6 +1286,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         
@@ -1837,6 +1841,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public String toString()
         {
             return "ServletContext@"+Integer.toHexString(hashCode())+"{"+(getContextPath().equals("")?URIUtil.SLASH:getContextPath())+","+getBaseResource()+"}";

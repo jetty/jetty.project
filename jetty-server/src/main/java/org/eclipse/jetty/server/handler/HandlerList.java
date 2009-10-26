@@ -20,7 +20,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 
 /* ------------------------------------------------------------ */
@@ -35,6 +34,7 @@ public class HandlerList extends HandlerCollection
     /* 
      * @see org.eclipse.jetty.server.server.EventHandler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) 
         throws IOException, ServletException
     {

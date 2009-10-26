@@ -49,12 +49,14 @@ public class CachedExchange extends HttpExchange
         return _responseFields;
     }
 
+    @Override
     protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
     {
         _responseStatus = status;
         super.onResponseStatus(version, status, reason);
     }
 
+    @Override
     protected void onResponseHeader(Buffer name, Buffer value) throws IOException
     {
         if (_responseFields != null)

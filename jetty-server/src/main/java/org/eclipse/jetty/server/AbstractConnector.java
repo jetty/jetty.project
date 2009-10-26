@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.http.HttpBuffers;
@@ -107,36 +108,42 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     public Buffer newRequestBuffer(int size)
     {
         return new ByteArrayBuffer(size);
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     public Buffer newRequestHeader(int size)
     {
         return new ByteArrayBuffer(size);
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     public Buffer newResponseBuffer(int size)
     {
         return new ByteArrayBuffer(size);
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     public Buffer newResponseHeader(int size)
     {
         return new ByteArrayBuffer(size);
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected boolean isRequestHeader(Buffer buffer)
     {
         return true;
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected boolean isResponseHeader(Buffer buffer)
     {
         return true;
@@ -319,6 +326,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStart() throws Exception
     {
         if (_server==null)
@@ -353,6 +361,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStop() throws Exception
     {
         try{close();} catch(IOException e) {Log.warn(e);}
@@ -696,6 +705,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         String name = this.getClass().getName();

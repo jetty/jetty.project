@@ -65,12 +65,14 @@ public class Dump extends HttpServlet
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         doGet(request, response);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
         if(request.getPathInfo()!=null && request.getPathInfo().toLowerCase().indexOf("script")!=-1)
@@ -796,12 +798,14 @@ public class Dump extends HttpServlet
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getServletInfo()
     {
         return "Dump Servlet";
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public synchronized void destroy()
     {
     }

@@ -54,6 +54,7 @@ public class MultiPartWriter extends FilterWriter
     /** End the current part.
      * @exception IOException IOException
      */
+    @Override
     public void close()
          throws IOException
     {

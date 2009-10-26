@@ -125,6 +125,7 @@ public class FileResource extends URLResource
     }
     
     /* -------------------------------------------------------- */
+    @Override
     public Resource addPath(String path)
         throws IOException,MalformedURLException
     {
@@ -171,6 +172,7 @@ public class FileResource extends URLResource
    
     
     /* ------------------------------------------------------------ */
+    @Override
     public URL getAlias()
     {
         if (__checkAliases && !_aliasChecked)
@@ -204,6 +206,7 @@ public class FileResource extends URLResource
     /**
      * Returns true if the resource exists.
      */
+    @Override
     public boolean exists()
     {
         return _file.exists();
@@ -213,6 +216,7 @@ public class FileResource extends URLResource
     /**
      * Returns the last modified time
      */
+    @Override
     public long lastModified()
     {
         return _file.lastModified();
@@ -222,6 +226,7 @@ public class FileResource extends URLResource
     /**
      * Returns true if the respresenetd resource is a container/directory.
      */
+    @Override
     public boolean isDirectory()
     {
         return _file.isDirectory();
@@ -231,6 +236,7 @@ public class FileResource extends URLResource
     /**
      * Return the length of the resource
      */
+    @Override
     public long length()
     {
         return _file.length();
@@ -241,6 +247,7 @@ public class FileResource extends URLResource
     /**
      * Returns the name of the resource
      */
+    @Override
     public String getName()
     {
         return _file.getAbsolutePath();
@@ -251,6 +258,7 @@ public class FileResource extends URLResource
      * Returns an File representing the given resource or NULL if this
      * is not possible.
      */
+    @Override
     public File getFile()
     {
         return _file;
@@ -260,6 +268,7 @@ public class FileResource extends URLResource
     /**
      * Returns an input stream to the resource
      */
+    @Override
     public InputStream getInputStream() throws IOException
     {
         return new FileInputStream(_file);
@@ -269,6 +278,7 @@ public class FileResource extends URLResource
     /**
      * Returns an output stream to the resource
      */
+    @Override
     public OutputStream getOutputStream()
         throws java.io.IOException, SecurityException
     {
@@ -279,6 +289,7 @@ public class FileResource extends URLResource
     /**
      * Deletes the given resource
      */
+    @Override
     public boolean delete()
         throws SecurityException
     {
@@ -289,6 +300,7 @@ public class FileResource extends URLResource
     /**
      * Rename the given resource
      */
+    @Override
     public boolean renameTo( Resource dest)
         throws SecurityException
     {
@@ -302,6 +314,7 @@ public class FileResource extends URLResource
     /**
      * Returns a list of resources contained in the given resource
      */
+    @Override
     public String[] list()
     {
         String[] list =_file.list();
@@ -322,6 +335,7 @@ public class FileResource extends URLResource
      * @param uri URI to encode.
      * @return The uri unchanged.
      */
+    @Override
     public String encode(String uri)
     {
         return uri;
@@ -332,6 +346,7 @@ public class FileResource extends URLResource
      * @param o
      * @return <code>true</code> of the object <code>o</code> is a {@link FileResource} pointing to the same file as this resource. 
      */
+    @Override
     public boolean equals( Object o)
     {
         if (this == o)

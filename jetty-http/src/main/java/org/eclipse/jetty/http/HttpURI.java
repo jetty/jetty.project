@@ -581,6 +581,7 @@ public class HttpURI
         _encoded=false;
     }
     
+    @Override
     public String toString()
     {
         if (_rawString==null)

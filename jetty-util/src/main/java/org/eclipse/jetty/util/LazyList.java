@@ -436,7 +436,7 @@ public class LazyList
         if (array==null)
         {
             if (type==null && item!=null)
-                type= (Class<Object>)item.getClass();
+                type= item.getClass();
             Object[] na = (Object[])Array.newInstance(type, 1);
             na[0]=item;
             return na;

@@ -134,6 +134,7 @@ public class JSONPojoConvertorTest extends TestCase
             setBazs(bazs);
         }
         
+        @Override
         public String toString()
         {
             return new StringBuffer().append("\n=== ").append(getClass().getSimpleName()).append(" ===")
@@ -213,6 +214,7 @@ public class JSONPojoConvertorTest extends TestCase
             setFoo(foo);
         }
         
+        @Override
         public String toString()
         {
             return new StringBuffer().append("\n=== ").append(getClass().getSimpleName()).append(" ===")
@@ -270,6 +272,7 @@ public class JSONPojoConvertorTest extends TestCase
             
         }
         
+        @Override
         public String toString()
         {
             return new StringBuffer().append("\n=== ").append(getClass().getSimpleName()).append(" ===")
@@ -285,6 +288,7 @@ public class JSONPojoConvertorTest extends TestCase
                 .toString();                
         }
         
+        @Override
         public boolean equals(Object another)
         {
             if(another instanceof Foo)

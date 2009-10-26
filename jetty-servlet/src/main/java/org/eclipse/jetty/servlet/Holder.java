@@ -22,7 +22,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;

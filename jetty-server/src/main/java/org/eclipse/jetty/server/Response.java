@@ -19,13 +19,11 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Locale;
 
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.http.Generator;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -35,7 +33,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.HttpStatus.Code;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -1172,6 +1169,7 @@ public class Response implements HttpServletResponse
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return "HTTP/1.1 "+_status+" "+ (_reason==null?"":_reason) +System.getProperty("line.separator")+
@@ -1183,18 +1181,22 @@ public class Response implements HttpServletResponse
     /* ------------------------------------------------------------ */
     private static class NullOutput extends ServletOutputStream
     {
+        @Override
         public void write(int b) throws IOException
         {
         }
 
+        @Override
         public void print(String s) throws IOException
         {
         }
 
+        @Override
         public void println(String s) throws IOException
         {
         }
 
+        @Override
         public void write(byte[] b, int off, int len) throws IOException
         {
         }

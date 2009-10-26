@@ -107,6 +107,7 @@ public class ContextDeployer extends AbstractLifeCycle
         {
             undeploy(filename);
         }
+        @Override
         public String toString()
         {
             return "ContextDeployer$Scanner";
@@ -193,6 +194,7 @@ public class ContextDeployer extends AbstractLifeCycle
      * @throws Exception
      * @deprecated use {@link #setContextsDir(String)}
      */
+    @Deprecated
     public void setConfigurationDir(String dir) throws Exception
     {
         setConfigurationDir(Resource.newResource(dir));
@@ -204,6 +206,7 @@ public class ContextDeployer extends AbstractLifeCycle
      * @throws Exception
      * @deprecated use {@link #setContextsDir(String)}
      */
+    @Deprecated
     public void setConfigurationDir(File file) throws Exception
     {
         setConfigurationDir(Resource.newResource(file.toURL()));
@@ -214,6 +217,7 @@ public class ContextDeployer extends AbstractLifeCycle
      * @param resource
      * @deprecated use {@link #setContextsDir(String)}
      */
+    @Deprecated
     public void setConfigurationDir(Resource resource)
     {
         if (isStarted()||isStarting())
@@ -226,6 +230,7 @@ public class ContextDeployer extends AbstractLifeCycle
      * @param directory
      * @deprecated use {@link #setContextsDir(String)}
      */
+    @Deprecated
     public void setDirectory(String directory) throws Exception
     {
         setConfigurationDir(directory);
@@ -236,6 +241,7 @@ public class ContextDeployer extends AbstractLifeCycle
      * @return
      * @deprecated use {@link #setContextsDir(String)}
      */
+    @Deprecated
     public String getDirectory()
     {
         return getConfigurationDir().getName();
@@ -246,6 +252,7 @@ public class ContextDeployer extends AbstractLifeCycle
      * @return
      * @deprecated use {@link #setContextsDir(String)}
      */
+    @Deprecated
     public Resource getConfigurationDir()
     {
         return _contextsDir;
@@ -359,6 +366,7 @@ public class ContextDeployer extends AbstractLifeCycle
      * 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         if (_contextsDir==null)
@@ -401,6 +409,7 @@ public class ContextDeployer extends AbstractLifeCycle
      * 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         _scanner.removeListener(_scannerListener);

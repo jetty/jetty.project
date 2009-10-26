@@ -133,6 +133,7 @@ public class LifeCycleListenerTest extends TestCase
         {
         }
         
+        @Override
         protected void doStart() throws Exception
         {
             if (cause!=null)
@@ -140,6 +141,7 @@ public class LifeCycleListenerTest extends TestCase
             super.doStart();
         }
         
+        @Override
         protected void doStop() throws Exception
         {
             if (cause!=null)

@@ -110,6 +110,7 @@ public class AttributesMap implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return _map.toString();

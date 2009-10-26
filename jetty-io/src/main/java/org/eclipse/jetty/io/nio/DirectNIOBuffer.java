@@ -130,6 +130,7 @@ public class DirectNIOBuffer extends AbstractBuffer implements NIOBuffer
         _buf.put(index,b);
     }
 
+    @Override
     public int poke(int index, Buffer src)
     {
         if (isReadOnly()) throw new IllegalStateException(__READONLY);
@@ -174,6 +175,7 @@ public class DirectNIOBuffer extends AbstractBuffer implements NIOBuffer
         }
     }
     
+    @Override
     public int poke(int index, byte[] b, int offset, int length)
     {
         if (isReadOnly()) throw new IllegalStateException(__READONLY);
@@ -212,6 +214,7 @@ public class DirectNIOBuffer extends AbstractBuffer implements NIOBuffer
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public int readFrom(InputStream in, int max) throws IOException
     {
         if (_in==null || !_in.isOpen() || in!=_inStream)
@@ -276,6 +279,7 @@ public class DirectNIOBuffer extends AbstractBuffer implements NIOBuffer
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void writeTo(OutputStream out) throws IOException
     {
         if (_out==null || !_out.isOpen() || out!=_outStream)

@@ -18,7 +18,6 @@ import java.security.Principal;
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.server.UserIdentity;
 
 /**
  * This is similar to the jaspi PasswordValidationCallback but includes user

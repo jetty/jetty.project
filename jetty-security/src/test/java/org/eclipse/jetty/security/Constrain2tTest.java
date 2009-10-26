@@ -16,11 +16,13 @@ package org.eclipse.jetty.security;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
+
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;

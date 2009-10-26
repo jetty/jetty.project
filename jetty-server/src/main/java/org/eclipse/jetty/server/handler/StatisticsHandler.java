@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -101,6 +102,7 @@ public class StatisticsHandler extends HandlerWrapper
         }
     }
 
+    @Override
     public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
     {
         _requests.incrementAndGet();
@@ -173,6 +175,7 @@ public class StatisticsHandler extends HandlerWrapper
         _responsesTotalBytes.addAndGet(response.getContentCount());
     }
 
+    @Override
     protected void doStart() throws Exception
     {
         super.doStart();

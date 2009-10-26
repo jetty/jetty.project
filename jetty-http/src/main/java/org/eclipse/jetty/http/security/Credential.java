@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http.security;
 
-import java.lang.reflect.Array;
 import java.security.MessageDigest;
 
 import org.eclipse.jetty.util.StringUtil;
@@ -81,6 +80,7 @@ public abstract class Credential
             _cooked = cooked.startsWith(Crypt.__TYPE) ? cooked.substring(__TYPE.length()) : cooked;
         }
 
+        @Override
         public boolean check(Object credentials)
         {
             if (credentials instanceof char[])
@@ -126,6 +126,7 @@ public abstract class Credential
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public boolean check(Object credentials)
         {
             try

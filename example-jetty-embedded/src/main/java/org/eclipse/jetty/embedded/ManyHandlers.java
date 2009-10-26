@@ -71,6 +71,7 @@ public class ManyHandlers
         Handler param = new ParamHandler();
         HandlerWrapper wrapper = new HandlerWrapper()
         {
+            @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                     ServletException
             {

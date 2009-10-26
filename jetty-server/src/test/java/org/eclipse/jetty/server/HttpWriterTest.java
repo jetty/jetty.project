@@ -2,6 +2,8 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 
+import junit.framework.TestCase;
+
 import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Buffer;
@@ -10,8 +12,6 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.util.StringUtil;
-
-import junit.framework.TestCase;
 
 public class HttpWriterTest extends TestCase
 {

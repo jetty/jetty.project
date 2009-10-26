@@ -20,7 +20,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -86,6 +85,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     /* 
      * @see org.eclipse.thread.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         if (_handler!=null)
@@ -97,6 +97,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     /* 
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         super.doStop();

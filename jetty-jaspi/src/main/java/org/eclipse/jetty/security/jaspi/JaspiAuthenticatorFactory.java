@@ -29,8 +29,8 @@ import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.DefaultAuthenticatorFactory;
-import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.Authenticator.Configuration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;

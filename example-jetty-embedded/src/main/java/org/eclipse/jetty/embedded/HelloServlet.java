@@ -35,6 +35,7 @@ public class HelloServlet extends HttpServlet
         greeting = hi;
     }
 
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         response.setContentType("text/html");

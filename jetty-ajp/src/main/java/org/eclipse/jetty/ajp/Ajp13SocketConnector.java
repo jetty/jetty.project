@@ -41,6 +41,7 @@ public class Ajp13SocketConnector extends SocketConnector
         super.setMaxIdleTime(900000);
     }
 
+    @Override
     protected void doStart() throws Exception
     {
         super.doStart();
@@ -53,6 +54,7 @@ public class Ajp13SocketConnector extends SocketConnector
     /* (non-Javadoc)
      * @see org.eclipse.jetty.server.bio.SocketConnector#customize(org.eclipse.io.EndPoint, org.eclipse.jetty.server.Request)
      */
+    @Override
     public void customize(EndPoint endpoint, Request request) throws IOException
     {
         super.customize(endpoint,request);
@@ -61,6 +63,7 @@ public class Ajp13SocketConnector extends SocketConnector
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected HttpConnection newHttpConnection(EndPoint endpoint)
     {
         return new Ajp13Connection(this,endpoint,getServer());
@@ -68,6 +71,7 @@ public class Ajp13SocketConnector extends SocketConnector
 
     /* ------------------------------------------------------------ */
     // Secured on a packet by packet bases not by connection
+    @Override
     public boolean isConfidential(Request request)
     {
         return ((Ajp13Request) request).isSslSecure();
@@ -75,24 +79,28 @@ public class Ajp13SocketConnector extends SocketConnector
 
     /* ------------------------------------------------------------ */
     // Secured on a packet by packet bases not by connection
+    @Override
     public boolean isIntegral(Request request)
     {
         return ((Ajp13Request) request).isSslSecure();
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setHeaderBufferSize(int headerBufferSize)
     {
         Log.debug(Log.IGNORED);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setRequestBufferSize(int requestBufferSize)
     {
         Log.debug(Log.IGNORED);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setResponseBufferSize(int responseBufferSize)
     {
         Log.debug(Log.IGNORED);

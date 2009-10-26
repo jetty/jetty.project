@@ -215,6 +215,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                     _task.cancel();
                 _task = new TimerTask()
                 {
+                    @Override
                     public void run()
                     {
                         scavenge();
@@ -372,6 +373,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
      * 
      * @see org.eclipse.jetty.server.session.AbstractSessionIdManager#doStart()
      */
+    @Override
     public void doStart()
     {
         try
@@ -394,6 +396,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
      * 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */
+    @Override
     public void doStop () 
     throws Exception
     {

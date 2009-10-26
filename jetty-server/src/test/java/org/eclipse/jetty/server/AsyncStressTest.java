@@ -21,7 +21,6 @@ import java.net.Socket;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -48,6 +47,7 @@ public class AsyncStressTest extends TestCase
     protected QueuedThreadPool _threads=new QueuedThreadPool();
     protected boolean _stress;
 
+    @Override
     protected void setUp() throws Exception
     {
         _stress= Boolean.getBoolean("STRESS");
@@ -59,9 +59,10 @@ public class AsyncStressTest extends TestCase
         _server.setHandler(_handler);
         _server.start();
         _port=_connector.getLocalPort();
-        _addr=Inet4Address.getLocalHost();
+        _addr=InetAddress.getLocalHost();
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _server.stop();
@@ -176,6 +177,7 @@ public class AsyncStressTest extends TestCase
             _timer=new Timer();
         }
         
+        @Override
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
             int read_before=0;
@@ -223,6 +225,7 @@ public class AsyncStressTest extends TestCase
                     {
                         TimerTask complete = new TimerTask()
                         {
+                            @Override
                             public void run()
                             {
                                 try
@@ -261,6 +264,7 @@ public class AsyncStressTest extends TestCase
                     {
                         TimerTask resume = new TimerTask()
                         {
+                            @Override
                             public void run()
                             {
                                 asyncContext.dispatch();

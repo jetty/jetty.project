@@ -51,6 +51,7 @@ class JarFileResource extends JarResource
    
 
     /* ------------------------------------------------------------ */
+    @Override
     public synchronized void release()
     {
         _list=null;
@@ -61,6 +62,7 @@ class JarFileResource extends JarResource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     protected boolean checkConnection()
     {
         try{
@@ -81,6 +83,7 @@ class JarFileResource extends JarResource
 
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void newConnection()
         throws IOException
     {
@@ -105,6 +108,7 @@ class JarFileResource extends JarResource
     /**
      * Returns true if the respresenetd resource exists.
      */
+    @Override
     public boolean exists()
     {
         if (_exists)
@@ -195,6 +199,7 @@ class JarFileResource extends JarResource
      * If the resource is not a file, resources ending with "/" are
      * considered directories.
      */
+    @Override
     public boolean isDirectory()
     {
         return _urlString.endsWith("/") || exists() && _directory;
@@ -204,6 +209,7 @@ class JarFileResource extends JarResource
     /**
      * Returns the last modified time
      */
+    @Override
     public long lastModified()
     {
         if (checkConnection() && _file!=null)
@@ -212,6 +218,7 @@ class JarFileResource extends JarResource
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public synchronized String[] list()
     {
         
@@ -279,6 +286,7 @@ class JarFileResource extends JarResource
     /**
      * Return the length of the resource
      */
+    @Override
     public long length()
     {
         if (isDirectory())
@@ -296,6 +304,7 @@ class JarFileResource extends JarResource
      * @param uri URI to encode.
      * @return The uri unchanged.
      */
+    @Override
     public String encode(String uri)
     {
         return uri;
@@ -327,6 +336,7 @@ class JarFileResource extends JarResource
      * @return
      * @throws MalformedURLException
      */
+    @Override
     public boolean isContainedIn (Resource resource) 
     throws MalformedURLException
     {

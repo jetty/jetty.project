@@ -112,6 +112,7 @@ public class StringMap extends AbstractMap implements Externalizable
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public Object put(Object key, Object value)
     {
         if (key==null)
@@ -231,6 +232,7 @@ public class StringMap extends AbstractMap implements Externalizable
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public Object get(Object key)
     {
         if (key==null)
@@ -428,6 +430,7 @@ public class StringMap extends AbstractMap implements Externalizable
     
     
     /* ------------------------------------------------------------ */
+    @Override
     public Object remove(Object key)
     {
         if (key==null)
@@ -500,24 +503,28 @@ public class StringMap extends AbstractMap implements Externalizable
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Set entrySet()
     {
         return _umEntrySet;
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public int size()
     {
         return _entrySet.size();
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isEmpty()
     {
         return _entrySet.isEmpty();
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean containsKey(Object key)
     {
         if (key==null)
@@ -527,6 +534,7 @@ public class StringMap extends AbstractMap implements Externalizable
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void clear()
     {
         _root=new Node();
@@ -610,6 +618,7 @@ public class StringMap extends AbstractMap implements Externalizable
         public Object getKey(){return _key;}
         public Object getValue(){return _value;}
         public Object setValue(Object o){Object old=_value;_value=o;return old;}
+        @Override
         public String toString()
         {
             StringBuilder buf=new StringBuilder();
@@ -658,6 +667,7 @@ public class StringMap extends AbstractMap implements Externalizable
         public Object getValue(){return _nullValue;}
         public Object setValue(Object o)
             {Object old=_nullValue;_nullValue=o;return old;}
+        @Override
         public String toString(){return "[:null="+_nullValue+"]";}
     }
 

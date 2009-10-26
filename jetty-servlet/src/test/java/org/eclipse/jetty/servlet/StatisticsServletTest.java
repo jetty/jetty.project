@@ -12,13 +12,12 @@
 // ========================================================================
 package org.eclipse.jetty.servlet;
 
-import org.eclipse.jetty.server.Handler;
+import junit.framework.AssertionFailedError;
+import junit.framework.TestCase;
+
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-
-import junit.framework.AssertionFailedError;
-import junit.framework.TestCase;
 
 public class StatisticsServletTest extends TestCase
 {

@@ -33,7 +33,6 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.util.ArrayQueue;
 
 /**
  * Quality of Service Filter.

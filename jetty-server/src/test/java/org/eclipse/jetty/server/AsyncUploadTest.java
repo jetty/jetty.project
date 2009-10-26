@@ -105,6 +105,7 @@ public class AsyncUploadTest extends TestCase
             
             new Thread()
             {
+                @Override
                 public void run()
                 {
                     try

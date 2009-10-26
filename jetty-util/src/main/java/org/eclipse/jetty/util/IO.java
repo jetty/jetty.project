@@ -12,7 +12,6 @@
 // ========================================================================
 
 package org.eclipse.jetty.util;
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -453,10 +452,15 @@ public class IO
     /* ------------------------------------------------------------ */
     private static class NullOS extends OutputStream                                    
     {
+        @Override
         public void close(){}
+        @Override
         public void flush(){}
+        @Override
         public void write(byte[]b){}
+        @Override
         public void write(byte[]b,int i,int l){}
+        @Override
         public void write(int b){}
     }
     private static NullOS __nullStream = new NullOS();
@@ -466,6 +470,7 @@ public class IO
     /* ------------------------------------------------------------ */
     private static class ClosedIS extends InputStream                                    
     {
+        @Override
         public int read() throws IOException
         {
             return -1;
@@ -495,12 +500,19 @@ public class IO
     /* ------------------------------------------------------------ */
     private static class NullWrite extends Writer                                    
     {
+        @Override
         public void close(){}
+        @Override
         public void flush(){}
+        @Override
         public void write(char[]b){}
+        @Override
         public void write(char[]b,int o,int l){}
+        @Override
         public void write(int b){}
+        @Override
         public void write(String s){}
+        @Override
         public void write(String s,int o,int l){}
     }
     private static NullWrite __nullWriter = new NullWrite();

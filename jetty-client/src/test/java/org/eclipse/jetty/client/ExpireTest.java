@@ -119,6 +119,7 @@ public class ExpireTest extends TestCase
             expireCount.incrementAndGet();
             final ContentExchange ex = new ContentExchange()
             {
+                @Override
                 protected void onExpire()
                 {
                     expireCount.decrementAndGet();

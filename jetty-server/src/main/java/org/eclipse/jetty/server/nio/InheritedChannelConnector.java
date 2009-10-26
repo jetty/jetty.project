@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.log.Log;
 public class InheritedChannelConnector extends SelectChannelConnector
 {
     /* ------------------------------------------------------------ */
+    @Override
     public void open() throws IOException
     {
         synchronized(this)

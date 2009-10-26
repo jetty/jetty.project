@@ -24,7 +24,6 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.DispatcherType;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
@@ -94,6 +93,7 @@ public class SessionHandler extends HandlerWrapper
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setServer(Server server)
     {
         Server old_server=getServer();
@@ -109,6 +109,7 @@ public class SessionHandler extends HandlerWrapper
     /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         _sessionManager.start();
@@ -118,6 +119,7 @@ public class SessionHandler extends HandlerWrapper
     /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         super.doStop();
@@ -128,6 +130,7 @@ public class SessionHandler extends HandlerWrapper
     /*
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {

@@ -1,8 +1,8 @@
 package org.eclipse.jetty.webapp.verifier.rules;
 
-import org.eclipse.jetty.webapp.verifier.RuleAssert;
-
 import junit.framework.TestCase;
+
+import org.eclipse.jetty.webapp.verifier.RuleAssert;
 
 public class NoNativeRuleTest extends TestCase
 {

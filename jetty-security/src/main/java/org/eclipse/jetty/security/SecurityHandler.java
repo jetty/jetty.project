@@ -28,7 +28,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;

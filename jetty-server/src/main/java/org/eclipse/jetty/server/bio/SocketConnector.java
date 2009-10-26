@@ -23,7 +23,6 @@ import java.util.Set;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
@@ -93,6 +92,7 @@ public class SocketConnector extends AbstractConnector
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void accept(int acceptorID)
     	throws IOException, InterruptedException
     {   
@@ -113,6 +113,7 @@ public class SocketConnector extends AbstractConnector
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     public void customize(EndPoint endpoint, Request request)
         throws IOException
     {
@@ -136,6 +137,7 @@ public class SocketConnector extends AbstractConnector
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected void doStart() throws Exception
     {
         _connections.clear();
@@ -143,6 +145,7 @@ public class SocketConnector extends AbstractConnector
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected void doStop() throws Exception
     {
         super.doStop();
@@ -188,6 +191,7 @@ public class SocketConnector extends AbstractConnector
             }
         }
         
+        @Override
         public int fill(Buffer buffer) throws IOException
         {
             int l = super.fill(buffer);
@@ -196,6 +200,7 @@ public class SocketConnector extends AbstractConnector
             return l;
         } 
         
+        @Override
         public void close() throws IOException
         {
             _connection.getRequest().getAsyncContinuation().cancel();

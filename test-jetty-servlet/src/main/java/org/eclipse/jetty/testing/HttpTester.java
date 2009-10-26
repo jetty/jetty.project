@@ -457,6 +457,7 @@ public class HttpTester
     /* ------------------------------------------------------------ */
     private class PH extends HttpParser.EventHandler
     {
+        @Override
         public void startRequest(Buffer method, Buffer url, Buffer version) throws IOException
         {
             reset();
@@ -465,6 +466,7 @@ public class HttpTester
             _version=getString(version);
         }
 
+        @Override
         public void startResponse(Buffer version, int status, Buffer reason) throws IOException
         {
             reset();
@@ -473,11 +475,13 @@ public class HttpTester
             _reason=getString(reason);
         }
         
+        @Override
         public void parsedHeader(Buffer name, Buffer value) throws IOException
         {
             _fields.add(name,value);
         }
 
+        @Override
         public void headerComplete() throws IOException
         {
             _contentType = _fields.get(HttpHeaders.CONTENT_TYPE_BUFFER);
@@ -489,10 +493,12 @@ public class HttpTester
             }
         }
 
+        @Override
         public void messageComplete(long contextLength) throws IOException
         {
         }
         
+        @Override
         public void content(Buffer ref) throws IOException
         {
             if (_parsedContent==null)

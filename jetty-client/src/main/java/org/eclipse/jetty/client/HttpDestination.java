@@ -171,7 +171,8 @@ public class HttpDestination
             {
                 try
                 {
-                    Thread.currentThread().sleep(200);
+                    Thread.currentThread();
+                    Thread.sleep(200);
                     timeout-=200;
                 }
                 catch (InterruptedException e)
@@ -475,7 +476,7 @@ public class HttpDestination
         {
             Authorization auth = (Authorization)_authorizations.match(ex.getURI());
             if (auth != null)
-                ((Authorization)auth).setCredentials(ex);
+                (auth).setCredentials(ex);
         }
 
         HttpConnection connection = getIdleConnection();
@@ -498,6 +499,7 @@ public class HttpDestination
         }
     }
 
+    @Override
     public synchronized String toString()
     {
         return "HttpDestination@" + hashCode() + "//" + _address.getHost() + ":" + _address.getPort() + "(" + _connections.size() + "," + _idle.size() + "," + _queue.size() + ")";

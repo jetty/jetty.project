@@ -47,6 +47,7 @@ public class Address
         this.port = port;
     }
 
+    @Override
     public boolean equals(Object obj)
     {
         if (this == obj) return true;
@@ -56,6 +57,7 @@ public class Address
         return port == that.port;
     }
 
+    @Override
     public int hashCode()
     {
         int result = host.hashCode();

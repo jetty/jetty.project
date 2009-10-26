@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -39,12 +40,12 @@ import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Parser;
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
+import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
@@ -672,7 +673,7 @@ public class HttpConnection implements Connection
                 _response.reset();
                 _generator.reset(true);
                 _generator.setResponse(HttpStatus.INTERNAL_SERVER_ERROR_500,null);
-                _generator.completeHeader(_responseFields,HttpGenerator.LAST);
+                _generator.completeHeader(_responseFields,Generator.LAST);
                 _generator.complete();
                 throw new HttpException(HttpStatus.INTERNAL_SERVER_ERROR_500);
             }
@@ -690,7 +691,7 @@ public class HttpConnection implements Connection
             _generator.setResponse(_response.getStatus(), _response.getReason());
             try
             {
-                _generator.completeHeader(_responseFields, HttpGenerator.LAST);
+                _generator.completeHeader(_responseFields, Generator.LAST);
             }
             catch(IOException io)
             {
@@ -704,7 +705,7 @@ public class HttpConnection implements Connection
                 _response.reset();
                 _generator.reset(true);
                 _generator.setResponse(HttpStatus.INTERNAL_SERVER_ERROR_500,null);
-                _generator.completeHeader(_responseFields,HttpGenerator.LAST);
+                _generator.completeHeader(_responseFields,Generator.LAST);
                 _generator.complete();
                 throw new HttpException(HttpStatus.INTERNAL_SERVER_ERROR_500);
             }
@@ -718,7 +719,7 @@ public class HttpConnection implements Connection
     {
         try
         {
-            commitResponse(HttpGenerator.MORE);
+            commitResponse(Generator.MORE);
             _generator.flushBuffer();
         }
         catch(IOException e)
@@ -792,6 +793,7 @@ public class HttpConnection implements Connection
          * @see org.eclipse.jetty.server.server.HttpParser.EventHandler#startRequest(org.eclipse.io.Buffer,
          *      org.eclipse.io.Buffer, org.eclipse.io.Buffer)
          */
+        @Override
         public void startRequest(Buffer method, Buffer uri, Buffer version) throws IOException
         {
             _host = false;
@@ -835,6 +837,7 @@ public class HttpConnection implements Connection
         /*
          * @see org.eclipse.jetty.server.server.HttpParser.EventHandler#parsedHeaderValue(org.eclipse.io.Buffer)
          */
+        @Override
         public void parsedHeader(Buffer name, Buffer value)
         {
             int ho = HttpHeaders.CACHE.getOrdinal(name);
@@ -939,6 +942,7 @@ public class HttpConnection implements Connection
         /*
          * @see org.eclipse.jetty.server.server.HttpParser.EventHandler#headerComplete()
          */
+        @Override
         public void headerComplete() throws IOException
         {
             _requests++;
@@ -989,6 +993,7 @@ public class HttpConnection implements Connection
         /*
          * @see org.eclipse.jetty.server.server.HttpParser.EventHandler#content(int, org.eclipse.io.Buffer)
          */
+        @Override
         public void content(Buffer ref) throws IOException
         {
             if (_delayedHandling)
@@ -1004,6 +1009,7 @@ public class HttpConnection implements Connection
          *
          * @see org.eclipse.jetty.server.server.HttpParser.EventHandler#messageComplete(int)
          */
+        @Override
         public void messageComplete(long contentLength) throws IOException
         {
             if (_delayedHandling)
@@ -1020,6 +1026,7 @@ public class HttpConnection implements Connection
          * @see org.eclipse.jetty.server.server.HttpParser.EventHandler#startResponse(org.eclipse.io.Buffer, int,
          *      org.eclipse.io.Buffer)
          */
+        @Override
         public void startResponse(Buffer version, int status, Buffer reason)
         {
             Log.debug("Bad request!: "+version+" "+status+" "+reason);
@@ -1042,13 +1049,14 @@ public class HttpConnection implements Connection
         /*
          * @see java.io.OutputStream#close()
          */
+        @Override
         public void close() throws IOException
         {
             if (_closed)
                 return;
 
             if (!isIncluding() && !super._generator.isCommitted())
-                commitResponse(HttpGenerator.LAST);
+                commitResponse(Generator.LAST);
             else
                 flushResponse();
 
@@ -1060,10 +1068,11 @@ public class HttpConnection implements Connection
         /*
          * @see java.io.OutputStream#flush()
          */
+        @Override
         public void flush() throws IOException
         {
             if (!super._generator.isCommitted())
-                commitResponse(HttpGenerator.MORE);
+                commitResponse(Generator.MORE);
             super.flush();
         }
 
@@ -1071,6 +1080,7 @@ public class HttpConnection implements Connection
         /*
          * @see javax.servlet.ServletOutputStream#print(java.lang.String)
          */
+        @Override
         public void print(String s) throws IOException
         {
             if (_closed)
@@ -1151,8 +1161,8 @@ public class HttpConnection implements Connection
 
             if (content instanceof Buffer)
             {
-                super._generator.addContent((Buffer) content, HttpGenerator.LAST);
-                commitResponse(HttpGenerator.LAST);
+                super._generator.addContent((Buffer) content, Generator.LAST);
+                commitResponse(Generator.LAST);
             }
             else if (content instanceof InputStream)
             {

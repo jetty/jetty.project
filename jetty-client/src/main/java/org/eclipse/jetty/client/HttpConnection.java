@@ -49,7 +49,6 @@ public class HttpConnection implements Connection
     private boolean _http11 = true;
     private Buffer _connectionHeader;
     private Buffer _requestContentChunk;
-    private long _last;
     private boolean _requestComplete;
     private boolean _reserved;
     // The current exchange waiting for a response
@@ -527,6 +526,7 @@ public class HttpConnection implements Connection
         }
     }
 
+    @Override
     public String toString()
     {
         return "HttpConnection@" + hashCode() + "//" + _destination.getAddress().getHost() + ":" + _destination.getAddress().getPort();

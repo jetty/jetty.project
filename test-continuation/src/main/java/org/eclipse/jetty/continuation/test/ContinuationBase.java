@@ -24,11 +24,11 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import junit.framework.TestCase;
+
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
-
-import junit.framework.TestCase;
 
 
 
@@ -314,6 +314,7 @@ public abstract class ContinuationBase extends TestCase
                     {
                         TimerTask complete = new TimerTask()
                         {
+                            @Override
                             public void run()
                             {
                                 try
@@ -343,6 +344,7 @@ public abstract class ContinuationBase extends TestCase
                     {
                         TimerTask resume = new TimerTask()
                         {
+                            @Override
                             public void run()
                             {
                                 ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","resume");
@@ -396,6 +398,7 @@ public abstract class ContinuationBase extends TestCase
                 {
                     TimerTask complete = new TimerTask()
                     {
+                        @Override
                         public void run()
                         {
                             try
@@ -425,6 +428,7 @@ public abstract class ContinuationBase extends TestCase
                 {
                     TimerTask resume = new TimerTask()
                     {
+                        @Override
                         public void run()
                         {
                             ((HttpServletResponse)response).addHeader("history","resume");

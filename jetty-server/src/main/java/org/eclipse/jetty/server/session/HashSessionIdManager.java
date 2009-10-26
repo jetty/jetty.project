@@ -108,6 +108,7 @@ public class HashSessionIdManager extends AbstractLifeCycle implements SessionId
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStart()
     {
         if (_random==null)
@@ -140,6 +141,7 @@ public class HashSessionIdManager extends AbstractLifeCycle implements SessionId
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStop()
     {
         if (_sessions!=null)

@@ -26,11 +26,11 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import junit.framework.TestCase;
+
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.log.Log;
-
-import junit.framework.TestCase;
 
 /**
  *

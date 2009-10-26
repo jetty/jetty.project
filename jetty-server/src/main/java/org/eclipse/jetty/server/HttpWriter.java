@@ -74,18 +74,21 @@ public class HttpWriter extends Writer
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void close() throws IOException
     {
         _out.close();
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void flush() throws IOException
     {
         _out.flush();
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void write (String s,int offset, int length) throws IOException
     {   
         while (length > MAX_OUTPUT_CHARS)
@@ -105,6 +108,7 @@ public class HttpWriter extends Writer
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void write (char[] s,int offset, int length) throws IOException
     {              
         HttpOutput out = _out; 

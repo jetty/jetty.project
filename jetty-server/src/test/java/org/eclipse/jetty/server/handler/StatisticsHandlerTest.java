@@ -17,11 +17,13 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
+
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.LocalConnector;
@@ -35,6 +37,7 @@ public class StatisticsHandlerTest extends TestCase
     private LatchHandler _latchHandler;
     private StatisticsHandler _statsHandler;
 
+    @Override
     protected void setUp() throws Exception
     {
         _server = new Server();
@@ -49,6 +52,7 @@ public class StatisticsHandlerTest extends TestCase
         _latchHandler.setHandler(_statsHandler);
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _server.stop();
@@ -236,6 +240,7 @@ public class StatisticsHandlerTest extends TestCase
     {
         private volatile CountDownLatch latch = new CountDownLatch(1);
 
+        @Override
         public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
         {
             try

@@ -18,9 +18,10 @@ package org.eclipse.jetty.logging;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import org.eclipse.jetty.logging.impl.io.LogIO;
 
 import junit.framework.TestCase;
+
+import org.eclipse.jetty.logging.impl.io.LogIO;
 
 /**
  * Common utility methods for working with JUnit tests cases in a maven friendly way.

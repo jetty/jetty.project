@@ -40,7 +40,6 @@ import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -58,6 +57,7 @@ public class SslSecurityListenerTest extends TestCase
     protected int _type = HttpClient.CONNECTOR_SOCKET;
     private static final String APP_CONTEXT = "localhost /";
 
+    @Override
     protected void setUp() throws Exception
     {
         startServer();
@@ -89,6 +89,7 @@ public class SslSecurityListenerTest extends TestCase
         _httpClient.setRealmResolver(resolver);
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         Thread.sleep(1000);
@@ -103,6 +104,7 @@ public class SslSecurityListenerTest extends TestCase
         
         ContentExchange httpExchange = new ContentExchange(true)
         {
+            @Override
             protected void onResponseComplete() throws IOException
             {
                 super.onResponseComplete();

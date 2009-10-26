@@ -100,6 +100,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     /* (non-Javadoc)
      * @see org.eclipse.io.nio.SelectChannelEndPoint#idleExpired()
      */
+    @Override
     protected void idleExpired()
     {
         try
@@ -125,6 +126,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void close() throws IOException
     {
         // TODO - this really should not be done in a loop here - but with async callbacks.
@@ -816,18 +818,21 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isBufferingInput()
     {
         return _inNIOBuffer.hasContent();
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isBufferingOutput()
     {
         return _outNIOBuffer.hasContent();
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isBufferred()
     {
         return true;
@@ -840,6 +845,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return super.toString()+","+_engine.getHandshakeStatus()+", in/out="+_inNIOBuffer.length()+"/"+_outNIOBuffer.length()+" "+_result;

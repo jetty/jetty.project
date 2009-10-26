@@ -76,6 +76,7 @@ public class RandomAccessFileBuffer extends AbstractBuffer implements Buffer
         return _capacity;
     }
 
+    @Override
     public void clear()
     {
         try
@@ -93,6 +94,7 @@ public class RandomAccessFileBuffer extends AbstractBuffer implements Buffer
     }
 
 
+    @Override
     public byte peek()
     {
         synchronized (_file)
@@ -158,6 +160,7 @@ public class RandomAccessFileBuffer extends AbstractBuffer implements Buffer
         }
     }
 
+    @Override
     public int poke(int index, byte[] b, int offset, int length)
     {
         synchronized (_file)

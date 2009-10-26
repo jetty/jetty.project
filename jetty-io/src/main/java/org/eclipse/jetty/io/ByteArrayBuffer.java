@@ -97,6 +97,7 @@ public class ByteArrayBuffer extends AbstractBuffer
         return _bytes.length;
     }
     
+    @Override
     public void compact()
     {
         if (isReadOnly()) 
@@ -116,6 +117,7 @@ public class ByteArrayBuffer extends AbstractBuffer
     }
 
 
+    @Override
     public boolean equals(Object obj)
     {
         if (obj==this)
@@ -155,6 +157,7 @@ public class ByteArrayBuffer extends AbstractBuffer
     }
 
 
+    @Override
     public boolean equalsIgnoreCase(Buffer b)
     {
         if (b==this)
@@ -206,11 +209,13 @@ public class ByteArrayBuffer extends AbstractBuffer
         return true;
     }
 
+    @Override
     public byte get()
     {
         return _bytes[_get++];
     }
 
+    @Override
     public int hashCode()
     {
         if (_hash == 0 || _hashGet!=_get || _hashPut!=_put) 
@@ -268,6 +273,7 @@ public class ByteArrayBuffer extends AbstractBuffer
         _bytes[index] = b;
     }
     
+    @Override
     public int poke(int index, Buffer src)
     {
         _hash=0;
@@ -303,6 +309,7 @@ public class ByteArrayBuffer extends AbstractBuffer
     }
     
 
+    @Override
     public int poke(int index, byte[] b, int offset, int length)
     {
         _hash=0;
@@ -358,6 +365,7 @@ public class ByteArrayBuffer extends AbstractBuffer
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void writeTo(OutputStream out)
         throws IOException
     {
@@ -366,6 +374,7 @@ public class ByteArrayBuffer extends AbstractBuffer
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public int readFrom(InputStream in,int max) throws IOException
     {
         if (max<0||max>space())
@@ -394,6 +403,7 @@ public class ByteArrayBuffer extends AbstractBuffer
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public int space()
     {
         return _bytes.length - _put;
@@ -415,6 +425,7 @@ public class ByteArrayBuffer extends AbstractBuffer
             super(b,o,l,rw);
         }
 
+        @Override
         public boolean equals(Object obj)
         {
             return obj instanceof Buffer && equalsIgnoreCase((Buffer)obj);

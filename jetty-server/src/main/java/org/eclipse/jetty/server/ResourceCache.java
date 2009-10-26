@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -266,6 +265,7 @@ public class ResourceCache extends AbstractLifeCycle
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public synchronized void doStart()
         throws Exception
     {
@@ -277,6 +277,7 @@ public class ResourceCache extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /** Stop the context.
      */
+    @Override
     public void doStop()
         throws InterruptedException
     {
@@ -528,6 +529,7 @@ public class ResourceCache extends AbstractLifeCycle
         }   
 
         /* ------------------------------------------------------------ */
+        @Override
         public String toString()
         {
             return "{"+_resource+","+_contentType+","+_lastModifiedBytes+"}";
@@ -549,6 +551,7 @@ public class ResourceCache extends AbstractLifeCycle
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         boolean isValid()
         {
             if (_resource.exists())

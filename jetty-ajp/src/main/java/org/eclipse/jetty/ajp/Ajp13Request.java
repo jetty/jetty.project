@@ -47,6 +47,7 @@ public class Ajp13Request extends Request
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getRemoteUser()
     {
         if(_remoteUser != null)
@@ -55,6 +56,7 @@ public class Ajp13Request extends Request
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getRemoteAddr()
     {
         if (_remoteAddr != null)
@@ -67,12 +69,14 @@ public class Ajp13Request extends Request
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setRemoteAddr(String remoteAddr)
     {
         _remoteAddr = remoteAddr;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getRemoteHost()
     {
         if (_remoteHost != null)
@@ -83,6 +87,7 @@ public class Ajp13Request extends Request
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setRemoteHost(String remoteHost)
     {
         _remoteHost = remoteHost;
@@ -101,6 +106,7 @@ public class Ajp13Request extends Request
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void recycle()
     {
         super.recycle();

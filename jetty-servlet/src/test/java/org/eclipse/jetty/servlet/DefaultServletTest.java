@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
+
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;

@@ -25,6 +25,7 @@ public class WebdavSupportedExchange extends HttpExchange
     private boolean _webdavSupported = false;
     private boolean _isComplete = false;
 
+    @Override
     protected void onResponseHeader(Buffer name, Buffer value) throws IOException
     {
         if (Log.isDebugEnabled())
@@ -51,6 +52,7 @@ public class WebdavSupportedExchange extends HttpExchange
         }
     }
 
+    @Override
     protected void onResponseComplete() throws IOException
     {
         _isComplete = true;

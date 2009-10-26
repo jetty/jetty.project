@@ -66,6 +66,7 @@ public class HashSessionManager extends AbstractSessionManager
     /* (non-Javadoc)
      * @see org.eclipse.jetty.servlet.AbstractSessionManager#doStart()
      */
+    @Override
     public void doStart() throws Exception
     {
         _sessions=new ConcurrentHashMap(); // TODO: use syncronizedMap for JDK 1.4
@@ -91,6 +92,7 @@ public class HashSessionManager extends AbstractSessionManager
     /* (non-Javadoc)
      * @see org.eclipse.jetty.servlet.AbstractSessionManager#doStop()
      */
+    @Override
     public void doStop() throws Exception
     {
         
@@ -126,6 +128,7 @@ public class HashSessionManager extends AbstractSessionManager
 
     
     /* ------------------------------------------------------------ */
+    @Override
     public Map getSessionMap()
     {
         return Collections.unmodifiableMap(_sessions);
@@ -133,6 +136,7 @@ public class HashSessionManager extends AbstractSessionManager
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public int getSessions()
     {
         return _sessions.size();
@@ -140,6 +144,7 @@ public class HashSessionManager extends AbstractSessionManager
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setMaxInactiveInterval(int seconds)
     {
         super.setMaxInactiveInterval(seconds);
@@ -166,6 +171,7 @@ public class HashSessionManager extends AbstractSessionManager
                 {
                     _saveTask = new TimerTask()
                     {
+                        @Override
                         public void run()
                         {
                             try
@@ -218,6 +224,7 @@ public class HashSessionManager extends AbstractSessionManager
                     _task.cancel();
                 _task = new TimerTask()
                 {
+                    @Override
                     public void run()
                     {
                         scavenge();
@@ -307,12 +314,14 @@ public class HashSessionManager extends AbstractSessionManager
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     protected void addSession(AbstractSessionManager.Session session)
     {
         _sessions.put(session.getClusterId(),session);
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public AbstractSessionManager.Session getSession(String idInCluster)
     {
         try
@@ -332,6 +341,7 @@ public class HashSessionManager extends AbstractSessionManager
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void invalidateSessions()
     {
         // Invalidate all sessions to cause unbind events
@@ -346,6 +356,7 @@ public class HashSessionManager extends AbstractSessionManager
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected AbstractSessionManager.Session newSession(HttpServletRequest request)
     {
         return new Session(request);
@@ -358,6 +369,7 @@ public class HashSessionManager extends AbstractSessionManager
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     protected void removeSession(String clusterId)
     {
         _sessions.remove(clusterId);
@@ -530,6 +542,7 @@ public class HashSessionManager extends AbstractSessionManager
         }
         
         /* ------------------------------------------------------------- */
+        @Override
         public void setMaxInactiveInterval(int secs)
         {
             super.setMaxInactiveInterval(secs);
@@ -538,6 +551,7 @@ public class HashSessionManager extends AbstractSessionManager
         }
         
         /* ------------------------------------------------------------ */
+        @Override
         protected Map newAttributeMap()
         {
             return new HashMap(3);
@@ -545,6 +559,7 @@ public class HashSessionManager extends AbstractSessionManager
         
 
         /* ------------------------------------------------------------ */
+        @Override
         public void invalidate ()
         throws IllegalStateException
         {
@@ -635,6 +650,7 @@ public class HashSessionManager extends AbstractSessionManager
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public Class resolveClass (java.io.ObjectStreamClass cl) throws IOException, ClassNotFoundException
         {
             try

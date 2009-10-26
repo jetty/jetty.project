@@ -17,12 +17,10 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
@@ -31,15 +29,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
 
-import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ExecutorThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class StressTest extends TestCase
 {
@@ -63,6 +58,7 @@ public class StressTest extends TestCase
             };
     private Random _random=new Random();
 
+    @Override
     protected void setUp() throws Exception
     {
         _stress= Boolean.getBoolean("STRESS");
@@ -82,7 +78,7 @@ public class StressTest extends TestCase
         _server.setHandler(_handler);
         _server.start();
         _port=_connector.getLocalPort();
-        _addr=Inet4Address.getLocalHost();
+        _addr=InetAddress.getLocalHost();
         // _addr=Inet4Address.getByName("10.10.1.16");
         // System.err.println("ADDR "+_addr+":"+_port);
         
@@ -91,6 +87,7 @@ public class StressTest extends TestCase
         _handled.set(0);
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _server.stop();
@@ -251,6 +248,7 @@ public class StressTest extends TestCase
                 final String name = "T"+i;
                 thread[i]=new Thread()
                 {
+                    @Override
                     public void run() 
                     { 
                         try
@@ -435,6 +433,7 @@ public class StressTest extends TestCase
             _timer=new Timer();
         }
         
+        @Override
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
             long now=System.currentTimeMillis();

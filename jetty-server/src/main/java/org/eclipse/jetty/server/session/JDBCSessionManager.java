@@ -231,6 +231,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             return _virtualHost;
         }
         
+        @Override
         public String toString ()
         {
             return "Session rowId="+_rowId+",id="+_id+",lastNode="+_lastNode+
@@ -280,24 +281,28 @@ public class JDBCSessionManager extends AbstractSessionManager
              _values=data.getAttributeMap();
          }
         
-         protected Map newAttributeMap()
+         @Override
+        protected Map newAttributeMap()
          {
              return _data.getAttributeMap();
          }
          
-         public void setAttribute (String name, Object value)
+         @Override
+        public void setAttribute (String name, Object value)
          {
              super.setAttribute(name, value);
              _dirty=true;
          }
 
-         public void removeAttribute (String name)
+         @Override
+        public void removeAttribute (String name)
          {
              super.removeAttribute(name); 
              _dirty=true;
          }
          
-         protected void cookieSet()
+         @Override
+        protected void cookieSet()
          {
              _data.setCookieSet(_data.getAccessed());
          }
@@ -308,6 +313,7 @@ public class JDBCSessionManager extends AbstractSessionManager
          * 
          * @see org.eclipse.jetty.server.session.AbstractSessionManager.Session#access(long)
          */
+        @Override
         protected void access(long time)
         {
             super.access(time);
@@ -320,6 +326,7 @@ public class JDBCSessionManager extends AbstractSessionManager
          * Exit from session
          * @see org.eclipse.jetty.server.session.AbstractSessionManager.Session#complete()
          */
+        @Override
         protected void complete()
         {
             super.complete();
@@ -347,6 +354,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             }
         }
         
+        @Override
         protected void timeout() throws IllegalStateException
         {
             if (Log.isDebugEnabled()) Log.debug("Timing out session id="+getClusterId());
@@ -374,6 +382,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             super();
         }
 
+        @Override
         public Class resolveClass (java.io.ObjectStreamClass cl) throws IOException, ClassNotFoundException
         {
             try
@@ -435,6 +444,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * 
      * @see org.eclipse.jetty.server.session.AbstractSessionManager#getSession(java.lang.String)
      */
+    @Override
     public Session getSession(String idInCluster)
     {
         Session session = (Session)_sessions.get(idInCluster);
@@ -502,6 +512,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * 
      * @see org.eclipse.jetty.server.session.AbstractSessionManager#getSessionMap()
      */
+    @Override
     public Map getSessionMap()
     {
        return Collections.unmodifiableMap(_sessions);
@@ -513,6 +524,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * 
      * @see org.eclipse.jetty.server.session.AbstractSessionManager#getSessions()
      */
+    @Override
     public int getSessions()
     {
         int size = 0;
@@ -529,6 +541,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * 
      * @see org.eclipse.jetty.server.session.AbstractSessionManager#doStart()
      */
+    @Override
     public void doStart() throws Exception
     {
         if (_sessionIdManager==null)
@@ -546,6 +559,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * 
      * @see org.eclipse.jetty.server.session.AbstractSessionManager#doStop()
      */
+    @Override
     public void doStop() throws Exception
     {
         _sessions.clear();
@@ -554,6 +568,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         super.doStop();
     } 
     
+    @Override
     protected void invalidateSessions()
     {
         //Do nothing - we don't want to remove and
@@ -588,6 +603,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * 
      * @see org.eclipse.jetty.server.session.AbstractSessionManager#removeSession(java.lang.String)
      */
+    @Override
     protected void removeSession(String idInCluster)
     {
         synchronized (this)
@@ -610,6 +626,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * 
      * @see org.eclipse.jetty.server.session.AbstractSessionManager#addSession(org.eclipse.jetty.server.session.AbstractSessionManager.Session)
      */
+    @Override
     protected void addSession(AbstractSessionManager.Session session)
     {
         if (session==null)
@@ -639,6 +656,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * 
      * @see org.eclipse.jetty.server.session.AbstractSessionManager#newSession(javax.servlet.http.HttpServletRequest)
      */
+    @Override
     protected AbstractSessionManager.Session newSession(HttpServletRequest request)
     {
         return new Session(request);
@@ -650,6 +668,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * @param invalidate True if {@link HttpSessionListener#sessionDestroyed(HttpSessionEvent)} and
      * {@link SessionIdManager#invalidateAll(String)} should be called.
      */
+    @Override
     public void removeSession(AbstractSessionManager.Session session, boolean invalidate)
     {
         // Remove session from context and global maps

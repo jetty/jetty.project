@@ -273,6 +273,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      * @deprecated use {@link #getSslKeyManagerFactoryAlgorithm()} or 
      * {@link #getSslTrustManagerFactoryAlgorithm()}
      */
+    @Deprecated
     public String getAlgorithm()
     {
         return getSslKeyManagerFactoryAlgorithm();
@@ -283,6 +284,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      * @deprecated use {@link #setSslKeyManagerFactoryAlgorithm(String)} or 
      * {@link #setSslTrustManagerFactoryAlgorithm(String)}
      */
+    @Deprecated
     public void setAlgorithm(String algorithm)
     {
         setSslKeyManagerFactoryAlgorithm(algorithm);
@@ -525,6 +527,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      * client certs providing CONFIDENTIAL, whereas another SSL listener not
      * requiring client certs providing mere INTEGRAL constraints.
      */
+    @Override
     public boolean isConfidential(Request request)
     {
         final int confidentialPort=getConfidentialPort();
@@ -540,6 +543,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      * client certs providing CONFIDENTIAL, whereas another SSL listener not
      * requiring client certs providing mere INTEGRAL constraints.
      */
+    @Override
     public boolean isIntegral(Request request)
     {
         final int integralPort=getIntegralPort();
@@ -547,12 +551,14 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
         return new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,createSSLEngine());
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
     {
         HttpConnection connection=(HttpConnection)super.newConnection(channel,endpoint);
@@ -603,6 +609,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     }
 
    
+    @Override
     protected void doStart() throws Exception
     {
     	if (_context == null)

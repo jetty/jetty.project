@@ -35,6 +35,7 @@ public class ContinuationTest extends ContinuationBase
     protected SelectChannelConnector _connector;
     FilterHolder _filter;
 
+    @Override
     protected void setUp() throws Exception
     {
         _connector = new SelectChannelConnector();
@@ -50,6 +51,7 @@ public class ContinuationTest extends ContinuationBase
         
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _server.stop();

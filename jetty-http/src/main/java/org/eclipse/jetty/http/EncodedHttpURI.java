@@ -33,6 +33,7 @@ public class EncodedHttpURI extends HttpURI
     }
     
     
+    @Override
     public String getScheme()
     {
         if (_scheme==_authority)
@@ -55,6 +56,7 @@ public class EncodedHttpURI extends HttpURI
         return StringUtil.toString(_raw,_scheme,_authority-_scheme-1,_encoding);
     }
     
+    @Override
     public String getAuthority()
     {
         if (_authority==_path)
@@ -62,6 +64,7 @@ public class EncodedHttpURI extends HttpURI
         return StringUtil.toString(_raw,_authority,_path-_authority,_encoding);
     }
     
+    @Override
     public String getHost()
     {
         if (_host==_port)
@@ -69,6 +72,7 @@ public class EncodedHttpURI extends HttpURI
         return StringUtil.toString(_raw,_host,_port-_host,_encoding);
     }
     
+    @Override
     public int getPort()
     {
         if (_port==_path)
@@ -76,6 +80,7 @@ public class EncodedHttpURI extends HttpURI
         return TypeUtil.parseInt(_raw, _port+1, _path-_port-1,10);
     }
     
+    @Override
     public String getPath()
     {
         if (_path==_param)
@@ -83,6 +88,7 @@ public class EncodedHttpURI extends HttpURI
         return StringUtil.toString(_raw,_path,_param-_path,_encoding);
     }
     
+    @Override
     public String getDecodedPath()
     {
         if (_path==_param)
@@ -90,6 +96,7 @@ public class EncodedHttpURI extends HttpURI
         return URIUtil.decodePath(_raw,_path,_param-_path);
     }
     
+    @Override
     public String getPathAndParam()
     {
         if (_path==_query)
@@ -97,6 +104,7 @@ public class EncodedHttpURI extends HttpURI
         return StringUtil.toString(_raw,_path,_query-_path,_encoding);
     }
     
+    @Override
     public String getCompletePath()
     {
         if (_path==_end)
@@ -104,6 +112,7 @@ public class EncodedHttpURI extends HttpURI
         return StringUtil.toString(_raw,_path,_end-_path,_encoding);
     }
     
+    @Override
     public String getParam()
     {
         if (_param==_query)
@@ -111,6 +120,7 @@ public class EncodedHttpURI extends HttpURI
         return StringUtil.toString(_raw,_param+1,_query-_param-1,_encoding);
     }
     
+    @Override
     public String getQuery()
     {
         if (_query==_fragment)
@@ -118,11 +128,13 @@ public class EncodedHttpURI extends HttpURI
         return StringUtil.toString(_raw,_query+1,_fragment-_query-1,_encoding);
     }
     
+    @Override
     public boolean hasQuery()
     {
         return (_fragment>_query);
     }
     
+    @Override
     public String getFragment()
     {
         if (_fragment==_end)
@@ -130,6 +142,7 @@ public class EncodedHttpURI extends HttpURI
         return StringUtil.toString(_raw,_fragment+1,_end-_fragment-1,_encoding);
     }
 
+    @Override
     public void decodeQueryTo(MultiMap parameters) 
     {
         if (_query==_fragment)
@@ -137,6 +150,7 @@ public class EncodedHttpURI extends HttpURI
         UrlEncoded.decodeTo(StringUtil.toString(_raw,_query+1,_fragment-_query-1,_encoding),parameters,_encoding);
     }
 
+    @Override
     public void decodeQueryTo(MultiMap parameters, String encoding) 
         throws UnsupportedEncodingException
     {
@@ -148,6 +162,7 @@ public class EncodedHttpURI extends HttpURI
         UrlEncoded.decodeTo(StringUtil.toString(_raw,_query+1,_fragment-_query-1,encoding),parameters,encoding);
     }
     
+    @Override
     public String toString()
     {
         if (_rawString==null)

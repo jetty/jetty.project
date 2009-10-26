@@ -14,9 +14,7 @@
 package org.eclipse.jetty.webapp;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
@@ -25,7 +23,6 @@ import java.util.HashSet;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;

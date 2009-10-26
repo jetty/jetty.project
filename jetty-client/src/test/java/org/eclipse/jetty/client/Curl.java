@@ -2,7 +2,6 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HttpMethods;

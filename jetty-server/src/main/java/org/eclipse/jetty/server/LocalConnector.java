@@ -59,6 +59,7 @@ public class LocalConnector extends AbstractConnector
         return request.getResponsesBuffer();
     }
 
+    @Override
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
         Request request = requests.take();

@@ -25,7 +25,6 @@ import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
@@ -146,6 +145,7 @@ public class ContextHandlerCollection extends HandlerCollection
     /* 
      * @see org.eclipse.jetty.server.server.handler.HandlerCollection#setHandlers(org.eclipse.jetty.server.server.Handler[])
      */
+    @Override
     public void setHandlers(Handler[] handlers)
     {
         _contextMap=null;
@@ -155,6 +155,7 @@ public class ContextHandlerCollection extends HandlerCollection
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStart() throws Exception
     {
         mapContexts();
@@ -166,6 +167,7 @@ public class ContextHandlerCollection extends HandlerCollection
     /* 
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         Handler[] handlers = getHandlers();

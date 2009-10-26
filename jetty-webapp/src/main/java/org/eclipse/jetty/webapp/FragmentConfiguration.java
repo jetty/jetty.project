@@ -15,7 +15,6 @@
 package org.eclipse.jetty.webapp;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.resource.Resource;
 

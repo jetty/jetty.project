@@ -37,6 +37,7 @@ public class NonBlockingHttpExchangeCancelTest extends AbstractHttpExchangeCance
         super.tearDown();
     }
 
+    @Override
     protected HttpClient getHttpClient()
     {
         return httpClient;

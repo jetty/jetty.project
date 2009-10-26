@@ -15,7 +15,6 @@ package org.eclipse.jetty.webapp.verifier.rules;
 import org.eclipse.jetty.webapp.verifier.AbstractTestWebappVerifier;
 import org.eclipse.jetty.webapp.verifier.MavenTestingUtils;
 import org.eclipse.jetty.webapp.verifier.WebappVerifier;
-import org.eclipse.jetty.webapp.verifier.rules.JarSignatureRule;
 
 /**
  * Tests against {@link JarSignatureRule}

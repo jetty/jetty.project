@@ -15,12 +15,14 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
+
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;

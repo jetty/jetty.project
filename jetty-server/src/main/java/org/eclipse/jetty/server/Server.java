@@ -13,12 +13,9 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -33,7 +30,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.bio.SocketConnector;
-import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.Attributes;
@@ -44,7 +40,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
@@ -190,6 +185,7 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStart() throws Exception
     {
         if (getStopAtShutdown())
@@ -253,6 +249,7 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStop() throws Exception
     {
         MultiException mex=new MultiException();
@@ -444,6 +441,7 @@ public class Server extends HandlerWrapper implements Attributes
      * @deprecated Use {@link #addBean(LifeCycle)}
      * @param c
      */
+    @Deprecated
     public void addLifeCycle (LifeCycle c)
     {
         addBean(c);
@@ -503,6 +501,7 @@ public class Server extends HandlerWrapper implements Attributes
      * along with the Server
      * @deprecated Use {@link #removeBean(Object)}
      */
+    @Deprecated
     public void removeLifeCycle (LifeCycle c)
     {
         removeBean(c);
@@ -600,6 +599,7 @@ public class Server extends HandlerWrapper implements Attributes
         /**
          * Stop all Servers in list.
          */
+        @Override
         public void run()
         {
             setName("Shutdown");
@@ -700,6 +700,7 @@ public class Server extends HandlerWrapper implements Attributes
         _graceful=timeoutMS;
     }
     
+    @Override
     public String toString()
     {
         return this.getClass().getName()+"@"+Integer.toHexString(hashCode());

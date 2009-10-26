@@ -22,9 +22,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlProcessor;
 import org.eclipse.jetty.webapp.WebXmlProcessor.Descriptor;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
 
 
 public abstract class AbstractConfiguration implements Configuration

@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.util.EventListener;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
@@ -191,6 +192,7 @@ public interface SessionManager extends LifeCycle
      * @return the cross context session id manager.
      * @deprecated use {@link #getIdManager()}
      */
+    @Deprecated
     public SessionIdManager getMetaManager();
 
     /* ------------------------------------------------------------ */

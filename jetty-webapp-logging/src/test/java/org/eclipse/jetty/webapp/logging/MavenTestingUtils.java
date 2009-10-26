@@ -18,6 +18,7 @@ package org.eclipse.jetty.webapp.logging;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.util.IO;

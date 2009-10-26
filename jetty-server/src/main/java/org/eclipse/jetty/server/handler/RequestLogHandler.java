@@ -20,7 +20,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.DispatcherType;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
@@ -44,6 +43,7 @@ public class RequestLogHandler extends HandlerWrapper
     /* 
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {
@@ -87,6 +87,7 @@ public class RequestLogHandler extends HandlerWrapper
     /* 
      * @see org.eclipse.jetty.server.server.handler.HandlerWrapper#setServer(org.eclipse.jetty.server.server.Server)
      */
+    @Override
     public void setServer(Server server)
     {
         if (_requestLog!=null)
@@ -111,6 +112,7 @@ public class RequestLogHandler extends HandlerWrapper
     /* 
      * @see org.eclipse.jetty.server.server.handler.HandlerWrapper#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         super.doStart();
@@ -122,6 +124,7 @@ public class RequestLogHandler extends HandlerWrapper
     /* 
      * @see org.eclipse.jetty.server.server.handler.HandlerWrapper#doStop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         super.doStop();

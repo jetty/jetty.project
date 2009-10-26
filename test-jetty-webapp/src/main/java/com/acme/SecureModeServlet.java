@@ -93,13 +93,12 @@ public class SecureModeServlet extends HttpServlet
         out.println("    <h1>Checking Classloader Setup</h1>");
         out.println("      <p>");
 
-        String userDir = System.getProperty("user.dir");
+        System.getProperty("user.dir");
         try
         {
             out.println("check ability to create classloader<br/>");
             URL url = new URL("http://not.going.to.work");
-            URLClassLoader cl = new URLClassLoader(new URL[]
-            { url });
+            new URLClassLoader(new URL[] { url });
             out.println("status: <b>SUCCESS - unexpected</b><br/>");
         }
         catch (SecurityException e)
@@ -282,7 +281,7 @@ public class SecureModeServlet extends HttpServlet
         try
         {
             out.println("check read permission for __ALLOWED_READ_PROPERTY <br/>");
-            String value = System.getProperty("__ALLOWED_READ_PROPERTY");
+            System.getProperty("__ALLOWED_READ_PROPERTY");
             out.println("status: <b>SUCCESS - expected</b><br/>");
         }
         catch (SecurityException e)
@@ -314,7 +313,7 @@ public class SecureModeServlet extends HttpServlet
         try
         {
             out.println("check read permission for __ALLOWED_WRITE_PROPERTY<br/>");
-            String value = System.getProperty("__ALLOWED_WRITE_PROPERTY");
+            System.getProperty("__ALLOWED_WRITE_PROPERTY");
             out.println("Status: <b>SUCCESS - expected</b><br/>");
         }
         catch (SecurityException e)
@@ -349,7 +348,7 @@ public class SecureModeServlet extends HttpServlet
         try
         {
             out.println("check read permission for __UNDECLARED_PROPERTY: <br/>");
-            String value = System.getProperty("__UNDECLARED_PROPERTY");
+            System.getProperty("__UNDECLARED_PROPERTY");
             out.println("status: <b>SUCCESS - expected</b><br/>");
         }
         catch (SecurityException e)

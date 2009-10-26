@@ -164,6 +164,7 @@ public class WebAppDeployer extends AbstractLifeCycle
     /**
      * @throws Exception 
      */
+    @Override
     public void doStart() throws Exception
     {
         _deployed=new ArrayList();
@@ -292,6 +293,7 @@ public class WebAppDeployer extends AbstractLifeCycle
         }
     }
     
+    @Override
     public void doStop() throws Exception
     {
         for (int i=_deployed.size();i-->0;)

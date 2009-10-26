@@ -21,8 +21,6 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.io.Connection;
@@ -196,6 +194,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
     /* (non-Javadoc)
      * @see org.eclipse.component.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         _selectSet = new SelectSet[_selectSets];
@@ -207,6 +206,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
 
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected void doStop() throws Exception
     {
         SelectSet[] sets= _selectSet;
@@ -596,7 +596,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
                     else if (__BUSY_KEY>0 && selected==1 && _selects>__MAX_SELECTS)
                     {
                         // Look for busy key
-                        SelectionKey busy = (SelectionKey)selector.selectedKeys().iterator().next();
+                        SelectionKey busy = selector.selectedKeys().iterator().next();
                         if (busy==_busyKey)
                         {
                             if (++_busyKeyCount>__BUSY_KEY)

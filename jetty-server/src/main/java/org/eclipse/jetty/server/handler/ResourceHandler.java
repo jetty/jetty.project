@@ -118,6 +118,7 @@ public class ResourceHandler extends AbstractHandler
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doStart()
     throws Exception
     {

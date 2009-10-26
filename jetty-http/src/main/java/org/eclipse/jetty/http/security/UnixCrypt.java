@@ -23,7 +23,6 @@
 
 package org.eclipse.jetty.http.security;
 
-import org.eclipse.jetty.util.StringUtil;
 
 /* ------------------------------------------------------------ */
 /**
@@ -141,10 +140,10 @@ public class UnixCrypt
         for (int i = 0; i < 64; i++)
         {
             int k;
-            if ((k = (int) PC2[i]) == 0) continue;
+            if ((k = PC2[i]) == 0) continue;
             k += Rotates[0] - 1;
             if ((k % 28) < Rotates[0]) k -= 28;
-            k = (int) PC1[k];
+            k = PC1[k];
             if (k > 0)
             {
                 k--;
@@ -163,12 +162,12 @@ public class UnixCrypt
                 perm[i] = temp[i] = 0;
             for (int i = 0; i < 64; i++)
             {
-                if ((k = (int) PC2[i]) == 0) continue;
+                if ((k = PC2[i]) == 0) continue;
                 temp[k - 1] = (byte) (i + 1);
             }
             for (int i = 0; i < 64; i++)
             {
-                if ((k = (int) PC2[i]) == 0) continue;
+                if ((k = PC2[i]) == 0) continue;
                 k += j;
                 if ((k % 28) <= j) k -= 28;
                 perm[i] = temp[k];
@@ -233,7 +232,7 @@ public class UnixCrypt
                     temp[4 * t + i] = (byte) ((k >> i) & 0x01);
                 long kk = 0;
                 for (int i = 24; --i >= 0;)
-                    kk = ((kk << 1) | ((long) temp[perm[i] - 1]) << 32 | ((long) temp[perm[i + 24] - 1]));
+                    kk = ((kk << 1) | ((long) temp[perm[i] - 1]) << 32 | (temp[perm[i + 24] - 1]));
 
                 SPE[t][j] = to_six_bit(kk);
             }

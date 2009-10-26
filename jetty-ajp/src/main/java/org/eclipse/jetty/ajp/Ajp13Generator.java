@@ -114,6 +114,7 @@ public class Ajp13Generator extends AbstractGenerator
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void reset(boolean returnBuffers)
     {
         super.reset(returnBuffers);
@@ -290,6 +291,7 @@ public class Ajp13Generator extends AbstractGenerator
      * @return the available space in the buffer.
      * @throws IOException
      */
+    @Override
     public int prepareUncheckedAddContent() throws IOException
     {
         if (_noContent)
@@ -327,6 +329,7 @@ public class Ajp13Generator extends AbstractGenerator
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void completeHeader(HttpFields fields, boolean allContentAdded) throws IOException
     {
         if (_state != STATE_HEADER)
@@ -438,6 +441,7 @@ public class Ajp13Generator extends AbstractGenerator
      * 
      * @throws IOException
      */
+    @Override
     public void complete() throws IOException
     {
         if (_state == STATE_END)
@@ -455,6 +459,7 @@ public class Ajp13Generator extends AbstractGenerator
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public long flushBuffer() throws IOException
     {
         try
@@ -699,6 +704,7 @@ public class Ajp13Generator extends AbstractGenerator
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isComplete()
     {
         return !_expectMore && _state == STATE_END;

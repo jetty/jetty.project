@@ -41,6 +41,7 @@ public abstract class AbstractHandler extends AbstractLifeCycle implements Handl
     /* 
      * @see org.eclipse.thread.LifeCycle#start()
      */
+    @Override
     protected void doStart() throws Exception
     {
         Log.debug("starting {}",this);
@@ -50,12 +51,14 @@ public abstract class AbstractHandler extends AbstractLifeCycle implements Handl
     /* 
      * @see org.eclipse.thread.LifeCycle#stop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         Log.debug("stopping {}",this);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         StringBuilder b=new StringBuilder();

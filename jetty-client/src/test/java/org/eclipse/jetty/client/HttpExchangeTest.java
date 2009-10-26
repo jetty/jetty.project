@@ -34,7 +34,6 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -57,6 +56,7 @@ public class HttpExchangeTest extends TestCase
     protected Connector _connector;
     protected AtomicInteger _count = new AtomicInteger();
 
+    @Override
     protected void setUp() throws Exception
     {
         startServer();
@@ -66,6 +66,7 @@ public class HttpExchangeTest extends TestCase
         _httpClient.start();
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _httpClient.stop();
@@ -115,40 +116,47 @@ public class HttpExchangeTest extends TestCase
             {
                 String result="pending";
                 int len=0;
+                @Override
                 protected void onRequestCommitted()
                 {
                     result="committed";
                     // System.err.println(n+" Request committed: "+close);
                 }
 
+                @Override
                 protected void onRequestComplete() throws IOException
                 {
                     result="sent";
                 }
 
+                @Override
                 protected void onResponseStatus(Buffer version, int status, Buffer reason)
                 {
                     result="status";
                     // System.err.println(n+" Response Status: " + version+" "+status+" "+reason);
                 }
 
+                @Override
                 protected void onResponseHeader(Buffer name, Buffer value)
                 {
                     // System.err.println(n+" Response header: " + name + " = " + value);
                 }
 
+                @Override
                 protected void onResponseHeaderComplete() throws IOException
                 {
                     result="content";
                     super.onResponseHeaderComplete();
                 }
 
+                @Override
                 protected void onResponseContent(Buffer content)
                 {
                     len+=content.length();
                     // System.err.println(n+" Response content:" + content.length());
                 }
 
+                @Override
                 protected void onResponseComplete()
                 {
                     result="complete";
@@ -160,6 +168,7 @@ public class HttpExchangeTest extends TestCase
                     complete.countDown();
                 }
 
+                @Override
                 protected void onConnectionFailed(Throwable ex)
                 {
                     complete.countDown();
@@ -168,6 +177,7 @@ public class HttpExchangeTest extends TestCase
                     super.onConnectionFailed(ex);
                 }
 
+                @Override
                 protected void onException(Throwable ex)
                 {
                     complete.countDown();
@@ -176,6 +186,7 @@ public class HttpExchangeTest extends TestCase
                     super.onException(ex);
                 }
 
+                @Override
                 protected void onExpire()
                 {
                     complete.countDown();
@@ -184,6 +195,7 @@ public class HttpExchangeTest extends TestCase
                     super.onExpire();
                 }
 
+                @Override
                 public String toString()
                 {
                     return n+" "+result+" "+len;

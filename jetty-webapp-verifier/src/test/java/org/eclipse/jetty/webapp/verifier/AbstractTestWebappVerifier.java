@@ -16,6 +16,7 @@
 package org.eclipse.jetty.webapp.verifier;
 
 import java.io.File;
+
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.util.IO;

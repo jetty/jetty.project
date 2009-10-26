@@ -425,6 +425,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStart() throws Exception
     {
         if (_logDateFormat != null)
@@ -460,6 +461,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStop() throws Exception
     {
         super.doStop();

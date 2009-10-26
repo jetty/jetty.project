@@ -359,7 +359,7 @@ public class UrlEncoded extends MultiMap
                         break;
                         
                     case '+':
-                        buffer.append((char)' ');
+                        buffer.append(' ');
                         break;
                         
                     case '%':
@@ -858,6 +858,7 @@ public class UrlEncoded extends MultiMap
     /* ------------------------------------------------------------ */
     /** 
      */
+    @Override
     public Object clone()
     {
         return new UrlEncoded(this);

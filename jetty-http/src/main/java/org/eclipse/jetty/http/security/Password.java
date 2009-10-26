@@ -68,6 +68,7 @@ public class Password extends Credential
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return _pw;
@@ -80,6 +81,7 @@ public class Password extends Credential
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean check(Object credentials)
     {
         if (this == credentials) return true;
@@ -96,6 +98,7 @@ public class Password extends Credential
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean equals(Object o)
     {
         if (this == o) 
@@ -118,6 +121,7 @@ public class Password extends Credential
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public int hashCode()
     {
         return null == _pw ? super.hashCode() : _pw.hashCode();

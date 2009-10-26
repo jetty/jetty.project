@@ -133,6 +133,7 @@ public class Slf4jLog implements Logger
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return _logger.toString();

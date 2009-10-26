@@ -143,6 +143,7 @@ public class PathMap extends HashMap implements Externalizable
      * path specifications.
      * @param object The object the path maps to
      */
+    @Override
     public Object put(Object pathSpec, Object object)
     {
         StringTokenizer tok = new StringTokenizer(pathSpec.toString(),__pathSpecSeparators);
@@ -335,6 +336,7 @@ public class PathMap extends HashMap implements Externalizable
     }
 
     /* --------------------------------------------------------------- */  
+    @Override
     public Object remove(Object pathSpec)
     {
         if (pathSpec!=null)
@@ -362,6 +364,7 @@ public class PathMap extends HashMap implements Externalizable
     }
     
     /* --------------------------------------------------------------- */
+    @Override
     public void clear()
     {
         _exactMap.clear();
@@ -537,6 +540,7 @@ public class PathMap extends HashMap implements Externalizable
             throw new UnsupportedOperationException();
         }
 
+        @Override
         public String toString()
         {
             if (string==null)

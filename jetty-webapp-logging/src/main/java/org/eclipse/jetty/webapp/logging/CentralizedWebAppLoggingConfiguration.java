@@ -17,6 +17,7 @@ package org.eclipse.jetty.webapp.logging;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+
 import org.eclipse.jetty.logging.impl.CentralLoggerConfig;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;

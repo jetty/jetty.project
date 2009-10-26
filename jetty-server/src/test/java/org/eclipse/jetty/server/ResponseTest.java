@@ -21,6 +21,7 @@ import java.net.Socket;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -28,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionContext;
 
 import junit.framework.TestCase;
+
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;

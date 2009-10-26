@@ -16,12 +16,14 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
+
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 

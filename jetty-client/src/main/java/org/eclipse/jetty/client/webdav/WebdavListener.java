@@ -57,6 +57,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         }
     }
 
+    @Override
     public void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
     {
         if ( !_webdavEnabled )
@@ -99,6 +100,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         super.onResponseStatus(version, status, reason);
     }
 
+    @Override
     public void onResponseComplete() throws IOException
     {
         _responseComplete = true;
@@ -147,6 +149,7 @@ public class WebdavListener extends HttpEventListenerWrapper
 
     
     
+    @Override
     public void onRequestComplete () throws IOException
     {
         _requestComplete = true;

@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */

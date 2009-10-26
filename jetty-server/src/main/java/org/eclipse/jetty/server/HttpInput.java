@@ -36,6 +36,7 @@ public class HttpInput extends ServletInputStream
     /*
      * @see java.io.InputStream#read()
      */
+    @Override
     public int read() throws IOException
     {
         int c=-1;
@@ -49,6 +50,7 @@ public class HttpInput extends ServletInputStream
     /* 
      * @see java.io.InputStream#read(byte[], int, int)
      */
+    @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
         int l=-1;

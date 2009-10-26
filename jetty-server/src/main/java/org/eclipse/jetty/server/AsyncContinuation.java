@@ -19,11 +19,10 @@ import java.util.List;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.ServletResponseWrapper;
 
-import org.eclipse.jetty.continuation.ContinuationThrowable;
-import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationListener;
+import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -183,6 +182,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         synchronized (this)
@@ -871,6 +871,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
             return _path;
         }
 
+        @Override
         public void expired()
         {
             AsyncContinuation.this.expired();
