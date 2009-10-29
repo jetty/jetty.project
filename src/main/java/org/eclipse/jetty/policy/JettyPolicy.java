@@ -94,29 +94,19 @@ public class JettyPolicy extends Policy
     public PermissionCollection getPermissions(ProtectionDomain domain)
     {
 
-        if (!_initialized)
+        synchronized (_initialized)
         {
-            synchronized (_initialized)
+            if (!_initialized)
             {
-                // make sure we haven't been initialized since obtaining lock
-                if (!_initialized)
-                {
-                    refresh();
-                }
+                refresh();
             }
-        }
-
-        if (_cache.containsKey(domain))
-        {
-            return _cache.get(domain);
         }
 
         synchronized (_cache)
         {
-            // check if it was added in since we obtained lock
             if (_cache.containsKey(domain))
             {
-                return _cache.get(domain);
+                return copyOf(_cache.get(domain));
             }
 
             PermissionCollection perms = new Permissions();
@@ -158,36 +148,26 @@ public class JettyPolicy extends Policy
 
             _cache.put(domain,perms);
 
-            return perms;
+            return copyOf(perms);
         }
     }
 
     @Override
     public PermissionCollection getPermissions(CodeSource codesource)
     {
-        if (!_initialized)
+        synchronized (_initialized)
         {
-            synchronized (_initialized)
+            if (!_initialized)
             {
-                // make sure we haven't been initialized since obtaining lock
-                if (!_initialized)
-                {
-                    refresh();
-                }
+                refresh();
             }
-        }
-
-        if (_cache.containsKey(codesource))
-        {
-            return _cache.get(codesource);
         }
 
         synchronized (_cache)
         {
-            // check if it was added in since we obtained lock
             if (_cache.containsKey(codesource))
             {
-                return _cache.get(codesource);
+                return copyOf(_cache.get(codesource));
             }
 
             PermissionCollection perms = new Permissions();
@@ -225,45 +205,16 @@ public class JettyPolicy extends Policy
 
             _cache.put(codesource,perms);
 
-            return perms;
+            return copyOf(perms);
         }
     }
 
     @Override
-    public boolean implies(ProtectionDomain domain, Permission permission) {
-        PermissionCollection pc;
-
-        if (!_initialized)
-        {
-            synchronized (_initialized)
-            {
-                // make sure we haven't been initialized since obtaining lock
-                if (!_initialized)
-                {
-                    refresh();
-                }
-            }
-        }
-
-        synchronized (_cache) {
-            pc = _cache.get(domain);
-        }
-
-        if (pc != null) {
-            return pc.implies(permission);
-        } 
+    public boolean implies(ProtectionDomain domain, Permission permission)
+    {
+        PermissionCollection pc = getPermissions(domain);
         
-        pc = getPermissions(domain);
-        if (pc == null) {
-            return false;
-        }
-
-        synchronized (_cache) {
-            // cache it 
-            _cache.put(domain, pc);
-        }
-        
-        return pc.implies(permission);
+        return (pc == null ? false : pc.implies(permission));
     }
     
 
@@ -397,5 +348,18 @@ public class JettyPolicy extends Policy
             }
         }
         write.flush();
+    }
+    
+    public PermissionCollection copyOf(final PermissionCollection in)
+    {
+        PermissionCollection out  = new Permissions();
+        synchronized (in)
+        {
+            for (Enumeration el = in.elements() ; el.hasMoreElements() ;)
+            {
+                out.add((Permission)el.nextElement());
+            }
+        }
+        return out;
     }
 }
