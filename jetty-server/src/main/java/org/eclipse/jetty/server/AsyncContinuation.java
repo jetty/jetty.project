@@ -676,6 +676,12 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
+    public Request getBaseRequest()
+    {
+        return _connection.getRequest();
+    }
+    
+    /* ------------------------------------------------------------ */
     public ServletRequest getRequest()
     {
         if (_event!=null)

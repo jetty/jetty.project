@@ -52,6 +52,7 @@ public class Dump extends HttpServlet
 {
     static boolean fixed;
     /* ------------------------------------------------------------ */
+    @Override
     public void init(ServletConfig config) throws ServletException
     {
     	super.init(config);
@@ -131,25 +132,11 @@ public class Dump extends HttpServlet
                     {
                         e.printStackTrace();
                     }
-                    Continuation continuation = ContinuationSupport.getContinuation(request,response);
+                    Continuation continuation = ContinuationSupport.getContinuation(request);
                     continuation.resume();
                 }
                 
             }).start();
-        }
-        
-        if (request.getParameter("suspend")!=null)
-        {
-            try
-            {
-                Continuation continuation = ContinuationSupport.getContinuation(request,response);
-                continuation.setTimeout(Long.parseLong(request.getParameter("suspend")));
-                continuation.suspend();
-            }
-            catch(Exception e)
-            {
-                throw new ServletException(e);
-            }
         }
 
         if (request.getParameter("complete")!=null)
@@ -183,6 +170,21 @@ public class Dump extends HttpServlet
             }).start();
         }
         
+        if (request.getParameter("suspend")!=null && request.getAttribute("SUSPEND")!=Boolean.TRUE)
+        {
+            request.setAttribute("SUSPEND",Boolean.TRUE);
+            try
+            {
+                Continuation continuation = ContinuationSupport.getContinuation(request);
+                continuation.setTimeout(Long.parseLong(request.getParameter("suspend")));
+                continuation.suspend();
+                continuation.undispatch();
+            }
+            catch(Exception e)
+            {
+                throw new ServletException(e);
+            }
+        }        
             
         request.setAttribute("Dump", this);
         getServletContext().setAttribute("Dump",this);

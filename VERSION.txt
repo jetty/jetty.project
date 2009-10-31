@@ -12,6 +12,7 @@ jetty-7.0.1-SNAPSHOT
  + 292642 Fix errors in embedded Jetty examples
  + 292825 Continuations ISE rather than ignore bad transitions
  + 292546 Proactively enforce HttpClient idle timeout
+ + 293222 Improved StatisticsHandler for async
  + 293506 Unable to use jconsole with Jetty when running with security manager 
  + 293557 Add "jad" mime mapping
  + JETTY-937 More JVM bug work arounds. Insert pause if all else fails

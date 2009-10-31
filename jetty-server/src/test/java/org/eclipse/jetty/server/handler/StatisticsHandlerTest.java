@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -25,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -59,139 +61,10 @@ public class StatisticsHandlerTest extends TestCase
         _server.join();
     }
 
-    public void testSuspendResume() throws Exception
+    public void testRequest() throws Exception
     {
-        final long sleep = 500;
-        final AtomicReference<Continuation> continuationHandle = new AtomicReference<Continuation>();
-        _statsHandler.setHandler(new AbstractHandler()
-        {
-            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
-            {
-                request.setHandled(true);
-
-                Continuation continuation = ContinuationSupport.getContinuation(httpRequest);
-                if (continuationHandle.get() == null)
-                {
-                    continuation.suspend();
-                    continuationHandle.set(continuation);
-                    try
-                    {
-                        Thread.sleep(sleep);
-                    }
-                    catch (InterruptedException x)
-                    {
-                        Thread.currentThread().interrupt();
-                        throw (IOException)new IOException().initCause(x);
-                    }
-                }
-            }
-        });
-        _server.start();
-
-        String request = "GET / HTTP/1.1\r\n" +
-                         "Host: localhost\r\n" +
-                         "\r\n";
-        _connector.executeRequest(request);
-        boolean passed = _latchHandler.await(1000);
-        assertTrue(passed);
-        assertNotNull(continuationHandle.get());
-        assertTrue(continuationHandle.get().isSuspended());
-
-        continuationHandle.get().resume();
-        passed = _latchHandler.await(1000);
-        assertTrue(passed);
-
-        assertEquals(2, _statsHandler.getRequests());
-        assertEquals(1, _statsHandler.getRequestsResumed());
-        assertEquals(0, _statsHandler.getRequestsExpired());
-        assertEquals(1, _statsHandler.getResponses2xx());
-        assertTrue(sleep <= _statsHandler.getSuspendedTimeMin());
-        assertEquals(_statsHandler.getSuspendedTimeMin(), _statsHandler.getSuspendedTimeTotal());
-    }
-
-    public void testSuspendExpire() throws Exception
-    {
-        final long timeout = 1000;
-        final AtomicReference<Continuation> continuationHandle = new AtomicReference<Continuation>();
-        _statsHandler.setHandler(new AbstractHandler()
-        {
-            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
-            {
-                request.setHandled(true);
-
-                Continuation continuation = ContinuationSupport.getContinuation(httpRequest);
-                System.out.println("continuation = " + continuation);
-                if (continuationHandle.get() == null)
-                {
-                    continuation.setTimeout(timeout);
-                    continuation.suspend();
-                    continuationHandle.set(continuation);
-                }
-            }
-        });
-        _server.start();
-
-        String request = "GET / HTTP/1.1\r\n" +
-                         "Host: localhost\r\n" +
-                         "\r\n";
-        _connector.executeRequest(request);
-        boolean passed = _latchHandler.await(1000);
-        assertTrue(passed);
-        assertNotNull(continuationHandle.get());
-        assertTrue(continuationHandle.get().isSuspended());
-
-        Thread.sleep(timeout);
-
-        passed = _latchHandler.await(1000);
-        assertTrue(passed);
-
-        assertEquals(2, _statsHandler.getRequests());
-        assertEquals(0, _statsHandler.getRequestsResumed());
-        assertEquals(1, _statsHandler.getRequestsExpired());
-        assertEquals(1, _statsHandler.getResponses2xx());
-    }
-
-    public void testSuspendComplete() throws Exception
-    {
-        final AtomicReference<Continuation> continuationHandle = new AtomicReference<Continuation>();
-        _statsHandler.setHandler(new AbstractHandler()
-        {
-            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
-            {
-                request.setHandled(true);
-
-                Continuation continuation = ContinuationSupport.getContinuation(httpRequest);
-                if (continuationHandle.get() == null)
-                {
-                    continuation.suspend();
-                    continuationHandle.set(continuation);
-                }
-            }
-        });
-        _server.start();
-
-        String request = "GET / HTTP/1.1\r\n" +
-                         "Host: localhost\r\n" +
-                         "\r\n";
-        _connector.executeRequest(request);
-        boolean passed = _latchHandler.await(1000);
-        assertTrue(passed);
-        assertNotNull(continuationHandle.get());
-        assertTrue(continuationHandle.get().isSuspended());
-
-        continuationHandle.get().complete();
-
-        assertEquals(1, _statsHandler.getRequests());
-        assertEquals(0, _statsHandler.getRequestsResumed());
-        assertEquals(0, _statsHandler.getRequestsExpired());
-        // TODO: complete callback not implemented
-        // Commented to pass the tests
-//        assertEquals(1, _statsHandler.getResponses2xx());
-    }
-
-    public void testRequestTimes() throws Exception
-    {
-        final long sleep = 1000;
+        final CyclicBarrier barrier[] = { new CyclicBarrier(2), new CyclicBarrier(2)};
+        
         _statsHandler.setHandler(new AbstractHandler()
         {
             public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
@@ -199,9 +72,11 @@ public class StatisticsHandlerTest extends TestCase
                 request.setHandled(true);
                 try
                 {
-                    Thread.sleep(sleep);
+                    barrier[0].await();
+                    barrier[1].await();
+                    
                 }
-                catch (InterruptedException x)
+                catch (Exception x)
                 {
                     Thread.currentThread().interrupt();
                     throw (IOException)new IOException().initCause(x);
@@ -213,23 +88,451 @@ public class StatisticsHandlerTest extends TestCase
         String request = "GET / HTTP/1.1\r\n" +
                          "Host: localhost\r\n" +
                          "\r\n";
-        _connector.getResponses(request);
+        _connector.executeRequest(request);
 
+        barrier[0].await();
+        
+        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getRequestsActiveMax());
+        
+        assertEquals(0, _statsHandler.getDispatched());
+        assertEquals(1, _statsHandler.getDispatchedActive());
+        assertEquals(1, _statsHandler.getDispatchedActiveMax());
+
+
+        barrier[1].await();
+        boolean passed = _latchHandler.await(1000);
+        assertTrue(passed);
+        
         assertEquals(1, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getRequestsActiveMax());
+        
+        assertEquals(1, _statsHandler.getDispatched());
+        assertEquals(0, _statsHandler.getDispatchedActive());
+        assertEquals(1, _statsHandler.getDispatchedActiveMax());
+
+        assertEquals(0, _statsHandler.getSuspends());
+        assertEquals(0, _statsHandler.getResumes());
+        assertEquals(0, _statsHandler.getExpires());
         assertEquals(1, _statsHandler.getResponses2xx());
-        assertTrue(sleep <= _statsHandler.getRequestTimeMin());
-        assertEquals(_statsHandler.getRequestTimeMin(), _statsHandler.getRequestTimeMax());
-        assertEquals(_statsHandler.getRequestTimeMin(), _statsHandler.getRequestTimeTotal());
-        assertEquals(_statsHandler.getRequestTimeMin(), _statsHandler.getRequestTimeAverage());
+        
+        _latchHandler.reset();
+        barrier[0].reset();
+        barrier[1].reset();
+        
+        _connector.executeRequest(request);
 
-        _connector.getResponses(request);
+        barrier[0].await();
+        
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getRequestsActiveMax());
+        
+        assertEquals(1, _statsHandler.getDispatched());
+        assertEquals(1, _statsHandler.getDispatchedActive());
+        assertEquals(1, _statsHandler.getDispatchedActiveMax());
 
+
+        barrier[1].await();
+        passed = _latchHandler.await(1000);
+        assertTrue(passed);
+        
         assertEquals(2, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getRequestsActiveMax());
+        
+        assertEquals(2, _statsHandler.getDispatched());
+        assertEquals(0, _statsHandler.getDispatchedActive());
+        assertEquals(1, _statsHandler.getDispatchedActiveMax());
+
+        assertEquals(0, _statsHandler.getSuspends());
+        assertEquals(0, _statsHandler.getResumes());
+        assertEquals(0, _statsHandler.getExpires());
         assertEquals(2, _statsHandler.getResponses2xx());
-        assertTrue(sleep <= _statsHandler.getRequestTimeMin());
-        assertTrue(sleep <= _statsHandler.getRequestTimeAverage());
-        assertTrue(_statsHandler.getRequestTimeTotal() >= 2 * sleep);
+
+        _latchHandler.reset(2);
+        barrier[0]=new CyclicBarrier(3);
+        barrier[1]=new CyclicBarrier(3);
+        
+        _connector.executeRequest(request);
+        _connector.executeRequest(request);
+
+        barrier[0].await();
+        
+        assertEquals(2, _statsHandler.getRequests());
+        assertEquals(2, _statsHandler.getRequestsActive());
+        assertEquals(2, _statsHandler.getRequestsActiveMax());
+        
+        assertEquals(2, _statsHandler.getDispatched());
+        assertEquals(2, _statsHandler.getDispatchedActive());
+        assertEquals(2, _statsHandler.getDispatchedActiveMax());
+
+
+        barrier[1].await();
+        passed = _latchHandler.await(1000);
+        assertTrue(passed);
+        
+        assertEquals(4, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
+        assertEquals(2, _statsHandler.getRequestsActiveMax());
+        
+        assertEquals(4, _statsHandler.getDispatched());
+        assertEquals(0, _statsHandler.getDispatchedActive());
+        assertEquals(2, _statsHandler.getDispatchedActiveMax());
+
+        assertEquals(0, _statsHandler.getSuspends());
+        assertEquals(0, _statsHandler.getResumes());
+        assertEquals(0, _statsHandler.getExpires());
+        assertEquals(4, _statsHandler.getResponses2xx());
+        
+        
     }
+
+    public void testSuspendResume() throws Exception
+    {
+        final AtomicReference<Continuation> continuationHandle = new AtomicReference<Continuation>();
+        final CyclicBarrier barrier[] = { new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        _statsHandler.setHandler(new AbstractHandler()
+        {
+            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+            {
+                request.setHandled(true);
+
+                try
+                {
+                    barrier[0].await();
+                    Thread.sleep(10);
+                    Continuation continuation = ContinuationSupport.getContinuation(httpRequest);
+                    if (continuationHandle.get() == null)
+                    {
+                        continuation.suspend();
+                        continuationHandle.set(continuation);
+                    }
+                    
+                }
+                catch (Exception x)
+                {
+                    Thread.currentThread().interrupt();
+                    throw (IOException)new IOException().initCause(x);
+                }
+                finally
+                {
+                    try
+                    {
+                        barrier[1].await();
+                    }
+                    catch (Exception x)
+                    {
+                        Thread.currentThread().interrupt();
+                        throw (IOException)new IOException().initCause(x);
+                    }
+                }
+
+            }
+        });
+        _server.start();
+
+        String request = "GET / HTTP/1.1\r\n" +
+                         "Host: localhost\r\n" +
+                         "\r\n";
+        _connector.executeRequest(request);
+        
+
+        barrier[0].await();
+        
+        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
+        
+        assertEquals(0, _statsHandler.getDispatched());
+        assertEquals(1, _statsHandler.getDispatchedActive());
+
+        barrier[1].await();
+        assertTrue(_latchHandler.await(1000));
+        assertNotNull(continuationHandle.get());
+        assertTrue(continuationHandle.get().isSuspended());
+        
+        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getDispatched());
+        assertEquals(0, _statsHandler.getDispatchedActive());
+
+        Thread.sleep(10);
+        _latchHandler.reset();
+        barrier[0].reset();
+        barrier[1].reset();
+        
+        continuationHandle.get().addContinuationListener(new ContinuationListener()
+        {
+            public void onTimeout(Continuation continuation)
+            {
+            }
+            
+            public void onComplete(Continuation continuation)
+            {
+                try { barrier[2].await(); } catch(Exception e) {}
+            }
+        });
+        
+        continuationHandle.get().resume();
+        
+
+        barrier[0].await();
+        
+        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getDispatched());
+        assertEquals(1, _statsHandler.getDispatchedActive());
+
+        barrier[1].await();
+        assertTrue(_latchHandler.await(1000));
+        barrier[2].await();
+        
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
+        assertEquals(2, _statsHandler.getDispatched());
+        assertEquals(0, _statsHandler.getDispatchedActive());
+        
+        
+        assertEquals(1, _statsHandler.getSuspends());
+        assertEquals(1, _statsHandler.getResumes());
+        assertEquals(0, _statsHandler.getExpires());
+        assertEquals(1, _statsHandler.getResponses2xx());
+        
+        
+        assertTrue(_statsHandler.getRequestTimeTotal()>=30);
+        assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeMax());
+        assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeAverage());
+        
+        assertTrue(_statsHandler.getDispatchedTimeTotal()>=20);
+        assertTrue(_statsHandler.getDispatchedTimeAverage()+10<=_statsHandler.getDispatchedTimeTotal());
+        assertTrue(_statsHandler.getDispatchedTimeMax()+10<=_statsHandler.getDispatchedTimeTotal());
+        
+    }
+
+    public void testSuspendExpire() throws Exception
+    {
+        final AtomicReference<Continuation> continuationHandle = new AtomicReference<Continuation>();
+        final CyclicBarrier barrier[] = { new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        _statsHandler.setHandler(new AbstractHandler()
+        {
+            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+            {
+                request.setHandled(true);
+
+                try
+                {
+                    barrier[0].await();
+                    Thread.sleep(10);
+                    Continuation continuation = ContinuationSupport.getContinuation(httpRequest);
+                    if (continuationHandle.get() == null)
+                    {
+                        continuation.setTimeout(10);
+                        continuation.suspend();
+                        continuationHandle.set(continuation);
+                    }
+                    
+                }
+                catch (Exception x)
+                {
+                    Thread.currentThread().interrupt();
+                    throw (IOException)new IOException().initCause(x);
+                }
+                finally
+                {
+                    try
+                    {
+                        barrier[1].await();
+                    }
+                    catch (Exception x)
+                    {
+                        Thread.currentThread().interrupt();
+                        throw (IOException)new IOException().initCause(x);
+                    }
+                }
+
+            }
+        });
+        _server.start();
+
+        String request = "GET / HTTP/1.1\r\n" +
+                         "Host: localhost\r\n" +
+                         "\r\n";
+        _connector.executeRequest(request);
+        
+
+        barrier[0].await();
+        
+        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
+        
+        assertEquals(0, _statsHandler.getDispatched());
+        assertEquals(1, _statsHandler.getDispatchedActive());
+
+        barrier[1].await();
+        assertTrue(_latchHandler.await(1000));
+        assertNotNull(continuationHandle.get());
+        assertTrue(continuationHandle.get().isSuspended());
+        
+        continuationHandle.get().addContinuationListener(new ContinuationListener()
+        {
+            public void onTimeout(Continuation continuation)
+            {
+            }
+            
+            public void onComplete(Continuation continuation)
+            {
+                try { barrier[2].await(); } catch(Exception e) {}
+            }
+        });
+        
+        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getDispatched());
+        assertEquals(0, _statsHandler.getDispatchedActive());
+
+        _latchHandler.reset();
+        barrier[0].reset();
+        barrier[1].reset();
+
+        barrier[0].await();
+        
+        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getDispatched());
+        assertEquals(1, _statsHandler.getDispatchedActive());
+
+        barrier[1].await();
+        assertTrue(_latchHandler.await(1000));
+        barrier[2].await();
+        
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
+        assertEquals(2, _statsHandler.getDispatched());
+        assertEquals(0, _statsHandler.getDispatchedActive());
+        
+        assertEquals(1, _statsHandler.getSuspends());
+        assertEquals(1, _statsHandler.getResumes());
+        assertEquals(1, _statsHandler.getExpires());
+        assertEquals(1, _statsHandler.getResponses2xx());
+        
+        
+        assertTrue(_statsHandler.getRequestTimeTotal()>=30);
+        assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeMax());
+        assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeAverage());
+        
+        assertTrue(_statsHandler.getDispatchedTimeTotal()>=20);
+        assertTrue(_statsHandler.getDispatchedTimeAverage()+10<=_statsHandler.getDispatchedTimeTotal());
+        assertTrue(_statsHandler.getDispatchedTimeMax()+10<=_statsHandler.getDispatchedTimeTotal());
+        
+    }
+
+    public void testSuspendComplete() throws Exception
+    {
+        final AtomicReference<Continuation> continuationHandle = new AtomicReference<Continuation>();
+        final CyclicBarrier barrier[] = { new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        _statsHandler.setHandler(new AbstractHandler()
+        {
+            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+            {
+                request.setHandled(true);
+
+                try
+                {
+                    barrier[0].await();
+                    Thread.sleep(10);
+                    Continuation continuation = ContinuationSupport.getContinuation(httpRequest);
+                    if (continuationHandle.get() == null)
+                    {
+                        continuation.setTimeout(1000);
+                        continuation.suspend();
+                        continuationHandle.set(continuation);
+                    }
+                    
+                }
+                catch (Exception x)
+                {
+                    Thread.currentThread().interrupt();
+                    throw (IOException)new IOException().initCause(x);
+                }
+                finally
+                {
+                    try
+                    {
+                        barrier[1].await();
+                    }
+                    catch (Exception x)
+                    {
+                        Thread.currentThread().interrupt();
+                        throw (IOException)new IOException().initCause(x);
+                    }
+                }
+
+            }
+        });
+        _server.start();
+
+        String request = "GET / HTTP/1.1\r\n" +
+                         "Host: localhost\r\n" +
+                         "\r\n";
+        _connector.executeRequest(request);
+        
+
+        barrier[0].await();
+        
+        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
+        
+        assertEquals(0, _statsHandler.getDispatched());
+        assertEquals(1, _statsHandler.getDispatchedActive());
+
+        
+        barrier[1].await();
+        assertTrue(_latchHandler.await(1000));
+        assertNotNull(continuationHandle.get());
+        assertTrue(continuationHandle.get().isSuspended());
+        continuationHandle.get().addContinuationListener(new ContinuationListener()
+        {
+            public void onTimeout(Continuation continuation)
+            {
+            }
+            
+            public void onComplete(Continuation continuation)
+            {
+                try { barrier[2].await(); } catch(Exception e) {}
+            }
+        });
+        
+        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getDispatched());
+        assertEquals(0, _statsHandler.getDispatchedActive());
+
+        Thread.sleep(10);
+        continuationHandle.get().complete();
+        barrier[2].await();
+        
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getDispatched());
+        assertEquals(0, _statsHandler.getDispatchedActive());
+        
+        assertEquals(1, _statsHandler.getSuspends());
+        assertEquals(0, _statsHandler.getResumes());
+        assertEquals(0, _statsHandler.getExpires());
+        assertEquals(1, _statsHandler.getResponses2xx());
+        
+        assertTrue(_statsHandler.getRequestTimeTotal()>=20);
+        assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeMax());
+        assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeAverage());
+        
+        assertTrue(_statsHandler.getDispatchedTimeTotal()>=10);
+        assertTrue(_statsHandler.getDispatchedTimeTotal()<_statsHandler.getRequestTimeTotal());
+        assertEquals(_statsHandler.getDispatchedTimeTotal(),_statsHandler.getDispatchedTimeMax());
+        assertEquals(_statsHandler.getDispatchedTimeTotal(),_statsHandler.getDispatchedTimeAverage());
+    }
+    
 
     /**
      * This handler is external to the statistics handler and it is used to ensure that statistics handler's
@@ -238,11 +541,12 @@ public class StatisticsHandlerTest extends TestCase
      */
     private static class LatchHandler extends HandlerWrapper
     {
-        private volatile CountDownLatch latch = new CountDownLatch(1);
+        private volatile CountDownLatch _latch = new CountDownLatch(1);
 
         @Override
         public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
         {
+            final CountDownLatch latch=_latch;
             try
             {
                 super.handle(path, request, httpRequest, httpResponse);
@@ -253,11 +557,19 @@ public class StatisticsHandlerTest extends TestCase
             }
         }
 
+        private void reset()
+        {
+            _latch=new CountDownLatch(1);
+        }
+        
+        private void reset(int count)
+        {
+            _latch=new CountDownLatch(count);
+        }
+        
         private boolean await(long ms) throws InterruptedException
         {
-            boolean result = latch.await(ms, TimeUnit.MILLISECONDS);
-            latch = new CountDownLatch(1);
-            return result;
+            return _latch.await(ms, TimeUnit.MILLISECONDS);
         }
     }
 }

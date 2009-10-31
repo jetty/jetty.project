@@ -21,46 +21,87 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 
 public class StatisticsHandler extends HandlerWrapper
 {
-    private transient final AtomicLong _statsStartedAt = new AtomicLong();
-    private transient final AtomicInteger _requests = new AtomicInteger();
-    private transient final AtomicInteger _resumedRequests = new AtomicInteger();
-    private transient final AtomicInteger _expiredRequests = new AtomicInteger();
-    private transient final AtomicLong _requestMinTime = new AtomicLong();
-    private transient final AtomicLong _requestMaxTime = new AtomicLong();
-    private transient final AtomicLong _requestTotalTime = new AtomicLong();
-    private transient final AtomicLong _suspendMinTime = new AtomicLong();
-    private transient final AtomicLong _suspendTotalTime = new AtomicLong();
-    private transient final AtomicInteger _requestsActive = new AtomicInteger();
-    private transient final AtomicInteger _requestsMaxActive = new AtomicInteger();
-    private transient final AtomicInteger _responses1xx = new AtomicInteger();
-    private transient final AtomicInteger _responses2xx = new AtomicInteger();
-    private transient final AtomicInteger _responses3xx = new AtomicInteger();
-    private transient final AtomicInteger _responses4xx = new AtomicInteger();
-    private transient final AtomicInteger _responses5xx = new AtomicInteger();
-    private transient final AtomicLong _responsesTotalBytes = new AtomicLong();
+    private final AtomicLong _statsStartedAt = new AtomicLong();
+    
+    private final AtomicInteger _requests = new AtomicInteger();
+    private final AtomicInteger _requestsActive = new AtomicInteger();
+    private final AtomicInteger _requestsActiveMax = new AtomicInteger();
+    private final AtomicLong _requestTimeMax = new AtomicLong();
+    private final AtomicLong _requestTimeTotal = new AtomicLong();
 
+    private final AtomicInteger _dispatched = new AtomicInteger();
+    private final AtomicInteger _dispatchedActive = new AtomicInteger();
+    private final AtomicInteger _dispatchedActiveMax = new AtomicInteger();
+    private final AtomicLong _dispatchedTimeMax = new AtomicLong();
+    private final AtomicLong _dispatchedTimeTotal = new AtomicLong();
+    
+    private final AtomicInteger _suspends = new AtomicInteger();
+    private final AtomicInteger _suspendsActive = new AtomicInteger();
+    private final AtomicInteger _suspendsActiveMax = new AtomicInteger();
+    private final AtomicInteger _resumes = new AtomicInteger();
+    private final AtomicInteger _expires = new AtomicInteger();
+    
+    private final AtomicInteger _responses1xx = new AtomicInteger();
+    private final AtomicInteger _responses2xx = new AtomicInteger();
+    private final AtomicInteger _responses3xx = new AtomicInteger();
+    private final AtomicInteger _responses4xx = new AtomicInteger();
+    private final AtomicInteger _responses5xx = new AtomicInteger();
+    private final AtomicLong _responsesTotalBytes = new AtomicLong();
+
+    private final ContinuationListener _onCompletion = new ContinuationListener()
+    {
+        public void onComplete(Continuation continuation)
+        {
+            final Request request = ((AsyncContinuation)continuation).getBaseRequest();
+            final long elapsed = System.currentTimeMillis()-request.getTimeStamp();
+            
+            _requestsActive.decrementAndGet();
+            _requests.incrementAndGet();
+            updateMax(_requestTimeMax, elapsed);
+            _requestTimeTotal.addAndGet(elapsed);
+            updateResponse(request);
+            if (!continuation.isResumed())
+                _suspendsActive.decrementAndGet();
+        }
+
+        public void onTimeout(Continuation continuation)
+        {
+            _expires.incrementAndGet();
+        }
+    };
+    
     /**
      * Resets the current request statistics.
      */
     public void statsReset()
     {
         _statsStartedAt.set(System.currentTimeMillis());
+        
         _requests.set(0);
-        _resumedRequests.set(0);
-        _expiredRequests.set(0);
-        _requestMinTime.set(Long.MAX_VALUE);
-        _requestMaxTime.set(0L);
-        _requestTotalTime.set(0L);
-        _suspendMinTime.set(Long.MAX_VALUE);
-        _suspendTotalTime.set(0L);
         _requestsActive.set(0);
-        _requestsMaxActive.set(0);
+        _requestsActiveMax.set(0);
+        _requestTimeMax.set(0L);
+        _requestTimeTotal.set(0L);
+        
+        _dispatched.set(0);
+        _dispatchedActive.set(0);
+        _dispatchedActiveMax.set(0);
+        _dispatchedTimeMax.set(0L);
+        _dispatchedTimeTotal.set(0L);
+        
+        _suspends.set(0);
+        _suspendsActive.set(0);
+        _suspendsActiveMax.set(0);
+        _resumes.set(0);
+        _expires.set(0);
         _responses1xx.set(0);
         _responses2xx.set(0);
         _responses3xx.set(0);
@@ -91,40 +132,26 @@ public class StatisticsHandler extends HandlerWrapper
         }
     }
 
-    private void updateMin(AtomicLong valueHolder, long value)
-    {
-        long oldValue = valueHolder.get();
-        while (value < oldValue)
-        {
-            if (valueHolder.compareAndSet(oldValue, value))
-                break;
-            oldValue = valueHolder.get();
-        }
-    }
-
     @Override
     public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
     {
-        _requests.incrementAndGet();
+        updateMax(_dispatchedActiveMax, _dispatchedActive.incrementAndGet());
 
-        int activeRequests = _requestsActive.incrementAndGet();
-        updateMax(_requestsMaxActive, activeRequests);
-
-        // The order of the ifs is important, as a continuation can be resumed and expired
-        // We test first if it's expired, and then if it's resumed
+        final long start;
         AsyncContinuation continuation = request.getAsyncContinuation();
-        if (continuation.isExpired())
+        if (continuation.isInitial())
         {
-            _expiredRequests.incrementAndGet();
+            // new request
+            updateMax(_requestsActiveMax, _requestsActive.incrementAndGet());
+            start = request.getTimeStamp();
         }
-        else if (continuation.isResumed())
+        else
         {
-            _resumedRequests.incrementAndGet();
-
-            long initialTime = request.getTimeStamp();
-            long suspendTime = System.currentTimeMillis() - initialTime;
-            updateMin(_suspendMinTime, suspendTime);
-            _suspendTotalTime.addAndGet(suspendTime);
+            // resumed request
+            start = System.currentTimeMillis();
+            _suspendsActive.decrementAndGet();
+            if (continuation.isResumed())
+                _resumes.incrementAndGet();
         }
 
         try
@@ -133,23 +160,37 @@ public class StatisticsHandler extends HandlerWrapper
         }
         finally
         {
-            _requestsActive.decrementAndGet();
-
-            if (!continuation.isSuspended())
+            final long now = System.currentTimeMillis();
+            final long dispatched=now-start;
+            
+            _dispatchedActive.decrementAndGet();
+            _dispatched.incrementAndGet();
+            
+            _dispatchedTimeTotal.addAndGet(dispatched);
+            updateMax(_dispatchedTimeMax, dispatched);
+            
+            if (continuation.isSuspended())
             {
+                if (continuation.isInitial())
+                    continuation.addContinuationListener(_onCompletion);
+                _suspends.incrementAndGet();
+                updateMax(_suspendsActiveMax, _suspendsActive.incrementAndGet());
+            }
+            else if (continuation.isInitial())
+            {
+                _requestsActive.decrementAndGet();
+                _requests.incrementAndGet();
+                
+                updateMax(_requestTimeMax, dispatched);
+                _requestTimeTotal.addAndGet(dispatched);
                 updateResponse(request);
             }
+            // else onCompletion will handle it.
         }
     }
 
     private void updateResponse(Request request)
     {
-        long elapsed = System.currentTimeMillis() - request.getTimeStamp();
-
-        updateMin(_requestMinTime, elapsed);
-        updateMax(_requestMaxTime, elapsed);
-        _requestTotalTime.addAndGet(elapsed);
-
         Response response = request.getResponse();
         switch (response.getStatus() / 100)
         {
@@ -171,7 +212,6 @@ public class StatisticsHandler extends HandlerWrapper
             default:
                 break;
         }
-
         _responsesTotalBytes.addAndGet(response.getContentCount());
     }
 
@@ -184,9 +224,9 @@ public class StatisticsHandler extends HandlerWrapper
 
     /**
      * @return the number of requests handled by this handler
-     * since {@link #statsReset()} was last called, including
-     * resumed requests
-     * @see #getRequestsResumed()
+     * since {@link #statsReset()} was last called, excluding
+     * active requests
+     * @see #getResumes()
      */
     public int getRequests()
     {
@@ -208,25 +248,145 @@ public class StatisticsHandler extends HandlerWrapper
      */
     public int getRequestsActiveMax()
     {
-        return _requestsMaxActive.get();
+        return _requestsActiveMax.get();
     }
 
     /**
-     * @return the number of requests that have been resumed
-     * @see #getRequestsExpired()
+     * @return the maximum time (in milliseconds) of request handling
+     * since {@link #statsReset()} was last called.
      */
-    public int getRequestsResumed()
+    public long getRequestTimeMax()
     {
-        return _resumedRequests.get();
+        return _requestTimeMax.get();
+    }
+
+    /**
+     * @return the total time (in milliseconds) of requests handling
+     * since {@link #statsReset()} was last called.
+     */
+    public long getRequestTimeTotal()
+    {
+        return _requestTimeTotal.get();
+    }
+
+    /**
+     * @return the average time (in milliseconds) of request handling
+     * since {@link #statsReset()} was last called.
+     * @see #getRequestTimeTotal()
+     * @see #getRequests()
+     */
+    public long getRequestTimeAverage()
+    {
+        int requests = getRequests();
+        return requests == 0 ? 0 : getRequestTimeTotal() / requests;
+    }
+
+    /**
+     * @return the number of dispatches seen by this handler
+     * since {@link #statsReset()} was last called, excluding
+     * active dispatches
+     */
+    public int getDispatched()
+    {
+        return _dispatched.get();
+    }
+
+    /**
+     * @return the number of dispatches currently in this handler
+     * since {@link #statsReset()} was last called, including
+     * resumed requests
+     */
+    public int getDispatchedActive()
+    {
+        return _dispatchedActive.get();
+    }
+
+    /**
+     * @return the max number of dispatches currently in this handler
+     * since {@link #statsReset()} was last called, including
+     * resumed requests
+     */
+    public int getDispatchedActiveMax()
+    {
+        return _dispatchedActiveMax.get();
+    }
+
+    /**
+     * @return the maximum time (in milliseconds) of request dispatch
+     * since {@link #statsReset()} was last called.
+     */
+    public long getDispatchedTimeMax()
+    {
+        return _dispatchedTimeMax.get();
+    }
+    
+    /**
+     * @return the total time (in milliseconds) of requests handling
+     * since {@link #statsReset()} was last called.
+     */
+    public long getDispatchedTimeTotal()
+    {
+        return _dispatchedTimeTotal.get();
+    }
+
+    /**
+     * @return the average time (in milliseconds) of request handling
+     * since {@link #statsReset()} was last called.
+     * @see #getRequestTimeTotal()
+     * @see #getRequests()
+     */
+    public long getDispatchedTimeAverage()
+    {
+        int requests = getDispatched();
+        return requests == 0 ? 0 : getDispatchedTimeTotal() / requests;
+    }
+    
+    
+    /**
+     * @return the number of requests handled by this handler
+     * since {@link #statsReset()} was last called, including
+     * resumed requests
+     * @see #getResumes()
+     */
+    public int getSuspends()
+    {
+        return _suspends.get();
+    }
+
+    /**
+     * @return the number of requests currently suspended.
+     * since {@link #statsReset()} was last called.
+     */
+    public int getSuspendsActive()
+    {
+        return _suspendsActive.get();
+    }
+
+    /**
+     * @return the maximum number of current suspended requests
+     * since {@link #statsReset()} was last called.
+     */
+    public int getSuspendsActiveMax()
+    {
+        return _suspendsActiveMax.get();
+    }
+    
+    /**
+     * @return the number of requests that have been resumed
+     * @see #getExpires()
+     */
+    public int getResumes()
+    {
+        return _resumes.get();
     }
 
     /**
      * @return the number of requests that expired while suspended.
-     * @see #getRequestsResumed()
+     * @see #getResumes()
      */
-    public int getRequestsExpired()
+    public int getExpires()
     {
-        return _expiredRequests.get();
+        return _expires.get();
     }
 
     /**
@@ -281,46 +441,7 @@ public class StatisticsHandler extends HandlerWrapper
     {
         return System.currentTimeMillis() - _statsStartedAt.get();
     }
-
-    /**
-     * @return the minimum time (in milliseconds) of request handling
-     * since {@link #statsReset()} was last called.
-     */
-    public long getRequestTimeMin()
-    {
-        return _requestMinTime.get();
-    }
-
-    /**
-     * @return the maximum time (in milliseconds) of request handling
-     * since {@link #statsReset()} was last called.
-     */
-    public long getRequestTimeMax()
-    {
-        return _requestMaxTime.get();
-    }
-
-    /**
-     * @return the total time (in milliseconds) of requests handling
-     * since {@link #statsReset()} was last called.
-     */
-    public long getRequestTimeTotal()
-    {
-        return _requestTotalTime.get();
-    }
-
-    /**
-     * @return the average time (in milliseconds) of request handling
-     * since {@link #statsReset()} was last called.
-     * @see #getRequestTimeTotal()
-     * @see #getRequests()
-     */
-    public long getRequestTimeAverage()
-    {
-        int requests = getRequests();
-        return requests == 0 ? 0 : getRequestTimeTotal() / requests;
-    }
-
+    
     /**
      * @return the total bytes of content sent in responses
      */
@@ -328,22 +449,45 @@ public class StatisticsHandler extends HandlerWrapper
     {
         return _responsesTotalBytes.get();
     }
+    
+    public String toStatsHTML()
+    {   
+        StringBuilder sb = new StringBuilder();
 
-    /**
-     * @return the minimum time (in milliseconds) of request suspension
-     * since {@link #statsReset()} was last called.
-     */
-    public long getSuspendedTimeMin()
-    {
-        return _suspendMinTime.get();
-    }
+        sb.append("<h1>Statistics:</h1>\n");
+        sb.append("Statistics gathering started ").append(getStatsOnMs()).append("ms ago").append("<br />\n");
 
-    /**
-     * @return the total time (in milliseconds) of request suspension
-     * since {@link #statsReset()} was last called.
-     */
-    public long getSuspendedTimeTotal()
-    {
-        return _suspendTotalTime.get();
+        sb.append("<h2>Requests:</h2>\n");
+        sb.append("Total requests: ").append(getRequests()).append("<br />\n");
+        sb.append("Active requests: ").append(getRequestsActive()).append("<br />\n");
+        sb.append("Max active requests: ").append(getRequestsActiveMax()).append("<br />\n");
+        sb.append("Total requests time: ").append(getRequestTimeTotal()).append("<br />\n");
+        sb.append("Average request time: ").append(getRequestTimeAverage()).append("<br />\n");
+        sb.append("Max request time: ").append(getRequestTimeMax()).append("<br />\n");
+        
+
+        sb.append("<h2>Dispatches:</h2>\n");
+        sb.append("Total dispatched: ").append(getDispatched()).append("<br />\n");
+        sb.append("Active dispatched: ").append(getDispatchedActive()).append("<br />\n");
+        sb.append("Max active dispatched: ").append(getDispatchedActiveMax()).append("<br />\n");
+        sb.append("Total dispatched time: ").append(getDispatchedTimeTotal()).append("<br />\n");
+        sb.append("Average dispatched time: ").append(getDispatchedTimeAverage()).append("<br />\n");
+        sb.append("Max dispatched time: ").append(getDispatchedTimeMax()).append("<br />\n");
+
+
+        sb.append("Total requests suspended: ").append(getSuspends()).append("<br />\n");
+        sb.append("Total requests expired: ").append(getExpires()).append("<br />\n");
+        sb.append("Total requests resumed: ").append(getResumes()).append("<br />\n");
+        
+        sb.append("<h2>Responses:</h2>\n");
+        sb.append("1xx responses: ").append(getResponses1xx()).append("<br />\n");
+        sb.append("2xx responses: ").append(getResponses2xx()).append("<br />\n");
+        sb.append("3xx responses: ").append(getResponses3xx()).append("<br />\n");
+        sb.append("4xx responses: ").append(getResponses4xx()).append("<br />\n");
+        sb.append("5xx responses: ").append(getResponses5xx()).append("<br />\n");
+        sb.append("Bytes sent total: ").append(getResponsesBytesTotal()).append("<br />\n");
+
+        return sb.toString();
+
     }
 }

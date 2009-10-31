@@ -111,17 +111,24 @@ public class StatisticsServlet extends HttpServlet
 
         sb.append("  <requests>\n");
         sb.append("    <statsOnMs>").append(_statsHandler.getStatsOnMs()).append("</statsOnMs>\n");
+        
         sb.append("    <requests>").append(_statsHandler.getRequests()).append("</requests>\n");
-        sb.append("    <requestsExpired>").append(_statsHandler.getRequestsExpired()).append("</requestsExpired>\n");
-        sb.append("    <requestsResumed>").append(_statsHandler.getRequestsResumed()).append("</requestsResumed>\n");
         sb.append("    <requestsActive>").append(_statsHandler.getRequestsActive()).append("</requestsActive>\n");
         sb.append("    <requestsActiveMax>").append(_statsHandler.getRequestsActiveMax()).append("</requestsActiveMax>\n");
         sb.append("    <requestsTimeTotal>").append(_statsHandler.getRequestTimeTotal()).append("</requestsTimeTotal>\n");
         sb.append("    <requestsTimeAverage>").append(_statsHandler.getRequestTimeAverage()).append("</requestsTimeAverage>\n");
-        sb.append("    <requestsTimeMin>").append(_statsHandler.getRequestTimeMin()).append("</requestsTimeMin>\n");
         sb.append("    <requestsTimeMax>").append(_statsHandler.getRequestTimeMax()).append("</requestsTimeMax>\n");
-        sb.append("    <suspendTimeMin>").append(_statsHandler.getSuspendedTimeMin()).append("</suspendTimeMin>\n");
-        sb.append("    <suspendTimeTotal>").append(_statsHandler.getSuspendedTimeTotal()).append("</suspendTimeTotal>\n");
+
+        sb.append("    <dispatched>").append(_statsHandler.getDispatched()).append("</dispatched>\n");
+        sb.append("    <dispatchedActive>").append(_statsHandler.getDispatchedActive()).append("</dispatchedActive>\n");
+        sb.append("    <dispatchedActiveMax>").append(_statsHandler.getDispatchedActiveMax()).append("</dispatchedActiveMax>\n");
+        sb.append("    <dispatchedTimeTotal>").append(_statsHandler.getDispatchedTimeTotal()).append("</dispatchedTimeTotal>\n");
+        sb.append("    <dispatchedTimeAverage>").append(_statsHandler.getDispatchedTimeAverage()).append("</dispatchedTimeAverage>\n");
+        sb.append("    <dispatchedTimeMax>").append(_statsHandler.getDispatchedTimeMax()).append("</dispatchedTimeMax>\n");
+        
+        sb.append("    <requestsSuspended>").append(_statsHandler.getSuspends()).append("</requestsSuspended>\n");
+        sb.append("    <requestsExpired>").append(_statsHandler.getExpires()).append("</requestsExpired>\n");
+        sb.append("    <requestsResumed>").append(_statsHandler.getResumes()).append("</requestsResumed>\n");
         sb.append("  </requests>\n");
 
         sb.append("  <responses>\n");
@@ -173,32 +180,8 @@ public class StatisticsServlet extends HttpServlet
 
     private void sendTextResponse(HttpServletResponse response) throws IOException
     {
-
         StringBuilder sb = new StringBuilder();
-
-        sb.append("<h1>Statistics:</h1>\n");
-
-        sb.append("<h2>Requests:</h2>\n");
-        sb.append("Statistics gathering started ").append(_statsHandler.getStatsOnMs()).append("ms ago").append("<br />\n");
-        sb.append("Total requests: ").append(_statsHandler.getRequests()).append("<br />\n");
-        sb.append("Total requests expired: ").append(_statsHandler.getRequestsExpired()).append("<br />\n");
-        sb.append("Total requests resumed: ").append(_statsHandler.getRequestsResumed()).append("<br />\n");
-        sb.append("Current requests active: ").append(_statsHandler.getRequestsActive()).append("<br />\n");
-        sb.append("Max concurrent requests active: ").append(_statsHandler.getRequestsActiveMax()).append("<br />\n");
-        sb.append("Total requests time: ").append(_statsHandler.getRequestTimeTotal()).append("<br />\n");
-        sb.append("Average request time: ").append(_statsHandler.getRequestTimeAverage()).append("<br />\n");
-        sb.append("Min request time: ").append(_statsHandler.getRequestTimeMin()).append("<br />\n");
-        sb.append("Max request time: ").append(_statsHandler.getRequestTimeMax()).append("<br />\n");
-        sb.append("Min suspended request time: ").append(_statsHandler.getSuspendedTimeMin()).append("<br />\n");
-        sb.append("Total suspended requests time: ").append(_statsHandler.getSuspendedTimeTotal()).append("<br />\n");
-
-        sb.append("<h2>Responses:</h2>\n");
-        sb.append("1xx responses: ").append(_statsHandler.getResponses1xx()).append("<br />\n");
-        sb.append("2xx responses: ").append(_statsHandler.getResponses2xx()).append("<br />\n");
-        sb.append("3xx responses: ").append(_statsHandler.getResponses3xx()).append("<br />\n");
-        sb.append("4xx responses: ").append(_statsHandler.getResponses4xx()).append("<br />\n");
-        sb.append("5xx responses: ").append(_statsHandler.getResponses5xx()).append("<br />\n");
-        sb.append("Bytes sent total: ").append(_statsHandler.getResponsesBytesTotal()).append("<br />\n");
+        sb.append(_statsHandler.toStatsHTML());
 
         sb.append("<h2>Connections:</h2>\n");
         for (Connector connector : _connectors)
