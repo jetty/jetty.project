@@ -289,17 +289,25 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
 
     public void testHttpExchangeOnServerException() throws Exception
     {
-        TestHttpExchange exchange = new TestHttpExchange();
-        exchange.setAddress(newAddress());
-        exchange.setURI("/?action=throw");
+        try
+        {
+            System.err.println("doing it");
+            TestHttpExchange exchange = new TestHttpExchange();
+            exchange.setAddress(newAddress());
+            exchange.setURI("/?action=throw");
 
-        getHttpClient().send(exchange);
+            getHttpClient().send(exchange);
 
-        int status = exchange.waitForDone();
-        assertEquals(HttpExchange.STATUS_COMPLETED, status);
-        assertTrue(exchange.isResponseCompleted());
-        assertFalse(exchange.isFailed());
-        assertFalse(exchange.isAssociated());
+            int status = exchange.waitForDone();
+            assertEquals(HttpExchange.STATUS_COMPLETED, status);
+            assertTrue(exchange.isResponseCompleted());
+            assertFalse(exchange.isFailed());
+            assertFalse(exchange.isAssociated());
+        }
+        finally
+        {
+            System.err.println("OVER");
+        }
     }
 
     public void testHttpExchangeOnExpire() throws Exception

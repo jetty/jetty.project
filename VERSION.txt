@@ -13,6 +13,7 @@ jetty-7.0.1-SNAPSHOT
  + 292825 Continuations ISE rather than ignore bad transitions
  + 292546 Proactively enforce HttpClient idle timeout
  + 293506 Unable to use jconsole with Jetty when running with security manager 
+ + 293557 Add "jad" mime mapping
  + JETTY-937 More JVM bug work arounds. Insert pause if all else fails
  + JETTY-983 Send content-length with multipart ranges
  + JETTY-1114 unsynchronised WebAppClassloader.getResource(String)
@@ -27,7 +28,7 @@ jetty-7.0.1-SNAPSHOT
  + Promoted Jetty Centralized Logging from Sandbox
  + Promoted Jetty WebApp Verifier from Sandbox
  + Refactored continuation test harnessess
- + 293557 Add "jad" mime mapping
+ + Fixed client abort asocciation 
 
 jetty-7.0.0.v20091005 5 October 2009
 291340 Race condition in onException() notifications

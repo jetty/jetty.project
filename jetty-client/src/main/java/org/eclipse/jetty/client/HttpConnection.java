@@ -318,7 +318,7 @@ public class HttpConnection implements Connection
                             no_progress = 0;
                             if (_exchange != null)
                             {
-                                _exchange.disassociate(this);
+                                _exchange.disassociate();
                                 _exchange = null;
 
                                 if (_pipeline == null)
@@ -353,7 +353,7 @@ public class HttpConnection implements Connection
         finally
         {
             if (_exchange != null && _exchange.isAssociated())
-                _exchange.disassociate(this);
+                _exchange.disassociate();
         }
     }
 
@@ -581,7 +581,7 @@ public class HttpConnection implements Connection
                     _exchange = null;
                     if (ex != null)
                     {
-                        ex.disassociate(HttpConnection.this);
+                        ex.disassociate();
                         _destination.returnConnection(HttpConnection.this, true);
                     }
                     else if (_idle.compareAndSet(true,false))

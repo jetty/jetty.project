@@ -93,7 +93,7 @@ public class HttpExchange
     // controls if the exchange will have listeners autoconfigured by the destination
     private boolean _configureListeners = true;
     private HttpEventListener _listener = new Listener();
-    private volatile HttpConnection connection;
+    private volatile HttpConnection _connection;
 
     boolean _onRequestCompleteDone;
     boolean _onResponseCompleteDone;
@@ -601,6 +601,7 @@ public class HttpExchange
     {
         synchronized(this)
         {
+            disassociate();
             _onDone=true;
             notifyAll();
         }
@@ -608,7 +609,7 @@ public class HttpExchange
     
     private void abort()
     {
-        HttpConnection httpConnection = this.connection;
+        HttpConnection httpConnection = _connection;
         if (httpConnection != null)
         {
             try
@@ -626,20 +627,20 @@ public class HttpExchange
 
     void associate(HttpConnection connection)
     {
-        this.connection = connection;
+        _connection = connection;
         if (getStatus() == STATUS_CANCELLING)
             abort();
     }
 
     boolean isAssociated()
     {
-        return this.connection != null;
+        return this._connection != null;
     }
 
-    HttpConnection disassociate(HttpConnection connection)
+    HttpConnection disassociate()
     {
-        HttpConnection result = this.connection;
-        this.connection = null;
+        HttpConnection result = _connection;
+        this._connection = null;
         if (getStatus() == STATUS_CANCELLING)
             setStatus(STATUS_CANCELLED);
         return result;
@@ -834,6 +835,8 @@ public class HttpExchange
                 {
                     _onRequestCompleteDone=true;
                     _onDone=_onResponseCompleteDone;
+                    if (_onDone)
+                        disassociate();
                     HttpExchange.this.notifyAll();
                 }
             }
@@ -851,6 +854,8 @@ public class HttpExchange
                 {
                     _onResponseCompleteDone=true;
                     _onDone=_onRequestCompleteDone;
+                    if (_onDone)
+                        disassociate();
                     HttpExchange.this.notifyAll();
                 }
             }
