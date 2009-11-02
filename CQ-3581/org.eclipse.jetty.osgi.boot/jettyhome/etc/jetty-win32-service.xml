@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure the Jetty Server                                      -->
+<!--                                                                 -->
+<!-- Documentation of this file format can be found at:              -->
+<!-- http://docs.codehaus.org/display/JETTY/jetty.xml                -->
+<!--                                                                 -->
+<!-- =============================================================== -->
+
+
+<Configure id="Server" class="org.mortbay.jetty.Server">
+
+    
+    <Call name="addLifeCycle">
+      <Arg>
+        <New class="org.mortbay.jetty.win32service.Win32Service">
+          <Set name="server"><Ref id="Server"/></Set>
+        </New>
+      </Arg>
+    </Call>
+    
+    <Set name="stopAtShutdown">true</Set>
+    <!-- ensure/prevent Server: header being sent to browsers        -->
+    <Set name="sendServerVersion">true</Set>
+
+</Configure>

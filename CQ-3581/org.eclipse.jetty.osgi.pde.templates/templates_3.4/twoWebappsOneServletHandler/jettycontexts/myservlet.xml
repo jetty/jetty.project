@@ -1,0 +1,8 @@
+<?xml version="1.0"  encoding="ISO-8859-1"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<Configure class="org.eclipse.jetty.servlet.ServletContextHandler">
+  <Call name="addServlet">
+    <Arg>$packageName$.Servlet</Arg>
+    <Arg>/theservlet</Arg>
+  </Call>
+</Configure>

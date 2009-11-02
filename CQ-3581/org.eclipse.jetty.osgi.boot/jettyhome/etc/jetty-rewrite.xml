@@ -1,0 +1,149 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure.dtd">
+
+<!-- =============================================================== -->
+<!-- Mixin the RewriteHandler                                        -->
+<!-- =============================================================== -->
+
+
+<Configure id="Server" class="org.mortbay.jetty.Server">
+
+    <!-- =========================================================== -->
+    <!-- Configure Rewrite Handler                                   --> 
+    <!-- =========================================================== -->
+    <Get id="oldhandler" name="handler"/>
+
+    <Set name="handler">
+     <New id="Rewrite" class="org.mortbay.jetty.handler.rewrite.RewriteHandler">
+     
+      <Set name="handler"><Ref id="oldhandler"/></Set>
+      <Set name="rewriteRequestURI">true</Set>
+      <Set name="rewritePathInfo">false</Set>
+      <Set name="originalPathAttribute">requestedPath</Set>
+
+      <Set name="rules">
+          <Array type="org.mortbay.jetty.handler.rewrite.Rule">
+
+           <!-- return an error message if low on threads; put this at the top so it will be processed first -->
+           <Item>
+             <New id="lowThreads" class="org.mortbay.jetty.handler.rewrite.LowThreadsRuleContainer">                
+                <!-- set the trigger for low threads ridiculously low 
+                uncomment the block below to see it in action -->
+                <!--Ref id="Server">
+                  <Get id="serverThreadPool" name="threadPool">
+                    <Set name="minThreads">3</Set>
+                    <Set name="maxThreads">4</Set>
+                    <Set name="lowThreads">0</Set>
+                  </Get>
+                </Ref>
+
+                <Set name="threadPool"><Ref id="serverThreadPool"/></Set-->
+                
+                <Call name="addRule">
+                  <Arg>
+                    <New id="busyresponse" class="org.mortbay.jetty.handler.rewrite.ResponsePatternRule">
+                        <Set name="pattern">/*</Set>
+                        <Set name="code">500</Set>
+                        <Set name="reason">Server busy</Set>
+                   </New>
+                  </Arg>
+                </Call>
+             </New>
+           </Item>
+
+            <!-- Add rule to protect against IE ssl bug -->
+            <Item>
+              <New class="org.mortbay.jetty.handler.rewrite.MsieSslRule"/>
+            </Item>
+
+            <!-- protect favicon handling -->
+            <Item>
+              <New class="org.mortbay.jetty.handler.rewrite.HeaderPatternRule">
+                <Set name="pattern">/favicon.ico</Set>
+                <Set name="name">Cache-Control</Set>
+                <Set name="value">Max-Age=3600,public</Set>
+                <Set name="terminating">true</Set>
+              </New>
+            </Item>
+
+
+            <!-- add a regex rule -->
+            <Item>
+              <New class="org.mortbay.jetty.handler.rewrite.RewriteRegexRule">
+                <Set name="regex">/rewrite/dump/regex/([^/]*)/(.*)</Set>
+                <Set name="replacement">/test/dump/$2/$1</Set>
+              </New>
+            </Item>
+
+            <!-- add a rewrite rule -->
+            <Item>
+              <New id="" class="org.mortbay.jetty.handler.rewrite.RewritePatternRule">
+                <Set name="pattern">/rewrite</Set>
+                <Set name="replacement">/rewrittento</Set>
+              </New>
+            </Item>
+            
+            <!-- add a response rule -->
+            <Item>
+              <New id="response" class="org.mortbay.jetty.handler.rewrite.ResponsePatternRule">
+                <Set name="pattern">/rewrite/session/</Set>
+                <Set name="code">401</Set>
+                <Set name="reason">Setting error code 401</Set>
+              </New>
+            </Item>
+
+            <!-- add a header pattern rule -->
+            <Item>
+              <New id="header" class="org.mortbay.jetty.handler.rewrite.HeaderPatternRule">
+                <Set name="pattern">*.jsp</Set>
+                <Set name="name">Server</Set>
+                <Set name="value">Server for JSP</Set>
+              </New>
+            </Item>
+
+            <!-- add a redirect -->
+            <Item>
+              <New id="redirect" class="org.mortbay.jetty.handler.rewrite.RedirectPatternRule">
+                <Set name="pattern">/rewrite/dispatch</Set>
+                <Set name="location">http://jetty.mortbay.org</Set>
+              </New>
+            </Item>
+
+            <Item>
+              <New id="forwardedHttps" class="org.mortbay.jetty.handler.rewrite.ForwardedSchemeHeaderRule">
+                <Set name="header">X-Forwarded-Scheme</Set>
+                <Set name="headerValue">https</Set>
+                <Set name="scheme">https</Set>
+              </New>
+            </Item>
+
+            <Item>
+              <New id="virtualHost" class="org.mortbay.jetty.handler.rewrite.VirtualHostRuleContainer">
+
+                <Set name="virtualHosts">
+                  <Array type="java.lang.String">
+                    <Item>mortbay.com</Item>
+                    <Item>www.mortbay.com</Item>
+                    <Item>mortbay.org</Item>
+                    <Item>www.mortbay.org</Item>
+                  </Array>
+                </Set>
+
+                <Call name="addRule">
+                  <Arg>
+                    <New class="org.mortbay.jetty.handler.rewrite.CookiePatternRule">
+                      <Set name="pattern">/*</Set>
+                      <Set name="name">CookiePatternRule</Set>
+                      <Set name="value">1</Set>
+                    </New>
+                  </Arg>
+                </Call>
+     
+             </New>
+           </Item>           
+          </Array>
+        </Set>
+      </New>
+    </Set>
+    
+</Configure>

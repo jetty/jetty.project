@@ -30,6 +30,7 @@ jetty-7.0.1-SNAPSHOT
  + Promoted Jetty WebApp Verifier from Sandbox
  + Refactored continuation test harnessess
  + Fixed client abort asocciation 
+ + CQ-3581 jetty OSGi contribution
 
 jetty-7.0.0.v20091005 5 October 2009
 291340 Race condition in onException() notifications

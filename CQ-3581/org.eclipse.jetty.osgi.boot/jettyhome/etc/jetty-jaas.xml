@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure.dtd">
+
+<Configure id="Server" class="org.mortbay.jetty.Server">
+
+  
+    <!-- ======================================================== -->
+    <!-- java.security.auth.login.config System property          -->
+    <!-- This is usually a runtime parameter to the jvm, but      -->
+    <!-- it is placed here for convenience.                       -->
+    <!-- ======================================================== -->
+    <Call class="java.lang.System" name="setProperty">
+      <Arg>java.security.auth.login.config</Arg>
+      <Arg><SystemProperty name="jetty.home" default="." />/etc/login.conf</Arg>
+    </Call>
+
+
+    <!-- ======================================================== -->
+    <!-- An example JAAS realm setup                              -->
+    <!-- For more information see the jetty wiki at               -->
+    <!--   http://http://docs.codehaus.org/display/JETTY/JAAS     -->
+    <!-- ======================================================== -->
+    <Set name="UserRealms">
+      <Array type="org.mortbay.jetty.security.UserRealm">
+        <Item>
+          <New class="org.mortbay.jetty.plus.jaas.JAASUserRealm">
+           <Set name="Name">Test JAAS Realm</Set>
+           <Set name="LoginModuleName">xyz</Set>
+          </New>
+        </Item>
+      </Array>
+    </Set>
+    
+
+</Configure>
