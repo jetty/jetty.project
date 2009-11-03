@@ -1,0 +1,45 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-project</artifactId>
+    <version>7.0.1-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <groupId>org.eclipse.jetty.osgi</groupId>
+  <artifactId>jetty-osgi-project</artifactId>
+  <name>Jetty :: OSGi</name>
+  <packaging>pom</packaging>
+  <properties>
+    <osgi-version>3.5.0.v20090520</osgi-version>
+    <osgi-services-version>3.1.200-v20070605</osgi-services-version>
+  </properties>
+  <modules>
+    <module>jetty-osgi-boot</module>
+    <module>jetty-osgi-boot-jsp</module>
+  </modules>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-webapp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-deploy</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse</groupId>
+        <artifactId>osgi</artifactId>
+        <version>${osgi-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.osgi</groupId>
+        <artifactId>services</artifactId>
+        <version>${osgi-services-version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>
