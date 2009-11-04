@@ -14,9 +14,11 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -34,15 +36,17 @@ import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.thread.Timeout;
 
 class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector, Runnable
 {
     private final HttpClient _httpClient;
+    private final Manager _selectorManager=new Manager();
+    private final Timeout _connectTimer = new Timeout();
+    private final Map<SocketChannel, Timeout.Task> _connectingChannels = new ConcurrentHashMap<SocketChannel, Timeout.Task>();
     private SSLContext _sslContext;
     private Buffers _sslBuffers;
     private boolean _blockingConnect;
-
-    Manager _selectorManager=new Manager();
 
     /**
      * @param httpClient
@@ -75,6 +79,28 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     protected void doStart() throws Exception
     {
         super.doStart();
+
+        _connectTimer.setDuration(_httpClient.getConnectTimeout());
+        _connectTimer.setNow();
+        _httpClient._threadPool.dispatch(new Runnable()
+        {
+            public void run()
+            {
+                while (isRunning())
+                {
+                    _connectTimer.tick(System.currentTimeMillis());
+                    try
+                    {
+                        Thread.sleep(200);
+                    }
+                    catch (InterruptedException x)
+                    {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
+        });
 
         _selectorManager.start();
 
@@ -124,6 +150,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     @Override
     protected void doStop() throws Exception
     {
+        _connectTimer.cancelAll();
         _selectorManager.stop();
     }
 
@@ -136,6 +163,9 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         channel.configureBlocking( false );
         channel.connect(address.toSocketAddress());
         _selectorManager.register( channel, destination );
+        ConnectTimeout connectTimeout = new ConnectTimeout(channel, destination);
+        _connectTimer.schedule(connectTimeout);
+        _connectingChannels.put(channel, connectTimeout);
     }
 
     /* ------------------------------------------------------------ */
@@ -193,6 +223,12 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
         {
+            // We're connected, cancel the connect timeout
+            Timeout.Task connectTimeout = _connectingChannels.remove(channel);
+            if (connectTimeout != null)
+                connectTimeout.cancel();
+            Log.debug("Channels with connection pending: {}", _connectingChannels.size());
+
             // key should have destination at this point (will be replaced by endpoint after this call)
             HttpDestination dest=(HttpDestination)key.attachment();
 
@@ -247,6 +283,38 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
                 ((HttpDestination)attachment).onConnectionFailed(ex);
             else
                 super.connectionFailed(channel,ex,attachment);
+        }
+    }
+
+    private class ConnectTimeout extends Timeout.Task
+    {
+        private final SocketChannel channel;
+        private final HttpDestination destination;
+
+        public ConnectTimeout(SocketChannel channel, HttpDestination destination)
+        {
+            this.channel = channel;
+            this.destination = destination;
+        }
+
+        @Override
+        protected void expired()
+        {
+            _connectingChannels.remove(channel);
+            if (channel.isConnectionPending())
+            {
+                Log.debug("Channel {} timed out while connecting, closing it", channel);
+                try
+                {
+                    // This will unregister the channel from the selector
+                    channel.close();
+                }
+                catch (IOException x)
+                {
+                    Log.ignore(x);
+                }
+                destination.onConnectionFailed(new SocketTimeoutException());
+            }
         }
     }
 }

@@ -32,15 +32,14 @@ public class ConnectionTest extends TestCase
         socket.bind(null);
         int port=socket.getLocalPort();
         socket.close();
-        
+
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
         CountDownLatch latch = new CountDownLatch(1);
         HttpExchange exchange = new ConnectionExchange(latch);
-        exchange.setAddress(new Address("localhost", port)); 
+        exchange.setAddress(new Address("localhost", port));
         exchange.setURI("/");
-
         httpClient.send(exchange);
 
         boolean passed = latch.await(1000, TimeUnit.MILLISECONDS);
@@ -58,18 +57,76 @@ public class ConnectionTest extends TestCase
         assertEquals(HttpExchange.STATUS_EXCEPTED, exchange.getStatus());
     }
 
+    public void testConnectionTimeoutWithSocketConnector() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.setConnectorType(HttpClient.CONNECTOR_SOCKET);
+        int connectTimeout = 5000;
+        httpClient.setConnectTimeout(connectTimeout);
+        httpClient.start();
+
+        try
+        {
+            CountDownLatch latch = new CountDownLatch(1);
+            HttpExchange exchange = new ConnectionExchange(latch);
+            // Using a IP address has a different behavior than using a host name
+            exchange.setAddress(new Address("1.2.3.4", 8080));
+            exchange.setURI("/");
+            httpClient.send(exchange);
+
+            boolean passed = latch.await(connectTimeout * 2L, TimeUnit.MILLISECONDS);
+            assertTrue(passed);
+
+            int status = exchange.waitForDone();
+            assertEquals(HttpExchange.STATUS_EXCEPTED, status);
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    public void testConnectionTimeoutWithSelectConnector() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        int connectTimeout = 5000;
+        httpClient.setConnectTimeout(connectTimeout);
+        httpClient.start();
+
+        try
+        {
+            CountDownLatch latch = new CountDownLatch(1);
+            HttpExchange exchange = new ConnectionExchange(latch);
+            // Using a IP address has a different behavior than using a host name
+            exchange.setAddress(new Address("1.2.3.4", 8080));
+            exchange.setURI("/");
+            httpClient.send(exchange);
+
+            boolean passed = latch.await(connectTimeout * 2L, TimeUnit.MILLISECONDS);
+            assertTrue(passed);
+
+            int status = exchange.waitForDone();
+            assertEquals(HttpExchange.STATUS_EXCEPTED, status);
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
     public void testIdleConnection() throws Exception
     {
         ServerSocket socket = new ServerSocket();
         socket.bind(null);
         int port=socket.getLocalPort();
-        
+
         HttpClient httpClient = new HttpClient();
         httpClient.setIdleTimeout(700);
         httpClient.start();
 
         HttpExchange exchange = new ConnectionExchange();
-        exchange.setAddress(new Address("localhost", port)); 
+        exchange.setAddress(new Address("localhost", port));
         exchange.setURI("/");
         HttpDestination dest = httpClient.getDestination(new Address("localhost", port),false);
 
@@ -79,15 +136,15 @@ public class ConnectionTest extends TestCase
         s.getInputStream().read(buf);
         assertEquals(1,dest.getConnections());
         assertEquals(0,dest.getIdleConnections());
-        
+
         s.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes());
 
         Thread.sleep(300);
         assertEquals(1,dest.getConnections());
         assertEquals(1,dest.getIdleConnections());
-        
+
         exchange = new ConnectionExchange();
-        exchange.setAddress(new Address("localhost", port)); 
+        exchange.setAddress(new Address("localhost", port));
         exchange.setURI("/");
 
         httpClient.send(exchange);
@@ -100,16 +157,16 @@ public class ConnectionTest extends TestCase
 
         assertEquals(1,dest.getConnections());
         assertEquals(1,dest.getIdleConnections());
-        
+
         Thread.sleep(500);
-        
+
         assertEquals(0,dest.getConnections());
         assertEquals(0,dest.getIdleConnections());
-        
+
         socket.close();
-        
+
     }
-    
+
     private class ConnectionExchange extends HttpExchange
     {
         private final CountDownLatch latch;
@@ -118,7 +175,7 @@ public class ConnectionTest extends TestCase
         {
             this.latch = null;
         }
-        
+
         private ConnectionExchange(CountDownLatch latch)
         {
             this.latch = latch;

@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -93,6 +92,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     Connector _connector;
     private long _idleTimeout = 20000;
     private long _timeout = 320000;
+    private int _connectTimeout = 75000;
     private Timeout _timeoutQ = new Timeout();
     private Timeout _idleTimeoutQ = new Timeout();
     private Address _proxy;
@@ -513,7 +513,6 @@ public class HttpClient extends HttpBuffers implements Attributes
     interface Connector extends LifeCycle
     {
         public void startConnection(HttpDestination destination) throws IOException;
-
     }
 
     /**
@@ -682,6 +681,22 @@ public class HttpClient extends HttpBuffers implements Attributes
     public void setTimeout(long timeout)
     {
         _timeout = timeout;
+    }
+
+    /**
+     * @return the period in ms before timing out an attempt to connect
+     */
+    public int getConnectTimeout()
+    {
+        return _connectTimeout;
+    }
+
+    /**
+     * @param connectTimeout the period in ms before timing out an attempt to connect
+     */
+    public void setConnectTimeout(int connectTimeout)
+    {
+        this._connectTimeout = connectTimeout;
     }
 
     /* ------------------------------------------------------------ */
