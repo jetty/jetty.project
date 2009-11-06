@@ -99,6 +99,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     private Authorization _proxyAuthentication;
     private Set<String> _noProxy;
     private int _maxRetries = 3;
+    private int _maxRedirects = 20;
     private LinkedList<String> _registeredListeners;
 
     // TODO clean up and add getters/setters to some of this maybe
@@ -751,6 +752,18 @@ public class HttpClient extends HttpBuffers implements Attributes
     public void setMaxRetries(int retries)
     {
         _maxRetries = retries;
+    }
+
+    /* ------------------------------------------------------------ */
+    public int maxRedirects()
+    {
+        return _maxRedirects;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setMaxRedirects(int redirects)
+    {
+        _maxRedirects = redirects;
     }
 
     /* ------------------------------------------------------------ */

@@ -25,8 +25,8 @@ import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.log.Log;
 
 
@@ -98,7 +98,7 @@ public class HttpExchange
     boolean _onRequestCompleteDone;
     boolean _onResponseCompleteDone;
     boolean _onDone; // == onConnectionFail || onException || onExpired || onCancelled || onResponseCompleted && onRequestCompleted
-    
+
 
     public int getStatus()
     {
@@ -117,13 +117,13 @@ public class HttpExchange
     }
 
     /**
-     * Wait until the exchange is "done".  
-     * Done is defined as when a final state has been passed to the 
+     * Wait until the exchange is "done".
+     * Done is defined as when a final state has been passed to the
      * HttpExchange via the associated onXxx call.  Note that an
      * exchange can transit a final state when being used as part
      * of a dialog (eg {@link SecurityListener}.   Done status
      * is thus defined as:<pre>
-     *   done == onConnectionFailed 
+     *   done == onConnectionFailed
      *        || onException
      *        || onExpire
      *        || onRequestComplete && onResponseComplete
@@ -144,7 +144,7 @@ public class HttpExchange
     public void reset()
     {
         // TODO - this should do a cancel and wakeup everybody that was waiting.
-        // might need a version number concept 
+        // might need a version number concept
         synchronized(this)
         {
             _onRequestCompleteDone=false;
@@ -160,7 +160,7 @@ public class HttpExchange
         {
             int oldStatus = _status.get();
             boolean set = false;
-            
+
             // State machine: from which old status you can go into which new status
             switch (oldStatus)
             {
@@ -597,7 +597,7 @@ public class HttpExchange
         abort();
     }
 
-    private void done() 
+    private void done()
     {
         synchronized(this)
         {
@@ -606,7 +606,7 @@ public class HttpExchange
             notifyAll();
         }
     }
-    
+
     private void abort()
     {
         HttpConnection httpConnection = _connection;
@@ -790,7 +790,7 @@ public class HttpExchange
             }
             finally
             {
-	        done();
+                done();
             }
         }
 
@@ -802,7 +802,7 @@ public class HttpExchange
             }
             finally
             {
-	        done();
+                done();
             }
         }
 
@@ -814,7 +814,7 @@ public class HttpExchange
             }
             finally
             {
-	        done();
+                done();
             }
         }
 
