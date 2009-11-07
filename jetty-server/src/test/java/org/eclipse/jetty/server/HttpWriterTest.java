@@ -80,15 +80,15 @@ public class HttpWriterTest extends TestCase
     public void testUTF8() throws Exception
     {
         _writer.setCharacterEncoding(StringUtil.__UTF8);
-        _writer.write("How now Ｂrown cow");      
-        assertArrayEquals("How now Ｂrown cow".getBytes(StringUtil.__UTF8),_bytes.asArray());
+        _writer.write("How now \uFF22rown cow");      
+        assertArrayEquals("How now \uFF22rown cow".getBytes(StringUtil.__UTF8),_bytes.asArray());
     }
     
     public void testMultiByteOverflowUTF8() throws Exception
     {
         _writer.setCharacterEncoding(StringUtil.__UTF8);    
         final String singleByteStr = "a";
-        final String multiByteDuplicateStr = "Ｂ";
+        final String multiByteDuplicateStr = "\uFF22";
         int remainSize = 1;
 
         int multiByteStrByteLength = multiByteDuplicateStr.getBytes("UTF-8").length;
@@ -113,11 +113,10 @@ public class HttpWriterTest extends TestCase
     public void testISO8859() throws Exception
     {
         _writer.setCharacterEncoding(StringUtil.__ISO_8859_1);
-        _writer.write("How now Ｂrown cow");      
+        _writer.write("How now \uFF22rown cow");      
         assertEquals("How now ?rown cow",new String(_bytes.asArray(),StringUtil.__ISO_8859_1));
     }
 
-    /* TODO fails on bamboo ??
     public void testOutput()
         throws Exception
     {
@@ -142,10 +141,9 @@ public class HttpWriterTest extends TestCase
         
         hb.completeHeader(fields,true);
         hb.flush(10000);
-        String response = new String(endp.getOut().asArray());
+        String response = new String(endp.getOut().asArray(),StringUtil.__UTF8);
         assertTrue(response.startsWith("HTTP/1.1 200 OK\r\nContent-Length: 1025\r\n\r\n\u05531234567890"));
         
         
     }    
-    */   
 }
