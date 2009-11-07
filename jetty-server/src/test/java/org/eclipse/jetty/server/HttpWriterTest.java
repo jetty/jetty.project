@@ -6,6 +6,7 @@ import junit.framework.TestCase;
 
 import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -115,4 +116,34 @@ public class HttpWriterTest extends TestCase
         _writer.write("How now Ｂrown cow");      
         assertEquals("How now ?rown cow",new String(_bytes.asArray(),StringUtil.__ISO_8859_1));
     }
+
+    public void testOutput()
+        throws Exception
+    {
+        Buffer sb=new ByteArrayBuffer(1500);
+        Buffer bb=new ByteArrayBuffer(8096);
+        HttpFields fields = new HttpFields();
+        ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
+        
+        HttpGenerator hb = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
+
+        hb.setResponse(200,"OK");
+        
+        HttpOutput output = new HttpOutput(hb,10000);
+        HttpWriter writer = new HttpWriter(output);
+        writer.setCharacterEncoding(StringUtil.__UTF8);
+        
+        char[] chars = new char[1024];
+        for (int i=0;i<chars.length;i++)
+            chars[i]=(char)('0'+(i%10));
+        chars[0]='\u0553';
+        writer.write(chars);
+        
+        hb.completeHeader(fields,true);
+        hb.flush(10000);
+        String response = new String(endp.getOut().asArray());
+        assertTrue(response.startsWith("HTTP/1.1 200 OK\r\nContent-Length: 1025\r\n\r\n\u05531234567890"));
+        
+        
+    }       
 }

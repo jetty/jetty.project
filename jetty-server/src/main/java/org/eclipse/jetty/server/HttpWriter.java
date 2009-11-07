@@ -162,6 +162,11 @@ public class HttpWriter extends Writer
                         if ((code & 0xffffff80) == 0) 
                         {
                             // 1b
+                            if (bytes>=buffer.length)
+                            {
+                                chars=i;
+                                break;
+                            }
                             buffer[bytes++]=(byte)(code);
                         }
                         else
