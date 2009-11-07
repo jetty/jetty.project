@@ -26,6 +26,8 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
 
 import org.eclipse.jetty.deploy.ConfigurationManager;
 import org.eclipse.jetty.deploy.ContextDeployer;
@@ -42,6 +44,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -52,14 +55,16 @@ import org.osgi.framework.BundleContext;
 import org.xml.sax.SAXException;
 
 /**
- * Bridges the traditional web-application deployers: {@link WebAppDeployer} and {@link ContextDeployer} with the OSGi lifecycle where applications are managed
+ * Bridges the traditional web-application deployers: {@link WebAppDeployer} and
+ *  {@link ContextDeployer} with the OSGi lifecycle where applications are managed
  * inside OSGi-bundles.
  * <p>
  * This class should be called as a consequence of the activation of a new service that is a ContextHandler.<br/>
  * This way the new webapps are exposed as OSGi services.
  * </p>
  * <p>
- * Helper methods to register a bundle that is a web-application or a context. It is deployed as if the server was using its WebAppDeployer or ContextDeployer
+ * Helper methods to register a bundle that is a web-application or a context.
+ * It is deployed as if the server was using its WebAppDeployer or ContextDeployer
  * as configured in its etc/jetty.xml file. Well as close as possible to that.
  * </p>
  * Limitations:
@@ -139,14 +144,32 @@ class WebappRegistrationHelper
             }
         }
     }
+    
+    /**
+     * Removes quotes around system property values before we try to make them into
+     * file pathes.
+     */
+    public static String stripQuotesIfPresent(String filePath) {
+        if (filePath == null)
+            return null;
+        
+        if ((filePath.startsWith("\"") || filePath.startsWith("'"))
+                && (filePath.endsWith("\"") || filePath.endsWith("'")))
+            return filePath.substring(1, filePath.length()-1);
+        return filePath;
+    }
 
     /**
-     * Look for the home directory of jetty as defined by the system property 'jetty.home'. If undefined, look at the current bundle and uses its own jettyhome
+     * Look for the home directory of jetty as defined by the system property 
+     * 'jetty.home'. If undefined, look at the current bundle and uses its own jettyhome
      * folder for this feature.
      * <p>
      * Special case: inside eclipse-SDK:<br/>
-     * If the bundle is jarred, see if we are inside eclipse-PDE itself. In that case, look for the installation directory of eclipse-PDE, try to create a
-     * jettyhome folder there and install the sample jettyhome folder at that location. This makes the installation in eclipse-SDK easier.
+     * If the bundle is jarred, see if we are inside eclipse-PDE itself. In that case, 
+     * look for the installation directory of eclipse-PDE, try to create a
+     * jettyhome folder there and install the sample jettyhome folder at that location. 
+     * This makes the installation in eclipse-SDK easier.
+     * <br/>This is a bit redundant with the work done by the jetty configuration launcher.
      * </p>
      * 
      * @param context
@@ -159,7 +182,8 @@ class WebappRegistrationHelper
         // new File("~/proj/eclipse-install/eclipse-3.5.1-SDK-jetty7/" +
         // "dropins/jetty7/plugins/org.eclipse.jetty.osgi.boot_0.0.1.001-SNAPSHOT.jar");
         boolean bootBundleCanBeJarred = true;
-        String jettyHome = System.getProperty("jetty.home");
+        String jettyHome = stripQuotesIfPresent(System.getProperty("jetty.home"));
+        
         if (jettyHome == null || jettyHome.length() == 0)
         {
             if (_installLocation.getName().endsWith(".jar"))
@@ -171,19 +195,25 @@ class WebappRegistrationHelper
                 jettyHome = _installLocation.getAbsolutePath() + "/jettyhome";
                 bootBundleCanBeJarred = false;
             }
-            System.setProperty("jetty.home",jettyHome);
         }
-        String jettyLogs = System.getProperty("jetty.logs");
+        //in case we stripped the quotes.
+        System.setProperty("jetty.home",jettyHome);
+        
+        String jettyLogs = stripQuotesIfPresent(System.getProperty("jetty.logs"));
         if (jettyLogs == null || jettyLogs.length() == 0)
         {
-            System.setProperty("jetty.logs",System.getProperty("jetty.home") + "/logs");
+            System.setProperty("jetty.logs",jettyHome + "/logs");
         }
 
         if (!bootBundleCanBeJarred && !_installLocation.isDirectory())
         {
-            String install = _installLocation != null?_installLocation.getCanonicalPath():" unresolved_install_location";
-            throw new IllegalArgumentException("The system property -Djetty.home" + " must be set to a directory or the bundle "
-                    + context.getBundle().getSymbolicName() + " installed here " + install + " must be unjarred.");
+            String install = _installLocation != null
+                ? _installLocation.getCanonicalPath()
+                : " unresolved_install_location";
+            throw new IllegalArgumentException("The system property -Djetty.home"
+                    + " must be set to a directory or the bundle "
+                    + context.getBundle().getSymbolicName()
+                    + " installed here " + install + " must be unjarred.");
 
         }
         try
@@ -199,7 +229,8 @@ class WebappRegistrationHelper
         try
         {
 
-            XmlConfiguration config = new XmlConfiguration(new FileInputStream(jettyHome + "/etc/jetty.xml"));
+            XmlConfiguration config = new XmlConfiguration(
+                    new FileInputStream(jettyHome + "/etc/jetty.xml"));
             config.getProperties().put("jetty.home", jettyHome);
 
             // passing this bundle's classloader as the context classlaoder
@@ -208,7 +239,8 @@ class WebappRegistrationHelper
             File jettyHomeF = new File(jettyHome);
             try
             {
-                _libEtcClassLoader = LibExtClassLoaderHelper.createLibEtcClassLoaderHelper(jettyHomeF,_server,JettyBootstrapActivator.class.getClassLoader());
+                _libEtcClassLoader = LibExtClassLoaderHelper.createLibEtcClassLoaderHelper(
+                        jettyHomeF,_server,JettyBootstrapActivator.class.getClassLoader());
             }
             catch (MalformedURLException e)
             {
@@ -237,8 +269,10 @@ class WebappRegistrationHelper
     /**
      * Must be called after the server is configured.
      * 
-     * Locate the actual instance of the ContextDeployer and WebAppDeployer that was created when configuring the server through jetty.xml. If there is no such
-     * thing it won't be possible to deploy webapps from a context and we throw IllegalStateExceptions.
+     * Locate the actual instance of the ContextDeployer and WebAppDeployer
+     * that was created when configuring the server through jetty.xml. If there is no such
+     * thing it won't be possible to deploy webapps from a context and we 
+     * throw IllegalStateExceptions.
      */
     private void init()
     {
@@ -248,7 +282,8 @@ class WebappRegistrationHelper
         // instead of hardcoding the values: but they are unlikely to change.
         if (System.getProperty("java.naming.factory.initial") == null)
         {
-            System.setProperty("java.naming.factory.initial","org.eclipse.jetty.jndi.InitialContextFactory");
+            System.setProperty("java.naming.factory.initial",
+                    "org.eclipse.jetty.jndi.InitialContextFactory");
         }
         if (System.getProperty("java.naming.factory.url.pkgs") == null)
         {
@@ -258,14 +293,17 @@ class WebappRegistrationHelper
         _ctxtHandler = (ContextHandlerCollection)_server.getChildHandlerByClass(ContextHandlerCollection.class);
         if (_ctxtHandler == null)
         {
-            throw new IllegalStateException("ERROR: No ContextHandlerCollection was configured" + " with the server to add applications to."
-                    + "Using a default one is not supported at" + " this point. " + " Please review the jetty.xml file used.");
+            throw new IllegalStateException("ERROR: No ContextHandlerCollection was configured"
+                    + " with the server to add applications to."
+                    + "Using a default one is not supported at"
+                    + " this point. " + " Please review the jetty.xml file used.");
         }
         List<ContextDeployer> ctxtDeployers = _server.getBeans(ContextDeployer.class);
 
         if (ctxtDeployers == null || ctxtDeployers.isEmpty())
         {
-            System.err.println("Warn: No ContextDeployer was configured" + " with the server. Using a default one is not supported at" + " this point. "
+            System.err.println("Warn: No ContextDeployer was configured"
+                    + " with the server. Using a default one is not supported at" + " this point. "
                     + " Please review the jetty.xml file used.");
         }
         else
@@ -276,7 +314,9 @@ class WebappRegistrationHelper
 
         if (wDeployers == null || wDeployers.isEmpty())
         {
-            System.err.println("Warn: No WebappDeployer was configured" + " with the server. Using a default one is not supported at" + " this point. "
+            System.err.println("Warn: No WebappDeployer was configured"
+                    + " with the server. Using a default one is not supported at"
+                    + " this point. "
                     + " Please review the jetty.xml file used.");
         }
         else
@@ -292,20 +332,38 @@ class WebappRegistrationHelper
      * @param context
      *            The current bundle context
      * @param webappFolderPath
-     *            The path to the root of the webapp. Must be a path relative to bundle; either an absolute path.
+     *            The path to the root of the webapp. Must be a path relative to bundle;
+     *            either an absolute path.
      * @param contextPath
      *            The context path. Must start with "/"
      * @param classInBundle
-     *            A class that belongs to the current bundle to inherit from the osgi classloader. Null to not have access to the OSGI classloader.
+     *            A class that belongs to the current bundle to inherit from the osgi classloader.
+     *            Null to not have access to the OSGI classloader.
      * @throws Exception
      */
-    public ContextHandler registerWebapplication(Bundle bundle, String webappFolderPath, String contextPath) throws Exception
+    public ContextHandler registerWebapplication(Bundle bundle, String webappFolderPath,
+            String contextPath, String extraClasspath, String overrideBundleInstallLocation) throws Exception
     {
-        File bundleInstall = BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(bundle);
-        File webapp = webappFolderPath != null && webappFolderPath.length() != 0 
-                        && !webappFolderPath.equals(".")
-                ? new File(bundleInstall,webappFolderPath)
-                : bundleInstall;
+        File bundleInstall = overrideBundleInstallLocation == null
+            ? BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(bundle)
+            : new File(overrideBundleInstallLocation);
+        File webapp = null;
+        if (webappFolderPath != null && webappFolderPath.length() != 0 
+                && !webappFolderPath.equals("."))
+        {
+            if (webappFolderPath.startsWith("/") || webappFolderPath.startsWith("file:/"))
+            {
+                webapp = new File(webappFolderPath);
+            }
+            else
+            {
+                webapp = new File(bundleInstall, webappFolderPath);
+            }
+        }
+        else
+        {
+            webapp = bundleInstall;
+        }
         if (!webapp.exists())
         {
             throw new IllegalArgumentException("Unable to locate "
@@ -314,7 +372,7 @@ class WebappRegistrationHelper
                ? bundleInstall.getAbsolutePath()
                : "unlocated bundle '" + bundle.getSymbolicName() + "'"));
         }
-        return registerWebapplication(bundle,webapp,contextPath);
+        return registerWebapplication(bundle,webapp,contextPath,extraClasspath);
     }
 
     /**
@@ -326,7 +384,8 @@ class WebappRegistrationHelper
      * @return The contexthandler created and started
      * @throws Exception
      */
-    public ContextHandler registerWebapplication(Bundle contributor, File webapp, String contextPath) throws Exception
+    public ContextHandler registerWebapplication(Bundle contributor, File webapp,
+            String contextPath, String extraClasspath) throws Exception
     {
 
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
@@ -341,6 +400,7 @@ class WebappRegistrationHelper
             Thread.currentThread().setContextClassLoader(composite);
 
             context = new WebAppContext(webapp.getAbsolutePath(),contextPath);
+            context.setExtraClasspath(extraClasspath);
 
             WebXmlConfiguration webXml = new WebXmlConfiguration();
             webXml.configure(context);
@@ -354,9 +414,11 @@ class WebappRegistrationHelper
             // was at least one such handler for webapps.
             _ctxtHandler.addHandler(context);
 
-            configureContextClassLoader(context,composite);
+            configureContextClassLoader(contributor,context,composite);
 
             // @see org.eclipse.jetty.webapp.JettyWebXmlConfiguration#configure(WebAppContext)
+            // during initialization of the webapp all the jetty packages are visible
+            // through the webapp classloader.
             oldServerClasses = context.getServerClasses();
             context.setServerClasses(null);
             context.start();
@@ -365,7 +427,7 @@ class WebappRegistrationHelper
         }
         finally
         {
-            if (context != null)
+            if (context != null && oldServerClasses != null)
             {
                 context.setServerClasses(oldServerClasses);
             }
@@ -417,7 +479,8 @@ class WebappRegistrationHelper
      * @param classInBundle
      * @throws Exception
      */
-    public ContextHandler registerContext(Bundle contributor, String contextFileRelativePath) throws Exception
+    public ContextHandler registerContext(Bundle contributor, String contextFileRelativePath,
+            String extraClasspath, String overrideBundleInstallLocation) throws Exception
     {
         File contextsHome = getOSGiContextsHome();
         if (contextsHome != null)
@@ -425,13 +488,17 @@ class WebappRegistrationHelper
             File prodContextFile = new File(contextsHome,contributor.getSymbolicName() + "/" + contextFileRelativePath);
             if (prodContextFile.exists())
             {
-                return registerContext(contributor,prodContextFile);
+                return registerContext(contributor,prodContextFile,
+                            extraClasspath, overrideBundleInstallLocation);
             }
         }
-        File contextFile = new File(BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(contributor),contextFileRelativePath);
+        File contextFile = overrideBundleInstallLocation != null
+            ? new File(overrideBundleInstallLocation, contextFileRelativePath)
+            : new File(BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(contributor),contextFileRelativePath);
         if (contextFile.exists())
         {
-            return registerContext(contributor,contextFile);
+            return registerContext(contributor, contextFile,
+                        extraClasspath, overrideBundleInstallLocation);
         }
         else
         {
@@ -443,13 +510,41 @@ class WebappRegistrationHelper
             {
                 contextFileRelativePath = "/" + contextFileRelativePath;
             }
-            URL contextURL = contributor.getEntry(contextFileRelativePath);
-            if (contextURL != null)
+            if (overrideBundleInstallLocation == null)
             {
-                return registerContext(contributor,contextURL.openStream());
+                URL contextURL = contributor.getEntry(contextFileRelativePath);
+                if (contextURL != null)
+                {
+                    return registerContext(contributor,
+                                contextURL.openStream(), extraClasspath,
+                                overrideBundleInstallLocation);
+                }
             }
-            throw new IllegalArgumentException("Could not find the context " + "file " + contextFileRelativePath + " for the bundle "
-                    + contributor.getSymbolicName());
+            else
+            {
+                JarFile zipFile = null;
+                try
+                {
+                    zipFile = new JarFile(overrideBundleInstallLocation);
+                    ZipEntry entry = zipFile.getEntry(contextFileRelativePath.substring(1));
+                    return registerContext(contributor,
+                            zipFile.getInputStream(entry), extraClasspath,
+                            overrideBundleInstallLocation);
+                }
+                catch (Throwable t)
+                {
+                    
+                }
+                finally
+                {
+                    if (zipFile != null) try { zipFile.close(); } catch (IOException ioe) {}
+                }
+            }
+            throw new IllegalArgumentException("Could not find the context "
+                    + "file " + contextFileRelativePath + " for the bundle "
+                    + contributor.getSymbolicName()
+                    + (overrideBundleInstallLocation != null
+                            ? " using the install location " + overrideBundleInstallLocation : ""));
         }
     }
 
@@ -463,13 +558,15 @@ class WebappRegistrationHelper
      * @param classInBundle
      * @throws Exception
      */
-    private ContextHandler registerContext(Bundle contributor, File contextFile) throws Exception
+    private ContextHandler registerContext(Bundle contributor, File contextFile,
+            String extraClasspath, String overrideBundleInstallLocation) throws Exception
     {
         InputStream contextFileInputStream = null;
         try
         {
             contextFileInputStream = new BufferedInputStream(new FileInputStream(contextFile));
-            return registerContext(contributor,contextFileInputStream);
+            return registerContext(contributor, contextFileInputStream,
+                        extraClasspath, overrideBundleInstallLocation);
         }
         finally
         {
@@ -484,7 +581,14 @@ class WebappRegistrationHelper
         }
     }
 
-    private ContextHandler registerContext(Bundle contributor, InputStream contextFileInputStream) throws Exception
+    /**
+     * @param contributor
+     * @param contextFileInputStream
+     * @return The ContextHandler created and registered or null if it did not happen.
+     * @throws Exception
+     */
+    private ContextHandler registerContext(Bundle contributor, InputStream contextFileInputStream,
+            String extraClasspath, String overrideBundleInstallLocation) throws Exception
     {
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         String[] oldServerClasses = null;
@@ -496,18 +600,17 @@ class WebappRegistrationHelper
             // configure with access to all jetty classes and also all the classes
             // that the contributor gives access to.
             Thread.currentThread().setContextClassLoader(composite);
-            ContextHandler context = createContextHandler(contributor,contextFileInputStream);
-            // //[H]extra work for the path to the file:
-            // if (context instanceof WebAppContext) {
-            // WebAppContext wah = (WebAppContext)context;
-            // Resource.newResource(wah.getWar());
-            // }
-
+            ContextHandler context = createContextHandler(contributor,
+                    contextFileInputStream, extraClasspath, overrideBundleInstallLocation);
+            if (context == null) {
+            	return null;//did not happen
+            }
+            
             // ok now register this webapp. we checked when we started jetty that there
             // was at least one such handler for webapps.
             _ctxtHandler.addHandler(context);
 
-            configureContextClassLoader(context,composite);
+            configureContextClassLoader(contributor,context,composite);
             if (context instanceof WebAppContext)
             {
                 webAppContext = (WebAppContext)context;
@@ -515,7 +618,7 @@ class WebappRegistrationHelper
                 oldServerClasses = webAppContext.getServerClasses();
                 webAppContext.setServerClasses(null);
             }
-
+            
             context.start();
             return context;
         }
@@ -590,11 +693,13 @@ class WebappRegistrationHelper
      * @param contextFile
      * @return
      */
-    protected ContextHandler createContextHandler(Bundle bundle, File contextFile)
+    protected ContextHandler createContextHandler(Bundle bundle, File contextFile,
+            String extraClasspath, String overrideBundleInstallLocation)
     {
         try
         {
-            return createContextHandler(bundle,new BufferedInputStream(new FileInputStream(contextFile)));
+            return createContextHandler(bundle,new BufferedInputStream(
+                    new FileInputStream(contextFile)), extraClasspath, overrideBundleInstallLocation);
         }
         catch (FileNotFoundException e)
         {
@@ -609,7 +714,8 @@ class WebappRegistrationHelper
      * @return
      */
     @SuppressWarnings("unchecked")
-    protected ContextHandler createContextHandler(Bundle bundle, InputStream contextInputStream)
+    protected ContextHandler createContextHandler(Bundle bundle, InputStream contextInputStream,
+            String extraClasspath, String overrideBundleInstallLocation)
     {
 
         /*
@@ -632,15 +738,14 @@ class WebappRegistrationHelper
                 properties.putAll(_configMgr.getProperties());
             }
             // insert the bundle's location as a property.
-            setThisBundleHomeProperty(bundle,properties);
+            setThisBundleHomeProperty(bundle,properties,overrideBundleInstallLocation);
             xmlConfiguration.setProperties(properties);
 
-            // bug in equinox? if jetty plus is an optionally required-bundle, then we can't load the class!
-            // JettyBootstrapActivator.class.getClassLoader().loadClass("org.eclipse.jetty.plus.jndi.EnvEntry");
-            // FrameworkUtil.getBundle(JettyBootstrapActivator.class).loadClass("org.eclipse.jetty.plus.jndi.EnvEntry");
-            // in fact the pde can't find it at compilation time and shows a warning "Unsatisfied version constraint: ..."
-            // System.err.println(EnvEntry.class);
             ContextHandler context = (ContextHandler)xmlConfiguration.configure();
+            if (context instanceof WebAppContext)
+            {
+                ((WebAppContext)context).setExtraClasspath(extraClasspath);
+            }
             context.setAttributes(new AttributesMap(_contextAttributes));
 
             // rfc-66:
@@ -670,27 +775,30 @@ class WebappRegistrationHelper
         finally
         {
             if (contextInputStream != null)
-                try
-                {
-                    contextInputStream.close();
-                }
-                catch (IOException ioe)
-                {
-                }
+                try { contextInputStream.close(); } catch (IOException ioe) {}
         }
         return null;
     }
 
     /**
-     * Configure a classloader onto the context. If the context is a WebAppContext, build a WebAppClassLoader that has access to all the jetty classes thanks to
-     * the classloader of the JettyBootStrapper bundle and also has access to the classloader of the bundle that defines this context.
+     * Configure a classloader onto the context. If the context is a WebAppContext,
+     * build a WebAppClassLoader that has access to all the jetty classes thanks to
+     * the classloader of the JettyBootStrapper bundle and also has access to the
+     * classloader of the bundle that defines this context.
      * <p>
-     * If the context is not a WebAppContext, same but with a simpler URLClassLoader. Note that the URLClassLoader is pretty much fake: it delegate all actual
+     * If the context is not a WebAppContext, same but with a simpler URLClassLoader.
+     * Note that the URLClassLoader is pretty much fake: it delegate all actual
      * classloading to the parent classloaders.
      * </p>
      * <p>
-     * The URL[] returned by the URLClassLoader create contained specifically the jars that some j2ee tools expect and look into. For example the jars that
+     * The URL[] returned by the URLClassLoader create contained specifically
+     * the jars that some j2ee tools expect and look into. For example the jars that
      * contain tld files for jasper's jstl support.
+     * </p>
+     * <p>
+     * Also as the jars in the lib folder and the classes in the classes folder
+     * might already be in the OSGi classloader we filter them out
+     * of the WebAppClassLoader
      * </p>
      * 
      * @param context
@@ -700,13 +808,26 @@ class WebappRegistrationHelper
      * @param classInBundle
      * @throws Exception
      */
-    protected void configureContextClassLoader(ContextHandler context, TldLocatableURLClassloader composite) throws Exception
+    protected void configureContextClassLoader(
+            Bundle contributor, ContextHandler context,
+            TldLocatableURLClassloader composite) throws Exception
     {
         if (context instanceof WebAppContext)
         {
             WebAppContext webappCtxt = (WebAppContext)context;
             // updateServerClasses(webappCtxt);
-            WebAppClassLoader wcl = new WebAppClassLoader(composite,webappCtxt);
+            WebAppClassLoader wcl = new WebAppClassLoader(composite,webappCtxt) {
+
+                @Override
+                public void addJars(Resource lib)
+                {
+                    //TODO: look in the Bundle-Classpath header
+                    //of the contributor bundle and don't add a lib that is already
+                    //there.
+                    super.addJars(lib);
+                }
+                
+            };
 
             // addJarsWithTlds(wcl);
             context.setClassLoader(wcl);
@@ -716,42 +837,6 @@ class WebappRegistrationHelper
             context.setClassLoader(composite);
         }
 
-    }
-
-    /**
-     * Right now we avoid this by doing what JettWebXmlConfiguration is doing during the configureWebapp method call: set the serverclasses to null and when
-     * done put back the limitations as defined.
-     * 
-     * We need to test that though.
-     * 
-     * TODO: review this with the jetty team: how do you let cometd cleanly access jetty-client, jetty-io, jetty-http from osgi? The webapp-classloader of jetty
-     * refuses to delegate loading the class to the parent classloader if that class belongs to the org.eclipse.jetty package or one of its descendants: make
-     * sure they isolate the webapp from the server.
-     * 
-     * Maybe we need to somehow chagne the way we buidl the webappcontext classloader so that the osgi classloader is not the parent of the webappclassloader.
-     * 
-     */
-    private static String[] visibleinOsgi = new String[]
-    { "-org.eclipse.jetty.util.", "-org.eclipse.jetty.io.", "-org.eclipse.jetty.client.", "-org.eclipse.jetty.http.", "-org.eclipse.jetty.osgi." };
-
-    /**
-     * @deprecated not so good.
-     * @see WebAppContext#setServerClasses(String[]) We make org.eclipse.jetty.osgi visible if they are hidden.
-     */
-    private void updateServerClasses(WebAppContext webappCtxt)
-    {
-        String[] serverClasses = webappCtxt.getServerClasses();
-        for (String s : serverClasses)
-        {
-            if (s.startsWith("-org.eclipse.jetty.osgi."))
-            {
-                return;// ok already visible
-            }
-        }
-        String[] serverClasses2 = new String[serverClasses.length + visibleinOsgi.length];
-        System.arraycopy(visibleinOsgi,0,serverClasses2,0,visibleinOsgi.length);
-        System.arraycopy(serverClasses,0,serverClasses2,visibleinOsgi.length,serverClasses.length);
-        webappCtxt.setServerClasses(serverClasses2);
     }
 
     protected TldLocatableURLClassloader createContextClassLoader(Bundle contributor) throws Exception
@@ -768,7 +853,7 @@ class WebappRegistrationHelper
             // the contributed webapp.
             TldLocatableURLClassloader composite =
                 new TldLocatableURLClassloaderWithInsertedJettyClassloader(
-                    _libEtcClassLoader,osgiCl, getJarsWithTlds());
+                    _libEtcClassLoader, osgiCl, getJarsWithTlds());
             return composite;
         }
         else
@@ -783,13 +868,16 @@ class WebappRegistrationHelper
     }
 
     /**
-     * Set the property &quot;this.bundle.install&quot; to point to the location of the bundle. Useful when <SystemProperty name="this.bundle.home"/> is used.
+     * Set the property &quot;this.bundle.install&quot; to point to the location of the bundle.
+     * Useful when <SystemProperty name="this.bundle.home"/> is used.
      */
-    private void setThisBundleHomeProperty(Bundle bundle, HashMap<String, Object> properties)
+    private void setThisBundleHomeProperty(Bundle bundle, HashMap<String, Object> properties,String overrideBundleInstallLocation)
     {
         try
         {
-            File location = BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(bundle);
+            File location = overrideBundleInstallLocation != null
+                ? new File(overrideBundleInstallLocation)
+                : BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(bundle);
             properties.put("this.bundle.install",location.getCanonicalPath());
         }
         catch (Throwable t)

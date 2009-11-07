@@ -15,6 +15,9 @@ jetty-7.0.1-SNAPSHOT
  + 293222 Improved StatisticsHandler for async
  + 293506 Unable to use jconsole with Jetty when running with security manager
  + 293557 Add "jad" mime mapping
+ + 294154 Patched jetty-osgi
+ + 294224 HttpClient timeout setting has no effect when connecting to host
+ + 294345 Support for HTTP/301 + HTTP/302 response codes
  + JETTY-937 More JVM bug work arounds. Insert pause if all else fails
  + JETTY-983 Send content-length with multipart ranges
  + JETTY-1114 unsynchronised WebAppClassloader.getResource(String)
@@ -32,8 +35,6 @@ jetty-7.0.1-SNAPSHOT
  + Refactored continuation test harnessess
  + Fixed client abort asocciation
  + CQ-3581 jetty OSGi contribution
- + 294224 HttpClient timeout setting has no effect when connecting to host
- + 294345 Support for HTTP/301 + HTTP/302 response codes
 
 jetty-7.0.0.v20091005 5 October 2009
 291340 Race condition in onException() notifications

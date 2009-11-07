@@ -10,8 +10,6 @@
   <artifactId>jetty-osgi-boot</artifactId>
   <name>Jetty :: OSGi :: Boot</name>
   <description>Jetty OSGi Boot bundle</description>
-  <build>
-  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -24,12 +22,57 @@
     <dependency>
     	<groupId>org.eclipse</groupId>
     	<artifactId>osgi</artifactId>
-    	<scope>provided</scope>
     </dependency>
     <dependency>
         <groupId>org.eclipse.osgi</groupId>
         <artifactId>services</artifactId>
-        <scope>provided</scope>
     </dependency>
   </dependencies>
+  
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <configuration>
+              <tasks>
+                <replace file="target/classes/META-INF/MANIFEST.MF"
+                    token="Bundle-Version: 7.0.1.qualifier"
+                    value="Bundle-Version: ${parsedVersion.osgiVersion}"/>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>artifact-jar</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>test-jar</id>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <archive>               
+            <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  
 </project>

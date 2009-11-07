@@ -14,10 +14,13 @@
 // ========================================================================
 package org.eclipse.jetty.osgi.boot;
 
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.Properties;
 
 import org.eclipse.jetty.osgi.boot.internal.webapp.JettyContextHandlerExtender;
 import org.eclipse.jetty.osgi.boot.internal.webapp.JettyContextHandlerServiceTracker;
+import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -61,6 +64,7 @@ public class JettyBootstrapActivator implements BundleActivator
     private ServiceRegistration _registeredServer;
     private Server _server;
     private JettyContextHandlerServiceTracker _jettyContextHandlerTracker;
+    private PackageAdminServiceTracker _packageAdminServiceTracker;
 
     /**
      * Setup a new jetty Server, registers it as a service. Setup the Service
@@ -73,7 +77,11 @@ public class JettyBootstrapActivator implements BundleActivator
     public void start(BundleContext context) throws Exception
     {
         INSTANCE = this;
-
+        
+        //track other bundles and fragments attached to this bundle that we should activate.
+        _packageAdminServiceTracker = new PackageAdminServiceTracker(context);
+        
+        
         // todo: replace all this by the ManagedFactory so that we can start multiple jetty servers.
         _server = new Server();
         // expose the server as a service.
@@ -108,6 +116,11 @@ public class JettyBootstrapActivator implements BundleActivator
                 _jettyContextHandlerTracker.stop();
                 context.removeServiceListener(_jettyContextHandlerTracker);
             }
+            if (_packageAdminServiceTracker != null)
+            {
+                _packageAdminServiceTracker.stop();
+                context.removeServiceListener(_packageAdminServiceTracker);
+            }
             if (_registeredServer != null)
             {
                 try
@@ -140,9 +153,6 @@ public class JettyBootstrapActivator implements BundleActivator
      *            to bundle; either an absolute path.
      * @param contextPath
      *            The context path. Must start with "/"
-     * @param classInBundle
-     *            A class that belongs to the current bundle to inherit from the
-     *            osgi classloader. Null to not have access to the OSGI classloader.
      * @throws Exception
      */
     public static void registerWebapplication(Bundle contributor,
@@ -150,10 +160,35 @@ public class JettyBootstrapActivator implements BundleActivator
     {
         WebAppContext contextHandler = new WebAppContext();
         Properties dic = new Properties();
-        dic.put("war",webappFolderPath);
-        dic.put("contextPath",contextPath);
+        dic.put(OSGiWebappConstants.SERVICE_PROP_WAR,webappFolderPath);
+        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH,contextPath);
         contributor.getBundleContext().registerService(ContextHandler.class.getName(),contextHandler,dic);
-
+    }
+    /**
+     * Helper method that creates a new org.jetty.webapp.WebAppContext and 
+     * registers it as an OSGi service. The tracker
+     * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
+     * 
+     * @param context
+     *            The current bundle context
+     * @param webappFolderPath
+     *            The path to the root of the webapp. Must be a path relative 
+     *            to bundle; either an absolute path.
+     * @param contextPath
+     *            The context path. Must start with "/"
+     * @param thisBundleInstallationOverride The location to a folder where the context file is located
+     *            This overrides the default behavior that consists of using the location
+     *            where the bundle is installed. Useful when in fact the webapp contributed is not inside a bundle.
+     * @throws Exception
+     */
+    public static void registerWebapplication(Bundle contributor,
+            String webappFolderPath, String contextPath,
+            Dictionary<String, String> dic) throws Exception
+    {
+        WebAppContext contextHandler = new WebAppContext();
+        dic.put(OSGiWebappConstants.SERVICE_PROP_WAR, webappFolderPath);
+        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH, contextPath);
+        contributor.getBundleContext().registerService(ContextHandler.class.getName(),contextHandler,dic);
     }
 
     /**
@@ -168,15 +203,33 @@ public class JettyBootstrapActivator implements BundleActivator
      */
     public static void registerContext(Bundle contributor, String contextFilePath) throws Exception
     {
+        registerContext(contributor,contextFilePath,new Hashtable<String, String>());
+    }
+
+    /**
+     * Helper method that creates a new skeleton of a ContextHandler and registers it as an OSGi service.
+     * The tracker {@link JettyContextHandlerServiceTracker}  will do the actual deployment.
+     * 
+     * @param contributor
+     *            The bundle that registers a new context
+     * @param contextFilePath
+     *            The path to the file inside the bundle that defines the context.
+     * @param thisBundleInstallationOverride The location to a folder where the context file is located
+     *            This overrides the default behavior that consists of using the location
+     *            where the bundle is installed. Useful when in fact the webapp contributed is not inside a bundle.
+     * @throws Exception
+     */
+    public static void registerContext(Bundle contributor, String contextFilePath,
+            Dictionary<String,String> dic) throws Exception
+    {
         ContextHandler contextHandler = new ContextHandler();
-        Properties dic = new Properties();
-        dic.put("contextFilePath",contextFilePath);
+        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH, contextFilePath);
         contributor.getBundleContext().registerService(ContextHandler.class.getName(),contextHandler,dic);
     }
 
     public static void unregister(String contextPath)
     {
         // todo
-    }	
+    }
 
 }

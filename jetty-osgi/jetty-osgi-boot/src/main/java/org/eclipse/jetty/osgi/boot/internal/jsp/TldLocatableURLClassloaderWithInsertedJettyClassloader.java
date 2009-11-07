@@ -29,7 +29,7 @@ public class TldLocatableURLClassloaderWithInsertedJettyClassloader extends TldL
     public TldLocatableURLClassloaderWithInsertedJettyClassloader(ClassLoader osgiClassLoader,
             ClassLoader internalClassLoader, URL[] jarsWithTldsInside)
     {
-        super(osgiClassLoader,jarsWithTldsInside);
+        super(osgiClassLoader, jarsWithTldsInside);
         _internalClassLoader = internalClassLoader;
     }
 

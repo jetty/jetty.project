@@ -9,8 +9,6 @@
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
 // You may elect to redistribute this code under either of these licenses. 
-// Contributors:
-//    Hugues Malphettes - initial API and implementation
 // ========================================================================
 package org.eclipse.jetty.osgi.boot.utils.internal;
 
@@ -23,6 +21,7 @@ import java.util.ArrayList;
 import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
+import org.eclipse.jetty.util.URIUtil;
 import org.osgi.framework.Bundle;
 
 /**
@@ -125,7 +124,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             String location = bundle.getLocation();
             if (location.startsWith("file:/"))
             {
-                URI uri = new URI(bundle.getLocation());
+                URI uri = new URI(URIUtil.encodePath(location));
                 return new File(uri);
             }
         }
@@ -147,11 +146,16 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             path = path.substring(1);
         }
         File bundleInstall = getBundleInstallLocation(bundle);
-        File webapp = path != null && path.length() != 0?new File(bundleInstall,path):bundleInstall;
+        File webapp = path != null && path.length() != 0
+                ? new File(bundleInstall,path)
+                : bundleInstall;
         if (!webapp.exists())
         {
-            throw new IllegalArgumentException("Unable to locate " + path + " inside " + bundle.getSymbolicName() + " ("
-                    + (bundleInstall != null?bundleInstall.getAbsolutePath():" no_bundle_location ") + ")");
+            throw new IllegalArgumentException("Unable to locate " + path
+                    + " inside " + bundle.getSymbolicName() + " ("
+                    + (bundleInstall != null
+                            ? bundleInstall.getAbsolutePath()
+                            :" no_bundle_location ") + ")");
         }
         return webapp;
     }
@@ -194,8 +198,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         }
         else
         {
-            return new File[]
-            { jasperLocation };
+            return new File[] { jasperLocation };
         }
     }
 

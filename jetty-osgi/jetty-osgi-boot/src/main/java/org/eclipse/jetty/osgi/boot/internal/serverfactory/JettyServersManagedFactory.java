@@ -47,12 +47,10 @@ import org.osgi.service.cm.ManagedServiceFactory;
  * </ol>
  * </p>
  * 
- * A nice intro to ManagedFactory in OSGi:
- * http://www.osgilook.com/2009/08/04/factory-pattern-on-steroids-the-managedservicefactory/
- * 
  * @author hmalphettes
  */
-public class JettyServersManagedFactory implements ManagedServiceFactory {
+public class JettyServersManagedFactory implements ManagedServiceFactory
+{
 	
 	/** key to configure the server according to a jetty home folder.
 	 * the value is the corresponding java.io.File */
@@ -69,47 +67,48 @@ public class JettyServersManagedFactory implements ManagedServiceFactory {
 	/** default property in jetty.xml that is used as the value of the https port. */
 	public static final String JETTY_HTTPS_PORT = "jetty.http.port";
 	
-	/**  */
 	private Map<String, Server> _servers = new HashMap<String, Server>();
 	
 	/**
-	 * @return the name for the factory
+	 * Return a descriptive name of this factory.
+	 * 
+	 * @return the name for the factory, which might be localized
 	 */
 	public String getName()
 	{
-		return "Jetty Servers Managed Factory";
+		return getClass().getName();
 	}
 	
-	/**
-	 * Called when the config for a jetty server is updated.
-	 */
+
 	public void updated(String pid, Dictionary properties)
-			throws ConfigurationException {
+			throws ConfigurationException
+	{
 		Server server = _servers.get(pid);
 		deleted(pid);
 		//do we need to collect the currently deployed http services and webapps
 		//to be able to re-deploy them later?
-
+		//probably not. simply restart and see the various service trackers
+		//do everything that is needed.
+		
+		
+		
 	}
 	
-	/**
-	 * Will stop the corresponding server is there is one.
-	 * @pid the unique identifier for that implementtion of the service: in this case the jetty server.
-	 */
+	
 	public synchronized void deleted(String pid)
 	{
-		Server server = (Server) _servers.remove(pid);
-		if (server != null)
-		{
-			try
-			{
-				server.stop();
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-			}
-		}
+        Server server = (Server)_servers.remove(pid);
+        if (server != null)
+        {
+            try
+            {
+                server.stop();
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
 	}
 	
 }

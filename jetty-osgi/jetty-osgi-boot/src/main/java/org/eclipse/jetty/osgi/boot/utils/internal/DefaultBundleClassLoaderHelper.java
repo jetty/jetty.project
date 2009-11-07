@@ -9,8 +9,6 @@
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
 // You may elect to redistribute this code under either of these licenses. 
-// Contributors:
-//    Hugues Malphettes - initial API and implementation
 // ========================================================================
 package org.eclipse.jetty.osgi.boot.utils.internal;
 
