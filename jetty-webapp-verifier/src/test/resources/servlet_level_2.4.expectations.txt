@@ -1,3 +1,0 @@
-ERROR|target/testing/dummy-servlet24-webapp/WEB-INF/web.xml|Specified servlet version 2.4 of Schema is over the configured supported servlet version 2.1
-ERROR|target/testing/dummy-servlet24-webapp/WEB-INF/web.xml|Specified servlet version 2.4 of version attribute is over the configured supported servlet version 2.1
-ERROR|target/testing/dummy-servlet24-webapp/WEB-INF/web.xml|Specified servlet version 2.4 of XML Namespace is over the configured supported servlet version 2.1

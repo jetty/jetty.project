@@ -1,6 +1,0 @@
-ERROR|example.rb|JRuby scripting not allowed
-ERROR|other/lib.rb|JRuby scripting not allowed
-ERROR|output.rhtml|JRuby scripting not allowed
-ERROR|WEB-INF/lib/dummy-jruby-lib-1.0-SNAPSHOT.jar!/org/jruby/javasupport/JavaArray.class|JRuby dependencies are not allowed
-ERROR|WEB-INF/lib/dummy-jruby-lib-1.0-SNAPSHOT.jar!/org/jruby/Ruby.class|JRuby dependencies are not allowed
-ERROR|WEB-INF/lib/dummy-jruby-lib-1.0-SNAPSHOT.jar!/org/jruby/runtime/RubyEvent.class|JRuby dependencies are not allowed
