@@ -1,9 +1,0 @@
-target/
-.classpath
-.project
-.settings
-*.swp
-*.patch
-*.diff
-*.log
-cobertura.ser
