@@ -12,6 +12,10 @@ import org.eclipse.jetty.util.StringUtil;
 
 import junit.framework.TestCase;
 
+
+/* ------------------------------------------------------------ */
+/**
+ */
 public class WebSocketParserTest extends TestCase
 {
     
