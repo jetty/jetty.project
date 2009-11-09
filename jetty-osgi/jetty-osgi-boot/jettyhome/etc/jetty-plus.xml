@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure.dtd">
+
+<!-- =============================================================== -->
+<!-- Configure Jetty Plus features                                   -->
+<!--                                                                 -->
+<!-- This file sets up a WebAppDeployer to automatically deploy all  -->
+<!-- webapps in $jetty.home/webapps-plus at startup time, and to     -->
+<!-- enable all of them with Plus features (jndi etc).               -->
+<!--                                                                 -->
+<!-- You can instead configure individual webapps with Jetty Plus    -->
+<!-- features by using the ContextDeployer (configured in            -->
+<!-- $jetty.home/etc/jetty.xml), and ensuring that you set the       -->
+<!-- same set of classes listed below in the "plusConfig" as the     -->
+<!-- webapp's configurationClasses.                                  -->
+<!--                                                                 -->
+<!-- For more information about Jetty Plus, see the Jetty wiki at    -->
+<!-- http://docs.codehaus.org/display/JETTY/Jetty+Wiki               -->
+<!-- =============================================================== -->
+<Configure id="Server" class="org.mortbay.jetty.Server">
+
+  <!-- =========================================================== -->
+  <!-- Example JAAS realm setup.                                   -->
+  <!-- The LoginModuleName must be exactly the same as in the      -->
+  <!-- login.conf file, and the realm Name must be the same as in  -->
+  <!-- the web.xml file.                                           -->
+  <!-- =========================================================== -->
+  <!-- 
+  <Call name="addUserRealm">
+    <Arg>
+      <New class="org.mortbay.jetty.plus.jaas.JAASUserRealm">
+	      <Set name="name">xyzrealm</Set>
+	      <Set name="LoginModuleName">xyz</Set>
+	    </New>
+    </Arg>
+  </Call>
+  -->
+
+  <!-- =========================================================== -->
+  <!-- Configurations for WebAppContexts                           -->
+  <!-- Sequence of configurations to enable Plus features.         -->
+  <!-- =========================================================== -->
+  <Array id="plusConfig" type="java.lang.String">
+    <Item>org.mortbay.jetty.webapp.WebInfConfiguration</Item>
+    <Item>org.mortbay.jetty.plus.webapp.EnvConfiguration</Item>
+    <Item>org.mortbay.jetty.plus.webapp.Configuration</Item>
+    <Item>org.mortbay.jetty.webapp.JettyWebXmlConfiguration</Item>
+    <Item>org.mortbay.jetty.webapp.TagLibConfiguration</Item>
+  </Array>
+
+  <!-- =========================================================== -->
+  <!-- Deploy all webapps in webapps-plus                          -->
+  <!-- =========================================================== -->
+  <!-- Uncomment the following to set up a WebAppDeployer that will -->
+  <!-- deploy webapps from a directory called webapps-plus. Note    -->
+  <!-- that you will need to create this directory first!           -->
+  <!--
+    <Call name="addLifeCycle">
+      <Arg>
+        <New class="org.mortbay.jetty.deployer.WebAppDeployer">
+          <Set name="contexts"><Ref id="Contexts"/></Set>
+          <Set name="webAppDir"><SystemProperty name="jetty.home" default="."/>/webapps-plus</Set>
+          <Set name="parentLoaderPriority">false</Set>
+          <Set name="extract">true</Set>
+          <Set name="allowDuplicates">false</Set>
+          <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Set>
+          <Set name="configurationClasses"><Ref id="plusConfig"/></Set>
+        </New>
+      </Arg>
+    </Call>
+   -->
+
+</Configure>
+
