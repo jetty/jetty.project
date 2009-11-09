@@ -38,7 +38,7 @@ public class ChannelEndPoint implements EndPoint
 {
     protected final ByteChannel _channel;
     protected final ByteBuffer[] _gather2=new ByteBuffer[2];
-    protected Socket _socket;
+    protected final Socket _socket;
     protected InetSocketAddress _local;
     protected InetSocketAddress _remote;
     
@@ -49,8 +49,7 @@ public class ChannelEndPoint implements EndPoint
     {
         super();
         this._channel = channel;
-        if (channel instanceof SocketChannel)
-            _socket=((SocketChannel)channel).socket();
+        _socket=(channel instanceof SocketChannel)?((SocketChannel)channel).socket():null;
     }
     
     public boolean isBlocking()

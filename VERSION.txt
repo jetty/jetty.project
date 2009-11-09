@@ -18,6 +18,7 @@ jetty-7.0.1-SNAPSHOT
  + 294154 Patched jetty-osgi
  + 294224 HttpClient timeout setting has no effect when connecting to host
  + 294345 Support for HTTP/301 + HTTP/302 response codes
+ + 294563 Initial websocket implementation
  + JETTY-937 More JVM bug work arounds. Insert pause if all else fails
  + JETTY-983 Send content-length with multipart ranges
  + JETTY-1114 unsynchronised WebAppClassloader.getResource(String)

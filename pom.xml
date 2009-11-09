@@ -124,6 +124,7 @@
     <module>jetty-util</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
+    <module>jetty-websocket</module>
     <module>jetty-continuation</module>
     <module>jetty-server</module>
     <module>jetty-client</module>

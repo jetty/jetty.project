@@ -37,8 +37,8 @@ import org.eclipse.jetty.util.thread.Timeout;
 public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, AsyncEndPoint
 {
     private final SelectorManager.SelectSet _selectSet;
-    private final Connection _connection;
     private final SelectorManager _manager;
+    private volatile Connection _connection;
     private boolean _dispatched = false;
     private boolean _redispatched = false;
     private volatile boolean _writable = true; 
@@ -77,6 +77,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     public SelectorManager getSelectManager()
     {
         return _manager;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setConnection(Connection connection)
+    {
+        _connection=connection;
     }
 
     /* ------------------------------------------------------------ */
@@ -543,7 +549,5 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         {
             return "TimeoutTask:" + SelectChannelEndPoint.this.toString();
         }
-
     }
-
 }
