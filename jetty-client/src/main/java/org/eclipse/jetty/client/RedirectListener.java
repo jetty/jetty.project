@@ -80,24 +80,28 @@ public class RedirectListener extends HttpEventListenerWrapper
     public void onRequestComplete() throws IOException
     {
         _requestComplete = true;
+
         if (checkExchangeComplete())
+        {
             super.onRequestComplete();
+        }
     }
 
     public void onResponseComplete() throws IOException
     {
         _responseComplete = true;
+
         if (checkExchangeComplete())
+        {
             super.onResponseComplete();
+        }
     }
 
-    private boolean checkExchangeComplete() throws IOException
+    public boolean checkExchangeComplete()
+        throws IOException
     {
         if (_redirected && _requestComplete && _responseComplete)
         {
-            setDelegatingRequests(true);
-            setDelegatingResponses(true);
-
             if (_location != null)
             {
                 if (_location.indexOf("://")>0)
@@ -106,6 +110,7 @@ public class RedirectListener extends HttpEventListenerWrapper
                     _exchange.setURI(_location);
 
                 _destination.resend(_exchange);
+
                 return false;
             }
             else
@@ -113,6 +118,7 @@ public class RedirectListener extends HttpEventListenerWrapper
                 setDelegationResult(false);
             }
         }
+
         return true;
     }
 

@@ -18,11 +18,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
+
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.client.security.SimpleRealmResolver;
 import org.eclipse.jetty.http.HttpMethods;
