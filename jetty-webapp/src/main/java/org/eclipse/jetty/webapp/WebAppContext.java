@@ -95,12 +95,14 @@ public class WebAppContext extends ServletContextHandler
             "org.eclipse.jetty.jndi.",         // webapp cannot change naming classes
             "org.eclipse.jetty.plus.jaas.",    // webapp cannot change jetty jaas classes
             "org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
+            "org.eclipse.jetty.websocket.",    // WebSocket is a jetty extension
             };
     private String[] _serverClasses = {
             "-org.eclipse.jetty.continuation.", // don't hide continuation classes
             "-org.eclipse.jetty.jndi.",         // don't hide naming classes
             "-org.eclipse.jetty.plus.jaas.",    // don't hide jaas modules
             "-org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
+            "-org.eclipse.jetty.websocket.",    // don't hide websocket extension
             "org.eclipse.jetty."                // hide rest of jetty classes
             };
     private File _tmpDir;

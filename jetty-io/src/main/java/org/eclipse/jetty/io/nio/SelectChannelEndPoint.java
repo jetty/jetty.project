@@ -21,8 +21,10 @@ import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -34,7 +36,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  * 
  *
  */
-public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, AsyncEndPoint
+public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, AsyncEndPoint, ConnectedEndPoint
 {
     private final SelectorManager.SelectSet _selectSet;
     private final SelectorManager _manager;
@@ -66,12 +68,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         _key = key;
         scheduleIdle();
     }
-    
-    /* ------------------------------------------------------------ */
-    public Connection getConnection()
-    {
-        return _connection;
-    }
+
     
     /* ------------------------------------------------------------ */
     public SelectorManager getSelectManager()
@@ -80,9 +77,17 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     }
     
     /* ------------------------------------------------------------ */
+    public Connection getConnection()
+    {
+        return _connection;
+    }
+    
+    /* ------------------------------------------------------------ */
     public void setConnection(Connection connection)
     {
+        Connection old=_connection;
         _connection=connection;
+        _manager.endPointUpgraded(this,old);
     }
 
     /* ------------------------------------------------------------ */
@@ -217,7 +222,14 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
     {
         int l = super.flush(header, buffer, trailer);
-        _writable = l!=0;
+        if (!(_writable=l!=0))
+        {
+            synchronized (this)
+            {
+                if (!_dispatched)
+                    updateKey();
+            }
+        }
         return l;
     }
 
@@ -228,7 +240,14 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     public int flush(Buffer buffer) throws IOException
     {
         int l = super.flush(buffer);
-        _writable = l!=0;
+        if (!(_writable=l!=0))
+        {
+            synchronized (this)
+            {
+                if (!_dispatched)
+                    updateKey();
+            }
+        }
         return l;
     }
 
@@ -444,6 +463,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                 try
                 {
                     _connection.handle();
+                }
+                catch (UpgradeConnectionException e)
+                {
+                    Log.debug(e.toString());
+                    Log.ignore(e);
+                    setConnection(e.getConnection());
+                    continue;
                 }
                 catch (ClosedChannelException e)
                 {

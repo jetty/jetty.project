@@ -23,8 +23,11 @@ import java.util.Set;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ConnectedEndPoint;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.HttpConnection;
@@ -47,7 +50,7 @@ import org.eclipse.jetty.util.log.Log;
 public class SocketConnector extends AbstractConnector
 {
     protected ServerSocket _serverSocket;
-    protected final Set _connections;
+    protected final Set<EndPoint> _connections;
     
     /* ------------------------------------------------------------ */
     /** Constructor.
@@ -55,7 +58,7 @@ public class SocketConnector extends AbstractConnector
      */
     public SocketConnector()
     {
-        _connections=new HashSet();
+        _connections=new HashSet<EndPoint>();
     }
 
     /* ------------------------------------------------------------ */
@@ -99,7 +102,7 @@ public class SocketConnector extends AbstractConnector
         Socket socket = _serverSocket.accept();
         configure(socket);
         
-        Connection connection=new Connection(socket);
+        ConnectorEndPoint connection=new ConnectorEndPoint(socket);
         connection.dispatch();
     }
 
@@ -117,7 +120,7 @@ public class SocketConnector extends AbstractConnector
     public void customize(EndPoint endpoint, Request request)
         throws IOException
     {
-        Connection connection = (Connection)endpoint;
+        ConnectorEndPoint connection = (ConnectorEndPoint)endpoint;
         int lrmit = isLowResources()?_lowResourceMaxIdleTime:_maxIdleTime;
         if (connection._sotimeout!=lrmit)
         {
@@ -159,7 +162,7 @@ public class SocketConnector extends AbstractConnector
         Iterator iter=set.iterator();
         while(iter.hasNext())
         {
-            Connection connection = (Connection)iter.next();
+            ConnectorEndPoint connection = (ConnectorEndPoint)iter.next();
             connection.close();
         }
     }
@@ -167,19 +170,31 @@ public class SocketConnector extends AbstractConnector
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
-    protected class Connection extends SocketEndPoint implements Runnable
+    protected class ConnectorEndPoint extends SocketEndPoint implements Runnable, ConnectedEndPoint
     {
         boolean _dispatched=false;
-        HttpConnection _connection;
+        volatile Connection _connection;
         int _sotimeout;
-        protected Socket _socket;
+        protected final Socket _socket;
         
-        public Connection(Socket socket) throws IOException
+        public ConnectorEndPoint(Socket socket) throws IOException
         {
             super(socket);
             _connection = newHttpConnection(this);
             _sotimeout=socket.getSoTimeout();
             _socket=socket;
+        }
+
+        public Connection getConnection()
+        {
+            return _connection;
+        }
+
+        public void setConnection(Connection connection)
+        {
+            if (_connection!=connection)
+                connectionUpgraded(_connection,connection);
+            _connection=connection;
         }
         
         public void dispatch() throws IOException
@@ -203,7 +218,8 @@ public class SocketConnector extends AbstractConnector
         @Override
         public void close() throws IOException
         {
-            _connection.getRequest().getAsyncContinuation().cancel();
+            if (_connection instanceof HttpConnection)
+                ((HttpConnection)_connection).getRequest().getAsyncContinuation().cancel();
             super.close();
         }
 
@@ -231,7 +247,17 @@ public class SocketConnector extends AbstractConnector
                             }
                         }
                     }                    
-                    _connection.handle();
+                    try
+                    {
+                        _connection.handle();
+                    }
+                    catch (UpgradeConnectionException e)
+                    {
+                        Log.debug(e.toString());
+                        Log.ignore(e);
+                        setConnection(e.getConnection());
+                        continue;
+                    }
                 }
             }
             catch (EofException e)

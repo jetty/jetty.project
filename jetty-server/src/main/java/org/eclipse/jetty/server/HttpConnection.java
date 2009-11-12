@@ -45,6 +45,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
+import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -562,6 +563,10 @@ public class HttpConnection implements Connection
                         _request.setDispatcherType(DispatcherType.ASYNC);
                         server.handleAsync(this);
                     }
+                }
+                catch (UpgradeConnectionException e)
+                {
+                    throw e;
                 }
                 catch (ContinuationThrowable e)
                 {

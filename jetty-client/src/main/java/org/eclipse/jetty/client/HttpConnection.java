@@ -74,6 +74,11 @@ public class HttpConnection implements Connection
         _parser = new HttpParser(responseBuffers,endp,new Handler());
     }
 
+    public long getTimeStamp()
+    {
+        return -1;
+    }
+    
     public void setReserved (boolean reserved)
     {
         _reserved = reserved;

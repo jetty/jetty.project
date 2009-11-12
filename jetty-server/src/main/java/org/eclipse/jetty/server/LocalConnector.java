@@ -20,7 +20,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
 
 public class LocalConnector extends AbstractConnector
 {
@@ -101,17 +104,41 @@ public class LocalConnector extends AbstractConnector
 
         public void run()
         {
-            ByteArrayEndPoint endPoint = new ByteArrayEndPoint(requestsBuffer.asArray(), 1024);
+            ByteArrayEndPoint endPoint = new ByteArrayEndPoint(requestsBuffer.asArray(), 1024)
+            {
+                @Override
+                public void setConnection(Connection connection)
+                {
+                    connectionUpgraded(getConnection(),connection);
+                    super.setConnection(connection);
+                }
+            };
+            
             endPoint.setGrowOutput(true);
-
             HttpConnection connection = new HttpConnection(LocalConnector.this, endPoint, getServer());
+            endPoint.setConnection(connection);
             connectionOpened(connection);
-
+            
             boolean leaveOpen = keepOpen;
             try
             {
                 while (endPoint.getIn().length() > 0)
-                    connection.handle();
+                {
+                    while(true)
+                    {
+                        try
+                        {
+                            endPoint.getConnection().handle();
+                            break;
+                        }
+                        catch (UpgradeConnectionException e)
+                        {
+                            Log.debug(e.toString());
+                            Log.ignore(e);
+                            endPoint.setConnection(e.getConnection());
+                        }
+                    }
+                }
             }
             catch (Exception x)
             {

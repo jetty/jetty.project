@@ -450,12 +450,15 @@ public class HttpGenerator extends AbstractGenerator
                     if (_buffer!=null)
                         _buffer.clear();
                     // end the header.
-                    _header.put(HttpTokens.CRLF);
-                    _state = STATE_CONTENT;
-                    return;
-                }
 
-                if (_status==204 || _status==304)
+                    if (_status!=101 )
+                    {
+                        _header.put(HttpTokens.CRLF);
+                        _state = STATE_CONTENT;
+                        return;
+                    }
+                }
+                else if (_status==204 || _status==304)
                 {
                     _noContent=true;
                     _content=null;

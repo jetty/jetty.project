@@ -448,6 +448,20 @@ public class TypeUtil
     }
 
     /* ------------------------------------------------------------ */
+    public static void toHex(byte b,StringBuilder buf)
+    {   
+        int bi=0xff&b;
+        int c='0'+(bi/16)%16;
+        if (c>'9')
+            c= 'A'+(c-'0'-10);
+        buf.append((char)c);
+        c='0'+bi%16;
+        if (c>'9')
+            c= 'A'+(c-'0'-10);
+        buf.append((char)c);
+    }
+    
+    /* ------------------------------------------------------------ */
     public static String toHexString(byte[] b)
     {   
         StringBuilder buf = new StringBuilder();

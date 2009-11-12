@@ -23,7 +23,7 @@ public class WebSocketParser
     public static final int STATE_LENGTH=2;
     public static final int STATE_DATA=3;
 
-    private final Buffers _buffers;
+    private final WebSocketBuffers _buffers;
     private final EndPoint _endp;
     private final EventHandler _handler;
     private int _state;
@@ -40,7 +40,7 @@ public class WebSocketParser
      * @param endp
      * @param handler
      */
-    public WebSocketParser(Buffers buffers, EndPoint endp, EventHandler handler)
+    public WebSocketParser(WebSocketBuffers buffers, EndPoint endp, EventHandler handler)
     {
         _buffers=buffers;
         _endp=endp;
@@ -134,7 +134,7 @@ public class WebSocketParser
                             String data=_utf8.toString();
                             _utf8.reset();
                             _state=STATE_START;
-                            _handler.onUtf8Message(_frame,data);
+                            _handler.onFrame(_frame,data);
                             _buffer.setMarkIndex(-1);
                             if (_buffer.length()==0)
                             {
@@ -163,7 +163,7 @@ public class WebSocketParser
                         Buffer data=_buffer.sliceFromMark(_length);
                         _buffer.skip(_length);
                         _state=STATE_START;
-                        _handler.onBinaryMessage(_frame,data);
+                        _handler.onFrame(_frame,data);
                         
                         if (_buffer.length()==0)
                         {
@@ -178,11 +178,26 @@ public class WebSocketParser
     }
 
     /* ------------------------------------------------------------ */
+    public void fill(Buffer buffer)
+    {
+        if (buffer!=null && buffer.length()>0)
+        {
+            if (_buffer==null)
+                _buffer=_buffers.getBuffer();
+            _buffer.put(buffer);
+            buffer.clear();
+        }
+        
+            
+    }
+    
+    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     public interface EventHandler
     {
-        void onUtf8Message(byte frame,String data);
-        void onBinaryMessage(byte frame,Buffer buffer);
+        void onFrame(byte frame,String data);
+        void onFrame(byte frame,Buffer buffer);
     }
+
 }

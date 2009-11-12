@@ -1,16 +1,10 @@
 package org.eclipse.jetty.websocket;
 
-import java.util.ArrayList;
-import java.util.List;
+import junit.framework.TestCase;
 
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.util.StringUtil;
-
-import junit.framework.TestCase;
 
 
 /* ------------------------------------------------------------ */
@@ -19,7 +13,7 @@ import junit.framework.TestCase;
 public class WebSocketGeneratorTest extends TestCase
 {
     
-    Buffers _buffers;
+    WebSocketBuffers _buffers;
     ByteArrayBuffer _out;
     ByteArrayEndPoint _endp;
     WebSocketGenerator _generator;
@@ -28,17 +22,17 @@ public class WebSocketGeneratorTest extends TestCase
     @Override
     protected void setUp() throws Exception
     {
-        _buffers=new SimpleBuffers(null,new ByteArrayBuffer(1024));
+        _buffers=new WebSocketBuffers(1024);
         _endp = new ByteArrayEndPoint();
         _generator = new WebSocketGenerator(_buffers,_endp);
         _out = new ByteArrayBuffer(2048);
         _endp.setOut(_out);
     }
     
-    
+    /* ------------------------------------------------------------ */
     public void testOneString() throws Exception
     {
-        _generator.addMessage((byte)0x04,"Hell\uFF4F W\uFF4Frld",0);
+        _generator.addFrame((byte)0x04,"Hell\uFF4F W\uFF4Frld",0);
         _generator.flush();
         assertEquals(4,_out.get());
         assertEquals('H',_out.get());
@@ -61,7 +55,7 @@ public class WebSocketGeneratorTest extends TestCase
     
     public void testOneBuffer() throws Exception
     {
-        _generator.addMessage((byte)0x04,new ByteArrayBuffer("Hell\uFF4F W\uFF4Frld",StringUtil.__UTF8),0);
+        _generator.addFrame((byte)0x84,"Hell\uFF4F W\uFF4Frld".getBytes(StringUtil.__UTF8),0);
         _generator.flush();
         assertEquals(0x84,0xff&_out.get());
         assertEquals(15,0xff&_out.get());
@@ -88,8 +82,7 @@ public class WebSocketGeneratorTest extends TestCase
         for (int i=0;i<b.length;i++)
             b[i]=(byte)('0'+(i%10));
         
-        
-        _generator.addMessage((byte)0x05,new ByteArrayBuffer(b),0);
+        _generator.addFrame((byte)0x85,b,0);
         
         _generator.flush();
         assertEquals(0x85,0xff&_out.get());
@@ -98,7 +91,4 @@ public class WebSocketGeneratorTest extends TestCase
         for (int i=0;i<b.length;i++)
             assertEquals('0'+(i%10),0xff&_out.get());
     }
-    
-    
-
 }

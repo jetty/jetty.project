@@ -17,7 +17,9 @@ import java.io.IOException;
 
 public interface Connection
 {
-    void handle() throws IOException;
+    void handle() throws IOException, UpgradeConnectionException;
+    
+    long getTimeStamp();
 
     boolean isIdle();
     boolean isSuspended();

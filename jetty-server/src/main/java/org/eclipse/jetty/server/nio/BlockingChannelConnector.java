@@ -21,8 +21,11 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.http.HttpException;
+import org.eclipse.jetty.io.ConnectedEndPoint;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.io.nio.ChannelEndPoint;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
@@ -89,7 +92,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
         Socket socket=channel.socket();
         configure(socket);
 
-        Connection connection=new Connection(channel);
+        ConnectorEndPoint connection=new ConnectorEndPoint(channel);
         connection.dispatch();
     }
     
@@ -98,7 +101,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
     public void customize(EndPoint endpoint, Request request)
         throws IOException
     {
-        Connection connection = (Connection)endpoint;
+        ConnectorEndPoint connection = (ConnectorEndPoint)endpoint;
         if (connection._sotimeout!=_maxIdleTime)
         {
             connection._sotimeout=_maxIdleTime;
@@ -121,24 +124,41 @@ public class BlockingChannelConnector extends AbstractNIOConnector
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
-    private class Connection extends ChannelEndPoint implements Runnable
+    private class ConnectorEndPoint extends ChannelEndPoint implements Runnable, ConnectedEndPoint
     {
-        final HttpConnection _connection;
+        Connection _connection;
         boolean _dispatched=false;
         int _sotimeout;
         
-        Connection(ByteChannel channel) 
+        ConnectorEndPoint(ByteChannel channel) 
         {
             super(channel);
             _connection = new HttpConnection(BlockingChannelConnector.this,this,getServer());
         }
         
+        
+        /* ------------------------------------------------------------ */
+        /** Get the connection.
+         * @return the connection
+         */
+        public Connection getConnection()
+        {
+            return _connection;
+        }
+        
+        /* ------------------------------------------------------------ */
+        public void setConnection(Connection connection)
+        {
+            _connection=connection;
+        }
+
+        /* ------------------------------------------------------------ */
         void dispatch() throws IOException
         {
             if (!getThreadPool().dispatch(this))
             {
                 Log.warn("dispatch failed for  {}",_connection);
-                Connection.this.close();
+                ConnectorEndPoint.this.close();
             }
         }
         
@@ -162,25 +182,35 @@ public class BlockingChannelConnector extends AbstractNIOConnector
                             }
                         }
                     }
-                    _connection.handle();
+                    try
+                    {
+                        _connection.handle();
+                    }
+                    catch (UpgradeConnectionException e)
+                    {
+                        Log.debug(e.toString());
+                        Log.ignore(e);
+                        setConnection(e.getConnection());
+                        continue;
+                    }
                 }
             }
             catch (EofException e)
             {
                 Log.debug("EOF", e);
-                try{Connection.this.close();}
+                try{ConnectorEndPoint.this.close();}
                 catch(IOException e2){Log.ignore(e2);}
             }
             catch (HttpException e)
             {
                 Log.debug("BAD", e);
-                try{Connection.this.close();}
+                try{ConnectorEndPoint.this.close();}
                 catch(IOException e2){Log.ignore(e2);}
             }
             catch(Throwable e)
             {
                 Log.warn("handle failed",e);
-                try{Connection.this.close();}
+                try{ConnectorEndPoint.this.close();}
                 catch(IOException e2){Log.ignore(e2);}
             }
             finally

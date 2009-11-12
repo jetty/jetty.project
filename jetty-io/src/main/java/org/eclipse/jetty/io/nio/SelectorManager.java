@@ -23,6 +23,7 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -233,6 +234,9 @@ public abstract class SelectorManager extends AbstractLifeCycle
      * @param endpoint
      */
     protected abstract void endPointOpened(SelectChannelEndPoint endpoint);
+
+    /* ------------------------------------------------------------ */
+    protected abstract void endPointUpgraded(ConnectedEndPoint endpoint,Connection oldConnection);
 
     /* ------------------------------------------------------------------------------- */
     protected abstract Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint);

@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -964,7 +965,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
-    protected void connectionOpened(HttpConnection connection)
+    protected void connectionOpened(Connection connection)
     {
         if (_statsStartedAt==-1)
             return;
@@ -977,13 +978,24 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
-    protected void connectionClosed(HttpConnection connection)
+    protected void connectionUpgraded(Connection oldConnection,Connection newConnection)
+    {
+        int requests=(oldConnection instanceof HttpConnection)?((HttpConnection)oldConnection).getRequests():0;
+
+        synchronized(_statsLock)
+        {
+            _requests+=requests;
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected void connectionClosed(Connection connection)
     {
         if (_statsStartedAt>=0)
         {
             long duration=System.currentTimeMillis()-connection.getTimeStamp();
-            int requests=connection.getRequests();
-
+            
+            int requests=(connection instanceof HttpConnection)?((HttpConnection)connection).getRequests():0;
 
             synchronized(_statsLock)
             {

@@ -3,23 +3,20 @@ package org.eclipse.jetty.websocket;
 import java.util.ArrayList;
 import java.util.List;
 
+import junit.framework.TestCase;
+
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.util.StringUtil;
-
-import junit.framework.TestCase;
 
 
 /* ------------------------------------------------------------ */
 /**
  */
 public class WebSocketParserTest extends TestCase
-{
-    
-    Buffers _buffers;
+{   
+    WebSocketBuffers _buffers;
     ByteArrayBuffer _in;
     ByteArrayEndPoint _endp;
     Handler _handler;
@@ -29,7 +26,7 @@ public class WebSocketParserTest extends TestCase
     @Override
     protected void setUp() throws Exception
     {
-        _buffers=new SimpleBuffers(null,new ByteArrayBuffer(1024));
+        _buffers=new WebSocketBuffers(1024);
         _endp = new ByteArrayEndPoint();
         _handler = new Handler();
         _parser=new WebSocketParser(_buffers,_endp,_handler);
@@ -139,12 +136,12 @@ public class WebSocketParserTest extends TestCase
     {
         public List<String> _data = new ArrayList<String>();
 
-        public void onBinaryMessage(byte frame, Buffer buffer)
+        public void onFrame(byte frame, Buffer buffer)
         {
             _data.add(buffer.toString(StringUtil.__UTF8));
         }
 
-        public void onUtf8Message(byte frame, String data)
+        public void onFrame(byte frame, String data)
         {
             _data.add(data);
         }

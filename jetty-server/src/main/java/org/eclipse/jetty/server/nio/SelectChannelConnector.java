@@ -20,6 +20,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
+import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
@@ -89,14 +90,20 @@ public class SelectChannelConnector extends AbstractNIOConnector
         @Override
         protected void endPointClosed(final SelectChannelEndPoint endpoint)
         {
-            connectionClosed((HttpConnection)endpoint.getConnection());
+            connectionClosed(endpoint.getConnection());
         }
 
         @Override
         protected void endPointOpened(SelectChannelEndPoint endpoint)
         {
             // TODO handle max connections and low resources
-            connectionOpened((HttpConnection)endpoint.getConnection());
+            connectionOpened(endpoint.getConnection());
+        }
+        
+        @Override
+        protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
+        {
+            connectionUpgraded(oldConnection,endpoint.getConnection());
         }
 
         @Override

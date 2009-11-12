@@ -164,7 +164,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         Socket socket = _serverSocket.accept();
         configure(socket);
         
-        Connection connection=new SslConnection(socket);
+        ConnectorEndPoint connection=new SslConnection(socket);
         connection.dispatch();
     }
     
@@ -670,7 +670,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     
 
     /* ------------------------------------------------------------ */
-    public class SslConnection extends Connection
+    public class SslConnection extends ConnectorEndPoint
     {
         public SslConnection(Socket socket) throws IOException
         {
