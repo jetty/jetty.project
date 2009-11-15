@@ -38,6 +38,7 @@ jetty-7.0.1-SNAPSHOT
  + CQ-3581 jetty OSGi contribution
  + Moved centralized logging and verifier back to sandbox
  + 294345 Support for HTTP/301 + HTTP/302 response codes
+ + CVE-2009-3555 Prevent SSL renegotiate for SSL vulnerability
 
 jetty-7.0.0.v20091005 5 October 2009
 291340 Race condition in onException() notifications

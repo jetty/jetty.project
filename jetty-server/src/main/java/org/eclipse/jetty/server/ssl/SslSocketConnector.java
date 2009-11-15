@@ -29,6 +29,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.net.ssl.HandshakeCompletedEvent;
+import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -144,6 +146,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     private int _handshakeTimeout = 0; //0 means use maxIdleTime
     
     private SSLContext _context;
+    private boolean _allowRenegotiate =false;
 
 
     /* ------------------------------------------------------------ */
@@ -155,6 +158,27 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         super();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if SSL re-negotiation is allowed (default false)
+     */
+    public boolean isAllowRenegotiate()
+    {
+        return _allowRenegotiate;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
+     * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
+     * does not have CVE-2009-3555 fixed, then re-negotiation should 
+     * not be allowed.
+     * @param allowRenegotiate true if re-negotiation is allowed (default false)
+     */
+    public void setAllowRenegotiate(boolean allowRenegotiate)
+    {
+        _allowRenegotiate = allowRenegotiate;
+    }
 
     /* ------------------------------------------------------------ */
     @Override
@@ -687,7 +711,25 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
                 if (handshakeTimeout > 0)            
                     _socket.setSoTimeout(handshakeTimeout);
 
-                ((SSLSocket)_socket).startHandshake();
+                final SSLSocket ssl=(SSLSocket)_socket;
+                ssl.addHandshakeCompletedListener(new HandshakeCompletedListener()
+                {
+                    boolean handshook=false;
+                    public void handshakeCompleted(HandshakeCompletedEvent event)
+                    {
+                        if (handshook)
+                        {
+                            if (!_allowRenegotiate)
+                            {
+                                Log.warn("SSL renegotiate denied: "+ssl);
+                                try{ssl.close();}catch(IOException e){Log.warn(e);}
+                            }
+                        }
+                        else
+                            handshook=true;
+                    }
+                });
+                ssl.startHandshake();
 
                 if (handshakeTimeout>0)
                     _socket.setSoTimeout(oldTimeout);

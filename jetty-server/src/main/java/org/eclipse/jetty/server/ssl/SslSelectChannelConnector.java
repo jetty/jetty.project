@@ -82,6 +82,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     /** Set to true if we require client certificate authentication. */
     private boolean _needClientAuth=false;
     private boolean _wantClientAuth=false;
+    private boolean _allowRenegotiate=false;
 
     private transient Password _password;
     private transient Password _keyPassword;
@@ -221,6 +222,28 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     /* ------------------------------------------------------------ */
     public SslSelectChannelConnector()
     {
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if SSL re-negotiation is allowed (default false)
+     */
+    public boolean isAllowRenegotiate()
+    {
+        return _allowRenegotiate;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
+     * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
+     * does not have CVE-2009-3555 fixed, then re-negotiation should 
+     * not be allowed.
+     * @param allowRenegotiate true if re-negotiation is allowed (default false)
+     */
+    public void setAllowRenegotiate(boolean allowRenegotiate)
+    {
+        _allowRenegotiate = allowRenegotiate;
     }
 
     /* ------------------------------------------------------------ */
@@ -554,7 +577,9 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Override
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
-        return new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,createSSLEngine());
+        SslSelectChannelEndPoint endp = new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,createSSLEngine());
+        endp.setAllowRenegotiate(_allowRenegotiate);
+        return endp;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -597,7 +622,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
                 engine.setEnabledCipherSuites(enabledCipherSuites);
             }
-
         }
         catch (Exception e)
         {
@@ -607,7 +631,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         }
         return engine;
     }
-
    
     @Override
     protected void doStart() throws Exception
