@@ -2,7 +2,6 @@ package org.eclipse.jetty.server.ssl;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
