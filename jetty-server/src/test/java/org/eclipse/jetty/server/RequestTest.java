@@ -14,6 +14,8 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -26,6 +28,7 @@ import junit.framework.TestCase;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  *
@@ -50,7 +53,6 @@ public class RequestTest extends TestCase
         super(arg0);
         _server.setConnectors(new Connector[]{_connector});
 
-        _server.setHandler(_handler);
     }
 
     public static void main(String[] args)
@@ -65,6 +67,7 @@ public class RequestTest extends TestCase
     {
         super.setUp();
 
+        _server.setHandler(_handler);
         _server.start();
     }
 
@@ -165,6 +168,98 @@ public class RequestTest extends TestCase
                 assertEquals(l,_handler._content.length());
             content+="x";
         }
+    }
+
+    public void testPartialRead()
+        throws Exception
+    {
+        Handler handler = new AbstractHandler()
+        {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+                    ServletException
+            {
+                baseRequest.setHandled(true);
+                Reader reader=request.getReader();
+                byte[] b=("read="+reader.read()+"\n").getBytes(StringUtil.__UTF8);
+                response.setContentLength(b.length);
+                response.getOutputStream().write(b);
+                response.flushBuffer();
+            }
+            
+        };
+        _server.stop();
+        _server.setHandler(handler);
+        _server.start();
+
+        String request="GET / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: text/plane\r\n"+
+        "Content-Length: "+10+"\r\n"+
+        "\r\n"+
+        "0123456789\r\n"+
+        "GET / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: text/plane\r\n"+
+        "Content-Length: "+10+"\r\n"+
+        "Connection: close\r\n"+
+        "\r\n"+
+        "ABCDEFGHIJ\r\n";
+
+        String responses = _connector.getResponses(request);
+        System.err.println("response="+responses);
+        
+        int index=responses.indexOf("read="+(int)'0');
+        assertTrue(index>0);
+        
+        index=responses.indexOf("read="+(int)'A',index+7);
+        assertTrue(index>0);
+        
+    }
+
+    public void testPartialInput()
+    throws Exception
+    {
+        Handler handler = new AbstractHandler()
+        {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+            ServletException
+            {
+                baseRequest.setHandled(true);
+                InputStream in=request.getInputStream();
+                byte[] b=("read="+in.read()+"\n").getBytes(StringUtil.__UTF8);
+                response.setContentLength(b.length);
+                response.getOutputStream().write(b);
+                response.flushBuffer();
+            }
+
+        };
+        _server.stop();
+        _server.setHandler(handler);
+        _server.start();
+
+        String request="GET / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: text/plane\r\n"+
+        "Content-Length: "+10+"\r\n"+
+        "\r\n"+
+        "0123456789\r\n"+
+        "GET / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: text/plane\r\n"+
+        "Content-Length: "+10+"\r\n"+
+        "Connection: close\r\n"+
+        "\r\n"+
+        "ABCDEFGHIJ\r\n";
+
+        String responses = _connector.getResponses(request);
+        System.err.println("response="+responses);
+
+        int index=responses.indexOf("read="+(int)'0');
+        assertTrue(index>0);
+
+        index=responses.indexOf("read="+(int)'A',index+7);
+        assertTrue(index>0);
+
     }
 
     public void testConnectionClose()

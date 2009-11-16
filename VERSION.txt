@@ -28,6 +28,7 @@ jetty-7.0.1-SNAPSHOT
  + JETTY-1129 Filter control characters out of StdErrLog
  + JETTY-1135 Handle connection closed before accepted during JVM bug work around
  + JETTY-1144 fixed multi-byte character overflow
+ + JETTY-1148 Reset partially read request reader.
  + COMETD-34 Support Baeyux MBean
  + Fixed XSS issue in CookieDump demo servlet.
  + Improved start.jar usage text for properties

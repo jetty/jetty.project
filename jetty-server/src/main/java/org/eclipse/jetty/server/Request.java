@@ -1302,6 +1302,21 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     protected void recycle()
     {
+        if (_inputState==__READER)
+        {
+            try
+            {
+                int r=_reader.read();
+                while(r!=-1)
+                    r=_reader.read();
+            }
+            catch(Exception e)
+            {
+                Log.ignore(e);
+                _reader=null;
+            }
+        }
+        
         setAuthentication(Authentication.NOT_CHECKED);
     	_async.recycle();
         _asyncSupported=true;
