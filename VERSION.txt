@@ -1,4 +1,4 @@
-jetty-7.0.1-SNAPSHOT
+jetty-7.0.1.v20091116 16 November 2009
  + 274251 DefaultServlet supports exact match mode.
  + 288401 HttpExchange.cancel() Method Unimplemented
  + 289027 deobfuscate HttpClient SSL passwords
