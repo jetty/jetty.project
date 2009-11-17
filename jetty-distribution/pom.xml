@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.0.1-SNAPSHOT</version>
+    <version>7.0.1.v20091116</version>
   </parent>
   <artifactId>jetty-distribution</artifactId>
   <name>Jetty :: Distribution Assemblies</name>
@@ -47,8 +47,8 @@
                 <mkdir dir="${assembly.directory}/lib/jndi" />
                 <get src="${orbit.base.url}/javax.activation_1.1.0.v200905021805.jar" dest="${assembly.directory}/lib/jndi/activation-1.1.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit.base.url}/javax.mail_1.4.0.v200905040518.jar" dest="${assembly.directory}/lib/jndi/mail-1.4.jar" usetimestamp="true" verbose="true" />
-                <copy file="../VERSION.txt" todir="${assembly.directory}"/>
-                <chmod dir="${assembly.directory}/bin" perm="755" includes="**/*.sh"/>
+                <copy file="../VERSION.txt" todir="${assembly.directory}" />
+                <chmod dir="${assembly.directory}/bin" perm="755" includes="**/*.sh" />
               </tasks>
             </configuration>
           </execution>
