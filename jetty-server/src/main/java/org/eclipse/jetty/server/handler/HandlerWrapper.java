@@ -85,6 +85,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     /* 
      * @see org.eclipse.thread.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         if (_handler!=null)
@@ -96,6 +97,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     /* 
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         super.doStop();

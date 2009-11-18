@@ -295,6 +295,7 @@ public abstract class Resource implements Serializable
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void finalize()
     {
         release();

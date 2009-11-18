@@ -133,6 +133,7 @@ public class MultiException extends Exception
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         if (LazyList.size(nested)>0)
@@ -142,6 +143,7 @@ public class MultiException extends Exception
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void printStackTrace()
     {
         super.printStackTrace();
@@ -154,6 +156,7 @@ public class MultiException extends Exception
     /**
      * @see java.lang.Throwable#printStackTrace(java.io.PrintStream)
      */
+    @Override
     public void printStackTrace(PrintStream out)
     {
         super.printStackTrace(out);
@@ -165,6 +168,7 @@ public class MultiException extends Exception
     /**
      * @see java.lang.Throwable#printStackTrace(java.io.PrintWriter)
      */
+    @Override
     public void printStackTrace(PrintWriter out)
     {
         super.printStackTrace(out);

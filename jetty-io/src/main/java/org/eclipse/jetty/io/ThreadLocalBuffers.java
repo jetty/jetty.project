@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 /* ------------------------------------------------------------ */
 /** Abstract Buffer pool.
@@ -28,6 +27,7 @@ public abstract class ThreadLocalBuffers implements Buffers
     /* ------------------------------------------------------------ */
     private final ThreadLocal<ThreadBuffers> _buffers=new ThreadLocal<ThreadBuffers>()
     {
+        @Override
         protected ThreadBuffers initialValue()
         {
             return new ThreadBuffers();
@@ -175,6 +175,13 @@ public abstract class ThreadLocalBuffers implements Buffers
         _headerSize = size;
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
+    {
+        return "{{"+getHeaderSize()+","+getBufferSize()+"}}";
+    }
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     protected static class ThreadBuffers

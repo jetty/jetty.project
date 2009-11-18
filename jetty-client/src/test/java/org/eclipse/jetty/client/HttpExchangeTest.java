@@ -29,6 +29,7 @@ import junit.framework.TestCase;
 import org.eclipse.jetty.client.security.ProxyAuthorization;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EofException;
@@ -55,6 +56,7 @@ public class HttpExchangeTest extends TestCase
     protected Connector _connector;
     protected AtomicInteger _count = new AtomicInteger();
 
+    @Override
     protected void setUp() throws Exception
     {
         startServer();
@@ -64,6 +66,7 @@ public class HttpExchangeTest extends TestCase
         _httpClient.start();
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _httpClient.stop();
@@ -113,40 +116,47 @@ public class HttpExchangeTest extends TestCase
             {
                 String result="pending";
                 int len=0;
+                @Override
                 protected void onRequestCommitted()
                 {
                     result="committed";
                     // System.err.println(n+" Request committed: "+close);
                 }
 
+                @Override
                 protected void onRequestComplete() throws IOException
                 {
                     result="sent";
                 }
 
+                @Override
                 protected void onResponseStatus(Buffer version, int status, Buffer reason)
                 {
                     result="status";
                     // System.err.println(n+" Response Status: " + version+" "+status+" "+reason);
                 }
 
+                @Override
                 protected void onResponseHeader(Buffer name, Buffer value)
                 {
                     // System.err.println(n+" Response header: " + name + " = " + value);
                 }
 
+                @Override
                 protected void onResponseHeaderComplete() throws IOException
                 {
                     result="content";
                     super.onResponseHeaderComplete();
                 }
 
+                @Override
                 protected void onResponseContent(Buffer content)
                 {
                     len+=content.length();
                     // System.err.println(n+" Response content:" + content.length());
                 }
 
+                @Override
                 protected void onResponseComplete()
                 {
                     result="complete";
@@ -158,6 +168,7 @@ public class HttpExchangeTest extends TestCase
                     complete.countDown();
                 }
 
+                @Override
                 protected void onConnectionFailed(Throwable ex)
                 {
                     complete.countDown();
@@ -166,6 +177,7 @@ public class HttpExchangeTest extends TestCase
                     super.onConnectionFailed(ex);
                 }
 
+                @Override
                 protected void onException(Throwable ex)
                 {
                     complete.countDown();
@@ -174,6 +186,7 @@ public class HttpExchangeTest extends TestCase
                     super.onException(ex);
                 }
 
+                @Override
                 protected void onExpire()
                 {
                     complete.countDown();
@@ -182,6 +195,7 @@ public class HttpExchangeTest extends TestCase
                     super.onExpire();
                 }
 
+                @Override
                 public String toString()
                 {
                     return n+" "+result+" "+len;
@@ -240,6 +254,20 @@ public class HttpExchangeTest extends TestCase
             assertEquals(HttpExchange.STATUS_COMPLETED, status);
             Thread.sleep(5);
         }
+    }
+
+    public void testSun() throws Exception
+    {
+            ContentExchange httpExchange=new ContentExchange();
+            httpExchange.setURL(_scheme+"www.sun.com/");
+            httpExchange.setMethod(HttpMethods.GET);
+            _httpClient.send(httpExchange);
+            int status = httpExchange.waitForDone();
+            String result=httpExchange.getResponseContent();
+            assertTrue(result.indexOf("<title>Sun Microsystems</title>")>0);
+            assertEquals(HttpExchange.STATUS_COMPLETED, status);
+            assertEquals(HttpStatus.OK_200,httpExchange.getResponseStatus());
+            
     }
 
     public void testProxy() throws Exception

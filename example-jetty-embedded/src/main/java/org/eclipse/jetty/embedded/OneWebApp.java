@@ -22,7 +22,7 @@ public class OneWebApp
 {
     public static void main(String[] args) throws Exception
     {
-        String jetty_home = System.getProperty("jetty.home","..");
+        String jetty_home = System.getProperty("jetty.home","../jetty-distribution/target/distribution");
 
         Server server = new Server();
 
@@ -31,7 +31,7 @@ public class OneWebApp
         server.setConnectors(new Connector[]
         { connector });
 
-        String war = args.length > 0?args[0]:jetty_home + "/test-jetty-webapp/target/test-jetty-webapp-" + Server.getVersion();
+        String war = args.length > 0?args[0]: "../test-jetty-webapp/target/test-jetty-webapp-" + Server.getVersion();
         String path = args.length > 1?args[1]:"/";
 
         System.err.println(war + " " + path);

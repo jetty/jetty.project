@@ -21,7 +21,6 @@ import java.net.Socket;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -52,6 +51,7 @@ public class AsyncStressTest extends TestCase
     protected QueuedThreadPool _threads=new QueuedThreadPool();
     protected boolean _stress;
 
+    @Override
     protected void setUp() throws Exception
     {
         _stress= Boolean.getBoolean("STRESS");
@@ -63,9 +63,10 @@ public class AsyncStressTest extends TestCase
         _server.setHandler(_handler);
         _server.start();
         _port=_connector.getLocalPort();
-        _addr=Inet4Address.getLocalHost();
+        _addr=InetAddress.getLocalHost();
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _server.stop();
@@ -180,6 +181,7 @@ public class AsyncStressTest extends TestCase
             _timer=new Timer();
         }
         
+        @Override
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
             int read_before=0;
@@ -218,15 +220,16 @@ public class AsyncStressTest extends TestCase
 
                 if (suspend_for>=0)
                 {
+                    final AsyncContext asyncContext = baseRequest.startAsync();
+                    asyncContext.addListener(__asyncListener);
                     if (suspend_for>0)
-                        request.setAsyncTimeout(suspend_for);
-                    request.addAsyncListener(__asyncListener);
-                    final AsyncContext asyncContext = request.startAsync();
+                        asyncContext.setTimeout(suspend_for);
                     
                     if (complete_after>0)
                     {
                         TimerTask complete = new TimerTask()
                         {
+                            @Override
                             public void run()
                             {
                                 try
@@ -244,7 +247,6 @@ public class AsyncStressTest extends TestCase
                                     System.err.println(uri+"=="+br.getUri());
                                     System.err.println(asyncContext+"=="+br.getAsyncContinuation());
                                     
-                                    System.err.println(((AsyncContinuation)asyncContext).getHistory());
                                     Log.warn(e);
                                     System.exit(1);
                                 }
@@ -266,6 +268,7 @@ public class AsyncStressTest extends TestCase
                     {
                         TimerTask resume = new TimerTask()
                         {
+                            @Override
                             public void run()
                             {
                                 asyncContext.dispatch();
@@ -323,14 +326,30 @@ public class AsyncStressTest extends TestCase
     
     private static AsyncListener __asyncListener = new AsyncListener()
     {
+        @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
         }
 
+        @Override
         public void onTimeout(AsyncEvent event) throws IOException
         {
-            event.getRequest().setAttribute("TIMEOUT",Boolean.TRUE);
-            event.getRequest().getAsyncContext().dispatch();
+            event.getSuppliedRequest().setAttribute("TIMEOUT",Boolean.TRUE);
+            event.getSuppliedRequest().getAsyncContext().dispatch();
+        }
+
+        @Override
+        public void onError(AsyncEvent event) throws IOException
+        {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public void onStartAsync(AsyncEvent event) throws IOException
+        {
+            // TODO Auto-generated method stub
+            
         }
     };
 }

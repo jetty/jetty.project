@@ -22,7 +22,7 @@ import java.io.IOException;
  * 
  *
  */
-public class ByteArrayEndPoint implements EndPoint
+public class ByteArrayEndPoint implements ConnectedEndPoint
 {
     byte[] _inBytes;
     ByteArrayBuffer _in;
@@ -30,6 +30,7 @@ public class ByteArrayEndPoint implements EndPoint
     boolean _closed;
     boolean _nonBlocking;
     boolean _growOutput;
+    Connection _connection;
 
     /* ------------------------------------------------------------ */
     /**
@@ -39,6 +40,24 @@ public class ByteArrayEndPoint implements EndPoint
     {
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.ConnectedEndPoint#getConnection()
+     */
+    public Connection getConnection()
+    {
+        return _connection;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.ConnectedEndPoint#setConnection(org.eclipse.jetty.io.Connection)
+     */
+    public void setConnection(Connection connection)
+    {
+        _connection=connection;
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * @return the nonBlocking

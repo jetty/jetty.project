@@ -52,16 +52,19 @@ public class Ajp13Connection extends HttpConnection
         ((Ajp13Request)_request).setConnection(this);
     }
 
+    @Override
     public boolean isConfidential(Request request)
     {
         return ((Ajp13Request) request).isSslSecure();
     }
 
+    @Override
     public boolean isIntegral(Request request)
     {
         return ((Ajp13Request) request).isSslSecure();
     }
 
+    @Override
     public ServletInputStream getInputStream()
     {
         if (_in == null)

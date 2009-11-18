@@ -42,7 +42,6 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
@@ -1083,16 +1082,28 @@ public class HttpFields
     {
         try
         {
-            ByteArrayBuffer buffer = new ByteArrayBuffer(4096);
-            put(buffer);
-            return BufferUtil.to8859_1_String(buffer);
+            StringBuffer buffer = new StringBuffer();
+            for (int i = 0; i < _fields.size(); i++)
+            {
+                Field field = (Field) _fields.get(i);
+                if (field != null && field._revision == _revision)
+                {
+                    String tmp = field.getName();
+                    if (tmp != null) buffer.append(tmp);
+                    buffer.append(": ");
+                    tmp = field.getValue();
+                    if (tmp != null) buffer.append(tmp);
+                    buffer.append("\r\n");
+                }
+            }
+            buffer.append("\r\n");
+            return buffer.toString();
         }
         catch (Exception e)
         {
             Log.warn(e);
             return e.toString();
         }
-
     }
 
     /* ------------------------------------------------------------ */

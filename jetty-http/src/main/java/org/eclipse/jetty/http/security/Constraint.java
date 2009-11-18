@@ -87,6 +87,7 @@ public class Constraint implements Cloneable, Serializable
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Object clone() throws CloneNotSupportedException
     {
         return super.clone();
@@ -200,6 +201,7 @@ public class Constraint implements Cloneable, Serializable
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return "SC{" + _name

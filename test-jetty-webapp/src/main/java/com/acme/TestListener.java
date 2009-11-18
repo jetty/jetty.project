@@ -13,7 +13,6 @@
 
 package com.acme;
 
-import javax.servlet.ServletContext;
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
 import javax.servlet.ServletContextEvent;
@@ -57,9 +56,7 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
     }
 
     public void contextInitialized(ServletContextEvent sce)
-    {
-    	ServletContext context=sce.getServletContext();
-    	
+    {	
     	/* TODO  for servlet 3.0
     	 * FilterRegistration registration=context.addFilter("TestFilter",TestFilter.class.getName());
     	

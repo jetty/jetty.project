@@ -117,6 +117,7 @@ public class ByteArrayISO8859Writer extends Writer
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void write(char[] ca)
         throws IOException
     {
@@ -135,6 +136,7 @@ public class ByteArrayISO8859Writer extends Writer
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void write(char[] ca,int offset, int length)
         throws IOException
     {
@@ -153,6 +155,7 @@ public class ByteArrayISO8859Writer extends Writer
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void write(String s)
         throws IOException
     {
@@ -178,6 +181,7 @@ public class ByteArrayISO8859Writer extends Writer
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void write(String s,int offset, int length)
         throws IOException
     {
@@ -214,6 +218,7 @@ public class ByteArrayISO8859Writer extends Writer
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void flush()
     {}
 
@@ -224,6 +229,7 @@ public class ByteArrayISO8859Writer extends Writer
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void close()
     {}
 

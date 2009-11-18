@@ -87,7 +87,7 @@ public class ContinuationFilter implements Filter
             {
                 try
                 {
-                    if (fc==null || ((FilteredContinuation)fc).enter(response))
+                    if (fc==null || (fc).enter(response))
                         chain.doFilter(request,response);
                 }
                 catch (ContinuationThrowable e)
@@ -99,7 +99,7 @@ public class ContinuationFilter implements Filter
                     if (fc==null)
                         fc = (FilteredContinuation) request.getAttribute(Continuation.ATTRIBUTE);
 
-                    complete=fc==null || ((FilteredContinuation)fc).exit();
+                    complete=fc==null || (fc).exit();
                 }
             }
         }

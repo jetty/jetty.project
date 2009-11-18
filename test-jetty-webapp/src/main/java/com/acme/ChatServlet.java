@@ -47,6 +47,7 @@ public class ChatServlet extends HttpServlet
     
     
     // Handle Ajax calls from browser
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {   
         // Ajax calls are form encoded
@@ -171,6 +172,7 @@ public class ChatServlet extends HttpServlet
     
     // Serve the HTML with embedded CSS and Javascript.
     // This should be static content and should use real JS libraries.
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         if (!request.getRequestURI().endsWith("/"))

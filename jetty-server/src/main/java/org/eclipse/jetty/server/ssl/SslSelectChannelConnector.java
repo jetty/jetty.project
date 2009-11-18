@@ -82,6 +82,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     /** Set to true if we require client certificate authentication. */
     private boolean _needClientAuth=false;
     private boolean _wantClientAuth=false;
+    private boolean _allowRenegotiate=false;
 
     private transient Password _password;
     private transient Password _keyPassword;
@@ -225,6 +226,28 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
     /* ------------------------------------------------------------ */
     /**
+     * @return True if SSL re-negotiation is allowed (default false)
+     */
+    public boolean isAllowRenegotiate()
+    {
+        return _allowRenegotiate;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
+     * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
+     * does not have CVE-2009-3555 fixed, then re-negotiation should 
+     * not be allowed.
+     * @param allowRenegotiate true if re-negotiation is allowed (default false)
+     */
+    public void setAllowRenegotiate(boolean allowRenegotiate)
+    {
+        _allowRenegotiate = allowRenegotiate;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
      * @see org.eclipse.jetty.server.ssl.SslConnector#getExcludeCipherSuites()
      */
     public String[] getExcludeCipherSuites()
@@ -273,6 +296,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      * @deprecated use {@link #getSslKeyManagerFactoryAlgorithm()} or 
      * {@link #getSslTrustManagerFactoryAlgorithm()}
      */
+    @Deprecated
     public String getAlgorithm()
     {
         return getSslKeyManagerFactoryAlgorithm();
@@ -283,6 +307,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      * @deprecated use {@link #setSslKeyManagerFactoryAlgorithm(String)} or 
      * {@link #setSslTrustManagerFactoryAlgorithm(String)}
      */
+    @Deprecated
     public void setAlgorithm(String algorithm)
     {
         setSslKeyManagerFactoryAlgorithm(algorithm);
@@ -525,6 +550,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      * client certs providing CONFIDENTIAL, whereas another SSL listener not
      * requiring client certs providing mere INTEGRAL constraints.
      */
+    @Override
     public boolean isConfidential(Request request)
     {
         final int confidentialPort=getConfidentialPort();
@@ -540,6 +566,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      * client certs providing CONFIDENTIAL, whereas another SSL listener not
      * requiring client certs providing mere INTEGRAL constraints.
      */
+    @Override
     public boolean isIntegral(Request request)
     {
         final int integralPort=getIntegralPort();
@@ -547,12 +574,16 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
-        return new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,createSSLEngine());
+        SslSelectChannelEndPoint endp = new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,createSSLEngine());
+        endp.setAllowRenegotiate(_allowRenegotiate);
+        return endp;
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
     {
         HttpConnection connection=(HttpConnection)super.newConnection(channel,endpoint);
@@ -591,7 +622,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
                 engine.setEnabledCipherSuites(enabledCipherSuites);
             }
-
         }
         catch (Exception e)
         {
@@ -601,8 +631,8 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         }
         return engine;
     }
-
    
+    @Override
     protected void doStart() throws Exception
     {
     	if (_context == null)
@@ -632,7 +662,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
             }
         };
         buffers.setBufferSize(ssl_session.getApplicationBufferSize());
-        buffers.setHeaderSize(ssl_session.getPacketBufferSize());
+        buffers.setHeaderSize(ssl_session.getApplicationBufferSize());
         _sslBuffers=buffers;
         
         if (getRequestHeaderSize()<ssl_session.getApplicationBufferSize())

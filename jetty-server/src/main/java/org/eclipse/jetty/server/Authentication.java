@@ -120,7 +120,8 @@ public interface Authentication
      * This convenience instance is for non mandatory authentication where credentials
      * have been presented and checked, but failed authentication. 
      */
-    public final static Authentication UNAUTHENTICATED = new Authentication(){public String toString(){return "UNAUTHENTICATED";}};
+    public final static Authentication UNAUTHENTICATED = new Authentication(){@Override
+    public String toString(){return "UNAUTHENTICATED";}};
 
     /* ------------------------------------------------------------ */
     /** Authentication not checked
@@ -128,20 +129,24 @@ public interface Authentication
      * This convenience instance us for non mandatory authentication when no 
      * credentials are present to be checked.
      */
-    public final static Authentication NOT_CHECKED = new Authentication(){public String toString(){return "NOT CHECKED";}};
+    public final static Authentication NOT_CHECKED = new Authentication(){@Override
+    public String toString(){return "NOT CHECKED";}};
 
     /* ------------------------------------------------------------ */
     /** Authentication challenge sent.
      * <p>
      * This convenience instance is for when an authentication challenge has been sent.
      */
-    public final static Authentication SEND_CONTINUE = new Authentication.Challenge(){public String toString(){return "CHALLENGE";}};
+    public final static Authentication SEND_CONTINUE = new Authentication.Challenge(){@Override
+    public String toString(){return "CHALLENGE";}};
 
     /* ------------------------------------------------------------ */
     /** Authentication failure sent.
      * <p>
      * This convenience instance is for when an authentication failure has been sent.
      */
-    public final static Authentication SEND_FAILURE = new Authentication.Failure(){public String toString(){return "FAILURE";}};
-    public final static Authentication SEND_SUCCESS = new SendSuccess(){public String toString(){return "SEND_SUCCESS";}};
+    public final static Authentication SEND_FAILURE = new Authentication.Failure(){@Override
+    public String toString(){return "FAILURE";}};
+    public final static Authentication SEND_SUCCESS = new SendSuccess(){@Override
+    public String toString(){return "SEND_SUCCESS";}};
 }

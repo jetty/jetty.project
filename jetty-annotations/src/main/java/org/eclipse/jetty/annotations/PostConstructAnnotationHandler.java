@@ -13,25 +13,24 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.List;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.PostConstructCallback;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class PostConstructAnnotationHandler implements AnnotationHandler
 {
     protected WebAppContext _wac;
+    protected LifeCycleCallbackCollection _callbacks;
 
     public PostConstructAnnotationHandler (WebAppContext wac)
     {
         _wac = wac;
+        _callbacks = (LifeCycleCallbackCollection)_wac.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
     }
 
 
@@ -47,35 +46,39 @@ public class PostConstructAnnotationHandler implements AnnotationHandler
       Log.warn("@PostConstruct annotation not applicable to fields: "+className+"."+fieldName);  
     }
 
-    public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
+    public void handleMethod(String className, String methodName, int access, String desc, String signature, String[] exceptions, String annotation,
                              List<Value> values)
-    {
-
-        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_wac.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
-        Class clazz = null;
+    {  
         try
         {
-            clazz = Loader.loadClass(null, className);
-            Method m = clazz.getDeclaredMethod(methodName, Util.convertTypes(params));
-
-            if (!Util.isServletType(m.getDeclaringClass()))
+            org.objectweb.asm.Type[] args = org.objectweb.asm.Type.getArgumentTypes(desc);      
+         
+            if (args.length != 0)
             {
-                Log.debug("Ignoring "+m.getName()+" as non-servlet type");
+                Log.warn("Skipping PostConstruct annotation on "+className+"."+methodName+": has parameters");
                 return;
             }
-            if (m.getParameterTypes().length != 0)
-                throw new IllegalStateException(m+" has parameters");
-            if (m.getReturnType() != Void.TYPE)
-                throw new IllegalStateException(m+" is not void");
-            if (m.getExceptionTypes().length != 0)
-                throw new IllegalStateException(m+" throws checked exceptions");
-            if (Modifier.isStatic(m.getModifiers()))
-                throw new IllegalStateException(m+" is static");
+            if (org.objectweb.asm.Type.getReturnType(desc) != org.objectweb.asm.Type.VOID_TYPE)
+            {
+                Log.warn("Skipping PostConstruct annotation on "+className+"."+methodName+": is not void");
+                return;
+            }
+            
+            if (exceptions != null && exceptions.length != 0)
+            {
+                Log.warn("Skipping PostConstruct annotation on "+className+"."+methodName+": throws checked exceptions");
+                return;
+            }
+            
+            if ((access & org.objectweb.asm.Opcodes.ACC_STATIC) > 0)
+            {
+                Log.warn("Skipping PostConstruct annotation on "+className+"."+methodName+": is static");
+                return;
+            }
 
             PostConstructCallback callback = new PostConstructCallback();
-            callback.setTargetClass(m.getDeclaringClass());
-            callback.setTarget(m);
-            callbacks.add(callback);
+            callback.setTarget(className, methodName);
+            _callbacks.add(callback);
         }
         catch (Exception e)
         {

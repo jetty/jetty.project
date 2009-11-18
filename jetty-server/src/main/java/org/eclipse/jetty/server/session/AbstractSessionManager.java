@@ -703,6 +703,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         /**
          * @deprecated From HttpSessionContext
          */
+        @Deprecated
         public Enumeration getIds()
         {
             return Collections.enumeration(Collections.EMPTY_LIST);
@@ -712,6 +713,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         /**
          * @deprecated From HttpSessionContext
          */
+        @Deprecated
         public HttpSession getSession(String id)
         {
             return null;
@@ -878,6 +880,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         /**
          * @deprecated
          */
+        @Deprecated
         public HttpSessionContext getSessionContext() throws IllegalStateException
         {
             if (_invalid)
@@ -890,6 +893,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
          * @deprecated As of Version 2.2, this method is replaced by
          *             {@link #getAttribute}
          */
+        @Deprecated
         public Object getValue(String name) throws IllegalStateException
         {
             return getAttribute(name);
@@ -900,6 +904,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
          * @deprecated As of Version 2.2, this method is replaced by
          *             {@link #getAttributeNames}
          */
+        @Deprecated
         public String[] getValueNames() throws IllegalStateException
         {
             synchronized(this)
@@ -1026,6 +1031,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
          * @deprecated As of Version 2.2, this method is replaced by
          *             {@link #setAttribute}
          */
+        @Deprecated
         public void putValue(java.lang.String name, java.lang.Object value) throws IllegalStateException
         {
             setAttribute(name,value);
@@ -1064,6 +1070,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
          * @deprecated As of Version 2.2, this method is replaced by
          *             {@link #removeAttribute}
          */
+        @Deprecated
         public void removeValue(java.lang.String name) throws IllegalStateException
         {
             removeAttribute(name);
@@ -1123,6 +1130,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         }
 
         /* ------------------------------------------------------------- */
+        @Override
         public String toString()
         {
             return this.getClass().getName()+":"+getId()+"@"+hashCode();

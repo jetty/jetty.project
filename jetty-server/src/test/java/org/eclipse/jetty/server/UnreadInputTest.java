@@ -51,6 +51,7 @@ public class UnreadInputTest extends TestCase
     
     
     
+    @Override
     protected void setUp() throws Exception
     {
         //server side
@@ -66,6 +67,7 @@ public class UnreadInputTest extends TestCase
         _inputStream = _socket.getInputStream();
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _server.stop();
@@ -91,15 +93,18 @@ public class UnreadInputTest extends TestCase
             byte[] bytes = content.getBytes();
 
             _outputStream.write("GET / HTTP/1.1\r\nHost: localhost\r\n".getBytes());
-            Thread.currentThread().sleep(500L);
+            Thread.currentThread();
+            Thread.sleep(500L);
 
             String str = "Content-Length: "+bytes.length+"\r\n" + "\r\n";
             _outputStream.write(str.getBytes());
-            Thread.currentThread().sleep(500L);
+            Thread.currentThread();
+            Thread.sleep(500L);
 
             //write some bytes of the content
             _outputStream.write(bytes, 0, (bytes.length/2));
-            Thread.currentThread().sleep(1000L);
+            Thread.currentThread();
+            Thread.sleep(1000L);
 
             //write the rest
             _outputStream.write(bytes, bytes.length/2, (bytes.length - bytes.length/2));       

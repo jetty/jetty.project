@@ -154,29 +154,30 @@ public class HttpGeneratorTest extends TestCase
                 {
                     view.setPutIndex(i*inc);
                     view.setGetIndex((i-1)*inc);
-                    hb.addContent(view,HttpGenerator.MORE);
-                    if (hb.isBufferFull() && hb.isState(HttpGenerator.STATE_HEADER))
-                        hb.completeHeader(fields, HttpGenerator.MORE);
+                    hb.addContent(view,Generator.MORE);
+                    if (hb.isBufferFull() && hb.isState(AbstractGenerator.STATE_HEADER))
+                        hb.completeHeader(fields, Generator.MORE);
                     if (i%2==0)
                     {
-                        if (hb.isState(HttpGenerator.STATE_HEADER))
-                            hb.completeHeader(fields, HttpGenerator.MORE);
+                        if (hb.isState(AbstractGenerator.STATE_HEADER))
+                            hb.completeHeader(fields, Generator.MORE);
                         hb.flushBuffer();
                     }
                 }
                 view.setPutIndex(buf.putIndex());
                 view.setGetIndex((chunks-1)*inc);
-                hb.addContent(view,HttpGenerator.LAST);
-                if(hb.isState(HttpGenerator.STATE_HEADER))
-                    hb.completeHeader(fields, HttpGenerator.LAST);
+                hb.addContent(view,Generator.LAST);
+                if(hb.isState(AbstractGenerator.STATE_HEADER))
+                    hb.completeHeader(fields, Generator.LAST);
             }
             else
             {
-                hb.completeHeader(fields, HttpGenerator.LAST);
+                hb.completeHeader(fields, Generator.LAST);
             }
             hb.complete();
         }
         
+        @Override
         public String toString()
         {
             return "["+code+","+values[0]+","+values[1]+","+(body==null?"none":"_content")+"]";
@@ -207,6 +208,7 @@ public class HttpGeneratorTest extends TestCase
     {   
         int index=0;
         
+        @Override
         public void content(Buffer ref)
         {
             if (index == 0)
@@ -216,6 +218,7 @@ public class HttpGeneratorTest extends TestCase
         }
 
 
+        @Override
         public void startRequest(Buffer tok0, Buffer tok1, Buffer tok2)
         {
             h= -1;
@@ -235,6 +238,7 @@ public class HttpGeneratorTest extends TestCase
         /* (non-Javadoc)
          * @see org.eclipse.jetty.EventHandler#startResponse(org.eclipse.io.Buffer, int, org.eclipse.io.Buffer)
          */
+        @Override
         public void startResponse(Buffer version, int status, Buffer reason)
         {
             h= -1;
@@ -249,17 +253,20 @@ public class HttpGeneratorTest extends TestCase
             index=0;
         }
 
+        @Override
         public void parsedHeader(Buffer name,Buffer value)
         {
             hdr[++h]= name.toString();
             val[h]= value.toString();
         }
 
+        @Override
         public void headerComplete()
         {
             content= null;
         }
 
+        @Override
         public void messageComplete(long contentLength)
         {
         }

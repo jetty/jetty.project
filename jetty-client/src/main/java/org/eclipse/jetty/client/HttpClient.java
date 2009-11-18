@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.client;
@@ -19,13 +19,11 @@ import java.net.UnknownHostException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -39,6 +37,7 @@ import org.eclipse.jetty.client.security.Authorization;
 import org.eclipse.jetty.client.security.RealmResolver;
 import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
@@ -74,9 +73,9 @@ import org.eclipse.jetty.util.thread.Timeout;
  * be allocated from a destination, so that multiple request sources are not multiplexed
  * over the same connection.
  *
- * 
- * 
- * 
+ *
+ *
+ *
  * @see {@link HttpExchange}
  * @see {@link HttpDestination}
  */
@@ -93,12 +92,14 @@ public class HttpClient extends HttpBuffers implements Attributes
     Connector _connector;
     private long _idleTimeout = 20000;
     private long _timeout = 320000;
-    int _soTimeout = 10000;
+    private int _connectTimeout = 75000;
     private Timeout _timeoutQ = new Timeout();
+    private Timeout _idleTimeoutQ = new Timeout();
     private Address _proxy;
     private Authorization _proxyAuthentication;
     private Set<String> _noProxy;
     private int _maxRetries = 3;
+    private int _maxRedirects = 20;
     private LinkedList<String> _registeredListeners;
 
     // TODO clean up and add getters/setters to some of this maybe
@@ -113,13 +114,13 @@ public class HttpClient extends HttpBuffers implements Attributes
     private String _trustManagerAlgorithm = "SunX509";
 
     private SSLContext _sslContext;
-    
+
     private String _protocol = "TLS";
     private String _provider;
     private String _secureRandomAlgorithm;
 
     private RealmResolver _realmResolver;
-    
+
     private AttributesMap _attributes=new AttributesMap();
 
     /* ------------------------------------------------------------------------------- */
@@ -245,6 +246,12 @@ public class HttpClient extends HttpBuffers implements Attributes
     public void schedule(Timeout.Task task)
     {
         _timeoutQ.schedule(task);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void scheduleIdle(Timeout.Task task)
+    {
+        _idleTimeoutQ.schedule(task);
     }
 
     /* ------------------------------------------------------------ */
@@ -380,6 +387,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     /**
      * @see org.eclipse.jetty.http.HttpBuffers#newResponseHeader(int)
      */
+    @Override
     protected Buffer newResponseHeader(int size)
     {
         if (_connectorType == CONNECTOR_SOCKET)
@@ -388,6 +396,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected boolean isRequestHeader(Buffer buffer)
     {
         if (_connectorType == CONNECTOR_SOCKET)
@@ -396,14 +405,15 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     protected boolean isResponseHeader(Buffer buffer)
     {
         if (_connectorType == CONNECTOR_SOCKET)
             return buffer instanceof ByteArrayBuffer;
         return buffer instanceof IndirectNIOBuffer;
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     public int getMaxConnectionsPerAddress()
     {
@@ -417,12 +427,15 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStart() throws Exception
     {
         super.doStart();
 
-        _timeoutQ.setNow();
         _timeoutQ.setDuration(_timeout);
+        _timeoutQ.setNow();
+        _idleTimeoutQ.setDuration(_idleTimeout);
+        _idleTimeoutQ.setNow();
 
         if (_threadPool == null)
         {
@@ -456,11 +469,11 @@ public class HttpClient extends HttpBuffers implements Attributes
             {
                 while (isRunning())
                 {
-                    _timeoutQ.setNow();
-                    _timeoutQ.tick();
+                    _timeoutQ.tick(System.currentTimeMillis());
+                    _idleTimeoutQ.tick(_timeoutQ.getNow());
                     try
                     {
-                        Thread.sleep(1000);
+                        Thread.sleep(200);
                     }
                     catch (InterruptedException e)
                     {
@@ -472,6 +485,13 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    long getNow()
+    {
+        return _timeoutQ.getNow();
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
     protected void doStop() throws Exception
     {
         _connector.stop();
@@ -486,6 +506,7 @@ public class HttpClient extends HttpBuffers implements Attributes
         }
 
         _timeoutQ.cancelAll();
+        _idleTimeoutQ.cancelAll();
         super.doStop();
     }
 
@@ -493,7 +514,6 @@ public class HttpClient extends HttpBuffers implements Attributes
     interface Connector extends LifeCycle
     {
         public void startConnection(HttpDestination destination) throws IOException;
-
     }
 
     /**
@@ -505,18 +525,18 @@ public class HttpClient extends HttpBuffers implements Attributes
      */
     protected SSLContext getSSLContext() throws IOException
     {
-    	if (_sslContext == null) 
+    	if (_sslContext == null)
     	{
-			if (_keyStoreLocation == null) 
+			if (_keyStoreLocation == null)
 			{
 				_sslContext = getLooseSSLContext();
-			} 
-			else 
+			}
+			else
 			{
 				_sslContext = getStrictSSLContext();
 			}
-		}   	
-    	return _sslContext;    	
+		}
+    	return _sslContext;
     }
 
     protected SSLContext getStrictSSLContext() throws IOException
@@ -626,16 +646,24 @@ public class HttpClient extends HttpBuffers implements Attributes
         _idleTimeout = ms;
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * @return the period in ms that an exchange will wait for a response from the server.
+     * @deprecated use {@link #getTimeout()} instead.
+     */
+    @Deprecated
     public int getSoTimeout()
     {
-        return _soTimeout;
+        return Long.valueOf(getTimeout()).intValue();
     }
 
-    /* ------------------------------------------------------------ */
-    public void setSoTimeout(int so)
+    /**
+     * @deprecated use {@link #setTimeout(long)} instead.
+     * @param timeout the period in ms that an exchange will wait for a response from the server.
+     */
+    @Deprecated
+    public void setSoTimeout(int timeout)
     {
-        _soTimeout = so;
+        setTimeout(timeout);
     }
 
     /* ------------------------------------------------------------ */
@@ -649,11 +677,27 @@ public class HttpClient extends HttpBuffers implements Attributes
 
     /* ------------------------------------------------------------ */
     /**
-     * @param ms the period in ms that an exchange will wait for a response from the server.
+     * @param timeout the period in ms that an exchange will wait for a response from the server.
      */
-    public void setTimeout(long ms)
+    public void setTimeout(long timeout)
     {
-        _timeout = ms;
+        _timeout = timeout;
+    }
+
+    /**
+     * @return the period in ms before timing out an attempt to connect
+     */
+    public int getConnectTimeout()
+    {
+        return _connectTimeout;
+    }
+
+    /**
+     * @param connectTimeout the period in ms before timing out an attempt to connect
+     */
+    public void setConnectTimeout(int connectTimeout)
+    {
+        this._connectTimeout = connectTimeout;
     }
 
     /* ------------------------------------------------------------ */
@@ -710,38 +754,57 @@ public class HttpClient extends HttpBuffers implements Attributes
         _maxRetries = retries;
     }
 
+    /* ------------------------------------------------------------ */
+    public int maxRedirects()
+    {
+        return _maxRedirects;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setMaxRedirects(int redirects)
+    {
+        _maxRedirects = redirects;
+    }
+
+    /* ------------------------------------------------------------ */
     public String getTrustStoreLocation()
     {
         return _trustStoreLocation;
     }
 
+    /* ------------------------------------------------------------ */
     public void setTrustStoreLocation(String trustStoreLocation)
     {
         this._trustStoreLocation = trustStoreLocation;
     }
 
+    /* ------------------------------------------------------------ */
     public String getKeyStoreLocation()
     {
         return _keyStoreLocation;
     }
 
+    /* ------------------------------------------------------------ */
     public void setKeyStoreLocation(String keyStoreLocation)
     {
         this._keyStoreLocation = keyStoreLocation;
     }
 
-    public void setKeyStorePassword(String _keyStorePassword)
+    /* ------------------------------------------------------------ */
+    public void setKeyStorePassword(String keyStorePassword)
     {
-        this._keyStorePassword = _keyStorePassword;
+        this._keyStorePassword = new Password(keyStorePassword).toString();
     }
 
-    public void setKeyManagerPassword(String _keyManagerPassword)
+    /* ------------------------------------------------------------ */
+    public void setKeyManagerPassword(String keyManagerPassword)
     {
-        this._keyManagerPassword = _keyManagerPassword;
+        this._keyManagerPassword = new Password(keyManagerPassword).toString();;
     }
 
-    public void setTrustStorePassword(String _trustStorePassword)
+    /* ------------------------------------------------------------ */
+    public void setTrustStorePassword(String trustStorePassword)
     {
-        this._trustStorePassword = _trustStorePassword;
+        this._trustStorePassword = new Password(trustStorePassword).toString();;
     }
 }

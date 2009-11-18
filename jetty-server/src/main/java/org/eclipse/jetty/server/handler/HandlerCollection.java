@@ -155,6 +155,7 @@ public class HandlerCollection extends AbstractHandlerContainer
     /* 
      * @see org.eclipse.jetty.server.server.handler.AbstractHandler#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         MultiException mex=new MultiException();
@@ -171,6 +172,7 @@ public class HandlerCollection extends AbstractHandlerContainer
     /* 
      * @see org.eclipse.jetty.server.server.handler.AbstractHandler#doStop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         MultiException mex=new MultiException();
@@ -184,6 +186,7 @@ public class HandlerCollection extends AbstractHandlerContainer
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void setServer(Server server)
     {
         if (isStarted())
@@ -222,6 +225,7 @@ public class HandlerCollection extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected Object expandChildren(Object list, Class byClass)
     {
         Handler[] handlers = getHandlers();

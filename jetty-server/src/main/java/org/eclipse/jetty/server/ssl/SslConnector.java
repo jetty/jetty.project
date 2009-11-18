@@ -217,4 +217,21 @@ public interface SslConnector extends Connector
      * @return The SSLContext
      */
     public abstract SSLContext getSslContext();
+    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if SSL re-negotiation is allowed (default false)
+     */
+    public boolean isAllowRenegotiate();
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
+     * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
+     * does not have CVE-2009-3555 fixed, then re-negotiation should 
+     * not be allowed.
+     * @param allowRenegotiate true if re-negotiation is allowed (default false)
+     */
+    public void setAllowRenegotiate(boolean allowRenegotiate);
 }

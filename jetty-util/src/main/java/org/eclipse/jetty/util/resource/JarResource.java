@@ -24,6 +24,7 @@ import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 
 
@@ -46,6 +47,7 @@ public class JarResource extends URLResource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public synchronized void release()
     {
         _jarConnection=null;
@@ -53,6 +55,7 @@ public class JarResource extends URLResource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     protected boolean checkConnection()
     {
         super.checkConnection();
@@ -83,6 +86,7 @@ public class JarResource extends URLResource
     /**
      * Returns true if the respresenetd resource exists.
      */
+    @Override
     public boolean exists()
     {
         if (_urlString.endsWith("!/"))
@@ -92,6 +96,7 @@ public class JarResource extends URLResource
     }    
 
     /* ------------------------------------------------------------ */
+    @Override
     public File getFile()
         throws IOException
     {
@@ -99,6 +104,7 @@ public class JarResource extends URLResource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public InputStream getInputStream()
         throws java.io.IOException
     {     
@@ -106,6 +112,7 @@ public class JarResource extends URLResource
         if (!_urlString.endsWith("!/"))
             return new FilterInputStream(super.getInputStream()) 
             {
+                @Override
                 public void close() throws IOException {this.in=IO.getClosedStream();}
             };
 
@@ -148,6 +155,7 @@ public class JarResource extends URLResource
         JarInputStream jin = new JarInputStream(is);
         JarEntry entry;
         boolean shouldExtract;
+        String directoryCanonicalPath = directory.getCanonicalPath()+"/";
         while((entry=jin.getNextJarEntry())!=null)
         {
             String entryName = entry.getName();
@@ -192,14 +200,16 @@ public class JarResource extends URLResource
                 continue;
             }
                 
-           
-            File file=new File(directory,entryName);
-
-            if(!file.getCanonicalPath().regionMatches(0,directory.getCanonicalPath()+"/",0,directory.getCanonicalPath().length()+1)) {
-                if (Log.isDebugEnabled()) Log.debug("Invalid entry: " + entryName);
+            String dotCheck = entryName.replace('\\', '/');   
+            dotCheck = URIUtil.canonicalPath(dotCheck);
+            if (dotCheck == null)
+            {
+                if (Log.isDebugEnabled()) Log.debug("Invalid entry: "+entryName);
                 continue;
-            } 
-            
+            }
+
+            File file=new File(directory,entryName);
+     
             if (entry.isDirectory())
             {
                 // Make directory

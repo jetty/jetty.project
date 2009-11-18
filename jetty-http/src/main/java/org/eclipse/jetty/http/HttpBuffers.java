@@ -75,6 +75,7 @@ public abstract class HttpBuffers extends AbstractLifeCycle
         _responseBuffers.setHeaderSize(6*1024);
     }
 
+    @Override
     protected void doStart()
         throws Exception
     {
@@ -85,6 +86,7 @@ public abstract class HttpBuffers extends AbstractLifeCycle
      * @return Returns the headerBufferSize.
      * @deprecated use {@link #getRequestHeaderSize()} or {@link #getResponseHeaderSize()}
      */
+    @Deprecated
     public int getHeaderBufferSize()
     {
         return _requestBuffers.getHeaderSize();
@@ -160,6 +162,7 @@ public abstract class HttpBuffers extends AbstractLifeCycle
      * @param headerBufferSize The headerBufferSize to set.
      * @deprecated 
      */
+    @Deprecated
     public void setHeaderBufferSize( int headerBufferSize )
     {
         setRequestHeaderSize(headerBufferSize);

@@ -15,7 +15,6 @@ package com.acme;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
@@ -33,17 +32,9 @@ public class CookieDump extends HttpServlet
     int redirectCount=0;
 
     /* ------------------------------------------------------------ */
-    public void init(ServletConfig config)
-         throws ServletException
-    {
-        super.init(config);        
-    }
-
-    /* ------------------------------------------------------------ */
     protected void handleForm(HttpServletRequest request,
                           HttpServletResponse response) 
     {
-        String action = request.getParameter("Action");
         String name =  request.getParameter("Name");
         String value =  request.getParameter("Value");
         String age =  request.getParameter("Age");
@@ -58,6 +49,7 @@ public class CookieDump extends HttpServlet
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void doPost(HttpServletRequest request,
                        HttpServletResponse response) 
         throws ServletException, IOException
@@ -69,6 +61,7 @@ public class CookieDump extends HttpServlet
     }
         
     /* ------------------------------------------------------------ */
+    @Override
     public void doGet(HttpServletRequest request,
                       HttpServletResponse response) 
         throws ServletException, IOException
@@ -85,7 +78,7 @@ public class CookieDump extends HttpServlet
         
         for (int i=0;cookies!=null && i<cookies.length;i++)
         {
-            out.println("<b>"+cookies[i].getName()+"</b>="+cookies[i].getValue()+"<br/>");
+            out.println("<b>"+deScript(cookies[i].getName())+"</b>="+deScript(cookies[i].getValue())+"<br/>");
         }
         
         out.println("<form action=\""+response.encodeURL(getURI(request))+"\" method=\"post\">"); 
@@ -98,6 +91,7 @@ public class CookieDump extends HttpServlet
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getServletInfo() {
         return "Session Dump Servlet";
     }
@@ -109,6 +103,17 @@ public class CookieDump extends HttpServlet
         if (uri==null)
             uri=request.getRequestURI();
         return uri;
+    }
+
+    /* ------------------------------------------------------------ */
+    protected String deScript(String string)
+    {
+        if (string==null)
+            return null;
+        string=string.replace("&", "&amp;");
+        string=string.replace( "<", "&lt;");
+        string=string.replace( ">", "&gt;");
+        return string;
     }
     
 }

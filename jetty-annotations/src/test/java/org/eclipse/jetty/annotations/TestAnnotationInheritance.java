@@ -13,15 +13,10 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Resource;
-import javax.annotation.Resources;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
@@ -29,16 +24,7 @@ import junit.framework.TestCase;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
-import org.eclipse.jetty.annotations.resources.ResourceA;
-import org.eclipse.jetty.annotations.resources.ResourceB;
-import org.eclipse.jetty.plus.annotation.Injection;
-import org.eclipse.jetty.plus.annotation.InjectionCollection;
-import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.plus.annotation.RunAsCollection;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * TestAnnotationInheritance

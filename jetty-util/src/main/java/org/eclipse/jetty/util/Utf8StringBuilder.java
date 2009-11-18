@@ -150,6 +150,7 @@ public class Utf8StringBuilder
         return _buffer;
     }
     
+    @Override
     public String toString()
     {
         if (_more!=0)

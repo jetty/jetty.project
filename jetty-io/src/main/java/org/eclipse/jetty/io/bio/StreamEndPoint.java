@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 
@@ -22,7 +22,7 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
 
 /**
- * 
+ *
  *
  * To change the template for this generated type comment go to
  * Window - Preferences - Java - Code Generation - Code and Comments
@@ -33,14 +33,14 @@ public class StreamEndPoint implements EndPoint
     OutputStream _out;
 
     /**
-     * 
+     *
      */
     public StreamEndPoint(InputStream in, OutputStream out)
     {
         _in=in;
         _out=out;
     }
-    
+
     public boolean isBlocking()
     {
         return true;
@@ -50,13 +50,13 @@ public class StreamEndPoint implements EndPoint
     {
         return true;
     }
-    
+
     public boolean blockWritable(long millisecs) throws IOException
     {
         return true;
     }
 
-    /* 
+    /*
      * @see org.eclipse.io.BufferIO#isOpen()
      */
     public boolean isOpen()
@@ -64,7 +64,7 @@ public class StreamEndPoint implements EndPoint
         return _in!=null;
     }
 
-    /* 
+    /*
      * @see org.eclipse.io.BufferIO#isOpen()
      */
     public final boolean isClosed()
@@ -72,7 +72,7 @@ public class StreamEndPoint implements EndPoint
         return !isOpen();
     }
 
-    /* 
+    /*
      * @see org.eclipse.io.BufferIO#close()
      */
     public void close() throws IOException
@@ -93,7 +93,7 @@ public class StreamEndPoint implements EndPoint
         // TODO handle null array()
         if (_in==null)
             return 0;
-            
+
     	int space=buffer.space();
     	if (space<=0)
     	{
@@ -101,7 +101,7 @@ public class StreamEndPoint implements EndPoint
     	        return 0;
     	    throw new IOException("FULL");
     	}
-        
+
         return buffer.readFrom(_in,space);
     }
 
@@ -126,7 +126,7 @@ public class StreamEndPoint implements EndPoint
     public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
     {
         int len=0;
-        
+
         if (header!=null)
         {
             int tw=header.length();
@@ -138,7 +138,7 @@ public class StreamEndPoint implements EndPoint
                     return len;
             }
         }
-        
+
         if (buffer!=null)
         {
             int tw=buffer.length();
@@ -152,7 +152,7 @@ public class StreamEndPoint implements EndPoint
                     return len;
             }
         }
-        
+
         if (trailer!=null)
         {
             int tw=trailer.length();
@@ -168,7 +168,7 @@ public class StreamEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getLocalAddr()
      */
     public String getLocalAddr()
@@ -177,7 +177,7 @@ public class StreamEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getLocalHost()
      */
     public String getLocalHost()
@@ -186,7 +186,7 @@ public class StreamEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getLocalPort()
      */
     public int getLocalPort()
@@ -195,7 +195,7 @@ public class StreamEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getRemoteAddr()
      */
     public String getRemoteAddr()
@@ -204,7 +204,7 @@ public class StreamEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getRemoteHost()
      */
     public String getRemoteHost()
@@ -213,7 +213,7 @@ public class StreamEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getRemotePort()
      */
     public int getRemotePort()
@@ -222,7 +222,7 @@ public class StreamEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getConnection()
      */
     public Object getTransport()
@@ -258,8 +258,9 @@ public class StreamEndPoint implements EndPoint
     /* ------------------------------------------------------------ */
     public void flush()
         throws IOException
-    {   
-        _out.flush();
+    {
+        if (_out != null)
+            _out.flush();
     }
 
     /* ------------------------------------------------------------ */

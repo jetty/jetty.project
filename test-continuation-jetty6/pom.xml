@@ -29,10 +29,10 @@
       <version>${project.version}</version>
       <scope>test</scope>
       <exclusions>
-        	<exclusion>
-        		<artifactId>servlet-api</artifactId>
-        		<groupId>org.mortbay.jetty</groupId>
-        	</exclusion>
+       	<exclusion>
+	  <groupId>${servlet.spec.groupId}</groupId>
+	  <artifactId>${servlet.spec.artifactId}</artifactId>
+       	</exclusion>
       </exclusions>
     </dependency> 
     <dependency>

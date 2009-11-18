@@ -74,6 +74,7 @@ public class URLResource extends Resource
     /* ------------------------------------------------------------ */
     /** Release any resources held by the resource.
      */
+    @Override
     public synchronized void release()
     {
         if (_in!=null)
@@ -90,6 +91,7 @@ public class URLResource extends Resource
     /**
      * Returns true if the represented resource exists.
      */
+    @Override
     public boolean exists()
     {
         try
@@ -113,6 +115,7 @@ public class URLResource extends Resource
      * If the resource is not a file, resources ending with "/" are
      * considered directories.
      */
+    @Override
     public boolean isDirectory()
     {
         return exists() && _url.toString().endsWith("/");
@@ -123,6 +126,7 @@ public class URLResource extends Resource
     /**
      * Returns the last modified time
      */
+    @Override
     public long lastModified()
     {
         if (checkConnection())
@@ -135,6 +139,7 @@ public class URLResource extends Resource
     /**
      * Return the length of the resource
      */
+    @Override
     public long length()
     {
         if (checkConnection())
@@ -146,6 +151,7 @@ public class URLResource extends Resource
     /**
      * Returns an URL representing the given resource
      */
+    @Override
     public URL getURL()
     {
         return _url;
@@ -156,6 +162,7 @@ public class URLResource extends Resource
      * Returns an File representing the given resource or NULL if this
      * is not possible.
      */
+    @Override
     public File getFile()
         throws IOException
     {
@@ -179,6 +186,7 @@ public class URLResource extends Resource
     /**
      * Returns the name of the resource
      */
+    @Override
     public String getName()
     {
         return _url.toExternalForm();
@@ -188,6 +196,7 @@ public class URLResource extends Resource
     /**
      * Returns an input stream to the resource
      */
+    @Override
     public synchronized InputStream getInputStream()
         throws java.io.IOException
     {
@@ -215,6 +224,7 @@ public class URLResource extends Resource
     /**
      * Returns an output stream to the resource
      */
+    @Override
     public OutputStream getOutputStream()
         throws java.io.IOException, SecurityException
     {
@@ -225,6 +235,7 @@ public class URLResource extends Resource
     /**
      * Deletes the given resource
      */
+    @Override
     public boolean delete()
         throws SecurityException
     {
@@ -235,6 +246,7 @@ public class URLResource extends Resource
     /**
      * Rename the given resource
      */
+    @Override
     public boolean renameTo( Resource dest)
         throws SecurityException
     {
@@ -245,6 +257,7 @@ public class URLResource extends Resource
     /**
      * Returns a list of resource names contained in the given resource
      */
+    @Override
     public String[] list()
     {
         return null;
@@ -255,6 +268,7 @@ public class URLResource extends Resource
      * Returns the resource contained inside the current resource with the
      * given name
      */
+    @Override
     public Resource addPath(String path)
         throws IOException,MalformedURLException
     {
@@ -267,18 +281,21 @@ public class URLResource extends Resource
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return _urlString;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public int hashCode()
     {
         return _url.hashCode();
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public boolean equals( Object o)
     {
         return o instanceof URLResource &&
@@ -290,6 +307,7 @@ public class URLResource extends Resource
         return _useCaches;
     }
     
+    @Override
     public boolean isContainedIn (Resource containingResource) throws MalformedURLException
     {
         return false; //TODO gregw check this!

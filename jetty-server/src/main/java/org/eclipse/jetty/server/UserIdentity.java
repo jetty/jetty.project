@@ -109,6 +109,7 @@ public interface UserIdentity
             return false;
         }
         
+        @Override
         public String toString()
         {
             return "UNAUTHENTICATED";

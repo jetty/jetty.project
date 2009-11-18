@@ -389,6 +389,7 @@ public class OldQueuedThreadPool extends AbstractLifeCycle implements Serializab
     /* Start the BoundedThreadPool.
      * Construct the minimum number of threads.
      */
+    @Override
     protected void doStart() throws Exception
     {
         if (_maxThreads<_minThreads || _minThreads<=0)
@@ -412,6 +413,7 @@ public class OldQueuedThreadPool extends AbstractLifeCycle implements Serializab
      * min(getMaxStopTimeMs(),getMaxIdleTimeMs()), for all jobs to
      * stop, at which time killJob is called.
      */
+    @Override
     protected void doStop() throws Exception
     {   
         super.doStop();
@@ -503,6 +505,7 @@ public class OldQueuedThreadPool extends AbstractLifeCycle implements Serializab
         /** BoundedThreadPool run.
          * Loop getting jobs and handling them until idle or stopped.
          */
+        @Override
         public void run()
         {
             boolean idle=false;

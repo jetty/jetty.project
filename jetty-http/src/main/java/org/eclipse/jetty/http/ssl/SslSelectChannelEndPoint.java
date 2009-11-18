@@ -24,8 +24,10 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 
+import org.eclipse.jetty.http.Parser;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
@@ -63,6 +65,9 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     private boolean _closing=false;
     private SSLEngineResult _result;
 
+    private boolean _handshook=false;
+    private boolean _allowRenegotiate=false;
+
     private final boolean _debug = __log.isDebugEnabled(); // snapshot debug status for optimizer 
 
     
@@ -86,18 +91,41 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         if (_debug) __log.debug(_session+" channel="+channel);
     }
 
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if SSL re-negotiation is allowed (default false)
+     */
+    public boolean isAllowRenegotiate()
+    {
+        return _allowRenegotiate;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
+     * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
+     * does not have CVE-2009-3555 fixed, then re-negotiation should 
+     * not be allowed.
+     * @param allowRenegotiate true if re-negotiation is allowed (default false)
+     */
+    public void setAllowRenegotiate(boolean allowRenegotiate)
+    {
+        _allowRenegotiate = allowRenegotiate;
+    }
+
+    /* ------------------------------------------------------------ */
     // TODO get rid of these dumps
     public void dump()
     {
         Log.info(""+_result);
-        // System.err.println(h.toString());
-        // System.err.println("--");
     }
     
     /* ------------------------------------------------------------ */
     /* (non-Javadoc)
      * @see org.eclipse.io.nio.SelectChannelEndPoint#idleExpired()
      */
+    @Override
     protected void idleExpired()
     {
         try
@@ -123,6 +151,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void close() throws IOException
     {
         // TODO - this really should not be done in a loop here - but with async callbacks.
@@ -159,6 +188,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 {
                     case FINISHED:
                     case NOT_HANDSHAKING:
+                        _handshook=true;
                         break loop;
                         
                     case NEED_UNWRAP:
@@ -236,54 +266,93 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         }   
     }
 
+
+    
     /* ------------------------------------------------------------ */
-    /* 
+    /** Fill the buffer with unencrypted bytes.
+     * Called by a {@link Parser} instance when more data is 
+     * needed to continue parsing a request or a response.
      */
+    @Override
     public int fill(Buffer buffer) throws IOException
     {
+        // This end point only works on NIO buffer type (director
+        // or indirect), so extract the NIO buffer that is wrapped
+        // by the passed jetty Buffer.
         final ByteBuffer bbuf=extractInputBuffer(buffer);
+        
+        // remember the original size of the unencrypted buffer
         int size=buffer.length();
+        
         HandshakeStatus initialStatus = _engine.getHandshakeStatus();
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (bbuf)
         {
             try
             {
+                // Call the SSLEngine unwrap method to process data in
+                // the inBuffer.  If there is no data in the inBuffer, then
+                // super.fill is called to read encrypted bytes.
                 unwrap(bbuf);
 
+                // Loop through the SSL engine state machine
+                
                 int wraps=0;
                 loop: while (true)
                 {
+                    // If we have encrypted data in output buffer
                     if (isBufferingOutput())
                     {
+                        // we must flush it, as the other end might be
+                        // waiting for that outgoing data before sending 
+                        // more incoming data
                         flush();
+                        
+                        // If we were unable to flush all the data, then 
+                        // we should break the loop and wait for the call
+                        // back to handle when the SelectSet detects that
+                        // the channel is writable again.
                         if (isBufferingOutput())
                             break loop;
                     }
 
+                    // handle the current hand share status
                     switch(_engine.getHandshakeStatus())
                     {
                         case FINISHED:
                         case NOT_HANDSHAKING:
+                            // If we are closing, then unwrap must have CLOSED result,
+                            // so return -1 to signal upwards
                             if (_closing)
                                 return -1;
+                            
+                            // otherwise we break loop with the data we have unwrapped.
                             break loop;
 
                         case NEED_UNWRAP:
+                            checkRenegotiate();
+                            // Need more data to be unwrapped so try another call to unwrap
                             if (!unwrap(bbuf) && _engine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP)
                             {
+                                // If the unwrap call did not make any progress and we are still in
+                                // NEED_UNWRAP, then we should break the loop and wait for more data to
+                                // arrive.
                                 break loop;
                             }
+                            // progress was made so continue the loop.
                             break;
 
                         case NEED_TASK:
                         {
+                            // A task needs to be run, so run it!
+                            
                             Runnable task;
                             while ((task=_engine.getDelegatedTask())!=null)
                             {
                                 task.run();
                             }
                             
+                            // Detect SUN JVM Bug!!!
                             if(initialStatus==HandshakeStatus.NOT_HANDSHAKING && 
                                _engine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP && wraps==0)
                             {
@@ -299,11 +368,16 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
                         case NEED_WRAP:
                         {
+                            checkRenegotiate();
+                            // The SSL needs to send some handshake data to the other side,
+                            // so let fill become a flush for a little bit.
                             wraps++;
                             synchronized(_outBuffer)
                             {
                                 try
                                 {
+                                    // call wrap with empty application buffers, so it can
+                                    // generate required handshake messages into _outNIOBuffer
                                     _outNIOBuffer.compact();
                                     int put=_outNIOBuffer.putIndex();
                                     _outBuffer.position();
@@ -327,6 +401,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                                 }
                             }
 
+                            // flush the encrypted outNIOBuffer
                             flush();
 
                             break;
@@ -342,15 +417,21 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             }
             finally
             {
+                // reset the Buffers
                 buffer.setPutIndex(bbuf.position());
                 bbuf.position(0);
             }
-        }
-        return buffer.length()-size; 
 
+            // return the number of unencrypted bytes filled.
+            int filled=buffer.length()-size; 
+            if (filled>0)
+                _handshook=true;
+            return filled; 
+        }
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public int flush(Buffer buffer) throws IOException
     {
         return flush(buffer,null,null);
@@ -360,6 +441,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     /* ------------------------------------------------------------ */
     /*     
      */
+    @Override
     public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
     {   
         int consumed=0;
@@ -376,12 +458,11 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 if (isBufferingOutput())
                     break loop;
             }
-            
+
             switch(_engine.getHandshakeStatus())
             {
                 case FINISHED:
                 case NOT_HANDSHAKING:
-
                     if (_closing || available==0)
                     {
                         if (consumed==0)
@@ -400,8 +481,10 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     else 
                         c=wrap(buffer);
                     
+                    
                     if (c>0)
                     {
+                        _handshook=true;
                         consumed+=c;
                         available-=c;
                     }
@@ -415,6 +498,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     break;
 
                 case NEED_UNWRAP:
+                    checkRenegotiate();
                     Buffer buf =_buffers.getBuffer(_engine.getSession().getApplicationBufferSize());
                     try
                     {
@@ -443,6 +527,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
                 case NEED_WRAP:
                 {
+                    checkRenegotiate();
                     synchronized(_outBuffer)
                     {
                         try
@@ -482,6 +567,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void flush() throws IOException
     {
         int len=_outNIOBuffer.length();
@@ -491,11 +577,22 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             if (_debug) __log.debug(_session+" Flushed "+flushed+"/"+len);
             if (isBufferingOutput())
             {
+                // Try again after yield.... cheaper than a reschedule.
                 Thread.yield();
                 flushed=super.flush(_outNIOBuffer);
                 if (_debug) __log.debug(_session+" flushed "+flushed+"/"+len);
             }
         }
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void checkRenegotiate() throws IOException
+    {
+        if (_handshook && !_allowRenegotiate && _channel!=null && _channel.isOpen())
+        {
+            Log.warn("SSL renegotiate denied: "+_channel);
+            close();
+        }   
     }
 
     /* ------------------------------------------------------------ */
@@ -520,12 +617,16 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             _inNIOBuffer.clear();
 
         int total_filled=0;
+        
+        // loop filling as much encrypted data as we can into the buffer
         while (_inNIOBuffer.space()>0 && super.isOpen())
         {
             try
             {
                 int filled=super.fill(_inNIOBuffer);
                 if (_debug) __log.debug(_session+" unwrap filled "+filled);
+                // break the loop if no progress is made (we have read everything
+                // there is to read).
                 if (filled<=0)
                     break;
                 total_filled+=filled;
@@ -533,45 +634,72 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             catch(IOException e)
             {
                 if (_inNIOBuffer.length()==0)
+                {
+                    _outNIOBuffer.clear();
                     throw e;
+                }
                 break;
             }
         }
         
-        if (_inNIOBuffer.length()==0)
+        // If we have no progress and no data
+        if (total_filled==0 && _inNIOBuffer.length()==0)
         {
             if(!isOpen())
-                throw new org.eclipse.jetty.io.EofException();
+            {
+                _outNIOBuffer.clear();
+                throw new EofException();
+            }
             return false;
         }
 
+        // We have some in data, so try to unwrap it.
         try
         {
+            // inBuffer is the NIO buffer inside the _inNIOBuffer,
+            // so update its position and limit from the inNIOBuffer.
             _inBuffer.position(_inNIOBuffer.getIndex());
             _inBuffer.limit(_inNIOBuffer.putIndex());
             _result=null;
+            
+            // Do the unwrap
             _result=_engine.unwrap(_inBuffer,buffer);
             if (_debug) __log.debug(_session+" unwrap unwrap "+_result);
+            
+            // skip the bytes consumed
             _inNIOBuffer.skip(_result.bytesConsumed());
         }
         finally
         {
+            // reset the buffer so it can be managed by the _inNIOBuffer again.
             _inBuffer.position(0);
             _inBuffer.limit(_inBuffer.capacity());
         }
 
+        // handle the unwrap results
         switch(_result.getStatus())
         {
             case BUFFER_OVERFLOW:
                 throw new IllegalStateException(_result.toString());
                 
             case BUFFER_UNDERFLOW:
+                // Not enough data, 
+                // If we are closed, we will never get more, so EOF
+                // else return and we will be tried again
+                // later when more data arriving causes another dispatch.
                 if (Log.isDebugEnabled()) Log.debug("unwrap {}",_result);
+                if(!isOpen())
+                {
+                    _inNIOBuffer.clear();
+                    _outNIOBuffer.clear();
+                    throw new EofException();
+                }
                 return (total_filled > 0);
                 
             case CLOSED:
                 _closing=true;
             case OK:
+                // return true is some bytes somewhere were moved about.
                 return total_filled>0 ||_result.bytesConsumed()>0 || _result.bytesProduced()>0;
             default:
                 Log.warn("unwrap "+_result);
@@ -735,18 +863,21 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isBufferingInput()
     {
         return _inNIOBuffer.hasContent();
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isBufferingOutput()
     {
         return _outNIOBuffer.hasContent();
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isBufferred()
     {
         return true;
@@ -759,6 +890,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return super.toString()+","+_engine.getHandshakeStatus()+", in/out="+_inNIOBuffer.length()+"/"+_outNIOBuffer.length()+" "+_result;

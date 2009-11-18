@@ -14,10 +14,8 @@
 package org.eclipse.jetty.io;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import junit.framework.TestCase;
@@ -40,12 +38,14 @@ public class ThreadLocalBuffersTest
 
     AtomicLong buffersRetrieved;
 
+    @Override
     protected void setUp()
         throws Exception
     {
         super.setUp();
     }
 
+    @Override
     protected void tearDown()
         throws Exception
     {
@@ -262,6 +262,7 @@ public class ThreadLocalBuffersTest
             start();
         }
 
+        @Override
         public void run()
         {
             while ( true )

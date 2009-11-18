@@ -98,6 +98,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
     /* 
      * @see org.eclipse.thread.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         if (_handler!=null)
@@ -109,6 +110,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
     /* 
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         super.doStop();
@@ -130,6 +132,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
     
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setServer(Server server)
     {
         Server old_server=getServer();
@@ -151,6 +154,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
     
 
     /* ------------------------------------------------------------ */
+    @Override
     protected Object expandChildren(Object list, Class byClass)
     {
         return expandHandler(_handler,list,byClass);

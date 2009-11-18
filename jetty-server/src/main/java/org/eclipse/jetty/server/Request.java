@@ -179,39 +179,14 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public void addAsyncListener(AsyncListener listener)
-    {
-        _async.addAsyncListener(listener);
-    }
-    
-    /* ------------------------------------------------------------ */
-    public void addAsyncListener(final AsyncListener listener, ServletRequest servletRequest, ServletResponse servletResponse)
-    {
-        final AsyncEvent event = new AsyncEvent(servletRequest,servletResponse);
-        
-        _async.addAsyncListener(new AsyncListener()
-        {
-            public void onComplete(AsyncEvent ev) throws IOException
-            {
-                listener.onComplete(event);
-            }
-
-            public void onTimeout(AsyncEvent ev) throws IOException
-            {
-                listener.onComplete(event);
-            }
-        });
-    }
-
-    /* ------------------------------------------------------------ */
     public void addEventListener(final EventListener listener) 
     {
         if (listener instanceof ServletRequestAttributeListener)
             _requestAttributeListeners= LazyList.add(_requestAttributeListeners, listener);
         if (listener instanceof ContinuationListener)
-            _async.addContinuationListener((ContinuationListener)listener);
+            throw new IllegalArgumentException(listener.getClass().toString());
         if (listener instanceof AsyncListener)
-            _async.addAsyncListener((AsyncListener)listener);
+            throw new IllegalArgumentException(listener.getClass().toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -328,12 +303,6 @@ public class Request implements HttpServletRequest
     public AsyncContinuation getAsyncContinuation()
     {
         return _async;
-    }
-
-    /* ------------------------------------------------------------ */
-    public long getAsyncTimeout()
-    {
-        return _async.getAsyncTimeout();
     }
     
     /* ------------------------------------------------------------ */
@@ -808,6 +777,7 @@ public class Request implements HttpServletRequest
             _readerEncoding=encoding;
             _reader=new BufferedReader(new InputStreamReader(in,encoding))
             {
+                @Override
                 public void close() throws IOException
                 {
                     in.close();
@@ -1341,6 +1311,21 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     protected void recycle()
     {
+        if (_inputState==__READER)
+        {
+            try
+            {
+                int r=_reader.read();
+                while(r!=-1)
+                    r=_reader.read();
+            }
+            catch(Exception e)
+            {
+                Log.ignore(e);
+                _reader=null;
+            }
+        }
+        
         setAuthentication(Authentication.NOT_CHECKED);
     	_async.recycle();
         _asyncSupported=true;
@@ -1429,12 +1414,6 @@ public class Request implements HttpServletRequest
     public void setAsyncSupported(boolean supported)
     {
         _asyncSupported=supported;
-    }
-    
-    /* ------------------------------------------------------------ */
-    public void setAsyncTimeout(long timeout)
-    {
-        _async.setAsyncTimeout(timeout);
     }
     
     /* ------------------------------------------------------------ */
@@ -1833,6 +1812,7 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return (_handled?"[":"(")+getMethod()+" "+_uri+(_handled?"]@":")@")+hashCode()+" "+super.toString();

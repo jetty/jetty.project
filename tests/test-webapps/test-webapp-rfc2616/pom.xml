@@ -34,11 +34,10 @@
         <artifactId>jetty-servlets</artifactId>
         <version>${project.version}</version>
     </dependency>
-  	<dependency>
-  		<groupId>javax.servlet</groupId>
-  		<artifactId>servlet-api</artifactId>
-  		<version>2.5</version>
-  		<scope>provided</scope>
-  	</dependency>
+    <dependency>
+      <groupId>${servlet.spec.groupId}</groupId>
+      <artifactId>${servlet.spec.artifactId}</artifactId>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 </project>

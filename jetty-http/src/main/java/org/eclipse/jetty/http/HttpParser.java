@@ -456,7 +456,15 @@ public class HttpParser implements Parser
                                         case HttpHeaders.CONTENT_LENGTH_ORDINAL:
                                             if (_contentLength != HttpTokens.CHUNKED_CONTENT)
                                             {
-                                                _contentLength=BufferUtil.toLong(value);
+                                                try
+                                                {
+                                                    _contentLength=BufferUtil.toLong(value);
+                                                }
+                                                catch(NumberFormatException e)
+                                                {
+                                                    Log.ignore(e);
+                                                    throw new HttpException(HttpStatus.BAD_REQUEST_400);
+                                                }
                                                 if (_contentLength <= 0)
                                                     _contentLength=HttpTokens.NO_CONTENT;
                                             }
@@ -506,6 +514,9 @@ public class HttpParser implements Parser
 
                                 _contentPosition=0;
                                 _eol=ch;
+                                if (_eol==HttpTokens.CARRIAGE_RETURN && _buffer.hasContent() && _buffer.peek()==HttpTokens.LINE_FEED)
+                                    _eol=_buffer.get();
+                                
                                 // We convert _contentLength to an int for this switch statement because
                                 // we don't care about the amount of data available just whether there is some.
                                 switch (_contentLength > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) _contentLength)
@@ -766,8 +777,11 @@ public class HttpParser implements Parser
                     if (ch == HttpTokens.CARRIAGE_RETURN || ch == HttpTokens.LINE_FEED)
                     {
                         _eol=ch;
+                        
                         if (_chunkLength == 0)
                         {
+                            if (_eol==HttpTokens.CARRIAGE_RETURN && _buffer.hasContent() && _buffer.peek()==HttpTokens.LINE_FEED)
+                                _eol=_buffer.get();
                             _state=STATE_END;
                             _handler.messageComplete(_contentPosition);
                             return total_filled;
@@ -796,6 +810,8 @@ public class HttpParser implements Parser
                         _eol=ch;
                         if (_chunkLength == 0)
                         {
+                            if (_eol==HttpTokens.CARRIAGE_RETURN && _buffer.hasContent() && _buffer.peek()==HttpTokens.LINE_FEED)
+                                _eol=_buffer.get();
                             _state=STATE_END;
                             _handler.messageComplete(_contentPosition);
                             return total_filled;
@@ -919,11 +935,8 @@ public class HttpParser implements Parser
         _length=0;
         _responseStatus=0;
 
-        if (_buffer!=null && _buffer.length()>0 && _eol == HttpTokens.CARRIAGE_RETURN && _buffer.peek() == HttpTokens.LINE_FEED)
-        {
-            _buffer.skip(1);
-            _eol=HttpTokens.LINE_FEED;
-        }
+        if (_eol == HttpTokens.CARRIAGE_RETURN && _buffer!=null && _buffer.hasContent() && _buffer.peek() == HttpTokens.LINE_FEED)
+            _eol=_buffer.get();
 
         if (_body!=null)
         {   
@@ -989,6 +1002,7 @@ public class HttpParser implements Parser
     }
     
     /* ------------------------------------------------------------------------------- */
+    @Override
     public String toString()
     {
         return "state=" + _state + " length=" + _length + " len=" + _contentLength;

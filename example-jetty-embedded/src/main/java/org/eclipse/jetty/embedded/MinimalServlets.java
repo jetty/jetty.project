@@ -38,7 +38,7 @@ public class MinimalServlets
         ServletHandler handler = new ServletHandler();
         server.setHandler(handler);
 
-        handler.addServletWithMapping("org.eclipse.jetty.server.example.MinimalServlets$HelloServlet","/");
+        handler.addServletWithMapping("org.eclipse.jetty.embedded.MinimalServlets$HelloServlet","/");
 
         server.start();
         server.join();
@@ -46,6 +46,7 @@ public class MinimalServlets
 
     public static class HelloServlet extends HttpServlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             response.setContentType("text/html");

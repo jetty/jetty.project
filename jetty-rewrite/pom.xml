@@ -65,10 +65,10 @@
       <artifactId>jetty-server</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.mortbay.jetty</groupId>
-      <artifactId>servlet-api</artifactId>
-    </dependency>
+      <dependency>
+         <groupId>${servlet.spec.groupId}</groupId>
+         <artifactId>${servlet.spec.artifactId}</artifactId>
+       </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>test-jetty-servlet</artifactId>

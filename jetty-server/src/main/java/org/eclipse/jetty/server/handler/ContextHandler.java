@@ -22,7 +22,6 @@ import java.net.URLClassLoader;
 import java.security.AccessController;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -32,8 +31,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterRegistration;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
@@ -48,6 +45,8 @@ import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
+import javax.servlet.Filter;
+import javax.servlet.FilterRegistration;
 import javax.servlet.FilterRegistration.Dynamic;
 import javax.servlet.descriptor.JspConfigDescriptor;
 import javax.servlet.http.HttpServletRequest;
@@ -79,7 +78,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * 
  * <p>
  * If the context init parameter "org.eclipse.jetty.server.context.ManagedAttributes"
- * is set to a coma separated list of names, then they are treated as context
+ * is set to a comma separated list of names, then they are treated as context
  * attribute names, which if set as attributes are passed to the servers Container
  * so that they may be managed with JMX.
  * 
@@ -88,7 +87,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * 
  *
  */
-public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful, CompleteHandler
+public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful
 {
     private static final ThreadLocal<Context> __context=new ThreadLocal<Context>();
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
@@ -213,6 +212,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setServer(Server server)
     {
         if (_errorHandler!=null)
@@ -276,6 +276,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /** 
      * @deprecated use {@link #setConnectorNames(String[])} 
      */
+    @Deprecated
     public void setHosts(String[] hosts)
     {
         setConnectorNames(hosts);
@@ -285,6 +286,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /** Get the hosts for the context.
      * @deprecated
      */
+    @Deprecated
     public String[] getHosts()
     {
         return getConnectorNames();
@@ -552,6 +554,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* 
      * @see org.eclipse.thread.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         _availability=__STOPPED;
@@ -657,6 +660,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* 
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         _availability=__STOPPED;
@@ -1290,6 +1294,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         
@@ -1438,12 +1443,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
       
             return host;
     }
-
-    public void complete(Request request)
-    {
-        // TODO Auto-generated method stub
-        
-    }
     
     /* ------------------------------------------------------------ */
     /** Context.
@@ -1459,7 +1458,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         protected int _majorVersion = 3;
         protected int _minorVersion = 0;
 
-        
         /* ------------------------------------------------------------ */
         protected Context()
         {
@@ -1546,6 +1544,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         {
             return null;
         }
+        
         /* ------------------------------------------------------------ */
         /* 
          * @see javax.servlet.ServletContext#getRequestDispatcher(java.lang.String)
@@ -1582,6 +1581,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
             return null;
         }
+        
         /* ------------------------------------------------------------ */
         /* 
          * @see javax.servlet.ServletContext#getRealPath(java.lang.String)
@@ -1883,6 +1883,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public String toString()
         {
             return "ServletContext@"+Integer.toHexString(hashCode())+"{"+(getContextPath().equals("")?URIUtil.SLASH:getContextPath())+","+getBaseResource()+"}";
@@ -2091,12 +2092,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         {
             _minorVersion = v;
         }
+        
         @Override
         public JspConfigDescriptor getJspConfigDescriptor()
         {
             return null;
         }
-        
-        
+
+        @Override
+        public void declareRoles(String... roleNames)
+        {
+            // TODO Auto-generated method stub
+            
+        }
     }
 }

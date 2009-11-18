@@ -309,11 +309,13 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>
         return _map.entrySet();
     }
 
+    @Override
     public boolean equals(Object o)
     {
         return _map.equals(o);
     }
 
+    @Override
     public int hashCode()
     {
         return _map.hashCode();

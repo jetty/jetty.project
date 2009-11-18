@@ -110,6 +110,7 @@ public abstract class ScopedHandler extends HandlerWrapper
     /* ------------------------------------------------------------ */
     /* 
      */
+    @Override
     public final void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (_outerScope==null)  

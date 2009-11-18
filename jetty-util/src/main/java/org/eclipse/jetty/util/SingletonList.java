@@ -42,6 +42,7 @@ public class SingletonList extends AbstractList
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Object get(int i)
     {
         if (i!=0)
@@ -50,24 +51,28 @@ public class SingletonList extends AbstractList
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public int size()
     {
         return 1;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public ListIterator listIterator()
     {
         return new SIterator();
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public ListIterator listIterator(int i)
     {
         return new SIterator(i);
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public Iterator iterator()
     {
         return new SIterator();

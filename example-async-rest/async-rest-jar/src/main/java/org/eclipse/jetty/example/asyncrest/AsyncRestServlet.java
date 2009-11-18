@@ -83,8 +83,8 @@ public class AsyncRestServlet extends AbstractRestServlet
             // suspend the request
             // This is done before scheduling async handling to avoid race of 
             // dispatch before startAsync!
-            request.setAsyncTimeout(30000);
             final AsyncContext async = request.startAsync();
+            async.setTimeout(30000);
 
             // extract keywords to search for
             String[] keywords=request.getParameter(ITEMS_PARAM).split(",");

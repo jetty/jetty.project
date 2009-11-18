@@ -1,6 +1,157 @@
 jetty-8.0.0.M0-SNAPSHOT
  + Updated servlet 3.0 spec 20090417
- + Merged 7.0.0.RC5
+ + Merged 7.0.1.v20091116
+
+jetty-7.0.1.v20091116 16 November 2009
+ + 274251 DefaultServlet supports exact match mode.
+ + 288401 HttpExchange.cancel() Method Unimplemented
+ + 289027 deobfuscate HttpClient SSL passwords
+ + 289265 Test harness for async input
+ + 289959 Improved ContextDeployer configuration
+ + 289960 start.jar assumes command line args are configs
+ + 291019 Fix default DEBUG option; "-D.DEBUG=true" now works
+ + 291340 Race condition in onException() notifications
+ + 291543 make bin/*.sh scripts executable in distribution
+ + 291589 Update jetty-rewrite demo
+ + 292642 Fix errors in embedded Jetty examples
+ + 292825 Continuations ISE rather than ignore bad transitions
+ + 292546 Proactively enforce HttpClient idle timeout
+ + 293222 Improved StatisticsHandler for async
+ + 293506 Unable to use jconsole with Jetty when running with security manager
+ + 293557 Add "jad" mime mapping
+ + 294154 Patched jetty-osgi
+ + 294224 HttpClient timeout setting has no effect when connecting to host
+ + 294345 Support for HTTP/301 + HTTP/302 response codes
+ + 294563 Initial websocket implementation
+ + JETTY-937 More JVM bug work arounds. Insert pause if all else fails
+ + JETTY-983 Send content-length with multipart ranges
+ + JETTY-1114 unsynchronised WebAppClassloader.getResource(String)
+ + JETTY-1121 Merge Multipart query parameters
+ + JETTY-1122 Handle multi-byte utf that causes buffer overflow
+ + JETTY-1125 TransparentProxy incorrectly configured for test webapp
+ + JETTY-1129 Filter control characters out of StdErrLog
+ + JETTY-1135 Handle connection closed before accepted during JVM bug work around
+ + JETTY-1144 fixed multi-byte character overflow
+ + JETTY-1148 Reset partially read request reader.
+ + COMETD-34 Support Baeyux MBean
+ + Fixed XSS issue in CookieDump demo servlet.
+ + Improved start.jar usage text for properties
+ + Promoted Jetty Centralized Logging from Sandbox
+ + Promoted Jetty WebApp Verifier from Sandbox
+ + Refactored continuation test harnessess
+ + Fixed client abort asocciation
+ + CQ-3581 jetty OSGi contribution
+ + Moved centralized logging and verifier back to sandbox
+ + 294345 Support for HTTP/301 + HTTP/302 response codes
+ + CVE-2009-3555 Prevent SSL renegotiate for SSL vulnerability
+
+jetty-7.0.0.v20091005 5 October 2009
+291340 Race condition in onException() notifications
+
+jetty-6.1.21 22 September 2009
+ + JETTY-719 Document state machine of jetty http client
+ + JETTY-933 State == HEADER in client
+ + JETTY-936 Improved servlet matching and optimized
+ + JETTY-1038 ChannelId.isParentOf returns the wrong result
+ + JETTY-1061 Catch exceptions from cometd listeners
+ + JETTY-1072 maven plugin handles context path not as documented
+ + JETTY-1080 modified previous fix for windows
+ + JETTY-1084 HEAD command not setting content-type in response under certain circumstances
+ + JETTY-1090 resolve inifinte loop condition for webdav listener
+ + JETTY-1092 MultiPartFilter can be pushed into infinite loop
+ + JETTY-1093 Request.toString throws exception when size exceeds 4k
+ + JETTY-1098 Default form encoding is UTF8
+ + JETTY-1099 Improve cookie handling in BayeuxClient
+ + JETTY-1100 extend setuid feature to allow setting max open file descriptors
+ + JETTY-1102 Wrong usage of deliver() in private chat messages
+ + JETTY-1108 SSL EOF detection
+ + JETTY-1109 Improper handling of cookies in Terracotta tests
+ + JETTY-1112 Response fails if header exceeds buffer size
+ + JETTY-1113 IllegalStateException when adding servlet filters programmatically
+ + JETTY-1114 Unsynchronize webapp classloader getResource
+ + 282543 HttpClient SSL buffer size fix
+ + 288055 fix jetty-client for failed listener state machine
+ + 288153 reset exchange when resending
+ + 288182 PUT request fails during retry
+ + Fix DefaultServletTest for windows
+ + Update Jetty implementation of com.sun.net.httpserver.*
+ + Include tmp directory sweeper in build
+ + Streamline jetty-jboss build, update sar to QueuedThreadPool
+
+jetty-7.0.0.RC6 September 21 2009
+ + Fixed XSS issue in CookieDump demo servlet.
+ + 289958 StatisticsServlet incorrectly adds StatisticsHandler
+ + 289960 start.jar assumes command line args are configs
+ + 290081 Eager consume LF after CR
+ + 290761 HttpExchange isDone handles intercepted events.
+ + JETTY-719 Document state machine of jetty http client
+ + JETTY-780 CNFE during startup of webapp with spring-context >= 2.5.1
+ + JETTY-936 274251 Improved servlet matching and optimized'
+ + JETTY-1080 modify previous fix to work on windows
+ + JETTY-1084 HEAD command not setting content-type in response under certain circumstances
+ + JETTY-1086 Use UncheckedPrintWriter & cleaned up HttpStatus.Code usage
+ + JETTY-1090 resolve potential infinite loop with webdav listener
+ + JETTY-1092 MultiPartFilter can be pushed into infinite loop
+ + JETTY-1093 Request.toString throws exception when size exceeds 4k
+ + JETTY-1098 Default form encoding is UTF8
+ + JETTY-1101 Updated servlet3 continuation constructor
+ + JETTY-1105 Custom error pages aren't working
+ + JETTY-1108 SSL EOF detection
+ + JETTY-1112 Response fails if header exceeds buffer size
+ + JETTY-1113 IllegalStateException when adding servlet filters programmatically
+ + 280723 Add non blocking statistics handler
+ + 282543 HttpClient SSL buffer size fix
+ + 283357 org.eclipse.jetty.server.HttpConnectionTest exceptions
+ + 288055 jetty-client fails to resolve failed resolution attempts correctly
+ + 288153 jetty-client resend doesn't reset exchange
+ + 288466 LocalConnector is not thread safe
+ + 288514 AbstractConnector does not handle InterruptedExceptions on shutdown
+ + 288772 Failure to connect does not set status to EXCEPTED
+ + 289146 formalize reload policy functionality
+ + 289156 jetty-client: no longer throw runtime exception for bad authn details
+ + 288182 PUT request fails during retry
+ + 289221 HttpExchange does not timeout when using blocking connector
+ + 289285 org.eclipse.jetty.continuation 7.0.0.RC5 imports the org.mortbay.util.ajax package
+ + 289686 HttpExchange.setStatus() has too coarse synchronization
+ + Tweak DefaultServletTest under windows
+ + Copy VERSION.txt to distro
+ + Remove printlns from jetty-plus
+
+jetty-6.1.20 27 August 2009
+ + JETTY-838 Don't log and throw
+ + JETTY-874 Better error on full header.
+ + JETTY-960 Support ldaps
+ + JETTY-1046 maven-jetty-jspc-plugin keepSources takes affect only in packageRoot
+ + JETTY-1057 XSS error page
+ + JETTY-1065 Add RedirectRegexRule to provide match/replace/group redirect support
+ + JETTY-1066 Send 400 error for request URI parse exceptions
+ + JETTY-1068 Avoid busy flush of async SSL
+ + JETTY-1069 Adjust Bayeux Java client backoff algorithm
+ + JETTY-1070 Java Bayeux Client not sending /meta/disconnect on stop
+ + JETTY-1074 JMX thread manipulation
+ + JETTY-1077 HashSSORealm shares Principals between UserRealms
+ + JETTY-1078 Automatic JSON Pojo Conversion
+ + JETTY-1079 ResourceCollection.toString() can throw IllegalStateException
+ + JETTY-1080 Ignore files that would be extracted outside the destination directory when unpacking WARs
+ + JETTY-1081 Handle null content type in GzipFilter
+ + JETTY-1084 Disable GzipFilter for HEAD requests
+ + JETTY-1085 Allow url sessionID if cookie invalid
+ + JETTY-1086 Added UncheckedPrintWriter to avoid ignored EOFs
+ + JETTY-1087 Chunked SSL non blocking input
+ + JETTY-1098 Upgrade jsp to SJSAS-9_1_1-B60F-07_Jan_2009
+ + 283513 Check endp.isOpen when blocking read
+ + 283818 fixed merge of forward parameters
+ + 285006 Fixed NPE in AbstractConnector during shutdown
+ + 286535 ContentExchange status code
+ + 286911 Clean out cache when recycling HTTP fields
+ + COMETD-7 max latency config for lazy messages
+ + Added getSubscriptions to cometd client
+ + Made unSubscribeAll public on cometd client
+ + Removed clearing of queue in unSubscribeAll for cometd client
+ + Update test-jndi and test-annotation examples for atomikos 3.5.5
+ + Clarified cometd interval timeout and allow per client intervals
+ + Update Main.main method to call setWar
+ + Added DebugHandler
 
 jetty-7.0.0.RC5 27 August 2009
  + 286911 Clean out cache when recycling HTTP fields
@@ -9,11 +160,37 @@ jetty-7.0.0.RC5 27 August 2009
  + JETTY-960 Support for ldaps
  + JETTY-1081 Handle null content type in GzipFilter
  + JETTY-1084 Disable GzipFilter for HEAD requests
- + JETTY-1085 Allow url sessionID if cookie invalid 
+ + JETTY-1085 Allow url sessionID if cookie invalid
  + JETTY-1086 Added UncheckedPrintWriter to avoid ignored EOFs
  + JETTY-1087 Chunked SSL non blocking input
  + 287496 Use start.ini always and added --exec
  + 287632 FilterContinuations for blocking jetty6
+
+jetty-6.1.19 1 July 2009
+ + JETTY-799 shell script for jetty on cygwin
+ + JETTY-863 Non blocking stats handler
+ + JETTY-937 Further Improvements for sun JVM selector bugs
+ + JETTY-970 BayeuxLoadGenerator latency handling
+ + JETTY-1011 Grizzly uses queued thread pool
+ + JETTY-1028 jetty:run plugin should check for the web.xml from the overlays if not found in src/main/webapp/WEB-INF/
+ + JETTY-1029 Handle quoted cookie paths
+ + JETTY-1031 Handle large pipeline
+ + JETTY-1033 jetty-plus compiled with jdk1.5
+ + JETTY-1034 Cookie parsing
+ + JETTY-1037 reimplemented channel doRemove
+ + JETTY-1040 jetty.client.HttpConnection does not handle non IOExceptions
+ + JETTY-1042 Avoid cookie reuse on shared connection
+ + JETTY-1044 add commons-daemon support as contrib/start-daemon module
+ + JETTY-1045 Handle the case where request.PathInfo() should be "/*"
+ + JETTY-1046 maven-jetty-jspc-plugin keepSources takes affect only in packageRoot
+ + JETTY-1047 Cometd client can grow cookie headers
+ + JETTY-1048 Default servlet can handle partially filtered large static content
+ + JETTY-1049 Improved transparent proxy usability
+ + JETTY-1054 Avoid double deploys
+ + JETTY-1055 Cookie quoting
+ + JETTY-1057 Error page stack trace XSS
+ + JETTY-1058 Handle trailing / with aliases on
+ + JETTY-1062 Don't filter cometd message without data
 
 jetty-7.0.0.RC4 18 August 2009
  + 286185 Implement ability for JSON implementation to automatically register convertors
@@ -24,7 +201,7 @@ jetty-7.0.0.RC4 18 August 2009
  + 279820 Fixed HotSwapHandler
  + JETTY-1080 Ignore files that would be extracted outside the destination directory when unpacking WARs
  + JETTY-1057 XSS error page
- 
+
 jetty-7.0.0.RC3 7 August 2009
  + 277403 remove system properties
  + JETTY-1074 JMX thread manipulation
@@ -48,7 +225,7 @@ jetty-7.0.0.RC2 29 June 2009
  + 284981 Implement a cross-origin filter
  + Improved handling of overlays and resourceCollections
  + 285006 fix AbstractConnector NPE during shutdown.
- 
+
 jetty-7.0.0.RC1 15 June 2009
  + JETTY-1066 283357 400 response for bad URIs
  + JETTY-1068 Avoid busy flush of async SSL

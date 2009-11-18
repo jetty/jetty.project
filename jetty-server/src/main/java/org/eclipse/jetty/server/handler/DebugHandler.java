@@ -46,6 +46,7 @@ public class DebugHandler extends HandlerWrapper
     /* 
      * @see org.eclipse.jetty.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {
@@ -57,7 +58,7 @@ public class DebugHandler extends HandlerWrapper
         boolean retry=false;
         String name=(String)request.getAttribute("org.mortbay.jetty.thread.name");
         if (name==null)
-            name=old_name+"://"+baseRequest.getHeader("Host") +baseRequest.getUri();
+            name=old_name+":"+baseRequest.getScheme()+"://"+baseRequest.getLocalAddr()+":"+baseRequest.getLocalPort()+baseRequest.getUri();
         else
             retry=true;
         
@@ -116,6 +117,7 @@ public class DebugHandler extends HandlerWrapper
     /* (non-Javadoc)
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         if (_out==null)
@@ -127,6 +129,7 @@ public class DebugHandler extends HandlerWrapper
     /* (non-Javadoc)
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStop()
      */
+    @Override
     protected void doStop() throws Exception
     {
         super.doStop();

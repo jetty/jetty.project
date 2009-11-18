@@ -145,6 +145,7 @@ public class ContextHandlerCollection extends HandlerCollection
     /* 
      * @see org.eclipse.jetty.server.server.handler.HandlerCollection#setHandlers(org.eclipse.jetty.server.server.Handler[])
      */
+    @Override
     public void setHandlers(Handler[] handlers)
     {
         _contextMap=null;
@@ -154,6 +155,7 @@ public class ContextHandlerCollection extends HandlerCollection
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStart() throws Exception
     {
         mapContexts();
@@ -165,6 +167,7 @@ public class ContextHandlerCollection extends HandlerCollection
     /* 
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         Handler[] handlers = getHandlers();

@@ -52,6 +52,7 @@ public class Dump extends HttpServlet
 {
     static boolean fixed;
     /* ------------------------------------------------------------ */
+    @Override
     public void init(ServletConfig config) throws ServletException
     {
     	super.init(config);
@@ -65,12 +66,14 @@ public class Dump extends HttpServlet
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         doGet(request, response);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
         if(request.getPathInfo()!=null && request.getPathInfo().toLowerCase().indexOf("script")!=-1)
@@ -129,25 +132,11 @@ public class Dump extends HttpServlet
                     {
                         e.printStackTrace();
                     }
-                    Continuation continuation = ContinuationSupport.getContinuation(request,response);
+                    Continuation continuation = ContinuationSupport.getContinuation(request);
                     continuation.resume();
                 }
                 
             }).start();
-        }
-        
-        if (request.getParameter("suspend")!=null)
-        {
-            try
-            {
-                Continuation continuation = ContinuationSupport.getContinuation(request,response);
-                continuation.setTimeout(Long.parseLong(request.getParameter("suspend")));
-                continuation.suspend();
-            }
-            catch(Exception e)
-            {
-                throw new ServletException(e);
-            }
         }
 
         if (request.getParameter("complete")!=null)
@@ -181,6 +170,21 @@ public class Dump extends HttpServlet
             }).start();
         }
         
+        if (request.getParameter("suspend")!=null && request.getAttribute("SUSPEND")!=Boolean.TRUE)
+        {
+            request.setAttribute("SUSPEND",Boolean.TRUE);
+            try
+            {
+                Continuation continuation = ContinuationSupport.getContinuation(request);
+                continuation.setTimeout(Long.parseLong(request.getParameter("suspend")));
+                continuation.suspend();
+                continuation.undispatch();
+            }
+            catch(Exception e)
+            {
+                throw new ServletException(e);
+            }
+        }        
             
         request.setAttribute("Dump", this);
         getServletContext().setAttribute("Dump",this);
@@ -740,7 +744,9 @@ public class Dump extends HttpServlet
             pout.write("<br/>");
             
             pout.write("<h2>Form to generate UPLOAD content</h2>");
-            pout.write("<form method=\"POST\" enctype=\"multipart/form-data\" accept-charset=\"utf-8\" action=\""+response.encodeURL(getURI(request))+"\">");
+            pout.write("<form method=\"POST\" enctype=\"multipart/form-data\" accept-charset=\"utf-8\" action=\""+
+                    response.encodeURL(getURI(request))+(request.getQueryString()==null?"":("?"+request.getQueryString()))+
+                    "\">");
             pout.write("TextField: <input type=\"text\" name=\"TextField\" value=\"comment\"/><br/>\n");
             pout.write("File 1: <input type=\"file\" name=\"file1\" /><br/>\n");
             pout.write("File 2: <input type=\"file\" name=\"file2\" /><br/>\n");
@@ -794,12 +800,14 @@ public class Dump extends HttpServlet
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getServletInfo()
     {
         return "Dump Servlet";
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public synchronized void destroy()
     {
     }

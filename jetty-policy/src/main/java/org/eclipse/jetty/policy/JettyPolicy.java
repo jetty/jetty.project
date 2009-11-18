@@ -57,6 +57,7 @@ import org.eclipse.jetty.util.Scanner;
 public class JettyPolicy extends Policy
 {
     private static boolean __DEBUG = false;
+    private static boolean __RELOAD = false;
 
     // Policy files that are actively managed by the aggregate policy mechanism
     private final Set<String> _policies;
@@ -67,47 +68,45 @@ public class JettyPolicy extends Policy
 
     private final PolicyContext _context = new PolicyContext();
 
-    private final Scanner scanner = new Scanner();
+    private Boolean _initialized = false;
 
-    private boolean initialized = false;
+    private Scanner _scanner;
 
     public JettyPolicy(Set<String> policies, Map<String, String> properties)
     {
         try
         {
+
+            __RELOAD = Boolean.getBoolean("org.eclipse.jetty.policy.RELOAD");
             __DEBUG = Boolean.getBoolean("org.eclipse.jetty.policy.DEBUG");
         }
         catch (AccessControlException ace)
         {
+            __RELOAD = false;
             __DEBUG = false;
         }
 
         _policies = policies;
         _context.setProperties(properties);
-
-        refresh();
     }
 
     @Override
     public PermissionCollection getPermissions(ProtectionDomain domain)
     {
-        if (!initialized)
-        {
 
-            refresh();
-        }
-
-        if (_cache.containsKey(domain))
+        synchronized (_initialized)
         {
-            return _cache.get(domain);
+            if (!_initialized)
+            {
+                refresh();
+            }
         }
 
         synchronized (_cache)
         {
-            // check if it was added in since we obtained lock
             if (_cache.containsKey(domain))
             {
-                return _cache.get(domain);
+                return copyOf(_cache.get(domain));
             }
 
             PermissionCollection perms = new Permissions();
@@ -149,32 +148,26 @@ public class JettyPolicy extends Policy
 
             _cache.put(domain,perms);
 
-            return perms;
+            return copyOf(perms);
         }
     }
 
     @Override
     public PermissionCollection getPermissions(CodeSource codesource)
     {
-        if (!initialized)
+        synchronized (_initialized)
         {
-            synchronized (this)
+            if (!_initialized)
             {
                 refresh();
             }
         }
 
-        if (_cache.containsKey(codesource))
-        {
-            return _cache.get(codesource);
-        }
-
         synchronized (_cache)
         {
-            // check if it was added in since we obtained lock
             if (_cache.containsKey(codesource))
             {
-                return _cache.get(codesource);
+                return copyOf(_cache.get(codesource));
             }
 
             PermissionCollection perms = new Permissions();
@@ -212,40 +205,16 @@ public class JettyPolicy extends Policy
 
             _cache.put(codesource,perms);
 
-            return perms;
+            return copyOf(perms);
         }
     }
 
     @Override
-    public boolean implies(ProtectionDomain domain, Permission permission) {
-        PermissionCollection pc;
-
-        if (_cache == null) {
-            synchronized (_cache)
-            {
-                refresh();
-            }
-        }
-
-        synchronized (_cache) {
-            pc = _cache.get(domain);
-        }
-
-        if (pc != null) {
-            return pc.implies(permission);
-        } 
+    public boolean implies(ProtectionDomain domain, Permission permission)
+    {
+        PermissionCollection pc = getPermissions(domain);
         
-        pc = getPermissions(domain);
-        if (pc == null) {
-            return false;
-        }
-
-        synchronized (_cache) {
-            // cache it 
-            _cache.put(domain, pc);
-        }
-        
-        return pc.implies(permission);
+        return (pc == null ? false : pc.implies(permission));
     }
     
 
@@ -283,20 +252,21 @@ public class JettyPolicy extends Policy
 
         try
         {
-            if (!initialized)
+            // initialize the reloading mechanism if enabled
+            if (__RELOAD && _scanner == null)
             {
-                initialize();
+                initializeReloading();
             }
             
-            for (Iterator<Object> i = _cache.keySet().iterator(); i.hasNext();)
-            {
-                System.out.println(i.next().toString());
-            }
-            
-
             if (__DEBUG)
             {
-                System.out.println("refreshing policy files");
+                synchronized (_cache)
+                {
+                    for (Iterator<Object> i = _cache.keySet().iterator(); i.hasNext();)
+                    {
+                        System.out.println(i.next().toString());
+                    }
+                }
             }
 
             Set<PolicyBlock> clean = new HashSet<PolicyBlock>();
@@ -314,12 +284,7 @@ public class JettyPolicy extends Policy
                 _grants.addAll(clean);
                 _cache.clear();
             }
-
-            if (__DEBUG)
-            {
-                System.out.println("finished reloading policies");
-            }
-
+            _initialized = true;
         }
         catch (Exception e)
         {
@@ -327,17 +292,9 @@ public class JettyPolicy extends Policy
         }
     }
 
-    /**
-     * TODO make this optional MUST be only called from refresh or race condition
-     */
-    private synchronized void initialize() throws Exception
+    private void initializeReloading() throws Exception
     {
-
-        // if we have been initialized since we got lock, return
-        if (initialized)
-        {
-            return;
-        }
+        _scanner = new Scanner();
 
         List<File> scanDirs = new ArrayList<File>();
 
@@ -347,33 +304,34 @@ public class JettyPolicy extends Policy
             scanDirs.add(policyFile.getParentFile());
         }
 
-        scanner.addListener(new Scanner.DiscreteListener()
+        _scanner.addListener(new Scanner.DiscreteListener()
         {
 
             public void fileRemoved(String filename) throws Exception
-            { // TODO Auto-generated method stub
+            {
 
             }
 
+            /* will trigger when files are changed, not on load time, just when changed */
             public void fileChanged(String filename) throws Exception
             {
-                if (filename.endsWith("policy"))
+                if (filename.endsWith("policy")) // TODO match up to existing policies to avoid unnecessary reloads
                 {
+                    System.out.println("JettyPolicy: refreshing policy files");
                     refresh();
+                    System.out.println("JettyPolicy: finished refreshing policies");
                 }
             }
 
             public void fileAdded(String filename) throws Exception
-            { // TODO Auto-generated method stub
+            {
 
             }
         });
 
-        scanner.setScanDirs(scanDirs);
-        scanner.start();
-        scanner.setScanInterval(10);
-
-        initialized = true;
+        _scanner.setScanDirs(scanDirs);
+        _scanner.start();
+        _scanner.setScanInterval(10);
     }
 
     public void dump(PrintStream out)
@@ -390,5 +348,18 @@ public class JettyPolicy extends Policy
             }
         }
         write.flush();
+    }
+    
+    public PermissionCollection copyOf(final PermissionCollection in)
+    {
+        PermissionCollection out  = new Permissions();
+        synchronized (in)
+        {
+            for (Enumeration el = in.elements() ; el.hasMoreElements() ;)
+            {
+                out.add((Permission)el.nextElement());
+            }
+        }
+        return out;
     }
 }

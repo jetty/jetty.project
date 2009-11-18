@@ -92,6 +92,7 @@ public class View extends AbstractBuffer
     /**
      * @return The {@link Buffer#buffer()} from the underlying buffer.
      */
+    @Override
     public Buffer buffer()
     {
         return _buffer.buffer();
@@ -108,6 +109,7 @@ public class View extends AbstractBuffer
     /**
      *  
      */
+    @Override
     public void clear()
     {
         setMarkIndex(-1);
@@ -119,6 +121,7 @@ public class View extends AbstractBuffer
     /**
      *  
      */
+    @Override
     public void compact()
     {
         // TODO
@@ -129,6 +132,7 @@ public class View extends AbstractBuffer
      * 
      * @see java.lang.Object#equals(java.lang.Object)
      */
+    @Override
     public boolean equals(Object obj)
     {
         return  this==obj ||((obj instanceof Buffer)&& obj.equals(this)) || super.equals(obj);
@@ -137,6 +141,7 @@ public class View extends AbstractBuffer
     /**
      * @return Whether the underlying buffer is {@link Buffer#isReadOnly read only}
      */
+    @Override
     public boolean isReadOnly()
     {
         return _buffer.isReadOnly();
@@ -145,6 +150,7 @@ public class View extends AbstractBuffer
     /**
      * @return Whether the underlying buffer is {@link Buffer#isVolatile volatile}
      */
+    @Override
     public boolean isVolatile()
     {
         return true;
@@ -169,6 +175,7 @@ public class View extends AbstractBuffer
     /**
      * @return The result of calling {@link Buffer#peek(int, int)} on the underlying buffer
      */
+    @Override
     public Buffer peek(int index, int length)
     {
         return _buffer.peek(index, length);
@@ -178,6 +185,7 @@ public class View extends AbstractBuffer
      * @param index
      * @param src
      */
+    @Override
     public int poke(int index, Buffer src)
     {
         return _buffer.poke(index,src); 
@@ -198,11 +206,13 @@ public class View extends AbstractBuffer
      * @param offset
      * @param length
      */
+    @Override
     public int poke(int index, byte[] b, int offset, int length)
     {
         return _buffer.poke(index,b,offset,length);
     }
     
+    @Override
     public String toString()
     {
         if (_buffer==null)
@@ -227,6 +237,7 @@ public class View extends AbstractBuffer
             super(buffer);
         }
         
+        @Override
         public boolean equals(Object obj)
         {
             return  this==obj ||((obj instanceof Buffer)&&((Buffer)obj).equalsIgnoreCase(this)) || super.equals(obj);

@@ -25,15 +25,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletSecurityElement;
 import javax.servlet.SingleThreadModel;
 import javax.servlet.UnavailableException;
-
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.RunAsToken;
 import org.eclipse.jetty.server.Request;
@@ -330,6 +331,15 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
     }
 
     /* ------------------------------------------------------------ */
+    /** Get the servlet instance (no initialization done).
+     * @return The servlet or null
+     */
+    public Servlet getServletInstance()
+    {
+        return _servlet;
+    }
+        
+    /* ------------------------------------------------------------ */
     /**
      * Check to ensure class of servlet is acceptable.
      * @throws UnavailableException
@@ -472,25 +482,6 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.UserIdentity.Scope#getRunAsRole()
-     */
-    public String getRunAsRole()
-    {
-        return _runAsRole;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the run-as role for this servlet
-     * @param role run-as role for this servlet
-     */
-    public void setRunAsRole(String role)
-    {
-        _runAsRole=role;
-    }
-
-    /* ------------------------------------------------------------ */
     /** Service a request with this servlet.
      */
     public void handle(Request baseRequest,
@@ -611,10 +602,29 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
             return patterns;
         }
 
+        @Override
+        public String getRunAsRole() {
+            return _runAsRole;
+        }
+
         public void setLoadOnStartup(int loadOnStartup)
         {
             illegalStateIfContextStarted();
             ServletHolder.this.setInitOrder(loadOnStartup);
+        }
+
+        @Override
+        public void setMultipartConfig(MultipartConfigElement element) {
+        }
+
+        @Override
+        public void setRunAsRole(String role) {
+            _runAsRole = role;
+        }
+
+        @Override
+        public Set<String> setServletSecurity(ServletSecurityElement securityElement) {
+            return null;
         }
     }
     

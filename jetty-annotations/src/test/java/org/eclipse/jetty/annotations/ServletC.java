@@ -18,6 +18,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import javax.annotation.security.RolesAllowed;
+import javax.annotation.Resources;
 import javax.annotation.security.RunAs;
 import javax.annotation.security.TransportProtected;
 import javax.servlet.ServletException;
@@ -31,14 +32,21 @@ import javax.servlet.http.HttpServletResponse;
 
 
 
+<<<<<<< .working
 @WebServlet(urlPatterns = { "/foo/*", "/bah/*" }, name="CServlet", initParams={@WebInitParam(name="x", value="y")}, loadOnStartup=2, asyncSupported=false)
 @MultipartConfig(fileSizeThreshold=1000, maxFileSize=2000, maxRequestSize=3000)
+=======
+@Resources({
+    @Resource(name="apple", mappedName="foo"),
+    @Resource(name="banana", mappedName="foo")
+})
+>>>>>>> .merge-right.r1059
 @RunAs("admin")
 @TransportProtected(false)
 @RolesAllowed({"fred", "bill", "dorothy"})
 public class ServletC extends HttpServlet
 {
-    @Resource (mappedName="foo")
+    @Resource (mappedName="foo", type=Double.class)
     private Double foo;
     
     @PreDestroy

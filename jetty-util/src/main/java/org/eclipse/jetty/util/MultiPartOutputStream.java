@@ -68,6 +68,7 @@ public class MultiPartOutputStream extends FilterOutputStream
     /** End the current part.
      * @exception IOException IOException
      */
+    @Override
     public void close()
          throws IOException
     {

@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 public class AsyncSslSecurityListenerTest extends SslSecurityListenerTest
 {
 
+    @Override
     protected void setUp() throws Exception
     {
         _type = HttpClient.CONNECTOR_SELECT_CHANNEL;

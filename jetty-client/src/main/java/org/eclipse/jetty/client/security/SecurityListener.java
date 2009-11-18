@@ -90,7 +90,10 @@ public class SecurityListener extends HttpEventListenerWrapper
         
         while ( strtok.hasMoreTokens() )
         {
-            String[] pair = strtok.nextToken().split( "=" );
+            String token = strtok.nextToken();
+            String[] pair = token.split( "=" );
+            
+            // authentication details ought to come in two parts, if not then just skip
             if ( pair.length == 2 )
             {
                 String itemName = pair[0].trim();
@@ -99,16 +102,17 @@ public class SecurityListener extends HttpEventListenerWrapper
                 itemValue = StringUtil.unquote( itemValue );
                 
                 authenticationDetails.put( itemName, itemValue );
-            }
+            }    
             else
             {
-                throw new IllegalArgumentException( "unable to process authentication details" );
-            }      
+                Log.debug("SecurityListener: missed scraping authentication details - " + token );
+            }
         }
         return authenticationDetails;
     }
 
   
+    @Override
     public void onResponseStatus( Buffer version, int status, Buffer reason )
         throws IOException
     {
@@ -131,6 +135,7 @@ public class SecurityListener extends HttpEventListenerWrapper
     }
 
 
+    @Override
     public void onResponseHeader( Buffer name, Buffer value )
         throws IOException
     {
@@ -182,6 +187,7 @@ public class SecurityListener extends HttpEventListenerWrapper
     }
     
 
+    @Override
     public void onRequestComplete() throws IOException
     {
         _requestComplete = true;
@@ -214,6 +220,7 @@ public class SecurityListener extends HttpEventListenerWrapper
     }
 
 
+    @Override
     public void onResponseComplete() throws IOException
     {   
         _responseComplete = true;
@@ -245,6 +252,7 @@ public class SecurityListener extends HttpEventListenerWrapper
         }
     }
 
+    @Override
     public void onRetry()
     {
         _attempts++;

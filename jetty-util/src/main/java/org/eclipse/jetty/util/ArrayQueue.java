@@ -181,6 +181,7 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isEmpty()
     {
         synchronized(_lock)
@@ -222,6 +223,7 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public E remove(int index)
     {
         synchronized(_lock)
@@ -262,6 +264,7 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public E set(int index, E element)
     {
         synchronized(_lock)
@@ -279,6 +282,7 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void add(int index, E element)
     {
         synchronized(_lock)

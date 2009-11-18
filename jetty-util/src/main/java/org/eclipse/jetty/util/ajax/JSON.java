@@ -202,6 +202,7 @@ public class JSON
      * @param in Reader containing JSON object or array.
      * @return A Map, Object array or primitive array parsed from the JSON.
      */
+    @Deprecated
     public static Object parse(InputStream in) throws IOException
     {
         return DEFAULT.parse(new StringSource(IO.toString(in)),false);
@@ -214,6 +215,7 @@ public class JSON
      * @param stripOuterComment If true, an outer comment around the JSON is ignored.
      * @return A Map, Object array or primitive array parsed from the JSON.
      */
+    @Deprecated
     public static Object parse(InputStream in, boolean stripOuterComment) throws IOException
     {
         return DEFAULT.parse(new StringSource(IO.toString(in)),stripOuterComment);
@@ -569,7 +571,7 @@ public class JSON
     protected Convertor getConvertor(Class forClass)
     {
         Class cls=forClass;
-        Convertor convertor=(Convertor)_convertors.get(cls.getName());
+        Convertor convertor=_convertors.get(cls.getName());
         if (convertor==null && this!=DEFAULT)
             convertor=DEFAULT.getConvertor(cls);
         
@@ -578,11 +580,11 @@ public class JSON
             Class[] ifs=cls.getInterfaces();
             int i=0;
             while (convertor==null&&ifs!=null&&i<ifs.length)
-                convertor=(Convertor)_convertors.get(ifs[i++].getName());
+                convertor=_convertors.get(ifs[i++].getName());
             if (convertor==null)
             {
                 cls=cls.getSuperclass();
-                convertor=(Convertor)_convertors.get(cls.getName());
+                convertor=_convertors.get(cls.getName());
             }
         }
         return convertor;
@@ -609,7 +611,7 @@ public class JSON
     public Convertor getConvertorFor(String name)
     {
         String clsName=name;
-        Convertor convertor=(Convertor)_convertors.get(clsName);
+        Convertor convertor=_convertors.get(clsName);
         if (convertor==null && this!=DEFAULT)
             convertor=DEFAULT.getConvertorFor(clsName);
         return convertor;
@@ -1255,6 +1257,7 @@ public class JSON
             return string.charAt(index);
         }
         
+        @Override
         public String toString()
         {
             return string.substring(0,index)+"|||"+string.substring(index);
@@ -1422,6 +1425,7 @@ public class JSON
             _json=json;
         }
 
+        @Override
         public String toString()
         {
             return _json;

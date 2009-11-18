@@ -59,6 +59,7 @@ public class HttpOutput extends ServletOutputStream
     /*
      * @see java.io.OutputStream#close()
      */
+    @Override
     public void close() throws IOException
     {
         _closed=true;
@@ -71,12 +72,14 @@ public class HttpOutput extends ServletOutputStream
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void flush() throws IOException
     {
         _generator.flush(_maxIdleTime);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void write(byte[] b, int off, int len) throws IOException
     {
         _buf.wrap(b, off, len);
@@ -87,6 +90,7 @@ public class HttpOutput extends ServletOutputStream
     /*
      * @see java.io.OutputStream#write(byte[])
      */
+    @Override
     public void write(byte[] b) throws IOException
     {
         _buf.wrap(b);
@@ -97,6 +101,7 @@ public class HttpOutput extends ServletOutputStream
     /*
      * @see java.io.OutputStream#write(int)
      */
+    @Override
     public void write(int b) throws IOException
     {
         if (_closed)
@@ -166,6 +171,7 @@ public class HttpOutput extends ServletOutputStream
     /* 
      * @see javax.servlet.ServletOutputStream#print(java.lang.String)
      */
+    @Override
     public void print(String s) throws IOException
     {
         write(s.getBytes());

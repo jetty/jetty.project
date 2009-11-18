@@ -42,24 +42,28 @@ class BadResource extends URLResource
     
 
     /* -------------------------------------------------------- */
+    @Override
     public boolean exists()
     {
         return false;
     }
         
     /* -------------------------------------------------------- */
+    @Override
     public long lastModified()
     {
         return -1;
     }
 
     /* -------------------------------------------------------- */
+    @Override
     public boolean isDirectory()
     {
         return false;
     }
 
     /* --------------------------------------------------------- */
+    @Override
     public long length()
     {
         return -1;
@@ -67,18 +71,21 @@ class BadResource extends URLResource
         
         
     /* ------------------------------------------------------------ */
+    @Override
     public File getFile()
     {
         return null;
     }
         
     /* --------------------------------------------------------- */
+    @Override
     public InputStream getInputStream() throws IOException
     {
         throw new FileNotFoundException(_message);
     }
         
     /* --------------------------------------------------------- */
+    @Override
     public OutputStream getOutputStream()
         throws java.io.IOException, SecurityException
     {
@@ -86,6 +93,7 @@ class BadResource extends URLResource
     }
         
     /* --------------------------------------------------------- */
+    @Override
     public boolean delete()
         throws SecurityException
     {
@@ -93,6 +101,7 @@ class BadResource extends URLResource
     }
 
     /* --------------------------------------------------------- */
+    @Override
     public boolean renameTo( Resource dest)
         throws SecurityException
     {
@@ -100,6 +109,7 @@ class BadResource extends URLResource
     }
 
     /* --------------------------------------------------------- */
+    @Override
     public String[] list()
     {
         return null;
@@ -114,6 +124,7 @@ class BadResource extends URLResource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return super.toString()+"; BadResource="+_message;

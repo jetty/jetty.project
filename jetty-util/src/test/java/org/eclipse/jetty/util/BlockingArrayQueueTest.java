@@ -141,6 +141,7 @@ public class BlockingArrayQueueTest extends TestCase
         
         Thread thread = new Thread()
         {
+            @Override
             public void run()
             {
                 try
@@ -197,6 +198,7 @@ public class BlockingArrayQueueTest extends TestCase
             final Integer id = new Integer(i);
             new Thread()
             {
+                @Override
                 public void run()
                 {
                     final Random random = new Random();
@@ -253,6 +255,7 @@ public class BlockingArrayQueueTest extends TestCase
             final Integer id = new Integer(i);
             new Thread()
             {
+                @Override
                 public void run()
                 {
                     final Random random = new Random();

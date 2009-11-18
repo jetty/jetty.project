@@ -39,6 +39,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
             /* (non-Javadoc)
              * @see org.eclipse.jetty.server.server.nio.SelectChannelConnector#newEndPoint(java.nio.channels.SocketChannel, org.eclipse.io.nio.SelectorManager.SelectSet, java.nio.channels.SelectionKey)
              */
+            @Override
             protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
             {
                 return new SelectChannelEndPoint(channel,selectSet,key)
@@ -50,6 +51,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                     /* (non-Javadoc)
                      * @see org.eclipse.io.nio.SelectChannelEndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
                      */
+                    @Override
                     public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
                     {
                         int x=write++&0xff;
@@ -64,6 +66,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                     /* (non-Javadoc)
                      * @see org.eclipse.io.nio.SelectChannelEndPoint#flush(org.eclipse.io.Buffer)
                      */
+                    @Override
                     public int flush(Buffer buffer) throws IOException
                     {
                         int x=write++&0xff;
@@ -85,6 +88,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                     /* (non-Javadoc)
                      * @see org.eclipse.io.nio.ChannelEndPoint#fill(org.eclipse.io.Buffer)
                      */
+                    @Override
                     public int fill(Buffer buffer) throws IOException
                     {
                         int x=read++&0xff;
@@ -132,6 +136,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
     }  
     
 
+    @Override
     protected void configServer(Server server)
     {
         server.setThreadPool(new QueuedThreadPool());

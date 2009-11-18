@@ -264,16 +264,19 @@ public class Container
             return _relationship;
         }
         
+        @Override
         public String toString()
         {
             return _parent+"---"+_relationship+"-->"+_child;
         }
         
+        @Override
         public int hashCode()
         {
             return _parent.hashCode()+_child.hashCode()+_relationship.hashCode();
         }
         
+        @Override
         public boolean equals(Object o)
         {
             if (o==null || !(o instanceof Relationship))

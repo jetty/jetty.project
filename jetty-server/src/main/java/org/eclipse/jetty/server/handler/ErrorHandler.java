@@ -26,7 +26,6 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
-import org.eclipse.jetty.util.StringUtil;
 
 
 /* ------------------------------------------------------------ */
@@ -50,7 +49,7 @@ public class ErrorHandler extends AbstractHandler
         HttpConnection connection = HttpConnection.getCurrentConnection();
         connection.getRequest().setHandled(true);
         String method = request.getMethod();
-        if(!method.equals(HttpMethods.GET) && !method.equals(HttpMethods.POST))
+        if(!method.equals(HttpMethods.GET) && !method.equals(HttpMethods.POST) && !method.equals(HttpMethods.HEAD))
             return;
         response.setContentType(MimeTypes.TEXT_HTML_8859_1);        
         response.setHeader(HttpHeaders.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
@@ -74,7 +73,7 @@ public class ErrorHandler extends AbstractHandler
         throws IOException
     {
         if (message == null)
-            message=HttpStatus.getCode(code).getMessage();
+            message=HttpStatus.getMessage(code);
 
         writer.write("<html>\n<head>\n");
         writeErrorPageHead(request,writer,code,message);
@@ -91,8 +90,7 @@ public class ErrorHandler extends AbstractHandler
         writer.write("<title>Error ");
         writer.write(Integer.toString(code));
         writer.write(' ');
-        if (message!=null)
-            writer.write(deScript(message));
+        write(writer,message);
         writer.write("</title>\n");    
     }
 
@@ -117,9 +115,9 @@ public class ErrorHandler extends AbstractHandler
         writer.write("<h2>HTTP ERROR ");
         writer.write(Integer.toString(code));
         writer.write("</h2>\n<p>Problem accessing ");
-        writer.write(deScript(uri));
+        write(writer,uri);
         writer.write(". Reason:\n<pre>    ");
-        writer.write(deScript(message));
+        write(writer,message);
         writer.write("</pre></p>");
     }
 
@@ -135,7 +133,7 @@ public class ErrorHandler extends AbstractHandler
             PrintWriter pw = new PrintWriter(sw);
             th.printStackTrace(pw);
             pw.flush();
-            writer.write(deScript(sw.getBuffer().toString()));
+            write(writer,sw.getBuffer().toString());
             writer.write("</pre>\n");
 
             th =th.getCause();
@@ -162,13 +160,34 @@ public class ErrorHandler extends AbstractHandler
     }
 
     /* ------------------------------------------------------------ */
-    protected String deScript(String string)
+    protected void write(Writer writer,String string)
+        throws IOException
     {
         if (string==null)
-            return null;
-        string=StringUtil.replace(string, "&", "&amp;");
-        string=StringUtil.replace(string, "<", "&lt;");
-        string=StringUtil.replace(string, ">", "&gt;");
-        return string;
+            return;
+        
+        for (int i=0;i<string.length();i++)
+        {
+            char c=string.charAt(i);
+            
+            switch(c)
+            {
+                case '&' :
+                    writer.write("&amp;");
+                    break;
+                case '<' :
+                    writer.write("&lt;");
+                    break;
+                case '>' :
+                    writer.write("&gt;");
+                    break;
+                    
+                default:
+                    if (Character.isISOControl(c) && !Character.isWhitespace(c))
+                        writer.write('?');
+                    else 
+                        writer.write(c);
+            }          
+        }
     }
 }

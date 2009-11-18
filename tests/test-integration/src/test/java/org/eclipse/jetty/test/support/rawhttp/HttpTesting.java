@@ -27,7 +27,6 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.List;
 
-import org.eclipse.jetty.test.StringAssert;
 import org.eclipse.jetty.test.support.StringUtil;
 import org.eclipse.jetty.util.IO;
 

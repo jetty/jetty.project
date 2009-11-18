@@ -46,6 +46,7 @@ public class SocketEndPoint extends StreamEndPoint
     /* (non-Javadoc)
      * @see org.eclipse.io.BufferIO#isClosed()
      */
+    @Override
     public boolean isOpen()
     {
         return super.isOpen() && _socket!=null && !_socket.isClosed() && !_socket.isInputShutdown() && !_socket.isOutputShutdown();
@@ -54,6 +55,7 @@ public class SocketEndPoint extends StreamEndPoint
     /* (non-Javadoc)
      * @see org.eclipse.io.BufferIO#close()
      */
+    @Override
     public void close() throws IOException
     {
         if (!_socket.isClosed() && !_socket.isOutputShutdown())
@@ -81,6 +83,7 @@ public class SocketEndPoint extends StreamEndPoint
     /* 
      * @see org.eclipse.io.EndPoint#getLocalAddr()
      */
+    @Override
     public String getLocalAddr()
     {
         if (_local==null)
@@ -96,6 +99,7 @@ public class SocketEndPoint extends StreamEndPoint
     /* 
      * @see org.eclipse.io.EndPoint#getLocalHost()
      */
+    @Override
     public String getLocalHost()
     {
         if (_local==null)
@@ -111,6 +115,7 @@ public class SocketEndPoint extends StreamEndPoint
     /* 
      * @see org.eclipse.io.EndPoint#getLocalPort()
      */
+    @Override
     public int getLocalPort()
     {
         if (_local==null)
@@ -124,6 +129,7 @@ public class SocketEndPoint extends StreamEndPoint
     /* 
      * @see org.eclipse.io.EndPoint#getRemoteAddr()
      */
+    @Override
     public String getRemoteAddr()
     {
         if (_remote==null)
@@ -138,6 +144,7 @@ public class SocketEndPoint extends StreamEndPoint
     /* 
      * @see org.eclipse.io.EndPoint#getRemoteHost()
      */
+    @Override
     public String getRemoteHost()
     {
         if (_remote==null)
@@ -151,6 +158,7 @@ public class SocketEndPoint extends StreamEndPoint
     /* 
      * @see org.eclipse.io.EndPoint#getRemotePort()
      */
+    @Override
     public int getRemotePort()
     {
         if (_remote==null)
@@ -164,6 +172,7 @@ public class SocketEndPoint extends StreamEndPoint
     /* 
      * @see org.eclipse.io.EndPoint#getConnection()
      */
+    @Override
     public Object getTransport()
     {
         return _socket;

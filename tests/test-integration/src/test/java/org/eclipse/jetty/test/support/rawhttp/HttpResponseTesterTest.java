@@ -16,12 +16,14 @@
 
 package org.eclipse.jetty.test.support.rawhttp;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.util.List;
 
 import org.eclipse.jetty.test.AbstractJettyTestCase;
-import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
 import org.junit.Test;
 
 public class HttpResponseTesterTest extends AbstractJettyTestCase

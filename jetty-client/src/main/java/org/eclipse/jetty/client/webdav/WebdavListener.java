@@ -57,6 +57,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         }
     }
 
+    @Override
     public void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
     {
         if ( !_webdavEnabled )
@@ -99,6 +100,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         super.onResponseStatus(version, status, reason);
     }
 
+    @Override
     public void onResponseComplete() throws IOException
     {
         _responseComplete = true;
@@ -120,6 +122,7 @@ public class WebdavListener extends HttpEventListenerWrapper
                     else
                     {
                         // admit defeat but retry because someone else might have 
+                        setDelegationResult(false);
                         setDelegatingRequests( true );
                         setDelegatingResponses(true);
                         super.onResponseComplete();
@@ -146,6 +149,7 @@ public class WebdavListener extends HttpEventListenerWrapper
 
     
     
+    @Override
     public void onRequestComplete () throws IOException
     {
         _requestComplete = true;
@@ -197,6 +201,8 @@ public class WebdavListener extends HttpEventListenerWrapper
     /**
      * walk through the steps to try and resolve missing parent collection issues via webdav
      *
+     * TODO this really ought to use URI itself for this resolution
+     *
      * @return
      * @throws IOException
      */
@@ -209,7 +215,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         int rewind = 0;
 
         String parentUri = URIUtil.parentPath( uri );
-        while ( !checkExists( parentUri ) )
+        while ( parentUri != null && !checkExists(parentUri) )
         {
             ++rewind;
             parentUri = URIUtil.parentPath( parentUri );
@@ -235,6 +241,12 @@ public class WebdavListener extends HttpEventListenerWrapper
 
     private boolean checkExists( String uri ) throws IOException
     {
+        if (uri == null)
+        {
+            System.out.println("have failed miserably");
+            return false;
+        }
+        
         PropfindExchange propfindExchange = new PropfindExchange();
         propfindExchange.setAddress( _exchange.getAddress() );
         propfindExchange.setMethod( HttpMethods.GET ); // PROPFIND acts wonky, just use get

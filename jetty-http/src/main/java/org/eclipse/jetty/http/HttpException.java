@@ -79,6 +79,7 @@ public class HttpException extends IOException
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return ("HttpException("+_status+","+_reason+","+super.getCause()+")");

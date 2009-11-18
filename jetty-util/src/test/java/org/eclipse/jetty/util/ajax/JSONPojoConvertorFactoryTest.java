@@ -26,8 +26,8 @@ public class JSONPojoConvertorFactoryTest extends TestCase {
         JSON jsonOut = new JSON();
         JSON jsonIn = new JSON();
         
-        jsonOut.registerConvertor(Object.class, new JSONPojoConvertorFactory(jsonOut));
-        jsonIn.registerConvertor(Object.class, new JSONPojoConvertorFactory(jsonIn));
+        JSON.registerConvertor(Object.class, new JSONPojoConvertorFactory(jsonOut));
+        JSON.registerConvertor(Object.class, new JSONPojoConvertorFactory(jsonIn));
         
         Foo foo = new Foo();
         foo._name = "Foo @ " + System.currentTimeMillis();
@@ -87,6 +87,7 @@ public class JSONPojoConvertorFactoryTest extends TestCase {
             setBazs(bazs);
         }
         
+        @Override
         public String toString()
         {
             return new StringBuffer().append("\n=== ").append(getClass().getSimpleName()).append(" ===")
@@ -166,6 +167,7 @@ public class JSONPojoConvertorFactoryTest extends TestCase {
             setFoo(foo);
         }
         
+        @Override
         public String toString()
         {
             return new StringBuffer().append("\n=== ").append(getClass().getSimpleName()).append(" ===")
@@ -223,6 +225,7 @@ public class JSONPojoConvertorFactoryTest extends TestCase {
             
         }
         
+        @Override
         public String toString()
         {
             return new StringBuffer().append("\n=== ").append(getClass().getSimpleName()).append(" ===")
@@ -238,6 +241,7 @@ public class JSONPojoConvertorFactoryTest extends TestCase {
                 .toString();                
         }
         
+        @Override
         public boolean equals(Object another)
         {
             if(another instanceof Foo)

@@ -122,6 +122,7 @@ public class HttpGenerator extends AbstractGenerator
     }
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     public void reset(boolean returnBuffers)
     {
         super.reset(returnBuffers);
@@ -270,6 +271,7 @@ public class HttpGenerator extends AbstractGenerator
      * @return the available space in the buffer.
      * @throws IOException
      */
+    @Override
     public int prepareUncheckedAddContent() throws IOException
     {
         if (_noContent)
@@ -301,6 +303,7 @@ public class HttpGenerator extends AbstractGenerator
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isBufferFull()
     {
         // Should we flush the buffers?
@@ -347,6 +350,7 @@ public class HttpGenerator extends AbstractGenerator
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void completeHeader(HttpFields fields, boolean allContentAdded) throws IOException
     {
         if (_state != STATE_HEADER) 
@@ -446,12 +450,15 @@ public class HttpGenerator extends AbstractGenerator
                     if (_buffer!=null)
                         _buffer.clear();
                     // end the header.
-                    _header.put(HttpTokens.CRLF);
-                    _state = STATE_CONTENT;
-                    return;
-                }
 
-                if (_status==204 || _status==304)
+                    if (_status!=101 )
+                    {
+                        _header.put(HttpTokens.CRLF);
+                        _state = STATE_CONTENT;
+                        return;
+                    }
+                }
+                else if (_status==204 || _status==304)
                 {
                     _noContent=true;
                     _content=null;
@@ -740,6 +747,7 @@ public class HttpGenerator extends AbstractGenerator
      * 
      * @throws IOException
      */
+    @Override
     public void complete() throws IOException
     {
         if (_state == STATE_END) 
@@ -758,6 +766,7 @@ public class HttpGenerator extends AbstractGenerator
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public long flushBuffer() throws IOException
     {
         try
@@ -979,6 +988,7 @@ public class HttpGenerator extends AbstractGenerator
         (_content==null||_content.length()==0);
     }
     
+    @Override
     public String toString()
     {
         return "HttpGenerator s="+_state+

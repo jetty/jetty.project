@@ -46,6 +46,7 @@ public class WebdavListenerTest extends TestCase//extends HttpExchangeTest
 
     
    
+    @Override
     protected void setUp() throws Exception
     {
         _singleFileURL = "https://dav.codehaus.org/user/" + _username + "/foo.txt";
@@ -81,6 +82,7 @@ public class WebdavListenerTest extends TestCase//extends HttpExchangeTest
     }
     
     
+    @Override
     public void tearDown () throws Exception
     {
         _httpClient.stop();

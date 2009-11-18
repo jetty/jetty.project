@@ -15,8 +15,8 @@
 package org.eclipse.jetty.io;
 
 import java.io.BufferedWriter;
-import java.io.InterruptedIOException;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -107,6 +107,7 @@ public class UncheckedPrintWriter extends PrintWriter
     /** 
      * Flush the stream. 
      */
+    @Override
     public void flush() {
         try {
             synchronized (lock) {
@@ -125,6 +126,7 @@ public class UncheckedPrintWriter extends PrintWriter
     /** 
      * Close the stream. 
      */
+    @Override
     public void close() {
         try {
             synchronized (lock) {
@@ -143,6 +145,7 @@ public class UncheckedPrintWriter extends PrintWriter
      * Write a single character.
      * @param c int specifying a character to be written.
      */
+    @Override
     public void write(int c) {
         try {
             synchronized (lock) {
@@ -167,6 +170,7 @@ public class UncheckedPrintWriter extends PrintWriter
      * @param off Offset from which to start writing characters
      * @param len Number of characters to write
      */
+    @Override
     public void write(char buf[], int off, int len) {
         try {
             synchronized (lock) {
@@ -190,6 +194,7 @@ public class UncheckedPrintWriter extends PrintWriter
      * Writer class because it must suppress I/O exceptions.
      * @param buf Array of characters to be written
      */
+    @Override
     public void write(char buf[]) {
         this.write(buf, 0, buf.length);
     }
@@ -201,6 +206,7 @@ public class UncheckedPrintWriter extends PrintWriter
      * @param off Offset from which to start writing characters
      * @param len Number of characters to write
      */
+    @Override
     public void write(String s, int off, int len) {
         try {
             synchronized (lock) {
@@ -224,6 +230,7 @@ public class UncheckedPrintWriter extends PrintWriter
      * because it must suppress I/O exceptions.
      * @param s String to be written
      */
+    @Override
     public void write(String s) {
         this.write(s, 0, s.length());
     }
@@ -260,6 +267,7 @@ public class UncheckedPrintWriter extends PrintWriter
      *
      * @param      b   The <code>boolean</code> to be printed
      */
+    @Override
     public void print(boolean b) {
         this.write(b ? "true" : "false");
     }
@@ -273,6 +281,7 @@ public class UncheckedPrintWriter extends PrintWriter
      *
      * @param      c   The <code>char</code> to be printed
      */
+    @Override
     public void print(char c) {
         this.write(c);
     }
@@ -288,6 +297,7 @@ public class UncheckedPrintWriter extends PrintWriter
      * @param      i   The <code>int</code> to be printed
      * @see        java.lang.Integer#toString(int)
      */
+    @Override
     public void print(int i) {
         this.write(String.valueOf(i));
     }
@@ -303,6 +313,7 @@ public class UncheckedPrintWriter extends PrintWriter
      * @param      l   The <code>long</code> to be printed
      * @see        java.lang.Long#toString(long)
      */
+    @Override
     public void print(long l) {
         this.write(String.valueOf(l));
     }
@@ -318,6 +329,7 @@ public class UncheckedPrintWriter extends PrintWriter
      * @param      f   The <code>float</code> to be printed
      * @see        java.lang.Float#toString(float)
      */
+    @Override
     public void print(float f) {
         this.write(String.valueOf(f));
     }
@@ -333,6 +345,7 @@ public class UncheckedPrintWriter extends PrintWriter
      * @param      d   The <code>double</code> to be printed
      * @see        java.lang.Double#toString(double)
      */
+    @Override
     public void print(double d) {
         this.write(String.valueOf(d));
     }
@@ -348,6 +361,7 @@ public class UncheckedPrintWriter extends PrintWriter
      *
      * @throws  NullPointerException  If <code>s</code> is <code>null</code>
      */
+    @Override
     public void print(char s[]) {
         this.write(s);
     }
@@ -362,6 +376,7 @@ public class UncheckedPrintWriter extends PrintWriter
      *
      * @param      s   The <code>String</code> to be printed
      */
+    @Override
     public void print(String s) {
         if (s == null) {
             s = "null";
@@ -380,6 +395,7 @@ public class UncheckedPrintWriter extends PrintWriter
      * @param      obj   The <code>Object</code> to be printed
      * @see        java.lang.Object#toString()
      */
+    @Override
     public void print(Object obj) {
         this.write(String.valueOf(obj));
     }
@@ -394,6 +410,7 @@ public class UncheckedPrintWriter extends PrintWriter
      * <code>line.separator</code>, and is not necessarily a single newline
      * character (<code>'\n'</code>).
      */
+    @Override
     public void println() {
         this.newLine();
     }
@@ -406,6 +423,7 @@ public class UncheckedPrintWriter extends PrintWriter
      *
      * @param x the <code>boolean</code> value to be printed
      */
+    @Override
     public void println(boolean x) {
         synchronized (lock) {
             this.print(x);
@@ -421,6 +439,7 @@ public class UncheckedPrintWriter extends PrintWriter
      *
      * @param x the <code>char</code> value to be printed
      */
+    @Override
     public void println(char x) {
         synchronized (lock) {
             this.print(x);
@@ -436,6 +455,7 @@ public class UncheckedPrintWriter extends PrintWriter
      *
      * @param x the <code>int</code> value to be printed
      */
+    @Override
     public void println(int x) {
         synchronized (lock) {
             this.print(x);
@@ -451,6 +471,7 @@ public class UncheckedPrintWriter extends PrintWriter
      *
      * @param x the <code>long</code> value to be printed
      */
+    @Override
     public void println(long x) {
         synchronized (lock) {
             this.print(x);
@@ -466,6 +487,7 @@ public class UncheckedPrintWriter extends PrintWriter
      *
      * @param x the <code>float</code> value to be printed
      */
+    @Override
     public void println(float x) {
         synchronized (lock) {
             this.print(x);
@@ -482,6 +504,7 @@ public class UncheckedPrintWriter extends PrintWriter
      * @param x the <code>double</code> value to be printed
      */
     /* ------------------------------------------------------------ */
+    @Override
     public void println(double x) {
         synchronized (lock) {
             this.print(x);
@@ -497,6 +520,7 @@ public class UncheckedPrintWriter extends PrintWriter
      *
      * @param x the array of <code>char</code> values to be printed
      */
+    @Override
     public void println(char x[]) {
         synchronized (lock) {
             this.print(x);
@@ -512,6 +536,7 @@ public class UncheckedPrintWriter extends PrintWriter
      *
      * @param x the <code>String</code> value to be printed
      */
+    @Override
     public void println(String x) {
         synchronized (lock) {
             this.print(x);
@@ -527,6 +552,7 @@ public class UncheckedPrintWriter extends PrintWriter
      *
      * @param x the <code>Object</code> value to be printed
      */
+    @Override
     public void println(Object x) {
         synchronized (lock) {
             this.print(x);

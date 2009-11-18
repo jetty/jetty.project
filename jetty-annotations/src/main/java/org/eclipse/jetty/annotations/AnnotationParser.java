@@ -164,7 +164,7 @@ public class AnnotationParser
                                  String annotation, List<Value>values);
         
         public void handleMethod (String className, String methodName, int access,  
-                                  String params, String signature,String[] exceptions, 
+                                  String desc, String signature,String[] exceptions, 
                                   String annotation, List<Value>values);
         
         public void handleField (String className, String fieldName,  int access, 
@@ -180,7 +180,7 @@ public class AnnotationParser
     
     public interface MethodHandler
     {
-        public void handle (String className, String methodName, int access,  String params, String signature,String[] exceptions);
+        public void handle (String className, String methodName, int access,  String desc, String signature,String[] exceptions);
     }
     
     public interface FieldHandler
@@ -325,7 +325,7 @@ public class AnnotationParser
 
         public MethodVisitor visitMethod (final int access,
                                           final String name,
-                                          final String params,
+                                          final String methodDesc,
                                           final String signature,
                                           final String[] exceptions)
         {   
@@ -343,7 +343,7 @@ public class AnnotationParser
                             AnnotationHandler handler = AnnotationParser.this._annotationHandlers.get(_annotationName);
                             if (handler != null)
                             {
-                                handler.handleMethod(_className, name, access, params, signature, exceptions, _annotationName, _annotationValues);
+                                handler.handleMethod(_className, name, access, methodDesc, signature, exceptions, _annotationName, _annotationValues);
                             }
                         }
                     };

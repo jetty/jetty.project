@@ -24,7 +24,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.http.Generator;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -275,7 +274,7 @@ public class Response implements HttpServletResponse
         setStatus(code,message);
 
         if (message==null)
-            message=HttpStatus.getCode(code).getMessage();
+            message=HttpStatus.getMessage(code);
 
         // If we are allowed to have a body
         if (code!=SC_NO_CONTENT &&
@@ -323,7 +322,7 @@ public class Response implements HttpServletResponse
                 writer.write(Integer.toString(code));
                 writer.write(' ');
                 if (message==null)
-                    message=HttpStatus.getCode(code).getMessage();
+                    message=HttpStatus.getMessage(code);
                 writer.write(message);
                 writer.write("</title>\n</head>\n<body>\n<h2>HTTP ERROR: ");
                 writer.write(Integer.toString(code));
@@ -1179,6 +1178,7 @@ public class Response implements HttpServletResponse
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return "HTTP/1.1 "+_status+" "+ (_reason==null?"":_reason) +System.getProperty("line.separator")+
@@ -1190,18 +1190,22 @@ public class Response implements HttpServletResponse
     /* ------------------------------------------------------------ */
     private static class NullOutput extends ServletOutputStream
     {
+        @Override
         public void write(int b) throws IOException
         {
         }
 
+        @Override
         public void print(String s) throws IOException
         {
         }
 
+        @Override
         public void println(String s) throws IOException
         {
         }
 
+        @Override
         public void write(byte[] b, int off, int len) throws IOException
         {
         }

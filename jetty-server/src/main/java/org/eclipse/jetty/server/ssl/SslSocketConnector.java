@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.ssl;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -30,6 +29,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.net.ssl.HandshakeCompletedEvent;
+import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -145,6 +146,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     private int _handshakeTimeout = 0; //0 means use maxIdleTime
     
     private SSLContext _context;
+    private boolean _allowRenegotiate =false;
 
 
     /* ------------------------------------------------------------ */
@@ -156,19 +158,42 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         super();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if SSL re-negotiation is allowed (default false)
+     */
+    public boolean isAllowRenegotiate()
+    {
+        return _allowRenegotiate;
+    }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
+     * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
+     * does not have CVE-2009-3555 fixed, then re-negotiation should 
+     * not be allowed.
+     * @param allowRenegotiate true if re-negotiation is allowed (default false)
+     */
+    public void setAllowRenegotiate(boolean allowRenegotiate)
+    {
+        _allowRenegotiate = allowRenegotiate;
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
     public void accept(int acceptorID)
         throws IOException, InterruptedException
     {   
         Socket socket = _serverSocket.accept();
         configure(socket);
         
-        Connection connection=new SslConnection(socket);
+        ConnectorEndPoint connection=new SslConnection(socket);
         connection.dispatch();
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     protected void configure(Socket socket)
         throws IOException
     {   
@@ -267,6 +292,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      *        This should be a {@link SocketEndPoint} wrapping a {@link SSLSocket}.
      * @param request HttpRequest to be customised.
      */
+    @Override
     public void customize(EndPoint endpoint, Request request)
         throws IOException
     {
@@ -394,6 +420,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * configured to require client certs providing CONFIDENTIAL, whereas another SSL listener not
      * requiring client certs providing mere INTEGRAL constraints.
      */
+    @Override
     public boolean isConfidential(Request request)
     {
         final int confidentialPort = getConfidentialPort();
@@ -408,6 +435,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * require client certs providing CONFIDENTIAL, whereas another SSL listener not requiring
      * client certs providing mere INTEGRAL constraints.
      */
+    @Override
     public boolean isIntegral(Request request)
     {
         final int integralPort = getIntegralPort();
@@ -427,6 +455,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      */
 
     /* ------------------------------------------------------------ */
+    @Override
     protected ServerSocket newServerSocket(String host, int port,int backlog) throws IOException
     {
         SSLServerSocketFactory factory = null;
@@ -665,13 +694,14 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     
 
     /* ------------------------------------------------------------ */
-    public class SslConnection extends Connection
+    public class SslConnection extends ConnectorEndPoint
     {
         public SslConnection(Socket socket) throws IOException
         {
             super(socket);
         }
         
+        @Override
         public void run()
         {
             try
@@ -681,7 +711,25 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
                 if (handshakeTimeout > 0)            
                     _socket.setSoTimeout(handshakeTimeout);
 
-                ((SSLSocket)_socket).startHandshake();
+                final SSLSocket ssl=(SSLSocket)_socket;
+                ssl.addHandshakeCompletedListener(new HandshakeCompletedListener()
+                {
+                    boolean handshook=false;
+                    public void handshakeCompleted(HandshakeCompletedEvent event)
+                    {
+                        if (handshook)
+                        {
+                            if (!_allowRenegotiate)
+                            {
+                                Log.warn("SSL renegotiate denied: "+ssl);
+                                try{ssl.close();}catch(IOException e){Log.warn(e);}
+                            }
+                        }
+                        else
+                            handshook=true;
+                    }
+                });
+                ssl.startHandshake();
 
                 if (handshakeTimeout>0)
                     _socket.setSoTimeout(oldTimeout);

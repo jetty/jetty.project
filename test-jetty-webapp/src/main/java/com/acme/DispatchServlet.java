@@ -17,7 +17,6 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 
 import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -41,18 +40,14 @@ public class DispatchServlet extends HttpServlet
     String pageType;
 
     /* ------------------------------------------------------------ */
-    public void init(ServletConfig config) throws ServletException
-    {
-        super.init(config);
-    }
-
-    /* ------------------------------------------------------------ */
+    @Override
     public void doPost(HttpServletRequest sreq, HttpServletResponse sres) throws ServletException, IOException
     {
         doGet(sreq, sres);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doGet(HttpServletRequest sreq, HttpServletResponse sres) throws ServletException, IOException
     {
         if (sreq.getParameter("wrap") != null)
@@ -264,12 +259,14 @@ public class DispatchServlet extends HttpServlet
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getServletInfo()
     {
         return "Include Servlet";
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public synchronized void destroy()
     {
     }

@@ -15,9 +15,6 @@ package org.eclipse.jetty.embedded;
 
 import java.lang.management.ManagementFactory;
 
-import javax.management.MBeanConstructorInfo;
-import javax.management.MBeanServer;
-
 import org.eclipse.jetty.deploy.ContextDeployer;
 import org.eclipse.jetty.deploy.WebAppDeployer;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -39,7 +36,7 @@ public class LikeJettyXml
 {
     public static void main(String[] args) throws Exception
     {
-        String jetty_home = System.getProperty("jetty.home","..");
+        String jetty_home = System.getProperty("jetty.home","../jetty-distribution/target/distribution");
         System.setProperty("jetty.home",jetty_home);
 
         Server server = new Server();

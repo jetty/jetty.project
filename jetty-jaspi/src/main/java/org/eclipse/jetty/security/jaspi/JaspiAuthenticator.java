@@ -15,7 +15,7 @@ package org.eclipse.jetty.security.jaspi;
 
 import java.security.Principal;
 import java.util.Map;
-import java.util.Set;        
+import java.util.Set;
 
 import javax.security.auth.Subject;
 import javax.security.auth.message.AuthException;
@@ -28,9 +28,9 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.UserAuthentication;
-import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;

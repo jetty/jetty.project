@@ -29,8 +29,8 @@ import org.eclipse.jetty.util.log.Log;
 public class LifeCycleCallbackCollection
 {
     public static final String LIFECYCLE_CALLBACK_COLLECTION = "org.eclipse.jetty.lifecyleCallbackCollection";
-    private HashMap postConstructCallbacksMap = new HashMap();
-    private HashMap preDestroyCallbacksMap = new HashMap();
+    private HashMap<String, List<LifeCycleCallback>> postConstructCallbacksMap = new HashMap<String, List<LifeCycleCallback>>();
+    private HashMap<String, List<LifeCycleCallback>> preDestroyCallbacksMap = new HashMap<String, List<LifeCycleCallback>>();
     
     
  
@@ -43,12 +43,12 @@ public class LifeCycleCallbackCollection
      */
     public void add (LifeCycleCallback callback)
     {
-        if ((callback==null) || (callback.getTargetClass()==null) || (callback.getTarget()==null))
+        if ((callback==null) || (callback.getTargetClassName()==null))
             return;
 
         if (Log.isDebugEnabled())
             Log.debug("Adding callback for class="+callback.getTargetClass()+ " on "+callback.getTarget());
-        Map map = null;
+        Map<String, List<LifeCycleCallback>> map = null;
         if (callback instanceof PreDestroyCallback)
             map = preDestroyCallbacksMap;
         if (callback instanceof PostConstructCallback)
@@ -56,13 +56,12 @@ public class LifeCycleCallbackCollection
 
         if (map == null)
             throw new IllegalArgumentException ("Unsupported lifecycle callback type: "+callback);
-
      
-        List callbacks = (List)map.get(callback.getTargetClass());
+        List<LifeCycleCallback> callbacks = map.get(callback.getTargetClassName());
         if (callbacks==null)
         {
-            callbacks = new ArrayList();
-            map.put(callback.getTargetClass(), callbacks);
+            callbacks = new ArrayList<LifeCycleCallback>();
+            map.put(callback.getTargetClassName(), callbacks);
         }
        
         //don't add another callback for exactly the same method
@@ -70,22 +69,22 @@ public class LifeCycleCallbackCollection
             callbacks.add(callback);
     }
 
-    public List getPreDestroyCallbacks (Object o)
+    public List<LifeCycleCallback> getPreDestroyCallbacks (Object o)
     {
         if (o == null)
             return null;
         
         Class clazz = o.getClass();
-        return (List)preDestroyCallbacksMap.get(clazz);
+        return preDestroyCallbacksMap.get(clazz.getName());
     }
     
-    public List getPostConstructCallbacks (Object o)
+    public List<LifeCycleCallback> getPostConstructCallbacks (Object o)
     {
         if (o == null)
             return null;
         
         Class clazz = o.getClass();
-        return (List)postConstructCallbacksMap.get(clazz);
+        return postConstructCallbacksMap.get(clazz.getName());
     }
     
     /**
@@ -101,7 +100,7 @@ public class LifeCycleCallbackCollection
             return;
         
         Class clazz = o.getClass();
-        List callbacks = (List)postConstructCallbacksMap.get(clazz);
+        List<LifeCycleCallback> callbacks = postConstructCallbacksMap.get(clazz.getName());
         
         if (callbacks == null)
             return;
@@ -123,7 +122,7 @@ public class LifeCycleCallbackCollection
             return;
         
         Class clazz = o.getClass();
-        List callbacks = (List)preDestroyCallbacksMap.get(clazz);
+        List<LifeCycleCallback> callbacks = preDestroyCallbacksMap.get(clazz.getName());
         if (callbacks == null)
             return;
         

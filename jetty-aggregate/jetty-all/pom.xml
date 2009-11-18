@@ -75,12 +75,8 @@
       <scope>provided</scope>
       <exclusions>
         <exclusion>
-          <groupId>org.mortbay.jetty</groupId>
-           <artifactId>servlet-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>servlet-api</artifactId>
+	  <groupId>${servlet.spec.groupId}</groupId>
+	  <artifactId>${servlet.spec.artifactId}</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -97,8 +93,8 @@
       <scope>provided</scope>
       <exclusions>
         <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>servlet-api</artifactId>
+	  <groupId>${servlet.spec.groupId}</groupId>
+	  <artifactId>${servlet.spec.artifactId}</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.apache.geronimo.specs</groupId>
@@ -166,11 +162,11 @@
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>org.mortbay.jetty</groupId>
-      <artifactId>servlet-api</artifactId>
-      <scope>compile</scope>
-    </dependency>
+      <dependency>
+         <groupId>${servlet.spec.groupId}</groupId>
+         <artifactId>${servlet.spec.artifactId}</artifactId>
+         <scope>compile</scope>
+       </dependency>
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-jta_1.1_spec</artifactId>

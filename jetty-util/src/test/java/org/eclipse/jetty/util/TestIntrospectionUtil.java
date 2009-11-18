@@ -75,6 +75,7 @@ public class TestIntrospectionUtil extends TestCase
         void setDefaultD(Integer d) {}
     }
     
+    @Override
     public void setUp()
     throws Exception
     {

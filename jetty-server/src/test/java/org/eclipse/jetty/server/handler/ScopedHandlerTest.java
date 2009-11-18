@@ -109,6 +109,7 @@ public class ScopedHandlerTest extends TestCase
             _name=name;
         }
         
+        @Override
         public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             try
@@ -122,6 +123,7 @@ public class ScopedHandlerTest extends TestCase
             }
         }
         
+        @Override
         public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             try
@@ -146,6 +148,7 @@ public class ScopedHandlerTest extends TestCase
             _name=name;
         }
         
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             try

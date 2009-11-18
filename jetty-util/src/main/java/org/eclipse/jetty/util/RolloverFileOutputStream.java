@@ -275,6 +275,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void write (byte[] buf)
             throws IOException
      {
@@ -282,6 +283,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
      }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void write (byte[] buf, int off, int len)
             throws IOException
      {
@@ -291,6 +293,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
     /* ------------------------------------------------------------ */
     /** 
      */
+    @Override
     public void close()
         throws IOException
     {
@@ -312,6 +315,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
     /* ------------------------------------------------------------ */
     private class RollTask extends TimerTask
     {
+        @Override
         public void run()
         {
             try

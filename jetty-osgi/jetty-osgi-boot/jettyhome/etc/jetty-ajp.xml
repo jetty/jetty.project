@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure.dtd">
+
+<Configure id="Server" class="org.mortbay.jetty.Server">
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- Add a AJP listener on port 8009                           -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <Call name="addConnector">
+    <Arg>
+       <New class="org.mortbay.jetty.ajp.Ajp13SocketConnector">
+         <Set name="port">8009</Set>
+       </New>
+    </Arg>
+  </Call>
+
+</Configure>
+

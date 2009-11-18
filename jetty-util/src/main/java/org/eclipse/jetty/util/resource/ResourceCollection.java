@@ -179,6 +179,7 @@ public class ResourceCollection extends Resource
      * @param path The path segment to add
      * @return The contained resource (found first) in the collection of resources
      */
+    @Override
     public Resource addPath(String path) throws IOException, MalformedURLException
     {
         if(_resources==null)
@@ -272,12 +273,14 @@ public class ResourceCollection extends Resource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public boolean delete() throws SecurityException
     {
         throw new UnsupportedOperationException();
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public boolean exists()
     {
         if(_resources==null)
@@ -287,6 +290,7 @@ public class ResourceCollection extends Resource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public File getFile() throws IOException
     {
         if(_resources==null)
@@ -302,6 +306,7 @@ public class ResourceCollection extends Resource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public InputStream getInputStream() throws IOException
     {
         if(_resources==null)
@@ -317,6 +322,7 @@ public class ResourceCollection extends Resource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public String getName()
     {
         if(_resources==null)
@@ -332,6 +338,7 @@ public class ResourceCollection extends Resource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public OutputStream getOutputStream() throws IOException, SecurityException
     {
         if(_resources==null)
@@ -347,6 +354,7 @@ public class ResourceCollection extends Resource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public URL getURL()
     {
         if(_resources==null)
@@ -362,6 +370,7 @@ public class ResourceCollection extends Resource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isDirectory()
     {
         if(_resources==null)
@@ -371,6 +380,7 @@ public class ResourceCollection extends Resource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public long lastModified()
     {
         if(_resources==null)
@@ -386,6 +396,7 @@ public class ResourceCollection extends Resource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public long length()
     {
         return -1;
@@ -395,6 +406,7 @@ public class ResourceCollection extends Resource
     /**
      * @return The list of resource names(merged) contained in the collection of resources.
      */    
+    @Override
     public String[] list()
     {
         if(_resources==null)
@@ -412,6 +424,7 @@ public class ResourceCollection extends Resource
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void release()
     {
         if(_resources==null)

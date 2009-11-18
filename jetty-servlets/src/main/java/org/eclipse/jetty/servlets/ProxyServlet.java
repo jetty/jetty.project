@@ -124,9 +124,12 @@ public class ProxyServlet implements Servlet
             
             _client.start();
             
-            _context.setAttribute("org.eclipse.jetty.servlets."+_name+".Logger",_log);
-            _context.setAttribute("org.eclipse.jetty.servlets."+_name+".ThreadPool",_client.getThreadPool());
-            _context.setAttribute("org.eclipse.jetty.servlets."+_name+".HttpClient",_client);
+            if (_context!=null)
+            {
+                _context.setAttribute("org.eclipse.jetty.servlets."+_name+".Logger",_log);
+                _context.setAttribute("org.eclipse.jetty.servlets."+_name+".ThreadPool",_client.getThreadPool());
+                _context.setAttribute("org.eclipse.jetty.servlets."+_name+".HttpClient",_client);
+            }
         }
         catch (Exception e)
         {

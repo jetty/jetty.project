@@ -15,12 +15,9 @@ package org.eclipse.jetty.annotations;
 
 import java.util.List;
 
-import javax.annotation.security.RunAs;
-
 import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -37,27 +34,22 @@ public class RunAsAnnotationHandler implements AnnotationHandler
                             List<Value> values)
     {
         RunAsCollection runAsCollection = (RunAsCollection)_wac.getAttribute(RunAsCollection.RUNAS_COLLECTION);
-        Class clazz = null;
+      
         try
         {
-            clazz = Loader.loadClass(null, className);
-            if (!javax.servlet.Servlet.class.isAssignableFrom(clazz))
+            if (values != null && values.size() == 1)
             {
-                Log.debug("@RunAs annotation ignored on on-servlet class "+clazz.getName());
-                return;
-            }
-            RunAs runAs = (RunAs)clazz.getAnnotation(RunAs.class);
-            if (runAs != null)
-            {
-                String role = runAs.value();
+                String role = (String)values.get(0).getValue();
                 if (role != null)
                 {
                     org.eclipse.jetty.plus.annotation.RunAs ra = new org.eclipse.jetty.plus.annotation.RunAs();
-                    ra.setTargetClass(clazz);
+                    ra.setTargetClassName(className);
                     ra.setRoleName(role);
                     runAsCollection.add(ra);
                 }
             }
+            else
+                Log.warn("Bad value for @RunAs annotation on class "+className);
         }
         catch (Exception e)
         {

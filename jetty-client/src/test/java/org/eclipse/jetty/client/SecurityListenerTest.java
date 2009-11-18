@@ -60,6 +60,7 @@ public class SecurityListenerTest extends TestCase
     private Realm _jettyRealm;
     private static final String APP_CONTEXT = "localhost /";
 
+    @Override
     protected void setUp() throws Exception
     {
         startServer();
@@ -89,6 +90,7 @@ public class SecurityListenerTest extends TestCase
         _httpClient.setRealmResolver( new SimpleRealmResolver(_jettyRealm) );
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         stopServer();
@@ -122,26 +124,31 @@ public class SecurityListenerTest extends TestCase
 
             HttpExchange httpExchange=new HttpExchange()
             {
+                @Override
                 protected void onRequestCommitted()
                 {
                     // System.err.println("Request committed");
                 }
 
+                @Override
                 protected void onResponseStatus(Buffer version, int status, Buffer reason)
                 {
                     // System.err.println("Response Status: " + version+" "+status+" "+reason);
                 }
 
+                @Override
                 protected void onResponseHeader(Buffer name, Buffer value)
                 {
                     // System.err.println("Response header: " + name + " = " + value);
                 }
 
+                @Override
                 protected void onResponseContent(Buffer content)
                 {
                     // System.err.println("Response content:" + content);
                 }
 
+                @Override
                 protected void onResponseComplete()
                 {
                     // System.err.println("Response completed "+n);
@@ -201,6 +208,7 @@ public class SecurityListenerTest extends TestCase
         
         ContentExchange httpExchange = new ContentExchange()
         {
+            @Override
             protected void onResponseComplete() throws IOException
             {
                 super.onResponseComplete();
@@ -219,6 +227,7 @@ public class SecurityListenerTest extends TestCase
         barrier.reset();
         ContentExchange httpExchange2 = new ContentExchange()
         {
+            @Override
             protected void onResponseComplete() throws IOException
             {
                 super.onResponseComplete();

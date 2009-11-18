@@ -80,6 +80,7 @@ public abstract class Credential
             _cooked = cooked.startsWith(Crypt.__TYPE) ? cooked.substring(__TYPE.length()) : cooked;
         }
 
+        @Override
         public boolean check(Object credentials)
         {
             if (credentials instanceof char[])
@@ -125,6 +126,7 @@ public abstract class Credential
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public boolean check(Object credentials)
         {
             try

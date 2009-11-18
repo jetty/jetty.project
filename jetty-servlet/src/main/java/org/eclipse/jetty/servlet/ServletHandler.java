@@ -41,6 +41,7 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
@@ -230,18 +231,8 @@ public class ServletHandler extends ScopedHandler
             return null;
         return _servletPathMap.getMatch(pathInContext);
     }
-    
-    /* ------------------------------------------------------------ */
-	/** Whether there is a ServletHolder that matches this path
- 	* @param pathInContext Path within _context.
- 	* @return whether there is a ServletHolder that matches this path
- 	*/
- 	public boolean matchesPath(String pathInContext)
- 	{
- 	return _servletPathMap.containsMatch(pathInContext);
- 	}
 
- 	/* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     /**
      * @param uriInContext uri to get dispatcher for
      * @return A {@link RequestDispatcher dispatcher} wrapping the resource at <code>uriInContext</code>,
@@ -466,7 +457,15 @@ public class ServletHandler extends ScopedHandler
         {
             throw e;
         }
+        catch(RuntimeIOException e)
+        {
+            throw e;
+        }
         catch(ContinuationThrowable e)
+        {   
+            throw e;
+        }
+        catch(UpgradeConnectionException e)
         {   
             throw e;
         }
@@ -505,9 +504,12 @@ public class ServletHandler extends ScopedHandler
 
             // handle or log exception
             if (th instanceof HttpException)
-            {
                 throw (HttpException)th;
-            }
+            else if (th instanceof RuntimeIOException)
+                throw (RuntimeIOException)th;
+            else if (th instanceof EofException)
+                throw (EofException)th;
+
             else if (Log.isDebugEnabled())
             {
                 Log.warn(request.getRequestURI(), th); 
@@ -522,7 +524,6 @@ public class ServletHandler extends ScopedHandler
                 Log.warn(request.getRequestURI(),th);
             }
 
-            // TODO httpResponse.getHttpConnection().forceClose();
             if (!response.isCommitted())
             {
                 request.setAttribute(Dispatcher.ERROR_EXCEPTION_TYPE,th.getClass());
@@ -539,10 +540,7 @@ public class ServletHandler extends ScopedHandler
                     response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,th.getMessage());
             }
             else
-                if(Log.isDebugEnabled())Log.debug("Response already committed for handling "+th);
-            
-            if (th instanceof IOException)
-                throw (IOException)th;
+                Log.debug("Response already committed for handling "+th);
         }
         catch(Error e)
         {   
@@ -559,7 +557,7 @@ public class ServletHandler extends ScopedHandler
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,e.getMessage());
             }
             else
-                if(Log.isDebugEnabled())Log.debug("Response already committed for handling ",e);
+                Log.debug("Response already committed for handling ",e);
         }
     }
 

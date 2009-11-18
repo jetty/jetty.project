@@ -14,12 +14,10 @@
 package org.eclipse.jetty.continuation;
 
 import java.lang.reflect.Constructor;
+
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
-import javax.servlet.ServletResponseWrapper;
-
-import org.mortbay.util.ajax.WaitingContinuation;
 
 /* ------------------------------------------------------------ */
 /** ContinuationSupport.
@@ -45,7 +43,7 @@ public class ContinuationSupport
             if (servlet3)
             {
                 Class<? extends Continuation> s3c = ContinuationSupport.class.getClassLoader().loadClass("org.eclipse.jetty.continuation.Servlet3Continuation").asSubclass(Continuation.class);
-                s3cc=s3c.getConstructor(ServletRequest.class, ServletResponse.class);
+                s3cc=s3c.getConstructor(ServletRequest.class);
                 servlet3Support=true;
             }
         }
@@ -154,6 +152,7 @@ public class ContinuationSupport
      * @deprecated use {@link #getContinuation(ServletRequest)}
      * @return
      */
+    @Deprecated
     public static Continuation getContinuation(final ServletRequest request, final ServletResponse response)
     {
         return getContinuation(request);

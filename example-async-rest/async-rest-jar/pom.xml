@@ -15,11 +15,10 @@
       <artifactId>jetty-client</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.mortbay.jetty</groupId>
-      <artifactId>servlet-api</artifactId>
-      <version>3.0.PFD20090525</version>
-      <scope>provided</scope>
-    </dependency>
+      <dependency>
+         <groupId>${servlet.spec.groupId}</groupId>
+         <artifactId>${servlet.spec.artifactId}</artifactId>
+         <scope>provided</scope>
+       </dependency>
   </dependencies>
 </project>

@@ -28,6 +28,7 @@ import java.util.Set;
 import javax.servlet.DispatcherType;
 import javax.servlet.Servlet;
 import javax.servlet.UnavailableException;
+import javax.servlet.ServletRegistration;
 
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.security.ConstraintAware;
@@ -668,6 +669,7 @@ public class WebXmlProcessor
             holder.setName(servlet_name);
             _servlets = LazyList.add(_servlets, holder);
         }
+        ServletRegistration.Dynamic registration = holder.getRegistration();
 
         // init params
         Iterator iParamsIter = node.iterator("init-param");
@@ -676,7 +678,7 @@ public class WebXmlProcessor
             XmlParser.Node paramNode = (XmlParser.Node) iParamsIter.next();
             String pname = paramNode.getString("param-name", false, true);
             String pvalue = paramNode.getString("param-value", false, true);
-            holder.setInitParameter(pname, pvalue);
+            registration.setInitParameter(pname, pvalue);
         }
 
         String servlet_class = node.getString("servlet-class", false, true);
@@ -697,18 +699,18 @@ public class WebXmlProcessor
                 _hasJSP = false;
                 _jspServletClass = servlet_class = "org.eclipse.jetty.servlet.NoJspServlet";
             }
-            if (holder.getInitParameter("scratchdir") == null)
+            if (registration.getInitParameter("scratchdir") == null)
             {
                 File tmp = _context.getTempDirectory();
                 File scratch = new File(tmp, "jsp");
                 if (!scratch.exists()) scratch.mkdir();
-                holder.setInitParameter("scratchdir", scratch.getAbsolutePath());
+                registration.setInitParameter("scratchdir", scratch.getAbsolutePath());
 
-                if ("?".equals(holder.getInitParameter("classpath")))
+                if ("?".equals(registration.getInitParameter("classpath")))
                 {
                     String classpath = _context.getClassPath();
                     Log.debug("classpath=" + classpath);
-                    if (classpath != null) holder.setInitParameter("classpath", classpath);
+                    if (classpath != null) registration.setInitParameter("classpath", classpath);
                 }
             }
         }
@@ -730,7 +732,7 @@ public class WebXmlProcessor
             if (s.startsWith("t"))
             {
                 Log.warn("Deprecated boolean load-on-startup.  Please use integer");
-                holder.setInitOrder(1);
+                registration.setLoadOnStartup(1);
             }
             else
             {
@@ -744,7 +746,7 @@ public class WebXmlProcessor
                     Log.warn("Cannot parse load-on-startup " + s + ". Please use integer");
                     Log.ignore(e);
                 }
-                holder.setInitOrder(order);
+                registration.setLoadOnStartup(order);
             }
         }
 
@@ -770,12 +772,12 @@ public class WebXmlProcessor
         {
             String roleName = run_as.getString("role-name", false, true);
             if (roleName != null)
-                holder.setRunAsRole(roleName);
+                registration.setRunAsRole(roleName);
         }
 
         String async=node.getString("async-supported",false,true);
         if (async!=null)
-            holder.setAsyncSupported(async.length()==0||Boolean.valueOf(async));
+            registration.setAsyncSupported(async.length()==0||Boolean.valueOf(async));
 
         String timeout=node.getString("async-timeout",false,true);
         // TODO set it

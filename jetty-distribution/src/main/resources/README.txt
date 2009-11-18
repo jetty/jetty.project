@@ -18,11 +18,11 @@ JETTY DISTRIBUTION
 ==================
 
 This is the jetty-distribution module from Jetty @ eclipse 
-project is based on the Jetty modules from eclipse plus
+project and is based on the Jetty modules from eclipse plus
 dependencies that have been through the eclipse IP
 process and conditioning.  
 
-This distribution and it's dependencies are  provided under 
+This distribution and its dependencies are provided under 
 the terms and conditions of the Eclipse Foundation Software 
 User Agreement unless otherwise specified. 
 
@@ -33,7 +33,8 @@ Some modules (eg annotations) are missing dependencies
 which may be discovered by using the command
   mvn dependency:tree 
 within the source module and placing them in the
-lib/ext directory.
+lib/ext directory.  Alternately we recommend the jetty-hightide
+distribution for users that desire more third party integrations.
 
 
 JETTY HIGHTIDE
@@ -48,7 +49,7 @@ application server.
 
 MAVEN
 =====
-All Jetty artefacts are available as maven dependencies
+All Jetty artifacts are available as maven dependencies
 under the org.eclipse.jetty and org.mortbay.hightide group IDs
 
   http://repo1.maven.org/maven2/org/eclipse/jetty/

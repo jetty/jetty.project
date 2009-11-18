@@ -6,7 +6,6 @@ import java.util.EventListener;
 import javax.servlet.ServletRequestListener;
 
 
-
 /* ------------------------------------------------------------ */
 /** A Continuation Listener
  * <p>
@@ -35,4 +34,5 @@ public interface ContinuationListener extends EventListener
      * @param continuation
      */
     public void onTimeout(Continuation continuation);
+
 }

@@ -359,7 +359,7 @@ public class UrlEncoded extends MultiMap
                         break;
                         
                     case '+':
-                        buffer.append((char)' ');
+                        buffer.append(' ');
                         break;
                         
                     case '%':
@@ -492,15 +492,15 @@ public class UrlEncoded extends MultiMap
     public static void decodeTo(InputStream in, MultiMap map, String charset, int maxLength)
     throws IOException
     {
-        if (charset==null || StringUtil.__ISO_8859_1.equals(charset))
-        {
-            decode88591To(in,map,maxLength);
-            return;
-        }
-
-        if (StringUtil.__UTF8.equalsIgnoreCase(charset))
+        if (charset==null || StringUtil.__UTF8.equalsIgnoreCase(charset))
         {
             decodeUtf8To(in,map,maxLength);
+            return;
+        }
+        
+        if (StringUtil.__ISO_8859_1.equals(charset))
+        {
+            decode88591To(in,map,maxLength);
             return;
         }
 
@@ -858,6 +858,7 @@ public class UrlEncoded extends MultiMap
     /* ------------------------------------------------------------ */
     /** 
      */
+    @Override
     public Object clone()
     {
         return new UrlEncoded(this);

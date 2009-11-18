@@ -46,6 +46,13 @@ public class FauxContinuationTest extends ContinuationBase
         _servletHandler=servletContext.getServletHandler();
         ServletHolder holder=new ServletHolder(_servlet);
         _servletHandler.addServletWithMapping(holder,"/");
+        
+        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",0);
+        _filter.setInitParameter("debug","true");
+        _filter.setInitParameter("faux","true");
+        _server.start();
+        _port=_connector.getLocalPort();
+        
     }
 
     protected void tearDown() throws Exception
@@ -53,26 +60,92 @@ public class FauxContinuationTest extends ContinuationBase
         _server.stop();
     }
 
-    public void testFaux() throws Exception
+    public void testContinuation() throws Exception
     {
-        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        _filter.setInitParameter("debug","true");
-        _filter.setInitParameter("faux","true");
-        _server.start();
-        _port=_connector.getLocalPort();
-        
-        doit("FauxContinuation");
+        doNormal("FauxContinuation");
+    }
+    
+    public void testSleep() throws Exception
+    {
+        doSleep();
     }
 
-    public void testNoFauxDefaults() throws Exception
+    public void testSuspend() throws Exception
     {
-        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        _filter.setInitParameter("debug","true");
-        _server.start();
-        _port=_connector.getLocalPort();
-        
-        doit("AsyncContinuation");
+        doSuspend();
     }
+
+    public void testSuspendWaitResume() throws Exception
+    {
+        doSuspendWaitResume();
+    }
+
+    public void testSuspendResume() throws Exception
+    {
+        doSuspendResume();
+    }
+
+    public void testSuspendWaitComplete() throws Exception
+    {
+        doSuspendWaitComplete();
+    }
+
+    public void testSuspendComplete() throws Exception
+    {
+        doSuspendComplete();
+    }
+
+    public void testSuspendWaitResumeSuspendWaitResume() throws Exception
+    {
+        doSuspendWaitResumeSuspendWaitResume();
+    }
+    
+    public void testSuspendWaitResumeSuspendComplete() throws Exception
+    {
+        doSuspendWaitResumeSuspendComplete();
+    }
+
+    public void testSuspendWaitResumeSuspend() throws Exception
+    {
+        doSuspendWaitResumeSuspend();
+    }
+
+    public void testSuspendTimeoutSuspendResume() throws Exception
+    {
+        doSuspendTimeoutSuspendResume();
+    }
+
+    public void testSuspendTimeoutSuspendComplete() throws Exception
+    {
+        doSuspendTimeoutSuspendComplete();
+    }
+
+    public void testSuspendTimeoutSuspend() throws Exception
+    {
+        doSuspendTimeoutSuspend();
+    }
+
+    public void testSuspendThrowResume() throws Exception
+    {
+        doSuspendThrowResume();
+    }
+
+    public void testSuspendResumeThrow() throws Exception
+    {
+        doSuspendResumeThrow();
+    }
+
+    public void testSuspendThrowComplete() throws Exception
+    {
+        doSuspendThrowComplete();
+    }
+
+    public void testSuspendCompleteThrow() throws Exception
+    {
+        doSuspendCompleteThrow();
+    }
+    
+    
     
     protected String toString(InputStream in) throws IOException
     {

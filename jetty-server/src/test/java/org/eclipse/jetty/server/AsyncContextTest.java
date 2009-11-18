@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server;
@@ -34,6 +34,7 @@ public class AsyncContextTest extends TestCase
     protected SuspendHandler _handler = new SuspendHandler();
     protected LocalConnector _connector;
 
+    @Override
     protected void setUp() throws Exception
     {
         _connector = new LocalConnector();
@@ -42,6 +43,7 @@ public class AsyncContextTest extends TestCase
         _server.start();
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _server.stop();
@@ -50,7 +52,7 @@ public class AsyncContextTest extends TestCase
     public void testSuspendResume() throws Exception
     {
         String response;
-        
+
         _handler.setRead(0);
         _handler.setSuspendFor(1000);
         _handler.setResumeAfter(-1);
@@ -58,56 +60,56 @@ public class AsyncContextTest extends TestCase
         check("TIMEOUT",process(null));
 
         _handler.setSuspendFor(10000);
-        
+
         _handler.setResumeAfter(0);
         _handler.setCompleteAfter(-1);
         check("RESUMED",process(null));
-        
+
         _handler.setResumeAfter(100);
         _handler.setCompleteAfter(-1);
         check("RESUMED",process(null));
-        
+
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(0);
         check("COMPLETED",process(null));
-        
+
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(200);
-        check("COMPLETED",process(null));   
+        check("COMPLETED",process(null));
 
         _handler.setRead(-1);
-        
+
         _handler.setResumeAfter(0);
         _handler.setCompleteAfter(-1);
         check("RESUMED",process("wibble"));
-        
+
         _handler.setResumeAfter(100);
         _handler.setCompleteAfter(-1);
         check("RESUMED",process("wibble"));
-        
+
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(0);
         check("COMPLETED",process("wibble"));
-        
+
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(100);
         check("COMPLETED",process("wibble"));
-        
+
 
         _handler.setRead(6);
-        
+
         _handler.setResumeAfter(0);
         _handler.setCompleteAfter(-1);
         check("RESUMED",process("wibble"));
-        
+
         _handler.setResumeAfter(100);
         _handler.setCompleteAfter(-1);
         check("RESUMED",process("wibble"));
-        
+
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(0);
         check("COMPLETED",process("wibble"));
-        
+
         _handler.setResumeAfter(-1);
         _handler.setCompleteAfter(100);
         check("COMPLETED",process("wibble"));
@@ -118,31 +120,29 @@ public class AsyncContextTest extends TestCase
         assertEquals("HTTP/1.1 200 OK",response.substring(0,15));
         assertTrue(response.contains(content));
     }
-    
+
     public synchronized String process(String content) throws Exception
     {
         String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n";
-        
+
         if (content==null)
             request+="\r\n";
         else
             request+="Content-Length: "+content.length()+"\r\n" + "\r\n" + content;
 
-        _connector.reopen();
-        String response = _connector.getResponses(request);
-        return response;
+        return _connector.getResponses(request);
     }
-    
+
     private static class SuspendHandler extends HandlerWrapper
     {
         private int _read;
         private long _suspendFor=-1;
         private long _resumeAfter=-1;
         private long _completeAfter=-1;
-        
+
         public SuspendHandler()
         {}
-        
+
 
         public int getRead()
         {
@@ -184,8 +184,9 @@ public class AsyncContextTest extends TestCase
             _completeAfter = completeAfter;
         }
         
+        @Override
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
-        {            
+        {
             if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
             {
                 if (_read>0)
@@ -201,14 +202,15 @@ public class AsyncContextTest extends TestCase
                         b=in.read();
                 }
 
-                if (_suspendFor>0)
-                    baseRequest.setAsyncTimeout(_suspendFor);
-                baseRequest.addEventListener(__asyncListener);
                 final AsyncContext asyncContext = baseRequest.startAsync();
-                
+                asyncContext.addListener(__asyncListener);
+                if (_suspendFor>0)
+                    asyncContext.setTimeout(_suspendFor);
+
                 if (_completeAfter>0)
                 {
                     new Thread() {
+                        @Override
                         public void run()
                         {
                             try
@@ -233,10 +235,11 @@ public class AsyncContextTest extends TestCase
                     baseRequest.setHandled(true);
                     asyncContext.complete();
                 }
-                
+
                 if (_resumeAfter>0)
                 {
                     new Thread() {
+                        @Override
                         public void run()
                         {
                             try
@@ -274,15 +277,34 @@ public class AsyncContextTest extends TestCase
     
     private static AsyncListener __asyncListener = new AsyncListener()
     {
+
+        @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
+            // TODO Auto-generated method stub
+            
         }
 
+        @Override
+        public void onError(AsyncEvent event) throws IOException
+        {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public void onStartAsync(AsyncEvent event) throws IOException
+        {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
         public void onTimeout(AsyncEvent event) throws IOException
         {
-            event.getRequest().setAttribute("TIMEOUT",Boolean.TRUE);
-            event.getRequest().getAsyncContext().dispatch();
+            event.getSuppliedRequest().setAttribute("TIMEOUT",Boolean.TRUE);
+            event.getSuppliedRequest().getAsyncContext().dispatch();
         }
-        
+
     };
 }

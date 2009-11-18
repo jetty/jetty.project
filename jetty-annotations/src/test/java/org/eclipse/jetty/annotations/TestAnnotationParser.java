@@ -58,10 +58,25 @@ public class TestAnnotationParser extends TestCase
 
             }
 
-            public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
+            public void handleMethod(String className, String methodName, int access, String desc, String signature, String[] exceptions, String annotation,
                                      List<Value> values)
             {
-               assertEquals("org.eclipse.jetty.annotations.ClassA", className);
+                System.err.println("Sample annotated method : classname="+className+" methodName="+methodName+" access="+access+" desc="+desc+" signature="+signature);
+              
+                org.objectweb.asm.Type retType = org.objectweb.asm.Type.getReturnType(desc);
+                System.err.println("REturn type = "+retType);
+                org.objectweb.asm.Type[] params = org.objectweb.asm.Type.getArgumentTypes(desc);
+                if (params == null)
+                    System.err.println("No params");
+                else
+                    System.err.println(params.length+" params");
+                
+                if (exceptions == null)
+                    System.err.println("No exceptions");
+                else
+                    System.err.println(exceptions.length+" exceptions");
+                
+                assertEquals("org.eclipse.jetty.annotations.ClassA", className);
                assertTrue(methods.contains(methodName));
                assertEquals("org.eclipse.jetty.annotations.Sample", annotation);
             }

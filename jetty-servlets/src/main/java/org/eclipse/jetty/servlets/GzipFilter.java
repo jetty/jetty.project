@@ -135,7 +135,7 @@ public class GzipFilter extends UserAgentFilter
             }
             finally
             {
-                Continuation continuation = ContinuationSupport.getContinuation(request,response);
+                Continuation continuation = ContinuationSupport.getContinuation(request);
                 if (continuation.isSuspended() && continuation.isResponseWrapped())   
                 {
                     continuation.addContinuationListener(new ContinuationListener()

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import junit.framework.TestCase;
@@ -30,6 +29,7 @@ public class TimeoutTest extends TestCase
     /* 
      * @see junit.framework.TestCase#setUp()
      */
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
@@ -50,6 +50,7 @@ public class TimeoutTest extends TestCase
     /* 
      * @see junit.framework.TestCase#tearDown()
      */
+    @Override
     protected void tearDown() throws Exception
     {
         super.tearDown();
@@ -136,11 +137,9 @@ public class TimeoutTest extends TestCase
     public void testStress() throws Exception
     {
     	if ( !_stress )
-    	{
     		return;
-    	}
     	
-        final int LOOP=500;
+        final int LOOP=250;
         final boolean[] running = {true};
         final AtomicIntegerArray count = new AtomicIntegerArray( 3 );
 
@@ -151,6 +150,7 @@ public class TimeoutTest extends TestCase
         // Start a ticker thread that will tick over the timer frequently.
         Thread ticker = new Thread()
         {
+            @Override
             public void run()
             {
                 while (running[0])
@@ -181,6 +181,7 @@ public class TimeoutTest extends TestCase
             // 
             Thread th = new Thread()
             { 
+                @Override
                 public void run()
                 {
                     // count how many threads were started (should == LOOP)
@@ -189,6 +190,7 @@ public class TimeoutTest extends TestCase
                     // create a task for this thread
                     Timeout.Task task = new Timeout.Task()
                     {
+                        @Override
                         public void expired()
                         {       
                             // count the number of expires                           
@@ -247,9 +249,9 @@ public class TimeoutTest extends TestCase
             running[0]=false;
         }
         // give some time for test to stop
-        Thread.sleep(2000);
-        timeout.tick(System.currentTimeMillis());
         Thread.sleep(1000);
+        timeout.tick(System.currentTimeMillis());
+        Thread.sleep(500);
         
         // check the counts
         assertEquals("count threads", LOOP,count.get( 0 ));
