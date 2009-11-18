@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.client;
@@ -19,13 +19,11 @@ import java.io.OutputStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
-
 import org.eclipse.jetty.client.security.ProxyAuthorization;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
@@ -41,9 +39,6 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 
 /**
  * Functional testing for HttpExchange.
- *
- * 
- * 
  */
 public class HttpExchangeTest extends TestCase
 {
@@ -72,6 +67,12 @@ public class HttpExchangeTest extends TestCase
         _httpClient.stop();
         Thread.sleep(500);
         stopServer();
+    }
+
+    public void testResetNewExchange() throws Exception
+    {
+        HttpExchange exchange = new HttpExchange();
+        exchange.reset();
     }
 
     public void testPerf() throws Exception
@@ -211,12 +212,12 @@ public class HttpExchangeTest extends TestCase
         }
 
         assertTrue(complete.await(45,TimeUnit.SECONDS));
-            
+
         long elapsed=System.currentTimeMillis()-start;
-        // make windows-friendly ... System.currentTimeMillis() on windows is dope! 
+        // make windows-friendly ... System.currentTimeMillis() on windows is dope!
         if(elapsed>0)
             System.err.println(nb+"/"+_count+" c="+close+" rate="+(nb*1000/elapsed));
-        
+
         assertEquals("nb="+nb+" close="+close,0,latch.getCount());
     }
 
@@ -267,7 +268,7 @@ public class HttpExchangeTest extends TestCase
             assertTrue(result.indexOf("<title>Sun Microsystems</title>")>0);
             assertEquals(HttpExchange.STATUS_COMPLETED, status);
             assertEquals(HttpStatus.OK_200,httpExchange.getResponseStatus());
-            
+
     }
 
     public void testProxy() throws Exception
@@ -298,7 +299,7 @@ public class HttpExchangeTest extends TestCase
         }
     }
 
-    
+
     public void testReserveConnections () throws Exception
     {
        final HttpDestination destination = _httpClient.getDestination (new Address("localhost", _port), _scheme.equalsIgnoreCase("https://"));
@@ -312,20 +313,20 @@ public class HttpExchangeTest extends TestCase
            ex.setMethod(HttpMethods.GET);
            connections[i].send(ex);
        }
-      
+
        //try to get a connection, and only wait 500ms, as we have
        //already reserved the max, should return null
        org.eclipse.jetty.client.HttpConnection c = destination.reserveConnection(500);
        assertNull(c);
-       
+
        //unreserve first connection
        destination.returnConnection(connections[0], false);
-       
+
        //reserving one should now work
        c = destination.reserveConnection(500);
        assertNotNull(c);
-       
-        
+
+
     }
     public static void copyStream(InputStream in, OutputStream out)
     {
@@ -371,7 +372,7 @@ public class HttpExchangeTest extends TestCase
                     baseRequest.setHandled(true);
                     response.setStatus(200);
                     _count.incrementAndGet();
-                    
+
                     if (request.getServerName().equals("jetty.eclipse.org"))
                     {
                         // System.err.println("HANDLING Proxy");

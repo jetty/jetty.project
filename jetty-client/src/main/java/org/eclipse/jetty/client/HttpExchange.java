@@ -167,6 +167,7 @@ public class HttpExchange
                 case STATUS_START:
                     switch (newStatus)
                     {
+                        case STATUS_START:
                         case STATUS_WAITING_FOR_CONNECTION:
                         case STATUS_WAITING_FOR_COMMIT:
                         case STATUS_CANCELLING:
