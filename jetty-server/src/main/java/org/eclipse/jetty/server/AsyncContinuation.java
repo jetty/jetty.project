@@ -261,8 +261,15 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 case __IDLE:
                     _initial=true;
                     _state=__DISPATCHED;
-                    _lastAsyncListeners=null;
-                    _asyncListeners=null;
+                    if (_lastAsyncListeners!=null)
+                        _lastAsyncListeners.clear();
+                    if (_asyncListeners!=null)
+                        _asyncListeners.clear();
+                    else
+                    {
+                        _asyncListeners=_lastAsyncListeners;
+                        _lastAsyncListeners=null;
+                    }
                     return true;
                     
                 case __COMPLETING:
@@ -274,8 +281,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
                     
                 case __REDISPATCH:
                     _state=__REDISPATCHED;
-                    _lastAsyncListeners=null;
-                    _asyncListeners=null;
                     return true;
 
                 default:
@@ -310,24 +315,29 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 case __DISPATCHED:
                 case __REDISPATCHED:
                     _state=__ASYNCSTARTED;
+                    List<AsyncListener> recycle=_lastAsyncListeners;
+                    _lastAsyncListeners=_asyncListeners;
+                    _asyncListeners=recycle;
+                    if (_asyncListeners!=null)
+                        _asyncListeners.clear();
                     break;
 
                 default:
                     throw new IllegalStateException(this.getStatusString());
             }
-            
-            if (_lastAsyncListeners!=null)
+        }
+        
+        if (_lastAsyncListeners!=null)
+        {
+            for (AsyncListener listener : _lastAsyncListeners)
             {
-                for (AsyncListener listener : _lastAsyncListeners)
+                try
                 {
-                    try
-                    {
-                        listener.onStartAsync(_event);
-                    }
-                    catch(Exception e)
-                    {
-                        Log.warn(e);
-                    }
+                    listener.onStartAsync(_event);
+                }
+                catch(Exception e)
+                {
+                    Log.warn(e);
                 }
             }
         }
@@ -367,6 +377,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
                         _state=__UNCOMPLETED;
                         return true;
                     }
+                    
                     _initial=false;
                     _state=__REDISPATCHED;
                     return false; 
@@ -568,7 +579,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
                     throw new IllegalStateException(this.getStatusString());
             }
         }
-
         
         if (aListeners!=null)
         {
