@@ -40,7 +40,7 @@ import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.UncheckedIOException;
 import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -457,7 +457,7 @@ public class ServletHandler extends ScopedHandler
         {
             throw e;
         }
-        catch(RuntimeIOException e)
+        catch(UncheckedIOException e)
         {
             throw e;
         }
@@ -494,10 +494,10 @@ public class ServletHandler extends ScopedHandler
                 if (cause!=null)
                     th=cause;
             }
-            else if (th instanceof RuntimeIOException)
+            else if (th instanceof UncheckedIOException)
             {
                 Log.debug(th);
-                Throwable cause=(IOException)((RuntimeIOException)th).getCause();
+                Throwable cause=(IOException)((UncheckedIOException)th).getCause();
                 if (cause!=null)
                     th=cause;
             }
@@ -505,8 +505,8 @@ public class ServletHandler extends ScopedHandler
             // handle or log exception
             if (th instanceof HttpException)
                 throw (HttpException)th;
-            else if (th instanceof RuntimeIOException)
-                throw (RuntimeIOException)th;
+            else if (th instanceof UncheckedIOException)
+                throw (UncheckedIOException)th;
             else if (th instanceof EofException)
                 throw (EofException)th;
 

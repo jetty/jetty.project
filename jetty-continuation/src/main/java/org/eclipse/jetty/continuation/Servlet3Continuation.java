@@ -39,11 +39,13 @@ public class Servlet3Continuation implements Continuation
 
         public void onStartAsync(AsyncEvent event) throws IOException
         {
+            event.getAsyncContext().addListener(this);
         }
 
         public void onTimeout(AsyncEvent event) throws IOException
         {
             _initial=false;
+            event.getAsyncContext().dispatch();
         }
     };
 
@@ -56,7 +58,6 @@ public class Servlet3Continuation implements Continuation
     {
         _request=request;
     }
-    
 
     public void addContinuationListener(final ContinuationListener listener)
     {
@@ -69,10 +70,12 @@ public class Servlet3Continuation implements Continuation
 
             public void onError(AsyncEvent event) throws IOException
             {
+                listener.onComplete(Servlet3Continuation.this);
             }
 
             public void onStartAsync(AsyncEvent event) throws IOException
             {
+                event.getAsyncContext().addListener(this);
             }
 
             public void onTimeout(AsyncEvent event) throws IOException

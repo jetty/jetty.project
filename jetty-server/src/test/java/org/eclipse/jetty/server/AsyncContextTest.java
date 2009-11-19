@@ -470,6 +470,7 @@ public class AsyncContextTest extends TestCase
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
+            __completed.incrementAndGet();
         }
 
         @Override

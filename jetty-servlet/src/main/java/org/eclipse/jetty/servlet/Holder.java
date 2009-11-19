@@ -292,6 +292,8 @@ public class Holder extends AbstractLifeCycle
 
         public void setDescription(String description)
         {
+            if (Log.isDebugEnabled())
+                Log.debug(this+" is "+description);
         }
 
         public String getClassName()

@@ -44,7 +44,7 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.UncheckedIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
 import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
@@ -383,9 +383,6 @@ public class HttpConnection implements Connection
                 {
                     if (_request._async.isAsync())
                     {
-                        // TODO - handle the case of input being read for a 
-                        // suspended request.
-                        
                         Log.debug("async request",_request);
                         if (!_request._async.isComplete())
                             handleRequest();
@@ -518,6 +515,7 @@ public class HttpConnection implements Connection
         boolean error = false;
 
         String threadName=null;
+        Throwable async_exception=null;
         try
         {
             if (Log.isDebugEnabled())
@@ -575,12 +573,14 @@ public class HttpConnection implements Connection
                 }
                 catch (EofException e)
                 {
+                    async_exception=e;
                     Log.debug(e);
                     _request.setHandled(true);
                     error=true;
                 }
-                catch (RuntimeIOException e)
+                catch (UncheckedIOException e)
                 {
+                    async_exception=e;
                     Log.debug(e);
                     _request.setHandled(true);
                     error=true;
@@ -597,6 +597,8 @@ public class HttpConnection implements Connection
                     if (e instanceof ThreadDeath)
                         throw (ThreadDeath)e;
 
+                    async_exception=e;
+                    
                     error=true;
                     if (info==null)
                     {
@@ -624,7 +626,8 @@ public class HttpConnection implements Connection
 
             if (_request._async.isUncompleted())
             {
-                _request._async.doComplete();
+                
+                _request._async.doComplete(async_exception);
 
                 if (_expect100Continue)
                 {

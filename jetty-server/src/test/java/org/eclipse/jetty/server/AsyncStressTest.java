@@ -341,15 +341,12 @@ public class AsyncStressTest extends TestCase
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
-            // TODO Auto-generated method stub
             
         }
 
         @Override
         public void onStartAsync(AsyncEvent event) throws IOException
         {
-            // TODO Auto-generated method stub
-            
         }
     };
 }

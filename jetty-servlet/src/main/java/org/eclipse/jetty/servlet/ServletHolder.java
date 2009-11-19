@@ -638,14 +638,14 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
     /* -------------------------------------------------------- */
     private class SingleThreadedWrapper implements Servlet
     {
-        Stack _stack=new Stack();
+        Stack<Servlet> _stack=new Stack<Servlet>();
         
         public void destroy()
         {
             synchronized(this)
             {
                 while(_stack.size()>0)
-                    try { ((Servlet)_stack.pop()).destroy(); } catch (Exception e) { Log.warn(e); }
+                    try { (_stack.pop()).destroy(); } catch (Exception e) { Log.warn(e); }
             }
         }
 

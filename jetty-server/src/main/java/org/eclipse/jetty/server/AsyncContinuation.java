@@ -559,7 +559,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /* (non-Javadoc)
      * @see javax.servlet.ServletRequest#complete()
      */
-    protected void doComplete()
+    protected void doComplete(Throwable ex)
     {
         final List<ContinuationListener> cListeners;
         final List<AsyncListener> aListeners;
@@ -586,7 +586,14 @@ public class AsyncContinuation implements AsyncContext, Continuation
             {
                 try
                 {
-                    listener.onComplete(_event);
+                    if (ex!=null)
+                    {
+                        _event.getSuppliedRequest().setAttribute(Dispatcher.ERROR_EXCEPTION,ex);
+                        _event.getSuppliedRequest().setAttribute(Dispatcher.ERROR_MESSAGE,ex.getMessage());
+                        listener.onError(_event);
+                    }
+                    else
+                        listener.onComplete(_event);
                 }
                 catch(Exception e)
                 {

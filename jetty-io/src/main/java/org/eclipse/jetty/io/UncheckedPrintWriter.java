@@ -118,7 +118,7 @@ public class UncheckedPrintWriter extends PrintWriter
         catch (IOException ex) {
             Log.debug(ex);
             setError();
-            throw new RuntimeIOException(ex);
+            throw new UncheckedIOException(ex);
         }
     }
 
@@ -136,7 +136,7 @@ public class UncheckedPrintWriter extends PrintWriter
         catch (IOException ex) {
             Log.debug(ex);
             setError();
-            throw new RuntimeIOException(ex);
+            throw new UncheckedIOException(ex);
         }
     }
 
@@ -159,7 +159,7 @@ public class UncheckedPrintWriter extends PrintWriter
         catch (IOException ex) {
             Log.debug(ex);
             setError();
-            throw new RuntimeIOException(ex);
+            throw new UncheckedIOException(ex);
         }
     }
 
@@ -184,7 +184,7 @@ public class UncheckedPrintWriter extends PrintWriter
         catch (IOException ex) {
             Log.debug(ex);
             setError();
-            throw new RuntimeIOException(ex);
+            throw new UncheckedIOException(ex);
         }
     }
 
@@ -220,7 +220,7 @@ public class UncheckedPrintWriter extends PrintWriter
         catch (IOException ex) {
             Log.debug(ex);
             setError();
-            throw new RuntimeIOException(ex);
+            throw new UncheckedIOException(ex);
         }
     }
 
@@ -250,7 +250,7 @@ public class UncheckedPrintWriter extends PrintWriter
         catch (IOException ex) {
             Log.debug(ex);
             setError();
-            throw new RuntimeIOException(ex);
+            throw new UncheckedIOException(ex);
         }
     }
 
