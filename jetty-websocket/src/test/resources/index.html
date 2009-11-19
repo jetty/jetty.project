@@ -1,0 +1,17 @@
+<h1>WebSocket Test</h1>
+
+<script lang="javascript">
+  alert("testing");
+  
+  var ws = new WebSocket("ws://localhost:8080/","testp");
+ 
+  ws.onopen = function(evt) 
+  { 
+    alert("Conn opened"); 
+    ws.send("Hello World");
+  }
+
+  ws.onmessage = function(evt) { alert("onmessage: " + evt.data); }
+  ws.onclose = function(evt) { alert("Conn closed"); }
+ 
+</script>
