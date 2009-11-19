@@ -47,7 +47,7 @@ public class FauxContinuationTest extends ContinuationBase
         ServletHolder holder=new ServletHolder(_servlet);
         _servletHandler.addServletWithMapping(holder,"/");
         
-        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",0);
+        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",null);
         _filter.setInitParameter("debug","true");
         _filter.setInitParameter("faux","true");
         _server.start();

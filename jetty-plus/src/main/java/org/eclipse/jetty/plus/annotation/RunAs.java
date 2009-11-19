@@ -60,7 +60,9 @@ public class RunAs
             return;
         String className = holder.getClassName();
 
+        /*
         if (className.equals(_className))
             holder.setRunAsRole(_roleName);
+            */
     }
 }

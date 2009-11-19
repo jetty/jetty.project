@@ -193,7 +193,6 @@ public class TestServletAnnotations extends TestCase
             {}
         }
         
-<<<<<<< .working
         class RolesAllowedHandler implements AnnotationHandler
         {
 
@@ -281,47 +280,6 @@ public class TestServletAnnotations extends TestCase
       }
         parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new ServletAnnotationHandler());
         parser.registerAnnotationHandler("javax.servlet.annotation.MultipartConfig", new MultipartAnnotationHandler ());
-=======
-        
-        class ResourcesAnnotationHandler implements AnnotationHandler
-        {
-            public void handleClass (String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                    List<Value> values)
-            {
-                assertNotNull (values);
-                for (Value v : values)
-                {
-                    List list = (List)(v.getValue());
-                    for (Object o : list)
-                    {
-                        AnnotationParser.ListValue lv = (AnnotationParser.ListValue)o;
-                        List<Value> theValues = lv.getList();
-                        for (Value vv : theValues)
-                        {
-                            if ("name".equals((String)vv.getName()))
-                            {
-                                if (!"apple".equals((String)vv.getValue()) && !"banana".equals((String)vv.getValue()))
-                                    fail("Wrong name "+vv.getName());
-                            }
-                            else if ("mappedName".equals((String)vv.getName()))
-                                assertEquals("foo", (String)vv.getValue());
-                                    
-                        }           
-                    }
-                }  
-            }
-            public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
-                    List<Value> values)
-            {}
-            public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                    List<Value> values)
-            {}
-        }
-        
-      
-     
-        parser.registerAnnotationHandler("javax.annotation.Resources", new ResourcesAnnotationHandler());
->>>>>>> .merge-right.r1059
         parser.registerAnnotationHandler("javax.annotation.Resource", new ResourceAnnotationHandler ());
         parser.registerAnnotationHandler("javax.annotation.PostConstruct", new CallbackAnnotationHandler());
         parser.registerAnnotationHandler("javax.annotation.PreDestroy", new CallbackAnnotationHandler());
