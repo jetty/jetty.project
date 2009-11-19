@@ -41,6 +41,7 @@ jetty-7.0.1.v20091117 17 November 2009
  + 294345 Support for HTTP/301 + HTTP/302 response codes
  + CVE-2009-3555 Prevent SSL renegotiate for SSL vulnerability
  + 295421 Cannot reset() a newly created HttpExchange: IllegalStateException 0 => 0
+ + 295562 CrossOriginFilter does not work with default values in Chrome and Safari
 
 jetty-7.0.0.v20091005 5 October 2009
 291340 Race condition in onException() notifications

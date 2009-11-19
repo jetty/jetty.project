@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -128,7 +127,7 @@ public class CrossOriginFilter implements Filter
         allowedMethods.addAll(Arrays.asList(allowedMethodsConfig.split(",")));
 
         String allowedHeadersConfig = config.getInitParameter(ALLOWED_HEADERS_PARAM);
-        if (allowedHeadersConfig == null) allowedHeadersConfig = "X-Requested-With";
+        if (allowedHeadersConfig == null) allowedHeadersConfig = "X-Requested-With,Content-Type,Accept";
         allowedHeaders.addAll(Arrays.asList(allowedHeadersConfig.split(",")));
 
         String preflightMaxAgeConfig = config.getInitParameter(PREFLIGHT_MAX_AGE_PARAM);
@@ -265,7 +264,7 @@ public class CrossOriginFilter implements Filter
                 boolean headerAllowed = false;
                 for (String allowedHeader : allowedHeaders)
                 {
-                    if (header.equalsIgnoreCase(allowedHeader))
+                    if (header.trim().equalsIgnoreCase(allowedHeader.trim()))
                     {
                         headerAllowed = true;
                         break;
