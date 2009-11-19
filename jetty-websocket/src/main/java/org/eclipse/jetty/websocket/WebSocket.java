@@ -17,5 +17,6 @@ public interface WebSocket
         void sendMessage(byte frame,byte[] data) throws IOException;
         void sendMessage(byte frame,byte[] data, int offset, int length) throws IOException;
         void disconnect() throws IOException;
+        boolean isOpen();
     }
 }

@@ -64,15 +64,38 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         boolean more=true;
         
-        while (more)
+        try
         {
-            int flushed=_generator.flush();
-            int filled=_parser.parseNext();
-            
-            more = flushed>0 || filled>0 || !_parser.isBufferEmpty() || !_generator.isBufferEmpty();
+            while (more)
+            {
+                int flushed=_generator.flush();
+                int filled=_parser.parseNext();
+
+                more = flushed>0 || filled>0 || !_parser.isBufferEmpty() || !_generator.isBufferEmpty();
+                if (filled<0 || flushed<0)
+                    _endp.close();
+                
+                // System.err.println("flushed="+flushed+" filled="+filled+" more="+more+" endp="+_endp.isOpen());
+            }
+        }
+        catch(IOException e)
+        {
+            System.err.println(e);
+            throw e;
+        }
+        finally
+        {
+            // TODO - not really the best way
+            if (!_endp.isOpen())
+                _websocket.onDisconnect();
         }
     }
 
+    public boolean isOpen()
+    {
+        return _endp!=null&&_endp.isOpen();
+    }
+    
     public boolean isIdle()
     {
         return _parser.isBufferEmpty() && _generator.isBufferEmpty();
@@ -116,5 +139,4 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         _parser.fill(buffer);
     }
-
 }
