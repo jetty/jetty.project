@@ -49,7 +49,8 @@ public abstract class WebSocketServlet extends HttpServlet
         if ("WebSocket".equals(request.getHeader("Upgrade")) &&
             "HTTP/1.1".equals(request.getProtocol()))
         {
-            WebSocket websocket=doWebSocketConnect(request,request.getHeader("WebSocket-Protocol"));
+            String protocol=request.getHeader("WebSocket-Protocol");
+            WebSocket websocket=doWebSocketConnect(request,protocol);
             
             if (websocket!=null)
             {
@@ -59,6 +60,10 @@ public abstract class WebSocketServlet extends HttpServlet
 
                 response.setHeader("Upgrade","WebSocket");
                 response.addHeader("Connection","Upgrade");
+                response.addHeader("WebSocket-Origin",request.getScheme()+"://"+request.getServerName());
+                response.addHeader("WebSocket-Location","ws://"+request.getHeader("Host")+request.getRequestURI());
+                if (protocol!=null)
+                    response.addHeader("WebSocket-Protocol",protocol);
                 response.sendError(101,"Web Socket Protocol Handshake");
                 response.flushBuffer();
 
