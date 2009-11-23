@@ -485,6 +485,7 @@ public class HttpGenerator extends AbstractGenerator
                 HttpFields.Field field = fields.getField(f);
                 if (field==null)
                     continue;
+
                 switch (field.getNameOrdinal())
                 {
                     case HttpHeaders.CONTENT_LENGTH_ORDINAL:
@@ -506,7 +507,8 @@ public class HttpGenerator extends AbstractGenerator
                         break;
 
                     case HttpHeaders.TRANSFER_ENCODING_ORDINAL:
-                        if (_version == HttpVersions.HTTP_1_1_ORDINAL) transfer_encoding = field;
+                        if (_version == HttpVersions.HTTP_1_1_ORDINAL) 
+                            transfer_encoding = field;
                         // Do NOT add yet!
                         break;
 
@@ -565,6 +567,15 @@ public class HttpGenerator extends AbstractGenerator
                                 }
                                 
                                 break;
+                            }
+                            case HttpHeaderValues.UPGRADE_ORDINAL:
+                            {
+                                // special case for websocket connection ordering
+                                if (_method==null)
+                                {
+                                    field.put(_header);
+                                    continue;
+                                }
                             }
                             case HttpHeaderValues.CLOSE_ORDINAL:
                             {

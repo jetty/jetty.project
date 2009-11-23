@@ -73,6 +73,7 @@ public class WebSocketParser
         int total_filled=0;
 
         // Loop until an datagram call back or can't fill anymore
+        boolean progress=true;
         while(true)
         {
             int length=_buffer.length();
@@ -92,7 +93,7 @@ public class WebSocketParser
                 {
                     int filled=_endp.isOpen()?_endp.fill(_buffer):-1;
                     if (filled<=0)
-                        return total_filled>0?total_filled:-1;
+                        return total_filled;
                     total_filled+=filled;
                     length=_buffer.length();
                 }

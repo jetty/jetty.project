@@ -5,10 +5,12 @@ import java.io.IOException;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.log.Log;
 
 public class WebSocketConnection implements Connection, WebSocket.Outbound
 {
+    final Connector _connector;
     final EndPoint _endp;
     final WebSocketParser _parser;
     final WebSocketGenerator _generator;
@@ -16,8 +18,9 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     final WebSocket _websocket;
     final int _maxIdleTimeMs=30000;
     
-    public WebSocketConnection(WebSocketBuffers buffers, EndPoint endpoint, long timestamp, WebSocket websocket)
+    public WebSocketConnection(Connector connector, WebSocketBuffers buffers, EndPoint endpoint, long timestamp, WebSocket websocket)
     {
+        _connector=connector;
         _endp = endpoint;
         _timestamp = timestamp;
         _websocket = websocket;
@@ -72,21 +75,28 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
                 int filled=_parser.parseNext();
 
                 more = flushed>0 || filled>0 || !_parser.isBufferEmpty() || !_generator.isBufferEmpty();
-                if (filled<0 || flushed<0)
-                    _endp.close();
                 
-                // System.err.println("flushed="+flushed+" filled="+filled+" more="+more+" endp="+_endp.isOpen());
+                // System.err.println("flushed="+flushed+" filled="+filled+" more="+more+" p.e="+_parser.isBufferEmpty()+" g.e="+_generator.isBufferEmpty());
+                
+                if (filled<0 || flushed<0)
+                {
+                    _endp.close();
+                    break;
+                }
+                
             }
         }
         catch(IOException e)
         {
-            System.err.println(e);
+            e.printStackTrace();
             throw e;
         }
         finally
         {
-            // TODO - not really the best way
-            if (!_endp.isOpen())
+            if (_endp.isOpen())
+                _connector.persist(_endp);
+            else
+                // TODO - not really the best way
                 _websocket.onDisconnect();
         }
     }
@@ -115,24 +125,34 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         _generator.addFrame(frame,content,_maxIdleTimeMs);
         _generator.flush();
+        _connector.persist(_endp);
     }
 
     public void sendMessage(byte frame, byte[] content) throws IOException
     {
         _generator.addFrame(frame,content,_maxIdleTimeMs);
         _generator.flush();
+        _connector.persist(_endp);
     }
 
     public void sendMessage(byte frame, byte[] content, int offset, int length) throws IOException
     {
         _generator.addFrame(frame,content,offset,length,_maxIdleTimeMs);
         _generator.flush();
+        _connector.persist(_endp);
     }
 
-    public void disconnect() throws IOException
+    public void disconnect()
     {
-        _generator.flush(_maxIdleTimeMs);
-        _endp.close();
+        try
+        {
+            _generator.flush(_maxIdleTimeMs);
+            _endp.close();
+        }
+        catch(IOException e)
+        {
+            Log.ignore(e);
+        }
     }
 
     public void fill(Buffer buffer)

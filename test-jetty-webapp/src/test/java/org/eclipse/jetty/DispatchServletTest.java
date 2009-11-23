@@ -11,13 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // ========================================================================
-package com.acme;
+package org.eclipse.jetty;
 
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.testing.ServletTester;
+
+import com.acme.DispatchServlet;
 
 /**
  * Simple tests against DispatchServlet.

@@ -32,9 +32,6 @@ import org.eclipse.jetty.util.thread.Timeout;
 /* ------------------------------------------------------------ */
 /**
  * An Endpoint that can be scheduled by {@link SelectorManager}.
- * 
- * 
- *
  */
 public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, AsyncEndPoint, ConnectedEndPoint
 {

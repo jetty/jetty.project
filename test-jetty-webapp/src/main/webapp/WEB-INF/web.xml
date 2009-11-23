@@ -176,6 +176,17 @@
     <url-pattern>/chat/*</url-pattern>
   </servlet-mapping>
   
+  <servlet>
+    <servlet-name>WSChat</servlet-name>
+    <servlet-class>com.acme.WebSocketChatServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>WSChat</servlet-name>
+    <url-pattern>/ws/*</url-pattern>
+  </servlet-mapping>
+  
   
   <servlet>
     <servlet-name>Rewrite</servlet-name>

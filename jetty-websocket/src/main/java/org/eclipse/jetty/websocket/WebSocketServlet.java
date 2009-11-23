@@ -15,19 +15,19 @@ import org.eclipse.jetty.server.HttpConnection;
 
 /* ------------------------------------------------------------ */
 /**
- * Servlet to ugrade connections to WebSocket
+ * Servlet to upgrade connections to WebSocket
  * <p>
  * The request must have the correct upgrade headers, else it is
  * handled as a normal servlet request.
  * <p>
  * The initParameter "bufferSize" can be used to set the buffer size,
  * which is also the max frame byte size (default 8192).
+ * 
  */
 public abstract class WebSocketServlet extends HttpServlet
 {
     WebSocketBuffers _buffers;
        
-    
     /* ------------------------------------------------------------ */
     /**
      * @see javax.servlet.GenericServlet#init()
@@ -56,12 +56,17 @@ public abstract class WebSocketServlet extends HttpServlet
             {
                 HttpConnection http = HttpConnection.getCurrentConnection();
                 ConnectedEndPoint endp = (ConnectedEndPoint)http.getEndPoint();
-                WebSocketConnection connection = new WebSocketConnection(_buffers,endp,http.getTimeStamp(),websocket);
+                WebSocketConnection connection = new WebSocketConnection(http.getConnector(),_buffers,endp,http.getTimeStamp(),websocket);
 
+                String uri=request.getRequestURI();
+                String host=request.getHeader("Host");
+                String origin=request.getHeader("Origin");
+                origin=checkOrigin(request,host,origin);
+                
                 response.setHeader("Upgrade","WebSocket");
                 response.addHeader("Connection","Upgrade");
-                response.addHeader("WebSocket-Origin",request.getScheme()+"://"+request.getServerName());
-                response.addHeader("WebSocket-Location","ws://"+request.getHeader("Host")+request.getRequestURI());
+                response.addHeader("WebSocket-Origin",origin);
+                response.addHeader("WebSocket-Location","ws://"+host+uri);
                 if (protocol!=null)
                     response.addHeader("WebSocket-Protocol",protocol);
                 response.sendError(101,"Web Socket Protocol Handshake");
@@ -80,6 +85,13 @@ public abstract class WebSocketServlet extends HttpServlet
         }
         else
             super.service(request,response);
+    }
+
+    protected String checkOrigin(HttpServletRequest request, String host, String origin)
+    {
+        if (origin==null)
+            origin=host;
+        return origin;
     }
     
     abstract protected WebSocket doWebSocketConnect(HttpServletRequest request,String protocol);

@@ -42,7 +42,8 @@ public class HttpHeaderValues extends BufferCache
         PROCESSING="102-processing",
         TE="TE",
         BYTES="bytes",
-        NO_CACHE="no-cache";
+        NO_CACHE="no-cache",
+        UPGRADE="Upgrade";
 
     public final static int
         CLOSE_ORDINAL=1,
@@ -54,7 +55,8 @@ public class HttpHeaderValues extends BufferCache
         PROCESSING_ORDINAL=7,
         TE_ORDINAL=8,
         BYTES_ORDINAL=9,
-        NO_CACHE_ORDINAL=10;
+        NO_CACHE_ORDINAL=10,
+        UPGRADE_ORDINAL=11;
     
     public final static HttpHeaderValues CACHE= new HttpHeaderValues();
 
@@ -68,7 +70,8 @@ public class HttpHeaderValues extends BufferCache
         PROCESSING_BUFFER=CACHE.add(PROCESSING, PROCESSING_ORDINAL),
         TE_BUFFER=CACHE.add(TE,TE_ORDINAL),
         BYTES_BUFFER=CACHE.add(BYTES,BYTES_ORDINAL),
-        NO_CACHE_BUFFER=CACHE.add(NO_CACHE,NO_CACHE_ORDINAL);
+        NO_CACHE_BUFFER=CACHE.add(NO_CACHE,NO_CACHE_ORDINAL),
+        UPGRADE_BUFFER=CACHE.add(UPGRADE,UPGRADE_ORDINAL);
         
     static
     {  
