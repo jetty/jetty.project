@@ -294,5 +294,28 @@ public class StringMapTest extends TestCase
         assertEquals("{abc=0}",m1.toString());
         assertTrue(m5.toString().indexOf("abc=2")>0);
     }
+    
+    
+    public void testIgnoreCase()
+    {
+        StringMap map = new StringMap(true);
+        map.put("POST","1");
+        map.put("HEAD","2");
+        map.put("PUT","3");
+        map.put("OPTIONS","4");
+        map.put("DELETE","5");
+        map.put("TRACE","6");
+        map.put("CONNECT","7");
+        map.put("Upgrade","8");
+        
+        assertEquals("1",map.get("POST"));
+        assertEquals("1",map.get("pOST"));
+        assertEquals("1",map.get("Post"));
+        
+        assertEquals("8",map.get("UPGRADE"));
+        assertEquals("8",map.get("Upgrade"));
+        assertEquals("8",map.get("upgrade"));
+        
+    }
 
 }

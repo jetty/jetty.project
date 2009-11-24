@@ -135,9 +135,6 @@ public class StringMap extends AbstractMap implements Externalizable
             return oldValue;
         }
         
-        if (_ignoreCase)
-            key=key.toUpperCase();
-        
         Node node = _root;
         int ni=-1;
         Node prev = null;

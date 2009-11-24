@@ -5,9 +5,11 @@ import java.util.List;
 
 import junit.framework.TestCase;
 
+import org.eclipse.jetty.http.HttpHeaderValues;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.util.StringUtil;
 
 
@@ -34,6 +36,10 @@ public class WebSocketParserTest extends TestCase
         _endp.setIn(_in);
     }
 
+    public void testCache() throws Exception
+    {
+        assertEquals(HttpHeaderValues.UPGRADE_ORDINAL ,((CachedBuffer)HttpHeaderValues.CACHE.lookup("Upgrade")).getOrdinal());
+    }
     
     public void testOneUtf8() throws Exception
     {

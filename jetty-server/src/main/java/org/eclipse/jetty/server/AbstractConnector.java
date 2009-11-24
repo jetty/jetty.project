@@ -256,22 +256,42 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the maxIdleTime.
+     * @return Returns the maxIdleTime when resources are low.
      */
-    public int getLowResourceMaxIdleTime()
+    public int getLowResourcesMaxIdleTime()
     {
         return _lowResourceMaxIdleTime;
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * @param maxIdleTime The maxIdleTime to set.
+     * @param maxIdleTime The maxIdleTime to set when resources are low.
      */
-    public void setLowResourceMaxIdleTime(int maxIdleTime)
+    public void setLowResourcesMaxIdleTime(int maxIdleTime)
     {
         _lowResourceMaxIdleTime = maxIdleTime;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the maxIdleTime when resources are low.
+     * @deprecated
+     */
+    public final int getLowResourceMaxIdleTime()
+    {
+        return getLowResourcesMaxIdleTime();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param maxIdleTime The maxIdleTime to set when resources are low.
+     * @deprecated
+     */
+    public final void setLowResourceMaxIdleTime(int maxIdleTime)
+    {
+        setLowResourcesMaxIdleTime(maxIdleTime);
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the soLingerTime.
