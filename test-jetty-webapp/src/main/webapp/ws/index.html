@@ -42,8 +42,8 @@
         _onmessage: function(m) {
           if (m.data){
             var c=m.data.indexOf(':');
-            var from=m.data.substring(0,c);
-            var text=m.data.substring(c+1);
+            var from=m.data.substring(0,c).replace('<','&lt;').replace('>','&gt;');
+            var text=m.data.substring(c+1).replace('<','&lt;').replace('>','&gt;');
             
             var chat=$('chat');
             var spanFrom = document.createElement('span');
