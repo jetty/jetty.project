@@ -211,6 +211,8 @@
     configure settings.xml for jetty.eclipse.website server entry
     > mvn -Paggregate-site javadoc:aggregate jxr:jxr
     > mvn -N site:deploy
+    or
+    > mvn -N site:sshdeploy     (for ssh users w/passphrase and ssh-agent)
    -->
   <profiles>
     <profile>
