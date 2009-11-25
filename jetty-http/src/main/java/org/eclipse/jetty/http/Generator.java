@@ -90,6 +90,8 @@ public interface Generator
     void setContentLength(long length);
     
     void setPersistent(boolean persistent);
+
+    void setDate(Buffer timeStampBuffer);
     
 
 }

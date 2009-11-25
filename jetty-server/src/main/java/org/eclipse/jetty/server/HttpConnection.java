@@ -963,7 +963,7 @@ public class HttpConnection implements Connection
                     _generator.setHead(_head);
 
                     if (_server.getSendDateHeader())
-                        _responseFields.put(HttpHeaders.DATE_BUFFER, _request.getTimeStampBuffer(),_request.getTimeStamp());
+                        _generator.setDate(_request.getTimeStampBuffer());
 
                     if (!_host)
                     {

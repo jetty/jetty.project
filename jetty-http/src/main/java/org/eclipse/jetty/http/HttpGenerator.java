@@ -469,6 +469,14 @@ public class HttpGenerator extends AbstractGenerator
         }
         
         // Add headers
+        if (_status>=200 && _date!=null)
+        {
+            _header.put(HttpHeaders.DATE_BUFFER);
+            _header.put((byte)':');
+            _header.put((byte)' ');
+            _header.put(_date);
+            _header.put(CRLF);
+        }
 
         // key field values
         HttpFields.Field content_length = null;
