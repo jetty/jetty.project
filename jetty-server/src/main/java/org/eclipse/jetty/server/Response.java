@@ -1018,12 +1018,6 @@ public class Response implements HttpServletResponse
                 }
             }
         }
-
-        if (_connection.getConnector().getServer().getSendDateHeader())
-        {
-            Request request=_connection.getRequest();
-            response_fields.put(HttpHeaders.DATE_BUFFER, request.getTimeStampBuffer(),request.getTimeStamp());
-        }
     }
     
     /* ------------------------------------------------------------ */

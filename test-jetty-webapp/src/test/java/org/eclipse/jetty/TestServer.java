@@ -39,6 +39,7 @@ public class TestServer
         System.setProperty("jetty.home",jetty_home);
 
         Server server = new Server();
+        server.setSendDateHeader(true);
         
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());

@@ -69,6 +69,8 @@ public abstract class AbstractGenerator implements Generator
     protected Buffer _buffer; // Buffer for copy of passed _content
     protected Buffer _content; // Buffer passed to addContent
     
+    protected Buffer _date;
+    
     private boolean _sendServerVersion;
 
     
@@ -105,6 +107,7 @@ public abstract class AbstractGenerator implements Generator
         _close = false;
         _contentWritten = 0;
         _contentLength = HttpTokens.UNKNOWN_CONTENT;
+        _date = null;
 
         // always return the buffer
         if (_buffer!=null)
@@ -278,6 +281,15 @@ public abstract class AbstractGenerator implements Generator
         return _version;
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.Generator#setDate(org.eclipse.jetty.io.Buffer)
+     */
+    public void setDate(Buffer timeStampBuffer)
+    {
+        _date=timeStampBuffer;
+    }
+
     /* ------------------------------------------------------------ */
     /**
      */
