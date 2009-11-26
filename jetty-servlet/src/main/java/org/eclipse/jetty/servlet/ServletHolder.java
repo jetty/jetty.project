@@ -53,7 +53,7 @@ import org.eclipse.jetty.util.log.Log;
  *
  * 
  */
-public class ServletHolder extends Holder implements UserIdentity.Scope, Comparable
+public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope, Comparable
 {
     /* ---------------------------------------------------------------- */
     private int _initOrder;
@@ -417,7 +417,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
         try
         {
             if (_servlet==null)
-                _servlet=(Servlet)newInstance();
+                _servlet=newInstance();
             if (_config==null)
                 _config=new Config();
 
@@ -667,7 +667,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
                 {
                     try
                     {
-                        Servlet s = (Servlet) newInstance();
+                        Servlet s = newInstance();
                         s = getServletHandler().customizeServlet(s);
                         s.init(config);
                         _stack.push(s);
@@ -695,7 +695,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
                 {
                     try
                     {
-                        s = (Servlet) newInstance();
+                        s = newInstance();
                         s = getServletHandler().customizeServlet(s);
                         s.init(_config);
                     }
@@ -726,7 +726,30 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
                 }
             }
         }
-        
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return
+     * @throws ServletException
+     * @throws IllegalAccessException
+     * @throws InstantiationException
+     */
+    protected Servlet newInstance() throws ServletException, IllegalAccessException, InstantiationException
+    {
+        try
+        {
+            return getServletHandler().getServletContext().createServlet(getHeldClass());
+        }
+        catch (ServletException se)
+        {
+            Throwable cause = se.getRootCause();
+            if (cause instanceof InstantiationException)
+                throw (InstantiationException)cause;
+            if (cause instanceof IllegalAccessException)
+                throw (IllegalAccessException)cause;
+            throw se;
+        }
     }
 }
 

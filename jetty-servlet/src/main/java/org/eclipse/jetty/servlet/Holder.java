@@ -34,9 +34,9 @@ import org.eclipse.jetty.util.log.Log;
 /** 
  * 
  */
-public class Holder extends AbstractLifeCycle 
+public class Holder<T> extends AbstractLifeCycle 
 {
-    protected transient Class _class;
+    protected transient Class<? extends T> _class;
     protected String _className;
     protected String _displayName;
     protected Map<String,String> _initParams;
@@ -51,7 +51,7 @@ public class Holder extends AbstractLifeCycle
     {}
 
     /* ---------------------------------------------------------------- */
-    protected Holder(Class held)
+    protected Holder(Class<? extends T> held)
     {
         _class=held;
         if (held!=null)
@@ -86,6 +86,7 @@ public class Holder extends AbstractLifeCycle
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void doStop()
         throws Exception
     {
@@ -100,7 +101,7 @@ public class Holder extends AbstractLifeCycle
     }
     
     /* ------------------------------------------------------------ */
-    public Class getHeldClass()
+    public Class<? extends T> getHeldClass()
     {
         return _class;
     }
@@ -149,16 +150,6 @@ public class Holder extends AbstractLifeCycle
     }
     
     /* ------------------------------------------------------------ */
-    public synchronized Object newInstance()
-        throws InstantiationException,
-               IllegalAccessException
-    {
-        if (_class==null)
-            throw new InstantiationException("!"+_className);
-        return _class.newInstance();
-    }
-
-    /* ------------------------------------------------------------ */
     public void destroyInstance(Object instance)
     throws Exception
     {
@@ -178,7 +169,7 @@ public class Holder extends AbstractLifeCycle
     /**
      * @param className The className to set.
      */
-    public void setHeldClass(Class held)
+    public void setHeldClass(Class<? extends T> held)
     {
         _class=held;
         _className = held!=null?held.getName():null;

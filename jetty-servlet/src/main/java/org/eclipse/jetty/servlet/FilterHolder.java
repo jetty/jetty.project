@@ -23,6 +23,7 @@ import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
 import javax.servlet.FilterRegistration;
+import javax.servlet.ServletException;
 
 import org.eclipse.jetty.util.log.Log;
 
@@ -30,7 +31,7 @@ import org.eclipse.jetty.util.log.Log;
 /** 
  * 
  */
-public class FilterHolder extends Holder
+public class FilterHolder extends Holder<Filter>
 {    
     /* ------------------------------------------------------------ */
     private transient Filter _filter;
@@ -60,6 +61,7 @@ public class FilterHolder extends Holder
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void doStart()
         throws Exception
     {
@@ -74,7 +76,21 @@ public class FilterHolder extends Holder
         }
 
         if (_filter==null)
-            _filter=(Filter)newInstance();
+        {
+            try
+            {
+                _filter=_servletHandler.getServletContext().createFilter(getHeldClass());
+            }
+            catch (ServletException se)
+            {
+                Throwable cause = se.getRootCause();
+                if (cause instanceof InstantiationException)
+                    throw (InstantiationException)cause;
+                if (cause instanceof IllegalAccessException)
+                    throw (IllegalAccessException)cause;
+                throw se;
+            }
+        }
         
         _filter = getServletHandler().customizeFilter(_filter);
         
@@ -83,6 +99,7 @@ public class FilterHolder extends Holder
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doStop()
         throws Exception
     {      
@@ -105,8 +122,9 @@ public class FilterHolder extends Holder
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void destroyInstance (Object o)
-    throws Exception
+        throws Exception
     {
         if (o==null)
             return;

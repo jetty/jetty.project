@@ -69,7 +69,7 @@ public class ServletContextHandler extends ContextHandler
     protected SecurityHandler _securityHandler;
     protected ServletHandler _servletHandler;
     protected int _options;
-    protected Injector _injector;
+    protected Decorator _decorator;
     
     /* ------------------------------------------------------------ */
     public ServletContextHandler()
@@ -328,20 +328,20 @@ public class ServletContextHandler extends ContextHandler
 
     /* ------------------------------------------------------------ */
     /**
-     * @return The inject used to resource inject new Filters, Servlets and EventListeners
+     * @return The decorator used to resource inject new Filters, Servlets and EventListeners
      */
-    public Injector getInjector()
+    public Decorator getDecorator()
     {
-        return _injector;
+        return _decorator;
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * @param injector The inject used to resource inject new Filters, Servlets and EventListeners
+     * @param decorator The inject used to resource inject new Filters, Servlets and EventListeners
      */
-    public void setInjector(Injector injector)
+    public void setDecorator(Decorator decorator)
     {
-        _injector = injector;
+        _decorator = decorator;
     }
 
     /* ------------------------------------------------------------ */
@@ -484,8 +484,8 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T f = c.newInstance();
-                if (_injector!=null)
-                    f=_injector.injectFilter(f);
+                if (_decorator!=null)
+                    f=_decorator.injectFilter(f);
                 return f;
             }
             catch (InstantiationException e)
@@ -505,8 +505,8 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T s = c.newInstance();
-                if (_injector!=null)
-                    s=_injector.injectServlet(s);
+                if (_decorator!=null)
+                    s=_decorator.injectServlet(s);
                 return s;
             }
             catch (InstantiationException e)
@@ -630,8 +630,8 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T l = super.createListener(clazz);
-                if (_injector!=null)
-                    l=_injector.injectListener(l);
+                if (_decorator!=null)
+                    l=_decorator.injectListener(l);
                 return l;
             }
             catch(ServletException e)
@@ -655,7 +655,7 @@ public class ServletContextHandler extends ContextHandler
      
     }
     
-    public interface Injector
+    public interface Decorator
     {
         public <T extends Filter> T injectFilter(T filter) throws ServletException;
         public <T extends Servlet> T injectServlet(T servlet) throws ServletException;

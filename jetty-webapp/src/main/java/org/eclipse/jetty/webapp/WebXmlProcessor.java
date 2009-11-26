@@ -27,6 +27,7 @@ import java.util.Set;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Servlet;
+import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.ServletRegistration;
 
@@ -827,9 +828,21 @@ public class WebXmlProcessor
     }
 
     /* ------------------------------------------------------------ */
-    protected Object newListenerInstance(Class clazz) throws InstantiationException, IllegalAccessException
+    protected Object newListenerInstance(Class<?extends EventListener> clazz) throws ServletException, InstantiationException, IllegalAccessException
     {
-        return clazz.newInstance();
+        try
+        {
+            return _context.getServletContext().createListener(clazz);
+        }
+        catch (ServletException se)
+        {
+            Throwable cause = se.getRootCause();
+            if (cause instanceof InstantiationException)
+                throw (InstantiationException)cause;
+            if (cause instanceof IllegalAccessException)
+                throw (IllegalAccessException)cause;
+            throw se;
+        }
     }
 
     /* ------------------------------------------------------------ */
