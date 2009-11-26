@@ -1,3 +1,6 @@
+jetty-7.0.2-SNAPSHOT
+ + JSON parses NaN as null
+
 jetty-7.0.1.v20091125 25 November 2009
  + 274251 DefaultServlet supports exact match mode.
  + 288401 HttpExchange.cancel() Method Unimplemented

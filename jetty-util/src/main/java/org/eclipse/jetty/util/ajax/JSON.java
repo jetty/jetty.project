@@ -784,7 +784,10 @@ public class JSON
                     case 'u':
                         complete("undefined",source);
                         return null;
-
+                    case 'N':
+                        complete("NaN",source);
+                        return null;
+                        
                     case '/':
                         comment_state=1;
                         break;

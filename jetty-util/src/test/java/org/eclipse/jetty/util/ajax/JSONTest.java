@@ -40,7 +40,9 @@ public class JSONTest extends TestCase
     "\"empty\" : {}  ," +
     "\"map\" : {\"a\":-1.0e2}  ," +
     "\"array\" : [\"a\",-1.0e2,[],null,true,false]  ," +
-    "\"w0\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle0\",\"nested\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle1\",\"nested\":null,\"number\":-101},\"number\":100}" +
+    "\"w0\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle0\",\"nested\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle1\",\"nested\":null,\"number\":-101},\"number\":100}," +
+    "\"NaN\": NaN," + 
+    "\"undefined\": undefined," +
     "}";
     
     public void testToString()
@@ -108,8 +110,6 @@ public class JSONTest extends TestCase
         JSON.registerConvertor(Gadget.class,new JSONObjectConvertor(false));
     }
 
-
-
     /* ------------------------------------------------------------ */
     public void testParse()
     {
@@ -121,12 +121,13 @@ public class JSONTest extends TestCase
         assertTrue(map.get("w0") instanceof Woggle);
         assertTrue(((Woggle)map.get("w0")).nested instanceof Woggle);
         assertEquals(-101,((Woggle)((Woggle)map.get("w0")).nested).number);
-        
+        assertTrue(map.containsKey("NaN"));
+        assertEquals(null,map.get("NaN"));
+        assertTrue(map.containsKey("undefined"));
+        assertEquals(null,map.get("undefined"));
         
         test="{\"data\":{\"source\":\"15831407eqdaawf7\",\"widgetId\":\"Magnet_8\"},\"channel\":\"/magnets/moveStart\",\"connectionId\":null,\"clientId\":\"15831407eqdaawf7\"}";
         map = (Map)JSON.parse(test);
-
-        
     }
 
     /* ------------------------------------------------------------ */
