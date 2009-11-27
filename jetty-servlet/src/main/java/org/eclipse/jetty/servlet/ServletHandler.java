@@ -78,7 +78,7 @@ public class ServletHandler extends ScopedHandler
     public static final String __DEFAULT_SERVLET="default";
         
     /* ------------------------------------------------------------ */
-    private ContextHandler _contextHandler;
+    private ServletContextHandler _contextHandler;
     private ContextHandler.Context _servletContext;
     private FilterHolder[] _filters;
     private FilterMapping[] _filterMappings;
@@ -135,7 +135,7 @@ public class ServletHandler extends ScopedHandler
         throws Exception
     {
         _servletContext=ContextHandler.getCurrentContext();
-        _contextHandler=_servletContext==null?null:_servletContext.getContextHandler();
+        _contextHandler=(ServletContextHandler)(_servletContext==null?null:_servletContext.getContextHandler());
 
         if (_contextHandler!=null)
         {
@@ -1351,56 +1351,17 @@ public class ServletHandler extends ScopedHandler
         _maxFilterChainsCacheSize = maxFilterChainsCacheSize;
     }
     
-    /**
-     * Customize a servlet.
-     * 
-     * Called before the servlet goes into service.
-     * Subclasses of ServletHandler should override
-     * this method.
-     * 
-     * @param servlet
-     * @return
-     * @throws Exception
-     */
-    public Servlet customizeServlet (Servlet servlet)
-    throws Exception
+    /* ------------------------------------------------------------ */
+    void destroyServlet(Servlet servlet)
     {
-        return servlet;
+        _contextHandler.destroyServlet(servlet);
     }
-    
-    
-    public Servlet customizeServletDestroy (Servlet servlet)
-    throws Exception
-    {
-        return servlet;
-    }
-    
-    
-    /**
-     * Customize a Filter.
-     * 
-     * Called before the Filter goes into service.
-     * Subclasses of ServletHandler should override
-     * this method.
-     * 
-     * @param filter
-     * @return
-     * @throws Exception
-     */
-    public Filter customizeFilter (Filter filter)
-    throws Exception
-    {
-        return filter;
-    }
-    
-    
-    public Filter customizeFilterDestroy (Filter filter)
-    throws Exception
-    {
-        return filter;
-    }
-    
 
+    /* ------------------------------------------------------------ */
+    void destroyFilter(Filter filter)
+    {
+        _contextHandler.destroyFilter(filter);
+    }
     
     /* ------------------------------------------------------------ */
     protected void dump(StringBuilder b,String indent)
@@ -1444,6 +1405,4 @@ public class ServletHandler extends ScopedHandler
         }
 
     }
-
-    
 }

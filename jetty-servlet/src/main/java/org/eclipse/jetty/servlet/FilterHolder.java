@@ -92,8 +92,6 @@ public class FilterHolder extends Holder<Filter>
             }
         }
         
-        _filter = getServletHandler().customizeFilter(_filter);
-        
         _config=new Config();
         _filter.init(_config);
     }
@@ -130,7 +128,7 @@ public class FilterHolder extends Holder<Filter>
             return;
         Filter f = (Filter)o;
         f.destroy();
-        getServletHandler().customizeFilterDestroy(f);
+        getServletHandler().destroyFilter(f);
     }
 
     /* ------------------------------------------------------------ */
@@ -155,7 +153,7 @@ public class FilterHolder extends Holder<Filter>
         return getName();
     }
     
-
+    /* ------------------------------------------------------------ */
     public FilterRegistration.Dynamic getRegistration()
     {
         return new Registration();

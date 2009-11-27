@@ -70,6 +70,7 @@ public class ServletContextHandler extends ContextHandler
     protected ServletHandler _servletHandler;
     protected int _options;
     protected Decorator _decorator;
+    protected JspConfigDescriptor _jspConfig;
     
     /* ------------------------------------------------------------ */
     public ServletContextHandler()
@@ -345,9 +346,23 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /* ------------------------------------------------------------ */
+    void destroyServlet(Servlet servlet)
+    {
+        if (_decorator!=null)
+            _decorator.destroyServlet(servlet);
+    }
+
+    /* ------------------------------------------------------------ */
+    void destroyFilter(Filter filter)
+    {
+        if (_decorator!=null)
+            _decorator.destroyFilter(filter);
+    }
+
+    /* ------------------------------------------------------------ */
     public class Context extends ContextHandler.Context
     {
-   
+        
         /* ------------------------------------------------------------ */
         /* 
          * @see javax.servlet.ServletContext#getNamedDispatcher(java.lang.String)
@@ -485,7 +500,7 @@ public class ServletContextHandler extends ContextHandler
             {
                 T f = c.newInstance();
                 if (_decorator!=null)
-                    f=_decorator.injectFilter(f);
+                    f=_decorator.filterCreated(f);
                 return f;
             }
             catch (InstantiationException e)
@@ -506,7 +521,7 @@ public class ServletContextHandler extends ContextHandler
             {
                 T s = c.newInstance();
                 if (_decorator!=null)
-                    s=_decorator.injectServlet(s);
+                    s=_decorator.servletCreated(s);
                 return s;
             }
             catch (InstantiationException e)
@@ -631,7 +646,7 @@ public class ServletContextHandler extends ContextHandler
             {
                 T l = super.createListener(clazz);
                 if (_decorator!=null)
-                    l=_decorator.injectListener(l);
+                    l=_decorator.listenerCreated(l);
                 return l;
             }
             catch(ServletException e)
@@ -648,8 +663,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public JspConfigDescriptor getJspConfigDescriptor()
         {
-            // TODO
-            return null;
+            return _jspConfig;
         }
       
      
@@ -657,8 +671,11 @@ public class ServletContextHandler extends ContextHandler
     
     public interface Decorator
     {
-        public <T extends Filter> T injectFilter(T filter) throws ServletException;
-        public <T extends Servlet> T injectServlet(T servlet) throws ServletException;
-        public <T extends EventListener> T injectListener(T listener) throws ServletException;
+        <T extends Filter> T filterCreated(T filter) throws ServletException;
+        <T extends Servlet> T servletCreated(T servlet) throws ServletException;
+        <T extends EventListener> T listenerCreated(T listener) throws ServletException;
+        void destroyServlet(Servlet s);
+        void destroyFilter(Filter f);
+        void destroyListener(EventListener f);
     }
 }

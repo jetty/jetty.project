@@ -306,7 +306,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             return;
         Servlet servlet =  ((Servlet)o);
         servlet.destroy();
-        getServletHandler().customizeServletDestroy(servlet);
+        getServletHandler().destroyServlet(servlet);
     }
 
     /* ------------------------------------------------------------ */
@@ -420,10 +420,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 _servlet=newInstance();
             if (_config==null)
                 _config=new Config();
-
-            //handle any cusomizations of the servlet, such as @postConstruct
-            if (!(_servlet instanceof SingleThreadedWrapper))
-                _servlet = getServletHandler().customizeServlet(_servlet);
             
             // Handle run as
             if (_identityService!=null)
@@ -603,10 +599,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
 
         @Override
-        public String getRunAsRole() {
+        public String getRunAsRole() 
+        {
             return _runAsRole;
         }
 
+        @Override
         public void setLoadOnStartup(int loadOnStartup)
         {
             illegalStateIfContextStarted();
@@ -614,16 +612,19 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
 
         @Override
-        public void setMultipartConfig(MultipartConfigElement element) {
+        public void setMultipartConfig(MultipartConfigElement element) 
+        {
         }
 
         @Override
-        public void setRunAsRole(String role) {
+        public void setRunAsRole(String role) 
+        {
             _runAsRole = role;
         }
 
         @Override
-        public Set<String> setServletSecurity(ServletSecurityElement securityElement) {
+        public Set<String> setServletSecurity(ServletSecurityElement securityElement) 
+        {
             return null;
         }
     }
@@ -668,7 +669,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                     try
                     {
                         Servlet s = newInstance();
-                        s = getServletHandler().customizeServlet(s);
                         s.init(config);
                         _stack.push(s);
                     }
@@ -696,14 +696,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                     try
                     {
                         s = newInstance();
-                        s = getServletHandler().customizeServlet(s);
                         s.init(_config);
                     }
                     catch (ServletException e)
-                    {
-                        throw e;
-                    }
-                    catch (IOException e)
                     {
                         throw e;
                     }
