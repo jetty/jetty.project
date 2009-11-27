@@ -53,16 +53,14 @@ public class RunAs
     }
 
 
-    public void setRunAs (ServletHolder holder, SecurityHandler securityHandler)
+    public void setRunAs (ServletHolder holder)
     throws ServletException
     {
         if (holder == null)
             return;
         String className = holder.getClassName();
 
-        /*
         if (className.equals(_className))
-            holder.setRunAsRole(_roleName);
-            */
+            holder.getRegistration().setRunAsRole(_roleName);
     }
 }

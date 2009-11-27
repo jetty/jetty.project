@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.plus.annotation;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
@@ -93,8 +94,8 @@ public abstract class LifeCycleCallback
 
     
     
-    public void callback (Object instance)
-    throws Exception
+    public void callback (Object instance) 
+    throws SecurityException, NoSuchMethodException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException
     {
         if (_target == null)
         {

@@ -22,7 +22,7 @@ import javax.naming.InitialContext;
 
 import junit.framework.TestCase;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.util.MultiMap;
 
@@ -36,7 +36,7 @@ public class TestAnnotationInheritance extends TestCase
     List<String> classNames = new ArrayList<String>();
   
     
-    class SampleHandler implements AnnotationHandler
+    class SampleHandler implements DiscoverableAnnotationHandler
     {
         public final List<String> annotatedClassNames = new ArrayList<String>();
         public final List<String> annotatedMethods = new ArrayList<String>();

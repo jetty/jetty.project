@@ -390,24 +390,15 @@ public abstract class AbstractConfiguration implements Configuration
     
     public void preConfigure (WebAppContext context)
     throws Exception
-    {
-      //set up our special ServletHandler to remember injections and lifecycle callbacks
-        ServletHandler servletHandler = new ServletHandler();
-        SecurityHandler securityHandler = context.getSecurityHandler();
-        org.eclipse.jetty.servlet.ServletHandler existingHandler = context.getServletHandler(); 
-        servletHandler.setFilters(existingHandler.getFilters());
-        servletHandler.setFilterMappings(existingHandler.getFilterMappings());    
-        servletHandler.setServlets(existingHandler.getServlets());
-        servletHandler.setServletMappings(existingHandler.getServletMappings());
-        context.setServletHandler(servletHandler);
-        securityHandler.setHandler(servletHandler);  
-        
+    {      
         LifeCycleCallbackCollection callbacks = new LifeCycleCallbackCollection();
         context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, callbacks);
         InjectionCollection injections = new InjectionCollection();
         context.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
         RunAsCollection runAsCollection = new RunAsCollection();
         context.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);  
+        WebAppDecorator decorator = new WebAppDecorator(context);
+        context.setDecorator(decorator);
     }
    
     public void postConfigure(WebAppContext context) throws Exception
@@ -440,27 +431,16 @@ public abstract class AbstractConfiguration implements Configuration
 
         //process the override-web.xml descriptor
         plusProcessor.process(webXmlProcessor.getOverrideWeb());
-        
-        
-        //configure injections and callbacks to be called by the FilterHolder and ServletHolder
-        //when they lazily instantiate the Filter/Servlet.
-        ((ServletHandler)context.getServletHandler()).setInjections((InjectionCollection)context.getAttribute(InjectionCollection.INJECTION_COLLECTION));
-        ((ServletHandler)context.getServletHandler()).setCallbacks((LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION));
-        
-        //do any injects on the listeners that were created and then
-        //also callback any postConstruct lifecycle methods
-        injectAndCallPostConstructCallbacks(context);
     }
     
     public void deconfigure (WebAppContext context)
     throws Exception
     {
-        //call any preDestroy methods on the listeners
-        callPreDestroyCallbacks(context);       
+           
     }
      
     
-    
+    /* CALLED BY THE SERVLETHOLDER when each Servlet/Filter/Listener is created
     protected void injectAndCallPostConstructCallbacks(WebAppContext context)
     throws Exception
     {
@@ -489,8 +469,11 @@ public abstract class AbstractConfiguration implements Configuration
                 callbacks.callPostConstructCallback(listeners[i]);
         }
     }
+    */
     
-    
+    /*
+     * CALLED BY THE SERVLETHOLDER when each Servlet/Filter/Listener is being destroyed
+     
     protected void callPreDestroyCallbacks (WebAppContext context)
     throws Exception
     {   
@@ -505,5 +488,6 @@ public abstract class AbstractConfiguration implements Configuration
             }
         }
     }
+    */
    
 }

@@ -15,47 +15,47 @@ package org.eclipse.jetty.annotations;
 
 import java.util.List;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
+import javax.servlet.Servlet;
+
+import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
+import org.eclipse.jetty.annotations.AnnotationIntrospector.IntrospectableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-public class RunAsAnnotationHandler implements AnnotationHandler
+public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
     protected WebAppContext _wac;
 
     public RunAsAnnotationHandler (WebAppContext wac)
     {
+        super(true);
         _wac = wac;
     }
     
-    public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                            List<Value> values)
+    public void doHandle (Class clazz)
     {
         RunAsCollection runAsCollection = (RunAsCollection)_wac.getAttribute(RunAsCollection.RUNAS_COLLECTION);
-      
-        try
+
+        if (!Servlet.class.isAssignableFrom(clazz))
+            return;
+        
+        javax.annotation.security.RunAs runAs = (javax.annotation.security.RunAs)clazz.getAnnotation(javax.annotation.security.RunAs.class);
+        if (runAs != null)
         {
-            if (values != null && values.size() == 1)
+            String role = runAs.value();
+            if (role != null)
             {
-                String role = (String)values.get(0).getValue();
-                if (role != null)
-                {
-                    org.eclipse.jetty.plus.annotation.RunAs ra = new org.eclipse.jetty.plus.annotation.RunAs();
-                    ra.setTargetClassName(className);
-                    ra.setRoleName(role);
-                    runAsCollection.add(ra);
-                }
+                org.eclipse.jetty.plus.annotation.RunAs ra = new org.eclipse.jetty.plus.annotation.RunAs();
+                ra.setTargetClassName(clazz.getCanonicalName());
+                ra.setRoleName(role);
+                runAsCollection.add(ra);
             }
             else
-                Log.warn("Bad value for @RunAs annotation on class "+className);
+                Log.warn("Bad value for @RunAs annotation on class "+clazz.getName());
         }
-        catch (Exception e)
-        {
-            Log.warn(e);
-        }
-      
+
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,

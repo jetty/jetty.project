@@ -13,26 +13,29 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.util.List;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
+import javax.annotation.Resource;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-public class ResourceAnnotationHandler implements AnnotationHandler
+public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
     protected WebAppContext _wac;
     protected InjectionCollection _injections;
 
     public ResourceAnnotationHandler (WebAppContext wac)
     {
+        super(true);
         _wac = wac;
         _injections = (InjectionCollection)_wac.getAttribute(InjectionCollection.INJECTION_COLLECTION);
     }
@@ -43,83 +46,80 @@ public class ResourceAnnotationHandler implements AnnotationHandler
      *  environment that will be looked up at runtime. They do
      *  not specify an injection.
      */
-    public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                            List<Value> values)
+    public void doHandle(Class clazz)
     {
-        String name = null;
-        String mappedName = null;
-        String resourceType = null;
-        if (values != null)
+        if (Util.isServletType(clazz))
         {
-            for (Value v : values)
-            {
-                if ("name".equals(v.getName()))
-                    name = (String)v.getValue();
-                else if ("mappedName".equals(v.getName()))
-                    mappedName = (String)v.getValue();
-                else if ("type".equals(v.getName()))
-                    resourceType = (String)v.getValue();
-            }
-
-            if (name==null || name.trim().equals(""))
-                throw new IllegalStateException ("Class level Resource annotations must contain a name (Common Annotations Spec Section 2.3)");
-
-            try
-            {
-                if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac, name,mappedName))
-                    if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac.getServer(), name,mappedName))
-                        throw new IllegalStateException("No resource at "+(mappedName==null?name:mappedName));
-            }
-            catch (NamingException e)
-            {
-                Log.warn(e);
-            }
+            handleClass(clazz);
+            
+            Method[] methods = clazz.getDeclaredMethods();
+            for (int i=0; i<methods.length; i++)
+                handleMethod(clazz, methods[i]);
+            Field[] fields = clazz.getDeclaredFields();
+            //For each field, get all of it's annotations
+            for (int i=0; i<fields.length; i++)
+                handleField(clazz, fields[i]);
         }
     }
+        
+     public void handleClass (Class clazz)
+     {
+         Resource resource = (Resource)clazz.getAnnotation(Resource.class);
+         if (resource != null)
+         {
+             String name = resource.name();
+             String mappedName = resource.mappedName();
+             Resource.AuthenticationType auth = resource.authenticationType();
+             Class type = resource.type();
+             boolean shareable = resource.shareable();
+             
+             if (name==null || name.trim().equals(""))
+                 throw new IllegalStateException ("Class level Resource annotations must contain a name (Common Annotations Spec Section 2.3)");
+             
+             try
+             {
+                 if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac, name,mappedName))
+                     if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac.getServer(), name,mappedName))
+                         throw new IllegalStateException("No resource at "+(mappedName==null?name:mappedName));
+             }
+             catch (NamingException e)
+             {
+                 Log.warn(e);
+             }
+         }
+    }
 
-    public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<Value> values)
+    public void handleField(Class clazz, Field field)
     {
-        try
+        Resource resource = (Resource)field.getAnnotation(Resource.class);
+        if (resource != null)
         {
             //JavaEE Spec 5.2.3: Field cannot be static
-            if ((access & org.objectweb.asm.Opcodes.ACC_STATIC) > 0)
+            if (Modifier.isStatic(field.getModifiers()))
             {
-                Log.warn("Skipping Resource annotation on "+className+"."+fieldName+": cannot be static");
+                Log.warn("Skipping Resource annotation on "+clazz.getName()+"."+field.getName()+": cannot be static");
                 return;
             }
 
             //JavaEE Spec 5.2.3: Field cannot be final
-            if ((access & org.objectweb.asm.Opcodes.ACC_FINAL) > 0)
+            if (Modifier.isFinal(field.getModifiers()))
             {
-                Log.warn("Skipping Resource annotation on "+className+"."+fieldName+": cannot be final");
+                Log.warn("Skipping Resource annotation on "+clazz.getName()+"."+field.getName()+": cannot be final");
                 return;
             }
 
             //work out default name
-            String name = className+"/"+fieldName;
-            String mappedName = null;
-            org.objectweb.asm.Type resourceType = null;
-            if (values != null)
-            {
-                for (Value val :values)
-                {
-                    //allow @Resource name= to override the field name
-                    if (val.getName().equals("name") && !"".equals((String)val.getValue()))
-                        name = (String)(val.getValue());
-                    //get the mappedName if there is one
-                    else if (val.getName().equals("mappedName") && !"".equals((String)val.getValue()))
-                        mappedName = (String)val.getValue();
-                    //save @Resource type, so we can check it is compatible with field type later
-                    else if (val.getName().equals("type"))
-                    {
-                       resourceType = (org.objectweb.asm.Type)(val.getValue());
-                    }
-                }
-            }
+            String name = clazz.getCanonicalName()+"/"+field.getName();
           
+           
+            //allow @Resource name= to override the field name
+            name = (resource.name()!=null && !resource.name().trim().equals("")? resource.name(): name);
+            String mappedName = (resource.mappedName()!=null && !resource.mappedName().trim().equals("")?resource.mappedName():null);
+            //get the type of the Field
+            Class type = field.getType();
+
             //check if an injection has already been setup for this target by web.xml
-            Injection webXmlInjection = _injections.getInjection(name, className, fieldName);
+            Injection webXmlInjection = _injections.getInjection(name, clazz, field);
             if (webXmlInjection == null)
             {
                 try
@@ -150,15 +150,13 @@ public class ResourceAnnotationHandler implements AnnotationHandler
                         Log.debug("Bound "+(mappedName==null?name:mappedName) + " as "+ name);
                         //   Make the Injection for it if the binding succeeded
                         Injection injection = new Injection();
-                        injection.setTarget(className, fieldName, Util.asCanonicalName(resourceType));
+                        injection.setTarget(clazz, field, type);
                         injection.setJndiName(name);
                         injection.setMappingName(mappedName);
                         _injections.add(injection); 
                     }  
-                    else if (!Util.isEnvEntryType(fieldType))
-                    {
-                        System.err.println(fieldType);
-                        
+                    else if (!Util.isEnvEntryType(type))
+                    {   
                         //if this is an env-entry type resource and there is no value bound for it, it isn't
                         //an error, it just means that perhaps the code will use a default value instead
                         // JavaEE Spec. sec 5.4.1.3
@@ -171,17 +169,14 @@ public class ResourceAnnotationHandler implements AnnotationHandler
                     //if this is an env-entry type resource and there is no value bound for it, it isn't
                     //an error, it just means that perhaps the code will use a default value instead
                     // JavaEE Spec. sec 5.4.1.3
-                    if (!Util.isEnvEntryType(fieldType))
+                    if (!Util.isEnvEntryType(type))
                         throw new IllegalStateException(e);
                 }
             }
         }
-        catch (Exception e)
-        {
-            Log.warn(e);
-        }
     }
 
+    
     /**
      * Process a Resource annotation on a Method.
      * 
@@ -189,12 +184,12 @@ public class ResourceAnnotationHandler implements AnnotationHandler
      * processed when an instance of the class is created.
      * @param injections
      */
-    public void handleMethod(String className, String methodName, int access, String desc, String signature, String[] exceptions, String annotation,
-                             List<Value> values)
+    public void handleMethod(Class clazz, Method method)
     {
-        try
+
+        Resource resource = (Resource)method.getAnnotation(Resource.class);
+        if (resource != null)
         {
-          
             /*
              * Commons Annotations Spec 2.3
              * " The Resource annotation is used to declare a reference to a resource.
@@ -213,59 +208,45 @@ public class ResourceAnnotationHandler implements AnnotationHandler
              *  or field, inject it!".
              */
             //JavaEE Spec 5.2.3: Method cannot be static
-            if ((access & org.objectweb.asm.Opcodes.ACC_STATIC) > 0)
+            if (Modifier.isStatic(method.getModifiers()))
             {
-                Log.warn("Skipping Resource annotation on "+className+"."+methodName+": cannot be static");
+                Log.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": cannot be static");
                 return;
             }
 
             // Check it is a valid javabean: must be void return type, the name must start with "set" and it must have
             // only 1 parameter
-            if (!methodName.startsWith("set"))
+            if (!method.getName().startsWith("set"))
             {
-                Log.warn("Skipping Resource annotation on "+className+"."+methodName+": invalid java bean, does not start with 'set'");
+                Log.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": invalid java bean, does not start with 'set'");
                 return;
             }
-            org.objectweb.asm.Type[] args = org.objectweb.asm.Type.getArgumentTypes(desc);
-            if (args == null || args.length != 1)
+
+            if (method.getParameterTypes().length != 1)
             {
-                Log.warn("Skipping Resource annotation on "+className+"."+methodName+": invalid java bean, not single argument to method");
+                Log.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": invalid java bean, not single argument to method");
                 return; 
             }
-            org.objectweb.asm.Type retVal = org.objectweb.asm.Type.getReturnType(desc);
-            if (!org.objectweb.asm.Type.VOID_TYPE.equals(retVal))
+
+            if (Void.TYPE != method.getReturnType())
             {
-                Log.warn("Skipping Resource annotation on "+className+"."+methodName+": invalid java bean, not void");
+                Log.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": invalid java bean, not void");
                 return; 
             }
-        
+
 
             //default name is the javabean property name
-            String name = methodName.substring(3);
+            String name = method.getName().substring(3);
             name = name.substring(0,1).toLowerCase()+name.substring(1);
-            name = className+"/"+name;
-            String mappedName = null;
-            org.objectweb.asm.Type resourceType = null;
-            if (values != null)
-            {
-                for (Value v : values)
-                {
-                    //allow default name to be overridden
-                    if ("name".equals(v.getName()))
-                        name = (String)(v.getValue());
-                    //get the mappedName if there is one
-                    else if ("mappedName".equals(v.getName()) && !"".equals((String)(v.getValue())))
-                        mappedName = (String)(v.getValue());
-                    else if ("type".equals(v.getName()))
-                    {
-                        resourceType = (org.objectweb.asm.Type)(v.getValue());
-                    }
-                    //TODO: authentication and shareable
-                }
-            }
+            name = clazz.getCanonicalName()+"/"+name;
 
+            name = (resource.name()!=null && !resource.name().trim().equals("")? resource.name(): name);
+            String mappedName = (resource.mappedName()!=null && !resource.mappedName().trim().equals("")?resource.mappedName():null);
+            Class paramType = method.getParameterTypes()[0];
+
+            Class resourceType = resource.type();
             //check if an injection has already been setup for this target by web.xml
-            Injection webXmlInjection = _injections.getInjection(name, className, methodName, Util.asCanonicalName(args[0]));
+            Injection webXmlInjection = _injections.getInjection(name, clazz, method, paramType);
             if (webXmlInjection == null)
             {
                 try
@@ -304,12 +285,12 @@ public class ResourceAnnotationHandler implements AnnotationHandler
                         Log.debug("Bound "+(mappedName==null?name:mappedName) + " as "+ name);
                         //   Make the Injection for it
                         Injection injection = new Injection();
-                        injection.setTarget(className, methodName, Util.asCanonicalName(args[0]), Util.asCanonicalName(resourceType));
+                        injection.setTarget(clazz, method,paramType,resourceType);
                         injection.setJndiName(name);
                         injection.setMappingName(mappedName);
                         _injections.add(injection);
                     } 
-                    else if (!Util.isEnvEntryType(args[0].getDescriptor()))
+                    else if (!Util.isEnvEntryType(paramType))
                     {
 
                         //if this is an env-entry type resource and there is no value bound for it, it isn't
@@ -323,14 +304,11 @@ public class ResourceAnnotationHandler implements AnnotationHandler
                     //if this is an env-entry type resource and there is no value bound for it, it isn't
                     //an error, it just means that perhaps the code will use a default value instead
                     // JavaEE Spec. sec 5.4.1.3
-                    if (!Util.isEnvEntryType(args[0].getDescriptor()))
+                    if (!Util.isEnvEntryType(paramType))
                         throw new IllegalStateException(e);
                 }
             }
-        }
-        catch (Exception e)
-        {
-            Log.warn(e);
+
         }
     }
 }

@@ -10,6 +10,7 @@ import javax.naming.InitialContext;
 
 import junit.framework.TestCase;
 
+import org.eclipse.jetty.annotations.AnnotationIntrospector;
 import org.eclipse.jetty.annotations.AnnotationParser;
 import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.annotations.ResourceAnnotationHandler;
@@ -36,28 +37,13 @@ public class TestResourceAnnotations extends TestCase
         
         org.eclipse.jetty.plus.jndi.EnvEntry resourceA = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", new Integer(1000), false);
         org.eclipse.jetty.plus.jndi.EnvEntry resourceB = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", new Integer(2000), false);
-        
 
-        ArrayList<String> classNames = new ArrayList<String>();
-        classNames.add(ResourceA.class.getName());
-        classNames.add(ResourceB.class.getName());
         
-        
-        AnnotationParser parser = new AnnotationParser();
+        AnnotationIntrospector parser = new AnnotationIntrospector();
         ResourceAnnotationHandler handler = new ResourceAnnotationHandler(wac);
-        parser.registerAnnotationHandler("javax.annotation.Resource", handler);
-        parser.parse(classNames, new ClassNameResolver()
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }       
-        });
+        parser.registerHandler(handler);
+        parser.introspect(ResourceA.class);
+        parser.introspect(ResourceB.class);
   
         //processing classA should give us these jndi name bindings:
         // java:comp/env/myf
@@ -85,7 +71,7 @@ public class TestResourceAnnotations extends TestCase
         //only 1 field injection because the other has no Resource mapping
         assertEquals(1, resBInjections.size());
         Injection fi = resBInjections.get(0);
-        assertEquals ("f", fi.getFieldName());
+        assertEquals ("f", fi.getTarget().getName());
         
         //3 method injections on class ResourceA, 4 field injections
         List<Injection> resAInjections = injections.getInjections(ResourceA.class.getCanonicalName());
@@ -133,7 +119,7 @@ public class TestResourceAnnotations extends TestCase
         comp.destroySubcontext("env");
     }
     
-    
+  
     public void testResourcesAnnotation ()
     throws Exception
     {
@@ -147,31 +133,14 @@ public class TestResourceAnnotations extends TestCase
         Context env = comp.createSubcontext("env");
         org.eclipse.jetty.plus.jndi.EnvEntry resourceA = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", new Integer(1000), false);
         org.eclipse.jetty.plus.jndi.EnvEntry resourceB = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", new Integer(2000), false);
-        
-        
-        ArrayList<String> classNames = new ArrayList<String>();
-        classNames.add(ResourceA.class.getName());
-        classNames.add(ResourceB.class.getName());
-        
-        
-        AnnotationParser parser = new AnnotationParser();
+             
+        AnnotationIntrospector introspector = new AnnotationIntrospector();
         ResourcesAnnotationHandler handler = new ResourcesAnnotationHandler(wac);
-        parser.registerAnnotationHandler("javax.annotation.Resources", handler);
-        parser.parse(classNames, new ClassNameResolver()
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }       
-        });
-  
+        introspector.registerHandler(handler);
+        introspector.introspect(ResourceA.class);
+        introspector.introspect(ResourceB.class);
+        
         assertEquals(resourceA.getObjectToBind(), env.lookup("peach"));
         assertEquals(resourceB.getObjectToBind(), env.lookup("pear"));
     }
-
 }

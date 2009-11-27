@@ -18,7 +18,7 @@ import java.util.List;
 
 import javax.servlet.annotation.HandlesTypes;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.Loader;
@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.log.Log;
  *
  * 
  */
-public class ContainerInitializerAnnotationHandler implements AnnotationHandler
+public class ContainerInitializerAnnotationHandler implements DiscoverableAnnotationHandler
 {
     ContainerInitializer _initializer;
     Class _annotation;
@@ -42,7 +42,7 @@ public class ContainerInitializerAnnotationHandler implements AnnotationHandler
     
     /** 
      * Handle finding a class that is annotated with the annotation we were constructed with.
-     * @see org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler#handleClass(java.lang.String, int, int, java.lang.String, java.lang.String, java.lang.String[], java.lang.String, java.util.List)
+     * @see org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler#handleClass(java.lang.String, int, int, java.lang.String, java.lang.String, java.lang.String[], java.lang.String, java.util.List)
      */
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotationName,
                             List<Value> values)

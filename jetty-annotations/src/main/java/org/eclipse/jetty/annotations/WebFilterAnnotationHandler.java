@@ -22,7 +22,7 @@ import javax.servlet.Filter;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.annotation.WebInitParam;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-public class WebFilterAnnotationHandler implements AnnotationHandler
+public class WebFilterAnnotationHandler implements DiscoverableAnnotationHandler
 {
   protected WebAppContext _wac;
     

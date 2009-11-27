@@ -101,14 +101,16 @@ public class LifeCycleCallbackCollection
         
         Class clazz = o.getClass();
         List<LifeCycleCallback> callbacks = postConstructCallbacksMap.get(clazz.getName());
-        
+
         if (callbacks == null)
             return;
-        
+
         for (int i=0;i<callbacks.size();i++)
+        {
             ((LifeCycleCallback)callbacks.get(i)).callback(o);
+        }
     }
-    
+
     
     /**
      * Call the method, if one exists, that is annotated with PreDestroy

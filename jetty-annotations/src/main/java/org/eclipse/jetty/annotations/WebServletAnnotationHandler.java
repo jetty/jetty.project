@@ -23,7 +23,7 @@ import javax.servlet.annotation.WebInitParam;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
@@ -38,7 +38,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * Process a WebServlet annotation on a class.
  * 
  */
-public class WebServletAnnotationHandler implements AnnotationHandler
+public class WebServletAnnotationHandler implements DiscoverableAnnotationHandler
 {
     protected WebAppContext _wac;
     
@@ -64,7 +64,7 @@ public class WebServletAnnotationHandler implements AnnotationHandler
      *     effective url-patterns for the servlet</li>
      * </ul>
      *  
-     * @see org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler#handleClass(java.lang.String, int, int, java.lang.String, java.lang.String, java.lang.String[], java.lang.String, java.util.List)
+     * @see org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler#handleClass(java.lang.String, int, int, java.lang.String, java.lang.String, java.lang.String[], java.lang.String, java.util.List)
      */
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotationName,
                             List<Value> values)
@@ -121,20 +121,23 @@ public class WebServletAnnotationHandler implements AnnotationHandler
         ServletHolder[] holders = _wac.getServletHandler().getServlets();
         boolean isNew = true;
         ServletHolder holder = null;
-        for (ServletHolder h : holders)
+        if (holders != null)
         {
-            if (h.getClassName().equals(clazz.getName()) && h.getName().equals(servletName))
+            for (ServletHolder h : holders)
             {
-                holder = h;
-                isNew = false;
-                break;
+                if (h.getClassName().equals(clazz.getName()) && h.getName().equals(servletName))
+                {
+                    holder = h;
+                    isNew = false;
+                    break;
+                }
             }
         }
 
         if (isNew)
         {
             holder = new ServletHolder(clazz);
-            _wac.getServletHandler().addServlet(holder);
+           
             holder.setName(servletName);
             holder.setInitOrder(annotation.loadOnStartup());
             holder.setAsyncSupported(annotation.asyncSupported());
@@ -147,6 +150,7 @@ public class WebServletAnnotationHandler implements AnnotationHandler
             {
                 //TODO set multipart on ServletHolder
             }
+            _wac.getServletHandler().addServlet(holder);
             ServletMapping mapping = new ServletMapping();  
             mapping.setServletName(holder.getName());
             mapping.setPathSpecs( LazyList.toStringArray(urlPatternList));

@@ -17,9 +17,12 @@ import java.io.IOException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import javax.annotation.Resources;
+import javax.annotation.security.RunAs;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.HttpConstraint;
+import javax.servlet.annotation.HttpMethodConstraint;
 import javax.servlet.annotation.MultipartConfig;
+import javax.servlet.annotation.ServletSecurity;
 import javax.servlet.annotation.WebInitParam;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -31,9 +34,8 @@ import javax.servlet.http.HttpServletResponse;
 
 @WebServlet(urlPatterns = { "/foo/*", "/bah/*" }, name="CServlet", initParams={@WebInitParam(name="x", value="y")}, loadOnStartup=2, asyncSupported=false)
 @MultipartConfig(fileSizeThreshold=1000, maxFileSize=2000, maxRequestSize=3000)
-//@RunAs("admin")
-//@TransportProtected(false)
-//@RolesAllowed({"fred", "bill", "dorothy"})
+@RunAs("admin")
+@ServletSecurity(value=@HttpConstraint(rolesAllowed={"fred", "bill", "dorothy"}), httpMethodConstraints={@HttpMethodConstraint(value="GET", rolesAllowed={"bob", "carol", "ted"})})
 public class ServletC extends HttpServlet
 {
     @Resource (mappedName="foo", type=Double.class)
@@ -51,7 +53,6 @@ public class ServletC extends HttpServlet
         
     }
     
-    //@RolesAllowed({"bob", "carol", "ted"})
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         response.setContentType("text/html");

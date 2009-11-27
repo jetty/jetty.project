@@ -17,6 +17,7 @@ import java.io.IOException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import javax.annotation.security.RunAs;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -31,7 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 @WebFilter(filterName="CFilter", dispatcherTypes={DispatcherType.REQUEST}, urlPatterns = {"/*"}, initParams={@WebInitParam(name="a", value="99")}, asyncSupported=false)
-//@RunAs("admin")
+@RunAs("admin")
 public class FilterC implements Filter
 {
     @Resource (mappedName="foo")
