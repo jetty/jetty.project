@@ -35,6 +35,7 @@ public class Jetty6ContinuationNioTest extends ContinuationBase
     protected SelectChannelConnector _selectChannelConnector;
     FilterHolder _filter;
 
+    @Override
     protected void setUp() throws Exception
     {
         _selectChannelConnector = new SelectChannelConnector();
@@ -45,14 +46,13 @@ public class Jetty6ContinuationNioTest extends ContinuationBase
         ServletHolder holder=new ServletHolder(_servlet);
         _servletHandler.addServletWithMapping(holder,"/");
         _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",0);
-
         _filter.setInitParameter("debug","true");
-        //_filter.setInitParameter("faux","false");
         _server.start();
         
         _port=_selectChannelConnector.getLocalPort();
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _server.stop();
@@ -143,6 +143,7 @@ public class Jetty6ContinuationNioTest extends ContinuationBase
         doSuspendCompleteThrow();
     }
     
+    @Override
     protected String toString(InputStream in) throws IOException
     {
         return IO.toString(in);
