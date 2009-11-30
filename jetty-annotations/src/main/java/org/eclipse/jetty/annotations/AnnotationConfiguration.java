@@ -42,6 +42,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
        Boolean b = (Boolean)context.getAttribute(METADATA_COMPLETE);
        boolean metadataComplete = (b != null && b.booleanValue());
       
+       WebAppDecoratorWrapper wrapper = new WebAppDecoratorWrapper(context, context.getDecorator());
+       context.setDecorator(wrapper);
       
         if (metadataComplete)
         {

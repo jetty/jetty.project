@@ -20,6 +20,7 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.plus.webapp.WebAppDecorator;
+import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -29,13 +30,13 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class WebAppDecoratorWrapper extends WebAppDecorator
 {
-    WebAppDecorator _wrappedDecorator;
+    Decorator _wrappedDecorator;
     AnnotationIntrospector _introspector = new AnnotationIntrospector();
     
     /**
      * @param context
      */
-    public WebAppDecoratorWrapper(WebAppContext context, WebAppDecorator wrappedDecorator)
+    public WebAppDecoratorWrapper(WebAppContext context, Decorator wrappedDecorator)
     {
         super(context);
         _wrappedDecorator = wrappedDecorator;
