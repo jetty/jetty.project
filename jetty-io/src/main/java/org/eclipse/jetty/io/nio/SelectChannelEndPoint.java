@@ -56,16 +56,25 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
 
         _manager = selectSet.getManager();
         _selectSet = selectSet;
-        _connection = _manager.newConnection(channel,this);
         _dispatched = false;
         _redispatched = false;
-        _open=true;
-        _manager.endPointOpened(this);
-        
+        _open=true;       
         _key = key;
+
+        _connection = _manager.newConnection(channel,this);
+        _manager.endPointOpened(this); 
+        
         scheduleIdle();
     }
 
+    /* ------------------------------------------------------------ */
+    public SelectionKey getSelectionKey()
+    {
+        synchronized (this)
+        {
+            return _key;
+        }
+    }
     
     /* ------------------------------------------------------------ */
     public SelectorManager getSelectManager()

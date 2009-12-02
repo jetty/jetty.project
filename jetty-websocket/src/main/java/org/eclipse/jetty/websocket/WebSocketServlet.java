@@ -56,7 +56,7 @@ public abstract class WebSocketServlet extends HttpServlet
             {
                 HttpConnection http = HttpConnection.getCurrentConnection();
                 ConnectedEndPoint endp = (ConnectedEndPoint)http.getEndPoint();
-                WebSocketConnection connection = new WebSocketConnection(http.getConnector(),_buffers,endp,http.getTimeStamp(),websocket);
+                WebSocketConnection connection = new WebSocketConnection(_buffers,endp,http.getTimeStamp(),websocket);
 
                 String uri=request.getRequestURI();
                 String host=request.getHeader("Host");
