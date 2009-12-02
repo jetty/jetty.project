@@ -22,6 +22,9 @@ import org.eclipse.jetty.server.HttpConnection;
  * <p>
  * The initParameter "bufferSize" can be used to set the buffer size,
  * which is also the max frame byte size (default 8192).
+ * <p>
+ * The initParameter "maxIdleTime" can be used to set the time in ms
+ * that a websocket may be idle before closing (default 300,000).
  * 
  */
 public abstract class WebSocketServlet extends HttpServlet
@@ -37,6 +40,9 @@ public abstract class WebSocketServlet extends HttpServlet
     {
         String bs=getInitParameter("bufferSize");
         _websocket = new WebSocketFactory(bs==null?8192:Integer.parseInt(bs));
+        String mit=getInitParameter("maxIdleTime");
+        if (mit!=null)
+            _websocket.setMaxIdleTime(Integer.parseInt(mit));
     }
 
     /* ------------------------------------------------------------ */

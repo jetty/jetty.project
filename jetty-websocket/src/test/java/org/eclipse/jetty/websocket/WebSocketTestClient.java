@@ -59,7 +59,7 @@ public class WebSocketTestClient extends AbstractLifeCycle
         protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
         {
             WebSocket ws=(WebSocket)endpoint.getSelectionKey().attachment();
-            WebSocketConnection connection = new WebSocketConnection(_buffers,endpoint,System.currentTimeMillis(),ws);
+            WebSocketConnection connection = new WebSocketConnection(ws,endpoint,_buffers,System.currentTimeMillis(), 30000);
             
             // TODO Blocking upgrade code.  Should be  async
             ByteArrayBuffer upgrade=new ByteArrayBuffer(

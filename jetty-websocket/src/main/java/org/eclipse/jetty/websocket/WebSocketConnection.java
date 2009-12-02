@@ -6,7 +6,6 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.log.Log;
 
 public class WebSocketConnection implements Connection, WebSocket.Outbound
@@ -17,9 +16,9 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     final WebSocketGenerator _generator;
     final long _timestamp;
     final WebSocket _websocket;
-    final int _maxIdleTimeMs=30000;
+    final int _maxIdleTimeMs=300000;
     
-    public WebSocketConnection(WebSocketBuffers buffers, EndPoint endpoint, long timestamp, WebSocket websocket)
+    public WebSocketConnection(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, long maxIdleTime)
     {
         _endp = endpoint;
         _timestamp = timestamp;
@@ -62,22 +61,27 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
             }
         });
         
-        _idle = (_endp instanceof SelectChannelEndPoint) ?
-                new IdleCheck()
+        if (_endp instanceof SelectChannelEndPoint)
         {
-            public void access(EndPoint endp)
+            final SelectChannelEndPoint scep=(SelectChannelEndPoint)_endp;
+            scep.cancelIdle();
+            _idle=new IdleCheck()
             {
-                ((SelectChannelEndPoint)_endp).scheduleIdle();
-            }
-            
+                public void access(EndPoint endp)
+                {
+                    scep.getSelectSet().scheduleTimeout(scep.getTimeoutTask(),_maxIdleTimeMs);
+                }
+            };
+            scep.getSelectSet().scheduleTimeout(scep.getTimeoutTask(),_maxIdleTimeMs);
         }
-        :new IdleCheck()
+        else
         {
-            public void access(EndPoint endp)
+            _idle = new IdleCheck()
             {
-            }  
-        };
-            
+                public void access(EndPoint endp)
+                {}  
+            };
+        }  
     }
     
     public void handle() throws IOException

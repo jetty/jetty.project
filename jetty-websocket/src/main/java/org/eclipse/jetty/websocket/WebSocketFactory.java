@@ -14,11 +14,58 @@ import org.eclipse.jetty.server.HttpConnection;
 /* ------------------------------------------------------------ */
 /** Factory to create WebSocket connections
  */
-public class WebSocketFactory extends WebSocketBuffers
+public class WebSocketFactory
 {
+    private WebSocketBuffers _buffers;
+    private long _maxIdleTime=300000;
+
+    /* ------------------------------------------------------------ */
+    public WebSocketFactory()
+    {
+        _buffers=new WebSocketBuffers(8192);
+    }
+
+    /* ------------------------------------------------------------ */
     public WebSocketFactory(int bufferSize)
     {
-        super(bufferSize);
+        _buffers=new WebSocketBuffers(bufferSize);
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the maxIdleTime.
+     * @return the maxIdleTime
+     */
+    public long getMaxIdleTime()
+    {
+        return _maxIdleTime;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the maxIdleTime.
+     * @param maxIdleTime the maxIdleTime to set
+     */
+    public void setMaxIdleTime(long maxIdleTime)
+    {
+        _maxIdleTime = maxIdleTime;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the bufferSize.
+     * @return the bufferSize
+     */
+    public int getBufferSize()
+    {
+        return _buffers.getBufferSize();
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the bufferSize.
+     * @param bufferSize the bufferSize to set
+     */
+    public void setBufferSize(int bufferSize)
+    {
+        if (bufferSize!=getBufferSize())
+            _buffers=new WebSocketBuffers(bufferSize);
     }
 
     /* ------------------------------------------------------------ */
@@ -44,7 +91,7 @@ public class WebSocketFactory extends WebSocketBuffers
                 
         HttpConnection http = HttpConnection.getCurrentConnection();
         ConnectedEndPoint endp = (ConnectedEndPoint)http.getEndPoint();
-        WebSocketConnection connection = new WebSocketConnection(this,endp,http.getTimeStamp(),websocket);
+        WebSocketConnection connection = new WebSocketConnection(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime);
 
         String uri=request.getRequestURI();
         String host=request.getHeader("Host");
@@ -63,7 +110,5 @@ public class WebSocketFactory extends WebSocketBuffers
 
         websocket.onConnect(connection);
         throw new UpgradeConnectionException(connection);
-            
      }
-
 }
