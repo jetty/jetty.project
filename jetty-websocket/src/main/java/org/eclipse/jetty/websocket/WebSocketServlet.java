@@ -26,7 +26,7 @@ import org.eclipse.jetty.server.HttpConnection;
  */
 public abstract class WebSocketServlet extends HttpServlet
 {
-    WebSocketBuffers _buffers;
+    WebSocketFactory _websocket;
        
     /* ------------------------------------------------------------ */
     /**
@@ -36,7 +36,7 @@ public abstract class WebSocketServlet extends HttpServlet
     public void init() throws ServletException
     {
         String bs=getInitParameter("bufferSize");
-        _buffers = new WebSocketBuffers(bs==null?8192:Integer.parseInt(bs));
+        _websocket = new WebSocketFactory(bs==null?8192:Integer.parseInt(bs));
     }
 
     /* ------------------------------------------------------------ */
@@ -46,42 +46,19 @@ public abstract class WebSocketServlet extends HttpServlet
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        if ("WebSocket".equals(request.getHeader("Upgrade")) &&
-            "HTTP/1.1".equals(request.getProtocol()))
+        if ("WebSocket".equals(request.getHeader("Upgrade")))
         {
             String protocol=request.getHeader("WebSocket-Protocol");
             WebSocket websocket=doWebSocketConnect(request,protocol);
+
+            String host=request.getHeader("Host");
+            String origin=request.getHeader("Origin");
+            origin=checkOrigin(request,host,origin);
             
             if (websocket!=null)
-            {
-                HttpConnection http = HttpConnection.getCurrentConnection();
-                ConnectedEndPoint endp = (ConnectedEndPoint)http.getEndPoint();
-                WebSocketConnection connection = new WebSocketConnection(_buffers,endp,http.getTimeStamp(),websocket);
-
-                String uri=request.getRequestURI();
-                String host=request.getHeader("Host");
-                String origin=request.getHeader("Origin");
-                origin=checkOrigin(request,host,origin);
-                
-                response.setHeader("Upgrade","WebSocket");
-                response.addHeader("Connection","Upgrade");
-                response.addHeader("WebSocket-Origin",origin);
-                response.addHeader("WebSocket-Location","ws://"+host+uri);
-                if (protocol!=null)
-                    response.addHeader("WebSocket-Protocol",protocol);
-                response.sendError(101,"Web Socket Protocol Handshake");
-                response.flushBuffer();
-
-                connection.fill(((HttpParser)http.getParser()).getHeaderBuffer());
-                connection.fill(((HttpParser)http.getParser()).getBodyBuffer());
-                
-                websocket.onConnect(connection);
-                throw new UpgradeConnectionException(connection);
-            }
+                _websocket.upgrade(request,response,websocket,origin,protocol);
             else
-            {
                 response.sendError(503);
-            }
         }
         else
             super.service(request,response);
