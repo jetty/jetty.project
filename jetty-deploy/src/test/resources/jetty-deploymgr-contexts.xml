@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <Call name="addLifeCycle">
+    <Arg>
+      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+        <Set name="contexts">
+          <Ref id="Contexts" />
+        </Set>
+        <Set name="configurationManager">
+          <New class="org.eclipse.jetty.deploy.support.FileConfigurationManager">
+            <Set name="file">
+              <Property name="test.targetdir" default="target" />/xml-configured-jetty.properties
+            </Set>
+          </New>
+        </Set>
+        
+        <!-- Providers of Apps -->
+        <Call name="addAppProvider">
+          <Arg>
+            <New class="org.eclipse.jetty.deploy.providers.MonitoredDirAppProvider">
+              <Set name="monitoredDir">
+                <Property name="jetty.home" />/contexts
+              </Set>
+              <Set name="scanInterval">1</Set>
+              <Set name="recursive">true</Set>
+            </New>
+          </Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+
+</Configure>

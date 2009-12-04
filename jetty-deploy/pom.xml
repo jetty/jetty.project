@@ -30,25 +30,25 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
-          <archive>               
+          <archive>
             <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
       </plugin>
       <!-- always include sources since jetty-xbean makes use of them -->
-       <plugin>
-         <groupId>org.apache.maven.plugins</groupId>
-         <artifactId>maven-source-plugin</artifactId>
-         <executions>
-           <execution>
-             <id>attach-sources</id>
-             <goals>
-               <goal>jar</goal>
-             </goals>
-           </execution>
-         </executions>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
-     </plugins>
+    </plugins>
   </build>
   <dependencies>
     <dependency>
@@ -62,9 +62,30 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp-verifier</artifactId>
+      <version>${project.version}</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <version>4.7</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.5</version>
+        <configuration>
+          <docfilessubdirs>true</docfilessubdirs>
+          <detectLinks>true</detectLinks>
+          <detectJavaApiLink>true</detectJavaApiLink>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
 </project>
