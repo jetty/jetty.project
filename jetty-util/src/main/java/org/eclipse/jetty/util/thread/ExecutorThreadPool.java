@@ -75,6 +75,16 @@ public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool,
      * Wraps an {@link ThreadPoolExecutor} using
      * an unbounded {@link LinkedBlockingQueue} is used for the jobs queue;
      */
+    public ExecutorThreadPool(int corePoolSize, int maximumPoolSize, long keepAliveTime)
+    {
+        this(new ThreadPoolExecutor(corePoolSize,maximumPoolSize,keepAliveTime,TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>()));
+    }
+
+    /* ------------------------------------------------------------ */
+    /** constructor.
+     * Wraps an {@link ThreadPoolExecutor} using
+     * an unbounded {@link LinkedBlockingQueue} is used for the jobs queue;
+     */
     public ExecutorThreadPool(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit)
     {
         this(new ThreadPoolExecutor(corePoolSize,maximumPoolSize,keepAliveTime,unit,new LinkedBlockingQueue<Runnable>()));

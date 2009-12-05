@@ -24,9 +24,10 @@
       </New>
 
       <!-- Optional Java 5 bounded threadpool with job queue 
-      <New class="org.eclipse.thread.concurrent.ThreadPool">
-        <Set name="corePoolSize">50</Set>
-        <Set name="maximumPoolSize">50</Set>
+      <New class="org.eclipse.jetty.util.thread.ExecutorThreadPool">     
+        <Arg name="coreSize" type="int">25</Arg>
+        <Arg name="maxSize" type="int">50</Arg>
+        <Arg name="maxIdleMs" type="long">30000</Arg>
       </New>
       -->
     </Set>
