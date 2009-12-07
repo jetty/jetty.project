@@ -49,7 +49,6 @@ public class DeploymentManagerLifeCyclePathTest
         // Setup Expectations.
         List<String> expected = new ArrayList<String>();
         // SHOULD NOT SEE THIS NODE VISITED - expected.add("undeployed");
-        expected.add("pre-deploying");
         expected.add("deploying");
         expected.add("deployed");
 

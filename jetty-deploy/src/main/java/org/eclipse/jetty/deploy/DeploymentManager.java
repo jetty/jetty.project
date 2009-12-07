@@ -29,6 +29,7 @@ import org.eclipse.jetty.deploy.bindings.StandardStarter;
 import org.eclipse.jetty.deploy.bindings.StandardStopper;
 import org.eclipse.jetty.deploy.bindings.StandardUndeployer;
 import org.eclipse.jetty.deploy.graph.Node;
+import org.eclipse.jetty.deploy.graph.NodePath;
 import org.eclipse.jetty.deploy.support.ConfigurationManager;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -440,7 +441,7 @@ public class DeploymentManager extends AbstractLifeCycle
     {
         Node destinationNode = lifecycle.getNodeByName(nodeName);
         // Compute lifecycle steps
-        List<Node> path = lifecycle.findPath(appentry.lifecyleNode,destinationNode);
+        NodePath path = lifecycle.getPath(appentry.lifecyleNode,destinationNode);
         if (path.isEmpty())
         {
             // nothing to do. already there.

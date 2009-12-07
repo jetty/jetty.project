@@ -62,15 +62,11 @@ public class AppLifeCycle extends Graph
 
     // Private string constants defined to avoid typos on repeatedly used strings 
     private static final String NODE_UNDEPLOYED = "undeployed";
-    private static final String NODE_PRE_DEPLOYING = "pre-deploying";
     private static final String NODE_DEPLOYING = "deploying";
     private static final String NODE_DEPLOYED = "deployed";
-    private static final String NODE_PRE_STARTING = "pre-starting";
     private static final String NODE_STARTING = "starting";
     private static final String NODE_STARTED = "started";
-    private static final String NODE_PRE_STOPPING = "pre-stopping";
     private static final String NODE_STOPPING = "stopping";
-    private static final String NODE_PRE_UNDEPLOYING = "pre-undeploying";
     private static final String NODE_UNDEPLOYING = "undeploying";
     private Map<Node, List<Binding>> lifecyclebindings = new HashMap<Node, List<Binding>>();
 
@@ -79,23 +75,19 @@ public class AppLifeCycle extends Graph
         // Define Default Graph
 
         // undeployed -> deployed
-        addEdge(NODE_UNDEPLOYED,NODE_PRE_DEPLOYING);
-        addEdge(NODE_PRE_DEPLOYING,NODE_DEPLOYING);
+        addEdge(NODE_UNDEPLOYED,NODE_DEPLOYING);
         addEdge(NODE_DEPLOYING,NODE_DEPLOYED);
 
         // deployed -> started
-        addEdge(NODE_DEPLOYED,NODE_PRE_STARTING);
-        addEdge(NODE_PRE_STARTING,NODE_STARTING);
+        addEdge(NODE_DEPLOYED,NODE_STARTING);
         addEdge(NODE_STARTING,NODE_STARTED);
 
         // started -> deployed
-        addEdge(NODE_STARTED,NODE_PRE_STOPPING);
-        addEdge(NODE_PRE_STOPPING,NODE_STOPPING);
+        addEdge(NODE_STARTED,NODE_STOPPING);
         addEdge(NODE_STOPPING,NODE_DEPLOYED);
 
         // deployed -> undeployed
-        addEdge(NODE_DEPLOYED,NODE_PRE_UNDEPLOYING);
-        addEdge(NODE_PRE_UNDEPLOYING,NODE_UNDEPLOYING);
+        addEdge(NODE_DEPLOYED,NODE_UNDEPLOYING);
         addEdge(NODE_UNDEPLOYING,NODE_UNDEPLOYED);
     }
 

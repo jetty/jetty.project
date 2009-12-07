@@ -15,15 +15,12 @@
 // ========================================================================
 package org.eclipse.jetty.deploy.graph;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
-import java.util.Stack;
 
 /**
  * Basic directed graph implementation
@@ -174,51 +171,6 @@ public class Graph
         }
     }
 
-    private class NodePath implements Iterable<Node>
-    {
-        private Stack<Node> path;
-
-        public NodePath()
-        {
-            path = new Stack<Node>();
-        }
-
-        public void add(Node node)
-        {
-            path.push(node);
-        }
-
-        public NodePath forkPath()
-        {
-            NodePath ep = new NodePath();
-            for (Node node : this)
-            {
-                ep.add(node);
-            }
-            return ep;
-        }
-
-        public Collection<Node> getCollection()
-        {
-            return path;
-        }
-
-        public Iterator<Node> iterator()
-        {
-            return path.iterator();
-        }
-
-        public Node lastNode()
-        {
-            return path.peek();
-        }
-
-        public int length()
-        {
-            return path.size();
-        }
-    }
-
     private Set<Node> nodes = new HashSet<Node>();
     private Set<Edge> edges = new HashSet<Edge>();
 
@@ -252,6 +204,11 @@ public class Graph
             addNode(toNode);
         }
 
+        addEdge(fromNode,toNode);
+    }
+
+    private void addEdge(Node fromNode, Node toNode)
+    {
         Edge edge = new Edge(fromNode,toNode);
         addEdge(edge);
     }
@@ -259,6 +216,55 @@ public class Graph
     public void addNode(Node node)
     {
         this.nodes.add(node);
+    }
+
+    public void writeGraph(GraphOutput output) throws IOException
+    {
+        output.write(this);
+    }
+
+    /**
+     * Convenience method for {@link #insertNode(Edge, Node)}
+     * 
+     * @param edge
+     *            the edge to split and insert a node into
+     * @param nodeName
+     *            the name of the node to insert along the edge
+     */
+    public void insertNode(Edge edge, String nodeName)
+    {
+        Node node;
+
+        try
+        {
+            node = getNodeByName(nodeName);
+        }
+        catch (NodeNotFoundException e)
+        {
+            node = new Node(nodeName);
+        }
+
+        insertNode(edge,node);
+    }
+
+    /**
+     * Insert an arbitrary node on an existing edge.
+     * 
+     * @param edge
+     *            the edge to split and insert a node into
+     * @param node
+     *            the node to insert along the edge
+     */
+    public void insertNode(Edge edge, Node node)
+    {
+        // Remove existing edge
+        removeEdge(edge);
+        // Ensure node is added
+        addNode(node);
+        // Add start edge
+        addEdge(edge.getFrom(),node);
+        // Add second edge
+        addEdge(node,edge.getTo());
     }
 
     /**
@@ -307,6 +313,27 @@ public class Graph
     }
 
     /**
+     * Convenience method for {@link #getPath(Node, Node)}
+     * 
+     * @param nodeNameOrigin
+     *            the name of the node to the path origin.
+     * @param nodeNameDest
+     *            the name of the node to the path destination.
+     * @return the path to take
+     */
+    public NodePath getPath(String nodeNameOrigin, String nodeNameDest)
+    {
+        if (nodeNameOrigin.equals(nodeNameDest))
+        {
+            return new NodePath();
+        }
+
+        Node from = getNodeByName(nodeNameOrigin);
+        Node to = getNodeByName(nodeNameDest);
+        return getPath(from,to);
+    }
+
+    /**
      * Using BFS (Breadth First Search) return the path from a any arbitrary node to any other.
      * 
      * @param from
@@ -315,21 +342,18 @@ public class Graph
      *            the node to
      * @return the path to take
      */
-    public List<Node> findPath(Node from, Node to)
+    public NodePath getPath(Node from, Node to)
     {
         if (from == to)
         {
-            return Collections.emptyList();
+            return new NodePath();
         }
 
         // Perform a Breadth First Search (BFS) of the tree.
         EdgeSearch search = new EdgeSearch(from);
         search.breadthFirst(to);
 
-        NodePath nodepath = search.getShortestPath();
-        List<Node> path = new ArrayList<Node>();
-        path.addAll(nodepath.getCollection());
-        return path;
+        return search.getShortestPath();
     }
 
     public Set<Edge> getEdges()
@@ -337,6 +361,15 @@ public class Graph
         return edges;
     }
 
+    /**
+     * Get the Node by Name.
+     * 
+     * @param name
+     *            the name to lookup
+     * @return the node if found
+     * @throws NodeNotFoundException
+     *             if node not found
+     */
     public Node getNodeByName(String name)
     {
         for (Node node : nodes)

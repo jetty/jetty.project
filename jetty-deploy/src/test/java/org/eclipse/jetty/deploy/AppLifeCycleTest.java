@@ -15,10 +15,15 @@
 // ========================================================================
 package org.eclipse.jetty.deploy;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.deploy.graph.GraphOutputDot;
 import org.eclipse.jetty.deploy.graph.Node;
+import org.eclipse.jetty.deploy.graph.NodePath;
+import org.eclipse.jetty.deploy.test.MavenTestingUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -36,11 +41,11 @@ public class AppLifeCycleTest
     {
         Node fromNode = lifecycle.getNodeByName(from);
         Node toNode = lifecycle.getNodeByName(to);
-        List<Node> actual = lifecycle.findPath(fromNode,toNode);
+        NodePath actual = lifecycle.getPath(fromNode,toNode);
         String msg = "LifeCycle path from " + from + " to " + to;
         Assert.assertNotNull(msg + " should never be null",actual);
 
-        if (expected.size() != actual.size())
+        if (expected.size() != actual.length())
         {
             System.out.println();
             System.out.printf("/* from '%s' -> '%s' */%n",from,to);
@@ -55,12 +60,12 @@ public class AppLifeCycleTest
                 System.out.println(path.getName());
             }
 
-            Assert.assertEquals(msg + " / count",expected.size(),actual.size());
+            Assert.assertEquals(msg + " / count",expected.size(),actual.length());
         }
 
         for (int i = 0, n = expected.size(); i < n; i++)
         {
-            Assert.assertEquals(msg + "[" + i + "]",expected.get(i),actual.get(i).getName());
+            Assert.assertEquals(msg + "[" + i + "]",expected.get(i),actual.getNode(i).getName());
         }
     }
 
@@ -81,7 +86,6 @@ public class AppLifeCycleTest
     {
         List<String> expected = new ArrayList<String>();
         expected.add("deployed");
-        expected.add("pre-starting");
         expected.add("starting");
         expected.add("started");
         assertPath("deployed","started",expected);
@@ -92,7 +96,6 @@ public class AppLifeCycleTest
     {
         List<String> expected = new ArrayList<String>();
         expected.add("deployed");
-        expected.add("pre-undeploying");
         expected.add("undeploying");
         expected.add("undeployed");
         assertPath("deployed","undeployed",expected);
@@ -103,7 +106,6 @@ public class AppLifeCycleTest
     {
         List<String> expected = new ArrayList<String>();
         expected.add("started");
-        expected.add("pre-stopping");
         expected.add("stopping");
         expected.add("deployed");
         assertPath("started","deployed",expected);
@@ -120,10 +122,8 @@ public class AppLifeCycleTest
     {
         List<String> expected = new ArrayList<String>();
         expected.add("started");
-        expected.add("pre-stopping");
         expected.add("stopping");
         expected.add("deployed");
-        expected.add("pre-undeploying");
         expected.add("undeploying");
         expected.add("undeployed");
         assertPath("started","undeployed",expected);
@@ -134,7 +134,6 @@ public class AppLifeCycleTest
     {
         List<String> expected = new ArrayList<String>();
         expected.add("undeployed");
-        expected.add("pre-deploying");
         expected.add("deploying");
         expected.add("deployed");
         assertPath("undeployed","deployed",expected);
@@ -145,10 +144,8 @@ public class AppLifeCycleTest
     {
         List<String> expected = new ArrayList<String>();
         expected.add("undeployed");
-        expected.add("pre-deploying");
         expected.add("deploying");
         expected.add("deployed");
-        expected.add("pre-starting");
         expected.add("starting");
         expected.add("started");
         assertPath("undeployed","started",expected);
@@ -163,17 +160,24 @@ public class AppLifeCycleTest
     /**
      * Request multiple lifecycle paths with a single lifecycle instance. Just to ensure that there is no state
      * maintained between {@link AppLifeCycle#findPath(Node, Node)} requests.
+     * 
+     * @throws IOException
      */
     @Test
-    public void testFindPathMultiple()
+    public void testFindPathMultiple() throws IOException
     {
         AppLifeCycle lifecycle = new AppLifeCycle();
         List<String> expected = new ArrayList<String>();
 
-        lifecycle.removeEdge("deployed","pre-starting");
-        lifecycle.addEdge("deployed","staging");
-        lifecycle.addEdge("staging","staged");
-        lifecycle.addEdge("staged","pre-starting");
+        File outputDir = MavenTestingUtils.getTargetTestingDir(this.getClass().getName() + ".testFindPathMultiple");
+        outputDir.mkdirs();
+
+        // Modify graph to add new 'staging' -> 'staged' between 'deployed' and 'started'
+        lifecycle.writeGraph(new GraphOutputDot(new File(outputDir,"multiple-1.dot"))); // before change
+        lifecycle.insertNode(lifecycle.getPath("deployed","started").getEdge(0),"staging");
+        lifecycle.writeGraph(new GraphOutputDot(new File(outputDir,"multiple-2.dot"))); // after first change
+        lifecycle.insertNode(lifecycle.getPath("staging","started").getEdge(0),"staged");
+        lifecycle.writeGraph(new GraphOutputDot(new File(outputDir,"multiple-3.dot"))); // after second change
 
         // Deployed -> Deployed
         expected.clear();
@@ -189,13 +193,10 @@ public class AppLifeCycleTest
         // Staged -> Undeployed
         expected.clear();
         expected.add("staged");
-        expected.add("pre-starting");
         expected.add("starting");
         expected.add("started");
-        expected.add("pre-stopping");
         expected.add("stopping");
         expected.add("deployed");
-        expected.add("pre-undeploying");
         expected.add("undeploying");
         expected.add("undeployed");
         assertPath(lifecycle,"staged","undeployed",expected);
@@ -203,12 +204,10 @@ public class AppLifeCycleTest
         // Undeployed -> Started
         expected.clear();
         expected.add("undeployed");
-        expected.add("pre-deploying");
         expected.add("deploying");
         expected.add("deployed");
         expected.add("staging");
         expected.add("staged");
-        expected.add("pre-starting");
         expected.add("starting");
         expected.add("started");
         assertPath(lifecycle,"undeployed","started",expected);
