@@ -25,6 +25,8 @@ import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.LazyList;
@@ -136,7 +138,8 @@ public class WebServletAnnotationHandler implements DiscoverableAnnotationHandle
 
         if (isNew)
         {
-            holder = new ServletHolder(clazz);
+            holder = _wac.getServletHandler().newServletHolder(Holder.Source.ANNOTATION);
+            holder.setHeldClass(clazz);
            
             holder.setName(servletName);
             holder.setInitOrder(annotation.loadOnStartup());

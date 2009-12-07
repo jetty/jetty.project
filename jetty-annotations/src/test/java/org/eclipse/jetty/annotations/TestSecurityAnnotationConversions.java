@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServlet;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
+import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
@@ -63,7 +64,6 @@ public class TestSecurityAnnotationConversions extends TestCase
     
     public void setUp()
     {
-      
     }
     
     public void testDenyAllOnClass ()

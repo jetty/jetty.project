@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.DispatcherType;
@@ -90,14 +91,14 @@ public class ServletHandler extends ScopedHandler
     private ServletHolder[] _servlets;
     private ServletMapping[] _servletMappings;
     
-    private transient Map<String,FilterHolder> _filterNameMap= new HashMap<String,FilterHolder>();
-    private transient List<FilterMapping> _filterPathMappings;
-    private transient MultiMap<String> _filterNameMappings;
+    private final Map<String,FilterHolder> _filterNameMap= new HashMap<String,FilterHolder>();
+    private List<FilterMapping> _filterPathMappings;
+    private MultiMap<String> _filterNameMappings;
     
-    private transient Map<String,ServletHolder> _servletNameMap=new HashMap();
-    private transient PathMap _servletPathMap;
+    private final Map<String,ServletHolder> _servletNameMap=new HashMap<String,ServletHolder>();
+    private PathMap _servletPathMap;
     
-    protected transient ConcurrentHashMap _chainCache[];
+    protected ConcurrentHashMap<String,FilterChain> _chainCache[];
 
 
     /* ------------------------------------------------------------ */
@@ -747,15 +748,9 @@ public class ServletHandler extends ScopedHandler
     /**
      * see also newServletHolder(Class)
      */
-    public ServletHolder newServletHolder()
+    public ServletHolder newServletHolder(Holder.Source source)
     {
-        return new ServletHolder();
-    }
-    
-    /* ------------------------------------------------------------ */
-    public ServletHolder newServletHolder(Class servlet)
-    {
-        return new ServletHolder(servlet);
+        return new ServletHolder(source);
     }
     
     /* ------------------------------------------------------------ */
@@ -779,9 +774,9 @@ public class ServletHandler extends ScopedHandler
      */
     public ServletHolder addServletWithMapping (Class<? extends Servlet> servlet,String pathSpec)
     {
-        ServletHolder holder = newServletHolder(servlet);
+        ServletHolder holder = newServletHolder(Holder.Source.EMBEDDED);
+        holder.setHeldClass(servlet);
         setServlets((ServletHolder[])LazyList.addToArray(getServlets(), holder, ServletHolder.class));
-        
         addServletWithMapping(holder,pathSpec);
         
         return holder;
@@ -848,18 +843,12 @@ public class ServletHandler extends ScopedHandler
     }
     
     /* ------------------------------------------------------------ */
-    public FilterHolder newFilterHolder(Class<? extends Filter> filter)
-    {
-        return new FilterHolder(filter);
-    }
-    
-    /* ------------------------------------------------------------ */
     /** 
      * @see {@link #newFilterHolder(Class)}
      */
-    public FilterHolder newFilterHolder()
+    public FilterHolder newFilterHolder(Holder.Source source)
     {
-        return new FilterHolder();
+        return new FilterHolder(source);
     }
 
     /* ------------------------------------------------------------ */
@@ -878,7 +867,8 @@ public class ServletHandler extends ScopedHandler
      */
     public FilterHolder addFilterWithMapping (Class<? extends Filter> filter,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
-        FilterHolder holder = newFilterHolder(filter);
+        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
+        holder.setHeldClass(filter);
         addFilterWithMapping(holder,pathSpec,dispatches);
         
         return holder;
@@ -893,7 +883,7 @@ public class ServletHandler extends ScopedHandler
      */
     public FilterHolder addFilterWithMapping (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
-        FilterHolder holder = newFilterHolder(null);
+        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
         holder.setName(className+"-"+holder.hashCode());
         holder.setClassName(className);
         

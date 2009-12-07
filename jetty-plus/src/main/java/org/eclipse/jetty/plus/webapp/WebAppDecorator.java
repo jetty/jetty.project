@@ -22,6 +22,7 @@ import javax.servlet.ServletException;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
@@ -42,59 +43,88 @@ public class WebAppDecorator implements Decorator
         _wac = context;
     }
     
-    /** 
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#filterCreated(javax.servlet.Filter)
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateFilterHolder(org.eclipse.jetty.servlet.FilterHolder)
      */
-    public <T extends Filter> T filterCreated(T filter) throws ServletException
+    @Override
+    public void decorateFilterHolder(FilterHolder filter) throws ServletException
+    {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateFilterInstance(javax.servlet.Filter)
+     */
+    @Override
+    public <T extends Filter> T decorateFilterInstance(T filter) throws ServletException
     {
         initialize(filter);
         return filter;
     }
 
-
-    /** 
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#listenerCreated(java.util.EventListener)
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateListenerInstance(java.util.EventListener)
      */
-    public <T extends EventListener> T listenerCreated(T listener) throws ServletException
+    @Override
+    public <T extends EventListener> T decorateListenerInstance(T listener) throws ServletException
     {
         initialize(listener);
         return listener;
     }
 
-
-    /** 
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#servletCreated(javax.servlet.Servlet)
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateServletHolder(org.eclipse.jetty.servlet.ServletHolder)
      */
-    public <T extends Servlet> T servletCreated(T servlet) throws ServletException
+    @Override
+    public void decorateServletHolder(ServletHolder servlet) throws ServletException
+    {
+        // TODO Auto-generated method stub
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateServletInstance(javax.servlet.Servlet)
+     */
+    @Override
+    public <T extends Servlet> T decorateServletInstance(T servlet) throws ServletException
     {
         initialize(servlet);
         return servlet;
     }
 
-    /** 
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyFilter(javax.servlet.Filter)
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyFilterInstance(javax.servlet.Filter)
      */
-    public void destroyFilter(Filter f)
+    @Override
+    public void destroyFilterInstance(Filter f)
     {
         destroy(f);
     }
 
 
-    /** 
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyListener(java.util.EventListener)
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyServletInstance(javax.servlet.Servlet)
      */
-    public void destroyListener(EventListener l)
+    @Override
+    public void destroyServletInstance(Servlet s)
     {
-        destroy(l);
+        destroy(s);
     }
 
-
     /** 
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyServlet(javax.servlet.Servlet)
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyListenerInstance(java.util.EventListener)
      */
-    public void destroyServlet(Servlet s)
+    @Override
+    public void destroyListenerInstance(EventListener l)
     {
-       destroy(s);
+        destroy(l);
     }
 
 

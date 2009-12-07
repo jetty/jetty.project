@@ -25,6 +25,7 @@ import javax.servlet.FilterConfig;
 import javax.servlet.FilterRegistration;
 import javax.servlet.ServletException;
 
+import org.eclipse.jetty.servlet.Holder.Source;
 import org.eclipse.jetty.util.log.Log;
 
 /* --------------------------------------------------------------------- */
@@ -36,20 +37,30 @@ public class FilterHolder extends Holder<Filter>
     /* ------------------------------------------------------------ */
     private transient Filter _filter;
     private transient Config _config;
-        
+    
     /* ---------------------------------------------------------------- */
-    /** Constructor for Serialization.
+    /** Constructor 
      */
     public FilterHolder()
     {
+        super (Source.EMBEDDED);
     }   
     
     /* ---------------------------------------------------------------- */
-    /** Constructor for Serialization.
+    /** Constructor 
      */
-    public FilterHolder(Class filter)
+    public FilterHolder(Holder.Source source)
     {
-        super (filter);
+        super (source);
+    }   
+    
+    /* ---------------------------------------------------------------- */
+    /** Constructor 
+     */
+    public FilterHolder(Class<? extends Filter> filter)
+    {
+        super (Source.EMBEDDED);
+        setHeldClass(filter);
     }
 
     /* ---------------------------------------------------------------- */
@@ -57,6 +68,7 @@ public class FilterHolder extends Holder<Filter>
      */
     public FilterHolder(Filter filter)
     {
+        super (Source.EMBEDDED);
         setFilter(filter);
     }
     
@@ -112,7 +124,7 @@ public class FilterHolder extends Holder<Filter>
                 Log.warn(e);
             }
         }
-        if (!_extInstance)
+        if (!_instance)
             _filter=null;
         
         _config=null;
@@ -135,7 +147,7 @@ public class FilterHolder extends Holder<Filter>
     public synchronized void setFilter(Filter filter)
     {
         _filter=filter;
-        _extInstance=true;
+        _instance=true;
         setHeldClass(filter.getClass());
         if (getName()==null)
             setName(filter.getClass().getName());

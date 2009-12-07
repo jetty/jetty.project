@@ -75,22 +75,34 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /** Constructor .
      */
     public ServletHolder()
-    {}
+    {
+        super (Source.EMBEDDED);
+    }
+    
+    /* ---------------------------------------------------------------- */
+    /** Constructor .
+     */
+    public ServletHolder(Holder.Source creator)
+    {
+        super (creator);
+    }
     
     /* ---------------------------------------------------------------- */
     /** Constructor for existing servlet.
      */
     public ServletHolder(Servlet servlet)
     {
+        super (Source.EMBEDDED);
         setServlet(servlet);
     }
 
     /* ---------------------------------------------------------------- */
     /** Constructor for existing servlet.
      */
-    public ServletHolder(Class servlet)
+    public ServletHolder(Class<? extends Servlet> servlet)
     {
-        super(servlet);
+        super (Source.EMBEDDED);
+        setHeldClass(servlet);
     }
 
     /* ---------------------------------------------------------------- */
@@ -108,7 +120,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (servlet==null || servlet instanceof SingleThreadModel)
             throw new IllegalArgumentException();
 
-        _extInstance=true;
+        _instance=true;
         _servlet=servlet;
         setHeldClass(servlet.getClass());
         if (getName()==null)
@@ -251,7 +263,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (_class!=null && javax.servlet.SingleThreadModel.class.isAssignableFrom(_class))
             _servlet = new SingleThreadedWrapper();
 
-        if (_extInstance || _initOnStartup)
+        if (_instance || _initOnStartup)
         {
             try
             {
@@ -292,7 +304,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             }
         }
 
-        if (!_extInstance)
+        if (!_instance)
             _servlet=null;
 
         _config=null;

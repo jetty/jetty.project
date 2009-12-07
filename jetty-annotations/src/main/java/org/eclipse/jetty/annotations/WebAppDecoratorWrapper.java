@@ -19,7 +19,8 @@ import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 
-import org.eclipse.jetty.plus.webapp.WebAppDecorator;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -28,7 +29,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *
  *
  */
-public class WebAppDecoratorWrapper extends WebAppDecorator
+public class WebAppDecoratorWrapper implements Decorator
 {
     Decorator _wrappedDecorator;
     AnnotationIntrospector _introspector = new AnnotationIntrospector();
@@ -38,7 +39,6 @@ public class WebAppDecoratorWrapper extends WebAppDecorator
      */
     public WebAppDecoratorWrapper(WebAppContext context, Decorator wrappedDecorator)
     {
-        super(context);
         _wrappedDecorator = wrappedDecorator;
         _introspector.registerHandler(new ResourceAnnotationHandler(context));
         _introspector.registerHandler(new ResourcesAnnotationHandler(context));
@@ -48,47 +48,111 @@ public class WebAppDecoratorWrapper extends WebAppDecorator
         _introspector.registerHandler(new ServletSecurityAnnotationHandler(context)); 
     }
 
-
-    public <T extends Filter> T filterCreated(T filter) throws ServletException
+    /* ------------------------------------------------------------ */
+    /**
+     * @param filter
+     * @throws ServletException
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateFilterHolder(org.eclipse.jetty.servlet.FilterHolder)
+     */
+    @Override
+    public void decorateFilterHolder(FilterHolder filter) throws ServletException
+    {
+        _wrappedDecorator.decorateFilterHolder(filter);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param <T>
+     * @param filter
+     * @return
+     * @throws ServletException
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateFilterInstance(javax.servlet.Filter)
+     */
+    @Override
+    public <T extends Filter> T decorateFilterInstance(T filter) throws ServletException
     {
         introspect(filter);
-        return _wrappedDecorator.filterCreated(filter);
+        return _wrappedDecorator.decorateFilterInstance(filter);
     }
-
- 
-    public <T extends EventListener> T listenerCreated(T listener) throws ServletException
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param <T>
+     * @param listener
+     * @return
+     * @throws ServletException
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateListenerInstance(java.util.EventListener)
+     */
+    @Override
+    public <T extends EventListener> T decorateListenerInstance(T listener) throws ServletException
     {
         introspect(listener);
-        return _wrappedDecorator.listenerCreated(listener);
+        return _wrappedDecorator.decorateListenerInstance(listener);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @param servlet
+     * @throws ServletException
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateServletHolder(org.eclipse.jetty.servlet.ServletHolder)
+     */
+    @Override
+    public void decorateServletHolder(ServletHolder servlet) throws ServletException
+    {
+        _wrappedDecorator.decorateServletHolder(servlet);
+    }
 
-    public <T extends Servlet> T servletCreated(T servlet) throws ServletException
+    /* ------------------------------------------------------------ */
+    /**
+     * @param <T>
+     * @param servlet
+     * @return
+     * @throws ServletException
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateServletInstance(javax.servlet.Servlet)
+     */
+    @Override
+    public <T extends Servlet> T decorateServletInstance(T servlet) throws ServletException
     {
         introspect(servlet);
-        return _wrappedDecorator.servletCreated(servlet);
+        return _wrappedDecorator.decorateServletInstance(servlet);
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param f
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyFilterInstance(javax.servlet.Filter)
+     */
+    @Override
+    public void destroyFilterInstance(Filter f)
+    {
+        _wrappedDecorator.destroyFilterInstance(f);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param s
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyServletInstance(javax.servlet.Servlet)
+     */
+    @Override
+    public void destroyServletInstance(Servlet s)
+    {
+        _wrappedDecorator.destroyServletInstance(s);
+    }
+
     
     
-
-    public void destroyFilter(Filter f)
-    {
-        _wrappedDecorator.destroyFilter(f);
-    }
-
-
-    public void destroyListener(EventListener l)
-    {
-        _wrappedDecorator.destroyListener(l);
-    }
-
- 
-    public void destroyServlet(Servlet s)
-    {
-        _wrappedDecorator.destroyServlet(s);
-    }
 
   
+    /* ------------------------------------------------------------ */
+    /**
+     * @param f
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyListenerInstance(java.util.EventListener)
+     */
+    public void destroyListenerInstance(EventListener f)
+    {
+        _wrappedDecorator.destroyListenerInstance(f);
+    }
+
     /**
      * Look for annotations that can be discovered with introspection:
      * <ul>

@@ -39,6 +39,7 @@ import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
+import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
@@ -581,7 +582,7 @@ public class WebXmlProcessor
         FilterHolder holder = _servletHandler.getFilter(name);
         if (holder == null)
         {
-            holder = _servletHandler.newFilterHolder();
+            holder = _servletHandler.newFilterHolder(Holder.Source.DESCRIPTOR);
             holder.setName(name);
             _filters = LazyList.add(_filters, holder);
         }
@@ -666,7 +667,7 @@ public class WebXmlProcessor
         ServletHolder holder = _servletHandler.getServlet(servlet_name);
         if (holder == null)
         {
-            holder = _servletHandler.newServletHolder();
+            holder = _servletHandler.newServletHolder(Holder.Source.DESCRIPTOR);
             holder.setName(servlet_name);
             _servlets = LazyList.add(_servlets, holder);
         }

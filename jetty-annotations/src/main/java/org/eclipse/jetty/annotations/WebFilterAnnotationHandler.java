@@ -26,6 +26,7 @@ import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHand
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
+import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -68,7 +69,8 @@ public class WebFilterAnnotationHandler implements DiscoverableAnnotationHandler
             return;
         }
         
-        FilterHolder holder = new FilterHolder(clazz);
+        FilterHolder holder = _wac.getServletHandler().newFilterHolder(Holder.Source.ANNOTATION);
+        holder.setHeldClass(clazz);
         holder.setName((filterAnnotation.filterName().equals("")?clazz.getName():filterAnnotation.filterName()));
         holder.setDisplayName(filterAnnotation.displayName());
 

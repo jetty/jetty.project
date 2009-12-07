@@ -14,11 +14,14 @@
 package org.eclipse.jetty.servlet;
 
 import java.security.AccessController;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.EventListener;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -71,6 +74,8 @@ public class ServletContextHandler extends ContextHandler
     protected int _options;
     protected Decorator _decorator;
     protected JspConfigDescriptor _jspConfig;
+    
+    protected final Set<Object> _created = Collections.newSetFromMap(new ConcurrentHashMap<Object,Boolean>());
     
     /* ------------------------------------------------------------ */
     public ServletContextHandler()
@@ -131,6 +136,42 @@ public class ServletContextHandler extends ContextHandler
     }    
 
     
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.handler.ContextHandler#doStart()
+     */
+    @Override
+    protected void doStart() throws Exception
+    {
+        _created.clear();
+        super.doStart();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.handler.ContextHandler#doStop()
+     */
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        _created.clear();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Check if instance was created by a call to {@link ServletContext#createFilter(Class)},
+     * {@link ServletContext#createServlet(Class)} or {@link ServletContext#createListener(Class)}
+     * @param instance Instance of {@link Servlet}, {@link Filter} or {@link EventListener}
+     * @return True if the instance was created by a call to {@link ServletContext#createFilter(Class)},
+     * {@link ServletContext#createServlet(Class)} or {@link ServletContext#createListener(Class)}
+     */
+    public boolean isCreatedInstance(Object instance)
+    {
+        return _created.contains(instance);
+    }
+
     /* ------------------------------------------------------------ */
     /** Get the defaultSecurityHandlerClass.
      * @return the defaultSecurityHandlerClass
@@ -206,7 +247,19 @@ public class ServletContextHandler extends ContextHandler
 
     	// OK to Initialize servlet handler now
     	if (_servletHandler != null && _servletHandler.isStarted())
-    		_servletHandler.initialize();
+    	{
+    	    if (_decorator!=null)
+    	    {
+                if (_servletHandler.getFilters()!=null)
+                    for (FilterHolder holder:_servletHandler.getFilters())
+                        _decorator.decorateFilterHolder(holder);
+    	        if(_servletHandler.getServlets()!=null)
+    	            for (ServletHolder holder:_servletHandler.getServlets())
+    	                _decorator.decorateServletHolder(holder);
+    	    }   
+    	        
+    	    _servletHandler.initialize();
+    	}
     }
 
     /* ------------------------------------------------------------ */
@@ -349,16 +402,16 @@ public class ServletContextHandler extends ContextHandler
     void destroyServlet(Servlet servlet)
     {
         if (_decorator!=null)
-            _decorator.destroyServlet(servlet);
+            _decorator.destroyServletInstance(servlet);
     }
 
     /* ------------------------------------------------------------ */
     void destroyFilter(Filter filter)
     {
         if (_decorator!=null)
-            _decorator.destroyFilter(filter);
+            _decorator.destroyFilterInstance(filter);
     }
-
+    
     /* ------------------------------------------------------------ */
     public class Context extends ContextHandler.Context
     {
@@ -387,7 +440,7 @@ public class ServletContextHandler extends ContextHandler
                 throw new IllegalStateException();
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final FilterHolder holder= handler.newFilterHolder();
+            final FilterHolder holder= handler.newFilterHolder(Holder.Source.JAVAX_API);
             holder.setName(filterName);
             holder.setHeldClass(filterClass);
             handler.addFilter(holder);
@@ -405,7 +458,7 @@ public class ServletContextHandler extends ContextHandler
                 throw new IllegalStateException();
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final FilterHolder holder= handler.newFilterHolder();
+            final FilterHolder holder= handler.newFilterHolder(Holder.Source.JAVAX_API);
             holder.setName(filterName);
             holder.setClassName(className);
             handler.addFilter(holder);
@@ -424,7 +477,7 @@ public class ServletContextHandler extends ContextHandler
                 throw new IllegalStateException();
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final FilterHolder holder= handler.newFilterHolder();
+            final FilterHolder holder= handler.newFilterHolder(Holder.Source.JAVAX_API);
             holder.setName(filterName);
             holder.setFilter(filter);
             handler.addFilter(holder);
@@ -442,7 +495,7 @@ public class ServletContextHandler extends ContextHandler
                 throw new IllegalStateException();
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final ServletHolder holder= handler.newServletHolder();
+            final ServletHolder holder= handler.newServletHolder(Holder.Source.JAVAX_API);
             holder.setName(servletName);
             holder.setHeldClass(servletClass);
             handler.addServlet(holder);
@@ -460,7 +513,7 @@ public class ServletContextHandler extends ContextHandler
                 throw new IllegalStateException();
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final ServletHolder holder= handler.newServletHolder();
+            final ServletHolder holder= handler.newServletHolder(Holder.Source.JAVAX_API);
             holder.setName(servletName);
             holder.setClassName(className);
             handler.addServlet(holder);
@@ -475,7 +528,7 @@ public class ServletContextHandler extends ContextHandler
                 throw new IllegalStateException();
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
-            final ServletHolder holder= handler.newServletHolder();
+            final ServletHolder holder= handler.newServletHolder(Holder.Source.JAVAX_API);
             holder.setName(servletName);
             holder.setServlet(servlet);
             handler.addServlet(holder);
@@ -500,7 +553,8 @@ public class ServletContextHandler extends ContextHandler
             {
                 T f = c.newInstance();
                 if (_decorator!=null)
-                    f=_decorator.filterCreated(f);
+                    f=_decorator.decorateFilterInstance(f);
+                _created.add(f);
                 return f;
             }
             catch (InstantiationException e)
@@ -521,7 +575,8 @@ public class ServletContextHandler extends ContextHandler
             {
                 T s = c.newInstance();
                 if (_decorator!=null)
-                    s=_decorator.servletCreated(s);
+                    s=_decorator.decorateServletInstance(s);
+                _created.add(s);
                 return s;
             }
             catch (InstantiationException e)
@@ -646,7 +701,8 @@ public class ServletContextHandler extends ContextHandler
             {
                 T l = super.createListener(clazz);
                 if (_decorator!=null)
-                    l=_decorator.listenerCreated(l);
+                    l=_decorator.decorateListenerInstance(l);
+                _created.add(l);
                 return l;
             }
             catch(ServletException e)
@@ -665,17 +721,19 @@ public class ServletContextHandler extends ContextHandler
         {
             return _jspConfig;
         }
-      
-     
     }
     
     public interface Decorator
     {
-        <T extends Filter> T filterCreated(T filter) throws ServletException;
-        <T extends Servlet> T servletCreated(T servlet) throws ServletException;
-        <T extends EventListener> T listenerCreated(T listener) throws ServletException;
-        void destroyServlet(Servlet s);
-        void destroyFilter(Filter f);
-        void destroyListener(EventListener f);
+        <T extends Filter> T decorateFilterInstance(T filter) throws ServletException;
+        <T extends Servlet> T decorateServletInstance(T servlet) throws ServletException;
+        <T extends EventListener> T decorateListenerInstance(T listener) throws ServletException;
+
+        void decorateFilterHolder(FilterHolder filter) throws ServletException;
+        void decorateServletHolder(ServletHolder servlet) throws ServletException;
+        
+        void destroyServletInstance(Servlet s);
+        void destroyFilterInstance(Filter f);
+        void destroyListenerInstance(EventListener f);
     }
 }

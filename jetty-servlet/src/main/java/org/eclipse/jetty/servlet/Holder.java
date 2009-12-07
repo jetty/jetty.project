@@ -36,31 +36,35 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Holder<T> extends AbstractLifeCycle 
 {
+    public enum Source { EMBEDDED, JAVAX_API, DESCRIPTOR, ANNOTATION };
+    
+    final private Source _source;
+    
     protected transient Class<? extends T> _class;
     protected String _className;
     protected String _displayName;
     protected Map<String,String> _initParams;
-    protected boolean _extInstance;
+    protected boolean _instance;
     protected boolean _asyncSupported;
 
     /* ---------------------------------------------------------------- */
     protected String _name;
     protected ServletHandler _servletHandler;
 
-    protected Holder()
-    {}
-
-    /* ---------------------------------------------------------------- */
-    protected Holder(Class<? extends T> held)
+    protected Holder(Source source)
     {
-        _class=held;
-        if (held!=null)
-        {
-            _className=held.getName();
-            _name=held.getName()+"-"+this.hashCode();
-        }
+        _source=source;
     }
-
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if this holder was created for a specific instance.
+     */
+    public boolean isInstance()
+    {
+        return _instance;
+    }
+    
     /* ------------------------------------------------------------ */
     public void doStart()
         throws Exception
@@ -90,7 +94,7 @@ public class Holder<T> extends AbstractLifeCycle
     public void doStop()
         throws Exception
     {
-        if (!_extInstance)
+        if (!_instance)
             _class=null;
     }
     
@@ -172,7 +176,12 @@ public class Holder<T> extends AbstractLifeCycle
     public void setHeldClass(Class<? extends T> held)
     {
         _class=held;
-        _className = held!=null?held.getName():null;
+        if (held!=null)
+        {
+            _className=held.getName();
+            if (_name==null)
+                _name=held.getName()+"-"+this.hashCode();
+        }
     }
     
     /* ------------------------------------------------------------ */
