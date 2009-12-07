@@ -322,7 +322,7 @@ public class DeploymentManager extends AbstractLifeCycle
      * @param name
      * @return
      */
-    public Object getAttribute(String name)
+    public Object getContextAttribute(String name)
     {
         return contextAttributes.getAttribute(name);
     }
@@ -399,7 +399,7 @@ public class DeploymentManager extends AbstractLifeCycle
      * 
      * @param name
      */
-    public void removeAttribute(String name)
+    public void removeContextAttribute(String name)
     {
         contextAttributes.removeAttribute(name);
     }
@@ -500,7 +500,7 @@ public class DeploymentManager extends AbstractLifeCycle
      * @param name
      * @param value
      */
-    public void setAttribute(String name, Object value)
+    public void setContextAttribute(String name, Object value)
     {
         contextAttributes.setAttribute(name,value);
     }
