@@ -46,7 +46,7 @@ public class FileConfigurationManager implements ConfigurationManager
     /** 
      * @see org.eclipse.jetty.deploy.ConfigurationManager#getProperties()
      */
-    public Map getProperties()
+    public Map<?,?> getProperties()
     {
         try
         {

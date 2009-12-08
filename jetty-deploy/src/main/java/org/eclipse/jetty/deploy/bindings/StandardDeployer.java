@@ -29,13 +29,13 @@ public class StandardDeployer implements AppLifeCycle.Binding
         { "deploying" };
     }
 
-    public void processBinding(Node node, App app, DeploymentManager deploymentManager) throws Exception
+    public void processBinding(Node node, App app) throws Exception
     {
-        ContextHandler handler = app.getContextHandler(deploymentManager);
+        ContextHandler handler = app.getContextHandler();
         if (handler == null)
         {
             throw new NullPointerException("No Handler created for App: " + app);
         }
-        deploymentManager.getContexts().addHandler(handler);
+        app.getDeploymentManager().getContexts().addHandler(handler);
     }
 }

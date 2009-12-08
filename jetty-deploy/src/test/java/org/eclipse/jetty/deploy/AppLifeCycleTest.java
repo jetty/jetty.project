@@ -22,7 +22,7 @@ import java.util.List;
 
 import org.eclipse.jetty.deploy.graph.GraphOutputDot;
 import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.deploy.graph.NodePath;
+import org.eclipse.jetty.deploy.graph.Path;
 import org.eclipse.jetty.deploy.test.MavenTestingUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,11 +41,11 @@ public class AppLifeCycleTest
     {
         Node fromNode = lifecycle.getNodeByName(from);
         Node toNode = lifecycle.getNodeByName(to);
-        NodePath actual = lifecycle.getPath(fromNode,toNode);
+        Path actual = lifecycle.getPath(fromNode,toNode);
         String msg = "LifeCycle path from " + from + " to " + to;
         Assert.assertNotNull(msg + " should never be null",actual);
 
-        if (expected.size() != actual.length())
+        if (expected.size() != actual.nodes())
         {
             System.out.println();
             System.out.printf("/* from '%s' -> '%s' */%n",from,to);
@@ -55,12 +55,12 @@ public class AppLifeCycleTest
                 System.out.println(path);
             }
             System.out.println("/* Actual Path */");
-            for (Node path : actual)
+            for (Node path : actual.getNodes())
             {
                 System.out.println(path.getName());
             }
 
-            Assert.assertEquals(msg + " / count",expected.size(),actual.length());
+            Assert.assertEquals(msg + " / count",expected.size(),actual.nodes());
         }
 
         for (int i = 0, n = expected.size(); i < n; i++)
@@ -173,11 +173,11 @@ public class AppLifeCycleTest
         outputDir.mkdirs();
 
         // Modify graph to add new 'staging' -> 'staged' between 'deployed' and 'started'
-        lifecycle.writeGraph(new GraphOutputDot(new File(outputDir,"multiple-1.dot"))); // before change
+        GraphOutputDot.write(lifecycle,new File(outputDir,"multiple-1.dot")); // before change
         lifecycle.insertNode(lifecycle.getPath("deployed","started").getEdge(0),"staging");
-        lifecycle.writeGraph(new GraphOutputDot(new File(outputDir,"multiple-2.dot"))); // after first change
+        GraphOutputDot.write(lifecycle,new File(outputDir,"multiple-2.dot")); // after first change
         lifecycle.insertNode(lifecycle.getPath("staging","started").getEdge(0),"staged");
-        lifecycle.writeGraph(new GraphOutputDot(new File(outputDir,"multiple-3.dot"))); // after second change
+        GraphOutputDot.write(lifecycle,new File(outputDir,"multiple-3.dot")); // after second change
 
         // Deployed -> Deployed
         expected.clear();

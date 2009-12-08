@@ -10,7 +10,7 @@
           <Ref id="Contexts" />
         </Set>
         <Set name="configurationManager">
-          <New class="org.eclipse.jetty.deploy.support.FileConfigurationManager">
+          <New class="org.eclipse.jetty.deploy.FileConfigurationManager">
             <Set name="file">
               <Property name="test.targetdir" default="target" />/xml-configured-jetty.properties
             </Set>

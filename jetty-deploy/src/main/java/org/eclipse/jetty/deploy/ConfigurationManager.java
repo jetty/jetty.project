@@ -15,6 +15,8 @@ package org.eclipse.jetty.deploy;
 
 import java.util.Map;
 
+import org.eclipse.jetty.util.component.LifeCycle;
+
 /**
  * ConfigurationManager
  *
@@ -23,6 +25,5 @@ import java.util.Map;
  */
 public interface ConfigurationManager
 {
-    public Map getProperties();
-
+    public Map<?,?> getProperties();
 }

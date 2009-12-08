@@ -28,19 +28,19 @@ public class StandardStarter implements AppLifeCycle.Binding
         return new String[] { "starting" };
     }
 
-    public void processBinding(Node node, App app, DeploymentManager deploymentManager) throws Exception
+    public void processBinding(Node node, App app) throws Exception
     {
-        ContextHandler handler = app.getContextHandler(deploymentManager);
+        ContextHandler handler = app.getContextHandler();
         if (!handler.isStarted())
         {
             handler.start();
         }
 
         // Remove other apps at same context
-        for (App other : deploymentManager.getAppsWithSameContext(app))
+        for (App other : app.getDeploymentManager().getAppsWithSameContext(app))
         {
             Log.info("Removing apps with same context: " + other);
-            deploymentManager.requestAppGoal(other,"undeployed");
+            app.getDeploymentManager().requestAppGoal(other,"undeployed");
         }
     }
 }

@@ -18,33 +18,31 @@ package org.eclipse.jetty.deploy.graph;
 /**
  * Basic Graph Node
  */
-public class Node
+public final class Node
 {
-    private String name;
+    private final String _name;
 
     public Node(String name)
     {
-        this.name = name;
+        assert name!=null;
+        this._name = name;
     }
 
     public String getName()
     {
-        return name;
+        return _name;
     }
 
     @Override
     public String toString()
     {
-        return "Node[" + name + "]";
+        return "Node[" + _name + "]";
     }
 
     @Override
     public int hashCode()
     {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((name == null)?0:name.hashCode());
-        return result;
+        return _name.hashCode();
     }
 
     @Override
@@ -57,12 +55,12 @@ public class Node
         if (getClass() != obj.getClass())
             return false;
         Node other = (Node)obj;
-        if (name == null)
+        if (_name == null)
         {
-            if (other.name != null)
+            if (other._name != null)
                 return false;
         }
-        else if (!name.equals(other.name))
+        else if (!_name.equals(other._name))
             return false;
         return true;
     }

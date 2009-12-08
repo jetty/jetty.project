@@ -15,190 +15,45 @@
 // ========================================================================
 package org.eclipse.jetty.deploy.graph;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Basic directed graph implementation
  */
 public class Graph
 {
-    private class EdgeSearch
-    {
-        private Set<Edge> seenEdges = new HashSet<Edge>();
-        private List<NodePath> paths = new ArrayList<NodePath>();
-
-        public EdgeSearch(Node from)
-        {
-            NodePath path = new NodePath();
-            path.add(from);
-            paths.add(path);
-        }
-
-        public void breadthFirst(Node destination)
-        {
-            // Test existing edge endpoints
-            if (hasReachedDestination(destination))
-            {
-                // Found our destination!
-
-                // Now remove the other paths that do not end at the destination
-                ListIterator<NodePath> pathiter = paths.listIterator();
-                while (pathiter.hasNext())
-                {
-                    NodePath path = pathiter.next();
-                    if (path.lastNode() != destination)
-                    {
-                        pathiter.remove();
-                    }
-                }
-                return;
-            }
-
-            List<NodePath> extrapaths = null;
-
-            // Add next unseen segments to paths.
-            boolean pathsAdded = false;
-
-            for (NodePath path : paths)
-            {
-                List<Edge> next = nextUnseenEdges(path);
-                if (next.size() == 0)
-                {
-                    continue; // no new edges
-                }
-
-                pathsAdded = true;
-
-                // More than 1 path out? Split it.
-                if (next.size() > 1)
-                {
-                    if (extrapaths == null)
-                    {
-                        extrapaths = new ArrayList<NodePath>();
-                    }
-
-                    // Split path for other edges
-                    for (int i = 1, n = next.size(); i < n; i++)
-                    {
-                        NodePath split = path.forkPath();
-                        // Add segment to split'd path
-                        split.add(next.get(i).getTo());
-
-                        // Add to extra paths
-                        extrapaths.add(split);
-                    }
-                }
-
-                // Add edge to current path
-                Edge edge = next.get(0);
-                path.add(edge.getTo());
-
-                // Mark all edges as seen
-                for (Edge e : next)
-                {
-                    seenEdges.add(e);
-                }
-            }
-
-            // Do we have any extra paths?
-            if (extrapaths != null)
-            {
-                paths.addAll(extrapaths);
-            }
-
-            if (pathsAdded)
-            {
-                // recurse
-                breadthFirst(destination);
-            }
-        }
-
-        public NodePath getShortestPath()
-        {
-            NodePath shortest = null;
-            int shortestlen = Integer.MAX_VALUE;
-
-            for (NodePath path : paths)
-            {
-                if (shortest == null)
-                {
-                    shortest = path;
-                    continue;
-                }
-
-                int len = path.length();
-
-                if (len < shortestlen)
-                {
-                    shortest = path;
-                    shortestlen = len;
-                }
-            }
-
-            return shortest;
-        }
-
-        private boolean hasReachedDestination(Node destination)
-        {
-            for (NodePath path : paths)
-            {
-                if (path.lastNode() == destination)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private List<Edge> nextUnseenEdges(NodePath path)
-        {
-            List<Edge> next = new ArrayList<Edge>();
-
-            for (Edge edge : findEdgesFrom(path.lastNode()))
-            {
-                if (seenEdges.contains(edge) == false)
-                {
-                    next.add(edge);
-                }
-            }
-
-            return next;
-        }
-    }
-
-    private Set<Node> nodes = new HashSet<Node>();
-    private Set<Edge> edges = new HashSet<Edge>();
+    private Set<Node> _nodes = new HashSet<Node>();
+    private Set<Edge> _edges = new HashSet<Edge>();
 
     public void addEdge(Edge edge)
     {
-        this.edges.add(edge);
+        Node fromNode = getNodeByName(edge.getFrom().getName());
+        if (fromNode==null)
+            addNode(fromNode=edge.getFrom());
+        Node toNode = getNodeByName(edge.getTo().getName());
+        if (toNode==null)
+            addNode(toNode=edge.getTo());
+        
+        // replace edge with normalized edge
+        if (edge.getFrom()!=fromNode || edge.getTo()!=toNode)
+            edge=new Edge(fromNode,toNode);
+        
+        this._edges.add(edge);
     }
 
     public void addEdge(String from, String to)
     {
-        Node fromNode = null;
-        Node toNode = null;
-
-        try
-        {
-            fromNode = getNodeByName(from);
-        }
-        catch (NodeNotFoundException e)
+        Node fromNode = getNodeByName(from);
+        if (fromNode==null)
         {
             fromNode = new Node(from);
             addNode(fromNode);
         }
-
-        try
-        {
-            toNode = getNodeByName(to);
-        }
-        catch (NodeNotFoundException e)
+            
+        Node toNode = getNodeByName(to);
+        if (toNode==null)
         {
             toNode = new Node(to);
             addNode(toNode);
@@ -215,12 +70,7 @@ public class Graph
 
     public void addNode(Node node)
     {
-        this.nodes.add(node);
-    }
-
-    public void writeGraph(GraphOutput output) throws IOException
-    {
-        output.write(this);
+        this._nodes.add(node);
     }
 
     /**
@@ -233,13 +83,8 @@ public class Graph
      */
     public void insertNode(Edge edge, String nodeName)
     {
-        Node node;
-
-        try
-        {
-            node = getNodeByName(nodeName);
-        }
-        catch (NodeNotFoundException e)
+        Node node = getNodeByName(nodeName);
+        if (node==null)
         {
             node = new Node(nodeName);
         }
@@ -279,7 +124,7 @@ public class Graph
     {
         Set<Edge> fromedges = new HashSet<Edge>();
 
-        for (Edge edge : this.edges)
+        for (Edge edge : this._edges)
         {
             if ((edge.getFrom() == node) || (edge.getTo() == node))
             {
@@ -301,7 +146,7 @@ public class Graph
     {
         Set<Edge> fromedges = new HashSet<Edge>();
 
-        for (Edge edge : this.edges)
+        for (Edge edge : this._edges)
         {
             if (edge.getFrom() == from)
             {
@@ -321,11 +166,11 @@ public class Graph
      *            the name of the node to the path destination.
      * @return the path to take
      */
-    public NodePath getPath(String nodeNameOrigin, String nodeNameDest)
+    public Path getPath(String nodeNameOrigin, String nodeNameDest)
     {
         if (nodeNameOrigin.equals(nodeNameDest))
         {
-            return new NodePath();
+            return new Path();
         }
 
         Node from = getNodeByName(nodeNameOrigin);
@@ -340,25 +185,66 @@ public class Graph
      *            the node from
      * @param to
      *            the node to
-     * @return the path to take
+     * @return the path to take or null if there is no path.
      */
-    public NodePath getPath(Node from, Node to)
+    public Path getPath(Node from, Node to)
     {
         if (from == to)
         {
-            return new NodePath();
+            return new Path();
         }
 
         // Perform a Breadth First Search (BFS) of the tree.
-        EdgeSearch search = new EdgeSearch(from);
-        search.breadthFirst(to);
-
-        return search.getShortestPath();
+        Path path = breadthFirst(from,to,new CopyOnWriteArrayList<Path>(),new HashSet<Edge>());
+        return path;
     }
+    
+
+    private Path breadthFirst(Node from, Node destination, CopyOnWriteArrayList<Path> paths, Set<Edge> seen)
+    {
+        // Add next unseen segments to paths.
+        boolean edgesAdded = false;
+        if (paths.size()==0)
+            paths.add(new Path());
+
+        for (Path path : paths)
+        {
+            Set<Edge> next = findEdgesFrom(path.nodes()==0?from:path.lastNode());
+            if (next.size() == 0)
+                continue; // no new edges
+
+            // Split path for other edges
+            int splits=0;
+            for (Edge edge:next)
+            {
+                if (seen.contains(edge))
+                    continue;
+                seen.add(edge);
+                Path nextPath = (++splits==next.size())?path:path.forkPath();
+                // Add segment to split'd path
+                nextPath.add(edge);
+                
+                // Are we there yet?
+                if (destination.equals(edge.getTo()))
+                    return nextPath;
+
+                edgesAdded = true;
+                
+                // Add to extra paths
+                if (nextPath!=path)
+                    paths.add(nextPath);
+            }
+        }
+
+        if (edgesAdded)
+            return breadthFirst(from,destination,paths,seen);
+        return null;
+    }
+
 
     public Set<Edge> getEdges()
     {
-        return edges;
+        return _edges;
     }
 
     /**
@@ -366,31 +252,28 @@ public class Graph
      * 
      * @param name
      *            the name to lookup
-     * @return the node if found
-     * @throws NodeNotFoundException
-     *             if node not found
+     * @return the node if found or null if not found.
      */
     public Node getNodeByName(String name)
     {
-        for (Node node : nodes)
+        for (Node node : _nodes)
         {
             if (node.getName().equals(name))
             {
                 return node;
             }
         }
-
-        throw new NodeNotFoundException("Unable to find node: " + name);
+        return null;
     }
 
     public Set<Node> getNodes()
     {
-        return nodes;
+        return _nodes;
     }
 
     public void removeEdge(Edge edge)
     {
-        this.edges.remove(edge);
+        this._edges.remove(edge);
     }
 
     public void removeEdge(String fromNodeName, String toNodeName)
@@ -403,16 +286,16 @@ public class Graph
 
     public void removeNode(Node node)
     {
-        this.nodes.remove(node);
+        this._nodes.remove(node);
     }
 
     public void setEdges(Set<Edge> edges)
     {
-        this.edges = edges;
+        this._edges = edges;
     }
 
     public void setNodes(Set<Node> nodes)
     {
-        this.nodes = nodes;
+        this._nodes = nodes;
     }
 }

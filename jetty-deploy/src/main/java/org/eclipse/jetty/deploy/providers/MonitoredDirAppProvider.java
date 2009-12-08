@@ -76,7 +76,7 @@ public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppPro
     private void addConfiguredContextApp(String filename)
     {
         String originId = filename;
-        App app = new App(originId,new File(filename));
+        App app = new App(deploymgr,originId,new File(filename));
         app.setExtractWars(this.extractWars);
         app.setParentLoaderPriority(this.parentLoaderPriority);
         app.setDefaultsDescriptor(this.defaultsDescriptor);

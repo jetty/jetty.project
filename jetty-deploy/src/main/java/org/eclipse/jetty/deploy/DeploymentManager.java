@@ -29,8 +29,7 @@ import org.eclipse.jetty.deploy.bindings.StandardStarter;
 import org.eclipse.jetty.deploy.bindings.StandardStopper;
 import org.eclipse.jetty.deploy.bindings.StandardUndeployer;
 import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.deploy.graph.NodePath;
-import org.eclipse.jetty.deploy.support.ConfigurationManager;
+import org.eclipse.jetty.deploy.graph.Path;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.AttributesMap;
@@ -107,9 +106,9 @@ public class DeploymentManager extends AbstractLifeCycle
         }
     }
 
-    private List<AppProvider> providers = new ArrayList<AppProvider>();
-    private AppLifeCycle lifecycle = new AppLifeCycle();
-    private LinkedList<AppEntry> apps = new LinkedList<AppEntry>();
+    private final List<AppProvider> providers = new ArrayList<AppProvider>();
+    private final AppLifeCycle lifecycle = new AppLifeCycle();
+    private final LinkedList<AppEntry> apps = new LinkedList<AppEntry>();
     private AttributesMap contextAttributes = new AttributesMap();
     private ConfigurationManager configurationManager;
     private ContextHandlerCollection contexts;
@@ -441,7 +440,7 @@ public class DeploymentManager extends AbstractLifeCycle
     {
         Node destinationNode = lifecycle.getNodeByName(nodeName);
         // Compute lifecycle steps
-        NodePath path = lifecycle.getPath(appentry.lifecyleNode,destinationNode);
+        Path path = lifecycle.getPath(appentry.lifecyleNode,destinationNode);
         if (path.isEmpty())
         {
             // nothing to do. already there.
@@ -451,7 +450,7 @@ public class DeploymentManager extends AbstractLifeCycle
         // Execute each Node binding.  Stopping at any thrown exception.
         try
         {
-            Iterator<Node> it = path.iterator();
+            Iterator<Node> it = path.getNodes().iterator();
             if (it.hasNext()) // Any entries?
             {
                 // The first entry in the path is always the start node

@@ -18,25 +18,23 @@ package org.eclipse.jetty.deploy.graph;
 /**
  * Basic Graph Edge
  */
-public class Edge
+public final class Edge
 {
-    private Node from;
-    private Node to;
+    private Node _from;
+    private Node _to;
 
     public Edge(Node from, Node to)
     {
-        this.from = from;
-        this.to = to;
+        if (from==null || to==null || from==to)
+            throw new IllegalArgumentException("from "+from+" to "+to);
+        _from = from;
+        _to = to;
     }
 
     @Override
     public int hashCode()
     {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((from == null)?0:from.hashCode());
-        result = prime * result + ((to == null)?0:to.hashCode());
-        return result;
+        return _from.hashCode() ^ _to.hashCode();
     }
 
     @Override
@@ -49,30 +47,36 @@ public class Edge
         if (getClass() != obj.getClass())
             return false;
         Edge other = (Edge)obj;
-        if (from == null)
+        if (_from == null)
         {
-            if (other.from != null)
+            if (other._from != null)
                 return false;
         }
-        else if (!from.equals(other.from))
+        else if (!_from.equals(other._from))
             return false;
-        if (to == null)
+        if (_to == null)
         {
-            if (other.to != null)
+            if (other._to != null)
                 return false;
         }
-        else if (!to.equals(other.to))
+        else if (!_to.equals(other._to))
             return false;
         return true;
     }
 
     public Node getFrom()
     {
-        return from;
+        return _from;
     }
 
     public Node getTo()
     {
-        return to;
+        return _to;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return _from+"->"+_to;
     }
 }

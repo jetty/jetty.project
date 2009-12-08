@@ -33,14 +33,14 @@ public class StandardUndeployer implements AppLifeCycle.Binding
         { "undeploying" };
     }
 
-    public void processBinding(Node node, App app, DeploymentManager deploymentManager) throws Exception
+    public void processBinding(Node node, App app) throws Exception
     {
-        ContextHandler handler = app.getContextHandler(deploymentManager);
-        ContextHandlerCollection chcoll = deploymentManager.getContexts();
+        ContextHandler handler = app.getContextHandler();
+        ContextHandlerCollection chcoll = app.getDeploymentManager().getContexts();
 
         recursiveRemoveContext(chcoll,handler);
 
-        deploymentManager.removeApp(app);
+        app.getDeploymentManager().removeApp(app);
     }
 
     private void recursiveRemoveContext(HandlerCollection coll, ContextHandler context)

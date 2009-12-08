@@ -57,7 +57,7 @@ public class AppLifeCycle extends Graph
          * @throws Exception
          *             if any problem severe enough to halt the AppLifeCycle processing
          */
-        void processBinding(Node node, App app, DeploymentManager deploymentManager) throws Exception;
+        void processBinding(Node node, App app) throws Exception;
     }
 
     // Private string constants defined to avoid typos on repeatedly used strings 
@@ -178,7 +178,7 @@ public class AppLifeCycle extends Graph
         for (Binding binding : bindings)
         {
             Log.info("Calling " + binding.getClass().getName());
-            binding.processBinding(node,app,deploymentManager);
+            binding.processBinding(node,app);
         }
     }
 }

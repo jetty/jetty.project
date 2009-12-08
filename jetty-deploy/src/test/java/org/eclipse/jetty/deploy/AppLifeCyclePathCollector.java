@@ -44,7 +44,7 @@ public class AppLifeCyclePathCollector implements AppLifeCycle.Binding
         { "*" };
     }
 
-    public void processBinding(Node node, App app, DeploymentManager deploymentManager) throws Exception
+    public void processBinding(Node node, App app) throws Exception
     {
         actualOrder.add(node);
     }

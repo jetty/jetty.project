@@ -35,12 +35,13 @@ import org.xml.sax.SAXException;
  */
 public class App
 {
-    private File archivePath;
-    private ContextHandler handler;
-    private boolean extractWars = false;
-    private boolean parentLoaderPriority = false;
-    private String defaultsDescriptor;
-    private String originId;
+    private final DeploymentManager _manager;
+    private final String _originId;
+    private final File _archivePath;
+    private ContextHandler _context;
+    private boolean _extractWars = false;
+    private boolean _parentLoaderPriority = false;
+    private String _defaultsDescriptor;
 
     /**
      * Create an App with specified Origin ID and archivePath
@@ -52,12 +53,22 @@ public class App
      * @see App#getOriginId()
      * @see App#getContextId()
      */
-    public App(String originId, File archivePath)
+    public App(DeploymentManager manager, String originId, File archivePath)
     {
-        this.originId = originId;
-        this.archivePath = archivePath;
+        _manager=manager;
+        _originId = originId;
+        _archivePath = archivePath;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The deployment manager
+     */
+    public DeploymentManager getDeploymentManager()
+    {
+        return _manager;
+    }
+    
     /**
      * Get the archive path to the App.
      * 
@@ -67,7 +78,7 @@ public class App
      */
     public File getArchivePath()
     {
-        return this.archivePath;
+        return this._archivePath;
     }
 
     /**
@@ -79,35 +90,35 @@ public class App
      *         when App is in the {@link AppState#STAGED} state}
      * @throws Exception
      */
-    public ContextHandler getContextHandler(DeploymentManager deployMgr) throws Exception
+    public ContextHandler getContextHandler() throws Exception
     {
-        if (handler == null)
+        if (_context == null)
         {
-            if (FileID.isXmlFile(archivePath))
+            if (FileID.isXmlFile(_archivePath))
             {
-                this.handler = createContextFromXml(deployMgr);
+                this._context = createContextFromXml(_manager);
             }
-            else if (FileID.isWebArchive(archivePath))
+            else if (FileID.isWebArchive(_archivePath))
             {
                 // Treat as a Web Archive.
-                this.handler = createContextDefault(deployMgr);
+                this._context = createContextDefault(_manager);
             }
             else
             {
-                throw new IllegalStateException("Not an XML or Web Archive: " + archivePath.getAbsolutePath());
+                throw new IllegalStateException("Not an XML or Web Archive: " + _archivePath.getAbsolutePath());
             }
 
-            this.handler.setAttributes(new AttributesMap(deployMgr.getContextAttributes()));
+            this._context.setAttributes(new AttributesMap(_manager.getContextAttributes()));
         }
-        return handler;
+        return _context;
     }
 
     private ContextHandler createContextDefault(DeploymentManager deploymgr)
     {
-        String context = archivePath.getName();
+        String context = _archivePath.getName();
 
         // Context Path is the same as the archive.
-        if (FileID.isWebArchiveFile(archivePath))
+        if (FileID.isWebArchiveFile(_archivePath))
         {
             context = context.substring(0,context.length() - 4);
         }
@@ -132,13 +143,13 @@ public class App
 
         WebAppContext wah = new WebAppContext();
         wah.setContextPath(context);
-        wah.setWar(archivePath.getAbsolutePath());
-        if (defaultsDescriptor != null)
+        wah.setWar(_archivePath.getAbsolutePath());
+        if (_defaultsDescriptor != null)
         {
-            wah.setDefaultsDescriptor(defaultsDescriptor);
+            wah.setDefaultsDescriptor(_defaultsDescriptor);
         }
-        wah.setExtractWAR(extractWars);
-        wah.setParentLoaderPriority(parentLoaderPriority);
+        wah.setExtractWAR(_extractWars);
+        wah.setParentLoaderPriority(_parentLoaderPriority);
 
         return wah;
     }
@@ -146,7 +157,7 @@ public class App
     @SuppressWarnings("unchecked")
     private ContextHandler createContextFromXml(DeploymentManager deploymgr) throws MalformedURLException, IOException, SAXException, Exception
     {
-        Resource resource = Resource.newResource(this.archivePath.toURI());
+        Resource resource = Resource.newResource(this._archivePath.toURI());
         if (!resource.exists())
         {
             return null;
@@ -166,32 +177,32 @@ public class App
 
     public boolean isExtractWars()
     {
-        return extractWars;
+        return _extractWars;
     }
 
     public void setExtractWars(boolean extractWars)
     {
-        this.extractWars = extractWars;
+        this._extractWars = extractWars;
     }
 
     public boolean isParentLoaderPriority()
     {
-        return parentLoaderPriority;
+        return _parentLoaderPriority;
     }
 
     public void setParentLoaderPriority(boolean parentLoaderPriority)
     {
-        this.parentLoaderPriority = parentLoaderPriority;
+        this._parentLoaderPriority = parentLoaderPriority;
     }
 
     public String getDefaultsDescriptor()
     {
-        return defaultsDescriptor;
+        return _defaultsDescriptor;
     }
 
     public void setDefaultsDescriptor(String defaultsDescriptor)
     {
-        this.defaultsDescriptor = defaultsDescriptor;
+        this._defaultsDescriptor = defaultsDescriptor;
     }
 
     /**
@@ -201,11 +212,11 @@ public class App
      */
     public String getContextId()
     {
-        if (this.handler == null)
+        if (this._context == null)
         {
             return null;
         }
-        return this.handler.getContextPath();
+        return this._context.getContextPath();
     }
 
     /**
@@ -215,6 +226,6 @@ public class App
      */
     public String getOriginId()
     {
-        return this.originId;
+        return this._originId;
     }
 }

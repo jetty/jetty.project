@@ -29,9 +29,9 @@ public class StandardStopper implements AppLifeCycle.Binding
         { "stopping" };
     }
 
-    public void processBinding(Node node, App app, DeploymentManager deploymentManager) throws Exception
+    public void processBinding(Node node, App app) throws Exception
     {
-        ContextHandler handler = app.getContextHandler(deploymentManager);
+        ContextHandler handler = app.getContextHandler();
         if (!handler.isStopped())
         {
             handler.stop();

@@ -39,7 +39,7 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
     public void findWebapp(String name)
     {
         File war = new File(webappsDir,name);
-        App app = new App("mock-" + name,war);
+        App app = new App(deployMan,"mock-" + name,war);
         this.deployMan.addApp(app);
     }
 }
