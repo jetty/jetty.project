@@ -19,6 +19,11 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.CollationKey;
+import java.text.Collator;
+import java.util.Comparator;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.eclipse.jetty.util.IO;
 
@@ -31,7 +36,41 @@ public class GraphOutputDot
     {
     }
 
-    public static void write(Graph graph,File outputFile) throws IOException
+    private static final String TOPNODE = "undeployed";
+
+    /**
+     * Comparator that makes the 'undeployed' node the first node in the sort list.
+     * 
+     * This makes the 'undeployed' node show up at the top of the generated graph.
+     */
+    private static class TopNodeSort implements Comparator<Node>
+    {
+        private Collator collator = Collator.getInstance();
+
+        public int compare(Node o1, Node o2)
+        {
+            if (o1.getName().equals(TOPNODE))
+            {
+                return -1;
+            }
+
+            if (o2.getName().equals(TOPNODE))
+            {
+                return 1;
+            }
+
+            CollationKey key1 = toKey(o1);
+            CollationKey key2 = toKey(o2);
+            return key1.compareTo(key2);
+        }
+
+        private CollationKey toKey(Node node)
+        {
+            return collator.getCollationKey(node.getName());
+        }
+    }
+
+    public static void write(Graph graph, File outputFile) throws IOException
     {
         FileWriter writer = null;
         PrintWriter out = null;
@@ -48,7 +87,10 @@ public class GraphOutputDot
             writeNodeDefaults(out);
             writeEdgeDefaults(out);
 
-            for (Node node : graph.getNodes())
+            Set<Node> nodes = new TreeSet<Node>(new TopNodeSort());
+            nodes.addAll(graph.getNodes());
+
+            for (Node node : nodes)
             {
                 writeNode(out,node);
             }
@@ -72,8 +114,8 @@ public class GraphOutputDot
         out.println();
         out.println("  // Edge");
         out.printf("  \"%s\" -> \"%s\" [%n",toId(edge.getFrom()),toId(edge.getTo()));
-        out.printf("    arrowtail=none,%n");
-        out.printf("    arrowhead=normal%n");
+        out.println("    arrowtail=none,");
+        out.println("    arrowhead=normal");
         out.println("  ];");
     }
 
@@ -85,10 +127,10 @@ public class GraphOutputDot
         out.printf("    label=\"%s\",%n",node.getName());
         if (node.getName().endsWith("ed"))
         {
-            out.printf("    color=\"#ddddff\",%n");
-            out.printf("    style=filled,%n");
+            out.println("    color=\"#ddddff\",");
+            out.println("    style=filled,");
         }
-        out.printf("    shape=box%n");
+        out.println("    shape=box");
         out.println("  ];");
     }
 

@@ -36,6 +36,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class AppLifeCycle extends Graph
 {
+    private static final String ALL_NODES = "*";
+
     public static interface Binding
     {
         /**
@@ -68,7 +70,7 @@ public class AppLifeCycle extends Graph
     private static final String NODE_STARTED = "started";
     private static final String NODE_STOPPING = "stopping";
     private static final String NODE_UNDEPLOYING = "undeploying";
-    private Map<Node, List<Binding>> lifecyclebindings = new HashMap<Node, List<Binding>>();
+    private Map<String, List<Binding>> lifecyclebindings = new HashMap<String, List<Binding>>();
 
     public AppLifeCycle()
     {
@@ -95,33 +97,15 @@ public class AppLifeCycle extends Graph
     {
         for (String nodeName : binding.getBindingTargets())
         {
-            if (nodeName.equals("*"))
+            List<Binding> bindings = lifecyclebindings.get(nodeName);
+            if (bindings == null)
             {
-                // Special Case: Bind to all Nodes
-                for (Node node : getNodes())
-                {
-                    bindToNode(node,binding);
-                }
+                bindings = new ArrayList<Binding>();
             }
-            else
-            {
-                // Bind to specific node
-                Node node = getNodeByName(nodeName);
-                bindToNode(node,binding);
-            }
+            bindings.add(binding);
+            
+            lifecyclebindings.put(nodeName,bindings);
         }
-    }
-
-    private void bindToNode(Node node, AppLifeCycle.Binding binding)
-    {
-        List<Binding> bindings = lifecyclebindings.get(node);
-        if (bindings == null)
-        {
-            bindings = new ArrayList<Binding>();
-        }
-        bindings.add(binding);
-
-        lifecyclebindings.put(node,bindings);
     }
 
     /**
@@ -148,9 +132,19 @@ public class AppLifeCycle extends Graph
      */
     public Set<AppLifeCycle.Binding> getBindings(Node node)
     {
+        return getBindings(node.getName());
+    }
+
+    /**
+     * Get all objects bound to a specific {@link Node}
+     * 
+     * @return Set of Object(s) for specific lifecycle bindings. never null.
+     */
+    public Set<AppLifeCycle.Binding> getBindings(String nodeName)
+    {
         Set<Binding> boundset = new HashSet<Binding>();
 
-        List<Binding> bindings = lifecyclebindings.get(node);
+        List<Binding> bindings = lifecyclebindings.get(nodeName);
         if (bindings == null)
         {
             return boundset;
@@ -161,19 +155,11 @@ public class AppLifeCycle extends Graph
         return boundset;
     }
 
-    public Set<Binding> getBindings(String nodeName)
-    {
-        Node node = getNodeByName(nodeName);
-        return getBindings(node);
-    }
-
     public void runBindings(Node node, App app, DeploymentManager deploymentManager) throws Throwable
     {
-        List<Binding> bindings = this.lifecyclebindings.get(node);
-        if (bindings == null)
-        {
-            return;
-        }
+        List<Binding> bindings = new ArrayList<Binding>();
+        bindings.addAll(getBindings(ALL_NODES)); // Bindings (special) All Nodes
+        bindings.addAll(getBindings(node)); // Specific Node
 
         for (Binding binding : bindings)
         {
