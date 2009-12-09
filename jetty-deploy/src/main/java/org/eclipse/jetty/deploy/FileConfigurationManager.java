@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * FileConfigurationManager
- *
+ * 
  * Supplies properties defined in a file.
  */
 public class FileConfigurationManager implements ConfigurationManager
@@ -32,21 +32,18 @@ public class FileConfigurationManager implements ConfigurationManager
     private Properties _properties = new Properties();
 
     public FileConfigurationManager()
-    {        
+    {
     }
-    
-    
-    public void setFile (String filename) 
-    throws MalformedURLException, IOException
+
+    public void setFile(String filename) throws MalformedURLException, IOException
     {
         _file = Resource.newResource(filename);
     }
-    
-    
-    /** 
+
+    /**
      * @see org.eclipse.jetty.deploy.ConfigurationManager#getProperties()
      */
-    public Map<?,?> getProperties()
+    public Map<?, ?> getProperties()
     {
         try
         {
@@ -59,9 +56,7 @@ public class FileConfigurationManager implements ConfigurationManager
         }
     }
 
-    
-    private void loadProperties () 
-    throws FileNotFoundException, IOException
+    private void loadProperties() throws FileNotFoundException, IOException
     {
         if (_properties.isEmpty())
             _properties.load(_file.getInputStream());

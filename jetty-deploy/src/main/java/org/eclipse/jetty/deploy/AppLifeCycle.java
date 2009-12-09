@@ -103,7 +103,7 @@ public class AppLifeCycle extends Graph
                 bindings = new ArrayList<Binding>();
             }
             bindings.add(binding);
-            
+
             lifecyclebindings.put(nodeName,bindings);
         }
     }
@@ -144,24 +144,26 @@ public class AppLifeCycle extends Graph
     {
         Set<Binding> boundset = new HashSet<Binding>();
 
+        // Specific node binding
         List<Binding> bindings = lifecyclebindings.get(nodeName);
-        if (bindings == null)
+        if (bindings != null)
         {
-            return boundset;
+            boundset.addAll(bindings);
         }
 
-        boundset.addAll(bindings);
+        // Special 'all nodes' binding
+        bindings = lifecyclebindings.get(ALL_NODES);
+        if (bindings != null)
+        {
+            boundset.addAll(bindings);
+        }
 
         return boundset;
     }
 
     public void runBindings(Node node, App app, DeploymentManager deploymentManager) throws Throwable
     {
-        List<Binding> bindings = new ArrayList<Binding>();
-        bindings.addAll(getBindings(ALL_NODES)); // Bindings (special) All Nodes
-        bindings.addAll(getBindings(node)); // Specific Node
-
-        for (Binding binding : bindings)
+        for (Binding binding : getBindings(node))
         {
             Log.info("Calling " + binding.getClass().getName());
             binding.processBinding(node,app);

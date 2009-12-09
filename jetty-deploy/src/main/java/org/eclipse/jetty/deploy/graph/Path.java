@@ -18,7 +18,7 @@ package org.eclipse.jetty.deploy.graph;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class Path 
+public class Path
 {
     private final List<Edge> _edges = new CopyOnWriteArrayList<Edge>();
     private final List<Node> _nodes = new CopyOnWriteArrayList<Node>();
@@ -30,10 +30,14 @@ public class Path
     public void add(Edge edge)
     {
         _edges.add(edge);
-        if (_nodes.size()==0)
+        if (_nodes.size() == 0)
+        {
             _nodes.add(edge.getFrom());
+        }
         else
-            assert _nodes.get(_nodes.size()-1).equals(edge.getFrom());
+        {
+            assert _nodes.get(_nodes.size() - 1).equals(edge.getFrom());
+        }
         _nodes.add(edge.getTo());
     }
 
@@ -61,19 +65,23 @@ public class Path
     {
         return _nodes.get(index);
     }
-    
+
     public Node firstNode()
     {
-        if (_nodes.size()==0)
+        if (_nodes.size() == 0)
+        {
             return null;
+        }
         return _nodes.get(0);
     }
 
     public Node lastNode()
     {
-        if (_nodes.size()==0)
+        if (_nodes.size() == 0)
+        {
             return null;
-        return _nodes.get(_nodes.size()-1);
+        }
+        return _nodes.get(_nodes.size() - 1);
     }
 
     public int nodes()
@@ -93,25 +101,30 @@ public class Path
 
     public Edge firstEdge()
     {
-        if (_edges.size()==0)
+        if (_edges.size() == 0)
+        {
             return null;
+        }
         return _edges.get(0);
     }
 
     public Edge lastEdge()
     {
-        if (_edges.size()==0)
+        if (_edges.size() == 0)
+        {
             return null;
-        return _edges.get(_edges.size()-1);
+        }
+        return _edges.get(_edges.size() - 1);
     }
+
     public Edge getEdge(int index)
     {
         return _edges.get(index);
     }
-    
+
     @Override
     public String toString()
     {
-        return super.toString()+_nodes.toString();
+        return super.toString() + _nodes.toString();
     }
 }

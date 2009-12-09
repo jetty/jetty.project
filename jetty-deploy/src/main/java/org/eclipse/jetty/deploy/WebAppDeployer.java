@@ -15,6 +15,7 @@ package org.eclipse.jetty.deploy;
 
 import java.util.ArrayList;
 
+import org.eclipse.jetty.deploy.providers.MonitoredDirAppProvider;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -27,21 +28,27 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
- * Web Application Deployer.
+ * Legacy Web Application Deployer.
  * 
- * The class searches a directory for and deploys standard web application.
- * At startup, the directory specified by {@link #setWebAppDir(String)} is searched 
- * for subdirectories (excluding hidden and CVS) or files ending with ".zip"
- * or "*.war".  For each webapp discovered is passed to a new instance
- * of {@link WebAppContext} (or a subclass specified by {@link #getContexts()}.
- * {@link ContextHandlerCollection#getContextClass()}
+ * <p>
+ * Note: The WebAppDeployer is being phased out of Jetty in favor of the {@link DeploymentManager} and
+ * {@link MonitoredDirAppProvider} implementation.
  * 
- * This deployer does not do hot deployment or undeployment. Nor does
- * it support per webapplication configuration. For these features 
- * see {@link ContextDeployer}.
+ * <p>
+ * The class searches a directory for and deploys standard web application. At startup, the directory specified by
+ * {@link #setWebAppDir(String)} is searched for subdirectories (excluding hidden and CVS) or files ending with ".zip"
+ * or "*.war". For each webapp discovered is passed to a new instance of {@link WebAppContext} (or a subclass specified
+ * by {@link #getContexts()}. {@link ContextHandlerCollection#getContextClass()}
  * 
- * @see {@link ContextDeployer}
+ * <p>
+ * This deployer does not do hot deployment or undeployment. Nor does it support per webapplication configuration. For
+ * these features see {@link ContextDeployer}.
+ * 
+ * @see DeploymentManager
+ * @see MonitoredDirAppProvider
+ * @see ContextDeployer
  */
+@SuppressWarnings("unchecked")
 public class WebAppDeployer extends AbstractLifeCycle
 {
     private HandlerCollection _contexts;

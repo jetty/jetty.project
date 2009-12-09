@@ -15,15 +15,12 @@ package org.eclipse.jetty.deploy;
 
 import java.util.Map;
 
-import org.eclipse.jetty.util.component.LifeCycle;
-
 /**
  * ConfigurationManager
- *
- * Type for allow injection of property values
- * for replacement in jetty xml files during deployment.
+ * 
+ * Type for allow injection of property values for replacement in jetty xml files during deployment.
  */
 public interface ConfigurationManager
 {
-    public Map<?,?> getProperties();
+    public Map<?, ?> getProperties();
 }

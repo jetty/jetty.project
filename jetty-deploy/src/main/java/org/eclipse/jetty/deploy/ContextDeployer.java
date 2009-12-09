@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.deploy.providers.MonitoredDirAppProvider;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -30,46 +31,53 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
- * Context Deployer
+ * Legacy Context Deployer.
  * 
- * This deployer scans a designated directory by
- * {@link #setConfigurationDir(String)} for the appearance/disappearance or
- * changes to xml configuration files. The scan is performed at startup and at
- * an optional hot deployment frequency specified by
- * {@link #setScanInterval(int)}. By default, the scanning is NOT recursive,
- * but can be made so by {@link #setRecursive(boolean)}.
+ * <p>
+ * Note: The WebAppDeployer is being phased out of Jetty in favor of the {@link DeploymentManager} and
+ * {@link MonitoredDirAppProvider} implementation.
  * 
- * Each configuration file is in {@link XmlConfiguration} format and represents
- * the configuration of a instance of {@link ContextHandler} (or a subclass
- * specified by the XML <code>Configure</code> element).
+ * <p>
+ * This deployer scans a designated directory by {@link #setConfigurationDir(String)} for the appearance/disappearance
+ * or changes to xml configuration files. The scan is performed at startup and at an optional hot deployment frequency
+ * specified by {@link #setScanInterval(int)}. By default, the scanning is NOT recursive, but can be made so by
+ * {@link #setRecursive(boolean)}.
  * 
- * The xml should configure the context and the instance is deployed to the
- * {@link ContextHandlerCollection} specified by {@link #setContexts(Server)}.
+ * <p>
+ * Each configuration file is in {@link XmlConfiguration} format and represents the configuration of a instance of
+ * {@link ContextHandler} (or a subclass specified by the XML <code>Configure</code> element).
  * 
- * Similarly, when one of these existing files is removed, the corresponding
- * context is undeployed; when one of these files is changed, the corresponding
- * context is undeployed, the (changed) xml config file reapplied to it, and
- * then (re)deployed.
+ * <p>
+ * The xml should configure the context and the instance is deployed to the {@link ContextHandlerCollection} specified
+ * by {@link #setContexts(Server)}.
  * 
- * Note that the context itself is NOT copied into the hot deploy directory. The
- * webapp directory or war file can exist anywhere. It is the xml config file
- * that points to it's location and deploys it from there.
+ * <p>
+ * Similarly, when one of these existing files is removed, the corresponding context is undeployed; when one of these
+ * files is changed, the corresponding context is undeployed, the (changed) xml config file reapplied to it, and then
+ * (re)deployed.
  * 
- * It means, for example, that you can keep a "read-only" copy of your webapp
- * somewhere, and apply different configurations to it simply by dropping
- * different xml configuration files into the configuration directory.
+ * <p>
+ * Note that the context itself is NOT copied into the hot deploy directory. The webapp directory or war file can exist
+ * anywhere. It is the xml config file that points to it's location and deploys it from there.
  * 
- * @org.apache.xbean.XBean element="hotDeployer" description="Creates a hot deployer 
- * 						to watch a directory for changes at a configurable interval."
+ * <p>
+ * It means, for example, that you can keep a "read-only" copy of your webapp somewhere, and apply different
+ * configurations to it simply by dropping different xml configuration files into the configuration directory.
  * 
+ * @see DeploymentManager
+ * @see MonitoredDirAppProvider
+ * 
+ * @org.apache.xbean.XBean element="hotDeployer" description="Creates a hot deployer to watch a directory for changes at
+ *                         a configurable interval."
  */
+@SuppressWarnings("unchecked")
 public class ContextDeployer extends AbstractLifeCycle
 {
     private int _scanInterval=10;
     private Scanner _scanner;
     private ScannerListener _scannerListener;
     private Resource _contextsDir;
-    private Map _currentDeployments=new HashMap();
+    private Map _currentDeployments = new HashMap();
     private ContextHandlerCollection _contexts;
     private ConfigurationManager _configMgr;
     private boolean _recursive = false;
@@ -366,6 +374,7 @@ public class ContextDeployer extends AbstractLifeCycle
      * 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
+    @SuppressWarnings("deprecation")
     @Override
     protected void doStart() throws Exception
     {
