@@ -19,7 +19,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.security.PermissionCollection;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -222,11 +226,44 @@ public class WebAppClassLoader extends URLClassLoader
     }
 
     /* ------------------------------------------------------------ */
+    public Enumeration<URL> getResources(String name) throws IOException
+    {
+        boolean system_class=_context.isSystemClass(name);
+        boolean server_class=_context.isServerClass(name);
+        
+        
+        List<URL> from_parent = toList(server_class?null:_parent.getResources(name));
+        List<URL> from_webapp = toList((system_class&&!from_parent.isEmpty())?null:this.findResources(name));
+            
+        if (_context.isParentLoaderPriority())
+        {
+            from_parent.addAll(from_webapp);
+            return Collections.enumeration(from_parent);
+        }
+        from_webapp.addAll(from_parent);
+        return Collections.enumeration(from_webapp);
+    }
+    
+    private List<URL> toList(Enumeration<URL> e)
+    {
+        List<URL> list = new ArrayList<URL>();
+        while (e!=null && e.hasMoreElements())
+            list.add(e.nextElement());
+        return list;
+    }
+    
+    /* ------------------------------------------------------------ */
     public URL getResource(String name)
     {
         URL url= null;
         boolean tried_parent= false;
-        if (_context.isParentLoaderPriority() || _context.isSystemClass(name))
+        boolean system_class=_context.isSystemClass(name);
+        boolean server_class=_context.isServerClass(name);
+        
+        if (system_class && server_class)
+            return null;
+        
+        if (_parent!=null &&(_context.isParentLoaderPriority() || system_class ) && !server_class)
         {
             tried_parent= true;
             
@@ -246,7 +283,7 @@ public class WebAppClassLoader extends URLClassLoader
             }
         }
 
-        if (url == null && !tried_parent && !_context.isServerClass(name) )
+        if (url == null && !tried_parent && !server_class )
         {
             if (_parent!=null)
                 url= _parent.getResource(name);
@@ -282,7 +319,7 @@ public class WebAppClassLoader extends URLClassLoader
             return null;
         }
         
-        if (c == null && _parent!=null && (_context.isParentLoaderPriority() || system_class) )
+        if (c == null && _parent!=null && (_context.isParentLoaderPriority() || system_class) && !server_class)
         {
             tried_parent= true;
             try
