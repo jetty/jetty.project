@@ -1,6 +1,7 @@
 jetty-7.0.2-SNAPSHOT
  + JSON parses NaN as null
  + 290765 Reset input for HttpExchange retry.
+ + 296765 JMX Connector Server and ShutdownThread
  + 297421 Hide server/system classes from WebAppClassLoader.getResources
 
 jetty-7.0.1.v20091125 25 November 2009
