@@ -96,22 +96,7 @@ public class ContentExchange extends CachedExchange
             setRequestContentSource(getInputStream());
         }
         else
-        {
-            InputStream requestContentStream = getRequestContentSource();
-            if (requestContentStream != null)
-            {
-                if (requestContentStream.markSupported())
-                {
-                    setRequestContent(null);
-                    requestContentStream.reset();
-                }
-                else
-                {
-                    throw new IOException("Unsupported retry attempt");
-                }
-            }
-        }
-        super.onRetry();
+            super.onRetry();
     }
 
     private InputStream getInputStream() throws IOException

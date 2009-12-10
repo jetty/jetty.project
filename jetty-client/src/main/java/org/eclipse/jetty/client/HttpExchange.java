@@ -517,6 +517,7 @@ public class HttpExchange
     public void setRequestContent(Buffer requestContent)
     {
         _requestContent = requestContent;
+        _requestContent.mark();
     }
 
     /**
@@ -525,6 +526,10 @@ public class HttpExchange
     public void setRequestContentSource(InputStream stream)
     {
         _requestContentSource = stream;
+        if (_requestContentSource.markSupported())
+        {
+            _requestContentSource.mark(Integer.MAX_VALUE);
+        }
     }
 
     /**
@@ -754,12 +759,30 @@ public class HttpExchange
 
     /**
      * Callback called when the request is retried (due to failures or authentication).
-     * Implementations may need to reset any consumable content that needs to be sent.
-     * This implementation does nothing.
+     * Implementations must reset any consumable content that needs to be sent.
      * @throws IOException allowed to be thrown by overriding code
      */
     protected void onRetry() throws IOException
     {
+        if (_requestContentSource != null)
+        {
+            if (_requestContentSource.markSupported())
+            {
+                _requestContent = null;
+                _requestContentSource.reset();
+            }
+            else
+            {
+                throw new IOException("Unsupported retry attempt");
+            }
+        }
+        else
+        {
+            if (_requestContent != null)
+            { 
+                _requestContent.reset();
+            }
+         }
     }
 
     /**
