@@ -201,12 +201,17 @@ public class SelectChannelConnector extends AbstractNIOConnector
             {
                 // Create a new server socket
                 _acceptChannel = ServerSocketChannel.open();
+                // Set to blocking mode
+                _acceptChannel.configureBlocking(true);
 
                 // Bind the server socket to the local host and port
                 _acceptChannel.socket().setReuseAddress(getReuseAddress());
                 InetSocketAddress addr = getHost()==null?new InetSocketAddress(getPort()):new InetSocketAddress(getHost(),getPort());
                 _acceptChannel.socket().bind(addr,getAcceptQueueSize());
 
+                if (_acceptChannel.socket().getLocalPort()==-1)
+                    throw new IOException("Server channel not bound");
+                
                 // Set to non blocking mode
                 _acceptChannel.configureBlocking(false);
                 
