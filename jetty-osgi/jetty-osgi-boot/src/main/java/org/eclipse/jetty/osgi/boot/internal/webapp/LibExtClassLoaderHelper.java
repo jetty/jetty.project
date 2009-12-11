@@ -17,6 +17,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jetty.server.Server;
 
@@ -27,6 +31,12 @@ import org.eclipse.jetty.server.Server;
  * To support standard jars or bundles that cannot be loaded in the current
  * OSGi environment, we support inserting the jars in the usual jetty/lib/ext
  * folders in the proper classpath for the webapps.
+ * <p>
+ * Also the folder resources typically contains central configuration files
+ * for things like: log config and others.
+ * We enable fragments to register classes that are called back and passed those resources
+ * to do what they need to do.
+ * </p>
  * <p>
  * For example the test-jndi webapplication depends on derby, derbytools, atomikos
  * none of them are osgi bundles.
@@ -61,28 +71,44 @@ import org.eclipse.jetty.server.Server;
  * </p>
  */
 public class LibExtClassLoaderHelper {
+	
+	/**
+	 * Class called back
+	 */
+	public interface IFilesInJettyHomeResourcesProcessor
+	{
+		void processFilesInResourcesFolder(File jettyHome, Map<String,File> filesInResourcesFolder);
+	}
+	
+	public static Set<IFilesInJettyHomeResourcesProcessor> registeredFilesInJettyHomeResourcesProcessors =
+		new HashSet<IFilesInJettyHomeResourcesProcessor>();
 
 	/**
 	 * @param server
-	 * @return a url classloader with the jars of lib/ext. The parent classloader
-	 * usuall is the JettyBootStrapper.
+	 * @return a url classloader with the jars of resources, lib/ext and the jars passed in the other argument.
+	 * The parent classloader usually is the JettyBootStrapper (an osgi classloader.
 	 * @throws MalformedURLException 
 	 */
-	public static ClassLoader createLibEtcClassLoaderHelper(File jettyHome, Server server,
+	public static URLClassLoader createLibEtcClassLoaderHelper(File jettyHome, Server server,
 			ClassLoader parentClassLoader)
 	throws MalformedURLException {
 		ArrayList<URL> urls = new ArrayList<URL>();
 		File jettyResources = new File(jettyHome, "resources");
 		if (jettyResources.exists()) {
 			//make sure it contains something else than README:
+		    Map<String,File> jettyResFiles = new HashMap<String, File>();
 			for (File f : jettyResources.listFiles()) {
+			    jettyResFiles.put(f.getName(),f);
 				if (f.getName().toLowerCase().startsWith("readme")) {
 					continue;
 				} else {
-					urls.add(jettyResources.toURI().toURL());
-					break;
+					if (urls.isEmpty())
+					{
+						urls.add(jettyResources.toURI().toURL());
+					}
 				}
 			}
+			processFilesInResourcesFolder(jettyHome, jettyResFiles);
 		}
 		File libEtc = new File(jettyHome, "lib/ext");
 		for (File f : libEtc.listFiles()) {
@@ -95,12 +121,35 @@ public class LibExtClassLoaderHelper {
 				urls.add(url);
 			}
 		}
-		if (urls.isEmpty()) {
-			return parentClassLoader;
-		}
-		return new URLClassLoader(urls.toArray(new URL[urls.size()]),
-				parentClassLoader);
+		
+//		if (urls.isEmpty()) {
+//			return parentClassLoader;
+//		}
+		return new URLClassLoader(urls.toArray(new URL[urls.size()]), parentClassLoader);
 	}
 	
+	
+	/**
+	 * When we find files typically used for central logging configuration
+	 * we do what it takes in this method to do what the user expects.
+	 * Without depending too much directly on a particular logging framework.
+	 * <p>
+	 * We can afford to do some implementation specific code for a logging framework
+	 * only in a fragment.
+	 * <br/>
+	 * Trying to configure log4j and logback in here.
+	 * </p>
+	 * <p>
+	 * We recommend that slf4j jars are all placed in the osgi framework.
+	 * And a single implementation if possible packaged as an osgi bundle is there.
+	 * </p>
+	 */
+	protected static void processFilesInResourcesFolder(File jettyHome, Map<String,File> childrenFiles)
+	{
+        for (IFilesInJettyHomeResourcesProcessor processor : registeredFilesInJettyHomeResourcesProcessors)
+        {
+        	processor.processFilesInResourcesFolder(jettyHome, childrenFiles);
+        }
+	}
 	
 }

@@ -9,8 +9,6 @@
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
 // You may elect to redistribute this code under either of these licenses. 
-// Contributors:
-//    Hugues Malphettes - initial API and implementation
 // ========================================================================
 package org.eclipse.jetty.osgi.boot.jasper;
 
@@ -19,6 +17,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 
+import javax.servlet.Servlet;
 import javax.servlet.jsp.JspContext;
 
 import org.apache.jasper.Constants;
@@ -44,8 +43,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
         fixupDtdResolution();
         try
         {
-            Class<?> cl = getClass().getClassLoader().loadClass(
-            		"org.apache.jasper.servlet.JspServlet");
+            Class cl = getClass().getClassLoader().loadClass("org.apache.jasper.servlet.JspServlet");
             System.err.println("found the jsp servlet: " + cl.getName());
         }
         catch (ClassNotFoundException e)
@@ -164,12 +162,16 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
                 {
                     String resourcePath = CACHED_DTD_RESOURCE_PATHS[i];
                     InputStream input = null;
-                    input = JspContext.class.getResourceAsStream(resourcePath);
+                    input = Servlet.class.getResourceAsStream(resourcePath);
                     if (input == null)
                     {
-                        // if that failed try again with the original code:
-                        // although it is likely not changed.
-                        input = this.getClass().getResourceAsStream(resourcePath);
+                        input = JspContext.class.getResourceAsStream(resourcePath);
+                        if (input == null)
+                        {
+                            // if that failed try again with the original code:
+                            // although it is likely not changed.
+                            input = this.getClass().getResourceAsStream(resourcePath);
+                        }
                     }
                     if (input == null)
                     {

@@ -165,17 +165,28 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
 			if (contextHandler instanceof WebAppContext) 
 			{
 				WebAppContext webapp = (WebAppContext)contextHandler;
-				String contextPath = (String)sr.getProperty("contextPath");
+				String contextPath = (String)sr.getProperty(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH);
 				if (contextPath == null) 
 				{
 					contextPath = webapp.getContextPath();
 				}
+                String webXmlPath = (String)sr.getProperty(OSGiWebappConstants.SERVICE_PROP_WEB_XML_PATH);
+                if (webXmlPath == null) 
+                {
+                    webXmlPath = webapp.getDescriptor();
+                }
+                String defaultWebXmlPath = (String)sr.getProperty(OSGiWebappConstants.SERVICE_PROP_DEFAULT_WEB_XML_PATH);
+                if (defaultWebXmlPath == null) 
+                {
+                    defaultWebXmlPath = webapp.getDefaultsDescriptor();
+                }
 				String war = (String)sr.getProperty("war");
-				try 
+				try
 				{
 					ContextHandler handler = _helper.registerWebapplication(contributor, war, contextPath,
                             (String)sr.getProperty(OSGiWebappConstants.SERVICE_PROP_EXTRA_CLASSPATH),
-                            (String)sr.getProperty(OSGiWebappConstants.SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE));
+                            (String)sr.getProperty(OSGiWebappConstants.SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE),
+                            webXmlPath, defaultWebXmlPath);
 					if (handler != null) 
 					{
 						registerInIndex(handler, sr);
@@ -183,7 +194,6 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
 				} 
 				catch (Throwable e) 
 				{
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}

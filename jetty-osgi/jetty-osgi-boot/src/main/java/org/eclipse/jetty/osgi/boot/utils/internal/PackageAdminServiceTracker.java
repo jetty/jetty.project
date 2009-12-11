@@ -82,7 +82,12 @@ public class PackageAdminServiceTracker implements ServiceListener
     
     private void invokeFragmentActivators(ServiceReference sr) {
         PackageAdmin admin = (PackageAdmin) _context.getService(sr);
-        for (Bundle frag : admin.getFragments(_context.getBundle())) {
+        Bundle[] fragments = admin.getFragments(_context.getBundle());
+        if (fragments == null)
+        {
+            return;
+        }
+        for (Bundle frag : fragments) {
             //find a convention to look for a class inside the fragment.
             try
             {

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <!-- =============================================================== -->
 <!-- Mixin configuration for Block socket connector                  -->
@@ -7,12 +7,12 @@
 <!-- =============================================================== -->
 
 
-<Configure id="Server" class="org.mortbay.jetty.Server">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
 
     <!-- Use this connector if NIO is not available.  -->
     <Call name="addConnector">
       <Arg>
-          <New class="org.mortbay.jetty.bio.SocketConnector">
+          <New class="org.eclipse.jetty.server.bio.SocketConnector">
             <Set name="port"><SystemProperty name="jetty.bio.port" default="8081"/></Set>
             <Set name="maxIdleTime">50000</Set>
             <Set name="lowResourceMaxIdleTime">1500</Set>

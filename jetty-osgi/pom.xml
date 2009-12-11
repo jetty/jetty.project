@@ -14,13 +14,13 @@
     <osgi-version>3.5.0.v20090520</osgi-version>
     <osgi-services-version>3.1.200-v20070605</osgi-services-version>
     <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
-    <jsp-2.1-glassfish-version>9.1.1.B60.25.p2</jsp-2.1-glassfish-version>
+    <jsp-2.1-glassfish-version>2.1.v20091210</jsp-2.1-glassfish-version>
   </properties>
   <modules>
     <module>jetty-osgi-boot</module>
-    <!-- once the latest version of jsp-2.1-glassfish is available in maven central
-    we will be able to compile and package this module too. -->
-    <!-- module>jetty-osgi-boot-jsp</module -->
+    <module>jetty-osgi-boot-jsp</module>
+    <!-- once logback is ready for eclipse -->
+    <!-- module>jetty-osgi-boot-logback</module -->
     <module>jetty-osgi-boot-warurl</module>
     <module>jetty-osgi-httpservice</module>
   </modules>

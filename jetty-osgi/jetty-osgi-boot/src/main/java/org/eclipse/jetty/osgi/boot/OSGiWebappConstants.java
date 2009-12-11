@@ -28,6 +28,9 @@ public class OSGiWebappConstants
     /** Name of the header that defines the path to the folder where the jsp files are extracted. */
     public static final String RFC66_JSP_EXTRACT_LOCATION = "Jsp-ExtractLocation";
     
+    /** Name of the servlet context attribute that points to the bundle context. */
+    public static final String RFC66_OSGI_BUNDLE_CONTEXT = "osgi-bundlecontext";
+    
     /** List of relative pathes within the bundle to the jetty context files. */
     public static final String JETTY_CONTEXT_FILE_PATH = "Jetty-ContextFilePath";
     
@@ -47,7 +50,20 @@ public class OSGiWebappConstants
     /** jetty context file path */
     public static final String SERVICE_PROP_CONTEXT_FILE_PATH = "contextFilePath";
     
+    /** web.xml file path */
+    public static final String SERVICE_PROP_WEB_XML_PATH = "webXmlFilePath";
+    
+    /** defaultweb.xml file path */
+    public static final String SERVICE_PROP_DEFAULT_WEB_XML_PATH = "defaultWebXmlFilePath";
+    
     /** path to the base folder that overrides the computed bundle installation location if not null
      * useful to install webapps or jetty context files that are in fact not embedded in a bundle */
     public static final String SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE = "thisBundleInstall";
+    
+    
+// sys prop config of jetty:
+    /** contains a comma separated list of pathes to the etc/jetty-*.xml files
+     * used to configure jetty. By default the value is 'etc/jetty.xml'
+     * when the path is relative the file is resolved relatively to jettyhome. */
+    public static final String SYS_PROP_JETTY_ETC_FILES = "jetty.etc.files";
 }

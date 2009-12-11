@@ -23,9 +23,11 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
@@ -33,8 +35,8 @@ import org.eclipse.jetty.deploy.ConfigurationManager;
 import org.eclipse.jetty.deploy.ContextDeployer;
 import org.eclipse.jetty.deploy.WebAppDeployer;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
+import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.boot.internal.jsp.TldLocatableURLClassloader;
-import org.eclipse.jetty.osgi.boot.internal.jsp.TldLocatableURLClassloaderWithInsertedJettyClassloader;
 import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelper;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
@@ -44,15 +46,17 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
-import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 /**
  * Bridges the traditional web-application deployers: {@link WebAppDeployer} and
@@ -75,6 +79,8 @@ import org.xml.sax.SAXException;
 class WebappRegistrationHelper
 {
     
+	private static Logger __logger = Log.getLogger(WebappRegistrationHelper.class.getName());
+	
     private static boolean INITIALIZED = false;
     
     /** By default set to: {@link DefaultBundleClassLoaderHelper}. It supports equinox and apache-felix
@@ -94,10 +100,19 @@ class WebappRegistrationHelper
     private ContextHandlerCollection _ctxtHandler;
 
     /**
-     * this class loader loads the jars inside {$jetty.home}/lib/ext it is meant as a migration path and for jars that are not OSGi ready.
+     * this class loader loads the jars inside {$jetty.home}/lib/ext it is meant
+     * as a migration path and for jars that are not OSGi ready.
+     * also gives access to the jsp jars.
      */
-    private ClassLoader _libEtcClassLoader;
-
+    //private URLClassLoader _libEtcClassLoader;
+    
+    /**
+     * This is the class loader that should be the parent classloader
+     * of any webapp classloader. It is in fact the _libEtcClassLoader
+     * with a trick to let the TldScanner find the jars where the tld files are.
+     */
+    private URLClassLoader _commonParentClassLoaderForWebapps;
+    
     public WebappRegistrationHelper(Server server)
     {
         _server = server;
@@ -229,31 +244,57 @@ class WebappRegistrationHelper
         try
         {
 
-            XmlConfiguration config = new XmlConfiguration(
-                    new FileInputStream(jettyHome + "/etc/jetty.xml"));
-            config.getProperties().put("jetty.home", jettyHome);
-
             // passing this bundle's classloader as the context classlaoder
             // makes sure there is access to all the jetty's bundles
 
             File jettyHomeF = new File(jettyHome);
             try
             {
-                _libEtcClassLoader = LibExtClassLoaderHelper.createLibEtcClassLoaderHelper(
-                        jettyHomeF,_server,JettyBootstrapActivator.class.getClassLoader());
+                URLClassLoader libEtcClassLoader = LibExtClassLoaderHelper.createLibEtcClassLoaderHelper(
+                        jettyHomeF, _server, JettyBootstrapActivator.class.getClassLoader());
+                URL[] jarsWithTlds = getJarsWithTlds();
+                _commonParentClassLoaderForWebapps = jarsWithTlds == null
+                  ? libEtcClassLoader
+                  : new TldLocatableURLClassloader(libEtcClassLoader, getJarsWithTlds());
             }
             catch (MalformedURLException e)
             {
                 e.printStackTrace();
             }
 
-            Thread.currentThread().setContextClassLoader(_libEtcClassLoader);
-            config.configure(_server);
-
+            Thread.currentThread().setContextClassLoader(_commonParentClassLoaderForWebapps);
+            
+            String jettyetc = System.getProperty(OSGiWebappConstants.SYS_PROP_JETTY_ETC_FILES, "etc/jetty.xml");
+            StringTokenizer tokenizer = new StringTokenizer(jettyetc, ";,");
+            while (tokenizer.hasMoreTokens())
+            {
+            	String etcFile = tokenizer.nextToken().trim();
+            	File conffile = etcFile.startsWith("/") ?  new File(etcFile) : new File(jettyHomeF, etcFile);
+            	if (!conffile.exists())
+            	{
+            		__logger.warn("Unable to resolve the jetty/etc file " + etcFile);
+            	}
+            	try
+            	{
+	                XmlConfiguration config = new XmlConfiguration(
+	                        new FileInputStream(conffile));
+	                config.getProperties().put("jetty.home", jettyHome);
+	                config.getProperties().put("jetty.host", System.getProperty("jetty.host", ""));
+	                config.getProperties().put("jetty.port", System.getProperty("jetty.port", "8080"));
+	                config.getProperties().put("jetty.port.ssl", System.getProperty("jetty.port.ssl", "8443"));
+	                config.configure(_server);
+            	}
+            	catch (SAXParseException saxparse)
+            	{
+            		Log.getLogger(WebappRegistrationHelper.class.getName())
+    					.warn("Unable to configure the jetty/etc file " + etcFile, saxparse);
+            		throw saxparse;
+            	}
+            }
+            
             init();
 
             _server.start();
-            // _server.join();
         }
         catch (Throwable t)
         {
@@ -342,7 +383,8 @@ class WebappRegistrationHelper
      * @throws Exception
      */
     public ContextHandler registerWebapplication(Bundle bundle, String webappFolderPath,
-            String contextPath, String extraClasspath, String overrideBundleInstallLocation) throws Exception
+            String contextPath, String extraClasspath, String overrideBundleInstallLocation,
+            String webXmlPath, String defaultWebXmlPath) throws Exception
     {
         File bundleInstall = overrideBundleInstallLocation == null
             ? BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(bundle)
@@ -372,7 +414,7 @@ class WebappRegistrationHelper
                ? bundleInstall.getAbsolutePath()
                : "unlocated bundle '" + bundle.getSymbolicName() + "'"));
         }
-        return registerWebapplication(bundle,webapp,contextPath,extraClasspath);
+        return registerWebapplication(bundle,webapp,contextPath,extraClasspath, bundleInstall, webXmlPath, defaultWebXmlPath);
     }
 
     /**
@@ -385,7 +427,8 @@ class WebappRegistrationHelper
      * @throws Exception
      */
     public ContextHandler registerWebapplication(Bundle contributor, File webapp,
-            String contextPath, String extraClasspath) throws Exception
+            String contextPath, String extraClasspath,
+            File bundleInstall, String webXmlPath, String defaultWebXmlPath) throws Exception
     {
 
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
@@ -394,27 +437,131 @@ class WebappRegistrationHelper
         try
         {
             // make sure we provide access to all the jetty bundles by going through this bundle.
-            TldLocatableURLClassloader composite = createContextClassLoader(contributor);
+            WebappClassLoaderForOSGi composite = createWebappClassLoader(contributor);
             // configure with access to all jetty classes and also all the classes
             // that the contributor gives access to.
             Thread.currentThread().setContextClassLoader(composite);
 
-            context = new WebAppContext(webapp.getAbsolutePath(),contextPath);
+
+//            final WebXmlConfiguration webXml = new WebXmlConfiguration();
+//            webXml.configure(context);
+
+            final JettyWebXmlConfiguration jettyXml = new JettyWebXmlConfiguration() {
+            	//workaround for https://bugs.eclipse.org/bugs/show_bug.cgi?id=294799
+            	//remove it when it is fixed.
+            	/** 
+                * Configure
+                * Apply web-jetty.xml configuration
+                * @see Configuration#configure(WebAppContext)
+                */
+               public void configure (WebAppContext context) throws Exception
+               {
+                   //cannot configure if the _context is already started
+                   if (context.isStarted())
+                   {
+                       if (Log.isDebugEnabled()){Log.debug("Cannot configure webapp after it is started");}
+                       return;
+                   }
+                   
+                   if(Log.isDebugEnabled())
+                       Log.debug("Configuring web-jetty.xml");
+                   
+                   Resource web_inf = context.getWebInf();
+                   // handle any WEB-INF descriptors
+                   if(web_inf!=null&&web_inf.isDirectory())
+                   {
+                       // do jetty.xml file
+                       Resource jetty=web_inf.addPath("jetty7-web.xml");
+                       if(!jetty.exists())
+                           jetty=web_inf.addPath("jetty-web.xml");
+                       if(!jetty.exists())
+                           jetty=web_inf.addPath("web-jetty.xml");
+
+                       if(jetty.exists())
+                       {
+                           // No server classes while configuring 
+                           String[] old_server_classes = context.getServerClasses();
+                           try
+                           {
+                               context.setServerClasses(null);
+                               if(Log.isDebugEnabled())
+                                   Log.debug("Configure: "+jetty);
+                               XmlConfiguration jetty_config=new XmlConfiguration(jetty.getURL());
+                               jetty_config.configure(context);
+                           }
+                           finally
+                           {
+                               if (context.getServerClasses()==null)
+                                   context.setServerClasses(old_server_classes);
+                           }
+                       }
+                   }
+               }
+
+            };
+//            jettyXml.configure(context);
+            
+            context = new WebAppContext(webapp.getAbsolutePath(),contextPath)
+            {
+            	@Override
+            	protected void loadConfigurations() throws Exception
+            	{
+            		super.loadConfigurations();
+            		//now replace the default JettyWebXmlConfiguration by our own.
+            		for (int i = 0; i < getConfigurations().length; i++)
+            		{
+            			if (getConfigurations()[i] instanceof JettyWebXmlConfiguration)
+            			{
+            				getConfigurations()[i] = jettyXml;
+            			}
+            		}
+            	}
+            };
             context.setExtraClasspath(extraClasspath);
 
-            WebXmlConfiguration webXml = new WebXmlConfiguration();
-            webXml.configure(context);
+            if (webXmlPath != null && webXmlPath.length() != 0)
+            {
+                File webXml = null;
+                if (webXmlPath.startsWith("/") || webXmlPath.startsWith("file:/"))
+                {
+                    webXml = new File(webXmlPath);
+                }
+                else
+                {
+                    webXml = new File(bundleInstall, webXmlPath);
+                }
+                if (webXml.exists())
+                {
+                    context.setDescriptor(webXml.getAbsolutePath());
+                }
+            }
+            
+            if (defaultWebXmlPath != null && defaultWebXmlPath.length() != 0)
+            {
+                File defaultWebXml = null;
+                if (defaultWebXmlPath.startsWith("/") || defaultWebXmlPath.startsWith("file:/"))
+                {
+                    defaultWebXml = new File(webXmlPath);
+                }
+                else
+                {
+                    defaultWebXml = new File(bundleInstall, defaultWebXmlPath);
+                }
+                if (defaultWebXml.exists())
+                {
+                    context.setDescriptor(defaultWebXml.getAbsolutePath());
+                }
+            }
+            
 
-            JettyWebXmlConfiguration jettyXml = new JettyWebXmlConfiguration();
-            jettyXml.configure(context);
+            configureWebAppContext(context, contributor);
 
-            configureWebAppContext(context);
 
             // ok now register this webapp. we checked when we started jetty that there
             // was at least one such handler for webapps.
             _ctxtHandler.addHandler(context);
 
-            configureContextClassLoader(contributor,context,composite);
+            configureWebappClassLoader(contributor,context,composite);
 
             // @see org.eclipse.jetty.webapp.JettyWebXmlConfiguration#configure(WebAppContext)
             // during initialization of the webapp all the jetty packages are visible
@@ -596,7 +743,7 @@ class WebappRegistrationHelper
         try
         {
             // make sure we provide access to all the jetty bundles by going through this bundle.
-            TldLocatableURLClassloader composite = createContextClassLoader(contributor);
+            WebappClassLoaderForOSGi composite = createWebappClassLoader(contributor);
             // configure with access to all jetty classes and also all the classes
             // that the contributor gives access to.
             Thread.currentThread().setContextClassLoader(composite);
@@ -610,7 +757,7 @@ class WebappRegistrationHelper
             // was at least one such handler for webapps.
             _ctxtHandler.addHandler(context);
 
-            configureContextClassLoader(contributor,context,composite);
+            configureWebappClassLoader(contributor,context,composite);
             if (context instanceof WebAppContext)
             {
                 webAppContext = (WebAppContext)context;
@@ -666,7 +813,7 @@ class WebappRegistrationHelper
      * 
      * @see {WebAppDeployer#scan} around the comment <code>// configure it</code>
      */
-    protected void configureWebAppContext(WebAppContext wah)
+    protected void configureWebAppContext(WebAppContext wah, Bundle contributor)
     {
         // configure it
         // wah.setContextPath(context);
@@ -685,6 +832,10 @@ class WebappRegistrationHelper
 
         // set up any contextAttributes
         wah.setAttributes(new AttributesMap(_contextAttributes));
+        
+        //rfc66
+        wah.setAttribute(OSGiWebappConstants.RFC66_OSGI_BUNDLE_CONTEXT,
+                contributor.getBundleContext());
 
     }
 
@@ -731,7 +882,7 @@ class WebappRegistrationHelper
         try
         {
             XmlConfiguration xmlConfiguration = new XmlConfiguration(contextInputStream);
-            HashMap<String, Object> properties = new HashMap<String, Object>();
+            HashMap properties = new HashMap();
             properties.put("Server",_server);
             if (_configMgr != null)
             {
@@ -749,7 +900,8 @@ class WebappRegistrationHelper
             context.setAttributes(new AttributesMap(_contextAttributes));
 
             // rfc-66:
-            context.setAttribute("osgi-bundlecontext",bundle.getBundleContext());
+            context.setAttribute(OSGiWebappConstants.RFC66_OSGI_BUNDLE_CONTEXT,
+                                 bundle.getBundleContext());
 
             return context;
         }
@@ -808,63 +960,32 @@ class WebappRegistrationHelper
      * @param classInBundle
      * @throws Exception
      */
-    protected void configureContextClassLoader(
+    protected void configureWebappClassLoader(
             Bundle contributor, ContextHandler context,
-            TldLocatableURLClassloader composite) throws Exception
+            WebappClassLoaderForOSGi webappClassLoader) throws Exception
     {
         if (context instanceof WebAppContext)
         {
             WebAppContext webappCtxt = (WebAppContext)context;
-            // updateServerClasses(webappCtxt);
-            WebAppClassLoader wcl = new WebAppClassLoader(composite,webappCtxt) {
-
-                @Override
-                public void addJars(Resource lib)
-                {
-                    //TODO: look in the Bundle-Classpath header
-                    //of the contributor bundle and don't add a lib that is already
-                    //there.
-                    super.addJars(lib);
-                }
-                
-            };
-
-            // addJarsWithTlds(wcl);
-            context.setClassLoader(wcl);
+            context.setClassLoader(webappClassLoader);
+            webappClassLoader.setWebappContext(webappCtxt);
         }
         else
         {
-            context.setClassLoader(composite);
+            context.setClassLoader(webappClassLoader);
         }
-
     }
-
-    protected TldLocatableURLClassloader createContextClassLoader(Bundle contributor) throws Exception
+    
+    /**
+     * No matter what the type of webapp, we create a WebappClassLoader.
+     */
+    protected WebappClassLoaderForOSGi createWebappClassLoader(Bundle contributor) throws Exception
     {
-        ClassLoader osgiCl = BUNDLE_CLASS_LOADER_HELPER.getBundleClassLoader(contributor);
-        if (osgiCl != null)
-        {
-            // this solution does not insert all the jetty related classes in the webapp's classloader:
-            // WebAppClassLoader cl = new WebAppClassLoader(classInBundle.getClassLoader(), context);
-            // context.setClassLoader(cl);
-
-            // Make all of the jetty's classes available to the webapplication classloader
-            // also add the contributing bundle's classloader to give access to osgi to
-            // the contributed webapp.
-            TldLocatableURLClassloader composite =
-                new TldLocatableURLClassloaderWithInsertedJettyClassloader(
-                    _libEtcClassLoader, osgiCl, getJarsWithTlds());
-            return composite;
-        }
-        else
-        {
-            // Make all of the jetty's classes available to the webapplication classloader
-            TldLocatableURLClassloader composite = new TldLocatableURLClassloader(
-                    _libEtcClassLoader,getJarsWithTlds());
-            return composite;
-
-        }
-
+        //we use a temporary WebAppContext object.
+        //if this is a real webapp we will set it on it a bit later: once we know.
+    	WebappClassLoaderForOSGi webappClassLoader = new WebappClassLoaderForOSGi(
+    			_commonParentClassLoaderForWebapps, new WebAppContext(), contributor);
+    	return webappClassLoader;
     }
 
     /**

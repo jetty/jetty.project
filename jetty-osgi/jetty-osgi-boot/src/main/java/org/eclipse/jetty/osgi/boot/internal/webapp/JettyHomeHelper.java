@@ -103,14 +103,6 @@ class JettyHomeHelper
                         || eclipseCommands.indexOf("-dev ") != -1);
     }
 
-    // /**
-    // * @return
-    // */
-    // private static File getEclipseInstallationDir() {
-    // return getFile(System.getProperty("eclipse.home.location",
-    // System.getProperty("osgi.install.area")));
-    // }
-
     /**
      * @return
      */

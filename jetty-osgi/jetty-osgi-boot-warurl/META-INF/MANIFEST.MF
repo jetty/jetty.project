@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Jetty :: OSGi :: Boot :: Warurl
+Bundle-Name: Support for rfc66 war url scheme
 Bundle-SymbolicName: org.eclipse.jetty.osgi.boot.warurl;singleton:=true
 Bundle-Version: 7.0.1.qualifier
 Bundle-Activator: org.eclipse.jetty.osgi.boot.warurl.WarUrlActivator
