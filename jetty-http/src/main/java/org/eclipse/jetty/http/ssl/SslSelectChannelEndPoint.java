@@ -157,12 +157,13 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         // TODO - this really should not be done in a loop here - but with async callbacks.
 
         _closing=true;
+        long end=System.currentTimeMillis()+((SocketChannel)_channel).socket().getSoTimeout();
         try
         {   
             if (isBufferingOutput())
             {
                 flush();
-                while (isOpen() && isBufferingOutput())
+                while (isOpen() && isBufferingOutput() && System.currentTimeMillis()<end)
                 {
                     Thread.sleep(100); // TODO non blocking
                     flush();
@@ -171,12 +172,12 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
             _engine.closeOutbound();
 
-            loop: while (isOpen() && !(_engine.isInboundDone() && _engine.isOutboundDone()))
+            loop: while (isOpen() && !(_engine.isInboundDone() && _engine.isOutboundDone()) && System.currentTimeMillis()<end)
             {   
                 if (isBufferingOutput())
                 {
                     flush();
-                    while (isOpen() && isBufferingOutput())
+                    while (isOpen() && isBufferingOutput() && System.currentTimeMillis()<end)
                     {
                         Thread.sleep(100); // TODO non blocking
                         flush();
