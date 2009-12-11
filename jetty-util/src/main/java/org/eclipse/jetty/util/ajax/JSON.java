@@ -500,9 +500,9 @@ public class JSON
     }
 
     /* ------------------------------------------------------------ */
-    protected Map newMap()
+    protected Map<String,Object> newMap()
     {
-        return new HashMap();
+        return new HashMap<String,Object>();
     }
 
     /* ------------------------------------------------------------ */
@@ -511,6 +511,7 @@ public class JSON
         return new Object[size];
     }
 
+    /* ------------------------------------------------------------ */
     protected JSON contextForArray()
     {
         return this;
@@ -817,7 +818,7 @@ public class JSON
     {
         if (source.next()!='{')
             throw new IllegalStateException();
-        Map map=newMap();
+        Map<String,Object> map=newMap();
 
         char next=seekTo("\"}",source);
 
