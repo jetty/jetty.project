@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
@@ -1980,7 +1981,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         @Override
-        public Map<String, FilterRegistration> getFilterRegistrations()
+        public Map<String, ? extends FilterRegistration> getFilterRegistrations()
         {
             Log.warn(__unimplmented);
             return null;
@@ -1994,7 +1995,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         @Override
-        public Map<String, ServletRegistration> getServletRegistrations()
+        public Map<String, ? extends ServletRegistration> getServletRegistrations()
         {
             Log.warn(__unimplmented);
             return null;
@@ -2008,7 +2009,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         @Override
-        public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
+        public void setSessionTrackingModes(EnumSet<SessionTrackingMode> sessionTrackingModes)
         {
             Log.warn(__unimplmented);
         }

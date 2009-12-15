@@ -613,7 +613,7 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
-        public Map<String, FilterRegistration> getFilterRegistrations()
+        public Map<String, ? extends FilterRegistration> getFilterRegistrations()
         {
             HashMap<String, FilterRegistration> registrations = new HashMap<String, FilterRegistration>();
             ServletHandler handler=ServletContextHandler.this.getServletHandler();
@@ -634,7 +634,7 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
-        public Map<String, ServletRegistration> getServletRegistrations()
+        public Map<String, ? extends ServletRegistration> getServletRegistrations()
         {
             HashMap<String, ServletRegistration> registrations = new HashMap<String, ServletRegistration>();
             ServletHandler handler=ServletContextHandler.this.getServletHandler();
@@ -657,7 +657,7 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
-        public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
+        public void setSessionTrackingModes(EnumSet<SessionTrackingMode> sessionTrackingModes)
         {
             // TODO other started conditions
             if (!isStarting())
