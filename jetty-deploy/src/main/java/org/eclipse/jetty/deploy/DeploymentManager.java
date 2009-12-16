@@ -28,6 +28,7 @@ import org.eclipse.jetty.deploy.bindings.StandardDeployer;
 import org.eclipse.jetty.deploy.bindings.StandardStarter;
 import org.eclipse.jetty.deploy.bindings.StandardStopper;
 import org.eclipse.jetty.deploy.bindings.StandardUndeployer;
+import org.eclipse.jetty.deploy.graph.Edge;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.deploy.graph.Path;
 import org.eclipse.jetty.server.Server;
@@ -147,6 +148,21 @@ public class DeploymentManager extends AbstractLifeCycle
     public void addLifeCycleBinding(AppLifeCycle.Binding binding)
     {
         lifecycle.addBinding(binding);
+    }
+
+    /**
+     * Convenience method to allow for insertion of nodes into the lifecycle.
+     * 
+     * @param existingFromNodeName
+     * @param existingToNodeName
+     * @param insertedNodeName
+     */
+    public void insertLifeCycleNode(String existingFromNodeName, String existingToNodeName, String insertedNodeName)
+    {
+        Node fromNode = lifecycle.getNodeByName(existingFromNodeName);
+        Node toNode = lifecycle.getNodeByName(existingToNodeName);
+        Edge edge = new Edge(fromNode,toNode);
+        lifecycle.insertNode(edge,insertedNodeName);
     }
 
     @Override

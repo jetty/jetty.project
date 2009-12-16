@@ -211,7 +211,6 @@ public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppPro
         this.scanner.setRecursive(recursive);
         this.scanner.setFilenameFilter(filenamefilter);
         this.scanner.addListener(this);
-        this.scanner.scan();
         this.scanner.start();
         Log.info("Started scanner: " + scanner);
     }
