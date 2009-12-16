@@ -5,6 +5,7 @@ jetty-7.0.2-SNAPSHOT
  + 297421 Hide server/system classes from WebAppClassLoader.getResources
  + JETTY-1156 SSL blocking close with JVM Bug busy key fix
  + JETTY-1157 Don't hold array passed in write(byte[])
+ + COMETD-46 reset ContentExchange response content on resend
 
 jetty-7.0.1.v20091125 25 November 2009
  + 274251 DefaultServlet supports exact match mode.

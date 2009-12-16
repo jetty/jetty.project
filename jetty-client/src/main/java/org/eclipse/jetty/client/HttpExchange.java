@@ -268,6 +268,7 @@ public class HttpExchange
                     switch (newStatus)
                     {
                         case STATUS_START:
+                        case STATUS_EXCEPTED:
                             set=_status.compareAndSet(oldStatus,newStatus);
                             break;
                         case STATUS_CANCELLING:

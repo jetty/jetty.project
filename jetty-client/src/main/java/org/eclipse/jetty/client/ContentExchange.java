@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class ContentExchange extends CachedExchange
 {
-    private int _contentLength = 1024;
+    private int _bufferSize = 4096;
     private String _encoding = "utf-8";
     private ByteArrayOutputStream _responseContent;
     private File _fileForUpload;
@@ -60,6 +60,14 @@ public class ContentExchange extends CachedExchange
     }
 
     @Override
+    protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+    {
+        if (_responseContent!=null)
+            _responseContent.reset();
+        super.onResponseStatus(version,status,reason);
+    }
+
+    @Override
     protected void onResponseHeader(Buffer name, Buffer value) throws IOException
     {
         super.onResponseHeader(name, value);
@@ -67,7 +75,7 @@ public class ContentExchange extends CachedExchange
         switch (header)
         {
             case HttpHeaders.CONTENT_LENGTH_ORDINAL:
-                _contentLength = BufferUtil.toInt(value);
+                _bufferSize = BufferUtil.toInt(value);
                 break;
             case HttpHeaders.CONTENT_TYPE_ORDINAL:
                 String mime = StringUtil.asciiToLowerCase(value.toString());
@@ -83,7 +91,7 @@ public class ContentExchange extends CachedExchange
     {
         super.onResponseContent(content);
         if (_responseContent == null)
-            _responseContent = new ByteArrayOutputStream(_contentLength);
+            _responseContent = new ByteArrayOutputStream(_bufferSize);
         content.writeTo(_responseContent);
     }
 
