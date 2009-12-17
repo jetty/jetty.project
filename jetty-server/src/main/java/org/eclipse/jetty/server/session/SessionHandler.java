@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.ScopedHandler;
 import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
@@ -36,7 +37,7 @@ import org.eclipse.jetty.util.log.Log;
  * 
  *
  */
-public class SessionHandler extends HandlerWrapper
+public class SessionHandler extends ScopedHandler
 {
     /* -------------------------------------------------------------- */
     private SessionManager _sessionManager;
@@ -126,12 +127,13 @@ public class SessionHandler extends HandlerWrapper
         _sessionManager.stop();
     }
 
+    
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {
         setRequestedId(baseRequest,request);
@@ -179,7 +181,18 @@ public class SessionHandler extends HandlerWrapper
                 Log.debug("session="+session);
             }
 
-            getHandler().handle(target, baseRequest, request, response);
+            // start manual inline of nextScope(target,baseRequest,request,response);
+            //noinspection ConstantIfStatement
+            if (false)
+                nextScope(target,baseRequest,request,response);
+            else if (_nextScope!=null)
+                _nextScope.doScope(target,baseRequest,request, response);
+            else if (_outerScope!=null)
+                _outerScope.doHandle(target,baseRequest,request, response);
+            else 
+                doHandle(target,baseRequest,request, response);
+            // end manual inline (pathentic attempt to reduce stack depth)
+            
         }
         finally
         {
@@ -194,6 +207,26 @@ public class SessionHandler extends HandlerWrapper
                 baseRequest.setSession(old_session);
             }
         }
+    }
+    
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
+     */
+    @Override
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
+    {
+        // start manual inline of nextHandle(target,baseRequest,request,response);
+        //noinspection ConstantIfStatement
+        if (false)
+            nextHandle(target,baseRequest,request,response);
+        else if (_nextScope!=null && _nextScope==_handler)
+            _nextScope.doHandle(target,baseRequest,request, response);
+        else if (_handler!=null)
+            _handler.handle(target,baseRequest, request, response);
+        // end manual inline
     }
 
     /* ------------------------------------------------------------ */

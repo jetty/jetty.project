@@ -597,18 +597,11 @@ public class HttpConnection implements Connection
                         throw (ThreadDeath)e;
 
                     error=true;
-                    if (info==null)
-                    {
-                        Log.debug(_uri+": "+e);
-                        _request.setHandled(true);
-                        _generator.sendError(400, null, null, true);
-                    }
-                    else
-                    {
-                        Log.debug(""+_uri,e);
-                        _request.setHandled(true);
-                        _generator.sendError(500, null, null, true);
-                    }
+                    Log.warn(_uri+": "+e);
+                    Log.debug(e);
+                    _request.setHandled(true);
+                    _generator.sendError(info==null?400:500, null, null, true);
+                    
                 }
                 finally
                 {

@@ -98,6 +98,7 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
 
     public void requestInitialized(ServletRequestEvent sre)
     {
+        ((HttpServletRequest)sre.getServletRequest()).getSession(true).getId();
         sre.getServletRequest().setAttribute("requestInitialized","'"+sre.getServletContext().getContextPath()+"'");
         // System.err.println("requestInitialized "+sre);
     }
