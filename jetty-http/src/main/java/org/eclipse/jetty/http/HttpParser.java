@@ -30,6 +30,14 @@ import org.eclipse.jetty.util.log.Log;
 /**
  * 
  */
+
+/* ------------------------------------------------------------ */
+/**
+ */
+
+/* ------------------------------------------------------------ */
+/**
+ */
 public class HttpParser implements Parser
 {
     // States
@@ -76,6 +84,7 @@ public class HttpParser implements Parser
     protected long _contentPosition;
     protected int _chunkLength;
     protected int _chunkPosition;
+    private boolean _headResponse;
     
     /* ------------------------------------------------------------------------------- */
     /**
@@ -116,12 +125,22 @@ public class HttpParser implements Parser
     {
         return _contentLength;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public long getContentRead()
     {
         return _contentPosition;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Set if a HEAD response is expected
+     * @param head
+     */
+    public void setHeadResponse(boolean head)
+    {
+        _headResponse=head;
+    }
+    
     /* ------------------------------------------------------------------------------- */
     public int getState()
     {
@@ -702,6 +721,15 @@ public class HttpParser implements Parser
         
         // ==========================
         
+        // Handle HEAD response
+        if (_responseStatus>0 && _headResponse)
+        {
+            _state=STATE_END;
+            _handler.messageComplete(_contentLength);
+        }
+
+        // ==========================
+        
         // Handle _content
         length=_buffer.length();
         Buffer chunk; 
@@ -924,6 +952,7 @@ public class HttpParser implements Parser
         }
         
     }
+    
     /* ------------------------------------------------------------------------------- */
     public void reset(boolean returnBuffers)
     {   

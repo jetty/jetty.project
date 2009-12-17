@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeaderValues;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpVersions;
@@ -404,7 +405,9 @@ public class HttpConnection implements Connection
                     auth.setCredentials(_exchange);
             }
 
-            _generator.setRequest(_exchange.getMethod(), uri);
+            String method=_exchange.getMethod();
+            _generator.setRequest(method, uri);
+            _parser.setHeadResponse(HttpMethods.HEAD.equalsIgnoreCase(method));
 
             HttpFields requestHeaders = _exchange.getRequestFields();
             if (_exchange.getVersion() >= HttpVersions.HTTP_1_1_ORDINAL)

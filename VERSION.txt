@@ -3,6 +3,7 @@ jetty-7.0.2-SNAPSHOT
  + 290765 Reset input for HttpExchange retry.
  + 296765 JMX Connector Server and ShutdownThread
  + 297421 Hide server/system classes from WebAppClassLoader.getResources
+ + 297783 Handle HEAD reponses in HttpClient
  + JETTY-1156 SSL blocking close with JVM Bug busy key fix
  + JETTY-1157 Don't hold array passed in write(byte[])
  + COMETD-46 reset ContentExchange response content on resend
