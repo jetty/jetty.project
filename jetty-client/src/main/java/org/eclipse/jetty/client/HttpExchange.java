@@ -518,7 +518,7 @@ public class HttpExchange
     public void setRequestContent(Buffer requestContent)
     {
         _requestContent = requestContent;
-        _requestContent.mark();
+        _requestContent.mark(_requestContent.getIndex());
     }
 
     /**
