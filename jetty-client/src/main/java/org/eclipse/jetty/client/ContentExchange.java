@@ -81,7 +81,12 @@ public class ContentExchange extends CachedExchange
                 String mime = StringUtil.asciiToLowerCase(value.toString());
                 int i = mime.indexOf("charset=");
                 if (i > 0)
+                {
                     _encoding = mime.substring(i + 8);
+                    i = _encoding.indexOf(';');
+                    if (i > 0)
+                        _encoding = _encoding.substring(0, i);
+                }
                 break;
         }
     }
