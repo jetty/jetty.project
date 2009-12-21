@@ -34,12 +34,10 @@ import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -50,9 +48,6 @@ import org.eclipse.jetty.util.IO;
 public class ContentExchangeTest
     extends TestCase
 {
-    private static String _content0 =
-        "Hello World";
-    
     private static String _content =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
         "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque "+
@@ -72,7 +67,7 @@ public class ContentExchangeTest
     private HttpClient _client;
     private Realm _realm;
     private String _protocol;
-    private String _requestUrl;
+    private String _baseUrl;
 
     public void setUp()
         throws Exception
@@ -81,9 +76,9 @@ public class ContentExchangeTest
         _docRoot.mkdirs();
         _docRoot.deleteOnExit();
         
-        File content = new File(_docRoot,"content.txt");
+        File content = new File(_docRoot,"input.txt");
         FileOutputStream out = new FileOutputStream(content);
-        out.write(_content0.getBytes("utf-8"));
+        out.write(_content.getBytes("utf-8"));
         out.close();
         
         _server = new Server();
@@ -91,7 +86,7 @@ public class ContentExchangeTest
         _server.start();
 
         int port = _server.getConnectors()[0].getLocalPort();
-        _requestUrl = _protocol+"://localhost:"+port+ "/content.txt";
+        _baseUrl = _protocol+"://localhost:"+port+ "/";
     }
     
     public void tearDown()
@@ -106,10 +101,12 @@ public class ContentExchangeTest
     
     public void testPut() throws Exception
     {
+        System.err.println(getName());
+        
         startClient(_realm);
     
         ContentExchange putExchange = new ContentExchange();
-        putExchange.setURL(_requestUrl);
+        putExchange.setURL(getBaseUrl() + "output.txt");
         putExchange.setMethod(HttpMethods.PUT);
         putExchange.setRequestContent(new ByteArrayBuffer(_content.getBytes()));
     
@@ -123,16 +120,18 @@ public class ContentExchangeTest
         boolean statusOk = (responseStatus == 200 || responseStatus == 201);
         assertTrue(statusOk);
         
-        String content = IO.toString(new FileInputStream(new File(_docRoot,"content.txt")));
+        String content = IO.toString(new FileInputStream(new File(_docRoot,"output.txt")));
         assertEquals(_content,content);
     }
     
     public void testGet() throws Exception
     {
+        System.err.println(getName());
+        
         startClient(_realm);
     
         ContentExchange getExchange = new ContentExchange();
-        getExchange.setURL(_requestUrl);
+        getExchange.setURL(getBaseUrl() + "input.txt");
         getExchange.setMethod(HttpMethods.GET);
     
         _client.send(getExchange);
@@ -148,15 +147,17 @@ public class ContentExchangeTest
         stopClient();
     
         assertEquals(HttpStatus.OK_200,responseStatus);
-        assertEquals(_content0,content);
+        assertEquals(_content,content);
     }
     
     public void testHead() throws Exception
     {
+        System.err.println(getName());
+        
         startClient(_realm);
     
         ContentExchange getExchange = new ContentExchange();
-        getExchange.setURL(_requestUrl);
+        getExchange.setURL(getBaseUrl() + "input.txt");
         getExchange.setMethod(HttpMethods.HEAD);
     
         _client.send(getExchange);
@@ -215,6 +216,26 @@ public class ContentExchangeTest
     protected String getBasePath()
     {
         return _docRoot.getAbsolutePath();
+    }
+    
+    protected String getBaseUrl()
+    {
+        return _baseUrl;
+    }
+    
+    protected HttpClient getClient()
+    {
+        return _client;
+    }
+    
+    protected Realm getRealm()
+    {
+        return _realm;
+    }
+    
+    protected String getContent()
+    {
+        return _content;
     }
     
     protected void setProtocol(String protocol)
