@@ -359,7 +359,9 @@ public class HttpConnection implements Connection
         finally
         {
             if (_exchange != null && _exchange.isAssociated())
+            {
                 _exchange.disassociate();
+            }
         }
     }
 
@@ -547,7 +549,20 @@ public class HttpConnection implements Connection
 
     public void close() throws IOException
     {
-        _endp.close();
+        try
+        {
+            _endp.close();
+        }
+        finally
+        {
+            HttpExchange exchange=_exchange;
+            if (exchange!=null)
+            {
+                int status = exchange.getStatus();
+                if (status>HttpExchange.STATUS_START && status<HttpExchange.STATUS_COMPLETED)
+                    System.err.println("\nCLOSE "+exchange);
+            }
+        }
     }
 
     public void setIdleTimeout(long expire)
@@ -620,5 +635,4 @@ public class HttpConnection implements Connection
             }
         }
     }
-
 }

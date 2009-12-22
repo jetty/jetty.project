@@ -101,8 +101,6 @@ public class ContentExchangeTest
     
     public void testPut() throws Exception
     {
-        System.err.println(getName());
-        
         startClient(_realm);
     
         ContentExchange putExchange = new ContentExchange();
@@ -126,8 +124,6 @@ public class ContentExchangeTest
     
     public void testGet() throws Exception
     {
-        System.err.println(getName());
-        
         startClient(_realm);
     
         ContentExchange getExchange = new ContentExchange();
@@ -152,8 +148,6 @@ public class ContentExchangeTest
     
     public void testHead() throws Exception
     {
-        System.err.println(getName());
-        
         startClient(_realm);
     
         ContentExchange getExchange = new ContentExchange();

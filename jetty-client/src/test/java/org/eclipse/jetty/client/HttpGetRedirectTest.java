@@ -91,8 +91,6 @@ public class HttpGetRedirectTest
 
     public void testGet() throws Exception
     {
-        System.err.println(getName());
-
         startClient(_realm);
 
         ContentExchange getExchange = new ContentExchange();

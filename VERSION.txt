@@ -7,6 +7,7 @@ jetty-7.0.2-SNAPSHOT
  + 298144 Unit test for jetty-client connecting to a server that uses Basic Auth
  + 298145 Reorganized test harness to separate the HTTP PUT and HTTP GET test URLs
  + JETTY-910 Allow request listeners to access session
+ + JETTY-1155 HttpConnection.close notifies HttpExchange
  + JETTY-1156 SSL blocking close with JVM Bug busy key fix
  + JETTY-1157 Don't hold array passed in write(byte[])
  + COMETD-46 reset ContentExchange response content on resend
