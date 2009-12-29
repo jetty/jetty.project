@@ -102,29 +102,27 @@ public class LibExtClassLoaderHelper {
 				if (f.getName().toLowerCase().startsWith("readme")) {
 					continue;
 				} else {
-					if (urls.isEmpty())
-					{
+					if (urls.isEmpty()) {
 						urls.add(jettyResources.toURI().toURL());
 					}
 				}
 			}
 			processFilesInResourcesFolder(jettyHome, jettyResFiles);
 		}
-		File libEtc = new File(jettyHome, "lib/ext");
-		for (File f : libEtc.listFiles()) {
-			if (f.getName().endsWith(".jar")) {
-				//cheap to tolerate folders so let's do it.
-				URL url = f.toURI().toURL();
-				if (f.isFile()) {//is this necessary anyways?
-					url = new URL("jar:" + url.toString() + "!/");
-				}
-				urls.add(url);
-			}
+		File libExt = new File(jettyHome, "lib/ext");
+		if (libExt.exists()) {
+		    for (File f : libExt.listFiles()) {
+		        if (f.getName().endsWith(".jar")) {
+		            //cheap to tolerate folders so let's do it.
+		            URL url = f.toURI().toURL();
+		            if (f.isFile()) {//is this necessary anyways?
+		                url = new URL("jar:" + url.toString() + "!/");
+		            }
+		            urls.add(url);
+		        }
+		    }
 		}
 		
-//		if (urls.isEmpty()) {
-//			return parentClassLoader;
-//		}
 		return new URLClassLoader(urls.toArray(new URL[urls.size()]), parentClassLoader);
 	}
 	

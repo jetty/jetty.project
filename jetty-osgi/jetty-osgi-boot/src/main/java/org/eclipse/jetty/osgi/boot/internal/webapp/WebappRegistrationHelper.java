@@ -42,9 +42,15 @@ import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
 import org.eclipse.jetty.osgi.boot.utils.internal.DefaultBundleClassLoaderHelper;
 import org.eclipse.jetty.osgi.boot.utils.internal.DefaultFileLocatorHelper;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -273,22 +279,40 @@ class WebappRegistrationHelper
             	if (!conffile.exists())
             	{
             		__logger.warn("Unable to resolve the jetty/etc file " + etcFile);
+            		
+            		if ("etc/jetty.xml".equals(etcFile))
+            		{
+                            __logger.info("Configuring default server on 8080");
+                            SelectChannelConnector connector = new SelectChannelConnector();
+                            connector.setPort(8080);
+                            _server.addConnector(connector);
+                            
+                            HandlerCollection handlers = new HandlerCollection();
+                            ContextHandlerCollection contexts = new ContextHandlerCollection();
+                            RequestLogHandler requestLogHandler = new RequestLogHandler();
+                            handlers.setHandlers(new Handler[]
+                            { contexts, new DefaultHandler(), requestLogHandler });
+                            _server.setHandler(handlers);
+            		}
             	}
-            	try
+            	else
             	{
-	                XmlConfiguration config = new XmlConfiguration(
-	                        new FileInputStream(conffile));
-	                config.getProperties().put("jetty.home", jettyHome);
-	                config.getProperties().put("jetty.host", System.getProperty("jetty.host", ""));
-	                config.getProperties().put("jetty.port", System.getProperty("jetty.port", "8080"));
-	                config.getProperties().put("jetty.port.ssl", System.getProperty("jetty.port.ssl", "8443"));
-	                config.configure(_server);
-            	}
-            	catch (SAXParseException saxparse)
-            	{
-            		Log.getLogger(WebappRegistrationHelper.class.getName())
-    					.warn("Unable to configure the jetty/etc file " + etcFile, saxparse);
-            		throw saxparse;
+            	    try
+            	    {
+            	        XmlConfiguration config = new XmlConfiguration(
+            	                new FileInputStream(conffile));
+            	        config.getIdMap().put("server","_server");
+            	        config.getProperties().put("jetty.home", jettyHome);
+            	        config.getProperties().put("jetty.host", System.getProperty("jetty.host", ""));
+            	        config.getProperties().put("jetty.port", System.getProperty("jetty.port", "8080"));
+            	        config.getProperties().put("jetty.port.ssl", System.getProperty("jetty.port.ssl", "8443"));
+            	    }
+            	    catch (SAXParseException saxparse)
+            	    {
+            	        Log.getLogger(WebappRegistrationHelper.class.getName())
+            	        .warn("Unable to configure the jetty/etc file " + etcFile, saxparse);
+            	        throw saxparse;
+            	    }
             	}
             }
             
