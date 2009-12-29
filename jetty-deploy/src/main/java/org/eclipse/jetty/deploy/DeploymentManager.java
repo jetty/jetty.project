@@ -107,14 +107,14 @@ public class DeploymentManager extends AbstractLifeCycle
         }
     }
 
-    private final List<AppProvider> providers = new ArrayList<AppProvider>();
-    private final AppLifeCycle lifecycle = new AppLifeCycle();
-    private final LinkedList<AppEntry> apps = new LinkedList<AppEntry>();
-    private AttributesMap contextAttributes = new AttributesMap();
-    private ConfigurationManager configurationManager;
-    private ContextHandlerCollection contexts;
-    private boolean useStandardBindings = true;
-    private String defaultLifeCycleGoal = "started";
+    private final List<AppProvider> _providers = new ArrayList<AppProvider>();
+    private final AppLifeCycle _lifecycle = new AppLifeCycle();
+    private final LinkedList<AppEntry> _apps = new LinkedList<AppEntry>();
+    private AttributesMap _contextAttributes = new AttributesMap();
+    private ConfigurationManager _configurationManager;
+    private ContextHandlerCollection _contexts;
+    private boolean _useStandardBindings = true;
+    private String _defaultLifeCycleGoal = "started";
 
     /**
      * Receive an app for processing.
@@ -126,19 +126,19 @@ public class DeploymentManager extends AbstractLifeCycle
         Log.info("App Added: " + app.getOriginId());
         AppEntry entry = new AppEntry();
         entry.app = app;
-        entry.setLifeCycleNode(lifecycle.getNodeByName("undeployed"));
-        apps.add(entry);
+        entry.setLifeCycleNode(_lifecycle.getNodeByName("undeployed"));
+        _apps.add(entry);
 
-        if (defaultLifeCycleGoal != null)
+        if (_defaultLifeCycleGoal != null)
         {
             // Immediately attempt to go to default lifecycle state
-            this.requestAppGoal(entry,defaultLifeCycleGoal);
+            this.requestAppGoal(entry,_defaultLifeCycleGoal);
         }
     }
 
     public void addAppProvider(AppProvider provider)
     {
-        providers.add(provider);
+        _providers.add(provider);
         if (isStarted() || isStarting())
         {
             startAppProvider(provider);
@@ -147,7 +147,7 @@ public class DeploymentManager extends AbstractLifeCycle
 
     public void addLifeCycleBinding(AppLifeCycle.Binding binding)
     {
-        lifecycle.addBinding(binding);
+        _lifecycle.addBinding(binding);
     }
 
     /**
@@ -159,16 +159,16 @@ public class DeploymentManager extends AbstractLifeCycle
      */
     public void insertLifeCycleNode(String existingFromNodeName, String existingToNodeName, String insertedNodeName)
     {
-        Node fromNode = lifecycle.getNodeByName(existingFromNodeName);
-        Node toNode = lifecycle.getNodeByName(existingToNodeName);
+        Node fromNode = _lifecycle.getNodeByName(existingFromNodeName);
+        Node toNode = _lifecycle.getNodeByName(existingToNodeName);
         Edge edge = new Edge(fromNode,toNode);
-        lifecycle.insertNode(edge,insertedNodeName);
+        _lifecycle.insertNode(edge,insertedNodeName);
     }
 
     @Override
     protected void doStart() throws Exception
     {
-        if (useStandardBindings)
+        if (_useStandardBindings)
         {
             Log.info("Using standard bindings");
             addLifeCycleBinding(new StandardDeployer());
@@ -177,9 +177,9 @@ public class DeploymentManager extends AbstractLifeCycle
             addLifeCycleBinding(new StandardUndeployer());
         }
 
-        Log.info("Starting all Providers: " + providers.size());
+        Log.info("Starting all Providers: " + _providers.size());
         // Start all of the AppProviders
-        for (AppProvider provider : providers)
+        for (AppProvider provider : _providers)
         {
             startAppProvider(provider);
         }
@@ -189,10 +189,10 @@ public class DeploymentManager extends AbstractLifeCycle
     @Override
     protected void doStop() throws Exception
     {
-        Log.info("Stopping all Providers: " + providers.size());
+        Log.info("Stopping all Providers: " + _providers.size());
 
         // Stop all of the AppProviders
-        for (AppProvider provider : providers)
+        for (AppProvider provider : _providers)
         {
             try
             {
@@ -213,7 +213,7 @@ public class DeploymentManager extends AbstractLifeCycle
             return null;
         }
 
-        for (AppEntry entry : apps)
+        for (AppEntry entry : _apps)
         {
             if (contextId.equals(entry.app.getContextId()))
             {
@@ -230,7 +230,7 @@ public class DeploymentManager extends AbstractLifeCycle
             return null;
         }
 
-        for (AppEntry entry : apps)
+        for (AppEntry entry : _apps)
         {
             if (originId.equals(entry.app.getOriginId()))
             {
@@ -262,18 +262,18 @@ public class DeploymentManager extends AbstractLifeCycle
 
     public Collection<AppEntry> getAppEntries()
     {
-        return apps;
+        return _apps;
     }
 
     public Collection<AppProvider> getAppProviders()
     {
-        return providers;
+        return _providers;
     }
 
     public Collection<App> getApps()
     {
         List<App> ret = new ArrayList<App>();
-        for (AppEntry entry : apps)
+        for (AppEntry entry : _apps)
         {
             ret.add(entry.app);
         }
@@ -290,7 +290,7 @@ public class DeploymentManager extends AbstractLifeCycle
     public Collection<App> getApps(Node node)
     {
         List<App> ret = new ArrayList<App>();
-        for (AppEntry entry : apps)
+        for (AppEntry entry : _apps)
         {
             if (entry.lifecyleNode == node)
             {
@@ -315,7 +315,7 @@ public class DeploymentManager extends AbstractLifeCycle
             return ret;
         }
 
-        for (AppEntry entry : apps)
+        for (AppEntry entry : _apps)
         {
             if (entry.app.equals(app))
             {
@@ -340,41 +340,41 @@ public class DeploymentManager extends AbstractLifeCycle
      */
     public Object getContextAttribute(String name)
     {
-        return contextAttributes.getAttribute(name);
+        return _contextAttributes.getAttribute(name);
     }
 
     public ConfigurationManager getConfigurationManager()
     {
-        return configurationManager;
+        return _configurationManager;
     }
 
     public AttributesMap getContextAttributes()
     {
-        return contextAttributes;
+        return _contextAttributes;
     }
 
     public ContextHandlerCollection getContexts()
     {
-        return contexts;
+        return _contexts;
     }
 
     public String getDefaultLifeCycleGoal()
     {
-        return defaultLifeCycleGoal;
+        return _defaultLifeCycleGoal;
     }
 
     public AppLifeCycle getLifeCycle()
     {
-        return lifecycle;
+        return _lifecycle;
     }
 
     public Server getServer()
     {
-        if (contexts == null)
+        if (_contexts == null)
         {
             return null;
         }
-        return contexts.getServer();
+        return _contexts.getServer();
     }
 
     /**
@@ -385,7 +385,7 @@ public class DeploymentManager extends AbstractLifeCycle
      */
     public void removeApp(App app)
     {
-        ListIterator<AppEntry> it = apps.listIterator();
+        ListIterator<AppEntry> it = _apps.listIterator();
         while (it.hasNext())
         {
             AppEntry entry = it.next();
@@ -399,7 +399,7 @@ public class DeploymentManager extends AbstractLifeCycle
 
     public void removeAppProvider(AppProvider provider)
     {
-        providers.remove(provider);
+        _providers.remove(provider);
         try
         {
             provider.stop();
@@ -417,7 +417,7 @@ public class DeploymentManager extends AbstractLifeCycle
      */
     public void removeContextAttribute(String name)
     {
-        contextAttributes.removeAttribute(name);
+        _contextAttributes.removeAttribute(name);
     }
 
     /**
@@ -454,9 +454,9 @@ public class DeploymentManager extends AbstractLifeCycle
      */
     private void requestAppGoal(AppEntry appentry, String nodeName)
     {
-        Node destinationNode = lifecycle.getNodeByName(nodeName);
+        Node destinationNode = _lifecycle.getNodeByName(nodeName);
         // Compute lifecycle steps
-        Path path = lifecycle.getPath(appentry.lifecyleNode,destinationNode);
+        Path path = _lifecycle.getPath(appentry.lifecyleNode,destinationNode);
         if (path.isEmpty())
         {
             // nothing to do. already there.
@@ -476,7 +476,7 @@ public class DeploymentManager extends AbstractLifeCycle
                 {
                     Node node = it.next();
                     Log.info("Executing Node: " + node);
-                    lifecycle.runBindings(node,appentry.app,this);
+                    _lifecycle.runBindings(node,appentry.app,this);
                     appentry.setLifeCycleNode(node);
                 }
             }
@@ -518,27 +518,27 @@ public class DeploymentManager extends AbstractLifeCycle
      */
     public void setContextAttribute(String name, Object value)
     {
-        contextAttributes.setAttribute(name,value);
+        _contextAttributes.setAttribute(name,value);
     }
 
     public void setConfigurationManager(ConfigurationManager configurationManager)
     {
-        this.configurationManager = configurationManager;
+        this._configurationManager = configurationManager;
     }
 
     public void setContextAttributes(AttributesMap contextAttributes)
     {
-        this.contextAttributes = contextAttributes;
+        this._contextAttributes = contextAttributes;
     }
 
     public void setContexts(ContextHandlerCollection contexts)
     {
-        this.contexts = contexts;
+        this._contexts = contexts;
     }
 
     public void setDefaultLifeCycleGoal(String defaultLifeCycleState)
     {
-        this.defaultLifeCycleGoal = defaultLifeCycleState;
+        this._defaultLifeCycleGoal = defaultLifeCycleState;
     }
 
     private void startAppProvider(AppProvider provider)
@@ -557,7 +557,7 @@ public class DeploymentManager extends AbstractLifeCycle
     public void undeployAll()
     {
         Log.info("Undeploy (All) started");
-        for (AppEntry appentry : apps)
+        for (AppEntry appentry : _apps)
         {
             Log.info("Undeploy: " + appentry);
             requestAppGoal(appentry,"undeployed");
@@ -567,11 +567,11 @@ public class DeploymentManager extends AbstractLifeCycle
 
     public boolean isUseStandardBindings()
     {
-        return useStandardBindings;
+        return _useStandardBindings;
     }
 
     public void setUseStandardBindings(boolean useStandardBindings)
     {
-        this.useStandardBindings = useStandardBindings;
+        this._useStandardBindings = useStandardBindings;
     }
 }
