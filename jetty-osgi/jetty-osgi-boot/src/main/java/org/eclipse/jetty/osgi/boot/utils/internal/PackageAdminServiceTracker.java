@@ -25,17 +25,17 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
- * When the PackageAdmin service is activated we can look for the fragments attached to
- * this bundle and "activate" them.
+ * When the PackageAdmin service is activated we can look for the fragments
+ * attached to this bundle and "activate" them.
  * 
  */
 public class PackageAdminServiceTracker implements ServiceListener
 {
     private BundleContext _context;
-    
+
     private List<BundleActivator> _activatedFragments = new ArrayList<BundleActivator>();
     private boolean _fragmentsWereActivated = false;
-    
+
     public PackageAdminServiceTracker(BundleContext context)
     {
         _context = context;
@@ -47,11 +47,11 @@ public class PackageAdminServiceTracker implements ServiceListener
             }
             catch (InvalidSyntaxException e)
             {
-                e.printStackTrace(); //won't happen
+                e.printStackTrace(); // won't happen
             }
         }
     }
-    
+
     /**
      * @return true if the fragments were activated by this method.
      */
@@ -63,14 +63,15 @@ public class PackageAdminServiceTracker implements ServiceListener
             invokeFragmentActivators(sr);
         return _fragmentsWereActivated;
     }
-    
+
     /**
-     * Invokes the optional BundleActivator in each fragment.
-     * By convention the bundle activator for a fragment must
-     * be in the package that is defined by the symbolic name of the fragment
-     * and the name of the class must be 'FragmentActivator'.
+     * Invokes the optional BundleActivator in each fragment. By convention the
+     * bundle activator for a fragment must be in the package that is defined by
+     * the symbolic name of the fragment and the name of the class must be
+     * 'FragmentActivator'.
      * 
-     * @param event The <code>ServiceEvent</code> object.
+     * @param event
+     *            The <code>ServiceEvent</code> object.
      */
     public void serviceChanged(ServiceEvent event)
     {
@@ -79,41 +80,43 @@ public class PackageAdminServiceTracker implements ServiceListener
             invokeFragmentActivators(event.getServiceReference());
         }
     }
-    
-    private void invokeFragmentActivators(ServiceReference sr) {
-        PackageAdmin admin = (PackageAdmin) _context.getService(sr);
+
+    private void invokeFragmentActivators(ServiceReference sr)
+    {
+        PackageAdmin admin = (PackageAdmin)_context.getService(sr);
         Bundle[] fragments = admin.getFragments(_context.getBundle());
         if (fragments == null)
         {
             return;
         }
-        for (Bundle frag : fragments) {
-            //find a convention to look for a class inside the fragment.
+        for (Bundle frag : fragments)
+        {
+            // find a convention to look for a class inside the fragment.
             try
             {
                 Class<?> c = Class.forName(frag.getSymbolicName() + ".FragmentActivator");
                 if (c != null)
                 {
-                    BundleActivator bActivator = (BundleActivator) c.newInstance();
+                    BundleActivator bActivator = (BundleActivator)c.newInstance();
                     bActivator.start(_context);
                     _activatedFragments.add(bActivator);
                 }
             }
             catch (NullPointerException e)
             {
-                //e.printStackTrace();
+                // e.printStackTrace();
             }
             catch (InstantiationException e)
             {
-                //e.printStackTrace();
+                // e.printStackTrace();
             }
             catch (IllegalAccessException e)
             {
-                //e.printStackTrace();
+                // e.printStackTrace();
             }
             catch (ClassNotFoundException e)
             {
-                //e.printStackTrace();
+                // e.printStackTrace();
             }
             catch (Exception e)
             {
@@ -121,7 +124,7 @@ public class PackageAdminServiceTracker implements ServiceListener
             }
         }
     }
-    
+
     public void stop()
     {
         for (BundleActivator fragAct : _activatedFragments)
@@ -136,5 +139,5 @@ public class PackageAdminServiceTracker implements ServiceListener
             }
         }
     }
-    
+
 }

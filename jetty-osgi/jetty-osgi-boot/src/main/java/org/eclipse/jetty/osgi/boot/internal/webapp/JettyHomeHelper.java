@@ -17,6 +17,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
@@ -26,10 +27,10 @@ import org.eclipse.jetty.util.URIUtil;
 
 /**
  * <p>
- * Magically extract the jettyhome folder from this bundle's jar place it 
- * somewhere in the file-system. Currently we do this only when we detect a system
- * property 'jetty.magic.home.parent' or if we are inside the pde in dev mode.
- * In dev mode we use the osgi.configuration.area folder.
+ * Magically extract the jettyhome folder from this bundle's jar place it
+ * somewhere in the file-system. Currently we do this only when we detect a
+ * system property 'jetty.magic.home.parent' or if we are inside the pde in dev
+ * mode. In dev mode we use the osgi.configuration.area folder.
  * </p>
  * <p>
  * This work is done through the jetty launch configuration inside the
@@ -42,17 +43,17 @@ class JettyHomeHelper
 {
 
     /** only magically extract jettyhome if we are inside the pde. */
-    static boolean magic_install_only_in_pde = Boolean.valueOf(
-            System.getProperty("jetty.magic.home.pde.only","true"));
+    static boolean magic_install_only_in_pde = Boolean.valueOf(System.getProperty("jetty.magic.home.pde.only","true"));
 
     /**
      * Hack for eclipse-PDE. When no jetty.home was set, detect if we running
-     * inside eclipse-PDE in development mode. In that case extract the jettyhome folder
-     * embedded inside this plugin inside the configuration area folder.
-     * It is specific to the workspace. Set the folder as jetty.home. If the folder already
-     * exist don't extract it again.
+     * inside eclipse-PDE in development mode. In that case extract the
+     * jettyhome folder embedded inside this plugin inside the configuration
+     * area folder. It is specific to the workspace. Set the folder as
+     * jetty.home. If the folder already exist don't extract it again.
      * <p>
-     * If we are not pde dev mode, the same but look in the installation folder of eclipse itself.
+     * If we are not pde dev mode, the same but look in the installation folder
+     * of eclipse itself.
      * </p>
      * 
      * @return
@@ -91,16 +92,15 @@ class JettyHomeHelper
     }
 
     /**
-     * @return true when we are currently being run by the pde in development mode.
+     * @return true when we are currently being run by the pde in development
+     *         mode.
      */
     private static boolean isPDEDevelopment()
     {
         String eclipseCommands = System.getProperty("eclipse.commands");
         // detect if we are being run from the pde: ie during development.
         return eclipseCommands != null && eclipseCommands.indexOf("-dev") != -1
-                && (eclipseCommands.indexOf("-dev\n") != -1
-                        || eclipseCommands.indexOf("-dev\r") != -1
-                        || eclipseCommands.indexOf("-dev ") != -1);
+                && (eclipseCommands.indexOf("-dev\n") != -1 || eclipseCommands.indexOf("-dev\r") != -1 || eclipseCommands.indexOf("-dev ") != -1);
     }
 
     /**
@@ -113,7 +113,8 @@ class JettyHomeHelper
 
     /**
      * @param zipFile
-     *            The current jar file for this bundle. contains an archive of the default jettyhome
+     *            The current jar file for this bundle. contains an archive of
+     *            the default jettyhome
      * @param parentOfMagicJettyHome
      *            The folder inside which jettyhome is created.
      */
@@ -193,24 +194,31 @@ class JettyHomeHelper
     }
 
     /**
-     * Look for the parent folder that contains jettyhome.
-     * Can be specified by the sys property jetty.magic.home.parent or if 
-     * inside the pde will default on the
-     * configuration area. Otherwise returns null.
+     * Look for the parent folder that contains jettyhome. Can be specified by
+     * the sys property jetty.magic.home.parent or if inside the pde will
+     * default on the configuration area. Otherwise returns null.
      * 
      * @return The folder inside which jettyhome should be placed.
      */
     private static File getParentFolderOfMagicHome()
     {
-        // for (java.util.Map.Entry<Object, Object> e : System.getProperties().entrySet()) {
+        // for (java.util.Map.Entry<Object, Object> e :
+        // System.getProperties().entrySet()) {
         // System.err.println(e.getKey() + " -> " + e.getValue());
         // }
         String magicParent = WebappRegistrationHelper.stripQuotesIfPresent(System.getProperty("jetty.magic.home.parent"));
-        String magicParentValue = magicParent != null
-                ? System.getProperty(magicParent) : null;
-        File specifiedMagicParent = magicParentValue != null
-                ? getFile(magicParentValue) // in that case it was pointing to another system property.
-                : getFile(magicParent); // in that case it was directly a file.
+        String magicParentValue = magicParent != null?System.getProperty(magicParent):null;
+        File specifiedMagicParent = magicParentValue != null?getFile(magicParentValue) // in
+                                                                                       // that
+                                                                                       // case
+                                                                                       // it
+                                                                                       // was
+                                                                                       // pointing
+                                                                                       // to
+                                                                                       // another
+                                                                                       // system
+                                                                                       // property.
+                :getFile(magicParent); // in that case it was directly a file.
         if (specifiedMagicParent != null && specifiedMagicParent.exists())
         {
             return specifiedMagicParent;
@@ -223,7 +231,8 @@ class JettyHomeHelper
     }
 
     /**
-     * Be flexible with the url/uri/path that can be the value of the various system properties.
+     * Be flexible with the url/uri/path that can be the value of the various
+     * system properties.
      * 
      * @param file
      * @return a file. might not exist.

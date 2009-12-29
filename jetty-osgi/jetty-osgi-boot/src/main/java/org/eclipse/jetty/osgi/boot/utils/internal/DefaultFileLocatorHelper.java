@@ -25,7 +25,8 @@ import org.eclipse.jetty.util.URIUtil;
 import org.osgi.framework.Bundle;
 
 /**
- * From a bundle to its location on the filesystem. Assumes the bundle is not a jar.
+ * From a bundle to its location on the filesystem. Assumes the bundle is not a
+ * jar.
  * 
  * @author hmalphettes
  */
@@ -35,18 +36,21 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
     // hack to locate the file-system directly from the bundle.
     // support equinox, felix and nuxeo's osgi implementations.
     // not tested on nuxeo and felix just yet.
-    // The url nuxeo and felix return is created directly from the File so it should work.
+    // The url nuxeo and felix return is created directly from the File so it
+    // should work.
     private static Field BUNDLE_ENTRY_FIELD = null;
     private static Field FILE_FIELD = null;
 
-    private static Field BUNDLE_FILE_FIELD_FOR_DIR_ZIP_BUNDLE_ENTRY = null;// ZipBundleFile inside DirZipBundleEntry
+    private static Field BUNDLE_FILE_FIELD_FOR_DIR_ZIP_BUNDLE_ENTRY = null;// ZipBundleFile
+                                                                           // inside
+                                                                           // DirZipBundleEntry
 
     private static Field ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE = null;// ZipFile
 
     /**
-     * Works with equinox, felix, nuxeo and probably more.
-     * Not exactly in the spirit of OSGi but quite necessary to support self-contained webapps and other
-     * situations.
+     * Works with equinox, felix, nuxeo and probably more. Not exactly in the
+     * spirit of OSGi but quite necessary to support self-contained webapps and
+     * other situations.
      * <p>
      * Currently only works with bundles that are not jar.
      * </p>
@@ -62,16 +66,19 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         // grab the MANIFEST.MF's url
         // and then do what it takes.
         URL url = bundle.getEntry("/META-INF/MANIFEST.MF");
-        // System.err.println(url.toString() + " " + url.toURI() + " " + url.getProtocol());
+        // System.err.println(url.toString() + " " + url.toURI() + " " +
+        // url.getProtocol());
         if (url.getProtocol().equals("file"))
         {
-            // some osgi frameworks do use the file protocole directly in some situations
+            // some osgi frameworks do use the file protocole directly in some
+            // situations
             return new File(url.toURI()).getParentFile().getParentFile();
         }
         else if (url.getProtocol().equals("bundleentry"))
         {
             // say hello to equinox who has its own protocol.
-            // we use introspection like there is no tomorrow to get access to the File
+            // we use introspection like there is no tomorrow to get access to
+            // the File
             URLConnection con = url.openConnection();
             if (BUNDLE_ENTRY_FIELD == null)
             {
@@ -115,7 +122,8 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             }
             else if (bundleEntry.getClass().getName().equals("org.eclipse.osgi.baseadaptor.bundlefile.DirZipBundleEntry"))
             {
-                // that will not happen as we did ask for the manifest not a directory.
+                // that will not happen as we did ask for the manifest not a
+                // directory.
             }
         }
         else if ("bundle".equals(url.getProtocol()))
@@ -146,29 +154,28 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             path = path.substring(1);
         }
         File bundleInstall = getBundleInstallLocation(bundle);
-        File webapp = path != null && path.length() != 0
-                ? new File(bundleInstall,path)
-                : bundleInstall;
+        File webapp = path != null && path.length() != 0?new File(bundleInstall,path):bundleInstall;
         if (!webapp.exists())
         {
-            throw new IllegalArgumentException("Unable to locate " + path
-                    + " inside " + bundle.getSymbolicName() + " ("
-                    + (bundleInstall != null
-                            ? bundleInstall.getAbsolutePath()
-                            :" no_bundle_location ") + ")");
+            throw new IllegalArgumentException("Unable to locate " + path + " inside " + bundle.getSymbolicName() + " ("
+                    + (bundleInstall != null?bundleInstall.getAbsolutePath():" no_bundle_location ") + ")");
         }
         return webapp;
     }
 
     /**
-     * If the bundle is a jar, returns the jar. If the bundle is a folder, look inside it and search for jars that it returns.
+     * If the bundle is a jar, returns the jar. If the bundle is a folder, look
+     * inside it and search for jars that it returns.
      * <p>
-     * Good enough for our purpose (TldLocationsCache when it scans for tld files inside jars alone. In fact we only support the second situation for
-     * development purpose where the bundle was imported in pde and the classes kept in a jar.
+     * Good enough for our purpose (TldLocationsCache when it scans for tld
+     * files inside jars alone. In fact we only support the second situation for
+     * development purpose where the bundle was imported in pde and the classes
+     * kept in a jar.
      * </p>
      * 
      * @param bundle
-     * @return The jar(s) file that is either the bundle itself, either the jars embedded inside it.
+     * @return The jar(s) file that is either the bundle itself, either the jars
+     *         embedded inside it.
      */
     public File[] locateJarsInsideBundle(Bundle bundle) throws Exception
     {
@@ -198,7 +205,8 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         }
         else
         {
-            return new File[] { jasperLocation };
+            return new File[]
+            { jasperLocation };
         }
     }
 
