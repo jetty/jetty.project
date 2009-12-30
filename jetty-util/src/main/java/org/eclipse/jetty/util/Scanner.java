@@ -50,6 +50,7 @@ public class Scanner
     private List<File> _scanDirs;
     private volatile boolean _running = false;
     private boolean _reportExisting = true;
+    private boolean _reportDirs = true;
     private Timer _timer;
     private TimerTask _task;
     private boolean _recursive=true;
@@ -97,11 +98,11 @@ public class Scanner
 
     /**
      * Set the scan interval
-     * @param scanInterval pause between scans in seconds
+     * @param scanInterval pause between scans in seconds, or 0 for no scan after the initial scan.
      */
     public synchronized void setScanInterval(int scanInterval)
     {
-        this._scanInterval = scanInterval;
+        _scanInterval = scanInterval;
         schedule();
     }
 
@@ -154,7 +155,7 @@ public class Scanner
      */
     public void setFilenameFilter (FilenameFilter filter)
     {
-        this._filter = filter;
+        _filter = filter;
     }
 
     /**
@@ -166,6 +167,7 @@ public class Scanner
         return _filter;
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * Whether or not an initial scan will report all files as being
      * added.
@@ -174,9 +176,31 @@ public class Scanner
      */
     public void setReportExistingFilesOnStartup (boolean reportExisting)
     {
-        this._reportExisting = reportExisting;
+        _reportExisting = reportExisting;
     }
 
+    /* ------------------------------------------------------------ */
+    public boolean getReportExistingFilesOnStartup()
+    {
+        return _reportExisting;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Set if found directories should be reported.
+     * @param dirs
+     */
+    public void setReportDirs(boolean dirs)
+    {
+        _reportDirs=dirs;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public boolean getReportDirs()
+    {
+        return _reportDirs;
+    }
+    
+    /* ------------------------------------------------------------ */
     /**
      * Add an added/removed/changed listener
      * @param listener
@@ -276,7 +300,7 @@ public class Scanner
     /**
      * Perform a pass of the scanner and report changes
      */
-    public void scan ()
+    public synchronized void scan ()
     {
         scanFiles();
         reportDifferences(_currentScan, _prevScan);
@@ -288,7 +312,7 @@ public class Scanner
      * Recursively scan all files in the designated directories.
      * @return Map of name of file to last modified time
      */
-    public void scanFiles ()
+    public synchronized void scanFiles ()
     {
         if (_scanDirs==null)
             return;
@@ -300,7 +324,7 @@ public class Scanner
             File dir = itor.next();
             
             if ((dir != null) && (dir.exists()))
-                scanFile(dir, _currentScan);
+                scanFile(dir, _currentScan,0);
         }
     }
 
@@ -361,14 +385,14 @@ public class Scanner
      * @param f file or directory
      * @param scanInfoMap map of filenames to last modified times
      */
-    private void scanFile (File f, Map scanInfoMap)
+    private void scanFile (File f, Map scanInfoMap, int depth)
     {
         try
         {
             if (!f.exists())
                 return;
 
-            if (f.isFile())
+            if (f.isFile() || depth>0&& _reportDirs && f.isDirectory())
             {
                 if ((_filter == null) || ((_filter != null) && _filter.accept(f.getParentFile(), f.getName())))
                 {
@@ -377,11 +401,12 @@ public class Scanner
                     scanInfoMap.put(name, new Long(lastModified));
                 }
             }
-            else if (f.isDirectory() && (_recursive || _scanDirs.contains(f)))
+            
+            if (f.isDirectory() && (_recursive || _scanDirs.contains(f)))
             {
                 File[] files = f.listFiles();
                 for (int i=0;i<files.length;i++)
-                    scanFile(files[i], scanInfoMap);
+                    scanFile(files[i], scanInfoMap,depth+1);
             }
         }
         catch (IOException e)

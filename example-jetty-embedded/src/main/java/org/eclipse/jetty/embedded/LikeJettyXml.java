@@ -16,7 +16,10 @@ package org.eclipse.jetty.embedded;
 import java.lang.management.ManagementFactory;
 
 import org.eclipse.jetty.deploy.ContextDeployer;
+import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.WebAppDeployer;
+import org.eclipse.jetty.deploy.providers.ContextAppProvider;
+import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Connector;
@@ -77,23 +80,23 @@ public class LikeJettyXml
         { contexts, new DefaultHandler(), requestLogHandler });
         server.setHandler(handlers);
 
-        
         // Setup deployers
+        DeploymentManager deployer = new DeploymentManager();
+        deployer.setContexts(contexts);
+        server.addBean(deployer);   
         
-        ContextDeployer deployer0 = new ContextDeployer();
-        deployer0.setContexts(contexts);
-        deployer0.setConfigurationDir(jetty_home + "/contexts");
-        deployer0.setScanInterval(1);
-        server.addBean(deployer0);
+        ContextAppProvider context_provider = new ContextAppProvider();
+        context_provider.setMonitoredDir(jetty_home + "/contexts");
+        context_provider.setScanInterval(5);
+        server.addBean(context_provider);
+        deployer.addAppProvider(context_provider);
 
-        WebAppDeployer deployer1 = new WebAppDeployer();
-        deployer1.setContexts(contexts);
-        deployer1.setWebAppDir(jetty_home + "/webapps");
-        deployer1.setParentLoaderPriority(false);
-        deployer1.setExtract(true);
-        deployer1.setAllowDuplicates(false);
-        deployer1.setDefaultsDescriptor(jetty_home + "/etc/webdefault.xml");
-        server.addBean(deployer1);
+        WebAppProvider webapp_provider = new WebAppProvider();
+        webapp_provider.setMonitoredDir(jetty_home + "/webapps");
+        webapp_provider.setParentLoaderPriority(false);
+        webapp_provider.setExtractWars(true);
+        webapp_provider.setDefaultsDescriptor(jetty_home + "/etc/webdefault.xml");
+        deployer.addAppProvider(webapp_provider);
 
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");

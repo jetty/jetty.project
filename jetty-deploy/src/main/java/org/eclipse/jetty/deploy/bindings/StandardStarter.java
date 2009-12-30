@@ -36,12 +36,5 @@ public class StandardStarter implements AppLifeCycle.Binding
         {
             handler.start();
         }
-
-        // Remove other apps at same context
-        for (App other : app.getDeploymentManager().getAppsWithSameContext(app))
-        {
-            Log.info("Removing apps with same context: " + other);
-            app.getDeploymentManager().requestAppGoal(other,"undeployed");
-        }
     }
 }

@@ -111,7 +111,6 @@ public class DeploymentManager extends AbstractLifeCycle
     private final AppLifeCycle _lifecycle = new AppLifeCycle();
     private final LinkedList<AppEntry> _apps = new LinkedList<AppEntry>();
     private AttributesMap _contextAttributes = new AttributesMap();
-    private ConfigurationManager _configurationManager;
     private ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;
     private String _defaultLifeCycleGoal = "started";
@@ -123,7 +122,7 @@ public class DeploymentManager extends AbstractLifeCycle
      */
     public void addApp(App app)
     {
-        Log.info("App Added: " + app.getOriginId());
+        Log.info("Deployable added: " + app.getOriginId());
         AppEntry entry = new AppEntry();
         entry.app = app;
         entry.setLifeCycleNode(_lifecycle.getNodeByName("undeployed"));
@@ -170,14 +169,13 @@ public class DeploymentManager extends AbstractLifeCycle
     {
         if (_useStandardBindings)
         {
-            Log.info("Using standard bindings");
+            Log.debug("DeploymentManager using standard bindings");
             addLifeCycleBinding(new StandardDeployer());
             addLifeCycleBinding(new StandardStarter());
             addLifeCycleBinding(new StandardStopper());
             addLifeCycleBinding(new StandardUndeployer());
         }
 
-        Log.info("Starting all Providers: " + _providers.size());
         // Start all of the AppProviders
         for (AppProvider provider : _providers)
         {
@@ -189,8 +187,6 @@ public class DeploymentManager extends AbstractLifeCycle
     @Override
     protected void doStop() throws Exception
     {
-        Log.info("Stopping all Providers: " + _providers.size());
-
         // Stop all of the AppProviders
         for (AppProvider provider : _providers)
         {
@@ -343,11 +339,6 @@ public class DeploymentManager extends AbstractLifeCycle
         return _contextAttributes.getAttribute(name);
     }
 
-    public ConfigurationManager getConfigurationManager()
-    {
-        return _configurationManager;
-    }
-
     public AttributesMap getContextAttributes()
     {
         return _contextAttributes;
@@ -391,8 +382,8 @@ public class DeploymentManager extends AbstractLifeCycle
             AppEntry entry = it.next();
             if (entry.app.equals(app) && "undeployed".equals(entry.lifecyleNode.getName()))
             {
-                Log.info("Remove App: " + entry.app);
                 it.remove();
+                Log.info("Deployable removed: " + entry.app);
             }
         }
     }
@@ -475,7 +466,7 @@ public class DeploymentManager extends AbstractLifeCycle
                 while (it.hasNext())
                 {
                     Node node = it.next();
-                    Log.info("Executing Node: " + node);
+                    Log.debug("Executing Node: " + node);
                     _lifecycle.runBindings(node,appentry.app,this);
                     appentry.setLifeCycleNode(node);
                 }
@@ -521,11 +512,6 @@ public class DeploymentManager extends AbstractLifeCycle
         _contextAttributes.setAttribute(name,value);
     }
 
-    public void setConfigurationManager(ConfigurationManager configurationManager)
-    {
-        this._configurationManager = configurationManager;
-    }
-
     public void setContextAttributes(AttributesMap contextAttributes)
     {
         this._contextAttributes = contextAttributes;
@@ -556,13 +542,11 @@ public class DeploymentManager extends AbstractLifeCycle
 
     public void undeployAll()
     {
-        Log.info("Undeploy (All) started");
+        Log.info("Undeploy All");
         for (AppEntry appentry : _apps)
         {
-            Log.info("Undeploy: " + appentry);
             requestAppGoal(appentry,"undeployed");
         }
-        Log.info("Undeploy (All) completed");
     }
 
     public boolean isUseStandardBindings()

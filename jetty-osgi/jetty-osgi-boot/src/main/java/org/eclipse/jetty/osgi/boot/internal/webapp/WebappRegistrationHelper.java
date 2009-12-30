@@ -304,7 +304,7 @@ class WebappRegistrationHelper
                     try
                     {
                         XmlConfiguration config = new XmlConfiguration(new FileInputStream(conffile));
-                        config.getIdMap().put("server","_server");
+                        config.getIdMap().put("Server","_server");
                         config.getProperties().put("jetty.home",jettyHome);
                         config.getProperties().put("jetty.host",System.getProperty("jetty.host",""));
                         config.getProperties().put("jetty.port",System.getProperty("jetty.port","8080"));

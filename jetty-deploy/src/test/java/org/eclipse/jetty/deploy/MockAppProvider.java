@@ -18,7 +18,12 @@ package org.eclipse.jetty.deploy;
 import java.io.File;
 
 import org.eclipse.jetty.deploy.test.MavenTestingUtils;
+import org.eclipse.jetty.deploy.util.FileID;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
 
 public class MockAppProvider extends AbstractLifeCycle implements AppProvider
 {
@@ -39,7 +44,37 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
     public void findWebapp(String name)
     {
         File war = new File(webappsDir,name);
-        App app = new App(deployMan,"mock-" + name,war);
+        App app = new App(deployMan,this,"mock-" + name,war);
         this.deployMan.addApp(app);
+    }
+
+    public ContextHandler createContextHandler(App app) throws Exception
+    {
+        WebAppContext context = new WebAppContext();
+        context.setWar(Resource.newResource(app.getArchivePath().toURL()).toString());
+
+        String path = app.getArchivePath().getName();
+        
+        if (FileID.isWebArchiveFile(app.getArchivePath()))
+        {
+            // Context Path is the same as the archive.
+            path = path.substring(0,path.length() - 4);
+        }
+        
+        // special case of archive (or dir) named "root" is / context
+        if (path.equalsIgnoreCase("root") || path.equalsIgnoreCase("root/"))
+            path = URIUtil.SLASH;
+
+        // Ensure "/" is Prepended to all context paths.
+        if (path.charAt(0) != '/')
+            path = "/" + path;
+
+        // Ensure "/" is Not Trailing in context paths.
+        if (path.endsWith("/") && path.length() > 0)
+            path = path.substring(0,path.length() - 1);
+
+        context.setContextPath(path);
+        
+        return context;
     }
 }

@@ -115,12 +115,9 @@
                Configured to behave similar to the legacy ContextDeployer -->
           <Call name="addAppProvider">
             <Arg>
-              <New class="org.eclipse.jetty.deploy.providers.MonitoredDirAppProvider">
+              <New class="org.eclipse.jetty.deploy.providers.ContextAppProvider">
                 <Set name="monitoredDir"><Property name="jetty.home" default="." />/contexts</Set>
-                <Set name="acceptContextXmlFiles">true</Set>
-                <Set name="acceptWarFiles">false</Set>
                 <Set name="scanInterval">5</Set>
-                <Set name="recursive">false</Set>
               </New>
             </Arg>
           </Call>
@@ -128,13 +125,10 @@
                Configured to behave similar to the legacy WebAppDeployer -->
           <Call name="addAppProvider">
             <Arg>
-              <New class="org.eclipse.jetty.deploy.providers.MonitoredDirAppProvider">
+              <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
                 <Set name="monitoredDir"><Property name="jetty.home" default="." />/webapps</Set>
-                <Set name="acceptContextXmlFiles">false</Set>
-                <Set name="acceptWarFiles">true</Set>
                 <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Set>
                 <Set name="scanInterval">5</Set>
-                <Set name="recursive">false</Set>
               </New>
             </Arg>
           </Call>

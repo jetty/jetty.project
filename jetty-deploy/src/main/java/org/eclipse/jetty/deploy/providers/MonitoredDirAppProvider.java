@@ -17,38 +17,53 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
+import org.eclipse.jetty.deploy.ConfigurationManager;
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.util.FileID;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
- * Backwards Compatible AppProvider for Monitoring a Contexts directory and deploying All Contexts.
+ * AppProvider for Monitoring directories for contexts.
  * 
- * Similar in scope to the original org.eclipse.jetty.deploy.ContextDeployer
+ * A Context may either be a WAR, a directory or an XML descriptor.
+ * 
  */
-public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppProvider, Scanner.DiscreteListener
+public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppProvider
 {
-    class ExtensionFilenameFilter implements FilenameFilter
+    class MonitoredFilenameFilter implements FilenameFilter
     {
-        boolean acceptXml = true;
-        boolean acceptWar = true;
-
-        public boolean accept(File dir, String name)
+        public boolean accept(File file, String name)
         {
+            if (!file.exists())
+                return false;
+            
             String lowername = name.toLowerCase();
 
-            if (acceptXml && (lowername.endsWith(".xml")))
+            if (_acceptContextXmlFiles && !file.isDirectory() && lowername.endsWith(".xml"))
             {
                 return true;
             }
 
-            if (acceptWar && (lowername.endsWith(".war")))
+            if (_acceptWarFiles && !file.isDirectory() && lowername.endsWith(".war"))
+            {
+                return true;
+            }
+            
+            if (_acceptDirectories && file.isDirectory())
             {
                 return true;
             }
@@ -57,106 +72,290 @@ public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppPro
         }
     }
 
-    private Resource monitoredDir;
-    private Scanner scanner;
-    private int scanInterval = 10;
-    private boolean recursive = false;
-    private boolean extractWars = false;
-    private boolean parentLoaderPriority = false;
-    private String defaultsDescriptor;
-    private DeploymentManager deploymgr;
-    private ExtensionFilenameFilter filenamefilter;
+    private boolean _acceptContextXmlFiles = true;
+    private boolean _acceptWarFiles = true;
+    private boolean _acceptDirectories = true;
+    private Resource _monitoredDir;
+    private Scanner _scanner;
+    private int _scanInterval = 10;
+    private boolean _recursive = false;
+    private boolean _extractWars = false;
+    private boolean _parentLoaderPriority = false;
+    private String _defaultsDescriptor;
+    private DeploymentManager _deploymentManager;
+    private FilenameFilter _filenamefilter;
+    private ConfigurationManager _configurationManager;
+    
+    private final Scanner.DiscreteListener _scannerListener = new Scanner.DiscreteListener()
+    {
+        public void fileAdded(String filename) throws Exception
+        {
+            Log.debug("added ",  filename);
+            addConfiguredContextApp(filename);
+        }
 
+        public void fileChanged(String filename) throws Exception
+        {
+            System.err.println("changed "+filename);
+            // TODO should this not be an add/remove?
+            Log.debug("changed ",  filename);
+            addConfiguredContextApp(filename);
+        }
+
+        public void fileRemoved(String filename) throws Exception
+        {
+            System.err.println("removed "+filename);
+            Log.debug("removed ",  filename);
+            
+            // TODO: How to determine ID from filename that doesn't exist?
+            // TODO: we probably need a map from discovered filename to resulting App
+        }
+    };
+    
     public MonitoredDirAppProvider()
     {
-        scanner = new Scanner();
-        filenamefilter = new ExtensionFilenameFilter();
+        _filenamefilter = new MonitoredFilenameFilter();
     }
 
-    private void addConfiguredContextApp(String filename)
+    protected MonitoredDirAppProvider(boolean xml,boolean war, boolean dir)
+    {
+        _acceptContextXmlFiles=xml;
+        _acceptWarFiles=war;
+        _acceptDirectories=dir;
+        _filenamefilter = new MonitoredFilenameFilter();
+    }
+
+    protected MonitoredDirAppProvider(FilenameFilter filter, boolean xml,boolean war, boolean dir)
+    {
+        _acceptContextXmlFiles=xml;
+        _acceptWarFiles=war;
+        _acceptDirectories=dir;
+        _filenamefilter = filter;
+    }
+    
+    private App addConfiguredContextApp(String filename)
     {
         String originId = filename;
-        App app = new App(deploymgr,originId,new File(filename));
-        app.setExtractWars(this.extractWars);
-        app.setParentLoaderPriority(this.parentLoaderPriority);
-        app.setDefaultsDescriptor(this.defaultsDescriptor);
-        this.deploymgr.addApp(app);
+        App app = new App(_deploymentManager,this,originId,new File(filename));
+        _deploymentManager.addApp(app);
+        return app;
     }
 
-    public void fileAdded(String filename) throws Exception
+    /* ------------------------------------------------------------ */
+    /** Create a context Handler for an App instance.
+     * This method can create a {@link ContextHandler} from a context XML file
+     * or a {@link WebAppContext} from a WAR file or directory, depending on the 
+     * settings of the accept fields.
+     * @see #setAcceptContextXmlFiles(boolean)
+     * @see #setAcceptWarFiles(boolean)
+     * @see #setAcceptDirectories(boolean)
+     * @see org.eclipse.jetty.deploy.AppProvider#createContextHandler(org.eclipse.jetty.deploy.App)
+     */
+    public ContextHandler createContextHandler(final App app) throws Exception
     {
-        Log.info("fileAdded(" + filename + ")");
-        addConfiguredContextApp(filename);
+        Resource resource = Resource.newResource(app.getArchivePath().toURI());
+        if (!resource.exists())
+            throw new IllegalStateException("App resouce does not exist "+resource);
+
+        if (_acceptContextXmlFiles &&  FileID.isXmlFile(app.getArchivePath()))
+        {
+            // TODO - it is a bit wierd that this ignores 
+            // _defaultsDescriptor, _extractWars and _parentLoaderPriority
+            // This reflects that there really is the common base for Context
+            // and WebApp deployers should probably not have these bits in them
+            
+            XmlConfiguration xmlc = new XmlConfiguration(resource.getURL());
+            Map props = new HashMap();
+            props.put("Server",_deploymentManager.getServer());
+            if (getConfigurationManager() != null)
+                props.putAll(getConfigurationManager().getProperties());
+            xmlc.setProperties(props);
+            return (ContextHandler)xmlc.configure();
+        }
+
+        String context = app.getArchivePath().getName();
+        
+        if (_acceptWarFiles && FileID.isWebArchiveFile(app.getArchivePath()))
+        {
+            // Context Path is the same as the archive.
+            context = context.substring(0,context.length() - 4);
+        }
+        else if (_acceptDirectories && app.getArchivePath().isDirectory())
+        {
+            // must be a directory
+        }
+        else
+            throw new IllegalStateException("unable to create ContextHandler for "+app);
+
+        
+        // special case of archive (or dir) named "root" is / context
+        if (context.equalsIgnoreCase("root") || context.equalsIgnoreCase("root/"))
+            context = URIUtil.SLASH;
+
+        // Ensure "/" is Prepended to all context paths.
+        if (context.charAt(0) != '/')
+            context = "/" + context;
+
+        // Ensure "/" is Not Trailing in context paths.
+        if (context.endsWith("/") && context.length() > 0)
+            context = context.substring(0,context.length() - 1);
+
+        WebAppContext wah = new WebAppContext();
+        wah.setContextPath(context);
+        wah.setWar(app.getArchivePath().getAbsolutePath());
+        if (_defaultsDescriptor != null)
+            wah.setDefaultsDescriptor(_defaultsDescriptor);
+        wah.setExtractWAR(_extractWars);
+        wah.setParentLoaderPriority(_parentLoaderPriority);
+
+        return wah;
+        
     }
 
-    public void fileChanged(String filename) throws Exception
+    @Override
+    protected void doStart() throws Exception
     {
-        Log.info("fileChanged(" + filename + ")");
-        addConfiguredContextApp(filename);
+        Log.info(this.getClass().getSimpleName() + ".doStart()");
+        if (_monitoredDir == null)
+        {
+            throw new IllegalStateException("No configuration dir specified");
+        }
+
+        File scandir = _monitoredDir.getFile();
+        Log.info("Deployment monitor " + scandir+ " at intervale "+_scanInterval);
+        _scanner=new Scanner();
+        _scanner.setScanDirs(Collections.singletonList(scandir));
+        _scanner.setScanInterval(_scanInterval);
+        _scanner.setRecursive(_recursive);
+        _scanner.setFilenameFilter(_filenamefilter);
+        _scanner.setReportDirs(_acceptDirectories);
+        _scanner.addListener(_scannerListener);
+        _scanner.start();
     }
 
-    public void fileRemoved(String filename) throws Exception
+    @Override
+    protected void doStop() throws Exception
     {
-        // TODO: How to determine ID from filename that doesn't exist?
-        /*
-        Log.info("fileRemoved(" + filename + ")");
-        addConfiguredContextApp(filename);
-         */
+        _scanner.stop();
+        _scanner.removeListener(_scannerListener);
+        _scanner=null;
+    }
+
+    public ConfigurationManager getConfigurationManager()
+    {
+        return _configurationManager;
     }
 
     public String getDefaultsDescriptor()
     {
-        return defaultsDescriptor;
+        return _defaultsDescriptor;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the deploymentManager.
+     * @return the deploymentManager
+     */
+    public DeploymentManager getDeploymentManager()
+    {
+        return _deploymentManager;
     }
 
     public Resource getMonitoredDir()
     {
-        return monitoredDir;
+        return _monitoredDir;
     }
 
     public int getScanInterval()
     {
-        return scanInterval;
+        return _scanInterval;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the acceptContextXmlFiles.
+     * @return the acceptContextXmlFiles
+     */
+    public boolean isAcceptContextXmlFiles()
+    {
+        return _acceptContextXmlFiles;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the acceptDirectories.
+     * @return the acceptDirectories
+     */
+    public boolean isAcceptDirectories()
+    {
+        return _acceptDirectories;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the acceptWarFiles.
+     * @return the acceptWarFiles
+     */
+    public boolean isAcceptWarFiles()
+    {
+        return _acceptWarFiles;
     }
 
     public boolean isExtractWars()
     {
-        return extractWars;
+        return _extractWars;
     }
 
     public boolean isParentLoaderPriority()
     {
-        return parentLoaderPriority;
+        return _parentLoaderPriority;
     }
 
     public boolean isRecursive()
     {
-        return recursive;
+        return _recursive;
     }
 
     public void setAcceptContextXmlFiles(boolean flag)
     {
-        filenamefilter.acceptXml = flag;
+        if (isRunning())
+            throw new IllegalStateException();
+        _acceptContextXmlFiles = flag;
+    }
+
+    public void setAcceptDirectories(boolean flag)
+    {
+        if (isRunning())
+            throw new IllegalStateException();
+        _acceptDirectories = flag;
     }
 
     public void setAcceptWarFiles(boolean flag)
     {
-        filenamefilter.acceptWar = flag;
+        if (isRunning())
+            throw new IllegalStateException();
+        _acceptWarFiles = flag;
+    }
+
+    public void setConfigurationManager(ConfigurationManager configurationManager)
+    {
+        _configurationManager = configurationManager;
     }
 
     public void setDefaultsDescriptor(String defaultsDescriptor)
     {
-        this.defaultsDescriptor = defaultsDescriptor;
+        _defaultsDescriptor = defaultsDescriptor;
+    }
+
+    public void setDeploymentManager(DeploymentManager deploymentManager)
+    {
+        _deploymentManager = deploymentManager;
     }
 
     public void setExtractWars(boolean extractWars)
     {
-        this.extractWars = extractWars;
+        _extractWars = extractWars;
     }
 
     public void setMonitoredDir(Resource contextsDir)
     {
-        this.monitoredDir = contextsDir;
+        _monitoredDir = contextsDir;
     }
 
     /**
@@ -167,59 +366,26 @@ public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppPro
     {
         try
         {
-            monitoredDir = Resource.newResource(dir);
+            _monitoredDir = Resource.newResource(dir);
         }
         catch (Exception e)
         {
             throw new IllegalArgumentException(e);
         }
     }
-
+    
     public void setParentLoaderPriority(boolean parentLoaderPriority)
     {
-        this.parentLoaderPriority = parentLoaderPriority;
+        _parentLoaderPriority = parentLoaderPriority;
     }
 
     public void setRecursive(boolean recursive)
     {
-        this.recursive = recursive;
+        _recursive = recursive;
     }
 
     public void setScanInterval(int scanInterval)
     {
-        this.scanInterval = scanInterval;
-    }
-
-    public void setDeploymentManager(DeploymentManager deploymentManager)
-    {
-        this.deploymgr = deploymentManager;
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        Log.info(this.getClass().getSimpleName() + ".doStart()");
-        if (monitoredDir == null)
-        {
-            throw new IllegalStateException("No configuration dir specified");
-        }
-
-        File scandir = monitoredDir.getFile();
-        Log.info("ScanDir: " + scandir);
-        this.scanner.setScanDirs(Collections.singletonList(scandir));
-        this.scanner.setScanInterval(scanInterval);
-        this.scanner.setRecursive(recursive);
-        this.scanner.setFilenameFilter(filenamefilter);
-        this.scanner.addListener(this);
-        this.scanner.start();
-        Log.info("Started scanner: " + scanner);
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        Log.info(this.getClass().getSimpleName() + ".doStop()");
-        this.scanner.removeListener(this);
-        this.scanner.stop();
+        _scanInterval = scanInterval;
     }
 }

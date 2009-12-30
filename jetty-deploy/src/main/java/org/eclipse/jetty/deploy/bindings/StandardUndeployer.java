@@ -50,12 +50,12 @@ public class StandardUndeployer implements AppLifeCycle.Binding
         for (int i = 0, n = children.length; i < n; i++)
         {
             Handler child = children[i];
-            Log.info("Child handler: " + child);
+            Log.debug("Child handler: " + child);
             if (child.equals(context))
             {
-                Log.info("Removing handler: " + child);
+                Log.debug("Removing handler: " + child);
                 coll.removeHandler(child);
-                Log.info(String.format("After removal: %d (originally %d)",coll.getHandlers().length,originalCount));
+                Log.debug(String.format("After removal: %d (originally %d)",coll.getHandlers().length,originalCount));
             }
             else if (child instanceof HandlerCollection)
             {
