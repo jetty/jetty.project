@@ -41,6 +41,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * 
  * A Context may either be a WAR, a directory or an XML descriptor.
  * 
+ * @deprecated - Use {@link ContextProvider} or {@link WebAppProvider}
  */
 public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppProvider
 {

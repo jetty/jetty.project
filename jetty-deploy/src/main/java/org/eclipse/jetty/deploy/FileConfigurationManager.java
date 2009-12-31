@@ -16,6 +16,7 @@ package org.eclipse.jetty.deploy;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -29,7 +30,7 @@ import org.eclipse.jetty.util.resource.Resource;
 public class FileConfigurationManager implements ConfigurationManager
 {
     private Resource _file;
-    private Properties _properties = new Properties();
+    private Map<String,Object> _map = new HashMap<String,Object>();
 
     public FileConfigurationManager()
     {
@@ -43,12 +44,12 @@ public class FileConfigurationManager implements ConfigurationManager
     /**
      * @see org.eclipse.jetty.deploy.ConfigurationManager#getProperties()
      */
-    public Map<?, ?> getProperties()
+    public Map<String, ?> getProperties()
     {
         try
         {
             loadProperties();
-            return _properties;
+            return _map;
         }
         catch (Exception e)
         {
@@ -58,7 +59,12 @@ public class FileConfigurationManager implements ConfigurationManager
 
     private void loadProperties() throws FileNotFoundException, IOException
     {
-        if (_properties.isEmpty())
-            _properties.load(_file.getInputStream());
+        if (_map.isEmpty())
+        {
+            Properties properties = new Properties();
+            properties.load(_file.getInputStream());
+            for (Map.Entry<Object, Object> entry : properties.entrySet())
+                _map.put(entry.getKey().toString(),entry.getValue());
+        }
     }
 }

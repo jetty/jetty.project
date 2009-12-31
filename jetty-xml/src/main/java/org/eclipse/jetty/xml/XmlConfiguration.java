@@ -28,10 +28,16 @@ import java.net.UnknownHostException;
 import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
@@ -343,7 +349,7 @@ public class XmlConfiguration
         {
             Log.ignore(e);
         }
-
+        
         // Try a field
         try
         {
@@ -364,8 +370,11 @@ public class XmlConfiguration
         Method set = null;
         for (int s = 0; sets != null && s < sets.length; s++)
         {
-            if (name.equals(sets[s].getName()) && sets[s].getParameterTypes().length == 1)
+
+            Class<?>[] paramTypes= sets[s].getParameterTypes();
+            if (name.equals(sets[s].getName()) && paramTypes.length == 1)
             {
+                
                 // lets try it
                 try
                 {
@@ -380,6 +389,28 @@ public class XmlConfiguration
                 catch (IllegalAccessException e)
                 {
                     Log.ignore(e);
+                }
+                
+                
+                // Can we convert to a collection
+                if (paramTypes[0].isAssignableFrom(Collection.class) && value.getClass().isArray())
+                {
+                    try
+                    {
+                        if (paramTypes[0].isAssignableFrom(Set.class))
+                            sets[s].invoke(obj, new Object[]{new HashSet<Object>(Arrays.asList((Object[])value))});
+                        else
+                            sets[s].invoke(obj, new Object[]{Arrays.asList((Object[])value)});
+                        return;
+                    }
+                    catch (IllegalArgumentException e)
+                    {
+                        Log.ignore(e);
+                    }
+                    catch (IllegalAccessException e)
+                    {
+                        Log.ignore(e);
+                    }
                 }
             }
         }

@@ -38,8 +38,6 @@ public class StandardUndeployer implements AppLifeCycle.Binding
         ContextHandlerCollection chcoll = app.getDeploymentManager().getContexts();
 
         recursiveRemoveContext(chcoll,handler);
-
-        app.getDeploymentManager().removeApp(app);
     }
 
     private void recursiveRemoveContext(HandlerCollection coll, ContextHandler context)

@@ -62,14 +62,16 @@ public class AppLifeCycle extends Graph
         void processBinding(Node node, App app) throws Exception;
     }
 
-    // Private string constants defined to avoid typos on repeatedly used strings 
-    private static final String NODE_UNDEPLOYED = "undeployed";
-    private static final String NODE_DEPLOYING = "deploying";
-    private static final String NODE_DEPLOYED = "deployed";
-    private static final String NODE_STARTING = "starting";
-    private static final String NODE_STARTED = "started";
-    private static final String NODE_STOPPING = "stopping";
-    private static final String NODE_UNDEPLOYING = "undeploying";
+    // Well known existing lifecycle Nodes
+    public static final String UNDEPLOYED = "undeployed";
+    public static final String DEPLOYING = "deploying";
+    public static final String DEPLOYED = "deployed";
+    public static final String STARTING = "starting";
+    public static final String STARTED = "started";
+    public static final String STOPPING = "stopping";
+    public static final String UNDEPLOYING = "undeploying";
+    
+    
     private Map<String, List<Binding>> lifecyclebindings = new HashMap<String, List<Binding>>();
 
     public AppLifeCycle()
@@ -77,20 +79,20 @@ public class AppLifeCycle extends Graph
         // Define Default Graph
 
         // undeployed -> deployed
-        addEdge(NODE_UNDEPLOYED,NODE_DEPLOYING);
-        addEdge(NODE_DEPLOYING,NODE_DEPLOYED);
+        addEdge(UNDEPLOYED,DEPLOYING);
+        addEdge(DEPLOYING,DEPLOYED);
 
         // deployed -> started
-        addEdge(NODE_DEPLOYED,NODE_STARTING);
-        addEdge(NODE_STARTING,NODE_STARTED);
+        addEdge(DEPLOYED,STARTING);
+        addEdge(STARTING,STARTED);
 
         // started -> deployed
-        addEdge(NODE_STARTED,NODE_STOPPING);
-        addEdge(NODE_STOPPING,NODE_DEPLOYED);
+        addEdge(STARTED,STOPPING);
+        addEdge(STOPPING,DEPLOYED);
 
         // deployed -> undeployed
-        addEdge(NODE_DEPLOYED,NODE_UNDEPLOYING);
-        addEdge(NODE_UNDEPLOYING,NODE_UNDEPLOYED);
+        addEdge(DEPLOYED,UNDEPLOYING);
+        addEdge(UNDEPLOYING,UNDEPLOYED);
     }
 
     public void addBinding(AppLifeCycle.Binding binding)
@@ -105,6 +107,16 @@ public class AppLifeCycle extends Graph
             bindings.add(binding);
 
             lifecyclebindings.put(nodeName,bindings);
+        }
+    }
+    
+    public void removeBinding(AppLifeCycle.Binding binding)
+    {
+        for (String nodeName : binding.getBindingTargets())
+        {
+            List<Binding> bindings = lifecyclebindings.get(nodeName);
+            if (bindings != null)
+                bindings.remove(binding);
         }
     }
 

@@ -398,8 +398,21 @@ public class WebInfConfiguration implements Configuration
                     !web_app.isDirectory())
                             )
             {
-                // Then extract it if necessary to the temporary location
-                File extractedWebAppDir= new File(context.getTempDirectory(), "webapp");
+                // Look for sibling directory.
+                File extractedWebAppDir = null;
+
+                if (war!=null)
+                {
+                    // look for a sibling like "foo/" to a "foo.war"
+                    File warfile=Resource.newResource(war).getFile();
+                    File sibling = new File(warfile.getParent(),warfile.getName().substring(0,warfile.getName().length()-4));
+                    if (sibling.exists() && sibling.isDirectory() && sibling.canWrite())
+                        extractedWebAppDir=sibling;
+                }
+                
+                if (extractedWebAppDir==null)
+                    // Then extract it if necessary to the temporary location
+                    extractedWebAppDir= new File(context.getTempDirectory(), "webapp");
 
                 if (web_app.getFile()!=null && web_app.getFile().isDirectory())
                 {
@@ -439,7 +452,6 @@ public class WebInfConfiguration implements Configuration
                 Log.warn("Web application not found " + war);
                 throw new java.io.FileNotFoundException(war);
             }
-
         
             context.setBaseResource(web_app);
             

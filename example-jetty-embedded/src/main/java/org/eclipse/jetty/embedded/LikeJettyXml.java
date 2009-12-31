@@ -18,7 +18,7 @@ import java.lang.management.ManagementFactory;
 import org.eclipse.jetty.deploy.ContextDeployer;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.WebAppDeployer;
-import org.eclipse.jetty.deploy.providers.ContextAppProvider;
+import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
@@ -85,9 +85,9 @@ public class LikeJettyXml
         deployer.setContexts(contexts);
         server.addBean(deployer);   
         
-        ContextAppProvider context_provider = new ContextAppProvider();
+        ContextProvider context_provider = new ContextProvider();
         context_provider.setMonitoredDir(jetty_home + "/contexts");
-        context_provider.setScanInterval(5);
+        context_provider.setScanInterval(2);
         server.addBean(context_provider);
         deployer.addAppProvider(context_provider);
 
@@ -95,7 +95,9 @@ public class LikeJettyXml
         webapp_provider.setMonitoredDir(jetty_home + "/webapps");
         webapp_provider.setParentLoaderPriority(false);
         webapp_provider.setExtractWars(true);
+        webapp_provider.setScanInterval(2);
         webapp_provider.setDefaultsDescriptor(jetty_home + "/etc/webdefault.xml");
+        webapp_provider.setContextXmlDir(jetty_home + "/contexts");
         deployer.addAppProvider(webapp_provider);
 
         HashLoginService login = new HashLoginService();

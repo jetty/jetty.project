@@ -17,12 +17,14 @@ package org.eclipse.jetty.deploy;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jetty.deploy.bindings.StandardDeployer;
 import org.eclipse.jetty.deploy.bindings.StandardStarter;
@@ -113,7 +115,7 @@ public class DeploymentManager extends AbstractLifeCycle
     private AttributesMap _contextAttributes = new AttributesMap();
     private ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;
-    private String _defaultLifeCycleGoal = "started";
+    private String _defaultLifeCycleGoal = AppLifeCycle.STARTED;
 
     /**
      * Receive an app for processing.
@@ -128,22 +130,51 @@ public class DeploymentManager extends AbstractLifeCycle
         entry.setLifeCycleNode(_lifecycle.getNodeByName("undeployed"));
         _apps.add(entry);
 
-        if (_defaultLifeCycleGoal != null)
+        if (isRunning() && _defaultLifeCycleGoal != null)
         {
             // Immediately attempt to go to default lifecycle state
             this.requestAppGoal(entry,_defaultLifeCycleGoal);
         }
     }
 
-    public void addAppProvider(AppProvider provider)
+    public void setAppProviders(Collection<AppProvider> providers)
     {
-        _providers.add(provider);
-        if (isStarted() || isStarting())
-        {
-            startAppProvider(provider);
-        }
+        if (isRunning())
+            throw new IllegalStateException();
+        
+        _providers.clear();
+        for (AppProvider provider:providers)
+            _providers.add(provider);
     }
 
+    public Collection<AppProvider> getAppProviders()
+    {
+        return Collections.unmodifiableList(_providers);
+    }
+    
+    public void addAppProvider(AppProvider provider)
+    {
+        if (isRunning())
+            throw new IllegalStateException();
+        
+        _providers.add(provider);
+    }
+
+    public void setLifeCycleBindings(Collection<AppLifeCycle.Binding> bindings)
+    {
+        if (isRunning())
+            throw new IllegalStateException();
+        for (AppLifeCycle.Binding b : _lifecycle.getBindings())
+            _lifecycle.removeBinding(b);
+        for (AppLifeCycle.Binding b : bindings)
+            _lifecycle.addBinding(b);
+    }
+
+    public Collection<AppLifeCycle.Binding> getLifeCycleBindings()
+    {
+        return Collections.unmodifiableSet(_lifecycle.getBindings());
+    }
+    
     public void addLifeCycleBinding(AppLifeCycle.Binding binding)
     {
         _lifecycle.addBinding(binding);
@@ -261,11 +292,6 @@ public class DeploymentManager extends AbstractLifeCycle
         return _apps;
     }
 
-    public Collection<AppProvider> getAppProviders()
-    {
-        return _providers;
-    }
-
     public Collection<App> getApps()
     {
         List<App> ret = new ArrayList<App>();
@@ -380,8 +406,10 @@ public class DeploymentManager extends AbstractLifeCycle
         while (it.hasNext())
         {
             AppEntry entry = it.next();
-            if (entry.app.equals(app) && "undeployed".equals(entry.lifecyleNode.getName()))
+            if (entry.app.equals(app))
             {
+                if (! AppLifeCycle.UNDEPLOYED.equals(entry.lifecyleNode.getName()))
+                    requestAppGoal(entry.app,AppLifeCycle.UNDEPLOYED);
                 it.remove();
                 Log.info("Deployable removed: " + entry.app);
             }

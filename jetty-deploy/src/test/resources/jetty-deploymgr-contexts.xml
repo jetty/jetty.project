@@ -11,14 +11,12 @@
         </Set>
         
         <!-- Providers of Apps -->
-        <Call name="addAppProvider">
-          <Arg>
-            <New class="org.eclipse.jetty.deploy.providers.MonitoredDirAppProvider">
-              <Set name="monitoredDir">
-                <Property name="jetty.home" />/contexts
-              </Set>
+        <Set name="appProviders">
+          <Array type="org.eclipse.jetty.deploy.AppProvider">
+            <Item>
+             <New class="org.eclipse.jetty.deploy.providers.ContextProvider">
+              <Set name="monitoredDir"><Property name="jetty.home" />/contexts</Set>
               <Set name="scanInterval">1</Set>
-              <Set name="recursive">true</Set>
               <Set name="configurationManager">
                 <New class="org.eclipse.jetty.deploy.FileConfigurationManager">
                   <Set name="file">
@@ -26,9 +24,17 @@
                   </Set>
                 </New>
               </Set>
-            </New>
-          </Arg>
-        </Call>
+             </New>
+            </Item>
+            <Item>
+             <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+              <Set name="monitoredDir"><Property name="jetty.home" />/webapps</Set>
+              <Set name="scanInterval">1</Set>
+              <Set name="contextXmlDir"><Property name="jetty.home" />/contexts</Set>
+             </New>
+            </Item>
+          </Array>
+        </Set>
       </New>
     </Arg>
   </Call>
