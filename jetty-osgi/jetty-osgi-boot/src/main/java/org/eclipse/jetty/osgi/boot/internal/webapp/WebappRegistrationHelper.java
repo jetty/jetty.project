@@ -34,6 +34,7 @@ import java.util.zip.ZipEntry;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
+import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.boot.internal.jsp.TldLocatableURLClassloader;
 import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelper;
@@ -123,6 +124,8 @@ class WebappRegistrationHelper
     private URLClassLoader _commonParentClassLoaderForWebapps;
 
     private DeploymentManager _deploymentManager;
+
+    private OSGiAppProvider _provider;
 
     public WebappRegistrationHelper(Server server)
     {
@@ -362,16 +365,10 @@ class WebappRegistrationHelper
             System.setProperty("java.naming.factory.url.pkgs","org.eclipse.jetty.jndi");
         }
 
+        // Get the context handler
         _ctxtHandler = (ContextHandlerCollection)_server.getChildHandlerByClass(ContextHandlerCollection.class);
-        if (_ctxtHandler == null)
-        {
-            throw new IllegalStateException("ERROR: No ContextHandlerCollection was configured" + " with the server to add applications to."
-                    + "Using a default one is not supported at" + " this point. " + " Please review the jetty.xml file used.");
-        }
-        
         
         // get a deployerManager
-        
         List<DeploymentManager> deployers = _server.getBeans(DeploymentManager.class);
         if (deployers != null && !deployers.isEmpty())
         {
@@ -379,9 +376,17 @@ class WebappRegistrationHelper
             
             for (AppProvider provider : _deploymentManager.getAppProviders())
             {
-                // if (provider instanceof OSGiAppProvider)
+                if (provider instanceof OSGiAppProvider)
+                {
+                    _provider=(OSGiAppProvider)provider;
+                    break;
+                }
             }
         }
+
+        if (_ctxtHandler == null || _provider==null)
+            throw new IllegalStateException("ERROR: No ContextHandlerCollection or OSGiAppProvider configured");
+        
 
     }
 
