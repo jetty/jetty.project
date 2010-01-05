@@ -183,5 +183,16 @@ public class URLEncodedTest extends junit.framework.TestCase
         else
             assertTrue("Charset Shift_JIS not supported by jvm", true);
     }
-    
+
+    /* -------------------------------------------------------------- */
+    public void testUtf8()
+        throws Exception
+    {
+        UrlEncoded url_encoded = new UrlEncoded();
+        assertEquals("Empty",0, url_encoded.size());
+
+        url_encoded.clear();
+        url_encoded.decode("text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit");
+        assertEquals("ฟหกวดา่กฟวหสดา่หฟกวดสาฟกหรด้ฟหนกรดี",url_encoded.get("text"));
+    }
 }
