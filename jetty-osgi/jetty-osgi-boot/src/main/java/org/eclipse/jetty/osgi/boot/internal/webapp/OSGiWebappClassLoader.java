@@ -35,10 +35,10 @@ import org.osgi.framework.Bundle;
  * Extends the webappclassloader to insert the classloader provided by the osgi
  * bundle at the same level than any other jars palced in the webappclassloader.
  */
-public class WebappClassLoaderForOSGi extends WebAppClassLoader
+public class OSGiWebappClassLoader extends WebAppClassLoader
 {
 
-    private Logger __logger = Log.getLogger(WebappClassLoaderForOSGi.class.getName().toString());
+    private Logger __logger = Log.getLogger(OSGiWebappClassLoader.class.getName().toString());
 
     /**
      * when a logging framework is setup in the osgi classloaders, it can access
@@ -66,7 +66,7 @@ public class WebappClassLoaderForOSGi extends WebAppClassLoader
     private boolean _lookInOsgiFirst = true;
     private Set<String> _libsAlreadyInManifest = new HashSet<String>();
 
-    public WebappClassLoaderForOSGi(ClassLoader parent, WebAppContext context, Bundle contributor) throws IOException
+    public OSGiWebappClassLoader(ClassLoader parent, WebAppContext context, Bundle contributor) throws IOException
     {
         super(parent,context);
         _osgiBundleClassLoader = WebappRegistrationHelper.BUNDLE_CLASS_LOADER_HELPER.getBundleClassLoader(contributor);
