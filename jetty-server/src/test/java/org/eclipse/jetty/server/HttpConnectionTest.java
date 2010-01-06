@@ -153,7 +153,7 @@ public class HttpConnectionTest extends TestCase
         response=connector.getResponses("GET /foo/bar%c0%00 HTTP/1.1\n"+
                 "Host: localhost\n"+
                 "\015\012");
-        checkContains(response,0,"HTTP/1.1 400");
+        checkContains(response,0,"pathInfo=/foo/bar?");
 
         response=connector.getResponses("GET /foo/bar%c1 HTTP/1.1\n"+
                 "Host: localhost\n"+
