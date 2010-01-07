@@ -43,13 +43,10 @@ public class JettyPolicyRuntimeTest extends TestCase
         
         super.setUp();
         
-        String basedir = MavenTestingUtils.getBaseURI().toASCIIString();
-
-        evaluator.put("jetty.home",basedir);
-        evaluator.put("basedir",basedir);
-
-        System.out.println("basedir: " + basedir);
+        evaluator.put("jetty.home",MavenTestingUtils.getBaseURI().toASCIIString());
+        evaluator.put("basedir",MavenTestingUtils.getBaseURI().toASCIIString());
     }
+
     
     @Override
     protected void tearDown() throws Exception
@@ -176,8 +173,6 @@ public class JettyPolicyRuntimeTest extends TestCase
         System.setSecurityManager( new SecurityManager() );
      
         URL url = MavenTestingUtils.toTargetURL("test-policy/jetty-test-policy.jar");
-        
-        System.out.println("Test URL: " + url.toString());
         
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )
