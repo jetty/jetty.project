@@ -43,10 +43,12 @@ public class JettyPolicyRuntimeTest extends TestCase
         
         super.setUp();
         
-        evaluator.put("jetty.home",MavenTestingUtils.getBaseURI().toASCIIString());
-        evaluator.put("basedir",MavenTestingUtils.getBaseURI().toASCIIString());
+        String basedir = MavenTestingUtils.getBaseURI().toASCIIString();
 
-        System.out.println("basedir: " + MavenTestingUtils.getBaseURI().toASCIIString());
+        evaluator.put("jetty.home",basedir);
+        evaluator.put("basedir",basedir);
+
+        System.out.println("basedir: " + basedir);
     }
     
     @Override
