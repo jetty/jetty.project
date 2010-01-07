@@ -45,6 +45,8 @@ public class JettyPolicyRuntimeTest extends TestCase
         
         evaluator.put("jetty.home",MavenTestingUtils.getBasedir().getAbsolutePath());
         evaluator.put("basedir",MavenTestingUtils.getBasedir().getAbsolutePath());
+        
+        System.out.println("basedir: "+MavenTestingUtils.getBasedir().getAbsolutePath());
     }
     
     @Override
@@ -173,7 +175,7 @@ public class JettyPolicyRuntimeTest extends TestCase
      
         URL url = MavenTestingUtils.toTargetURL("test-policy/jetty-test-policy.jar");
         
-        // System.out.println( "IN HERE: " + url.toString());
+        System.out.println( "Test URL: " + url.toString());
         
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )
