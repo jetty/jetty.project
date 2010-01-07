@@ -43,10 +43,10 @@ public class JettyPolicyRuntimeTest extends TestCase
         
         super.setUp();
         
-        evaluator.put("jetty.home",MavenTestingUtils.getBasedir().getAbsolutePath());
-        evaluator.put("basedir",MavenTestingUtils.getBasedir().getAbsolutePath());
-        
-        System.out.println("basedir: "+MavenTestingUtils.getBasedir().getAbsolutePath());
+        evaluator.put("jetty.home",MavenTestingUtils.getBaseURI().toASCIIString());
+        evaluator.put("basedir",MavenTestingUtils.getBaseURI().toASCIIString());
+
+        System.out.println("basedir: " + MavenTestingUtils.getBaseURI().toASCIIString());
     }
     
     @Override
@@ -175,7 +175,7 @@ public class JettyPolicyRuntimeTest extends TestCase
      
         URL url = MavenTestingUtils.toTargetURL("test-policy/jetty-test-policy.jar");
         
-        System.out.println( "Test URL: " + url.toString());
+        System.out.println("Test URL: " + url.toString());
         
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )
@@ -209,7 +209,7 @@ public class JettyPolicyRuntimeTest extends TestCase
 
         assertTrue("system property access was granted",true);
 
-       // ap.dump(System.out);
+        // ap.dump(System.out);
     }
     
     

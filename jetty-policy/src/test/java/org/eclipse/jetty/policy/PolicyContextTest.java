@@ -43,7 +43,7 @@ public class PolicyContextTest
     {
         _runningOnWindows = System.getProperty( "os.name" ).startsWith( "Windows" );
         
-        System.setProperty( "basedir", getWorkingDirectory() );
+        System.setProperty( "basedir", MavenTestingUtils.getBaseURI().toASCIIString() );
         
         super.setUp();
     }
@@ -128,13 +128,7 @@ public class PolicyContextTest
     
     private String getWorkingDirectory()
     {
-        String cwd = System.getProperty( "basedir" );
-        
-        if ( cwd == null )
-        {
-            cwd = System.getProperty( "user.dir" );
-        }
-        return cwd;
+        return MavenTestingUtils.getBasedir().getAbsolutePath();
     }
 
 }
