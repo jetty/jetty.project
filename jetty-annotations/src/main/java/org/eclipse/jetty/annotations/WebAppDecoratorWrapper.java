@@ -45,7 +45,8 @@ public class WebAppDecoratorWrapper implements Decorator
         _introspector.registerHandler(new RunAsAnnotationHandler(context));
         _introspector.registerHandler(new PostConstructAnnotationHandler(context));
         _introspector.registerHandler(new PreDestroyAnnotationHandler(context));
-        _introspector.registerHandler(new ServletSecurityAnnotationHandler(context)); 
+        _introspector.registerHandler(new ServletSecurityAnnotationHandler(context));
+        _introspector.registerHandler(new MultiPartConfigAnnotationHandler(context));
     }
 
     /* ------------------------------------------------------------ */

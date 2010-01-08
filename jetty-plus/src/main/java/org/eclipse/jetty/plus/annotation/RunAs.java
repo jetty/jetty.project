@@ -61,6 +61,11 @@ public class RunAs
         String className = holder.getClassName();
 
         if (className.equals(_className))
-            holder.getRegistration().setRunAsRole(_roleName);
+        {
+            //Only set the RunAs if it has not already been set, presumably by web/web-fragment.xml
+            if (holder.getRegistration().getRunAsRole() == null)
+                holder.getRegistration().setRunAsRole(_roleName);
+        }
+            
     }
 }

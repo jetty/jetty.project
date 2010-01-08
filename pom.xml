@@ -124,7 +124,6 @@
     </pluginManagement>
   </build>
   <modules>
-    <module>tmp-common-annotations</module>
     <module>jetty-util</module>
     <module>jetty-io</module>
     <module>jetty-http</module>

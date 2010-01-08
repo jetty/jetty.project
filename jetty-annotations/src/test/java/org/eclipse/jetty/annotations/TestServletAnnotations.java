@@ -76,5 +76,8 @@ public class TestServletAnnotations extends TestCase
         String[] paths = mappings[0].getPathSpecs();
         assertNotNull(paths);
         assertEquals(2, paths.length);
+        assertEquals("y", holders[0].getInitParameter("x"));
+        assertEquals(2,holders[0].getInitOrder());
+        assertFalse(holders[0].isAsyncSupported());
     }
 }

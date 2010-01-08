@@ -18,7 +18,6 @@ import java.util.List;
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationIntrospector.IntrospectableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.util.log.Log;
@@ -30,7 +29,9 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
 
     public RunAsAnnotationHandler (WebAppContext wac)
     {
-        super(true);
+        //Introspect only the given class for a RunAs annotation, as it is a class level annotation,
+        //and according to Common Annotation Spec p2-6 a class-level annotation is not inheritable.
+        super(false);
         _wac = wac;
     }
     

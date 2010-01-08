@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.DispatcherType;
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
@@ -783,6 +784,24 @@ public class WebXmlProcessor
 
         String timeout=node.getString("async-timeout",false,true);
         // TODO set it
+        
+        
+        //TODO node.getString("enabled", false, true);
+        
+        XmlParser.Node multipart = node.get("multipart-config");
+        if (multipart != null)
+        {
+            String location = node.getString("location", false, true);
+            String maxFile = node.getString("max-file-size", false, true);
+            String maxRequest = node.getString("max-request-size", false, true);
+            String threshold = node.getString("file-size-threshold",false,true);
+            MultipartConfigElement element = new MultipartConfigElement(location,
+                                                                        (maxFile==null||"".equals(maxFile)?-1L:Long.parseLong(maxFile)),
+                                                                        (maxRequest==null||"".equals(maxRequest)?-1L:Long.parseLong(maxRequest)),
+                                                                        (threshold==null||"".equals(threshold)?0:Integer.parseInt(threshold)));
+            registration.setMultipartConfig(element);
+            
+        }
     }
 
     /* ------------------------------------------------------------ */

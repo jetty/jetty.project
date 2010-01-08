@@ -28,11 +28,24 @@ public class AnnotationIntrospector
     protected List<IntrospectableAnnotationHandler> _handlers = new ArrayList<IntrospectableAnnotationHandler>();
     
     
+    /**
+     * IntrospectableAnnotationHandler
+     *
+     * Interface for all handlers that wish to introspect a class to find a particular annotation
+     */
     public interface IntrospectableAnnotationHandler
     {
         public void handle(Class clazz);
     }
     
+    
+    
+    /**
+     * AbstractIntrospectableAnnotationHandler
+     *
+     * Base class for handlers that introspect a class to find a particular annotation.
+     * A handler can optionally introspect the parent hierarchy of a class.
+     */
     public static abstract class AbstractIntrospectableAnnotationHandler implements IntrospectableAnnotationHandler
     {
         private boolean _introspectAncestors;

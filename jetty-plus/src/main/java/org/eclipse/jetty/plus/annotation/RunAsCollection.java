@@ -59,15 +59,15 @@ public class RunAsCollection
     {
         if (o == null)
             return;
+        
+        if (!ServletHolder.class.isAssignableFrom(o.getClass()))
+            return;
       
-        //TODO get all of the holders matching the class of the object and set their runAs
-       /*
-        RunAs runAs = (RunAs)_runAsMap.get(className);
+        RunAs runAs = (RunAs)_runAsMap.get(o.getClass().getName());
         if (runAs == null)
             return;
-
-        runAs.setRunAs(holder); 
-        */
+        
+        runAs.setRunAs((ServletHolder)o);
     }
 
 }

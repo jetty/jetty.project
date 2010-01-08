@@ -61,7 +61,7 @@ public class WebAppDecorator implements Decorator
     @Override
     public <T extends Filter> T decorateFilterInstance(T filter) throws ServletException
     {
-        initialize(filter);
+        decorate(filter);
         return filter;
     }
 
@@ -72,7 +72,7 @@ public class WebAppDecorator implements Decorator
     @Override
     public <T extends EventListener> T decorateListenerInstance(T listener) throws ServletException
     {
-        initialize(listener);
+        decorate(listener);
         return listener;
     }
 
@@ -81,9 +81,9 @@ public class WebAppDecorator implements Decorator
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateServletHolder(org.eclipse.jetty.servlet.ServletHolder)
      */
     @Override
-    public void decorateServletHolder(ServletHolder servlet) throws ServletException
+    public void decorateServletHolder(ServletHolder holder) throws ServletException
     {
-        // TODO Auto-generated method stub
+        decorate(holder);
     }
     
     /* ------------------------------------------------------------ */
@@ -93,7 +93,7 @@ public class WebAppDecorator implements Decorator
     @Override
     public <T extends Servlet> T decorateServletInstance(T servlet) throws ServletException
     {
-        initialize(servlet);
+        decorate(servlet);
         return servlet;
     }
 
@@ -128,7 +128,7 @@ public class WebAppDecorator implements Decorator
     }
 
 
-    protected void initialize (Object o) 
+    protected void decorate (Object o) 
     throws ServletException
     {       
         InjectionCollection injections = (InjectionCollection)_wac.getAttribute(InjectionCollection.INJECTION_COLLECTION);
