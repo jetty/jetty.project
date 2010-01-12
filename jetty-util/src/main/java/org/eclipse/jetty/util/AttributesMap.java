@@ -27,23 +27,23 @@ import java.util.Set;
  */
 public class AttributesMap implements Attributes
 {
-    Map _map;
+    protected final Map<String,Object> _map;
 
     /* ------------------------------------------------------------ */
     public AttributesMap()
     {
-        _map=new HashMap();
+        _map=new HashMap<String,Object>();
     }
     
     /* ------------------------------------------------------------ */
-    public AttributesMap(Map map)
+    public AttributesMap(Map<String,Object> map)
     {
         _map=map;
     }
     
     public AttributesMap(AttributesMap map)
     {
-        _map=new HashMap(map._map);
+        _map=new HashMap<String,Object>(map._map);
     }
     
     /* ------------------------------------------------------------ */
@@ -80,7 +80,7 @@ public class AttributesMap implements Attributes
     /* 
      * @see org.eclipse.jetty.util.Attributes#getAttributeNames()
      */
-    public Enumeration getAttributeNames()
+    public Enumeration<String> getAttributeNames()
     {
         return Collections.enumeration(_map.keySet());
     }
@@ -89,7 +89,16 @@ public class AttributesMap implements Attributes
     /* 
      * @see org.eclipse.jetty.util.Attributes#getAttributeNames()
      */
-    public static Enumeration getAttributeNamesCopy(Attributes attrs)
+    public Set<String> getAttributeNameSet()
+    {
+        return _map.keySet();
+    }
+
+    /* ------------------------------------------------------------ */
+    /* 
+     * @see org.eclipse.jetty.util.Attributes#getAttributeNames()
+     */
+    public static Enumeration<String> getAttributeNamesCopy(Attributes attrs)
     {
         if (attrs instanceof AttributesMap)
             return Collections.enumeration(((AttributesMap)attrs)._map.keySet());

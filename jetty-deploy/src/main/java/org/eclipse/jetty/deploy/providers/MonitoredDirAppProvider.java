@@ -136,8 +136,7 @@ public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppPro
     
     private App addConfiguredContextApp(String filename)
     {
-        String originId = filename;
-        App app = new App(_deploymentManager,this,originId,new File(filename));
+        App app = new App(_deploymentManager,this,filename);
         _deploymentManager.addApp(app);
         return app;
     }
@@ -154,11 +153,13 @@ public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppPro
      */
     public ContextHandler createContextHandler(final App app) throws Exception
     {
-        Resource resource = Resource.newResource(app.getArchivePath().toURI());
+        Resource resource = Resource.newResource(app.getOriginId());
+        File file=resource.getFile();
+        
         if (!resource.exists())
             throw new IllegalStateException("App resouce does not exist "+resource);
 
-        if (_acceptContextXmlFiles &&  FileID.isXmlFile(app.getArchivePath()))
+        if (_acceptContextXmlFiles &&  FileID.isXmlFile(file))
         {
             // TODO - it is a bit wierd that this ignores 
             // _defaultsDescriptor, _extractWars and _parentLoaderPriority
@@ -174,14 +175,14 @@ public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppPro
             return (ContextHandler)xmlc.configure();
         }
 
-        String context = app.getArchivePath().getName();
+        String context = file.getName();
         
-        if (_acceptWarFiles && FileID.isWebArchiveFile(app.getArchivePath()))
+        if (_acceptWarFiles && FileID.isWebArchiveFile(file))
         {
             // Context Path is the same as the archive.
             context = context.substring(0,context.length() - 4);
         }
-        else if (_acceptDirectories && app.getArchivePath().isDirectory())
+        else if (_acceptDirectories && file.isDirectory())
         {
             // must be a directory
         }
@@ -203,7 +204,7 @@ public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppPro
 
         WebAppContext wah = new WebAppContext();
         wah.setContextPath(context);
-        wah.setWar(app.getArchivePath().getAbsolutePath());
+        wah.setWar(file.getAbsolutePath());
         if (_defaultsDescriptor != null)
             wah.setDefaultsDescriptor(_defaultsDescriptor);
         wah.setExtractWAR(_extractWars);

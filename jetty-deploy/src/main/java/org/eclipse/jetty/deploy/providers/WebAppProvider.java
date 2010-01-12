@@ -170,17 +170,18 @@ public class WebAppProvider extends AbstractAppProvider
     /* ------------------------------------------------------------ */
     public ContextHandler createContextHandler(final App app) throws Exception
     {
-        Resource resource = Resource.newResource(app.getArchivePath().toURI());
+        Resource resource = Resource.newResource(app.getOriginId());
+        File file = resource.getFile();
         if (!resource.exists())
             throw new IllegalStateException("App resouce does not exist "+resource);
 
-        String context = app.getArchivePath().getName();
+        String context = file.getName();
         
-        if (app.getArchivePath().isDirectory())
+        if (file.isDirectory())
         {
             // must be a directory
         }
-        else if (FileID.isWebArchiveFile(app.getArchivePath()))
+        else if (FileID.isWebArchiveFile(file))
         {
             // Context Path is the same as the archive.
             context = context.substring(0,context.length() - 4);
@@ -202,7 +203,7 @@ public class WebAppProvider extends AbstractAppProvider
 
         WebAppContext wah = new WebAppContext();
         wah.setContextPath(context);
-        wah.setWar(app.getArchivePath().getAbsolutePath());
+        wah.setWar(file.getAbsolutePath());
         if (_defaultsDescriptor != null)
             wah.setDefaultsDescriptor(_defaultsDescriptor);
         wah.setExtractWAR(_extractWars);

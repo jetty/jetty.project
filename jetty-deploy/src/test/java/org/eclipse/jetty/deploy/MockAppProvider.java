@@ -43,19 +43,20 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
 
     public void findWebapp(String name)
     {
-        File war = new File(webappsDir,name);
-        App app = new App(deployMan,this,"mock-" + name,war);
+        App app = new App(deployMan,this,"mock-" + name);
         this.deployMan.addApp(app);
     }
 
     public ContextHandler createContextHandler(App app) throws Exception
     {
         WebAppContext context = new WebAppContext();
-        context.setWar(Resource.newResource(app.getArchivePath().toURL()).toString());
 
-        String path = app.getArchivePath().getName();
+        File war = new File(webappsDir,app.getOriginId().substring(5));
+        context.setWar(Resource.newResource(war.toURL()).toString());
+
+        String path = war.getName();
         
-        if (FileID.isWebArchiveFile(app.getArchivePath()))
+        if (FileID.isWebArchiveFile(war))
         {
             // Context Path is the same as the archive.
             path = path.substring(0,path.length() - 4);

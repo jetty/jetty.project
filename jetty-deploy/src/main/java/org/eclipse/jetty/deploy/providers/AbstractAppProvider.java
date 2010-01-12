@@ -48,7 +48,7 @@ public abstract class AbstractAppProvider extends AbstractLifeCycle implements A
         public void fileAdded(String filename) throws Exception
         {
             Log.debug("added ",  filename);
-            App app = new App(_deploymentManager,AbstractAppProvider.this,filename,new File(filename));
+            App app = new App(_deploymentManager,AbstractAppProvider.this,filename);
             _appMap.put(filename,app);
             _deploymentManager.addApp(app);
         }
@@ -59,7 +59,7 @@ public abstract class AbstractAppProvider extends AbstractLifeCycle implements A
             App app = _appMap.remove(filename);
             if (app!=null)
                 _deploymentManager.removeApp(app);
-            app = new App(_deploymentManager,AbstractAppProvider.this,filename,new File(filename));
+            app = new App(_deploymentManager,AbstractAppProvider.this,filename);
             _appMap.put(filename,app);
             _deploymentManager.addApp(app);
         }

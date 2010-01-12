@@ -1,7 +1,6 @@
 package org.eclipse.jetty.osgi.boot;
 
-import java.io.File;
-import java.util.HashMap;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,7 +31,7 @@ public class OSGiAppProvider extends AbstractLifeCycle implements AppProvider
         // TODO apply configuration specific to this provider
         
         // wrap context as an App
-        OSGiApp app = new OSGiApp(_manager,this,context.getDisplayName(),null,context);
+        OSGiApp app = new OSGiApp(_manager,this,context.getDisplayName(),context);
         _apps.put(context,app);
         _manager.addApp(app);
     }
@@ -43,7 +42,7 @@ public class OSGiAppProvider extends AbstractLifeCycle implements AppProvider
         // TODO construct ContextHandler
         ContextHandler context=null;
         // wrap context as an App
-        OSGiApp app = new OSGiApp(_manager,this,context.getDisplayName(),null,context);
+        OSGiApp app = new OSGiApp(_manager,this,context.getDisplayName(),context);
         _apps.put(context,app);
         _manager.addApp(app);
     }
@@ -59,9 +58,9 @@ public class OSGiAppProvider extends AbstractLifeCycle implements AppProvider
     class OSGiApp extends App
     {
         final ContextHandler _context;
-        public OSGiApp(DeploymentManager manager, AppProvider provider, String originId, File archivePath, ContextHandler context)
+        public OSGiApp(DeploymentManager manager, AppProvider provider, String originId, ContextHandler context)
         {
-            super(manager,provider,originId,archivePath);
+            super(manager,provider,originId);
             _context=context;
         }
     }

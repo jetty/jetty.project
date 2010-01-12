@@ -38,7 +38,6 @@ public class App
     private final DeploymentManager _manager;
     private final AppProvider _provider;
     private final String _originId;
-    private final File _archivePath;
     private ContextHandler _context;
 
     /**
@@ -46,17 +45,14 @@ public class App
      * 
      * @param originId
      *            the origin ID (The ID that the {@link AppProvider} knows about)
-     * @param archivePath
-     *            the path to the app (can be a file *.war or *.jar, or a webapp exploded directory)
      * @see App#getOriginId()
      * @see App#getContextId()
      */
-    public App(DeploymentManager manager, AppProvider provider, String originId, File archivePath)
+    public App(DeploymentManager manager, AppProvider provider, String originId)
     {
         _manager=manager;
         _provider = provider;
         _originId = originId;
-        _archivePath = archivePath;
     }
 
     /* ------------------------------------------------------------ */
@@ -77,18 +73,6 @@ public class App
         return _provider;
     }
     
-    /**
-     * Get the archive path to the App.
-     * 
-     * Might exist as a Directory (example: an exploded webapp, or a jetty:run) or a File (example: a WAR file)
-     * 
-     * @return the
-     */
-    public File getArchivePath()
-    {
-        return this._archivePath;
-    }
-
     /**
      * Get ContextHandler for the App.
      * 
@@ -132,8 +116,9 @@ public class App
         return this._originId;
     }
     
+    @Override
     public String toString()
     {
-        return "App["+_context+","+_originId+","+_archivePath+"]";
+        return "App["+_context+","+_originId+"]";
     }
 }

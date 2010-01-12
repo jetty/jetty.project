@@ -58,8 +58,10 @@ public class ContextProvider extends AbstractAppProvider
     /* ------------------------------------------------------------ */
     public ContextHandler createContextHandler(App app) throws Exception
     {
-        Resource resource = Resource.newResource(app.getArchivePath().toURI());
-        if (resource.exists() && FileID.isXmlFile(app.getArchivePath()))
+        Resource resource = Resource.newResource(app.getOriginId());
+        File file = resource.getFile();
+        
+        if (resource.exists() && FileID.isXmlFile(file))
         {
             XmlConfiguration xmlc = new XmlConfiguration(resource.getURL());
             Map<String,Object> props = new HashMap<String,Object>();

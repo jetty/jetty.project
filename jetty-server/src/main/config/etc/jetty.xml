@@ -115,7 +115,7 @@
                Configured to behave similar to the legacy ContextDeployer -->
           <Call name="addAppProvider">
             <Arg>
-              <New class="org.eclipse.jetty.deploy.providers.ContextAppProvider">
+              <New class="org.eclipse.jetty.deploy.providers.ContextProvider">
                 <Set name="monitoredDir"><Property name="jetty.home" default="." />/contexts</Set>
                 <Set name="scanInterval">5</Set>
               </New>
