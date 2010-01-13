@@ -85,17 +85,15 @@ public class JSONPojoConvertorTest extends TestCase
         foo._double2 = new Double(10000.22222d);
         
         Bar bar = new Bar("Hello", true, new Baz("World", Boolean.FALSE, foo));
+        bar.setColor(Color.Blue);
         
         String s = json.toJSON(bar);
-        
         Object obj = json.parse(new JSON.StringSource(s));
         
         assertTrue(obj instanceof Bar);
         
         Bar br = (Bar)obj;        
-        
         Baz bz = br.getBaz();
-        
         Foo f = bz.getFoo();
         
         assertNull(br.getTitle());
@@ -106,8 +104,11 @@ public class JSONPojoConvertorTest extends TestCase
         assertFalse(f.getLong1()==foo.getLong1());
         assertNull(f.getInt2());
         assertFalse(foo.getInt2().equals(f.getInt2()));
-        assertNull(f.getName());        
+        assertNull(f.getName());   
+        assertEquals(Color.Blue,br.getColor());
     }
+    
+    enum Color { Red, Green, Blue };
     
     public static class Bar
     {
@@ -115,6 +116,7 @@ public class JSONPojoConvertorTest extends TestCase
         private Baz _baz;
         private boolean _boolean1;
         private Baz[] _bazs;
+        private Color _color=Color.Red;
         
         public Bar()
         {
@@ -137,11 +139,13 @@ public class JSONPojoConvertorTest extends TestCase
         @Override
         public String toString()
         {
-            return new StringBuffer().append("\n=== ").append(getClass().getSimpleName()).append(" ===")
+            return new StringBuffer()
+                .append("\n=== ").append(getClass().getSimpleName()).append(" ===")
                 .append("\ntitle: ").append(getTitle())
                 .append("\nboolean1: ").append(isBoolean1())
                 .append("\nnullTest: ").append(getNullTest())
-                .append("\nbaz: ").append(getBaz()).toString();
+                .append("\nbaz: ").append(getBaz())
+                .append("\ncolor: ").append(_color).toString();
         }
         
         public void setTitle(String title)
@@ -194,6 +198,18 @@ public class JSONPojoConvertorTest extends TestCase
         {
             return _bazs;
         }
+
+        public Color getColor()
+        {
+            return _color;
+        }
+        
+        public void setColor(Color color)
+        {
+            _color = color;
+        }
+        
+        
     }
     
     public static class Baz

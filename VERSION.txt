@@ -8,6 +8,7 @@ jetty-7.0.2-SNAPSHOT
  + 298145 Reorganized test harness to separate the HTTP PUT and HTTP GET test URLs
  + 298234 Unit test for jetty-client handling different HTTP error codes
  + 298667 DeploymentManager uses ContextProvider and WebAppProvider
+ + 299455 Enum support in JSONPojoConvertor
  + JETTY-910 Allow request listeners to access session
  + JETTY-1153 System property for UrlEncoded charset
  + JETTY-1155 HttpConnection.close notifies HttpExchange

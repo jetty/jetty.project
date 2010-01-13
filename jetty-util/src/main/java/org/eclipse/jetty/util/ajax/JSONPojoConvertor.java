@@ -286,8 +286,14 @@ public class JSONPojoConvertor implements JSON.Convertor
         protected void invokeObject(Object obj, Object value) throws IllegalArgumentException, 
             IllegalAccessException, InvocationTargetException
         {
-            if(_numberType!=null && value instanceof Number)
+            if (_type.isEnum())
+            {
+                _method.invoke(obj, new Object[]{Enum.valueOf((Class<? extends Enum>)_type,value.toString())});
+            }
+            else if(_numberType!=null && value instanceof Number)
+            {
                 _method.invoke(obj, new Object[]{_numberType.getActualValue((Number)value)});
+            }
             else if(_componentType!=null && value.getClass().isArray())
             {
                 if(_numberType==null)
