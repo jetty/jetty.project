@@ -44,6 +44,8 @@ public class FragmentConfiguration implements Configuration
         
         //parse web-fragment.xmls
         parseWebFragments(context, processor);
+        
+      
        
         //TODO for jetty-8/servletspec 3 we will need to merge the parsed web fragments into the 
         //effective pom in this preConfigure step
@@ -54,15 +56,16 @@ public class FragmentConfiguration implements Configuration
         if (!context.isConfigurationDiscovered())
             return;
         
-        //TODO for jetty-8/servletspec3 the fragments will not be separately processed here, but
-        //will be done by webXmlConfiguration when it processes the effective merged web.xml
         WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
         if (processor == null)
         {
             processor = new WebXmlProcessor (context);
             context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
         }
-       
+        
+        //order the fragments first
+        processor.orderFragments(); 
+          
         processor.processFragments(); 
     }
 
@@ -93,5 +96,4 @@ public class FragmentConfiguration implements Configuration
             }
         }
     }
-
 }

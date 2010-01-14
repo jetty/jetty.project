@@ -113,7 +113,7 @@ public class WebFilterAnnotationHandler implements DiscoverableAnnotationHandler
         }
         mapping.setDispatcherTypes(dispatcherSet);
 
-        //TODO asyncSupported
+        holder.setAsyncSupported(filterAnnotation.asyncSupported());
         
         _wac.getServletHandler().addFilter(holder);
         _wac.getServletHandler().addFilterMapping(mapping);

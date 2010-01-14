@@ -23,6 +23,11 @@ import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.webapp.WebAppContext;
 
+/**
+ * ContainerInitializerConfiguration
+ *
+ * Apply the ServletContainerInitializers. 
+ */
 public class ContainerInitializerConfiguration extends AbstractConfiguration
 {
     public static final String CONTAINER_INITIALIZERS = "org.eclipse.jetty.containerInitializers";

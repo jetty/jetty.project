@@ -25,6 +25,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlProcessor;
 import org.eclipse.jetty.webapp.WebXmlProcessor.Descriptor;
+import org.eclipse.jetty.webapp.WebXmlProcessor.Fragment;
 
 
 public abstract class AbstractConfiguration implements Configuration
@@ -77,7 +78,7 @@ public abstract class AbstractConfiguration implements Configuration
         if (webXmlProcessor == null)
            throw new IllegalStateException ("No processor for web xml");
         
-        List<Descriptor> frags = webXmlProcessor.getFragments();
+        List<Fragment> frags = webXmlProcessor.getFragments();
         
         //Get the web-inf lib jars who have a web-fragment.xml that is not metadata-complete (or is not set)
         ArrayList<URI> webInfUris = new ArrayList<URI>();

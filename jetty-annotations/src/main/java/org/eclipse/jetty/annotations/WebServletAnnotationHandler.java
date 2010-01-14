@@ -139,20 +139,16 @@ public class WebServletAnnotationHandler implements DiscoverableAnnotationHandle
         if (isNew)
         {
             holder = _wac.getServletHandler().newServletHolder(Holder.Source.ANNOTATION);
-            holder.setHeldClass(clazz);
-           
+            holder.setHeldClass(clazz);   
             holder.setName(servletName);
+            holder.setDisplayName(annotation.displayName());
             holder.setInitOrder(annotation.loadOnStartup());
             holder.setAsyncSupported(annotation.asyncSupported());
             for (WebInitParam ip:annotation.initParams())
             {
                 holder.setInitParameter(ip.name(), ip.value());
             }
-            MultipartConfig multipart = (MultipartConfig)clazz.getAnnotation(MultipartConfig.class);
-            if (multipart != null)
-            {
-                //TODO set multipart on ServletHolder
-            }
+          
             _wac.getServletHandler().addServlet(holder);
             ServletMapping mapping = new ServletMapping();  
             mapping.setServletName(holder.getName());

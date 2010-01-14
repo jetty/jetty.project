@@ -103,6 +103,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     public void registerServletContainerInitializerAnnotationHandlers (WebAppContext context, AnnotationParser parser)
     {     
+        //TODO verify my interpretation of the spec. That is, that metadata-complete has nothing
+        //to do with finding the ServletContainerInitializers, classes designated to be of interest to them,
+        //or even calling them on startup. 
+        
         //Get all ServletContainerInitializers, and check them for HandlesTypes annotations.
         //For each class in the HandlesTypes value, if it IS an annotation, register a handler
         //that will record the classes that have that annotation.

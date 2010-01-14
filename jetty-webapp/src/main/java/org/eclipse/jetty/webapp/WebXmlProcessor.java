@@ -16,18 +16,22 @@ package org.eclipse.jetty.webapp;
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.ServletRegistration;
@@ -66,13 +70,18 @@ public class WebXmlProcessor
     public static final String WEBXML_MAJOR_VERSION = "org.eclipse.jetty.webXmlMajorVersion";
     public static final String WEBXML_MINOR_VERSION = "org.eclipse.jetty.webXmlMinorVersion";
     public static final String WEBXML_CLASSNAMES = "org.eclipse.jetty.webXmlClassNames";
-    
+    public static final String NAMELESS = "@@-NAMELESS-@@"; //prefix for nameless Fragments
+    protected int _counter = 0;
     protected WebAppContext _context;
     protected XmlParser _xmlParser;
     protected Descriptor _webDefaultsRoot;
     protected Descriptor _webXmlRoot;
-    protected List<Descriptor> _webFragmentRoots = new ArrayList<Descriptor>();   
     protected Descriptor _webOverrideRoot;
+    protected List<Fragment> _webFragmentRoots = new ArrayList<Fragment>();
+    protected Map<String,Fragment> _webFragmentNameMap = new HashMap<String,Fragment>();
+    protected List<Fragment> _orderedFragments = new LinkedList<Fragment>();
+    
+    protected Ordering _ordering;//can be set by web-default.xml, web.xml, web-override.xml
     
     protected ServletHandler _servletHandler;
     protected SecurityHandler _securityHandler;
@@ -91,6 +100,338 @@ public class WebXmlProcessor
     protected boolean _defaultWelcomeFileList;
    
 
+    public interface Ordering
+    {
+        public List<Fragment> order();
+        public boolean isAbsolute ();
+    }
+    
+    /**
+     * AbsoluteOrdering
+     *
+     * An <absolute-order> element in web.xml
+     */
+    public class AbsoluteOrdering implements Ordering
+    {
+        public static final String OTHER = "@@-OTHER-@@";
+        protected List<String> _order = new ArrayList<String>();
+        protected boolean _hasOther = false;
+ 
+        public List<Fragment> order()
+        {           
+            List<Fragment> orderedList = new ArrayList<Fragment>();
+          
+            //1. put everything into the list of named others, and take the named ones out of there,
+            //assuming we will want to use the <other> clause
+            Map<String,Fragment> others = new HashMap(_webFragmentNameMap);
+            
+            //2. for each name, take out of the list of others, add to tail of list
+            int index = -1;
+            for (String item:_order)
+            {
+                if (!item.equals(OTHER))
+                {
+                    Fragment f = others.remove(item);
+                    if (f != null)
+                        orderedList.add(f); //take from others and put into final list in order, ignoring duplicate names
+                }
+                else
+                    index = orderedList.size(); //remember the index at which we want to add in all the others
+            }
+            
+            //3. if <other> was specified, insert the leftovers
+            orderedList.addAll(index, others.values());
+            return orderedList;
+        }
+        
+        public boolean isAbsolute()
+        {
+            return true;
+        }
+        
+        public void add (String name)
+        {
+            _order.add(name); 
+        }
+        
+        public void addOthers ()
+        {
+            if (_hasOther)
+                throw new IllegalStateException ("Duplicate <other> element in absolute ordering");
+            
+            _hasOther = true;
+            _order.add(OTHER);
+        }
+    }
+    
+    
+    /**
+     * RelativeOrdering
+     *
+     * A set of <order> elements in web-fragment.xmls.
+     */
+    public class RelativeOrdering implements Ordering
+    {
+        protected LinkedList<String> _beforeOthers = new LinkedList<String>();
+        protected LinkedList<String> _afterOthers = new LinkedList<String>();
+        protected LinkedList<String> _noOthers = new LinkedList<String>();
+        
+        public List<Fragment> order()
+        {           
+            List<Fragment> orderedList = new ArrayList<Fragment>();
+ 
+            int maxIterations = 2;
+            boolean done = false;
+            do
+            {
+                //1. order the before-others according to any explicit before/after relationships 
+                done = orderList(_beforeOthers);
+
+                //2. order the after-others according to any explicit before/after relationships
+                done = orderList(_afterOthers);
+
+                //3. order the no-others according to their explicit before/after relationships
+                done = orderList(_noOthers);
+            }
+            while (!done && (--maxIterations >0));
+            
+            //5. merge before-others + no-others +after-others
+            if (!done)
+                throw new IllegalStateException("Circular references for fragments");
+            
+            for (String s: _beforeOthers)
+                orderedList.add(_webFragmentNameMap.get(s));
+            for (String s: _noOthers)
+                orderedList.add(_webFragmentNameMap.get(s));
+            for(String s: _afterOthers)
+                orderedList.add(_webFragmentNameMap.get(s));
+            
+            return orderedList;
+        }
+        
+        public boolean isAbsolute ()
+        {
+            return false;
+        }
+        
+        public void addBeforeOthers (Fragment d)
+        {
+            _beforeOthers.addLast(d.getName());
+        }
+        
+        public void addAfterOthers (Fragment d)
+        {
+            _afterOthers.addLast(d.getName());
+        }
+        
+        public void addNoOthers (Fragment d)
+        {
+            _noOthers.addLast(d.getName());
+        }
+        
+       protected boolean orderList (LinkedList<String> list)
+       {
+           //Take a copy of the list so we can iterate over it and at the same time do random insertions
+           boolean noChanges = true;
+           List<String> iterable = new ArrayList(list);
+           Iterator<String> itor = iterable.iterator();
+           System.err.println("List start:");
+           for (String s:list)
+               System.err.println(s);
+           System.err.println();
+           
+           while (itor.hasNext())
+           {
+               String name = itor.next();
+               Fragment f = _webFragmentNameMap.get(name);
+               if (f == null)
+                  throw new IllegalStateException ("No fragment matching name "+name);
+
+               //Handle any explicit <before> relationships for the fragment we're considering
+               List<String> befores = f.getBefores();
+               if (befores != null && !befores.isEmpty())
+               {
+                   for (String b: befores)
+                   {
+                       //Fragment we're considering must be before this name
+                       //Check that we are already before it, if not, move us so that we are.
+                       //If the name does not exist in our list, then get it out of the no-other list
+                       
+                       if (!isBefore(list, name, b))
+                       {
+                           //b is not already before name, move it so that it is
+                           int idx1 = list.indexOf(name);
+                           int idx2 = list.indexOf(b);
+
+                           //if b is not in the same list
+                           if (idx2 < 0)
+                           {
+                               // must be in the noOthers list or it would have been an error
+                               _noOthers.remove(b);
+
+                               //If its in the no-others list, insert into this list so that we are before it
+                               insert(list, idx1+1, b);
+                               noChanges = false;
+                           }
+                           else
+                           {
+                               //b is in the same list but b is before name, so swap it around
+                               list.remove(name);
+                               insert(list, idx2, name);
+                               noChanges = false;
+                           }
+                       }
+                   }
+               }
+
+               //Handle any explicit <after> relationships
+               List<String> afters = f.getAfters();
+               if (afters != null && !afters.isEmpty())
+               {
+                   for (String a: afters)
+                   {
+                       //Check that name is after a, moving it if possible if its not
+                       if (!isAfter(list, name, a))
+                       {
+                           //name is not after a, move it
+                           int idx1 = list.indexOf(name);
+                           int idx2 = list.indexOf(a);
+                           
+                           //if a is not in the same list as name
+                           if (idx2 < 0)
+                           {
+                               //take it out of the noOthers list and put it in the right place in this list
+                               _noOthers.remove(a);
+                               insert(list,idx1, a);
+                               noChanges = false;
+                           }
+                           else
+                           {
+                               //a is in the same list as name, but in the wrong place, so move it
+                               list.remove(a);
+                               insert(list,idx1, a);
+                               noChanges = false;
+                           }
+                       }
+                       //Name we're considering must be after this name
+                       //Check we're already after it, if not, move us so that we are.
+                       //If the name does not exist in our list, then get it out of the no-other list
+                   }
+               }
+           }
+           
+           System.err.println("List end:");
+           for (String s:list)
+               System.err.println(s);
+           System.err.println();
+           return noChanges;
+       }
+       
+       /**
+        * Is a before b?
+        * @param list
+        * @param a
+        * @param b
+        * @return
+        */
+       protected boolean isBefore (List<String> list, String a, String b)
+       {
+           //check if a and b are already in the same list, and b is already
+           //before a 
+           int idxa = list.indexOf(a);
+           int idxb = list.indexOf(b);
+           
+           
+           if (idxb >=0 && idxb < idxa)
+           {
+               //a and b are in the same list but a is not before b
+               return false;
+           }
+           
+           if (idxb < 0)
+           {
+               //a and b are not in the same list, but it is still possible that a is before
+               //b, depending on which list we're examining
+               if (list == _beforeOthers)
+               {
+                   //The list we're looking at is the beforeOthers.If b is in the _afterOthers or the _noOthers, then by
+                   //definition a is before it
+                   return true;
+               }
+               else if (list == _afterOthers)
+               {
+                   //The list we're looking at is the afterOthers, then a will be the tail of
+                   //the final list.  If b is in the beforeOthers list, then b will be before a and an error.
+                   if (_beforeOthers.contains(b))
+                       throw new IllegalStateException("Incorrect relationship: "+a+" before "+b);
+                   else
+                       return false; //b could be moved to the list
+               }
+           }
+          
+           //a and b are in the same list and a is already before b
+           return true;
+       }
+       
+       
+       /**
+        * Is a after b?
+        * @param list
+        * @param a
+        * @param b
+        * @return
+        */
+       protected boolean isAfter(List<String> list, String a, String b)
+       {
+           int idxa = list.indexOf(a);
+           int idxb = list.indexOf(b);
+           
+           if (idxb >=0 && idxa < idxb)
+           {
+               //a and b are both in the same list, but a is before b
+               return false;
+           }
+           
+           if (idxb < 0)
+           {
+               //a and b are in different lists. a could still be after b depending on which list it is in.
+
+               if (list == _afterOthers)
+               {
+                   //The list we're looking at is the afterOthers. If b is in the beforeOthers or noOthers then
+                   //by definition a is after b because a is in the afterOthers list.
+                   return true;
+               }
+               else if (list == _beforeOthers)
+               {
+                   //The list we're looking at is beforeOthers, and contains a and will be before
+                   //everything else in the final ist. If b is in the afterOthers list, then a cannot be before b.
+                   if (_afterOthers.contains(b))
+                       throw new IllegalStateException("Incorrect relationship: "+b+" after "+a);
+                   else
+                       return false; //b could be moved from noOthers list
+               }
+           }
+
+           return true; //a and b in the same list, a is after b
+       }
+       
+       protected void insert(List<String> list, int index, String element)
+       {
+           if (index > list.size())
+               list.add(element);
+           else
+               list.add(index, element);
+       }
+    }
+
+    
+    
+    /**
+     * Descriptor
+     *
+     * A web descriptor (web.xml).
+     */
     public class Descriptor
     {
         protected Resource _xml;
@@ -100,7 +441,6 @@ public class WebXmlProcessor
         protected int _majorVersion = 3; //default to container version
         protected int _minorVersion = 0;
         protected ArrayList<String> _classNames;
-        protected String _name;
         
         public Descriptor (Resource xml)
         {
@@ -116,16 +456,6 @@ public class WebXmlProcessor
                 processVersion();
                 processOrdering();
             }
-        }
-        
-        public void setName (String name)
-        {
-            _name = name;
-        }
-        
-        public String getName ()
-        {
-            return _name;
         }
         
         public boolean isMetaDataComplete()
@@ -192,12 +522,28 @@ public class WebXmlProcessor
             Log.debug(_xml.toString()+": Calculated metadatacomplete = " + _metadataComplete + " with version=" + version);     
         }
         
-        private void processOrdering ()
+        protected void processOrdering ()
         {
-            //TODO
-            //When ordering is implemented, need to set the ServletContext attribute ORDEREDLIBS
+            //Process the web.xml's optional <absolute-ordering> element              
+            XmlParser.Node ordering = _root.get("absolute-ordering");
+            if (ordering == null)
+               return; // could be a RelativeOrdering if we find any <ordering> clauses in web-fragments
+            
+            _ordering = new AbsoluteOrdering();            
+            Iterator iter = ordering.iterator();
+            XmlParser.Node node = null;
+            while (iter.hasNext())
+            {
+                Object o = iter.next();
+                if (!(o instanceof XmlParser.Node)) continue;
+                node = (XmlParser.Node) o;
+                if (node.getTag().equalsIgnoreCase("others"))
+                    ((AbsoluteOrdering)_ordering).addOthers();
+                else if (node.getTag().equalsIgnoreCase("name"))
+                    ((AbsoluteOrdering)_ordering).add(node.toString(false,true));
+            }
         }
-        
+           
         private void processClassNames ()
         {
             _classNames = new ArrayList<String>();          
@@ -236,7 +582,130 @@ public class WebXmlProcessor
         }
     }
     
-  
+    
+    /**
+     * Fragment
+     *
+     * A web-fragment.xml descriptor.
+     */
+    public class Fragment extends Descriptor
+    {
+        protected boolean _hasOther = false;
+        protected List<String> _befores = new ArrayList<String>();
+        protected List<String> _afters = new ArrayList<String>();
+        protected String _name;
+        
+        
+        public Fragment (Resource xml)
+        {
+            super (xml);
+        }       
+        
+        public String getName ()
+        {
+            return _name;
+        }
+        
+        protected void processOrdering ()
+        {
+            //Process a fragment jar's web-fragment.xml <name> and <ordering> elements
+            XmlParser.Node root = getRoot();
+            XmlParser.Node nameNode = root.get("name");
+            _name = NAMELESS+(_counter++);
+            if (nameNode != null)
+            {
+                String tmp = nameNode.toString(false,true);
+                if (tmp!=null && tmp.length()>0)
+                    _name = tmp;
+            }
+            _webFragmentNameMap.put(_name, this);
+           
+            
+            XmlParser.Node ordering = root.get("ordering");
+            if (ordering == null)
+                return; //No ordering for this fragment
+            
+            //We found a relative ordering clause
+            if (_ordering == null)
+                _ordering = new RelativeOrdering();
+
+            processBefores(ordering);
+            if (_hasOther)
+                ((RelativeOrdering)_ordering).addBeforeOthers(this); //we found a <before><others/></before> element
+              
+            processAfters(ordering);
+            if (_hasOther)
+                ((RelativeOrdering)_ordering).addAfterOthers(this); //we found a <after><others/></after element
+            
+            //No <other/> clauses
+            if (!_hasOther)
+                ((RelativeOrdering)_ordering).addNoOthers(this);        
+        }
+        
+        
+        public void processBefores (XmlParser.Node ordering)
+        {
+            //Process the <before> elements, looking for an <others/> clause and all of the <name> clauses
+            XmlParser.Node before = ordering.get("before");
+            if (before == null)
+                return;
+
+            Iterator iter = before.iterator();
+            XmlParser.Node node = null;
+            while (iter.hasNext())
+            {
+                Object o = iter.next();
+                if (!(o instanceof XmlParser.Node)) continue;
+                node = (XmlParser.Node) o;
+                if (node.getTag().equalsIgnoreCase("others"))
+                {
+                    if (_hasOther)
+                        throw new IllegalStateException("Duplicate <other> clause detected in "+_xml.getURI());
+
+                    _hasOther = true;
+                }
+                else if (node.getTag().equalsIgnoreCase("name"))
+                    _befores.add(node.toString(false,true));
+            }
+        }
+
+        public void processAfters (XmlParser.Node ordering)
+        {
+            //Process the <after> elements, look for an <others/> clause and all of the <name/> clauses
+            XmlParser.Node after = ordering.get("after");
+            if (after == null)
+                return;
+            
+            Iterator iter = after.iterator();
+            XmlParser.Node node = null;
+            while (iter.hasNext())
+            {
+                Object o = iter.next();
+                if (!(o instanceof XmlParser.Node)) continue;
+                node = (XmlParser.Node) o;
+                if (node.getTag().equalsIgnoreCase("others"))
+                {
+                    if (_hasOther)
+                        throw new IllegalStateException("Duplicate <other> clause detected in "+_xml.getURI());
+
+                    _hasOther = true;
+
+                }
+                else if (node.getTag().equalsIgnoreCase("name"))
+                    _afters.add(node.toString(false,true));
+            }
+        }
+        
+        public List<String> getBefores()
+        {
+            return Collections.unmodifiableList(_befores);
+        }
+        
+        public List<String> getAfters()
+        {
+            return Collections.unmodifiableList(_afters);
+        }
+    }
     
     
     public static XmlParser webXmlParser() throws ClassNotFoundException
@@ -351,7 +820,7 @@ public class WebXmlProcessor
             return; //do not process anything else if main web.xml file is complete
         
         //Metadata-complete is not set, or there is no web.xml
-        Descriptor frag = new Descriptor(fragment);
+        Fragment frag = new Fragment(fragment);
         frag.parse();
         _webFragmentRoots.add(frag);
     }
@@ -379,10 +848,33 @@ public class WebXmlProcessor
             _webXmlRoot.process();
     }
     
+    
+    public void orderFragments ()
+    {
+        if (_ordering != null)
+        {
+            _orderedFragments = _ordering.order();
+            
+            List<String> orderedJars = new ArrayList<String>();
+            for (Descriptor frag: _orderedFragments)
+            {
+                //get just the name of the jar file
+                String fullname = frag.getResource().getName();
+                int i = fullname.indexOf(".jar");          
+                int j = fullname.lastIndexOf("/", i);
+                orderedJars.add(fullname.substring(j,i+3));
+            }
+            _context.setAttribute(ServletContext.ORDERED_LIBS, orderedJars);
+        }
+        else
+            _orderedFragments = _webFragmentRoots;
+    }
+    
+    
     public void processFragments ()
     throws Exception
     {
-        for (Descriptor frag : _webFragmentRoots)
+        for (Descriptor frag : _orderedFragments)
         {
             frag.process();
         }
@@ -409,16 +901,29 @@ public class WebXmlProcessor
         return _webDefaultsRoot;
     }
     
-    public List<Descriptor> getFragments ()
+    public List<Fragment> getFragments ()
     {
         return _webFragmentRoots;
     }
     
+    public List<Fragment> getOrderedFragments ()
+    {
+        return _orderedFragments;
+    }
+    
+    public Ordering getOrdering()
+    {
+        return _ordering;
+    }
+    
+    public void setOrdering (Ordering o)
+    {
+        _ordering = o;
+    }
     
     public void process (Descriptor descriptor)
     throws Exception
-    {
-        
+    {      
         XmlParser.Node config = descriptor.getRoot();
        
         //Get the current objects from the context
@@ -500,10 +1005,6 @@ public class WebXmlProcessor
             initDisplayName(node);
         else if ("description".equals(element))
         {
-        }
-        else if ("name".equals(element))
-        {
-            descriptor.setName(node.toString(false, true));
         }
         else if ("context-param".equals(element))
             initContextParam(node);

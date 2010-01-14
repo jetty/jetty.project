@@ -32,7 +32,7 @@ public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnno
 
     public MultiPartConfigAnnotationHandler(WebAppContext context)
     {
-        //TODO verify that we ignore class parent hierarchy
+        //TODO verify that MultipartConfig is not inheritable
         super(false); 
         _wac = context;
     }

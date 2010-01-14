@@ -40,7 +40,6 @@ public class WebListenerAnnotationHandler implements DiscoverableAnnotationHandl
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
                             List<Value> values)
     {
-        // TODO Auto-generated method stub
         Class clazz = null;
         try
         {
