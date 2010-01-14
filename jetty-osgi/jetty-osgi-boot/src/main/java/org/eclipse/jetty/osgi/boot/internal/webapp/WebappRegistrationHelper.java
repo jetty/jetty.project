@@ -275,9 +275,9 @@ class WebappRegistrationHelper
             String jettyetc = System.getProperty(OSGiWebappConstants.SYS_PROP_JETTY_ETC_FILES,"etc/jetty.xml");
             StringTokenizer tokenizer = new StringTokenizer(jettyetc,";,");
             
-            Map<Object,Object> id_map = new HashMap();
-            id_map.put("Server","_server");
-            Map<Object,Object> properties = new HashMap();
+            Map<Object,Object> id_map = new HashMap<Object,Object>();
+            id_map.put("Server",_server);
+            Map<Object,Object> properties = new HashMap<Object,Object>();
             properties.put("jetty.home",jettyHome);
             properties.put("jetty.host",System.getProperty("jetty.host",""));
             properties.put("jetty.port",System.getProperty("jetty.port","8080"));
@@ -381,6 +381,13 @@ class WebappRegistrationHelper
                     _provider=(OSGiAppProvider)provider;
                     break;
                 }
+            }
+            if (_provider == null) {
+            	//why not creating it on the fly?
+            	//I think it is nice to create it on the fly:
+            	//this way we can reuse the original jetty.xml
+            	_provider = new OSGiAppProvider();
+            	_deploymentManager.addAppProvider(_provider);
             }
         }
 
