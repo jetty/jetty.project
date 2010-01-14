@@ -22,13 +22,13 @@ import junit.framework.TestCase;
  */
 public class JSONPojoConvertorTest extends TestCase
 {
-    
     public void testFoo()
     {
         JSON json = new JSON();
         json.addConvertor(Foo.class, new JSONPojoConvertor(Foo.class));
         json.addConvertor(Bar.class, new JSONPojoConvertor(Bar.class));
         json.addConvertor(Baz.class, new JSONPojoConvertor(Baz.class));
+        // json.addConvertor(Enum.class, new JSONEnumConvertor(true));
         
         Foo foo = new Foo();
         foo._name = "Foo @ " + System.currentTimeMillis();
@@ -44,8 +44,10 @@ public class JSONPojoConvertorTest extends TestCase
         Bar bar = new Bar("Hello", true, new Baz("World", Boolean.FALSE, foo), new Baz[]{
             new Baz("baz0", Boolean.TRUE, null), new Baz("baz1", Boolean.FALSE, null)
         });
+        bar.setColor(Color.Green);
         
         String s = json.toJSON(bar);
+        System.err.println(s);
         
         Object obj = json.parse(new JSON.StringSource(s));
         
@@ -61,6 +63,7 @@ public class JSONPojoConvertorTest extends TestCase
         assertTrue(br.getBazs().length==2);
         assertEquals(br.getBazs()[0].getMessage(), "baz0");
         assertEquals(br.getBazs()[1].getMessage(), "baz1");
+        assertEquals(Color.Green,br.getColor());
     }
     
     public void testExclude()
@@ -85,7 +88,7 @@ public class JSONPojoConvertorTest extends TestCase
         foo._double2 = new Double(10000.22222d);
         
         Bar bar = new Bar("Hello", true, new Baz("World", Boolean.FALSE, foo));
-        bar.setColor(Color.Blue);
+        // bar.setColor(Color.Blue);
         
         String s = json.toJSON(bar);
         Object obj = json.parse(new JSON.StringSource(s));
@@ -105,7 +108,7 @@ public class JSONPojoConvertorTest extends TestCase
         assertNull(f.getInt2());
         assertFalse(foo.getInt2().equals(f.getInt2()));
         assertNull(f.getName());   
-        assertEquals(Color.Blue,br.getColor());
+        assertEquals(null,br.getColor());
     }
     
     enum Color { Red, Green, Blue };
@@ -116,7 +119,7 @@ public class JSONPojoConvertorTest extends TestCase
         private Baz _baz;
         private boolean _boolean1;
         private Baz[] _bazs;
-        private Color _color=Color.Red;
+        private Color _color;
         
         public Bar()
         {
