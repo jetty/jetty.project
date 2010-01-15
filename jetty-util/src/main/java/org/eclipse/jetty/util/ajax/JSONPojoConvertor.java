@@ -187,8 +187,8 @@ public class JSONPojoConvertor implements JSON.Convertor
                 catch(Exception e)
                 {
                     // TODO throw exception?
-                    Log.warn("{} property '{}' not set. (errors)", _pojoClass.getName(), 
-                            setter.getPropertyName());
+                    Log.warn(_pojoClass.getName()+"#"+setter.getPropertyName()+" not set from "+
+                            (entry.getValue().getClass().getName())+"="+entry.getValue().toString());
                     log(e);
                 }
             }
