@@ -26,7 +26,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <servlet.spec.groupId>org.apache.geronimo.specs</servlet.spec.groupId>
     <servlet.spec.artifactId>geronimo-servlet_3.0_spec</servlet.spec.artifactId>
-    <servlet.spec.version>1.0-EA-SNAPSHOT</servlet.spec.version>
+    <servlet.spec.version>1.0-SNAPSHOT</servlet.spec.version>
   </properties>
   <scm>
     <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/branches/jetty-8</connection>
