@@ -21,7 +21,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * only for context.xml files.
  * @see ContextDeployer
  */
-public class ContextProvider extends AbstractAppProvider
+public class ContextProvider extends ScanningAppProvider
 {
     private ConfigurationManager _configurationManager;
 

@@ -54,6 +54,23 @@ public class App
         _provider = provider;
         _originId = originId;
     }
+    
+    /**
+     * Create an App with specified Origin ID and archivePath
+     * 
+     * @param originId
+     *            the origin ID (The ID that the {@link AppProvider} knows about)
+     * @see App#getOriginId()
+     * @see App#getContextId()
+     * @param context Some implementations of AppProvider might have to use an already created ContextHandler.
+     */
+    public App(DeploymentManager manager, AppProvider provider, String originId, ContextHandler context)
+    {
+        this(manager, provider, originId);
+        _context = context;
+    }
+
+
 
     /* ------------------------------------------------------------ */
     /**

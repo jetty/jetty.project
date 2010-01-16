@@ -20,12 +20,12 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 
 /* ------------------------------------------------------------ */
 /** Context directory App Provider.
- * <p>This specialisation of {@link MonitoredDirAppProvider} is the
+ * <p>This specialization of {@link MonitoredDirAppProvider} is the
  * replacement for {@link WebAppDeployer} and it will scan a directory
- * only for warfiles or directories files.
+ * only for war files or directories files.</p>
  * @see WebAppDeployer
  */
-public class WebAppProvider extends AbstractAppProvider
+public class WebAppProvider extends ScanningAppProvider
 {
     private boolean _extractWars = false;
     private boolean _parentLoaderPriority = false;

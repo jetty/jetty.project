@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * Helper to create a URL class-loader with the jars inside
@@ -92,6 +93,7 @@ public class LibExtClassLoaderHelper
      */
     public static URLClassLoader createLibEtcClassLoaderHelper(File jettyHome, Server server, ClassLoader parentClassLoader) throws MalformedURLException
     {
+    	
         ArrayList<URL> urls = new ArrayList<URL>();
         File jettyResources = new File(jettyHome,"resources");
         if (jettyResources.exists())

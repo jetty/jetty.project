@@ -186,7 +186,7 @@ class WebappRegistrationHelper
             return filePath.substring(1,filePath.length() - 1);
         return filePath;
     }
-
+    
     /**
      * Look for the home directory of jetty as defined by the system property
      * 'jetty.home'. If undefined, look at the current bundle and uses its own
@@ -383,10 +383,8 @@ class WebappRegistrationHelper
                 }
             }
             if (_provider == null) {
-            	//why not creating it on the fly?
-            	//I think it is nice to create it on the fly:
-            	//this way we can reuse the original jetty.xml
-            	_provider = new OSGiAppProvider();
+            	//create it on the fly with reasonable default values.
+            	_provider = new OSGiAppProvider(getOSGiContextsHome());
             	_deploymentManager.addAppProvider(_provider);
             }
         }
@@ -518,6 +516,7 @@ class WebappRegistrationHelper
                                     Log.debug("Configure: " + jetty);
                                 XmlConfiguration jetty_config = new XmlConfiguration(jetty.getURL());
                                 jetty_config.configure(context);
+//                                jetty_config.getProperties().add("jetty.home", );
                             }
                             finally
                             {
@@ -548,6 +547,7 @@ class WebappRegistrationHelper
                     }
                 }
             };
+            
             context.setExtraClasspath(extraClasspath);
 
             if (webXmlPath != null && webXmlPath.length() != 0)
@@ -580,7 +580,7 @@ class WebappRegistrationHelper
                 }
                 if (defaultWebXml.exists())
                 {
-                    context.setDescriptor(defaultWebXml.getAbsolutePath());
+                    context.setDefaultsDescriptor(defaultWebXml.getAbsolutePath());
                 }
             }
 
@@ -589,7 +589,7 @@ class WebappRegistrationHelper
             // ok now register this webapp. we checked when we started jetty
             // that there
             // was at least one such handler for webapps.
-            _ctxtHandler.addHandler(context);
+//            _ctxtHandler.addHandler(context);
 
             configureWebappClassLoader(contributor,context,composite);
 
@@ -600,7 +600,7 @@ class WebappRegistrationHelper
             // through the webapp classloader.
             oldServerClasses = context.getServerClasses();
             context.setServerClasses(null);
-            context.start();
+            _provider.addContext(context);//context.start();//we don't start the context ourselves anymore.
 
             return context;
         }
@@ -645,7 +645,7 @@ class WebappRegistrationHelper
             }
             return contextsHome;
         }
-        return null;
+        return new File(System.getProperty("jetty.home") + "/contexts");
     }
 
     /**
@@ -786,7 +786,8 @@ class WebappRegistrationHelper
             // ok now register this webapp. we checked when we started jetty
             // that there
             // was at least one such handler for webapps.
-            _ctxtHandler.addHandler(context);
+            //the actual registration must happen via the new Deployment API.
+//            _ctxtHandler.addHandler(context);
 
             configureWebappClassLoader(contributor,context,composite);
             if (context instanceof WebAppContext)

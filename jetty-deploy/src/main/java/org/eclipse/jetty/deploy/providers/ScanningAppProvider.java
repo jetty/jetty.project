@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.util.Scanner;
@@ -31,8 +30,14 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
+ * Abstract for AppProviders that monitor context files.
+ * The context file enables adminsitrators to customize the configuration of a WebAppContext or
+ * a ContextHandler without chaging files inside the packaged application.
+ * <p>
+ * When the context file is changed, the corresponding application is redeployed.
+ * </p>
  */
-public abstract class AbstractAppProvider extends AbstractLifeCycle implements AppProvider
+public abstract class ScanningAppProvider extends AbstractLifeCycle implements AppProvider
 {
     private Map<String,App> _appMap = new HashMap<String,App>();
     
@@ -48,9 +53,12 @@ public abstract class AbstractAppProvider extends AbstractLifeCycle implements A
         public void fileAdded(String filename) throws Exception
         {
             Log.debug("added ",  filename);
-            App app = new App(_deploymentManager,AbstractAppProvider.this,filename);
-            _appMap.put(filename,app);
-            _deploymentManager.addApp(app);
+            App app = ScanningAppProvider.this.createApp(filename);
+            if (app != null)
+            {
+            	_appMap.put(filename,app);
+            	_deploymentManager.addApp(app);
+            }
         }
 
         public void fileChanged(String filename) throws Exception
@@ -59,9 +67,12 @@ public abstract class AbstractAppProvider extends AbstractLifeCycle implements A
             App app = _appMap.remove(filename);
             if (app!=null)
                 _deploymentManager.removeApp(app);
-            app = new App(_deploymentManager,AbstractAppProvider.this,filename);
-            _appMap.put(filename,app);
-            _deploymentManager.addApp(app);
+            app = ScanningAppProvider.this.createApp(filename);
+            if (app != null)
+            {
+            	_appMap.put(filename,app);
+            	_deploymentManager.addApp(app);
+            }
         }
 
         public void fileRemoved(String filename) throws Exception
@@ -73,12 +84,32 @@ public abstract class AbstractAppProvider extends AbstractLifeCycle implements A
         }
     };
     
-    protected AbstractAppProvider(FilenameFilter filter)
+    protected ScanningAppProvider(FilenameFilter filter)
     {
         _filenameFilter = filter;
     }
     
-
+    /**
+     * @return The index of currently deployed applications.
+     */
+    protected Map<String,App> getDeployedApps()
+    {
+        return _appMap;
+    }
+    
+    /**
+     * Called by the Scanner.DiscreteListener to create a new App object.
+     * Isolated in a method so that it is possible to override the default App object
+     * for specialized implementations of the AppProvider.
+     * @param filename The file that is the context.xml.
+     * It is resolved by {@link Resource#newResource(String)}
+     * @return The App object for this particular context definition file.
+     */
+    protected App createApp(String filename)
+    {
+    	return new App(_deploymentManager,this,filename);
+    }
+    
     @Override
     protected void doStart() throws Exception
     {
