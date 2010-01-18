@@ -164,7 +164,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         
         _welcomes = _contextHandler.getWelcomeFiles();
         if (_welcomes==null)
-            _welcomes=new String[] {"index.jsp","index.html"};
+            _welcomes=new String[] {"index.html","index.jsp"};
         
         _acceptRanges=getInitBoolean("acceptRanges",_acceptRanges);
         _dirAllowed=getInitBoolean("dirAllowed",_dirAllowed);
