@@ -44,33 +44,35 @@ public class App
      * Create an App with specified Origin ID and archivePath
      * 
      * @param originId
-     *            the origin ID (The ID that the {@link AppProvider} knows about)
+     *            the origin ID (The ID that the {@link AppProvider} knows
+     *            about)
      * @see App#getOriginId()
      * @see App#getContextId()
      */
     public App(DeploymentManager manager, AppProvider provider, String originId)
     {
-        _manager=manager;
+        _manager = manager;
         _provider = provider;
         _originId = originId;
     }
-    
+
     /**
      * Create an App with specified Origin ID and archivePath
      * 
      * @param originId
-     *            the origin ID (The ID that the {@link AppProvider} knows about)
+     *            the origin ID (The ID that the {@link AppProvider} knows
+     *            about)
      * @see App#getOriginId()
      * @see App#getContextId()
-     * @param context Some implementations of AppProvider might have to use an already created ContextHandler.
+     * @param context
+     *            Some implementations of AppProvider might have to use an
+     *            already created ContextHandler.
      */
     public App(DeploymentManager manager, AppProvider provider, String originId, ContextHandler context)
     {
-        this(manager, provider, originId);
+        this(manager,provider,originId);
         _context = context;
     }
-
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -89,28 +91,30 @@ public class App
     {
         return _provider;
     }
-    
+
     /**
      * Get ContextHandler for the App.
      * 
      * Create it if needed.
      * 
-     * @return the {@link ContextHandler} to use for the App when fully started. (Portions of which might be ignored
-     *         when App is in the {@link AppState#STAGED} state}
+     * @return the {@link ContextHandler} to use for the App when fully started.
+     *         (Portions of which might be ignored when App is in the
+     *         {@link AppState#STAGED} state}
      * @throws Exception
      */
     public ContextHandler getContextHandler() throws Exception
     {
         if (_context == null)
         {
-            _context=getAppProvider().createContextHandler(this);
+            _context = getAppProvider().createContextHandler(this);
             this._context.setAttributes(new AttributesMap(_manager.getContextAttributes()));
         }
         return _context;
     }
 
     /**
-     * The unique id of the {@link App} relating to how it is installed on the jetty server side.
+     * The unique id of the {@link App} relating to how it is installed on the
+     * jetty server side.
      * 
      * @return the generated Id for the App.
      */
@@ -132,10 +136,10 @@ public class App
     {
         return this._originId;
     }
-    
+
     @Override
     public String toString()
     {
-        return "App["+_context+","+_originId+"]";
+        return "App[" + _context + "," + _originId + "]";
     }
 }

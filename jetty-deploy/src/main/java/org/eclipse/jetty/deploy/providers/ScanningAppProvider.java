@@ -30,86 +30,89 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * Abstract for AppProviders that monitor context files.
- * The context file enables adminsitrators to customize the configuration of a WebAppContext or
- * a ContextHandler without chaging files inside the packaged application.
+ * Abstract for AppProviders that monitor context files. The context file
+ * enables adminsitrators to customize the configuration of a WebAppContext or a
+ * ContextHandler without chaging files inside the packaged application.
  * <p>
- * When the context file is changed, the corresponding application is redeployed.
+ * When the context file is changed, the corresponding application is
+ * redeployed.
  * </p>
  */
 public abstract class ScanningAppProvider extends AbstractLifeCycle implements AppProvider
 {
-    private Map<String,App> _appMap = new HashMap<String,App>();
-    
+    private Map<String, App> _appMap = new HashMap<String, App>();
+
     private DeploymentManager _deploymentManager;
     protected final FilenameFilter _filenameFilter;
     private Resource _monitoredDir;
     private boolean _recursive = false;
     private int _scanInterval = 10;
     private Scanner _scanner;
-    
+
     private final Scanner.DiscreteListener _scannerListener = new Scanner.DiscreteListener()
     {
         public void fileAdded(String filename) throws Exception
         {
-            Log.debug("added ",  filename);
+            Log.debug("added ",filename);
             App app = ScanningAppProvider.this.createApp(filename);
             if (app != null)
             {
-            	_appMap.put(filename,app);
-            	_deploymentManager.addApp(app);
+                _appMap.put(filename,app);
+                _deploymentManager.addApp(app);
             }
         }
 
         public void fileChanged(String filename) throws Exception
         {
-            Log.debug("changed ",  filename);
+            Log.debug("changed ",filename);
             App app = _appMap.remove(filename);
-            if (app!=null)
+            if (app != null)
                 _deploymentManager.removeApp(app);
             app = ScanningAppProvider.this.createApp(filename);
             if (app != null)
             {
-            	_appMap.put(filename,app);
-            	_deploymentManager.addApp(app);
+                _appMap.put(filename,app);
+                _deploymentManager.addApp(app);
             }
         }
 
         public void fileRemoved(String filename) throws Exception
         {
-            Log.debug("removed ",  filename);
+            Log.debug("removed ",filename);
             App app = _appMap.remove(filename);
-            if (app!=null)
+            if (app != null)
                 _deploymentManager.removeApp(app);
         }
     };
-    
+
     protected ScanningAppProvider(FilenameFilter filter)
     {
         _filenameFilter = filter;
     }
-    
+
     /**
      * @return The index of currently deployed applications.
      */
-    protected Map<String,App> getDeployedApps()
+    protected Map<String, App> getDeployedApps()
     {
         return _appMap;
     }
-    
+
     /**
      * Called by the Scanner.DiscreteListener to create a new App object.
-     * Isolated in a method so that it is possible to override the default App object
-     * for specialized implementations of the AppProvider.
-     * @param filename The file that is the context.xml.
-     * It is resolved by {@link Resource#newResource(String)}
+     * Isolated in a method so that it is possible to override the default App
+     * object for specialized implementations of the AppProvider.
+     * 
+     * @param filename
+     *            The file that is the context.xml. It is resolved by
+     *            {@link Resource#newResource(String)}
      * @return The App object for this particular context definition file.
      */
     protected App createApp(String filename)
     {
-    	return new App(_deploymentManager,this,filename);
+        return new App(_deploymentManager,this,filename);
     }
-    
+
     @Override
     protected void doStart() throws Exception
     {
@@ -120,8 +123,8 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
         }
 
         File scandir = _monitoredDir.getFile();
-        Log.info("Deployment monitor " + scandir+ " at intervale "+_scanInterval);
-        _scanner=new Scanner();
+        Log.info("Deployment monitor " + scandir + " at intervale " + _scanInterval);
+        _scanner = new Scanner();
         _scanner.setScanDirs(Collections.singletonList(scandir));
         _scanner.setScanInterval(_scanInterval);
         _scanner.setRecursive(_recursive);
@@ -137,11 +140,13 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     {
         _scanner.stop();
         _scanner.removeListener(_scannerListener);
-        _scanner=null;
+        _scanner = null;
     }
 
     /* ------------------------------------------------------------ */
-    /** Get the deploymentManager.
+    /**
+     * Get the deploymentManager.
+     * 
      * @return the deploymentManager
      */
     public DeploymentManager getDeploymentManager()
@@ -160,7 +165,7 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     {
         return _scanInterval;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isRecursive()
     {
@@ -172,13 +177,14 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     {
         _deploymentManager = deploymentManager;
     }
+
     /* ------------------------------------------------------------ */
 
     public void setMonitoredDir(Resource contextsDir)
     {
         _monitoredDir = contextsDir;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param dir
