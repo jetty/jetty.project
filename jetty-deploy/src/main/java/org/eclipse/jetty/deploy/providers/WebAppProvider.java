@@ -81,24 +81,6 @@ public class WebAppProvider extends ScanningAppProvider
     }
 
     /* ------------------------------------------------------------ */
-    /** Get the extractWars.
-     * @return the extractWars
-     */
-    public boolean isExtractWars()
-    {
-        return _extractWars;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set the extractWars.
-     * @param extractWars the extractWars to set
-     */
-    public void setExtractWars(boolean extractWars)
-    {
-        _extractWars = extractWars;
-    }
-
-    /* ------------------------------------------------------------ */
     /** Get the parentLoaderPriority.
      * @return the parentLoaderPriority
      */

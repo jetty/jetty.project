@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
@@ -44,6 +45,10 @@ import org.eclipse.jetty.util.resource.Resource;
 public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
 {
     
+    private boolean _extractWars = false;
+    private boolean _parentLoaderPriority = false;
+    private String _defaultsDescriptor;
+	
 	/**
 	 * When a context file corresponds to a deployed bundle and is changed we
 	 * reload the corresponding bundle.
@@ -79,15 +84,25 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         return null;
 	}
 	
-	public OSGiAppProvider(File contextsDir) {
+	/**
+	 * Default OSGiAppProvider consutructed when none are defined in the jetty.xml
+	 * configuration.
+	 * @param contextsDir
+	 */
+	public OSGiAppProvider() {
 		super(new Filter());
 		((Filter)super._filenameFilter)._enclosedInstance = this;
-		try {
-			setMonitoredDir(Resource.newResource(contextsDir.toURI()));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	}
+
+	
+	/**
+	 * Default OSGiAppProvider consutructed when none are defined in the jetty.xml
+	 * configuration.
+	 * @param contextsDir
+	 */
+	public OSGiAppProvider(File contextsDir) throws IOException {
+		this();
+		setMonitoredDir(Resource.newResource(contextsDir.toURI()));
 	}
 	
     /**
@@ -176,5 +191,113 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         }
     }
     
+	////copied from WebAppProvider as the parameters are identical.
+    /* ------------------------------------------------------------ */
+    /** Get the extractWars.
+     * @return the extractWars
+     */
+    public boolean isExtractWars()
+    {
+        return _extractWars;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the extractWars.
+     * @param extractWars the extractWars to set
+     */
+    public void setExtractWars(boolean extractWars)
+    {
+        _extractWars = extractWars;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the parentLoaderPriority.
+     * @return the parentLoaderPriority
+     */
+    public boolean isParentLoaderPriority()
+    {
+        return _parentLoaderPriority;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the parentLoaderPriority.
+     * @param parentLoaderPriority the parentLoaderPriority to set
+     */
+    public void setParentLoaderPriority(boolean parentLoaderPriority)
+    {
+        _parentLoaderPriority = parentLoaderPriority;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the defaultsDescriptor.
+     * @return the defaultsDescriptor
+     */
+    public String getDefaultsDescriptor()
+    {
+        return _defaultsDescriptor;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the defaultsDescriptor.
+     * @param defaultsDescriptor the defaultsDescriptor to set
+     */
+    public void setDefaultsDescriptor(String defaultsDescriptor)
+    {
+        _defaultsDescriptor = defaultsDescriptor;
+    }
+
+    /**
+     * The context xml directory.
+     * In fact it is the directory watched by the scanner.
+     */
+    public File getContextXmlDirAsFile()
+    {
+        try {
+        	Resource monitoredDir = getMonitoredDir();
+        	if (monitoredDir == null)
+        		return null;
+			return monitoredDir.getFile();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+    }
+
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * The context xml directory.
+     * In fact it is the directory watched by the scanner.
+     */
+    public String getContextXmlDir()
+    {
+        try {
+        	Resource monitoredDir = getMonitoredDir();
+        	if (monitoredDir == null)
+        		return null;
+			return monitoredDir.getFile().toURI().toString();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the directory in which to look for context XML files.
+     * <p>
+     * If a webapp call "foo/" or "foo.war" is discovered in the monitored
+     * directory, then the ContextXmlDir is examined to see if a foo.xml
+     * file exists.  If it does, then this deployer will not deploy the webapp
+     * and the ContextProvider should be used to act on the foo.xml file.
+     * @see ContextProvider
+     * @param contextsDir
+     */
+    public void setContextXmlDir(String contextsDir)
+    {
+    	setMonitoredDir(contextsDir);
+    }
+
+	
     
 }

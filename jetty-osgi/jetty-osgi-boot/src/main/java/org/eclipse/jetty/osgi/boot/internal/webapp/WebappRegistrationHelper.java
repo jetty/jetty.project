@@ -20,7 +20,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -32,7 +31,9 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
 import org.eclipse.jetty.deploy.AppProvider;
+import org.eclipse.jetty.deploy.ContextDeployer;
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.WebAppDeployer;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
@@ -50,12 +51,9 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
@@ -382,9 +380,18 @@ class WebappRegistrationHelper
                     break;
                 }
             }
-            if (_provider == null) {
+            if (_provider == null)
+            {
             	//create it on the fly with reasonable default values.
-            	_provider = new OSGiAppProvider(getOSGiContextsHome());
+            	try
+            	{
+					_provider = new OSGiAppProvider();
+					_provider.setMonitoredDir(
+							Resource.newResource(getDefaultOSGiContextsHome(
+									new File(System.getProperty("jetty.home"))).toURI()));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
             	_deploymentManager.addAppProvider(_provider);
             }
         }
@@ -442,6 +449,7 @@ class WebappRegistrationHelper
 
     /**
      * @See {@link WebAppDeployer#scan()}
+     * TODO: refacotr this into the createContext method of OSGiAppProvider.
      * 
      * @param webapp
      * @param contextPath
@@ -461,93 +469,11 @@ class WebappRegistrationHelper
             // make sure we provide access to all the jetty bundles by going
             // through this bundle.
             OSGiWebappClassLoader composite = createWebappClassLoader(contributor);
-            // configure with access to all jetty classes and also all the
-            // classes
+            // configure with access to all jetty classes and also all the classes
             // that the contributor gives access to.
             Thread.currentThread().setContextClassLoader(composite);
 
-            // final WebXmlConfiguration webXml = new WebXmlConfiguration();
-            // webXml.configure(context);
-
-            final JettyWebXmlConfiguration jettyXml = new JettyWebXmlConfiguration()
-            {
-                // workaround for
-                // https://bugs.eclipse.org/bugs/show_bug.cgi?id=294799
-                // remove it when it is fixed.
-                /**
-                 * Configure Apply web-jetty.xml configuration
-                 * 
-                 * @see Configuration#configure(WebAppContext)
-                 */
-                public void configure(WebAppContext context) throws Exception
-                {
-                    // cannot configure if the _context is already started
-                    if (context.isStarted())
-                    {
-                        if (Log.isDebugEnabled())
-                        {
-                            Log.debug("Cannot configure webapp after it is started");
-                        }
-                        return;
-                    }
-
-                    if (Log.isDebugEnabled())
-                        Log.debug("Configuring web-jetty.xml");
-
-                    Resource web_inf = context.getWebInf();
-                    // handle any WEB-INF descriptors
-                    if (web_inf != null && web_inf.isDirectory())
-                    {
-                        // do jetty.xml file
-                        Resource jetty = web_inf.addPath("jetty7-web.xml");
-                        if (!jetty.exists())
-                            jetty = web_inf.addPath("jetty-web.xml");
-                        if (!jetty.exists())
-                            jetty = web_inf.addPath("web-jetty.xml");
-
-                        if (jetty.exists())
-                        {
-                            // No server classes while configuring
-                            String[] old_server_classes = context.getServerClasses();
-                            try
-                            {
-                                context.setServerClasses(null);
-                                if (Log.isDebugEnabled())
-                                    Log.debug("Configure: " + jetty);
-                                XmlConfiguration jetty_config = new XmlConfiguration(jetty.getURL());
-                                jetty_config.configure(context);
-//                                jetty_config.getProperties().add("jetty.home", );
-                            }
-                            finally
-                            {
-                                if (context.getServerClasses() == null)
-                                    context.setServerClasses(old_server_classes);
-                            }
-                        }
-                    }
-                }
-
-            };
-            // jettyXml.configure(context);
-
-            context = new WebAppContext(webapp.getAbsolutePath(),contextPath)
-            {
-                @Override
-                protected void loadConfigurations() throws Exception
-                {
-                    super.loadConfigurations();
-                    // now replace the default JettyWebXmlConfiguration by our
-                    // own.
-                    for (int i = 0; i < getConfigurations().length; i++)
-                    {
-                        if (getConfigurations()[i] instanceof JettyWebXmlConfiguration)
-                        {
-                            getConfigurations()[i] = jettyXml;
-                        }
-                    }
-                }
-            };
-            
+            context = new WebAppContext(webapp.getAbsolutePath(),contextPath);
             context.setExtraClasspath(extraClasspath);
 
             if (webXmlPath != null && webXmlPath.length() != 0)
@@ -567,6 +493,11 @@ class WebappRegistrationHelper
                 }
             }
 
+            if (defaultWebXmlPath == null || defaultWebXmlPath.length() == 0)
+            {
+            	//use the one defined by the OSGiAppProvider.
+            	defaultWebXmlPath = _provider.getDefaultsDescriptor();
+            }
             if (defaultWebXmlPath != null && defaultWebXmlPath.length() != 0)
             {
                 File defaultWebXml = null;
@@ -583,14 +514,11 @@ class WebappRegistrationHelper
                     context.setDefaultsDescriptor(defaultWebXml.getAbsolutePath());
                 }
             }
+            
+            //other parameters that might be defines on the OSGiAppProvider:
+            context.setParentLoaderPriority(_provider.isParentLoaderPriority());
 
             configureWebAppContext(context,contributor);
-
-            // ok now register this webapp. we checked when we started jetty
-            // that there
-            // was at least one such handler for webapps.
-//            _ctxtHandler.addHandler(context);
-
             configureWebappClassLoader(contributor,context,composite);
 
             // @see
@@ -600,7 +528,7 @@ class WebappRegistrationHelper
             // through the webapp classloader.
             oldServerClasses = context.getServerClasses();
             context.setServerClasses(null);
-            _provider.addContext(context);//context.start();//we don't start the context ourselves anymore.
+            _provider.addContext(context);
 
             return context;
         }
@@ -629,11 +557,13 @@ class WebappRegistrationHelper
     }
 
     /**
-     * @return The folder in which the context files of the osgi bundles are
-     *         located and watched. Or null when the system property
+     * @return The default folder in which the context files of the osgi bundles
+     *         are located and watched. Or null when the system property
      *         "jetty.osgi.contexts.home" is not defined.
+     *         If the configuration file defines the OSGiAppProvider's context.
+     *         This will not be taken into account.
      */
-    File getOSGiContextsHome()
+    File getDefaultOSGiContextsHome(File jettyHome)
     {
         String jettyContextsHome = System.getProperty("jetty.osgi.contexts.home");
         if (jettyContextsHome != null)
@@ -645,7 +575,12 @@ class WebappRegistrationHelper
             }
             return contextsHome;
         }
-        return new File(System.getProperty("jetty.home") + "/contexts");
+        return new File(jettyHome, "/contexts");
+    }
+    
+    File getOSGiContextsHome()
+    {
+    	return _provider.getContextXmlDirAsFile();
     }
 
     /**
@@ -661,7 +596,7 @@ class WebappRegistrationHelper
     public ContextHandler registerContext(Bundle contributor, String contextFileRelativePath, String extraClasspath, String overrideBundleInstallLocation)
             throws Exception
     {
-        File contextsHome = getOSGiContextsHome();
+        File contextsHome = _provider.getContextXmlDirAsFile();
         if (contextsHome != null)
         {
             File prodContextFile = new File(contextsHome,contributor.getSymbolicName() + "/" + contextFileRelativePath);

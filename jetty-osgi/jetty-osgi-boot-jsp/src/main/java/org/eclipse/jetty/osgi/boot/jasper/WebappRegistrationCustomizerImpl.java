@@ -41,14 +41,15 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
     public WebappRegistrationCustomizerImpl()
     {
         fixupDtdResolution();
+        //sanity check:
         try
         {
             Class cl = getClass().getClassLoader().loadClass("org.apache.jasper.servlet.JspServlet");
-            System.err.println("found the jsp servlet: " + cl.getName());
+            //System.err.println("found the jsp servlet: " + cl.getName());
         }
         catch (ClassNotFoundException e)
         {
-            // TODO Auto-generated catch block
+        	System.err.println("Unable to locate the JspServlet: jsp support unavailable.");
             e.printStackTrace();
         }
     }
