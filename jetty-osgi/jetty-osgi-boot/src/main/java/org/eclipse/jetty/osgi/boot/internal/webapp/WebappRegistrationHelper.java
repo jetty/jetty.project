@@ -821,7 +821,7 @@ class WebappRegistrationHelper
     protected ContextHandler createContextHandler(Bundle bundle, InputStream contextInputStream, String extraClasspath, String overrideBundleInstallLocation)
     {
         /*
-         * Do something identical to what the ContextDeployer would have done:
+         * Do something identical to what the ContextProvider would have done:
          * XmlConfiguration xmlConfiguration=new
          * XmlConfiguration(resource.getURL()); HashMap properties = new
          * HashMap(); properties.put("Server", _contexts.getServer()); if
@@ -845,6 +845,11 @@ class WebappRegistrationHelper
             if (context instanceof WebAppContext)
             {
                 ((WebAppContext)context).setExtraClasspath(extraClasspath);
+                ((WebAppContext)context).setParentLoaderPriority(_provider.isParentLoaderPriority());
+                if (_provider.getDefaultsDescriptor() != null && _provider.getDefaultsDescriptor().length() != 0)
+                {
+                	((WebAppContext)context).setDefaultsDescriptor(_provider.getDefaultsDescriptor());
+                }
             }
 
             // rfc-66:

@@ -192,24 +192,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     }
     
 	////copied from WebAppProvider as the parameters are identical.
-    /* ------------------------------------------------------------ */
-    /** Get the extractWars.
-     * @return the extractWars
-     */
-    public boolean isExtractWars()
-    {
-        return _extractWars;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set the extractWars.
-     * @param extractWars the extractWars to set
-     */
-    public void setExtractWars(boolean extractWars)
-    {
-        _extractWars = extractWars;
-    }
-
+	////only removed the parameer related to extractWars.
     /* ------------------------------------------------------------ */
     /** Get the parentLoaderPriority.
      * @return the parentLoaderPriority
