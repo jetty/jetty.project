@@ -79,7 +79,7 @@ public class HttpConnection implements Connection
     {
         return -1;
     }
-    
+
     public void setReserved (boolean reserved)
     {
         _reserved = reserved;
@@ -565,7 +565,7 @@ public class HttpConnection implements Connection
         }
     }
 
-    public void setIdleTimeout(long expire)
+    public void setIdleTimeout()
     {
         synchronized (this)
         {
@@ -575,7 +575,7 @@ public class HttpConnection implements Connection
                 throw new IllegalStateException();
         }
     }
-    
+
     public boolean cancelIdleTimeout()
     {
         synchronized (this)
@@ -586,10 +586,10 @@ public class HttpConnection implements Connection
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     private class TimeoutTask extends Timeout.Task
     {
         @Override
