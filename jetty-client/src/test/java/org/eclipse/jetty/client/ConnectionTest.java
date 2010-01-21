@@ -42,7 +42,7 @@ public class ConnectionTest extends TestCase
         exchange.setURI("/");
         httpClient.send(exchange);
 
-        boolean passed = latch.await(1000, TimeUnit.MILLISECONDS);
+        boolean passed = latch.await(4000, TimeUnit.MILLISECONDS);
         assertTrue(passed);
 
         long wait = 100;
