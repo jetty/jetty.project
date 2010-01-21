@@ -57,13 +57,23 @@ public class XmlConfiguredJetty
 
     public XmlConfiguredJetty() throws IOException
     {
-        String testname = new Throwable().getStackTrace()[1].getClassName();
-
+        this(MavenTestingUtils.getTestID());
+    }
+    
+    public XmlConfiguredJetty(String testname) throws IOException
+    {
         xmlConfigurations = new ArrayList<URL>();
         properties = new Properties();
 
-        jettyHome = MavenTestingUtils.getTargetTestingDir(testname);
-        deleteContents(jettyHome); // Ensure that we are working with a pristene directory
+        String jettyHomeBase = MavenTestingUtils.getTargetTestingDir(testname).getAbsolutePath();
+        // Ensure we have a new (pristene) directory to work with. 
+        int idx = 0;
+        jettyHome = new File(jettyHomeBase + "#" + idx);
+        while(jettyHome.exists()) {
+        	idx++;
+        	jettyHome = new File(jettyHomeBase + "#" + idx);
+        }
+        deleteContents(jettyHome);
         // Prepare Jetty.Home (Test) dir
         jettyHome.mkdirs();
 
@@ -228,6 +238,11 @@ public class XmlConfiguredJetty
     private void deleteContents(File dir)
     {
         System.out.printf("Delete  (dir) %s/%n",dir);
+        if(!dir.exists()) 
+        {
+        	return;
+        }
+        
         for (File file : dir.listFiles())
         {
             // Safety measure. only recursively delete within target directory.

@@ -110,10 +110,6 @@ public class MavenTestingUtils
     public static File getTargetTestingDir(String testname)
     {
         File dir = new File(getTargetDir(),"test-" + testname);
-        if (!dir.exists())
-        {
-            dir.mkdirs();
-        }
         return dir;
     }
 
@@ -197,23 +193,27 @@ public class MavenTestingUtils
         }
     }
 
-    /*
-    public static boolean isSurefireExecuting()
+    public static String getTestID()
     {
-        if (surefireRunning == null)
-        {
-            String val = System.getProperty("surefire.test.class.path");
-            if (val != null)
-            {
-                surefireRunning = Boolean.TRUE;
-            }
-            else
-            {
-                surefireRunning = Boolean.FALSE;
-            }
+        StackTraceElement stacked[] = new Throwable().getStackTrace();
+        
+        String name = null;
+        
+        for(StackTraceElement stack: stacked) {
+        	if(stack.getClassName().endsWith("Test"))
+    		{
+        		name = stack.getClassName();
+        		if (stack.getMethodName().startsWith("test")) 
+        		{
+            		return stack.getClassName() + "#" + stack.getMethodName();
+        		}
+        	}
         }
         
-        return surefireRunning;
+        if(name == null) 
+        {
+        	return "Unidentified_Test";
+        }
+        return name;
     }
-    */
 }
