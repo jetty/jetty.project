@@ -15,7 +15,6 @@ package org.eclipse.jetty.client;
 
 public class AsyncSslHttpExchangeTest extends SslHttpExchangeTest
 {
-
     @Override
     protected void setUp() throws Exception
     {
@@ -27,9 +26,4 @@ public class AsyncSslHttpExchangeTest extends SslHttpExchangeTest
         _httpClient.start();
     }
 
-    @Override
-    public void testSun() throws Exception
-    {
-        super.testSun();
-    }
 }

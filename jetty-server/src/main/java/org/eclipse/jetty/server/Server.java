@@ -246,7 +246,7 @@ public class Server extends HandlerWrapper implements Attributes
             }
         }
         if (Log.isDebugEnabled())
-            Log.debug(dump());
+            System.err.println(dump());
         
         mex.ifExceptionThrow();
     }

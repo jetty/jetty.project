@@ -257,20 +257,6 @@ public class HttpExchangeTest extends TestCase
         }
     }
 
-    public void testSun() throws Exception
-    {
-            ContentExchange httpExchange=new ContentExchange();
-            httpExchange.setURL(_scheme+"www.sun.com/");
-            httpExchange.setMethod(HttpMethods.GET);
-            _httpClient.send(httpExchange);
-            int status = httpExchange.waitForDone();
-            String result=httpExchange.getResponseContent();
-            assertTrue(result.indexOf("<title>Sun Microsystems</title>")>0);
-            assertEquals(HttpExchange.STATUS_COMPLETED, status);
-            assertEquals(HttpStatus.OK_200,httpExchange.getResponseStatus());
-
-    }
-
     public void testProxy() throws Exception
     {
         if (_scheme.equals("https://"))
