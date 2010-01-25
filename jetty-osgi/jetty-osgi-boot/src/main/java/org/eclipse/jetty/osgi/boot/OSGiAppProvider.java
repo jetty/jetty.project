@@ -153,21 +153,6 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         getDeploymentManager().addApp(app);
     }
 
-    // TODO: refactor the WebAppRegistrationHelper to add the creation of the
-    // context directly from here.
-    // unless the client code took care of the creation of the ContextHandler.
-    // public void addContext(String contextxml) throws Exception
-    // {
-    // // TODO apply configuration specific to this provider
-    // // TODO construct ContextHandler
-    // ContextHandler context=null;
-    // // wrap context as an App
-    // OSGiApp app = new
-    // OSGiApp(_manager,this,context.getDisplayName(),context);
-    // _apps.put(context,app);
-    // _manager.addApp(app);
-    // }
-
     /**
      * Called by the scanner of the context files directory. If we find the
      * corresponding deployed App we reload it by returning the App. Otherwise

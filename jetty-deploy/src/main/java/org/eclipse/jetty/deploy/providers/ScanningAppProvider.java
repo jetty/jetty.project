@@ -48,7 +48,7 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     private boolean _recursive = false;
     private int _scanInterval = 10;
     private Scanner _scanner;
-
+    
     private final Scanner.DiscreteListener _scannerListener = new Scanner.DiscreteListener()
     {
         public void fileAdded(String filename) throws Exception
@@ -66,8 +66,6 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
         {
             Log.debug("changed ",filename);
             App app = _appMap.remove(filename);
-            if (app != null)
-                _deploymentManager.removeApp(app);
             app = ScanningAppProvider.this.createApp(filename);
             if (app != null)
             {

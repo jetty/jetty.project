@@ -15,12 +15,14 @@
     <osgi-services-version>3.1.200-v20070605</osgi-services-version>
     <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
     <jsp-2.1-glassfish-version>2.1.v20091210</jsp-2.1-glassfish-version>
+    <logback-version>0.9.18</logback-version>
+    <slf4j-version>1.5.10</slf4j-version>
   </properties>
   <modules>
     <module>jetty-osgi-boot</module>
     <module>jetty-osgi-boot-jsp</module>
-    <!-- once logback is ready for eclipse -->
-    <!-- module>jetty-osgi-boot-logback</module -->
+    <!-- logback is currently under CQs -->
+    <module>jetty-osgi-boot-logback</module>
     <module>jetty-osgi-boot-warurl</module>
     <module>jetty-osgi-httpservice</module>
     <module>example-jetty-osgi</module>
@@ -128,6 +130,36 @@
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>jsp-api-2.1-glassfish</artifactId>
         <version>${jsp-2.1-glassfish-version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j-version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>jcl-over-slf4j</artifactId>
+        <version>${slf4j-version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>log4j-over-slf4j</artifactId>
+        <version>${slf4j-version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-core</artifactId>
+        <version>${logback-version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>${logback-version}</version>
         <scope>provided</scope>
       </dependency>
     </dependencies>
