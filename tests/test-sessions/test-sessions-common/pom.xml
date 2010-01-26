@@ -19,19 +19,36 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-project</artifactId>
+    <groupId>org.eclipse.jetty.tests</groupId>
+    <artifactId>test-sessions-parent</artifactId>
     <version>7.0.2-SNAPSHOT</version>
   </parent>
-  <groupId>org.eclipse.jetty.tests</groupId>
-  <artifactId>tests-parent</artifactId>
-  <name>Jetty Tests :: Parent</name>
-  <packaging>pom</packaging>
+  <artifactId>test-sessions-common</artifactId>
+  <name>Jetty Tests :: Sessions :: Common</name>
   <build>
   </build>
-  <modules>
-    <module>test-integration</module>
-    <module>test-webapps</module>
-    <module>test-sessions</module>
-  </modules>
+  <dependencies>
+    <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-server</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-webapp</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+       <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>5.8</version>
+            <classifier>jdk15</classifier>
+            <scope>compile</scope>
+        </dependency>
+  </dependencies>
 </project>

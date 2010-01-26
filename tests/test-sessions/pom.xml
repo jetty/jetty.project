@@ -19,19 +19,18 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-project</artifactId>
+    <groupId>org.eclipse.jetty.tests</groupId>
+    <artifactId>tests-parent</artifactId>
     <version>7.0.2-SNAPSHOT</version>
   </parent>
-  <groupId>org.eclipse.jetty.tests</groupId>
-  <artifactId>tests-parent</artifactId>
-  <name>Jetty Tests :: Parent</name>
+  <artifactId>test-sessions-parent</artifactId>
+  <name>Jetty Tests :: Sessions :: Parent</name>
   <packaging>pom</packaging>
   <build>
   </build>
   <modules>
-    <module>test-integration</module>
-    <module>test-webapps</module>
-    <module>test-sessions</module>
+    <module>test-sessions-common</module>
+    <module>test-hash-sessions</module>
+    <module>test-jdbc-sessions</module>
   </modules>
 </project>

@@ -318,22 +318,24 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             return false;
         
         String clusterId = getClusterId(id);
-        
+        boolean inUse = false;
         synchronized (_sessionIds)
         {
-            if (_sessionIds.contains(clusterId))
-                return true; //optimisation - if this session is one we've been managing, we can check locally
-            
-            //otherwise, we need to go to the database to check
-            try
-            {
-                return exists(clusterId);
-            }
-            catch (Exception e)
-            {
-                Log.warn("Problem checking inUse for id="+clusterId, e);
-                return false;
-            }
+            inUse = _sessionIds.contains(clusterId);
+        }
+        
+        if (inUse)
+            return true; //optimisation - if this session is one we've been managing, we can check locally
+
+        //otherwise, we need to go to the database to check
+        try
+        {
+            return exists(clusterId);
+        }
+        catch (Exception e)
+        {
+            Log.warn("Problem checking inUse for id="+clusterId, e);
+            return false;
         }
     }
 
@@ -452,7 +454,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     private void prepareTables()
     throws SQLException
     {
-        _createSessionIdTable = "create table "+_sessionIdTable+" (id varchar(60), primary key(id))";
+        _createSessionIdTable = "create table "+_sessionIdTable+" (id varchar(120), primary key(id))";
         _selectExpiredSessions = "select * from "+_sessionTable+" where expiryTime >= ? and expiryTime <= ?";
         _deleteOldExpiredSessions = "delete from "+_sessionTable+" where expiryTime >0 and expiryTime <= ?";
 
@@ -485,7 +487,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             {
                 //table does not exist, so create it
                 String blobType = _dbAdaptor.getBlobType();
-                _createSessionTable = "create table "+_sessionTable+" (rowId varchar(60), sessionId varchar(60), "+
+                _createSessionTable = "create table "+_sessionTable+" (rowId varchar(120), sessionId varchar(120), "+
                                            " contextPath varchar(60), virtualHost varchar(60), lastNode varchar(60), accessTime bigint, "+
                                            " lastAccessTime bigint, createTime bigint, cookieTime bigint, "+
                                            " lastSavedTime bigint, expiryTime bigint, map "+blobType+", primary key(rowId))";
@@ -634,7 +636,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 PreparedStatement statement = connection.prepareStatement(_selectExpiredSessions);
                 long lowerBound = (_lastScavengeTime - _scavengeIntervalMs);
                 long upperBound = _lastScavengeTime;
-                if (Log.isDebugEnabled()) Log.debug("Searching for sessions expired between "+lowerBound + " and "+upperBound);
+                if (Log.isDebugEnabled()) Log.debug (" Searching for sessions expired between "+lowerBound + " and "+upperBound);
+                
                 statement.setLong(1, lowerBound);
                 statement.setLong(2, upperBound);
                 ResultSet result = statement.executeQuery();
@@ -642,9 +645,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 {
                     String sessionId = result.getString("sessionId");
                     expiredSessionIds.add(sessionId);
-                    if (Log.isDebugEnabled()) Log.debug("Found expired sessionId="+sessionId);
+                    if (Log.isDebugEnabled()) Log.debug (" Found expired sessionId="+sessionId); 
                 }
-
 
                 //tell the SessionManagers to expire any sessions with a matching sessionId in memory
                 Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);

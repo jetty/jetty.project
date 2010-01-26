@@ -631,39 +631,36 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     public void removeSession(Session session, boolean invalidate)
     {
         // Remove session from context and global maps
-        //noinspection SynchronizeOnNonFinalField
-        synchronized (_sessionIdManager)
+        boolean removed = false;
+        
+        synchronized (this)
         {
-            boolean removed = false;
-
-            synchronized (this)
+            //take this session out of the map of sessions for this context
+            if (getSession(session.getClusterId()) != null)
             {
-                //take this session out of the map of sessions for this context
-                if (getSession(session.getClusterId()) != null)
-                {
-                    removed = true;
-                    removeSession(session.getClusterId());
-                }
-            }
-
-            if (removed)
-            {
-                // Remove session from all context and global id maps
-                _sessionIdManager.removeSession(session);
-                if (invalidate)
-                    _sessionIdManager.invalidateAll(session.getClusterId());
+                removed = true;
+                removeSession(session.getClusterId());
             }
         }
 
-        if (invalidate && _sessionListeners!=null)
+        if (removed)
         {
-            HttpSessionEvent event=new HttpSessionEvent(session);
-            for (int i=LazyList.size(_sessionListeners); i-->0;)
-                ((HttpSessionListener)LazyList.get(_sessionListeners,i)).sessionDestroyed(event);
-        }
-        if (!invalidate)
-        {
-            session.willPassivate();
+            // Remove session from all context and global id maps
+            _sessionIdManager.removeSession(session);
+            if (invalidate)
+                _sessionIdManager.invalidateAll(session.getClusterId());
+            
+            if (invalidate && _sessionListeners!=null)
+            {
+                HttpSessionEvent event=new HttpSessionEvent(session);
+                for (int i=LazyList.size(_sessionListeners); i-->0;)
+                    ((HttpSessionListener)LazyList.get(_sessionListeners,i)).sessionDestroyed(event);
+            }
+            
+            if (!invalidate)
+            {
+                session.willPassivate();
+            }
         }
     }
 
