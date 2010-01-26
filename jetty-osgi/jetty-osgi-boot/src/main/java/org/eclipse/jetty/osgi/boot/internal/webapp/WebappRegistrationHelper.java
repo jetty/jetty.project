@@ -23,9 +23,12 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
@@ -77,7 +80,7 @@ import org.xml.sax.SAXParseException;
  * <li>support for jarred webapps is somewhat limited.</li>
  * </ul>
  */
-class WebappRegistrationHelper
+public class WebappRegistrationHelper
 {
 
     private static Logger __logger = Log.getLogger(WebappRegistrationHelper.class.getName());
@@ -101,8 +104,12 @@ class WebappRegistrationHelper
      * By default set to: {@link DefaultBundleClassLoaderHelper}. It supports
      * equinox and apache-felix fragment bundles that are specific to an OSGi
      * implementation should set a different implementation.
+     * <p>
+     * Several of those objects can be added here: For example we could have an optional fragment that setups
+     * a specific implementation of JSF for the whole of jetty-osgi.
+     * </p>
      */
-    public static WebappRegistrationCustomizer JSP_REGISTRATION_HELPER = null;
+    public static Collection<WebappRegistrationCustomizer> JSP_REGISTRATION_HELPERS = new ArrayList<WebappRegistrationCustomizer>();
 
     private Server _server;
     private ContextHandlerCollection _ctxtHandler;
@@ -137,17 +144,6 @@ class WebappRegistrationHelper
         if (!INITIALIZED)
         {
             INITIALIZED = true;
-            // setup the custom WebappRegistrationCustomizer
-            try
-            {
-                Class<?> cl = Class.forName(WebappRegistrationCustomizer.CLASS_NAME);
-                JSP_REGISTRATION_HELPER = (WebappRegistrationCustomizer)cl.newInstance();
-            }
-            catch (Throwable t)
-            {
-                // System.err.println("no jsp/jasper support");
-                // System.exit(1);
-            }
             // setup the custom BundleClassLoaderHelper
             try
             {
@@ -771,15 +767,20 @@ class WebappRegistrationHelper
      */
     private URL[] getJarsWithTlds() throws Exception
     {
-        if (JSP_REGISTRATION_HELPER != null)
+        ArrayList<URL> res = new ArrayList<URL>();
+        for (WebappRegistrationCustomizer regCustomizer : JSP_REGISTRATION_HELPERS)
         {
-            return JSP_REGISTRATION_HELPER.getJarsWithTlds(BUNDLE_FILE_LOCATOR_HELPER);
+            URL[] urls = regCustomizer.getJarsWithTlds(BUNDLE_FILE_LOCATOR_HELPER);
+            for (URL url : urls)
+            {
+                if (!res.contains(url))
+                    res.add(url);
+            }
         }
+        if (!res.isEmpty())
+            return res.toArray(new URL[res.size()]);
         else
-        {
             return null;
-        }
-
     }
 
     /**

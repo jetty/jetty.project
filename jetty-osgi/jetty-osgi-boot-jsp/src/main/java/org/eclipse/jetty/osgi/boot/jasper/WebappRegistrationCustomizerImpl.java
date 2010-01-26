@@ -19,11 +19,13 @@ import java.util.ArrayList;
 
 import javax.servlet.Servlet;
 import javax.servlet.jsp.JspContext;
+import javax.servlet.jsp.JspFactory;
 
 import org.apache.jasper.Constants;
 import org.apache.jasper.compiler.Localizer;
 import org.apache.jasper.compiler.TldLocationsCache;
 import org.apache.jasper.xmlparser.ParserUtils;
+import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
 import org.osgi.framework.Bundle;
@@ -41,15 +43,37 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
     public WebappRegistrationCustomizerImpl()
     {
         fixupDtdResolution();
-        //sanity check:
+        
         try
         {
+          //sanity check:
             Class cl = getClass().getClassLoader().loadClass("org.apache.jasper.servlet.JspServlet");
             //System.err.println("found the jsp servlet: " + cl.getName());
         }
-        catch (ClassNotFoundException e)
+        catch (Exception e)
         {
-        	System.err.println("Unable to locate the JspServlet: jsp support unavailable.");
+            System.err.println("Unable to locate the JspServlet: jsp support unavailable.");
+            e.printStackTrace();
+            return;
+        }
+        try
+        {
+            //bug #299733
+            JspFactory fact = JspFactory.getDefaultFactory();
+            if (fact == null)
+            {   //bug #299733
+                //JspFactory does a simple Class.getForName("org.apache.jasper.runtime.JspFactoryImpl")
+                //however its bundles does not import the jasper package
+                //so it fails. let's help things out:
+                fact = (JspFactory)JettyBootstrapActivator.class.getClassLoader()
+                    .loadClass("org.apache.jasper.runtime.JspFactoryImpl").newInstance();
+                JspFactory.setDefaultFactory(fact);
+            }
+    
+        }
+        catch (Exception e)
+        {
+            System.err.println("Unable to set the JspFactory: jsp support incomplete.");
             e.printStackTrace();
         }
     }
