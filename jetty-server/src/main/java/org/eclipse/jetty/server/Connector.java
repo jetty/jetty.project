@@ -250,28 +250,9 @@ public interface Connector extends LifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the connectionsDurationMin.
-     */
-    public long getConnectionsDurationMin();
-
-    /* ------------------------------------------------------------ */
-    /**
      * @return Returns the connectionsDurationTotal.
      */
     public long getConnectionsDurationTotal();
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the connectionsOpenMin.
-     */
-    public int getConnectionsOpenMin();
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the connectionsRequestsMin.
-     */
-    public int getConnectionsRequestsMin();
-
 
     /* ------------------------------------------------------------ */
     /** 

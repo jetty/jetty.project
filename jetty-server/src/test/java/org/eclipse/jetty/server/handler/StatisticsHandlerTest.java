@@ -46,6 +46,7 @@ public class StatisticsHandlerTest extends TestCase
 
         _connector = new LocalConnector();
         _server.addConnector(_connector);
+        _connector.setStatsOn(true);
 
         _latchHandler = new LatchHandler();
         _statsHandler = new StatisticsHandler();
@@ -91,6 +92,8 @@ public class StatisticsHandlerTest extends TestCase
         _connector.executeRequest(request);
 
         barrier[0].await();
+
+        assertEquals(1, _connector.getConnectionsOpen());
         
         assertEquals(0, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
@@ -126,6 +129,8 @@ public class StatisticsHandlerTest extends TestCase
 
         barrier[0].await();
         
+        assertEquals(2, _connector.getConnectionsOpen());
+        
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
@@ -160,6 +165,8 @@ public class StatisticsHandlerTest extends TestCase
         _connector.executeRequest(request);
 
         barrier[0].await();
+        
+        assertEquals(4, _connector.getConnectionsOpen());
         
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(2, _statsHandler.getRequestsActive());
@@ -242,6 +249,8 @@ public class StatisticsHandlerTest extends TestCase
 
         barrier[0].await();
         
+        assertEquals(1, _connector.getConnectionsOpen());
+        
         assertEquals(0, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         
@@ -280,6 +289,8 @@ public class StatisticsHandlerTest extends TestCase
 
         barrier[0].await();
         
+        assertEquals(1, _connector.getConnectionsOpen());
+
         assertEquals(0, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getDispatched());
@@ -364,6 +375,8 @@ public class StatisticsHandlerTest extends TestCase
 
         barrier[0].await();
         
+        assertEquals(1, _connector.getConnectionsOpen());
+
         assertEquals(0, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         
@@ -480,6 +493,8 @@ public class StatisticsHandlerTest extends TestCase
         
 
         barrier[0].await();
+        
+        assertEquals(1, _connector.getConnectionsOpen());
         
         assertEquals(0, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
