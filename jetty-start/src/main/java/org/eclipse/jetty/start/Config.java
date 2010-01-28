@@ -883,9 +883,8 @@ public class Config
         for (File dir : dirs)
         {
             String id = dir.getName();
-            if (_classpaths.keySet().contains(id))
-                continue;
-            _classpaths.put(id,new Classpath());
+            if (!_classpaths.keySet().contains(id))
+                _classpaths.put(id, new Classpath());
             
             dyn_sections.clear();
             if (sections!=null)
