@@ -66,6 +66,10 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
         {
             Log.debug("changed ",filename);
             App app = _appMap.remove(filename);
+            if (app != null)
+            {
+                _deploymentManager.removeApp(app);
+            }
             app = ScanningAppProvider.this.createApp(filename);
             if (app != null)
             {
