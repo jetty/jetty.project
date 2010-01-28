@@ -26,7 +26,6 @@ public class JdbcTestServer extends AbstractTestServer
     public static final String CONNECTION_URL = "jdbc:derby:sessions;create=true";
     public static final int SAVE_INTERVAL = 1;
     
-    protected boolean _optimize = true;
     
     static 
     {
@@ -46,7 +45,6 @@ public class JdbcTestServer extends AbstractTestServer
     public JdbcTestServer (int port, boolean optimize)
     {
         super(port);
-        _optimize=optimize;
     }
 
     /** 
@@ -80,7 +78,6 @@ public class JdbcTestServer extends AbstractTestServer
         JDBCSessionManager manager =  new JDBCSessionManager();
         manager.setIdManager((JDBCSessionIdManager)_sessionIdManager);
         manager.setSaveInterval(SAVE_INTERVAL); //ensure we save any changes to the session at least once per second
-        manager.setOptimizeDbAccess(_optimize); //or go to the database every time
         return manager;
     }
 
