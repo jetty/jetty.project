@@ -74,7 +74,7 @@ public class JDBCSessionManager extends AbstractSessionManager
     
     private ConcurrentHashMap _sessions;
     protected long _saveIntervalSec = 60; //only persist changes to session access times every 60 secs
-    
+  
     /**
      * SessionData
      *
@@ -334,7 +334,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             try
             {
                 if (_dirty)
-                {
+                { 
                     //The session attributes have changed, write to the db, ensuring
                     //http passivation/activation listeners called
                     willPassivate();
@@ -342,8 +342,9 @@ public class JDBCSessionManager extends AbstractSessionManager
                     didActivate();
                 }
                 else if ((_data._accessed - _data._lastSaved) >= (getSaveInterval() * 1000))
+                {  
                     updateSessionAccessTime(_data);
-                
+                }
             }
             catch (Exception e)
             {
@@ -429,6 +430,24 @@ public class JDBCSessionManager extends AbstractSessionManager
     }
 
    
+    
+    /**
+     * A method that can be implemented in subclasses to support
+     * distributed caching of sessions. This method will be
+     * called whenever the session is written to the database
+     * because the session data has changed.
+     * 
+     * This could be used eg with a JMS backplane to notify nodes
+     * that the session has changed and to delete the session from
+     * the node's cache, and re-read it from the database.
+     * @param idInCluster
+     */
+    public void cacheInvalidate (Session session)
+    {
+        
+    }
+    
+    
     /** 
      * A session has been requested by it's id on this node.
      * 
@@ -454,13 +473,14 @@ public class JDBCSessionManager extends AbstractSessionManager
         {        
             try
             {                
-                //check if we need to reload the session - don't do it on every call
+                //check if we need to reload the session - 
+                //as an optimization, don't reload on every access
                 //to reduce the load on the database. This introduces a window of 
                 //possibility that the node may decide that the session is local to it,
                 //when the session has actually been live on another node, and then
                 //re-migrated to this node. This should be an extremely rare occurrence,
                 //as load-balancers are generally well-behaved and consistently send 
-                //sessions to the same node, changing only iff that node fails.
+                //sessions to the same node, changing only iff that node fails. 
                 SessionData data = null;
                 long now = System.currentTimeMillis();
                 if (Log.isDebugEnabled()) Log.debug("now="+now+
@@ -469,16 +489,19 @@ public class JDBCSessionManager extends AbstractSessionManager
                         " difference="+(now - (session==null?0:session._data._lastSaved)));
                 
                 if (session==null || ((now - session._data._lastSaved) >= (_saveIntervalSec * 1000)))
-                {
+                {       
                     data = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
                 }
                 else
+                {
                     data = session._data;
+                }
                 
                 if (data != null)
                 {
                     if (!data.getLastNode().equals(getIdManager().getWorkerName()) || session==null)
                     {
+                        
                         //if the session in the database has not already expired
                         if (data._expiryTime > System.currentTimeMillis())
                         {
