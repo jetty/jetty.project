@@ -184,6 +184,9 @@ public class ConfigTest extends TestCase
 
         File ext = new File(lib,"ext");
         expected.addComponent(new File(ext,"custom-impl.jar"));
+        File foo = new File(lib,"foo");
+        File bar = new File(foo,"bar");
+        expected.addComponent(new File(bar,"foobar.jar"));
 
         assertEquals("Components (Deep)",expected,actual);
     }
@@ -560,11 +563,45 @@ public class ConfigTest extends TestCase
         assertEquals("Classpath combined 'server,logging'",expectedCombined,cpCombined);
     }
     
+
     
     public void testDynamicSection() throws IOException
     {
         StringBuffer buf = new StringBuffer();
-        buf.append("[All,default,=$(jetty.home)/lib/ext]\n");
+        buf.append("[All,default,=$(jetty.home)/lib/*]\n");
+    
+        String jettyHome = getTestableJettyHome();
+
+        Config options = new Config();
+        options.setProperty("jetty.home",jettyHome);
+        options.parse(buf);
+
+        Classpath defaultClasspath = options.getClasspath();
+        assertNotNull("Default Classpath should not be null",defaultClasspath);
+        Classpath foocp = options.getSectionClasspath("foo");
+        assertNotNull("Foo Classpath should not exist",foocp);
+
+        Classpath allcp = options.getSectionClasspath("All");
+        assertNotNull("Classpath section 'All' should exist",allcp);
+    
+        Classpath extcp = options.getSectionClasspath("ext");
+        assertNotNull("Classpath section 'ext' should exist", extcp);
+
+        assertEquals("Deep Classpath Section",0,foocp.count());
+
+        Classpath expected = new Classpath();
+        File lib = new File(getJettyHomeDir(),"lib");
+        File ext = new File(lib, "ext");
+        expected = new Classpath();
+        expected.addComponent(new File(ext,"custom-impl.jar"));
+        assertEquals("Single Classpath Section",expected,extcp);
+       
+    }
+    
+    public void testDeepDynamicSection() throws IOException
+    {
+        StringBuffer buf = new StringBuffer();
+        buf.append("[All,default,=$(jetty.home)/lib/**]\n");
     
 
         String jettyHome = getTestableJettyHome();
@@ -575,22 +612,26 @@ public class ConfigTest extends TestCase
 
         Classpath defaultClasspath = options.getClasspath();
         assertNotNull("Default Classpath should not be null",defaultClasspath);
-        Classpath foocp = options.getSectionClasspath("Foo");
-        assertNull("Foo Classpath should not exist",foocp);
+        Classpath foocp = options.getSectionClasspath("foo");
+        assertNotNull("Foo Classpath should not exist",foocp);
 
         Classpath allcp = options.getSectionClasspath("All");
         assertNotNull("Classpath section 'All' should exist",allcp);
     
-        
         Classpath extcp = options.getSectionClasspath("ext");
         assertNotNull("Classpath section 'ext' should exist", extcp);
-     
+
         File lib = new File(getJettyHomeDir(),"lib");
-        File ext = new File(lib, "ext");
 
         Classpath expected = new Classpath();
+        File foo = new File(lib, "foo");
+        File bar = new File(foo, "bar");
+        expected.addComponent(new File(bar,"foobar.jar"));
+        assertEquals("Deep Classpath Section",expected,foocp);
+        
+        File ext = new File(lib, "ext");
+        expected = new Classpath();
         expected.addComponent(new File(ext,"custom-impl.jar"));
-  
         assertEquals("Single Classpath Section",expected,extcp);
        
     }
