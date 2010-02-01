@@ -13,6 +13,7 @@ public interface WebSocket
     
     public interface Outbound
     {
+        void sendMessage(String data) throws IOException;
         void sendMessage(byte frame,String data) throws IOException;
         void sendMessage(byte frame,byte[] data) throws IOException;
         void sendMessage(byte frame,byte[] data, int offset, int length) throws IOException;

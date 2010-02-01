@@ -142,6 +142,13 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         return _timestamp;
     }
 
+    public void sendMessage(String content) throws IOException
+    {
+        _generator.addFrame(WebSocket.SENTINEL_FRAME,content,_maxIdleTimeMs);
+        _generator.flush();
+        _idle.access(_endp);
+    }
+
     public void sendMessage(byte frame, String content) throws IOException
     {
         _generator.addFrame(frame,content,_maxIdleTimeMs);

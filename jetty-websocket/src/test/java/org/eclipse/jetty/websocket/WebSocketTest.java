@@ -114,7 +114,7 @@ public class WebSocketTest extends TestCase
             _outbound=outbound;
             try
             {
-                _outbound.sendMessage(SENTINEL_FRAME,"Roger That");
+                _outbound.sendMessage("Roger That");
             }
             catch (IOException e)
             {
