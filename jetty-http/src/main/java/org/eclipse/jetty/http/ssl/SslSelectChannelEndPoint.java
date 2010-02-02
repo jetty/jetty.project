@@ -681,7 +681,10 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         switch(_result.getStatus())
         {
             case BUFFER_OVERFLOW:
-                throw new IllegalStateException(_result.toString());
+                if (buffer.position()==0) // if this buffer can't have more space
+                    throw new IllegalStateException(_result.toString()+" "+buffer.limit());
+                // return true is some bytes somewhere were moved about.
+                return total_filled>0 ||_result.bytesConsumed()>0 || _result.bytesProduced()>0;
                 
             case BUFFER_UNDERFLOW:
                 // Not enough data, 
@@ -699,6 +702,9 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 
             case CLOSED:
                 _closing=true;
+                // return true is some bytes somewhere were moved about.
+                return total_filled>0 ||_result.bytesConsumed()>0 || _result.bytesProduced()>0;
+                
             case OK:
                 // return true is some bytes somewhere were moved about.
                 return total_filled>0 ||_result.bytesConsumed()>0 || _result.bytesProduced()>0;
