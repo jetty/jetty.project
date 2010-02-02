@@ -11,6 +11,7 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLProtocolException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -169,8 +170,12 @@ public class SslRenegotiateTest extends TestCase
             }
             catch(IOException e)
             {
-                // System.err.println(e);
-                assertFalse(reneg);
+                if (!(e instanceof SSLProtocolException))
+                {
+                    if (reneg)
+                        Log.warn(e);
+                    assertFalse(reneg);
+                }
                 return;
             }
             
