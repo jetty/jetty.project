@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.net.UnknownHostException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.Map;
@@ -106,12 +107,12 @@ public class HttpClient extends HttpBuffers implements Attributes
     private String _keyStoreLocation;
     private String _keyStoreType = "JKS";
     private String _keyStorePassword;
-    private String _keyManagerAlgorithm = "SunX509";
+    private String _keyManagerAlgorithm = (Security.getProperty("ssl.KeyManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.KeyManagerFactory.algorithm"));
     private String _keyManagerPassword;
     private String _trustStoreLocation;
     private String _trustStoreType = "JKS";
     private String _trustStorePassword;
-    private String _trustManagerAlgorithm = "SunX509";
+    private String _trustManagerAlgorithm = (Security.getProperty("ssl.TrustManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.TrustManagerFactory.algorithm"));
 
     private SSLContext _sslContext;
 

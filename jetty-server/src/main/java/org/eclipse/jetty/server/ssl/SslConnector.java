@@ -2,6 +2,7 @@ package org.eclipse.jetty.server.ssl;
 
 import java.io.File;
 import java.security.SecureRandom;
+import java.security.Security;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -17,6 +18,8 @@ import org.eclipse.jetty.server.Connector;
  */
 public interface SslConnector extends Connector
 {
+    public static final String DEFAULT_KEYSTORE_ALGORITHM=(Security.getProperty("ssl.KeyManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.KeyManagerFactory.algorithm"));;
+    public static final String DEFAULT_TRUSTSTORE_ALGORITHM=(Security.getProperty("ssl.TrustManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.TrustManagerFactory.algorithm"));
 
     /** Default value for the keystore location path. */
     public static final String DEFAULT_KEYSTORE = System.getProperty("user.home") + File.separator + ".keystore";
