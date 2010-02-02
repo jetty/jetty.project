@@ -278,7 +278,6 @@ public class JSON
         else
         {
             Convertor convertor=getConvertor(object.getClass());
-            System.err.println("Convertor for '"+object+"' is "+convertor);
             if (convertor!=null)
                 appendJSON(buffer,convertor,object);
             else

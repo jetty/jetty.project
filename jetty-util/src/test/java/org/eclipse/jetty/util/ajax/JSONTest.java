@@ -291,7 +291,7 @@ public class JSONTest extends TestCase
             buf = new StringBuffer();
             json.append(buf,map);
             js=buf.toString();
-
+            System.err.println(js);
             assertTrue(js.indexOf("\"date\":\"\u6728 1\u6708 01 09:00:00 JST 1970\"")>=0);
             assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle")>=0);
             assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo")<0);
