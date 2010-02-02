@@ -73,7 +73,10 @@ public class JSONTest extends TestCase
         map.put("w0",w0);
         
         obj7.put("x","value");
-        
+
+        System.err.println();
+        System.err.println();
+
         String s = JSON.toString(map);
         assertTrue(s.indexOf("\"n1\":null")>=0);
         assertTrue(s.indexOf("\"n2\":2")>=0);
@@ -85,7 +88,7 @@ public class JSONTest extends TestCase
         assertTrue(s.indexOf("\"n8\":[1,2,3,4]")>=0);
         assertTrue(s.indexOf("\"n9\":[{},  [],  {}]")>=0);
         assertTrue(s.indexOf("\"w0\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle0\",\"nested\":{\"class\":\"org.eclipse.jetty.util.ajax.JSONTest$Woggle\",\"name\":\"woggle1\",\"nested\":null,\"number\":-101},\"number\":100}")>=0);
-
+        
         Gadget gadget = new Gadget();
         gadget.setShields(42);
         gadget.setWoggles(new Woggle[]{w0,w1});
@@ -271,7 +274,6 @@ public class JSONTest extends TestCase
         json.append(buf,map);
         String js=buf.toString();
         
-        System.err.println(js);
         assertTrue(js.indexOf("\"date\":\"01/01/1970 00:00:00 GMT\"")>=0);
         assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle")>=0);
         assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo")<0);
@@ -302,7 +304,6 @@ public class JSONTest extends TestCase
         buf = new StringBuffer();
         json.append(buf,map);
         js=buf.toString();
-        System.err.println(js);
         assertTrue(js.indexOf("\"date\":\"Thu Jan 01 00:00:00 GMT 1970\"")<0);
         assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle")>=0);
         assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo")<0);

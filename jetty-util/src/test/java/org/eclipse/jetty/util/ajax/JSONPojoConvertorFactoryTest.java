@@ -26,9 +26,10 @@ public class JSONPojoConvertorFactoryTest extends TestCase {
         JSON jsonOut = new JSON();
         JSON jsonIn = new JSON();
         
-        JSON.registerConvertor(Object.class, new JSONPojoConvertorFactory(jsonOut));
-        JSON.registerConvertor(Object.class, new JSONPojoConvertorFactory(jsonIn));
-        JSON.registerConvertor(Enum.class, new JSONEnumConvertor());
+        jsonOut.addConvertor(Object.class, new JSONPojoConvertorFactory(jsonOut));
+        jsonOut.addConvertor(Enum.class, new JSONEnumConvertor());
+        jsonIn.addConvertor(Object.class, new JSONPojoConvertorFactory(jsonIn));
+        jsonIn.addConvertor(Enum.class, new JSONEnumConvertor());
         
         Foo foo = new Foo();
         foo._name = "Foo @ " + System.currentTimeMillis();

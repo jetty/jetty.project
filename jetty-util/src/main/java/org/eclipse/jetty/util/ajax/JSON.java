@@ -271,11 +271,14 @@ public class JSON
             appendNumber(buffer,(Number)object);
         else if (object instanceof Boolean)
             appendBoolean(buffer,(Boolean)object);
+        else if (object instanceof Character)
+            appendString(buffer,object.toString());
         else if (object instanceof String)
             appendString(buffer,(String)object);
         else
         {
             Convertor convertor=getConvertor(object.getClass());
+            System.err.println("Convertor for '"+object+"' is "+convertor);
             if (convertor!=null)
                 appendJSON(buffer,convertor,object);
             else
