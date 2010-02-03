@@ -314,10 +314,10 @@ public class StatisticsHandlerTest extends TestCase
         
         assertTrue(_statsHandler.getRequestTimeTotal()>=30);
         assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeMax());
-        assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeAverage());
+        assertEquals(_statsHandler.getRequestTimeTotal()*1.0,_statsHandler.getRequestTimeMean());
         
         assertTrue(_statsHandler.getDispatchedTimeTotal()>=20);
-        assertTrue(_statsHandler.getDispatchedTimeAverage()+10<=_statsHandler.getDispatchedTimeTotal());
+        assertTrue(_statsHandler.getDispatchedTimeMean()+10<=_statsHandler.getDispatchedTimeTotal());
         assertTrue(_statsHandler.getDispatchedTimeMax()+10<=_statsHandler.getDispatchedTimeTotal());
         
     }
@@ -433,10 +433,10 @@ public class StatisticsHandlerTest extends TestCase
         
         assertTrue(_statsHandler.getRequestTimeTotal()>=30);
         assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeMax());
-        assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeAverage());
+        assertEquals(_statsHandler.getRequestTimeTotal()*1.0,_statsHandler.getRequestTimeMean());
         
         assertTrue(_statsHandler.getDispatchedTimeTotal()>=20);
-        assertTrue(_statsHandler.getDispatchedTimeAverage()+10<=_statsHandler.getDispatchedTimeTotal());
+        assertTrue(_statsHandler.getDispatchedTimeMean()+10<=_statsHandler.getDispatchedTimeTotal());
         assertTrue(_statsHandler.getDispatchedTimeMax()+10<=_statsHandler.getDispatchedTimeTotal());
         
     }
@@ -540,12 +540,12 @@ public class StatisticsHandlerTest extends TestCase
         
         assertTrue(_statsHandler.getRequestTimeTotal()>=20);
         assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeMax());
-        assertEquals(_statsHandler.getRequestTimeTotal(),_statsHandler.getRequestTimeAverage());
+        assertEquals(_statsHandler.getRequestTimeTotal()*1.0,_statsHandler.getRequestTimeMean());
         
         assertTrue(_statsHandler.getDispatchedTimeTotal()>=10);
         assertTrue(_statsHandler.getDispatchedTimeTotal()<_statsHandler.getRequestTimeTotal());
         assertEquals(_statsHandler.getDispatchedTimeTotal(),_statsHandler.getDispatchedTimeMax());
-        assertEquals(_statsHandler.getDispatchedTimeTotal(),_statsHandler.getDispatchedTimeAverage());
+        assertEquals(_statsHandler.getDispatchedTimeTotal()*1.0,_statsHandler.getDispatchedTimeMean());
     }
     
 

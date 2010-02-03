@@ -26,26 +26,19 @@ import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.ServerStats.CounterStats;
+import org.eclipse.jetty.server.ServerStats.MeasuredStats;
 
 public class StatisticsHandler extends HandlerWrapper
 {
     private final AtomicLong _statsStartedAt = new AtomicLong();
     
-    private final AtomicInteger _requests = new AtomicInteger();
-    private final AtomicInteger _requestsActive = new AtomicInteger();
-    private final AtomicInteger _requestsActiveMax = new AtomicInteger();
-    private final AtomicLong _requestTimeMax = new AtomicLong();
-    private final AtomicLong _requestTimeTotal = new AtomicLong();
+    private final CounterStats _requestStats = new CounterStats();
+    private final MeasuredStats _requestTimeStats = new MeasuredStats();
+    private final CounterStats _dispatchedStats = new CounterStats();
+    private final MeasuredStats _dispatchedTimeStats = new MeasuredStats();
+    private final CounterStats _suspendStats = new CounterStats();
 
-    private final AtomicInteger _dispatched = new AtomicInteger();
-    private final AtomicInteger _dispatchedActive = new AtomicInteger();
-    private final AtomicInteger _dispatchedActiveMax = new AtomicInteger();
-    private final AtomicLong _dispatchedTimeMax = new AtomicLong();
-    private final AtomicLong _dispatchedTimeTotal = new AtomicLong();
-    
-    private final AtomicInteger _suspends = new AtomicInteger();
-    private final AtomicInteger _suspendsActive = new AtomicInteger();
-    private final AtomicInteger _suspendsActiveMax = new AtomicInteger();
     private final AtomicInteger _resumes = new AtomicInteger();
     private final AtomicInteger _expires = new AtomicInteger();
     
@@ -63,13 +56,13 @@ public class StatisticsHandler extends HandlerWrapper
             final Request request = ((AsyncContinuation)continuation).getBaseRequest();
             final long elapsed = System.currentTimeMillis()-request.getTimeStamp();
             
-            _requestsActive.decrementAndGet();
-            _requests.incrementAndGet();
-            updateMax(_requestTimeMax, elapsed);
-            _requestTimeTotal.addAndGet(elapsed);
+            _requestStats.decrement();
+            _requestTimeStats.set(elapsed);
+            
             updateResponse(request);
+            
             if (!continuation.isResumed())
-                _suspendsActive.decrementAndGet();
+                _suspendStats.decrement();
         }
 
         public void onTimeout(Continuation continuation)
@@ -85,21 +78,12 @@ public class StatisticsHandler extends HandlerWrapper
     {
         _statsStartedAt.set(System.currentTimeMillis());
         
-        _requests.set(0);
-        _requestsActive.set(0);
-        _requestsActiveMax.set(0);
-        _requestTimeMax.set(0L);
-        _requestTimeTotal.set(0L);
-        
-        _dispatched.set(0);
-        _dispatchedActive.set(0);
-        _dispatchedActiveMax.set(0);
-        _dispatchedTimeMax.set(0L);
-        _dispatchedTimeTotal.set(0L);
-        
-        _suspends.set(0);
-        _suspendsActive.set(0);
-        _suspendsActiveMax.set(0);
+        _requestStats.reset();
+        _requestTimeStats.reset();
+        _dispatchedStats.reset();
+        _dispatchedTimeStats.reset();
+        _suspendStats.reset();
+
         _resumes.set(0);
         _expires.set(0);
         _responses1xx.set(0);
@@ -110,46 +94,24 @@ public class StatisticsHandler extends HandlerWrapper
         _responsesTotalBytes.set(0L);
     }
 
-    private void updateMax(AtomicInteger valueHolder, int value)
-    {
-        int oldValue = valueHolder.get();
-        while (value > oldValue)
-        {
-            if (valueHolder.compareAndSet(oldValue, value))
-                break;
-            oldValue = valueHolder.get();
-        }
-    }
-
-    private void updateMax(AtomicLong valueHolder, long value)
-    {
-        long oldValue = valueHolder.get();
-        while (value > oldValue)
-        {
-            if (valueHolder.compareAndSet(oldValue, value))
-                break;
-            oldValue = valueHolder.get();
-        }
-    }
-
     @Override
     public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
     {
-        updateMax(_dispatchedActiveMax, _dispatchedActive.incrementAndGet());
+        _dispatchedStats.increment();
 
         final long start;
         AsyncContinuation continuation = request.getAsyncContinuation();
         if (continuation.isInitial())
         {
             // new request
-            updateMax(_requestsActiveMax, _requestsActive.incrementAndGet());
+            _requestStats.increment();
             start = request.getTimeStamp();
         }
         else
         {
             // resumed request
             start = System.currentTimeMillis();
-            _suspendsActive.decrementAndGet();
+            _suspendStats.decrement();
             if (continuation.isResumed())
                 _resumes.incrementAndGet();
         }
@@ -163,26 +125,19 @@ public class StatisticsHandler extends HandlerWrapper
             final long now = System.currentTimeMillis();
             final long dispatched=now-start;
             
-            _dispatchedActive.decrementAndGet();
-            _dispatched.incrementAndGet();
-            
-            _dispatchedTimeTotal.addAndGet(dispatched);
-            updateMax(_dispatchedTimeMax, dispatched);
+            _dispatchedStats.decrement();
+            _dispatchedTimeStats.set(dispatched);
             
             if (continuation.isSuspended())
             {
                 if (continuation.isInitial())
                     continuation.addContinuationListener(_onCompletion);
-                _suspends.incrementAndGet();
-                updateMax(_suspendsActiveMax, _suspendsActive.incrementAndGet());
+                _suspendStats.increment();
             }
             else if (continuation.isInitial())
             {
-                _requestsActive.decrementAndGet();
-                _requests.incrementAndGet();
-                
-                updateMax(_requestTimeMax, dispatched);
-                _requestTimeTotal.addAndGet(dispatched);
+                _requestStats.decrement();
+                _requestTimeStats.set(dispatched);
                 updateResponse(request);
             }
             // else onCompletion will handle it.
@@ -230,7 +185,7 @@ public class StatisticsHandler extends HandlerWrapper
      */
     public int getRequests()
     {
-        return _requests.get();
+        return (int)_requestStats.getTotal();
     }
 
     /**
@@ -239,7 +194,7 @@ public class StatisticsHandler extends HandlerWrapper
      */
     public int getRequestsActive()
     {
-        return _requestsActive.get();
+        return (int)_requestStats.getCurrent();
     }
 
     /**
@@ -248,7 +203,7 @@ public class StatisticsHandler extends HandlerWrapper
      */
     public int getRequestsActiveMax()
     {
-        return _requestsActiveMax.get();
+        return (int)_requestStats.getMax();
     }
 
     /**
@@ -257,7 +212,7 @@ public class StatisticsHandler extends HandlerWrapper
      */
     public long getRequestTimeMax()
     {
-        return _requestTimeMax.get();
+        return _requestTimeStats.getMax();
     }
 
     /**
@@ -266,19 +221,29 @@ public class StatisticsHandler extends HandlerWrapper
      */
     public long getRequestTimeTotal()
     {
-        return _requestTimeTotal.get();
+        return _requestTimeStats.getTotal();
     }
 
     /**
-     * @return the average time (in milliseconds) of request handling
+     * @return the mean time (in milliseconds) of request handling
      * since {@link #statsReset()} was last called.
      * @see #getRequestTimeTotal()
      * @see #getRequests()
      */
-    public long getRequestTimeAverage()
+    public double getRequestTimeMean()
     {
-        int requests = getRequests();
-        return requests == 0 ? 0 : getRequestTimeTotal() / requests;
+        return _requestTimeStats.getMean();
+    }
+
+    /**
+     * @return the standard deviation of time (in milliseconds) of request handling
+     * since {@link #statsReset()} was last called.
+     * @see #getRequestTimeTotal()
+     * @see #getRequests()
+     */
+    public double getRequestTimeStdDev()
+    {
+        return _requestTimeStats.getStdDev();
     }
 
     /**
@@ -288,7 +253,7 @@ public class StatisticsHandler extends HandlerWrapper
      */
     public int getDispatched()
     {
-        return _dispatched.get();
+        return (int)_dispatchedStats.getTotal();
     }
 
     /**
@@ -298,7 +263,7 @@ public class StatisticsHandler extends HandlerWrapper
      */
     public int getDispatchedActive()
     {
-        return _dispatchedActive.get();
+        return (int)_dispatchedStats.getCurrent();
     }
 
     /**
@@ -308,7 +273,7 @@ public class StatisticsHandler extends HandlerWrapper
      */
     public int getDispatchedActiveMax()
     {
-        return _dispatchedActiveMax.get();
+        return (int)_dispatchedStats.getMax();
     }
 
     /**
@@ -317,7 +282,7 @@ public class StatisticsHandler extends HandlerWrapper
      */
     public long getDispatchedTimeMax()
     {
-        return _dispatchedTimeMax.get();
+        return _dispatchedTimeStats.getMax();
     }
     
     /**
@@ -326,21 +291,30 @@ public class StatisticsHandler extends HandlerWrapper
      */
     public long getDispatchedTimeTotal()
     {
-        return _dispatchedTimeTotal.get();
+        return _dispatchedTimeStats.getTotal();
     }
 
     /**
-     * @return the average time (in milliseconds) of request handling
+     * @return the mean time (in milliseconds) of request handling
      * since {@link #statsReset()} was last called.
      * @see #getRequestTimeTotal()
      * @see #getRequests()
      */
-    public long getDispatchedTimeAverage()
+    public double getDispatchedTimeMean()
     {
-        int requests = getDispatched();
-        return requests == 0 ? 0 : getDispatchedTimeTotal() / requests;
+        return _dispatchedTimeStats.getMean();
     }
     
+    /**
+     * @return the standard deviation of time (in milliseconds) of request handling
+     * since {@link #statsReset()} was last called.
+     * @see #getRequestTimeTotal()
+     * @see #getRequests()
+     */
+    public double getDispatchedTimeStdDev()
+    {
+        return _dispatchedTimeStats.getStdDev();
+    }
     
     /**
      * @return the number of requests handled by this handler
@@ -350,7 +324,7 @@ public class StatisticsHandler extends HandlerWrapper
      */
     public int getSuspends()
     {
-        return _suspends.get();
+        return (int)_suspendStats.getTotal();
     }
 
     /**
@@ -359,7 +333,7 @@ public class StatisticsHandler extends HandlerWrapper
      */
     public int getSuspendsActive()
     {
-        return _suspendsActive.get();
+        return (int)_suspendStats.getCurrent();
     }
 
     /**
@@ -368,7 +342,7 @@ public class StatisticsHandler extends HandlerWrapper
      */
     public int getSuspendsActiveMax()
     {
-        return _suspendsActiveMax.get();
+        return (int)_suspendStats.getMax();
     }
     
     /**
@@ -462,8 +436,9 @@ public class StatisticsHandler extends HandlerWrapper
         sb.append("Active requests: ").append(getRequestsActive()).append("<br />\n");
         sb.append("Max active requests: ").append(getRequestsActiveMax()).append("<br />\n");
         sb.append("Total requests time: ").append(getRequestTimeTotal()).append("<br />\n");
-        sb.append("Average request time: ").append(getRequestTimeAverage()).append("<br />\n");
+        sb.append("Mean request time: ").append(getRequestTimeMean()).append("<br />\n");
         sb.append("Max request time: ").append(getRequestTimeMax()).append("<br />\n");
+        sb.append("Request time standard deviation: ").append(getRequestTimeStdDev()).append("<br />\n");
         
 
         sb.append("<h2>Dispatches:</h2>\n");
@@ -471,8 +446,9 @@ public class StatisticsHandler extends HandlerWrapper
         sb.append("Active dispatched: ").append(getDispatchedActive()).append("<br />\n");
         sb.append("Max active dispatched: ").append(getDispatchedActiveMax()).append("<br />\n");
         sb.append("Total dispatched time: ").append(getDispatchedTimeTotal()).append("<br />\n");
-        sb.append("Average dispatched time: ").append(getDispatchedTimeAverage()).append("<br />\n");
+        sb.append("Mean dispatched time: ").append(getDispatchedTimeMean()).append("<br />\n");
         sb.append("Max dispatched time: ").append(getDispatchedTimeMax()).append("<br />\n");
+        sb.append("Dispatched time standard deviation: ").append(getDispatchedTimeStdDev()).append("<br />\n");
 
 
         sb.append("Total requests suspended: ").append(getSuspends()).append("<br />\n");

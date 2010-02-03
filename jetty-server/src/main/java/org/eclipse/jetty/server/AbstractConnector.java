@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.ServletRequest;
@@ -31,6 +30,8 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.server.ServerStats.CounterStats;
+import org.eclipse.jetty.server.ServerStats.MeasuredStats;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -79,17 +80,9 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     private final AtomicLong _statsStartedAt = new AtomicLong(-1L);
 
-    private final AtomicInteger _requests = new AtomicInteger();                // total number of requests made to the server
-    private final AtomicInteger _connections = new AtomicInteger();             // total number of connections made to server
-
-    private final AtomicInteger _connectionsOpen = new AtomicInteger();         // number of connections currently open
-    private final AtomicInteger _connectionsOpenMax = new AtomicInteger();      // max number of connections open simultaneously
-
-    private final AtomicLong _connectionsDurationMax = new AtomicLong();        // max duration of a connection
-    private final AtomicLong _connectionsDurationTotal = new AtomicLong();      // total duration of all connection
-
-    private final AtomicInteger _connectionsRequestsMax = new AtomicInteger();  // max requests per connection
-
+    private final CounterStats _connectionStats = new CounterStats();           // connections to server
+    private final MeasuredStats _requestStats = new MeasuredStats();            // requests per connection
+    private final MeasuredStats _connectionDurationStats = new MeasuredStats(); // duration of a connection
 
     /* ------------------------------------------------------------------------------- */
     /**
@@ -524,8 +517,6 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     {
     }
 
-
-    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.server.Connector#getConfidentialPort()
@@ -842,7 +833,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
      */
     public int getRequests() 
     {
-        return _requests.get();
+        return (int)_requestStats.getTotal();
     }
 
     /* ------------------------------------------------------------ */
@@ -851,7 +842,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
      */
     public long getConnectionsDurationTotal()
     {
-        return _connectionsDurationTotal.get();
+        return _connectionDurationStats.getTotal();
     }
 
     /* ------------------------------------------------------------ */
@@ -859,59 +850,64 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
      * @return Number of connections accepted by the server since
      * statsReset() called. Undefined if setStatsOn(false).
      */
-    public int getConnections() {return _connections.get();}
+    public int getConnections() {return (int)_connectionStats.getTotal();}
 
     /* ------------------------------------------------------------ */
     /**
      * @return Number of connections currently open that were opened
      * since statsReset() called. Undefined if setStatsOn(false).
      */
-    public int getConnectionsOpen() {return _connectionsOpen.get();}
+    public int getConnectionsOpen() {return (int)_connectionStats.getCurrent();}
 
     /* ------------------------------------------------------------ */
     /**
      * @return Maximum number of connections opened simultaneously
      * since statsReset() called. Undefined if setStatsOn(false).
      */
-    public int getConnectionsOpenMax() {return _connectionsOpenMax.get();}
+    public int getConnectionsOpenMax() {return (int) _connectionStats.getMax();}
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Average duration in milliseconds of open connections
+     * @return Mean duration in milliseconds of open connections
      * since statsReset() called. Undefined if setStatsOn(false).
      */
-    public long getConnectionsDurationAve()
-    {
-        int connections = getConnections();
-        
-        return (connections==0) ? 0 : (getConnectionsDurationTotal()/connections);
-    }
+    public double getConnectionsDurationMean() { return _connectionDurationStats.getMean();}
 
     /* ------------------------------------------------------------ */
     /**
      * @return Maximum duration in milliseconds of an open connection
      * since statsReset() called. Undefined if setStatsOn(false).
      */
-    public long getConnectionsDurationMax() {return _connectionsDurationMax.get();}
+    public long getConnectionsDurationMax() {return _connectionDurationStats.getMax();}
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Average number of requests per connection
+     * @return Standard deviation of duration in milliseconds of
+     * open connections since statsReset() called. Undefined if
+     * setStatsOn(false).
+     */
+    public double getConnectionsDurationStdDev() { return _connectionDurationStats.getStdDev();}
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Mean number of requests per connection
      * since statsReset() called. Undefined if setStatsOn(false).
      */
-    public int getConnectionsRequestsAve()
-    {
-        int connections = getConnections();
-        
-        return (connections==0) ? 0: (getRequests()/connections);
-    }
+    public double getConnectionsRequestsMean() { return _requestStats.getMean(); }
 
     /* ------------------------------------------------------------ */
     /**
      * @return Maximum number of requests per connection
      * since statsReset() called. Undefined if setStatsOn(false).
      */
-    public int getConnectionsRequestsMax() {return _connectionsRequestsMax.get();}
+    public int getConnectionsRequestsMax() {return (int)_requestStats.getMax();}
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Standard deviation of number of requests per connection
+     * since statsReset() called. Undefined if setStatsOn(false).
+     */
+    public double getConnectionsRequestsStdDev() { return _requestStats.getStdDev(); }
 
     /* ------------------------------------------------------------ */
     /** Reset statistics.
@@ -920,17 +916,9 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     {
         updateNotEqual(_statsStartedAt, -1, System.currentTimeMillis());
 
-        _connections.set(0);
-
-        _connectionsOpenMax.set(_connectionsOpen.get());
-        _connectionsOpen.set(0);
-
-        _connectionsDurationMax.set(0);
-        _connectionsDurationTotal.set(0);
-
-        _requests.set(0);
-
-        _connectionsRequestsMax.set(0);
+        _requestStats.reset();
+        _connectionStats.reset();
+        _connectionDurationStats.reset();
     }
 
     /* ------------------------------------------------------------ */
@@ -971,13 +959,13 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         if (_statsStartedAt.get()==-1)
             return;
 
-        updateMax(_connectionsOpenMax, _connectionsOpen.incrementAndGet());
+        _connectionStats.increment();
     }
 
     /* ------------------------------------------------------------ */
     protected void connectionUpgraded(Connection oldConnection, Connection newConnection)
     {
-        _requests.addAndGet((oldConnection instanceof HttpConnection)?((HttpConnection)oldConnection).getRequests():0);
+        _requestStats.set((oldConnection instanceof HttpConnection)?((HttpConnection)oldConnection).getRequests():0);
     }
     
     /* ------------------------------------------------------------ */
@@ -989,14 +977,9 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         long duration = System.currentTimeMillis() - connection.getTimeStamp();
         int requests = (connection instanceof HttpConnection) ? ((HttpConnection)connection).getRequests() : 0;
 
-        _requests.addAndGet(requests);
-        _connections.incrementAndGet();
-        _connectionsOpen.decrementAndGet();
-        _connectionsDurationTotal.addAndGet(duration);
-
-        updateMax(_connectionsDurationMax, duration);
-        updateMax(_connectionsRequestsMax, requests);
-
+        _requestStats.set(requests);
+        _connectionStats.decrement();
+        _connectionDurationStats.set(duration);
     }
 
     /* ------------------------------------------------------------ */
@@ -1051,30 +1034,6 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     {
         long oldValue = valueHolder.get();
         while (compare != oldValue)
-        {
-            if (valueHolder.compareAndSet(oldValue, value))
-                break;
-            oldValue = valueHolder.get();
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    private void updateMax(AtomicInteger valueHolder, int value)
-    {
-        int oldValue = valueHolder.get();
-        while (value > oldValue)
-        {
-            if (valueHolder.compareAndSet(oldValue, value))
-                break;
-            oldValue = valueHolder.get();
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    private void updateMax(AtomicLong valueHolder, long value)
-    {
-        long oldValue = valueHolder.get();
-        while (value > oldValue)
         {
             if (valueHolder.compareAndSet(oldValue, value))
                 break;

@@ -277,13 +277,6 @@ public interface Connector extends LifeCycle
 
     /* ------------------------------------------------------------ */
     /** 
-     * @return Average duration in milliseconds of open connections
-     * since statsReset() called. Undefined if setStatsOn(false).
-     */
-    public long getConnectionsDurationAve() ;
-
-    /* ------------------------------------------------------------ */
-    /** 
      * @return Maximum duration in milliseconds of an open connection
      * since statsReset() called. Undefined if setStatsOn(false).
      */
@@ -291,10 +284,32 @@ public interface Connector extends LifeCycle
 
     /* ------------------------------------------------------------ */
     /** 
-     * @return Average number of requests per connection
+     * @return Mean duration in milliseconds of open connections
      * since statsReset() called. Undefined if setStatsOn(false).
      */
-    public int getConnectionsRequestsAve() ;
+    public double getConnectionsDurationMean() ;
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * @return Standard deviation of duration in milliseconds of
+     * open connections since statsReset() called. Undefined if
+     * setStatsOn(false).
+     */
+    public double getConnectionsDurationStdDev() ;
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * @return Mean number of requests per connection
+     * since statsReset() called. Undefined if setStatsOn(false).
+     */
+    public double getConnectionsRequestsMean() ;
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * @return Standard Deviation of number of requests per connection
+     * since statsReset() called. Undefined if setStatsOn(false).
+     */
+    public double getConnectionsRequestsStdDev() ;
 
     /* ------------------------------------------------------------ */
     /** 
@@ -303,8 +318,6 @@ public interface Connector extends LifeCycle
      */
     public int getConnectionsRequestsMax();
 
-
-    
     /* ------------------------------------------------------------ */
     /** Reset statistics.
      */

@@ -20,6 +20,7 @@ jetty-7.0.2-SNAPSHOT
  + 300178 HttpClients opens too many connections that are immediately closed
  + 300733 Jars from lib/ext are not visible for my web application
  + 300933 AbstractConnector uses concurrent objects for stats
+ + 301089 Improve statistics available in StatisticsHandler and AbstractConnector
 
 jetty-7.0.1.v20091125 25 November 2009
  + 274251 DefaultServlet supports exact match mode.
