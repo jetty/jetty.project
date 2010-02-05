@@ -1344,6 +1344,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         return encoding;
     }
     
+    public String getLocaleEncoding (String locale)
+    {
+        if (_localeEncodingMap==null)
+            return null;
+        String encoding = _localeEncodingMap.get(locale);
+        return encoding;
+    }
+    
     /* ------------------------------------------------------------ */
     /* 
      */

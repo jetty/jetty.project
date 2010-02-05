@@ -26,6 +26,7 @@ import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlProcessor;
 import org.eclipse.jetty.webapp.WebXmlProcessor.Descriptor;
 import org.eclipse.jetty.webapp.WebXmlProcessor.Fragment;
+import org.eclipse.jetty.webapp.WebXmlProcessor.MetaDataComplete;
 
 
 public abstract class AbstractConfiguration implements Configuration
@@ -100,7 +101,7 @@ public abstract class AbstractConfiguration implements Configuration
 
             //if there was no web-fragment.xml for the jar, or there was one 
             //and its metadata is NOT complete, we want to exame it for annotations
-            if (d == null || (d != null && !d.isMetaDataComplete()))
+            if (d == null || (d != null && d.getMetaDataComplete() != MetaDataComplete.True))
                 webInfUris.add(uri);
         }
  

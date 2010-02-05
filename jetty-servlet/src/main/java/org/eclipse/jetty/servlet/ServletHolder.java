@@ -568,7 +568,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
-    protected class Registration extends HolderRegistration implements ServletRegistration.Dynamic
+    public class Registration extends HolderRegistration implements ServletRegistration.Dynamic
     {
         public Set<String> addMapping(String... urlPatterns)
         {
@@ -622,10 +622,21 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             illegalStateIfContextStarted();
             ServletHolder.this.setInitOrder(loadOnStartup);
         }
+        
+        public int getInitOrder()
+        {
+            return ServletHolder.this.getInitOrder();
+        }
 
         @Override
         public void setMultipartConfig(MultipartConfigElement element) 
         {
+        }
+        
+        public MultipartConfigElement getMultipartConfig()
+        {
+            //TODO
+            return null;
         }
 
         @Override

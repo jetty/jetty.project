@@ -41,14 +41,9 @@ public class FragmentConfiguration implements Configuration
             context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
         }
       
-        
         //parse web-fragment.xmls
         parseWebFragments(context, processor);
         
-      
-       
-        //TODO for jetty-8/servletspec 3 we will need to merge the parsed web fragments into the 
-        //effective pom in this preConfigure step
     }
     
     public void configure(WebAppContext context) throws Exception
@@ -66,6 +61,7 @@ public class FragmentConfiguration implements Configuration
         //order the fragments first
         processor.orderFragments(); 
           
+        //process the fragments
         processor.processFragments(); 
     }
 

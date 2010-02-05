@@ -19,14 +19,14 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 
-import org.eclipse.jetty.jndi.NamingUtil;
-import org.eclipse.jetty.plus.jndi.EnvEntry;
-import org.eclipse.jetty.plus.jndi.Link;
-import org.eclipse.jetty.plus.jndi.NamingEntry;
-import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
+import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.webapp.Fragment;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebXmlProcessor;
 
 
 /**
@@ -34,80 +34,71 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *
  *
  */
-public class Configuration extends AbstractConfiguration
+public class Configuration implements org.eclipse.jetty.webapp.Configuration
 {
 
     private Integer _key;
     
-    
-    /** 
-     * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#bindEnvEntry(java.lang.String, java.lang.String)
-     * @param name
-     * @param value
-     * @throws Exception
-     */
-    public void bindEnvEntry(WebAppContext context, String name, Object value) throws Exception
-    {    
-        InitialContext ic = null;
-        boolean bound = false;
-        //check to see if we bound a value and an EnvEntry with this name already
-        //when we processed the server and the webapp's naming environment
-        //@see EnvConfiguration.bindEnvEntries()
-        ic = new InitialContext();
-        try
-        {
-            NamingEntry ne = (NamingEntry)ic.lookup("java:comp/env/"+NamingEntryUtil.makeNamingEntryName(ic.getNameParser(""), name));
-            if (ne!=null && ne instanceof EnvEntry)
-            {
-                EnvEntry ee = (EnvEntry)ne;
-                bound = ee.isOverrideWebXml();
-            }
-        }
-        catch (NameNotFoundException e)
-        {
-            bound = false;
-        }
-
-        if (!bound)
-        {
-            //either nothing was bound or the value from web.xml should override
-            Context envCtx = (Context)ic.lookup("java:comp/env");
-            NamingUtil.bind(envCtx, name, value);
-        }
+    public void preConfigure (WebAppContext context)
+    throws Exception
+    {      
+        LifeCycleCallbackCollection callbacks = new LifeCycleCallbackCollection();
+        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, callbacks);
+        InjectionCollection injections = new InjectionCollection();
+        context.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
+        RunAsCollection runAsCollection = new RunAsCollection();
+        context.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);  
+        WebAppDecorator decorator = new WebAppDecorator(context);
+        context.setDecorator(decorator);
     }
+   
+  
 
-    /** 
-     * Bind a resource reference.
-     * 
-     * If a resource reference with the same name is in a jetty-env.xml
-     * file, it will already have been bound.
-     * 
-     * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#bindResourceRef(java.lang.String)
-     * @param name
-     * @throws Exception
-     */
-    public void bindResourceRef(WebAppContext context, String name, Class typeClass)
+    public void configure (WebAppContext context)
     throws Exception
     {
-        bindEntry(context, name, typeClass);
-    }
+        bindUserTransaction(context);
+        
+        WebXmlProcessor webXmlProcessor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
+        if (webXmlProcessor == null)
+           throw new IllegalStateException ("No processor for web xml");
+        
+        PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor(webXmlProcessor);
+        webXmlProcessor.process(webXmlProcessor.getWebDefault(), plusProcessor);
+        webXmlProcessor.process(webXmlProcessor.getWebXml(), plusProcessor);
+     
 
-    /** 
-     * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#bindResourceEnvRef(java.lang.String)
-     * @param name
-     * @throws Exception
-     */
-    public void bindResourceEnvRef(WebAppContext context, String name, Class typeClass)
-    throws Exception
-    {
-        bindEntry(context, name, typeClass);
+        //Process plus-elements of each descriptor
+        for (Fragment frag: webXmlProcessor.getFragments())
+        {
+            webXmlProcessor.process(frag, plusProcessor);
+        }
+
+        //process the override-web.xml descriptor
+        webXmlProcessor.process(webXmlProcessor.getOverrideWeb(), plusProcessor);
     }
     
+    public void postConfigure(WebAppContext context) throws Exception
+    {
+        //lock this webapp's java:comp namespace as per J2EE spec
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(context.getClassLoader());
+        lockCompEnv(context);
+        Thread.currentThread().setContextClassLoader(oldLoader);
+        
+        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, null);
+        context.setAttribute(InjectionCollection.INJECTION_COLLECTION, null);
+        context.setAttribute(RunAsCollection.RUNAS_COLLECTION, null); 
+    }
     
-    public void bindMessageDestinationRef(WebAppContext context, String name, Class typeClass)
+    public void deconfigure (WebAppContext context)
     throws Exception
     {
-        bindEntry(context, name, typeClass);
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(context.getClassLoader());
+        unlockCompEnv(context);
+        _key = null;
+        Thread.currentThread().setContextClassLoader(oldLoader);
     }
     
     public void bindUserTransaction (WebAppContext context)
@@ -123,40 +114,8 @@ public class Configuration extends AbstractConfiguration
         }
     }
     
-    public void preConfigure (WebAppContext context)
-    throws Exception
-    {      
-        super.preConfigure(context);
-    }
-
+ 
   
-
-    public void configure (WebAppContext context)
-    throws Exception
-    {
-        super.configure (context);
-    }
-    
-    public void postConfigure (WebAppContext context)
-    throws Exception
-    {
-      //lock this webapp's java:comp namespace as per J2EE spec
-        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(context.getClassLoader());
-        lockCompEnv(context);
-        Thread.currentThread().setContextClassLoader(oldLoader);
-    }
-    
-    public void deconfigure (WebAppContext context) throws Exception
-    {
-        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(context.getClassLoader());
-        unlockCompEnv(context);
-        _key = null;
-        Thread.currentThread().setContextClassLoader(oldLoader);
-        super.deconfigure (context);
-    }
-    
     protected void lockCompEnv (WebAppContext wac)
     throws Exception
     {
@@ -194,72 +153,5 @@ public class Configuration extends AbstractConfiguration
             Thread.currentThread().setContextClassLoader(old_loader);
         }
         }
-    }
-
-  
-    /**
-     * Bind a resource with the given name from web.xml of the given type
-     * with a jndi resource from either the server or the webapp's naming 
-     * environment.
-     * 
-     * As the servlet spec does not cover the mapping of names in web.xml with
-     * names from the execution environment, jetty uses the concept of a Link, which is
-     * a subclass of the NamingEntry class. A Link defines a mapping of a name
-     * from web.xml with a name from the execution environment (ie either the server or the
-     * webapp's naming environment).
-     * 
-     * @param name name of the resource from web.xml
-     * @param typeClass 
-     * @throws Exception
-     */
-    private void bindEntry (WebAppContext context, String name, Class typeClass)
-    throws Exception
-    {
-        String nameInEnvironment = name;
-        boolean bound = false;
-        
-        //check if the name in web.xml has been mapped to something else
-        //check a context-specific naming environment first
-        Object scope = context;
-        NamingEntry ne = NamingEntryUtil.lookupNamingEntry(scope, name);
-    
-        if (ne!=null && (ne instanceof Link))
-        {
-            //if we found a mapping, get out name it is mapped to in the environment
-            nameInEnvironment = (String)((Link)ne).getObjectToBind();
-            Link l = (Link)ne;
-        }
-
-        //try finding that mapped name in the webapp's environment first
-        scope = context;
-        bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
-        
-        if (bound)
-            return;
-        
-        //try the server's environment
-        scope = context.getServer();
-        bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
-        if (bound)
-            return;
-
-        //try the jvm environment
-        bound = NamingEntryUtil.bindToENC(null, name, nameInEnvironment);
-        if (bound)
-            return;
-
-        //There is no matching resource so try a default name.
-        //The default name syntax is: the [res-type]/default
-        //eg       javax.sql.DataSource/default
-        nameInEnvironment = typeClass.getName()+"/default";
-        //First try the server scope
-        NamingEntry defaultNE = NamingEntryUtil.lookupNamingEntry(context.getServer(), nameInEnvironment);
-        if (defaultNE==null)
-            defaultNE = NamingEntryUtil.lookupNamingEntry(null, nameInEnvironment);
-        
-        if (defaultNE!=null)
-            defaultNE.bindToENC(name);
-        else
-            throw new IllegalStateException("Nothing to bind for name "+nameInEnvironment);
     }
 }

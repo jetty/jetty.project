@@ -58,6 +58,7 @@ public class WebXmlConfiguration implements Configuration
             context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
         }
         
+        
         //handle webdefault.xml
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
@@ -66,7 +67,7 @@ public class WebXmlConfiguration implements Configuration
             if (dftResource == null) 
                 dftResource = context.newResource(defaultsDescriptor);
             processor.parseDefaults (dftResource);
-            processor.processDefaults();
+            processor.process(processor.getWebDefault());
         }
         
         //parse, but don't process web.xml
@@ -98,8 +99,8 @@ public class WebXmlConfiguration implements Configuration
             context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
         }
 
-        //process web.xml (the effective web.xml???)
-        processor.processWebXml();
+        //process web.xml 
+        processor.process(processor.getWebXml());
         
         //process override-web.xml
         String overrideDescriptor = context.getOverrideDescriptor();
@@ -109,7 +110,7 @@ public class WebXmlConfiguration implements Configuration
             if (orideResource == null) 
                 orideResource = context.newResource(overrideDescriptor);
             processor.parseOverride(orideResource);
-            processor.processOverride();
+            processor.process(processor.getOverrideWeb());
         }
     }
 
