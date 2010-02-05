@@ -442,8 +442,9 @@ public class OldQueuedThreadPool extends AbstractLifeCycle implements Serializab
         }
 
         // TODO perhaps force stops
-        if (_threads.size()>0)
-            Log.warn(_threads.size()+" threads could not be stopped");
+        int size=_threads.size();
+        if (size>0)
+            Log.warn(size+" threads could not be stopped");
         
         synchronized (_joinLock)
         {
