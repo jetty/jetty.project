@@ -63,6 +63,17 @@ public class DumpHandler extends AbstractHandler
     {        
         if (!isStarted())
             return;
+
+        if (request.getParameter("ISE")!=null)
+        {
+            throw new IllegalStateException();
+        }
+        
+        if (request.getParameter("error")!=null)
+        {
+            response.sendError(Integer.parseInt(request.getParameter("error")));
+            return;
+        }
         
         if (request.getParameter("continue")!=null)
         {
