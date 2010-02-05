@@ -13,16 +13,13 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+
+import junit.framework.TestCase;
 
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebXmlProcessor.AbsoluteOrdering;
-import org.eclipse.jetty.webapp.Fragment;
 import org.eclipse.jetty.webapp.WebXmlProcessor.RelativeOrdering;
-
-import junit.framework.TestCase;
 
 /**
  * OrderingTest
@@ -299,7 +296,6 @@ public class OrderingTest extends TestCase
         }
         catch (Exception e)
         {
-            e.printStackTrace();
             assertTrue (e instanceof IllegalStateException);
         }
     }
@@ -341,7 +337,6 @@ public class OrderingTest extends TestCase
         }
         catch (Exception e)
         {
-            e.printStackTrace();
             assertTrue (e instanceof IllegalStateException);
         }
     }

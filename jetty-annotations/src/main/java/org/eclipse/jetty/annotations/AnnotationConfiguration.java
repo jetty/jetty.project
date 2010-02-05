@@ -13,10 +13,13 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.ServiceLoader;
 
 import javax.servlet.ServletContainerInitializer;
+import javax.servlet.ServletContext;
 import javax.servlet.annotation.HandlesTypes;
 
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
@@ -116,38 +119,68 @@ public class AnnotationConfiguration extends AbstractConfiguration
         context.setAttribute(ContainerInitializerConfiguration.CONTAINER_INITIALIZERS, initializers);
         
         //We use the ServiceLoader mechanism to find the ServletContainerInitializer classes to inspect
-        ServiceLoader<ServletContainerInitializer> loadedInitializers = ServiceLoader.load(ServletContainerInitializer.class);
+        ServiceLoader<ServletContainerInitializer> loadedInitializers = ServiceLoader.load(ServletContainerInitializer.class, context.getClassLoader());
+        List<String> orderedJars = (List<String>) context.getAttribute(ServletContext.ORDERED_LIBS);
         if (loadedInitializers != null)
         {
-            for (ServletContainerInitializer i : loadedInitializers)
+            for (ServletContainerInitializer service : loadedInitializers)
             {
-                //TODO : work out if the initializer came from an excluded url?
-                //URL(classloader.getSystemResources(service.getClass().toString().replace('.','/')+".class").next().toString());
-                HandlesTypes annotation = i.getClass().getAnnotation(HandlesTypes.class);
-                ContainerInitializer initializer = new ContainerInitializer();
-                initializer.setTarget(i);
-                initializers.add(initializer);
-                if (annotation != null)
-                {
-                    Class[] classes = annotation.value();
-                    if (classes != null)
+                if (!isFromExcludedJar(orderedJars, service))
+                { 
+                    HandlesTypes annotation = service.getClass().getAnnotation(HandlesTypes.class);
+                    ContainerInitializer initializer = new ContainerInitializer();
+                    initializer.setTarget(service);
+                    initializers.add(initializer);
+                    if (annotation != null)
                     {
-                        initializer.setInterestedTypes(classes);
-                        for (Class c: classes)
+                        Class[] classes = annotation.value();
+                        if (classes != null)
                         {
-                            if (c.isAnnotation())
+                            initializer.setInterestedTypes(classes);
+                            for (Class c: classes)
                             {
-                                if (Log.isDebugEnabled()) Log.debug("Registering annotation handler for "+c.getName());
-                                parser.registerAnnotationHandler(c.getName(), new ContainerInitializerAnnotationHandler(initializer, c));
+                                if (c.isAnnotation())
+                                {
+                                    if (Log.isDebugEnabled()) Log.debug("Registering annotation handler for "+c.getName());
+                                    parser.registerAnnotationHandler(c.getName(), new ContainerInitializerAnnotationHandler(initializer, c));
+                                }
                             }
                         }
+                        else
+                            Log.info("No classes in HandlesTypes on initializer "+service.getClass());
                     }
                     else
-                        Log.info("No classes in HandlesTypes on initializer "+i.getClass());
+                        Log.info("No annotation on initializer "+service.getClass());
                 }
-                else
-                    Log.info("No annotation on initializer "+i.getClass());
             }
         }
+    }
+    
+    /**
+     * Check to see if the ServletContainerIntializer loaded via the ServiceLoader came
+     * from a jar that is excluded by the fragment ordering. See ServletSpec 3.0 p.85.
+     * @param orderedJars
+     * @param service
+     * @return
+     */
+    public boolean isFromExcludedJar (List<String> orderedJars, ServletContainerInitializer service)
+    {
+        boolean isExcluded = false;
+        
+        try
+        {
+            String loadingJarName = context.getClassLoader().getSystemResources(service.getClass().toString().replace('.','/')+".class").nextElement().toString();
+            int i = loadingJarName.indexOf(".jar");          
+            int j = loadingJarName.lastIndexOf("/", i);
+            loadingJarName = loadingJarName.substring(j,i+3);
+            if (orderedJars != null)
+                isExcluded = orderedJars.contains(loadingJarName);
+        }
+        catch (Exception e)
+        {
+            Log.warn("Problem determining jar containing ServletContaininerInitializer "+service, e);   
+        }
+
+        return isExcluded;
     }
 }

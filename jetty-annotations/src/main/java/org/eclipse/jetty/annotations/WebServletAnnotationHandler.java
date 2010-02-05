@@ -167,21 +167,16 @@ public class WebServletAnnotationHandler implements DiscoverableAnnotationHandle
             
             //check the url-patterns, if there annotation has a new one, add it
             ServletMapping[] mappings = _wac.getServletHandler().getServletMappings();
-            
-            //find which patterns aren't already in web.xml
-            if (mappings != null)
+
+            //ServletSpec 3.0 p81 If a servlet already has url mappings from a 
+            //descriptor the annotation is ignored
+            if (mappings == null)
             {
-                for (ServletMapping mapping : mappings)
-                {   
-                    List<String> specs = LazyList.array2List(mapping.getPathSpecs());
-                    urlPatternList.removeAll(specs);
-                }
+                ServletMapping mapping = new ServletMapping();
+                mapping.setServletName(servletName);
+                mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
+                _wac.getServletHandler().addServletMapping(mapping); 
             }
-            //add the remaining new ones in as mapping patterns
-            ServletMapping mapping = new ServletMapping();
-            mapping.setServletName(servletName);
-            mapping.setPathSpecs(LazyList.toStringArray(urlPatternList));
-            _wac.getServletHandler().addServletMapping(mapping); 
         }
     }
 

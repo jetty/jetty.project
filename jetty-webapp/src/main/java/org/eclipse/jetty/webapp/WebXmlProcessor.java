@@ -17,18 +17,14 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 
-import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;

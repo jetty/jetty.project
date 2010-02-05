@@ -62,61 +62,129 @@ public class WebFilterAnnotationHandler implements DiscoverableAnnotationHandler
         }
         
         WebFilter filterAnnotation = (WebFilter)clazz.getAnnotation(WebFilter.class);
-        
+
         if (filterAnnotation.value().length > 0 && filterAnnotation.urlPatterns().length > 0)
         {
             Log.warn(clazz.getName()+" defines both @WebFilter.value and @WebFilter.urlPatterns");
             return;
         }
-        
-        FilterHolder holder = _wac.getServletHandler().newFilterHolder(Holder.Source.ANNOTATION);
-        holder.setHeldClass(clazz);
-        holder.setName((filterAnnotation.filterName().equals("")?clazz.getName():filterAnnotation.filterName()));
-        holder.setDisplayName(filterAnnotation.displayName());
 
-        for (WebInitParam ip:  filterAnnotation.initParams())
-        {
-            holder.setInitParameter(ip.name(), ip.value());
-        }
-        
+        String name = (filterAnnotation.filterName().equals("")?clazz.getName():filterAnnotation.filterName());
         String[] urlPatterns = filterAnnotation.value();
         if (urlPatterns.length == 0)
             urlPatterns = filterAnnotation.urlPatterns();
-       
-        FilterMapping mapping = new FilterMapping();
-        mapping.setFilterName(holder.getName());
-
-        if (urlPatterns.length > 0)
-        {
-            ArrayList paths = new ArrayList();
-            for (String s:urlPatterns)
-            {
-                paths.add(Util.normalizePattern(s));
-            }
-            mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
-        }
-
-        if (filterAnnotation.servletNames().length > 0)
-        {
-            ArrayList<String> names = new ArrayList<String>();
-            for (String s : filterAnnotation.servletNames())
-            {
-                names.add(s);
-            }
-            mapping.setServletNames((String[])names.toArray(new String[names.size()]));
-        }
-
-        EnumSet<DispatcherType> dispatcherSet = EnumSet.noneOf(DispatcherType.class);           
-        for (DispatcherType d : filterAnnotation.dispatcherTypes())
-        {
-            dispatcherSet.add(d);
-        }
-        mapping.setDispatcherTypes(dispatcherSet);
-
-        holder.setAsyncSupported(filterAnnotation.asyncSupported());
         
-        _wac.getServletHandler().addFilter(holder);
-        _wac.getServletHandler().addFilterMapping(mapping);
+        FilterHolder holder = _wac.getServletHandler().getFilter(name);
+        if (holder == null)
+        {
+            //Filter with this name does not already exist, so add it
+            holder = _wac.getServletHandler().newFilterHolder(Holder.Source.ANNOTATION);
+            holder.setHeldClass(clazz);
+            holder.setName(name);
+            holder.setDisplayName(filterAnnotation.displayName());
+
+            for (WebInitParam ip:  filterAnnotation.initParams())
+            {
+                holder.setInitParameter(ip.name(), ip.value());
+            }
+
+            FilterMapping mapping = new FilterMapping();
+            mapping.setFilterName(holder.getName());
+
+            if (urlPatterns.length > 0)
+            {
+                ArrayList paths = new ArrayList();
+                for (String s:urlPatterns)
+                {
+                    paths.add(Util.normalizePattern(s));
+                }
+                mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
+            }
+
+            if (filterAnnotation.servletNames().length > 0)
+            {
+                ArrayList<String> names = new ArrayList<String>();
+                for (String s : filterAnnotation.servletNames())
+                {
+                    names.add(s);
+                }
+                mapping.setServletNames((String[])names.toArray(new String[names.size()]));
+            }
+
+            EnumSet<DispatcherType> dispatcherSet = EnumSet.noneOf(DispatcherType.class);           
+            for (DispatcherType d : filterAnnotation.dispatcherTypes())
+            {
+                dispatcherSet.add(d);
+            }
+            mapping.setDispatcherTypes(dispatcherSet);
+
+            holder.setAsyncSupported(filterAnnotation.asyncSupported());
+
+            _wac.getServletHandler().addFilter(holder);
+            _wac.getServletHandler().addFilterMapping(mapping);
+        }
+        else
+        {
+            //A Filter definition for the same name already exists from web.xml
+            //ServletSpec 3.0 p81 if the Filter is already defined and has mappings,
+            //they override the annotation. If it already has DispatcherType set, that
+            //also overrides the annotation. Init-params are additive, but web.xml overrides
+            //init-params of the same name.
+            for (WebInitParam ip:  filterAnnotation.initParams())
+            {
+                if (holder.getInitParameter(ip.name()) == null)
+                    holder.setInitParameter(ip.name(), ip.value());
+            }
+            
+            FilterMapping[] mappings = _wac.getServletHandler().getFilterMappings();
+            boolean mappingExists = false;
+            if (mappings != null)
+            {
+                for (FilterMapping m:mappings)
+                {
+                    if (m.getFilterName().equals(name))
+                    {
+                        mappingExists = true;
+                        break;
+                    }
+                }
+            }
+            //if the web.xml didn't specify at least one mapping, use the mappings from the annotation and the DispatcherTypes
+            //from the annotation
+            if (!mappingExists)
+            {
+                FilterMapping mapping = new FilterMapping();
+                mapping.setFilterName(holder.getName());
+
+                if (urlPatterns.length > 0)
+                {
+                    ArrayList paths = new ArrayList();
+                    for (String s:urlPatterns)
+                    {
+                        paths.add(Util.normalizePattern(s));
+                    }
+                    mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
+                }
+                if (filterAnnotation.servletNames().length > 0)
+                {
+                    ArrayList<String> names = new ArrayList<String>();
+                    for (String s : filterAnnotation.servletNames())
+                    {
+                        names.add(s);
+                    }
+                    mapping.setServletNames((String[])names.toArray(new String[names.size()]));
+                }
+                
+                EnumSet<DispatcherType> dispatcherSet = EnumSet.noneOf(DispatcherType.class);           
+                for (DispatcherType d : filterAnnotation.dispatcherTypes())
+                {
+                    dispatcherSet.add(d);
+                }
+                mapping.setDispatcherTypes(dispatcherSet);
+                
+                _wac.getServletHandler().addFilterMapping(mapping);          
+            }
+        }
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,

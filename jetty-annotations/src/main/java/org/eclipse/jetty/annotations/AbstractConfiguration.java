@@ -24,9 +24,9 @@ import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlProcessor;
-import org.eclipse.jetty.webapp.WebXmlProcessor.Descriptor;
-import org.eclipse.jetty.webapp.WebXmlProcessor.Fragment;
-import org.eclipse.jetty.webapp.WebXmlProcessor.MetaDataComplete;
+import org.eclipse.jetty.webapp.Descriptor;
+import org.eclipse.jetty.webapp.Fragment;
+import org.eclipse.jetty.webapp.Descriptor.MetaDataComplete;
 
 
 public abstract class AbstractConfiguration implements Configuration
