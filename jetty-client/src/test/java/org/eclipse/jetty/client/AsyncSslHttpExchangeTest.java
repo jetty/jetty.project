@@ -27,9 +27,4 @@ public class AsyncSslHttpExchangeTest extends SslHttpExchangeTest
         _httpClient.start();
     }
 
-    @Override
-    public void testSun() throws Exception
-    {
-        super.testSun();
-    }
 }
