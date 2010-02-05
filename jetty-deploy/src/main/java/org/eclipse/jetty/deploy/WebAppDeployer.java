@@ -15,7 +15,6 @@ package org.eclipse.jetty.deploy;
 
 import java.util.ArrayList;
 
-import org.eclipse.jetty.deploy.providers.MonitoredDirAppProvider;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -32,7 +31,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * 
  * <p>
  * Note: The WebAppDeployer is being phased out of Jetty in favor of the {@link DeploymentManager} and
- * {@link MonitoredDirAppProvider} implementation.
+ * {@link org.eclipse.jetty.deploy.providers.WebAppProvider} implementation.
  * 
  * <p>
  * The class searches a directory for and deploys standard web application. At startup, the directory specified by

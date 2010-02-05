@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.deploy.providers.MonitoredDirAppProvider;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -35,7 +34,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * 
  * <p>
  * Note: The WebAppDeployer is being phased out of Jetty in favor of the {@link DeploymentManager} and
- * {@link MonitoredDirAppProvider} implementation.
+ * {@link org.eclipse.jetty.deploy.providers.ContextProvider} implementation.
  * 
  * <p>
  * This deployer scans a designated directory by {@link #setConfigurationDir(String)} for the appearance/disappearance
