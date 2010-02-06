@@ -16,6 +16,7 @@ jetty-7.0.2-SNAPSHOT
  + JETTY-1156 SSL blocking close with JVM Bug busy key fix
  + JETTY-1157 Don't hold array passed in write(byte[])
  + JETTY-1151 JETTY-1098 allow UTF-8 with 0 carry bits
+ + JETTY-1177 Allow error handler to set cacheControl
  + COMETD-46 reset ContentExchange response content on resend
  + 300178 HttpClients opens too many connections that are immediately closed
  + 300733 Jars from lib/ext are not visible for my web application
