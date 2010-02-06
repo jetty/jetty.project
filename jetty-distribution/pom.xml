@@ -29,7 +29,6 @@
           </execution>
         </executions>
       </plugin>
-      <!--
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
@@ -43,7 +42,9 @@
               <tasks>
                 <property name="orbit.base.url" value="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles" />
                 <mkdir dir="${assembly.directory}/lib" />
+      <!--
                 <get src="${orbit.base.url}/javax.servlet_2.5.0.v200806031605.jar" dest="${assembly.directory}/lib/servlet-api-2.5.jar" usetimestamp="true" verbose="true" />
+      -->
                 <mkdir dir="${assembly.directory}/lib/jndi" />
                 <get src="${orbit.base.url}/javax.activation_1.1.0.v200905021805.jar" dest="${assembly.directory}/lib/jndi/activation-1.1.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit.base.url}/javax.mail_1.4.0.v200905040518.jar" dest="${assembly.directory}/lib/jndi/mail-1.4.jar" usetimestamp="true" verbose="true" />
@@ -54,7 +55,6 @@
           </execution>
         </executions>
       </plugin>
-      -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-remote-resources-plugin</artifactId>
@@ -379,6 +379,16 @@
                   <outputDirectory>${assembly.directory}</outputDirectory>
                   <destFileName>start.jar</destFileName>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>${servlet.spec.groupId}</groupId>
+                  <artifactId>${servlet.spec.artifactId}</artifactId>
+                  <version>${servlet.spec.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <destFileName>servlet-api-3.0.jar</destFileName>
+                </artifactItem>
               </artifactItems>
             </configuration>
           </execution>
@@ -501,6 +511,11 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-policy</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${servlet.spec.groupId}</groupId>
+      <artifactId>${servlet.spec.artifactId}</artifactId>
+      <version>${servlet.spec.version}</version>
     </dependency>
   </dependencies>
 </project>
