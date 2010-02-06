@@ -632,7 +632,9 @@ public class WebXmlProcessor
     throws Exception
     {
         //Servlet Spec 3.0 p.74 says all descriptors must say distributable
-        boolean distributable = (_webDefaultsRoot.isDistributable() || _webXmlRoot.isDistributable() || _webOverrideRoot.isDistributable());
+        boolean distributable = ((_webDefaultsRoot != null && _webDefaultsRoot.isDistributable()) 
+                                 || (_webXmlRoot != null && _webXmlRoot.isDistributable())
+                                 || (_webOverrideRoot != null && _webOverrideRoot.isDistributable()));
         for (Fragment frag : _orderedFragments)
         {
             process(frag);       

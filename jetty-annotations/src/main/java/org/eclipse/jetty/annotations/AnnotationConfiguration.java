@@ -169,7 +169,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         
         try
         {
-            String loadingJarName = context.getClassLoader().getSystemResources(service.getClass().toString().replace('.','/')+".class").nextElement().toString();
+            String loadingJarName = Thread.currentThread().getContextClassLoader().getSystemResources(service.getClass().toString().replace('.','/')+".class").nextElement().toString();
             int i = loadingJarName.indexOf(".jar");          
             int j = loadingJarName.lastIndexOf("/", i);
             loadingJarName = loadingJarName.substring(j,i+3);

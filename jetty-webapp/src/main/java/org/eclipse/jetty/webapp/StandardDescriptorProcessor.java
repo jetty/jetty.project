@@ -91,7 +91,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             registerVisitor("session-config", this.getClass().getDeclaredMethod("visitSessionConfig",  __signature));
             registerVisitor("mime-mapping", this.getClass().getDeclaredMethod("visitMimeMapping",  __signature)); 
             registerVisitor("welcome-file-list", this.getClass().getDeclaredMethod("visitWelcomeFileList",  __signature));
-            registerVisitor("locale-encoding-mapping-list", this.getClass().getDeclaredMethod("visitLocaleEncoding",  __signature));
+            registerVisitor("locale-encoding-mapping-list", this.getClass().getDeclaredMethod("visitLocaleEncodingList",  __signature));
             registerVisitor("error-page", this.getClass().getDeclaredMethod("visitErrorPage",  __signature));
             registerVisitor("taglib", this.getClass().getDeclaredMethod("visitTagLib",  __signature));
             registerVisitor("jsp-config", this.getClass().getDeclaredMethod("visitJspConfig",  __signature));
@@ -933,7 +933,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
     
-    protected void visitMimeConfig(Descriptor descriptor, XmlParser.Node node)
+    protected void visitMimeMapping(Descriptor descriptor, XmlParser.Node node)
     {
         String extension = node.getString("extension", false, true);
         if (extension != null && extension.startsWith(".")) 

@@ -53,20 +53,23 @@ public abstract class IterativeDescriptorProcessor implements DescriptorProcesso
     public void process(Descriptor descriptor)
     throws Exception
     {
-       start();
+        if (descriptor == null)
+            return;
 
-       XmlParser.Node root = descriptor.getRoot();
-       Iterator iter = root.iterator();
-       XmlParser.Node node = null;
-       while (iter.hasNext())
-       {
-           Object o = iter.next();
-           if (!(o instanceof XmlParser.Node)) continue;
-           node = (XmlParser.Node) o;
-           visit(descriptor, node);
-       }
-       
-       end();
+        start();
+
+        XmlParser.Node root = descriptor.getRoot();
+        Iterator iter = root.iterator();
+        XmlParser.Node node = null;
+        while (iter.hasNext())
+        {
+            Object o = iter.next();
+            if (!(o instanceof XmlParser.Node)) continue;
+            node = (XmlParser.Node) o;
+            visit(descriptor, node);
+        }
+
+        end();
     }
 
 
