@@ -100,7 +100,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     public void postConfigure(WebAppContext context) throws Exception
     {
-        context.setAttribute(CLASS_INHERITANCE_MAP, null);
+        //context.setAttribute(CLASS_INHERITANCE_MAP, null);
     }
     
 
@@ -125,7 +125,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         {
             for (ServletContainerInitializer service : loadedInitializers)
             {
-                if (!isFromExcludedJar(orderedJars, service))
+                if (!isFromExcludedJar(context, orderedJars, service))
                 { 
                     HandlesTypes annotation = service.getClass().getAnnotation(HandlesTypes.class);
                     ContainerInitializer initializer = new ContainerInitializer();
@@ -163,16 +163,18 @@ public class AnnotationConfiguration extends AbstractConfiguration
      * @param service
      * @return
      */
-    public boolean isFromExcludedJar (List<String> orderedJars, ServletContainerInitializer service)
+    public boolean isFromExcludedJar (WebAppContext context, List<String> orderedJars, ServletContainerInitializer service)
     {
         boolean isExcluded = false;
         
         try
         {
-            String loadingJarName = Thread.currentThread().getContextClassLoader().getSystemResources(service.getClass().toString().replace('.','/')+".class").nextElement().toString();
+            String loadingJarName = Thread.currentThread().getContextClassLoader().getResource(service.getClass().getName().replace('.','/')+".class").toString();
+         
             int i = loadingJarName.indexOf(".jar");          
             int j = loadingJarName.lastIndexOf("/", i);
-            loadingJarName = loadingJarName.substring(j,i+3);
+            loadingJarName = loadingJarName.substring(j+1,i+4);
+          
             if (orderedJars != null)
                 isExcluded = orderedJars.contains(loadingJarName);
         }

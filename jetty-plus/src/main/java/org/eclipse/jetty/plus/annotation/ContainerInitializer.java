@@ -79,16 +79,27 @@ public class ContainerInitializer
     }
     
     
-    public void callStartup(ServletContext context)
+    public void callStartup(WebAppContext context)
     throws Exception
     {
-       if (_target != null)
-       {
-           Set<Class<?>> classes = new HashSet<Class<?>>();
-           for (String s : _applicableTypeNames)
-               classes.add(Loader.loadClass(ContainerInitializer.class, s));
-           
-           _target.onStartup(classes, context);
-       }
+        if (_target != null)
+        {
+            Set<Class<?>> classes = new HashSet<Class<?>>();
+          
+            ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(context.getClassLoader());
+
+            try
+            {
+                for (String s : _applicableTypeNames)
+                    classes.add(Loader.loadClass(context.getClass(), s));
+
+                _target.onStartup(classes, context.getServletContext());
+            }
+            finally
+            {
+                Thread.currentThread().setContextClassLoader(oldLoader);
+            }
+        }
     }
 }

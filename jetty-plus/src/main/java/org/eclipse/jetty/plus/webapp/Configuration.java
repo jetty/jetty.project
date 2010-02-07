@@ -80,12 +80,10 @@ public class Configuration implements org.eclipse.jetty.webapp.Configuration
     
     public void postConfigure(WebAppContext context) throws Exception
     {
+        System.err.println("PlusConfiguration.postConfigure CCL:"+Thread.currentThread().getContextClassLoader());
         //lock this webapp's java:comp namespace as per J2EE spec
-        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(context.getClassLoader());
         lockCompEnv(context);
-        Thread.currentThread().setContextClassLoader(oldLoader);
-        
+    
         context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, null);
         context.setAttribute(InjectionCollection.INJECTION_COLLECTION, null);
         context.setAttribute(RunAsCollection.RUNAS_COLLECTION, null); 
@@ -94,11 +92,8 @@ public class Configuration implements org.eclipse.jetty.webapp.Configuration
     public void deconfigure (WebAppContext context)
     throws Exception
     {
-        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(context.getClassLoader());
         unlockCompEnv(context);
         _key = null;
-        Thread.currentThread().setContextClassLoader(oldLoader);
     }
     
     public void bindUserTransaction (WebAppContext context)
@@ -139,19 +134,20 @@ public class Configuration implements org.eclipse.jetty.webapp.Configuration
     throws Exception
     {
         if (_key!=null)
-        {ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(wac.getClassLoader());
+        {
+            ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(wac.getClassLoader());
 
-        try
-        {
-            Context context = new InitialContext();
-            Context compCtx = (Context)context.lookup("java:comp");
-            compCtx.addToEnvironment("org.eclipse.jndi.unlock", _key); 
-        }
-        finally
-        {
-            Thread.currentThread().setContextClassLoader(old_loader);
-        }
+            try
+            {
+                Context context = new InitialContext();
+                Context compCtx = (Context)context.lookup("java:comp");
+                compCtx.addToEnvironment("org.eclipse.jndi.unlock", _key); 
+            }
+            finally
+            {
+                Thread.currentThread().setContextClassLoader(old_loader);
+            }
         }
     }
 }

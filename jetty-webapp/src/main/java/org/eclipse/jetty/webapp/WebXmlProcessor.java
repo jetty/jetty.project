@@ -619,7 +619,7 @@ public class WebXmlProcessor
                 String fullname = frag.getResource().getName();
                 int i = fullname.indexOf(".jar");          
                 int j = fullname.lastIndexOf("/", i);
-                orderedJars.add(fullname.substring(j,i+3));
+                orderedJars.add(fullname.substring(j+1,i+4));
             }
             _context.setAttribute(ServletContext.ORDERED_LIBS, orderedJars);
         }

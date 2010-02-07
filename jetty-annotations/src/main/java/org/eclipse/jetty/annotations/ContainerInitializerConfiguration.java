@@ -76,9 +76,8 @@ public class ContainerInitializerConfiguration extends AbstractConfiguration
                         addInheritedTypes(classMap, i, implementsOrExtends);
                 }
             }
-
             //instantiate ServletContainerInitializers, call doStart
-            i.callStartup(context.getServletContext());
+            i.callStartup(context);
         }
         
         //TODO Email from Jan Luehe 18 August: after all ServletContainerInitializers have been
