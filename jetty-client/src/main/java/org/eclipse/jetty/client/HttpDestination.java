@@ -20,7 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
-import org.eclipse.jetty.client.security.Authorization;
+import org.eclipse.jetty.client.security.Authentication;
 import org.eclipse.jetty.client.security.SecurityListener;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeaders;
@@ -46,7 +46,7 @@ public class HttpDestination
     private ArrayBlockingQueue<Object> _newQueue = new ArrayBlockingQueue<Object>(10, true);
     private int _newConnection = 0;
     private Address _proxy;
-    private Authorization _proxyAuthentication;
+    private Authentication _proxyAuthentication;
     private PathMap _authorizations;
     private List<HttpCookie> _cookies;
 
@@ -116,7 +116,7 @@ public class HttpDestination
         }
     }
 
-    public void addAuthorization(String pathSpec, Authorization authorization)
+    public void addAuthorization(String pathSpec, Authentication authorization)
     {
         synchronized (this)
         {
@@ -472,7 +472,7 @@ public class HttpDestination
         // Add any known authorizations
         if (_authorizations != null)
         {
-            Authorization auth = (Authorization)_authorizations.match(ex.getURI());
+            Authentication auth = (Authentication)_authorizations.match(ex.getURI());
             if (auth != null)
                 (auth).setCredentials(ex);
         }
@@ -534,12 +534,12 @@ public class HttpDestination
         return _proxy;
     }
 
-    public Authorization getProxyAuthentication()
+    public Authentication getProxyAuthentication()
     {
         return _proxyAuthentication;
     }
 
-    public void setProxyAuthentication(Authorization authentication)
+    public void setProxyAuthentication(Authentication authentication)
     {
         _proxyAuthentication = authentication;
     }

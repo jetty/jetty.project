@@ -28,11 +28,11 @@ import org.eclipse.jetty.util.StringUtil;
  * 
  * 
  */
-public class BasicAuthorization implements Authorization
+public class BasicAuthentication implements Authentication
 {
     private Buffer _authorization;
     
-    public BasicAuthorization(Realm realm) throws IOException
+    public BasicAuthentication(Realm realm) throws IOException
     {
         String authenticationString = "Basic " + B64Code.encode( realm.getPrincipal() + ":" + realm.getCredentials(), StringUtil.__ISO_8859_1);
         _authorization= new ByteArrayBuffer(authenticationString);

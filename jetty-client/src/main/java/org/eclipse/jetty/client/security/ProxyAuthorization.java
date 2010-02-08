@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.StringUtil;
  * 
  * 
  */
-public class ProxyAuthorization implements Authorization
+public class ProxyAuthorization implements Authentication
 {
     private Buffer _authorization;
     

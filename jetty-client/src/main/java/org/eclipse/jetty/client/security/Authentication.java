@@ -22,7 +22,7 @@ import org.eclipse.jetty.client.HttpExchange;
 /**
  * Simple authentication interface that sets required fields on the exchange.
  */
-public interface Authorization
+public interface Authentication
 {
     public void setCredentials( HttpExchange exchange) throws IOException;
 }

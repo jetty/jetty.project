@@ -18,7 +18,7 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.client.security.Authorization;
+import org.eclipse.jetty.client.security.Authentication;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeaderValues;
@@ -402,7 +402,7 @@ public class HttpConnection implements Connection
                 // TODO suppress port 80 or 443
                 uri = (_destination.isSecure()?HttpSchemes.HTTPS:HttpSchemes.HTTP) + "://" + _destination.getAddress().getHost() + ":"
                         + _destination.getAddress().getPort() + uri;
-                Authorization auth = _destination.getProxyAuthentication();
+                Authentication auth = _destination.getProxyAuthentication();
                 if (auth != null)
                     auth.setCredentials(_exchange);
             }

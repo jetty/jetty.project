@@ -34,7 +34,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
-import org.eclipse.jetty.client.security.Authorization;
+import org.eclipse.jetty.client.security.Authentication;
 import org.eclipse.jetty.client.security.RealmResolver;
 import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpSchemes;
@@ -97,7 +97,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     private Timeout _timeoutQ = new Timeout();
     private Timeout _idleTimeoutQ = new Timeout();
     private Address _proxy;
-    private Authorization _proxyAuthentication;
+    private Authentication _proxyAuthentication;
     private Set<String> _noProxy;
     private int _maxRetries = 3;
     private int _maxRedirects = 20;
@@ -714,13 +714,13 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    public Authorization getProxyAuthentication()
+    public Authentication getProxyAuthentication()
     {
         return _proxyAuthentication;
     }
 
     /* ------------------------------------------------------------ */
-    public void setProxyAuthentication(Authorization authentication)
+    public void setProxyAuthentication(Authentication authentication)
     {
         _proxyAuthentication = authentication;
     }

@@ -23,13 +23,13 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
-public class DigestAuthorization implements Authorization
+public class DigestAuthentication implements Authentication
 {
     private static final String NC = "00000001";
     Realm securityRealm;
     Map details;
     
-    public DigestAuthorization(Realm realm, Map details)
+    public DigestAuthentication(Realm realm, Map details)
     {
         this.securityRealm=realm;
         this.details=details;
