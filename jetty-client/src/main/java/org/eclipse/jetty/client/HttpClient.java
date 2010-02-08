@@ -36,6 +36,7 @@ import javax.net.ssl.X509TrustManager;
 
 import org.eclipse.jetty.client.security.Authentication;
 import org.eclipse.jetty.client.security.RealmResolver;
+import org.eclipse.jetty.client.security.SecurityListener;
 import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.security.Password;
@@ -271,6 +272,12 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    /** Set a RealmResolver for client Authentication.
+     * If a realmResolver is set, then the HttpDestinations created by 
+     * this client will instantiate a {@link SecurityListener} so that
+     * BASIC and DIGEST authentication can be performed.
+     * @param resolver
+     */
     public void setRealmResolver(RealmResolver resolver)
     {
         _realmResolver = resolver;
@@ -278,7 +285,7 @@ public class HttpClient extends HttpBuffers implements Attributes
 
     /* ------------------------------------------------------------ */
     /**
-     * returns the SecurityRealmResolver registered with the HttpClient or null
+     * returns the SecurityRealmResolver reg_realmResolveristered with the HttpClient or null
      *
      * @return
      */
