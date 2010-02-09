@@ -91,7 +91,6 @@ public class ConstraintTest extends TestCase
         Constraint constraint2 = new Constraint();
         constraint2.setAuthenticate(true);
         constraint2.setName("admin");
-
         constraint2.setRoles(new String[]{"administrator"});
         ConstraintMapping mapping2 = new ConstraintMapping();
         mapping2.setPathSpec("/admin/*");
@@ -105,13 +104,21 @@ public class ConstraintTest extends TestCase
         mapping3.setPathSpec("/admin/relax/*");
         mapping3.setConstraint(constraint3);
 
+        Constraint constraint4 = new Constraint();
+        constraint4.setAuthenticate(true);
+        constraint4.setName("loginpage");
+        constraint4.setRoles(new String[]{"administrator"});
+        ConstraintMapping mapping4 = new ConstraintMapping();
+        mapping4.setPathSpec("/testLoginPage");
+        mapping4.setConstraint(constraint4);
+        
         Set<String> knownRoles=new HashSet<String>();
         knownRoles.add("user");
         knownRoles.add("administrator");
 
         _security.setConstraintMappings(new ConstraintMapping[]
                 {
-                        mapping0, mapping1, mapping2, mapping3
+                        mapping0, mapping1, mapping2, mapping3, mapping4
                 },knownRoles);
     }
 
@@ -219,7 +226,7 @@ public class ConstraintTest extends TestCase
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
     }
 
-    public void testFormdispatch()
+    public void testFormDispatch()
             throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",true));
@@ -289,9 +296,15 @@ public class ConstraintTest extends TestCase
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
         assertTrue(response.indexOf(" 302 Found") > 0);
         assertTrue(response.indexOf("/ctx/testLoginPage") > 0);
-
         String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
+        response = _connector.getResponses("GET /ctx/testLoginPage HTTP/1.0\r\n"+
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        System.err.println(response);
+        assertTrue(response.indexOf(" 200 OK") > 0);
+        assertTrue(response.indexOf("URI=/ctx/testLoginPage") > 0);
+        
         response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +

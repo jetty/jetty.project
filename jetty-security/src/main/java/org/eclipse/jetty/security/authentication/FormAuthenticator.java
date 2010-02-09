@@ -158,7 +158,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (!mandatory)
             return _deferred;
         
-        if (isLoginOrErrorPage(uri))
+        if (isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo())))
             return Authentication.NOT_CHECKED;
             
         HttpSession session = request.getSession(true);

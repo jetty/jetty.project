@@ -11,6 +11,7 @@ jetty-7.0.2-SNAPSHOT
  + 299455 Enum support in JSONPojoConvertor
  + 302198 Rename HttpClient authorization classes to Authentication
  + 302244 invalid configuration boolean conversion in FormAuthenticator 
+ + 302246 redirect loop using form authenticator
  + JETTY-776 Make new session-tests module to concentrate all reusable session clustering test code
  + JETTY-910 Allow request listeners to access session
  + JETTY-1153 System property for UrlEncoded charset
