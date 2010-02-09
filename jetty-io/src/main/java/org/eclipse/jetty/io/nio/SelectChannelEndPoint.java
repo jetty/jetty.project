@@ -286,7 +286,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                         updateKey();
                         this.wait(timeoutMs);
 
-                        if (_readBlocked && timeoutMs<(_selectSet.getNow()-start))
+                        timeoutMs -= _selectSet.getNow()-start;
+                        if (_readBlocked && timeoutMs<=0)
                             return false;
                     }
                     catch (InterruptedException e)
@@ -323,7 +324,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                         updateKey();
                         this.wait(timeoutMs);
 
-                        if (_writeBlocked && timeoutMs<(_selectSet.getNow()-start))
+                        timeoutMs -= _selectSet.getNow()-start;
+                        if (_writeBlocked && timeoutMs<=0)
                             return false;
                     }
                     catch (InterruptedException e)

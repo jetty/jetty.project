@@ -377,9 +377,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     {
         try{close();} catch(IOException e) {Log.warn(e);}
 
-        if (_threadPool==_server.getThreadPool())
-            _threadPool=null;
-        else if (_threadPool instanceof LifeCycle)
+        if (_threadPool!=_server.getThreadPool() && _threadPool instanceof LifeCycle)
             ((LifeCycle)_threadPool).stop();
 
         super.doStop();
