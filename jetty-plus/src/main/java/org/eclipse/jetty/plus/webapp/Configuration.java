@@ -80,7 +80,6 @@ public class Configuration implements org.eclipse.jetty.webapp.Configuration
     
     public void postConfigure(WebAppContext context) throws Exception
     {
-        System.err.println("PlusConfiguration.postConfigure CCL:"+Thread.currentThread().getContextClassLoader());
         //lock this webapp's java:comp namespace as per J2EE spec
         lockCompEnv(context);
     
