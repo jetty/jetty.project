@@ -35,8 +35,9 @@ import org.eclipse.jetty.util.thread.Timeout;
 /**
  * The Selector Manager manages and number of SelectSets to allow
  * NIO scheduling to scale to large numbers of connections.
- * 
- * 
+ * <p>
+ * This class works around a number of know JVM bugs. For details
+ * see http://wiki.eclipse.org/Jetty/Feature/JVM_NIO_Bug
  *
  */
 public abstract class SelectorManager extends AbstractLifeCycle
@@ -525,10 +526,10 @@ public abstract class SelectorManager extends AbstractLifeCycle
                             Log.info(this+" JVM BUG(s) - injecting delay"+_jvmFix2+" times");
 
                         if (_jvmFix1>0)
-                            Log.info(this+" JVM BUG(s) - recreating selector "+_jvmFix1+" times, canceled keys "+_jvmFix0+" times");
+                            Log.info(this+" JVM BUG(s) - recreating selector "+_jvmFix1+" times, cancelled keys "+_jvmFix0+" times");
 
                         else if(Log.isDebugEnabled() && _jvmFix0>0)
-                            Log.info(this+" JVM BUG(s) - canceled keys "+_jvmFix0+" times");
+                            Log.info(this+" JVM BUG(s) - cancelled keys "+_jvmFix0+" times");
                         _paused=0;
                         _jvmFix2=0;
                         _jvmFix1=0;
