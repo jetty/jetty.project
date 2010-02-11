@@ -21,7 +21,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 
@@ -124,19 +123,16 @@ public class LocalConnector extends AbstractConnector
             {
                 while (endPoint.getIn().length() > 0)
                 {
-                    while(true)
+                    while (true)
                     {
-                        try
-                        {
-                            endPoint.getConnection().handle();
-                            break;
+                        final Connection con = endPoint.getConnection();
+                        final Connection next = con.handle();
+                        if (next!=con)
+                        {  
+                            endPoint.setConnection(next);
+                            continue;
                         }
-                        catch (UpgradeConnectionException e)
-                        {
-                            Log.debug(e.toString());
-                            Log.ignore(e);
-                            endPoint.setConnection(e.getConnection());
-                        }
+                        break;
                     }
                 }
             }

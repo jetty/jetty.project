@@ -24,7 +24,6 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -470,14 +469,16 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
             {
                 try
                 {
-                    _connection.handle();
-                }
-                catch (UpgradeConnectionException e)
-                {
-                    Log.debug(e.toString());
-                    Log.ignore(e);
-                    setConnection(e.getConnection());
-                    continue;
+                    while(true)
+                    {
+                        final Connection next = _connection.handle();
+                        if (next!=_connection)
+                        {  
+                            _connection=next;
+                            continue;
+                        }
+                        break;
+                    }
                 }
                 catch (ClosedChannelException e)
                 {

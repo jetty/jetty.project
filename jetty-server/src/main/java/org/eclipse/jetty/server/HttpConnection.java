@@ -45,7 +45,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
-import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -363,7 +362,7 @@ public class HttpConnection implements Connection
     }
 
     /* ------------------------------------------------------------ */
-    public void handle() throws IOException
+    public Connection handle() throws IOException
     {
         // Loop while more in buffer
         boolean more_in_buffer =true; // assume true until proven otherwise
@@ -428,7 +427,7 @@ public class HttpConnection implements Connection
                         }
 
                         if (!progress)
-                            return;
+                            return this;
                     }
                     progress=false;
                 }
@@ -452,6 +451,16 @@ public class HttpConnection implements Connection
 
                     if (_parser.isComplete() && _generator.isComplete() && !_endp.isBufferingOutput())
                     {
+                        if (_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
+                        {
+                            Connection connection = (Connection)_request.getAttribute("org.eclipse.jetty.io.Connection");
+                            if (connection!=null)
+                            {
+                                _parser.reset(true);
+                                return connection;
+                            }
+                        }
+                        
                         if (!_generator.isPersistent())
                         {
                             _parser.reset(true);
@@ -483,6 +492,7 @@ public class HttpConnection implements Connection
             setCurrentConnection(null);
             _handling=false;
         }
+        return this;
     }
 
     /* ------------------------------------------------------------ */
@@ -563,10 +573,6 @@ public class HttpConnection implements Connection
                         _request.setDispatcherType(DispatcherType.ASYNC);
                         server.handleAsync(this);
                     }
-                }
-                catch (UpgradeConnectionException e)
-                {
-                    throw e;
                 }
                 catch (ContinuationThrowable e)
                 {

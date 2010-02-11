@@ -84,7 +84,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         }  
     }
     
-    public void handle() throws IOException
+    public Connection handle() throws IOException
     {
         boolean more=true;
         
@@ -120,6 +120,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
                 // TODO - not really the best way
                 _websocket.onDisconnect();
         }
+        return this;
     }
 
     public boolean isOpen()

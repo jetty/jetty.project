@@ -39,7 +39,6 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
@@ -436,10 +435,6 @@ public class ServletHandler extends ScopedHandler
             throw e;
         }
         catch(ContinuationThrowable e)
-        {   
-            throw e;
-        }
-        catch(UpgradeConnectionException e)
         {   
             throw e;
         }

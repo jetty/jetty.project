@@ -7,11 +7,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.io.ConnectedEndPoint;
-import org.eclipse.jetty.io.UpgradeConnectionException;
-import org.eclipse.jetty.server.HttpConnection;
-
 
 /* ------------------------------------------------------------ */
 /**

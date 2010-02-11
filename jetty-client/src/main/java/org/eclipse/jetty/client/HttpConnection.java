@@ -133,7 +133,7 @@ public class HttpConnection implements Connection
         }
     }
 
-    public void handle() throws IOException
+    public Connection handle() throws IOException
     {
         if (_exchange != null)
             _exchange.associate(this);
@@ -171,7 +171,7 @@ public class HttpConnection implements Connection
                                 Log.warn("Unexpected data received but no request sent");
                                 close();
                             }
-                            return;
+                            return this;
                         }
                     }
                     if (!_exchange.isAssociated())
@@ -251,7 +251,7 @@ public class HttpConnection implements Connection
                             if (_generator.flushBuffer()>0)
                                 continue;
                         }
-                        return;
+                        return this;
                     }
                 }
                 catch (Throwable e)
@@ -363,6 +363,8 @@ public class HttpConnection implements Connection
                 _exchange.disassociate();
             }
         }
+        
+        return this;
     }
 
     public boolean isIdle()

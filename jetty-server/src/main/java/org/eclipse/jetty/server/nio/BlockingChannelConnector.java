@@ -25,7 +25,6 @@ import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.io.nio.ChannelEndPoint;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
@@ -167,14 +166,14 @@ public class BlockingChannelConnector extends AbstractNIOConnector
             try
             {
                 connectionOpened(_connection);
-                
+
                 while (isOpen())
                 {
                     if (_connection.isIdle())
                     {
                         if (getServer().getThreadPool().isLowOnThreads())
                         {
-                            int lrmit = getLowResourceMaxIdleTime();
+                            int lrmit = getLowResourcesMaxIdleTime();
                             if (lrmit>=0 && _sotimeout!= lrmit)
                             {
                                 _sotimeout=lrmit;
@@ -182,17 +181,8 @@ public class BlockingChannelConnector extends AbstractNIOConnector
                             }
                         }
                     }
-                    try
-                    {
-                        _connection.handle();
-                    }
-                    catch (UpgradeConnectionException e)
-                    {
-                        Log.debug(e.toString());
-                        Log.ignore(e);
-                        setConnection(e.getConnection());
-                        continue;
-                    }
+                    
+                    _connection = _connection.handle();
                 }
             }
             catch (EofException e)

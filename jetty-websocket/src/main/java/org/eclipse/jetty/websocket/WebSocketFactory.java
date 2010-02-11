@@ -7,7 +7,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.ConnectedEndPoint;
-import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.server.HttpConnection;
 
 
@@ -82,7 +81,7 @@ public class WebSocketFactory
      * @throws IOException
      */
     public void upgrade(HttpServletRequest request,HttpServletResponse response, WebSocket websocket, String origin, String protocol)
-     throws UpgradeConnectionException, IOException
+     throws IOException
      {
         if (!"WebSocket".equals(request.getHeader("Upgrade")))
             throw new IllegalStateException("!Upgrade:websocket");
@@ -109,6 +108,7 @@ public class WebSocketFactory
         connection.fill(((HttpParser)http.getParser()).getBodyBuffer());
 
         websocket.onConnect(connection);
-        throw new UpgradeConnectionException(connection);
+        request.setAttribute("org.eclipse.jetty.io.Connection",connection);
+        response.flushBuffer();
      }
 }
