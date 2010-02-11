@@ -24,9 +24,9 @@
     <eclipse-compiler-version>3.1.1</eclipse-compiler-version>
     <cometd-version>1.0.beta4</cometd-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <servlet.spec.groupId>org.apache.geronimo.specs</servlet.spec.groupId>
-    <servlet.spec.artifactId>geronimo-servlet_3.0_spec</servlet.spec.artifactId>
-    <servlet.spec.version>1.0-SNAPSHOT</servlet.spec.version>
+    <servlet.spec.groupId>org.mortbay.jetty</servlet.spec.groupId>
+    <servlet.spec.artifactId>servlet-api</servlet.spec.artifactId>
+    <servlet.spec.version>3.0-SNAPSHOT</servlet.spec.version>
   </properties>
   <scm>
     <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/branches/jetty-8</connection>
