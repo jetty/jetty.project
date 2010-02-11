@@ -2017,7 +2017,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         @Override
-        public void setSessionTrackingModes(EnumSet<SessionTrackingMode> sessionTrackingModes)
+        public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
         {
             Log.warn(__unimplmented);
         }
