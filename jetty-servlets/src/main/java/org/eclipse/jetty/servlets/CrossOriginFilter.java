@@ -234,7 +234,7 @@ public class CrossOriginFilter implements Filter
         // 5.2.9
         response.setHeader(ACCESS_CONTROL_ALLOW_METHODS_HEADER, commify(allowedMethods));
         // 5.2.10
-        response.setHeader(ACCESS_CONTROL_ALLOW_HEADERS_HEADER, commify(this.allowedHeaders));
+        response.setHeader(ACCESS_CONTROL_ALLOW_HEADERS_HEADER, commify(allowedHeaders));
     }
 
     private boolean isMethodAllowed(HttpServletRequest request)
@@ -254,10 +254,9 @@ public class CrossOriginFilter implements Filter
     {
         String accessControlRequestHeaders = request.getHeader(ACCESS_CONTROL_REQUEST_HEADERS_HEADER);
         Log.debug("{} is {}", ACCESS_CONTROL_REQUEST_HEADERS_HEADER, accessControlRequestHeaders);
-        boolean result = false;
+        boolean result = true;
         if (accessControlRequestHeaders != null)
         {
-            result = true;
             String[] headers = accessControlRequestHeaders.split(",");
             for (String header : headers)
             {

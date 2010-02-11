@@ -10,7 +10,7 @@ jetty-7.0.2-SNAPSHOT
  + 298667 DeploymentManager uses ContextProvider and WebAppProvider
  + 299455 Enum support in JSONPojoConvertor
  + 302198 Rename HttpClient authorization classes to Authentication
- + 302244 invalid configuration boolean conversion in FormAuthenticator 
+ + 302244 invalid configuration boolean conversion in FormAuthenticator
  + 302246 redirect loop using form authenticator
  + JETTY-776 Make new session-tests module to concentrate all reusable session clustering test code
  + JETTY-910 Allow request listeners to access session
@@ -25,6 +25,7 @@ jetty-7.0.2-SNAPSHOT
  + 300733 Jars from lib/ext are not visible for my web application
  + 300933 AbstractConnector uses concurrent objects for stats
  + 301089 Improve statistics available in StatisticsHandler and AbstractConnector
+ + 302556 CrossOriginFilter does not work correctly when Access-Control-Request-Headers header is not present
 
 jetty-7.0.1.v20091125 25 November 2009
  + 274251 DefaultServlet supports exact match mode.
