@@ -657,7 +657,7 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
-        public void setSessionTrackingModes(EnumSet<SessionTrackingMode> sessionTrackingModes)
+        public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
         {
             // TODO other started conditions
             if (!isStarting())
