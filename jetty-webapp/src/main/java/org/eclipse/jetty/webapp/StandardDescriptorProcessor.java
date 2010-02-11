@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2006-2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,9 @@
 package org.eclipse.jetty.webapp;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.EventListener;
@@ -45,6 +48,7 @@ import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebXmlProcessor.Origin;
 import org.eclipse.jetty.xml.XmlParser;
 
@@ -306,10 +310,17 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     String classpath = _context.getClassPath();
                     Log.debug("classpath=" + classpath);
-                    if (classpath != null) registration.setInitParameter("classpath", classpath);
+                    if (classpath != null) 
+                        registration.setInitParameter("classpath", classpath);
                 }
             }
+
+            /* Set the webapp's classpath for Jasper */
+            _context.setAttribute("org.apache.catalina.jsp_classpath", _context.getClassPath());
+            /* Set the system classpath for Jasper */
+            registration.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath());        
         }
+        
         //Set the servlet-class
         if (servlet_class != null) 
         {
@@ -1666,5 +1677,48 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
         if (p != null && p.length() > 0 && !p.startsWith("/") && !p.startsWith("*")) return "/" + p;
         return p;
+    }
+
+    /**
+     * Generate the classpath (as a string) of all classloaders
+     * above the webapp's classloader.
+     * 
+     * This is primarily used for jasper.
+     * @return
+     */
+    protected String getSystemClassPath ()
+    {
+        ClassLoader loader = _context.getClassLoader();
+        if (loader.getParent() != null)
+            loader = loader.getParent();
+
+        StringBuilder classpath=new StringBuilder();
+        while (loader != null && (loader instanceof URLClassLoader))
+        {
+            URL[] urls = ((URLClassLoader)loader).getURLs();
+            if (urls != null)
+            {     
+                for (int i=0;i<urls.length;i++)
+                {
+                    try
+                    {
+                        Resource resource = _context.newResource(urls[i]);
+                        File file=resource.getFile();
+                        if (file!=null && file.exists())
+                        {
+                            if (classpath.length()>0)
+                                classpath.append(File.pathSeparatorChar);
+                            classpath.append(file.getAbsolutePath());
+                        }
+                    }
+                    catch (IOException e)
+                    {
+                        Log.debug(e);
+                    }
+                }
+            }
+            loader = loader.getParent();
+        }
+        return classpath.toString();
     }
 }

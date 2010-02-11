@@ -40,17 +40,7 @@ public class WebXmlConfiguration implements Configuration
      */
     public void preConfigure (WebAppContext context) throws Exception
     {
-        // cannot configure if the context is already started
-        if (context.isStarted())
-        {
-            if (Log.isDebugEnabled())
-            {
-                Log.debug("Cannot configure webapp after it is started");
-            }
-            return;
-        }
         
-        //Get or create a processor to handle webdefaults, web.xml and the fragments
         WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
         if (processor == null)
         {
@@ -58,8 +48,7 @@ public class WebXmlConfiguration implements Configuration
             context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
         }
         
-        
-        //handle webdefault.xml
+        //parse webdefault.xml
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
         {
@@ -67,7 +56,7 @@ public class WebXmlConfiguration implements Configuration
             if (dftResource == null) 
                 dftResource = context.newResource(defaultsDescriptor);
             processor.parseDefaults (dftResource);
-            processor.process(processor.getWebDefault());
+           
         }
         
         //parse, but don't process web.xml
@@ -76,11 +65,21 @@ public class WebXmlConfiguration implements Configuration
         {      
             processor.parseWebXml(webxml);
         }
+        
+        //parse but don't process override-web.xml
+        String overrideDescriptor = context.getOverrideDescriptor();
+        if (overrideDescriptor != null && overrideDescriptor.length() > 0)
+        {
+            Resource orideResource = Resource.newSystemResource(overrideDescriptor);
+            if (orideResource == null) 
+                orideResource = context.newResource(overrideDescriptor);
+            processor.parseOverride(orideResource);
+        }
     }
 
     /* ------------------------------------------------------------------------------- */
     /**
-     * Process web.xml, web-fragment.xml(s), override-web.xml
+     * Process web-default.xml, web.xml, override-web.xml
      * 
      */
     public void configure (WebAppContext context) throws Exception
@@ -98,20 +97,17 @@ public class WebXmlConfiguration implements Configuration
             processor = new WebXmlProcessor (context);
             context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
         }
+        
+      
+        //process web-default.xml
+        processor.process(processor.getWebDefault());
 
         //process web.xml 
         processor.process(processor.getWebXml());
         
-        //process override-web.xml
-        String overrideDescriptor = context.getOverrideDescriptor();
-        if (overrideDescriptor != null && overrideDescriptor.length() > 0)
-        {
-            Resource orideResource = Resource.newSystemResource(overrideDescriptor);
-            if (orideResource == null) 
-                orideResource = context.newResource(overrideDescriptor);
-            processor.parseOverride(orideResource);
-            processor.process(processor.getOverrideWeb());
-        }
+        //process override-web.xml            
+        processor.process(processor.getOverrideWeb());
+      
     }
 
     public void postConfigure(WebAppContext context) throws Exception

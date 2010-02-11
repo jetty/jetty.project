@@ -700,8 +700,11 @@ public class WebXmlProcessor
     public void process (Descriptor descriptor)
     throws Exception
     {      
-        initStandardDescriptorProcessor();
-        process(descriptor, _standardDescriptorProcessor);
+        if (descriptor != null)
+        {
+            initStandardDescriptorProcessor();
+            process(descriptor, _standardDescriptorProcessor);
+        }
     }
   
     
@@ -716,7 +719,8 @@ public class WebXmlProcessor
     public void process (Descriptor descriptor, DescriptorProcessor processor)
     throws Exception
     {
-        processor.process(descriptor);
+        if (descriptor != null && processor != null)
+            processor.process(descriptor);
     }
     
     public Origin getOrigin (String name)
