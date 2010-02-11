@@ -91,8 +91,11 @@ public class ContainerInitializer
 
             try
             {
-                for (String s : _applicableTypeNames)
-                    classes.add(Loader.loadClass(context.getClass(), s));
+                if (_applicableTypeNames != null)
+                {
+                    for (String s : _applicableTypeNames)
+                        classes.add(Loader.loadClass(context.getClass(), s));
+                }
 
                 _target.onStartup(classes, context.getServletContext());
             }

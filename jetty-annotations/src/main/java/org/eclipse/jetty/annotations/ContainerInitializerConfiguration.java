@@ -50,30 +50,35 @@ public class ContainerInitializerConfiguration extends AbstractConfiguration
             //We have already found the classes that directly have an annotation that was in the HandlesTypes
             //annotation of the ServletContainerInitializer. For each of those classes, walk the inheritance
             //hierarchy to find classes that extend or implement them.
-            Set<String> annotatedClassNames = new HashSet<String>(i.getAnnotatedTypeNames());
-            for (String name : annotatedClassNames)
+            if (i.getAnnotatedTypeNames() != null)
             {
-                //add the class with the annotation
-                i.addApplicableTypeName(name);
-                //add the classes that inherit the annotation
-                List<String> implementsOrExtends = (List<String>)classMap.getValues(name);
-                if (implementsOrExtends != null && !implementsOrExtends.isEmpty())
-                    addInheritedTypes(classMap, i, implementsOrExtends);
+                Set<String> annotatedClassNames = new HashSet<String>(i.getAnnotatedTypeNames());
+                for (String name : annotatedClassNames)
+                {
+                    //add the class with the annotation
+                    i.addApplicableTypeName(name);
+                    //add the classes that inherit the annotation
+                    List<String> implementsOrExtends = (List<String>)classMap.getValues(name);
+                    if (implementsOrExtends != null && !implementsOrExtends.isEmpty())
+                        addInheritedTypes(classMap, i, implementsOrExtends);
+                }
             }
-            
-            
+
             
             //Now we need to look at the HandlesTypes classes that were not annotations. We need to
             //find all classes that extend or implement them.
-            for (Class c : i.getInterestedTypes())
+            if (i.getInterestedTypes() != null)
             {
-                if (!c.isAnnotation())
+                for (Class c : i.getInterestedTypes())
                 {
-                    //add the classes that implement or extend the class.
-                    //TODO but not including the class itself?
-                    List<String> implementsOrExtends = (List<String>)classMap.getValues(c.getName());
-                    if (implementsOrExtends != null && !implementsOrExtends.isEmpty())
-                        addInheritedTypes(classMap, i, implementsOrExtends);
+                    if (!c.isAnnotation())
+                    {
+                        //add the classes that implement or extend the class.
+                        //TODO but not including the class itself?
+                        List<String> implementsOrExtends = (List<String>)classMap.getValues(c.getName());
+                        if (implementsOrExtends != null && !implementsOrExtends.isEmpty())
+                            addInheritedTypes(classMap, i, implementsOrExtends);
+                    }
                 }
             }
             //instantiate ServletContainerInitializers, call doStart
