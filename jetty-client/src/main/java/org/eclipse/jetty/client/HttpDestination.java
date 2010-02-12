@@ -20,6 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
+import org.eclipse.jetty.client.HttpClient.Connector;
 import org.eclipse.jetty.client.security.Authentication;
 import org.eclipse.jetty.client.security.SecurityListener;
 import org.eclipse.jetty.http.HttpCookie;
@@ -242,7 +243,9 @@ public class HttpDestination
             {
                 _pendingConnections++;
             }
-            _client._connector.startConnection(this);
+            final Connector connector=_client._connector;
+            if (connector!=null)
+                connector.startConnection(this);
         }
         catch (Exception e)
         {
