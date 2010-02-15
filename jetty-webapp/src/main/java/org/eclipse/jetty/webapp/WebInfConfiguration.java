@@ -453,6 +453,7 @@ public class WebInfConfiguration implements Configuration
                 throw new java.io.FileNotFoundException(war);
             }
         
+            
             context.setBaseResource(web_app);
             
             if (Log.isDebugEnabled())
@@ -463,6 +464,7 @@ public class WebInfConfiguration implements Configuration
         
         // Do we need to extract WEB-INF/lib?
         Resource web_inf= web_app.addPath("WEB-INF/");
+       
         if (web_inf instanceof ResourceCollection ||
             web_inf.exists() && 
             web_inf.isDirectory() && 
@@ -472,12 +474,35 @@ public class WebInfConfiguration implements Configuration
             if (extractedWebInfDir.exists())
                 extractedWebInfDir.delete();
             extractedWebInfDir.mkdir();
+            Resource web_inf_lib = web_inf.addPath("lib/");
             File webInfDir=new File(extractedWebInfDir,"WEB-INF");
             webInfDir.mkdir();
-            Log.info("Extract " + web_inf + " to " + webInfDir);
-            web_inf.copyTo(webInfDir);
+            
+            if (web_inf_lib.exists())
+            {
+                File webInfLibDir = new File(webInfDir, "lib");
+                webInfLibDir.mkdir();
+
+                Log.info("Copying WEB-INF/lib " + web_inf_lib + " to " + webInfLibDir);
+                web_inf_lib.copyTo(webInfLibDir);
+            }
+
+            Resource web_inf_classes = web_inf.addPath("classes/");
+            if (web_inf_classes.exists())
+            {
+                File webInfClassesDir = new File(webInfDir, "classes");
+                webInfClassesDir.mkdir();
+                Log.info("Copying WEB-INF/classes from "+web_inf_classes+" to "+webInfClassesDir.getAbsolutePath());
+                web_inf_classes.copyTo(webInfClassesDir);
+            }
+            
             web_inf=Resource.newResource(extractedWebInfDir.toURL());
+            
             ResourceCollection rc = new ResourceCollection(new Resource[]{web_inf,web_app});
+            
+            if (Log.isDebugEnabled())
+                Log.debug("context.resourcebase = "+rc);
+            
             context.setBaseResource(rc);
         }       
     }
