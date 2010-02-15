@@ -339,7 +339,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         String servletPath=null;
         String pathInfo=null;
         Enumeration reqRanges = null;
-        boolean byteRangeRules = false;
         Boolean included =request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI)!=null;
         if (included!=null && included.booleanValue())
         {
@@ -357,21 +356,10 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             servletPath = request.getServletPath();
             pathInfo = request.getPathInfo();
 
-            // Is this a Content-Range request?
-            reqRanges = request.getHeaders(HttpHeaders.CONTENT_RANGE);
+            // Is this a Range request?
+            reqRanges = request.getHeaders(HttpHeaders.RANGE);
             if (!hasDefinedRange(reqRanges))
-            {
-                // Is this a Range request?
-                reqRanges = request.getHeaders(HttpHeaders.RANGE);
-                if (hasDefinedRange(reqRanges))
-                {
-                    byteRangeRules = true;
-                }
-                else
-                {
-                    reqRanges = null;
-                }
-            }
+                reqRanges = null;
         }
         
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
@@ -474,7 +462,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 			   if (mt!=null)
 			       response.setContentType(mt);
 			}
-			sendData(request,response,included.booleanValue(),resource,content,reqRanges,byteRangeRules);  
+			sendData(request,response,included.booleanValue(),resource,content,reqRanges);  
 		    }
 		}
             }
@@ -724,18 +712,17 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                             boolean include,
                             Resource resource,
                             HttpContent content,
-                            Enumeration reqRanges,
-                            boolean byteRangeRules)
+                            Enumeration reqRanges)
     throws IOException
     {
-        long content_length=resource.length();
+        long content_length=content==null?resource.length():content.getContentLength();
         
         // Get the output stream (or writer)
         OutputStream out =null;
         try{out = response.getOutputStream();}
         catch(IllegalStateException e) {out = new WriterOutputStream(response.getWriter());}
         
-        if ( reqRanges == null || !reqRanges.hasMoreElements())
+        if ( reqRanges == null || !reqRanges.hasMoreElements() || content_length<0)
         {
             //  if there were no ranges, send entire entity
             if (include)
@@ -774,7 +761,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         else
         {
             // Parse the satisfiable ranges
-            List ranges =InclusiveByteRange.satisfiableRanges(reqRanges,byteRangeRules,content_length);
+            List ranges =InclusiveByteRange.satisfiableRanges(reqRanges,content_length);
+            
+            System.err.println(ranges+" "+request.getHeader(HttpHeaders.RANGE)+" "+content_length);
             
             //  if there are no satisfiable ranges, send 416 response
             if (ranges==null || ranges.size()==0)
@@ -799,18 +788,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 response.setHeader(HttpHeaders.CONTENT_RANGE, 
                         singleSatisfiableRange.toHeaderRangeString(content_length));
                 resource.writeTo(out,singleSatisfiableRange.getFirst(content_length),singleLength);
-                return;
-            }
-            
-            // If not following byte range rules (such as when using the "Content-Range" request)
-            // There is no possibility of sending a multi-part range.
-            // See http://tools.ietf.org/html/rfc2616#section-14.16
-            if (!byteRangeRules)
-            {
-                writeHeaders(response,content,content_length);
-                response.setStatus(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE);
-                response.setHeader(HttpHeaders.CONTENT_RANGE,InclusiveByteRange.to416HeaderRangeString(content_length));
-                resource.writeTo(out,0,content_length);
                 return;
             }
             

@@ -518,7 +518,11 @@ public class ResourceCache extends AbstractLifeCycle
         public long getContentLength()
         {
             if (_buffer==null)
+            {
+                if (_resource!=null)
+                    return _resource.length();
                 return -1;
+            }
             return _buffer.length();
         }
 

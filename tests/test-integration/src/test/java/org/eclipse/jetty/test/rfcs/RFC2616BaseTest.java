@@ -1152,89 +1152,6 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         response.assertBody(ALPHA);
     }
 
-    private void assertBadContentRange(String rangedef) throws IOException
-    {
-        //
-        // server should ignore all range headers which include
-        // at least one syntactically invalid range
-        //
-
-        StringBuffer req1 = new StringBuffer();
-        req1.append("GET /rfc2616-webapp/alpha.txt HTTP/1.1\n");
-        req1.append("Host: localhost\n");
-        req1.append("Content-Range: ").append(rangedef).append("\n"); // Invalid range
-        req1.append("Connection: close\n");
-        req1.append("\n");
-
-        response = http.request(req1);
-
-        response.assertStatus("BadRange: '" + rangedef + "'",HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE_416);
-    }
-
-    /**
-     * Test Content-Range (Header Field) - Bad Range Request
-     * 
-     * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.16">RFC 2616 (section 14.16)</a>
-     */
-    @Test
-    public void test14_16_BadContentRange_InvalidSyntax() throws Exception
-    {
-        // server should ignore all range headers which include
-        // at least one syntactically invalid range
-
-        assertBadContentRange("bytes=a-b"); // Invalid due to non-digit entries
-        assertBadContentRange("bytes=-"); // Invalid due to missing range ends
-        assertBadContentRange("bytes=-1-"); // Invalid due negative to end range
-        assertBadContentRange("doublehalfwords=1-2"); // Invalid due to bad key 'doublehalfwords'
-    }
-
-    /**
-     * Test Content-Range (Header Field) - Bad Range Request
-     * 
-     * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.16">RFC 2616 (section 14.16)</a>
-     */
-    @Test
-    public void test14_16_BadContentRange_NegativeUse() throws Exception
-    {
-        // server should ignore all range headers which include
-        // at least one syntactically invalid range
-
-        assertBadContentRange("bytes=-1"); // Invalid due negative range use
-        assertBadContentRange("bytes=-1-"); // Invalid due negative to end range
-        assertBadContentRange("bytes=-1-2"); // Invalid due to use of negative range start (not allowed)
-    }
-
-    /**
-     * Test Content-Range (Header Field) - Bad Range Request
-     * 
-     * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.16">RFC 2616 (section 14.16)</a>
-     */
-    @Test
-    public void test14_16_BadContentRange_MultipleRanges() throws Exception
-    {
-        // server should ignore all range headers which include
-        // at least one syntactically invalid range
-
-        assertBadContentRange("bytes=1-2,4-5"); // Invalid due to multiple entries
-        assertBadContentRange("bytes=a-b,-1-1-1"); // Invalid due to multiple entries, non-digits, and invalid range syntax
-        assertBadContentRange("bytes=-1-2,2-3"); // Invalid because of 2 entries, and use of negative range end
-    }
-
-    /**
-     * Test Content-Range (Header Field) - Bad Range Request
-     * 
-     * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.16">RFC 2616 (section 14.16)</a>
-     */
-    @Test
-    public void test14_16_BadContentRange_OutOfRange() throws Exception
-    {
-        // server should ignore all range headers which include
-        // at least one syntactically invalid range
-
-        // A syntactically valid range, but is a range outside of the
-        // size of the data is also considered bad.
-        assertBadContentRange("bytes=50,60");
-    }
 
     private void assertPartialContentRange(String rangedef, String expectedRange, String expectedBody) throws IOException
     {
@@ -1244,7 +1161,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         StringBuffer req1 = new StringBuffer();
         req1.append("GET /rfc2616-webapp/alpha.txt HTTP/1.1\n");
         req1.append("Host: localhost\n");
-        req1.append("Content-Range: ").append(rangedef).append("\n"); // Invalid range
+        req1.append("Range: ").append(rangedef).append("\n"); // Invalid range
         req1.append("Connection: close\n");
         req1.append("\n");
 
