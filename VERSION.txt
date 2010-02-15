@@ -9,25 +9,26 @@ jetty-7.0.2-SNAPSHOT
  + 298234 Unit test for jetty-client handling different HTTP error codes
  + 298667 DeploymentManager uses ContextProvider and WebAppProvider
  + 299455 Enum support in JSONPojoConvertor
- + 302198 Rename HttpClient authorization classes to Authentication
- + 302244 invalid configuration boolean conversion in FormAuthenticator
- + 302246 redirect loop using form authenticator
- + JETTY-776 Make new session-tests module to concentrate all reusable session clustering test code
- + JETTY-910 Allow request listeners to access session
- + JETTY-983 Range handling cleanup
- + JETTY-1153 System property for UrlEncoded charset
- + JETTY-1155 HttpConnection.close notifies HttpExchange
- + JETTY-1156 SSL blocking close with JVM Bug busy key fix
- + JETTY-1157 Don't hold array passed in write(byte[])
- + JETTY-1151 JETTY-1098 allow UTF-8 with 0 carry bits
- + JETTY-1177 Allow error handler to set cacheControl
- + COMETD-46 reset ContentExchange response content on resend
  + 300178 HttpClients opens too many connections that are immediately closed
  + 300733 Jars from lib/ext are not visible for my web application
  + 300933 AbstractConnector uses concurrent objects for stats
  + 301089 Improve statistics available in StatisticsHandler and AbstractConnector
+ + 302018 Improve statistics available in AbstractSessionHandler
+ + 302198 Rename HttpClient authorization classes to Authentication
+ + 302244 invalid configuration boolean conversion in FormAuthenticator
+ + 302246 redirect loop using form authenticator
  + 302556 CrossOriginFilter does not work correctly when Access-Control-Request-Headers header is not present
  + 302669 WebInfConfiguration.unpack() unpacks WEB-INF/* from a ResourceCollection, breaking JSP reloading with ResourceCollections
+ + JETTY-776 Make new session-tests module to concentrate all reusable session clustering test code
+ + JETTY-910 Allow request listeners to access session
+ + JETTY-983 Range handling cleanup
+ + JETTY-1151 JETTY-1098 allow UTF-8 with 0 carry bits
+ + JETTY-1153 System property for UrlEncoded charset
+ + JETTY-1155 HttpConnection.close notifies HttpExchange
+ + JETTY-1156 SSL blocking close with JVM Bug busy key fix
+ + JETTY-1157 Don't hold array passed in write(byte[])
+ + JETTY-1177 Allow error handler to set cacheControl
+ + COMETD-46 reset ContentExchange response content on resend
 
 jetty-7.0.1.v20091125 25 November 2009
  + 274251 DefaultServlet supports exact match mode.

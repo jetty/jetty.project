@@ -769,9 +769,6 @@ public class JDBCSessionManager extends AbstractSessionManager
                 {
                     session.timeout();
                     itor.remove();
-                    int count = this._sessions.size();
-                    if (count < this._minSessions)
-                        this._minSessions=count;
                 }
                 else
                 {

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.server.session;
 
+import static java.lang.Math.round;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +42,8 @@ import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.statistic.CounterStatistic;
+import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 /* ------------------------------------------------------------ */
 /**
@@ -72,9 +76,6 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     protected int _dftMaxIdleSecs=-1;
     protected SessionHandler _sessionHandler;
     protected boolean _httpOnly=false;
-    protected int _maxSessions=0;
-
-    protected int _minSessions=0;
     protected SessionIdManager _sessionIdManager;
     protected boolean _secureCookies=false;
     protected Object _sessionAttributeListeners;
@@ -91,6 +92,9 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     protected int _refreshCookieAge;
     protected boolean _nodeIdInSessionId;
 
+    protected final CounterStatistic _sessionsStats = new CounterStatistic();
+    protected final SampleStatistic _sessionTimeStats = new SampleStatistic();
+    
     /* ------------------------------------------------------------ */
     public AbstractSessionManager()
     {
@@ -265,11 +269,33 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     {
         return _dftMaxIdleSecs;
     }
-
+    
     /* ------------------------------------------------------------ */
+    /**
+     * @see getSessionsMax()
+     */
+    @Deprecated
     public int getMaxSessions()
     {
-        return _maxSessions;
+        return getSessionsMax();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return maximum number of sessions
+     */
+    public int getSessionsMax()
+    {
+        return (int)_sessionsStats.getMax();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return total number of sessions
+     */
+    public int getSessionsTotal()
+    {
+        return (int)_sessionsStats.getTotal();
     }
 
     /* ------------------------------------------------------------ */
@@ -283,9 +309,13 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see getSessionsMin()
+     */
+    @Deprecated
     public int getMinSessions()
     {
-        return _minSessions;
+        return 0;
     }
 
     /* ------------------------------------------------------------ */
@@ -357,7 +387,10 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
-    public abstract int getSessions();
+    public int getSessions()
+    {
+        return (int)_sessionsStats.getCurrent();
+    }
 
     /* ------------------------------------------------------------ */
     public String getSessionIdPathParameterName()
@@ -421,12 +454,25 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         if (listener instanceof HttpSessionListener)
             _sessionListeners=LazyList.remove(_sessionListeners,listener);
     }
-
+    
     /* ------------------------------------------------------------ */
+    /**
+     * @see statsReset()
+     */
+    @Deprecated
     public void resetStats()
     {
-        _minSessions=getSessions();
-        _maxSessions=getSessions();
+        statsReset();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Reset statistics values
+     */
+    public void statsReset()
+    {
+        _sessionsStats.reset(getSessions());
+        _sessionTimeStats.reset();
     }
 
     /* ------------------------------------------------------------ */
@@ -554,26 +600,28 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             synchronized (this)
             {
                 addSession(session);
-                if (getSessions()>this._maxSessions)
-                    this._maxSessions=getSessions();
             }
         }
 
-        if (!created)
+        if (created)
+        {
+            _sessionsStats.increment();
+            if (_sessionListeners!=null)
+            {
+                HttpSessionEvent event=new HttpSessionEvent(session);
+                for (int i=0; i<LazyList.size(_sessionListeners); i++)
+                    ((HttpSessionListener)LazyList.get(_sessionListeners,i)).sessionCreated(event);
+            }
+        }
+        else
         {
             session.didActivate();
-        }
-        else if (_sessionListeners!=null)
-        {
-            HttpSessionEvent event=new HttpSessionEvent(session);
-            for (int i=0; i<LazyList.size(_sessionListeners); i++)
-                ((HttpSessionListener)LazyList.get(_sessionListeners,i)).sessionCreated(event);
         }
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * Get a known existingsession
+     * Get a known existing session
      * @param idInCluster The session ID in the cluster, stripped of any worker name.
      * @return A Session or null if none exists.
      */
@@ -642,9 +690,12 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                 removeSession(session.getClusterId());
             }
         }
-
+        
         if (removed)
         {
+            _sessionsStats.decrement();
+            _sessionTimeStats.set(round((System.currentTimeMillis() - session.getCreationTime())/1000.0));
+            
             // Remove session from all context and global id maps
             _sessionIdManager.removeSession(session);
             if (invalidate)
@@ -666,6 +717,42 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
     /* ------------------------------------------------------------ */
     protected abstract void removeSession(String idInCluster);
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return maximum amount of time session remained valid
+     */
+    public long getSessionTimeMax()
+    {
+        return _sessionTimeStats.getMax();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return total amount of time all sessions remained valid
+     */
+    public long getSessionTimeTotal()
+    {
+        return _sessionTimeStats.getTotal();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return mean amount of time session remained valid
+     */
+    public double getSessionTimeMean()
+    {
+        return _sessionTimeStats.getMean();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return standard deviation of amount of time session remained valid
+     */
+    public double getSessionTimeStdDev()
+    {
+        return _sessionTimeStats.getStdDev();
+    }
 
     /* ------------------------------------------------------------ */
     /**

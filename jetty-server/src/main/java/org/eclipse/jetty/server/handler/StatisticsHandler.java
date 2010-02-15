@@ -26,18 +26,18 @@ import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.ServerStats.CounterStats;
-import org.eclipse.jetty.server.ServerStats.MeasuredStats;
+import org.eclipse.jetty.util.statistic.SampleStatistic;
+import org.eclipse.jetty.util.statistic.CounterStatistic;
 
 public class StatisticsHandler extends HandlerWrapper
 {
     private final AtomicLong _statsStartedAt = new AtomicLong();
     
-    private final CounterStats _requestStats = new CounterStats();
-    private final MeasuredStats _requestTimeStats = new MeasuredStats();
-    private final CounterStats _dispatchedStats = new CounterStats();
-    private final MeasuredStats _dispatchedTimeStats = new MeasuredStats();
-    private final CounterStats _suspendStats = new CounterStats();
+    private final CounterStatistic _requestStats = new CounterStatistic();
+    private final SampleStatistic _requestTimeStats = new SampleStatistic();
+    private final CounterStatistic _dispatchedStats = new CounterStatistic();
+    private final SampleStatistic _dispatchedTimeStats = new SampleStatistic();
+    private final CounterStatistic _suspendStats = new CounterStatistic();
 
     private final AtomicInteger _resumes = new AtomicInteger();
     private final AtomicInteger _expires = new AtomicInteger();

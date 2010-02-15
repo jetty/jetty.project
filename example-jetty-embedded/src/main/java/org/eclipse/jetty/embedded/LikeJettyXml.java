@@ -15,9 +15,7 @@ package org.eclipse.jetty.embedded;
 
 import java.lang.management.ManagementFactory;
 
-import org.eclipse.jetty.deploy.ContextDeployer;
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.deploy.WebAppDeployer;
 import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -30,6 +28,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
@@ -61,6 +60,8 @@ public class LikeJettyXml
         connector.setPort(8080);
         connector.setMaxIdleTime(30000);
         connector.setConfidentialPort(8443);
+        connector.setStatsOn(true);
+        
         server.setConnectors(new Connector[]
         { connector });
 
@@ -71,6 +72,7 @@ public class LikeJettyXml
         ssl_connector.setKeyPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
         ssl_connector.setTruststore(jetty_home + "/etc/keystore");
         ssl_connector.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        ssl_connector.setStatsOn(true);
         server.addConnector(ssl_connector);
 
         HandlerCollection handlers = new HandlerCollection();
@@ -78,7 +80,11 @@ public class LikeJettyXml
         RequestLogHandler requestLogHandler = new RequestLogHandler();
         handlers.setHandlers(new Handler[]
         { contexts, new DefaultHandler(), requestLogHandler });
-        server.setHandler(handlers);
+        
+        StatisticsHandler stats = new StatisticsHandler();
+        stats.setHandler(handlers);
+        
+        server.setHandler(stats);
 
         // Setup deployers
         DeploymentManager deployer = new DeploymentManager();
