@@ -50,9 +50,16 @@ public class CounterStatistic
      */
     public void add(final long delta)
     {
-        updateMax(_curr.addAndGet(delta));
+        long value=_curr.addAndGet(delta);
         if (delta > 0)
             _total.addAndGet(delta);
+        long oldValue = _max.get();
+        while (value > oldValue)
+        {
+            if (_max.compareAndSet(oldValue, value))
+                break;
+            oldValue = _max.get();
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -108,14 +115,7 @@ public class CounterStatistic
     }
     
     /* ------------------------------------------------------------ */
-    protected void updateMax(long value)
+    protected void upxdateMax(long value)
     {
-        long oldValue = _max.get();
-        while (value > oldValue)
-        {
-            if (_max.compareAndSet(oldValue, value))
-                break;
-            oldValue = _max.get();
-        }
     }
 }

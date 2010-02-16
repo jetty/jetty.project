@@ -51,14 +51,6 @@ public class SampleStatistic
 
     public void set(final long sample)
     {
-        long oldMax = _max.get();
-        while (sample > oldMax)
-        {
-            if (_max.compareAndSet(oldMax, sample))
-                break;
-            oldMax = _max.get();
-        }
-        
         long total = _total.addAndGet(sample);
         long count = _count.incrementAndGet();
         
@@ -68,6 +60,15 @@ public class SampleStatistic
             long delta10 = sample*10 - mean10;
             _totalVariance100.addAndGet(delta10*delta10);
         }        
+        
+        long oldMax = _max.get();
+        while (sample > oldMax)
+        {
+            if (_max.compareAndSet(oldMax, sample))
+                break;
+            oldMax = _max.get();
+        }
+        
     }
 
     /* ------------------------------------------------------------ */
