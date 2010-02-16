@@ -28,6 +28,7 @@ jetty-7.0.2-SNAPSHOT
  + JETTY-1156 SSL blocking close with JVM Bug busy key fix
  + JETTY-1157 Don't hold array passed in write(byte[])
  + JETTY-1177 Allow error handler to set cacheControl
+ + JETTY-1179 Persistant session tables created on MySQL use wrong datatype
  + COMETD-46 reset ContentExchange response content on resend
 
 jetty-7.0.1.v20091125 25 November 2009

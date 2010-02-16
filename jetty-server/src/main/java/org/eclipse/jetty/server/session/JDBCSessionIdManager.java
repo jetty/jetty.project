@@ -63,7 +63,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     protected TimerTask _task; //scavenge task
     protected long _lastScavengeTime;
     protected long _scavengeIntervalMs = 1000 * 60 * 10; //10mins
-    
+    protected String _blobType; //if not set, is deduced from the type of the database at runtime
     
     protected String _createSessionIdTable;
     protected String _createSessionTable;
@@ -125,6 +125,9 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         
         public String getBlobType ()
         {
+            if (_blobType != null)
+                return _blobType;
+            
             if (_dbName.startsWith("postgres"))
                 return "bytea";
             
@@ -189,6 +192,15 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         return _jndiName;
     }
    
+    public void setBlobType (String name)
+    {
+        _blobType = name;
+    }
+    
+    public String getBlobType ()
+    {
+        return _blobType;
+    }
     
     public void setScavengeInterval (long sec)
     {
