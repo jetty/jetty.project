@@ -95,11 +95,11 @@ public class StatisticsHandlerTest extends TestCase
 
         assertEquals(1, _connector.getConnectionsOpen());
         
-        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
         
-        assertEquals(0, _statsHandler.getDispatched());
+        assertEquals(1, _statsHandler.getDispatched());
         assertEquals(1, _statsHandler.getDispatchedActive());
         assertEquals(1, _statsHandler.getDispatchedActiveMax());
 
@@ -131,11 +131,11 @@ public class StatisticsHandlerTest extends TestCase
         
         assertEquals(2, _connector.getConnectionsOpen());
         
-        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(2, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
         
-        assertEquals(1, _statsHandler.getDispatched());
+        assertEquals(2, _statsHandler.getDispatched());
         assertEquals(1, _statsHandler.getDispatchedActive());
         assertEquals(1, _statsHandler.getDispatchedActiveMax());
 
@@ -168,11 +168,11 @@ public class StatisticsHandlerTest extends TestCase
         
         assertEquals(4, _connector.getConnectionsOpen());
         
-        assertEquals(2, _statsHandler.getRequests());
+        assertEquals(4, _statsHandler.getRequests());
         assertEquals(2, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getRequestsActiveMax());
         
-        assertEquals(2, _statsHandler.getDispatched());
+        assertEquals(4, _statsHandler.getDispatched());
         assertEquals(2, _statsHandler.getDispatchedActive());
         assertEquals(2, _statsHandler.getDispatchedActiveMax());
 
@@ -251,10 +251,9 @@ public class StatisticsHandlerTest extends TestCase
         
         assertEquals(1, _connector.getConnectionsOpen());
         
-        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
-        
-        assertEquals(0, _statsHandler.getDispatched());
+        assertEquals(1, _statsHandler.getDispatched());
         assertEquals(1, _statsHandler.getDispatchedActive());
 
         barrier[1].await();
@@ -262,7 +261,7 @@ public class StatisticsHandlerTest extends TestCase
         assertNotNull(continuationHandle.get());
         assertTrue(continuationHandle.get().isSuspended());
         
-        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getDispatched());
         assertEquals(0, _statsHandler.getDispatchedActive());
@@ -291,9 +290,9 @@ public class StatisticsHandlerTest extends TestCase
         
         assertEquals(1, _connector.getConnectionsOpen());
 
-        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
-        assertEquals(1, _statsHandler.getDispatched());
+        assertEquals(2, _statsHandler.getDispatched());
         assertEquals(1, _statsHandler.getDispatchedActive());
 
         barrier[1].await();
@@ -377,10 +376,9 @@ public class StatisticsHandlerTest extends TestCase
         
         assertEquals(1, _connector.getConnectionsOpen());
 
-        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
-        
-        assertEquals(0, _statsHandler.getDispatched());
+        assertEquals(1, _statsHandler.getDispatched());
         assertEquals(1, _statsHandler.getDispatchedActive());
 
         barrier[1].await();
@@ -400,7 +398,7 @@ public class StatisticsHandlerTest extends TestCase
             }
         });
         
-        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getDispatched());
         assertEquals(0, _statsHandler.getDispatchedActive());
@@ -411,9 +409,9 @@ public class StatisticsHandlerTest extends TestCase
 
         barrier[0].await();
         
-        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
-        assertEquals(1, _statsHandler.getDispatched());
+        assertEquals(2, _statsHandler.getDispatched());
         assertEquals(1, _statsHandler.getDispatchedActive());
 
         barrier[1].await();
@@ -496,10 +494,9 @@ public class StatisticsHandlerTest extends TestCase
         
         assertEquals(1, _connector.getConnectionsOpen());
         
-        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
-        
-        assertEquals(0, _statsHandler.getDispatched());
+        assertEquals(1, _statsHandler.getDispatched());
         assertEquals(1, _statsHandler.getDispatchedActive());
 
         
@@ -519,7 +516,7 @@ public class StatisticsHandlerTest extends TestCase
             }
         });
         
-        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getDispatched());
         assertEquals(0, _statsHandler.getDispatchedActive());
