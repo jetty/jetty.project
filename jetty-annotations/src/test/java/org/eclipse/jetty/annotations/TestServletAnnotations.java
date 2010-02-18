@@ -15,6 +15,8 @@ package org.eclipse.jetty.annotations;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
+import java.util.HashSet;
 
 import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
@@ -22,6 +24,7 @@ import org.eclipse.jetty.annotations.AnnotationParser.ListValue;
 import org.eclipse.jetty.annotations.AnnotationParser.SimpleValue;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
+import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -79,5 +82,19 @@ public class TestServletAnnotations extends TestCase
         assertEquals("y", holders[0].getInitParameter("x"));
         assertEquals(2,holders[0].getInitOrder());
         assertFalse(holders[0].isAsyncSupported());
+    }
+    
+    public void testDeclareRoles ()
+    throws Exception
+    { 
+        WebAppContext wac = new WebAppContext();
+        ConstraintSecurityHandler sh = new ConstraintSecurityHandler();
+        wac.setSecurityHandler(sh);
+        sh.setRoles(new HashSet<String>(Arrays.asList(new String[]{"humpty", "dumpty"})));
+        DeclareRolesAnnotationHandler handler = new DeclareRolesAnnotationHandler(wac);
+        handler.doHandle(ServletC.class);
+        assertTrue(sh.getRoles().contains("alice"));
+        assertTrue(sh.getRoles().contains("humpty"));
+        assertTrue(sh.getRoles().contains("dumpty"));
     }
 }

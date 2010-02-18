@@ -39,6 +39,7 @@ import javax.servlet.SessionTrackingMode;
 import javax.servlet.FilterRegistration.Dynamic;
 import javax.servlet.descriptor.JspConfigDescriptor;
 
+import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
@@ -815,8 +816,15 @@ public class ServletContextHandler extends ContextHandler
                 throw new UnsupportedOperationException();
            
             //Get a reference to the SecurityHandler, which must be ConstraintAware
-            if (_securityHandler != null && _securityHandler instanceof ConstraintSecurityHandler)
-                ((ConstraintSecurityHandler)_securityHandler).setRoles(new HashSet(Arrays.asList(roleNames)));          
+            if (_securityHandler != null && _securityHandler instanceof ConstraintAware)
+            {
+                HashSet<String> union = new HashSet<String>();
+                Set<String> existing = ((ConstraintAware)_securityHandler).getRoles();
+                if (existing != null)
+                    union.addAll(existing);
+                union.addAll(Arrays.asList(roleNames));
+                ((ConstraintSecurityHandler)_securityHandler).setRoles(union);
+            }
         }
     }
     

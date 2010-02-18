@@ -1,5 +1,5 @@
 //  ========================================================================
-// Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2008-2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,7 @@ import java.io.IOException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import javax.annotation.security.DeclareRoles;
 import javax.annotation.security.RunAs;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.HttpConstraint;
@@ -31,7 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 
 
 
-
+@DeclareRoles({"alice"})
 @WebServlet(urlPatterns = { "/foo/*", "/bah/*" }, name="CServlet", initParams={@WebInitParam(name="x", value="y")}, loadOnStartup=2, asyncSupported=false)
 @MultipartConfig(fileSizeThreshold=1000, maxFileSize=2000, maxRequestSize=3000)
 @RunAs("admin")
