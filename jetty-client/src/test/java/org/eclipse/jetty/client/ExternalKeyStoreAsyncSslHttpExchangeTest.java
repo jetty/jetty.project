@@ -17,7 +17,6 @@ import java.io.File;
 
 public class ExternalKeyStoreAsyncSslHttpExchangeTest extends SslHttpExchangeTest
 {
-
     @Override
     protected void setUp() throws Exception
     {

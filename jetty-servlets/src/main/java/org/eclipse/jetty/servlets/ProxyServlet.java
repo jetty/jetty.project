@@ -68,13 +68,14 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * <li>name - Name of Proxy servlet (default: "ProxyServlet"
  * <li>maxThreads - maximum threads
  * <li>maxConnections - maximum connections per destination
+ * <li>HostHeader - Force the host header to a particular value
  * </ul> 
  */
 public class ProxyServlet implements Servlet
 {
     protected Logger _log; 
-    
     HttpClient _client;
+    String _hostHeader;
 
     protected HashSet<String> _DontProxyHeaders = new HashSet<String>();
     {
@@ -93,6 +94,7 @@ public class ProxyServlet implements Servlet
     protected ServletContext _context;
     protected String _name="ProxyServlet";
 
+    /* ------------------------------------------------------------ */
     /* (non-Javadoc)
      * @see javax.servlet.Servlet#init(javax.servlet.ServletConfig)
      */
@@ -103,6 +105,9 @@ public class ProxyServlet implements Servlet
 
         _client=new HttpClient();
         _client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        
+        _hostHeader=config.getInitParameter("HostHeader");
+        
         
         try
         {
@@ -137,6 +142,7 @@ public class ProxyServlet implements Servlet
         }
     }
 
+    /* ------------------------------------------------------------ */
     /* (non-Javadoc)
      * @see javax.servlet.Servlet#getServletConfig()
      */
@@ -145,6 +151,26 @@ public class ProxyServlet implements Servlet
         return _config;
     }
 
+    
+    /* ------------------------------------------------------------ */
+    /** Get the hostHeader.
+     * @return the hostHeader
+     */
+    public String getHostHeader()
+    {
+        return _hostHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the hostHeader.
+     * @param hostHeader the hostHeader to set
+     */
+    public void setHostHeader(String hostHeader)
+    {
+        _hostHeader = hostHeader;
+    }
+
+    /* ------------------------------------------------------------ */
     /* (non-Javadoc)
      * @see javax.servlet.Servlet#service(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
      */
@@ -289,6 +315,10 @@ public class ProxyServlet implements Servlet
                         connectionHdr=null;
                 }
 
+                // force host
+                if (_hostHeader!=null)
+                    exchange.setRequestHeader("Host",_hostHeader);
+                
                 // copy headers
                 boolean xForwardedFor=false;
                 boolean hasContent=false;
@@ -303,6 +333,8 @@ public class ProxyServlet implements Servlet
                     if (_DontProxyHeaders.contains(lhdr))
                         continue;
                     if (connectionHdr!=null && connectionHdr.indexOf(lhdr)>=0)
+                        continue;
+                    if (_hostHeader!=null && "host".equals(lhdr))
                         continue;
 
                     if ("content-type".equals(lhdr))
@@ -339,7 +371,7 @@ public class ProxyServlet implements Servlet
 
                 if (hasContent)
                     exchange.setRequestContentSource(in);
-
+                
                 continuation.suspend(response); 
                 _client.send(exchange);
 

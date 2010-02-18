@@ -32,5 +32,6 @@
   <modules>
     <module>test-integration</module>
     <module>test-webapps</module>
+    <module>test-sessions</module>
   </modules>
 </project>

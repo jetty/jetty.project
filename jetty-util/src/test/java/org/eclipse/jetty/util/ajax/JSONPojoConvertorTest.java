@@ -22,13 +22,13 @@ import junit.framework.TestCase;
  */
 public class JSONPojoConvertorTest extends TestCase
 {
-    
     public void testFoo()
     {
         JSON json = new JSON();
         json.addConvertor(Foo.class, new JSONPojoConvertor(Foo.class));
         json.addConvertor(Bar.class, new JSONPojoConvertor(Bar.class));
         json.addConvertor(Baz.class, new JSONPojoConvertor(Baz.class));
+        // json.addConvertor(Enum.class, new JSONEnumConvertor(true));
         
         Foo foo = new Foo();
         foo._name = "Foo @ " + System.currentTimeMillis();
@@ -44,8 +44,10 @@ public class JSONPojoConvertorTest extends TestCase
         Bar bar = new Bar("Hello", true, new Baz("World", Boolean.FALSE, foo), new Baz[]{
             new Baz("baz0", Boolean.TRUE, null), new Baz("baz1", Boolean.FALSE, null)
         });
+        bar.setColor(Color.Green);
         
         String s = json.toJSON(bar);
+        System.err.println(s);
         
         Object obj = json.parse(new JSON.StringSource(s));
         
@@ -61,6 +63,7 @@ public class JSONPojoConvertorTest extends TestCase
         assertTrue(br.getBazs().length==2);
         assertEquals(br.getBazs()[0].getMessage(), "baz0");
         assertEquals(br.getBazs()[1].getMessage(), "baz1");
+        assertEquals(Color.Green,br.getColor());
     }
     
     public void testExclude()
@@ -85,17 +88,15 @@ public class JSONPojoConvertorTest extends TestCase
         foo._double2 = new Double(10000.22222d);
         
         Bar bar = new Bar("Hello", true, new Baz("World", Boolean.FALSE, foo));
+        // bar.setColor(Color.Blue);
         
         String s = json.toJSON(bar);
-        
         Object obj = json.parse(new JSON.StringSource(s));
         
         assertTrue(obj instanceof Bar);
         
         Bar br = (Bar)obj;        
-        
         Baz bz = br.getBaz();
-        
         Foo f = bz.getFoo();
         
         assertNull(br.getTitle());
@@ -106,8 +107,11 @@ public class JSONPojoConvertorTest extends TestCase
         assertFalse(f.getLong1()==foo.getLong1());
         assertNull(f.getInt2());
         assertFalse(foo.getInt2().equals(f.getInt2()));
-        assertNull(f.getName());        
+        assertNull(f.getName());   
+        assertEquals(null,br.getColor());
     }
+    
+    enum Color { Red, Green, Blue };
     
     public static class Bar
     {
@@ -115,6 +119,7 @@ public class JSONPojoConvertorTest extends TestCase
         private Baz _baz;
         private boolean _boolean1;
         private Baz[] _bazs;
+        private Color _color;
         
         public Bar()
         {
@@ -137,11 +142,13 @@ public class JSONPojoConvertorTest extends TestCase
         @Override
         public String toString()
         {
-            return new StringBuffer().append("\n=== ").append(getClass().getSimpleName()).append(" ===")
+            return new StringBuffer()
+                .append("\n=== ").append(getClass().getSimpleName()).append(" ===")
                 .append("\ntitle: ").append(getTitle())
                 .append("\nboolean1: ").append(isBoolean1())
                 .append("\nnullTest: ").append(getNullTest())
-                .append("\nbaz: ").append(getBaz()).toString();
+                .append("\nbaz: ").append(getBaz())
+                .append("\ncolor: ").append(_color).toString();
         }
         
         public void setTitle(String title)
@@ -194,6 +201,18 @@ public class JSONPojoConvertorTest extends TestCase
         {
             return _bazs;
         }
+
+        public Color getColor()
+        {
+            return _color;
+        }
+        
+        public void setColor(Color color)
+        {
+            _color = color;
+        }
+        
+        
     }
     
     public static class Baz

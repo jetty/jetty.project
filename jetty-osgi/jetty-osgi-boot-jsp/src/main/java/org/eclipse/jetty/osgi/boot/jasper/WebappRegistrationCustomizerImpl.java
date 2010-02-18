@@ -9,8 +9,6 @@
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
 // You may elect to redistribute this code under either of these licenses. 
-// Contributors:
-//    Hugues Malphettes - initial API and implementation
 // ========================================================================
 package org.eclipse.jetty.osgi.boot.jasper;
 
@@ -19,12 +17,15 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 
+import javax.servlet.Servlet;
 import javax.servlet.jsp.JspContext;
+import javax.servlet.jsp.JspFactory;
 
 import org.apache.jasper.Constants;
 import org.apache.jasper.compiler.Localizer;
-import org.apache.jasper.compiler.TldLocationsCache;
+import org.apache.jasper.runtime.TldScanner;
 import org.apache.jasper.xmlparser.ParserUtils;
+import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
 import org.osgi.framework.Bundle;
@@ -42,15 +43,37 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
     public WebappRegistrationCustomizerImpl()
     {
         fixupDtdResolution();
+        
         try
         {
-            Class<?> cl = getClass().getClassLoader().loadClass(
-            		"org.apache.jasper.servlet.JspServlet");
-            System.err.println("found the jsp servlet: " + cl.getName());
+          //sanity check:
+            Class cl = getClass().getClassLoader().loadClass("org.apache.jasper.servlet.JspServlet");
+            //System.err.println("found the jsp servlet: " + cl.getName());
         }
-        catch (ClassNotFoundException e)
+        catch (Exception e)
         {
-            // TODO Auto-generated catch block
+            System.err.println("Unable to locate the JspServlet: jsp support unavailable.");
+            e.printStackTrace();
+            return;
+        }
+        try
+        {
+            //bug #299733
+            JspFactory fact = JspFactory.getDefaultFactory();
+            if (fact == null)
+            {   //bug #299733
+                //JspFactory does a simple Class.getForName("org.apache.jasper.runtime.JspFactoryImpl")
+                //however its bundles does not import the jasper package
+                //so it fails. let's help things out:
+                fact = (JspFactory)JettyBootstrapActivator.class.getClassLoader()
+                    .loadClass("org.apache.jasper.runtime.JspFactoryImpl").newInstance();
+                JspFactory.setDefaultFactory(fact);
+            }
+    
+        }
+        catch (Exception e)
+        {
+            System.err.println("Unable to set the JspFactory: jsp support incomplete.");
             e.printStackTrace();
         }
     }
@@ -72,7 +95,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
      */
     public URL[] getJarsWithTlds(BundleFileLocatorHelper locatorHelper) throws Exception
     {
-        Bundle jasperBundler = FrameworkUtil.getBundle(TldLocationsCache.class);
+        Bundle jasperBundler = FrameworkUtil.getBundle(TldScanner.class);
         File jasperLocation = locatorHelper.getBundleInstallLocation(jasperBundler);
         if (jasperLocation.isDirectory())
         {
@@ -164,12 +187,16 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
                 {
                     String resourcePath = CACHED_DTD_RESOURCE_PATHS[i];
                     InputStream input = null;
-                    input = JspContext.class.getResourceAsStream(resourcePath);
+                    input = Servlet.class.getResourceAsStream(resourcePath);
                     if (input == null)
                     {
-                        // if that failed try again with the original code:
-                        // although it is likely not changed.
-                        input = this.getClass().getResourceAsStream(resourcePath);
+                        input = JspContext.class.getResourceAsStream(resourcePath);
+                        if (input == null)
+                        {
+                            // if that failed try again with the original code:
+                            // although it is likely not changed.
+                            input = this.getClass().getResourceAsStream(resourcePath);
+                        }
                     }
                     if (input == null)
                     {

@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.net.UnknownHostException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.Map;
@@ -33,8 +34,9 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
-import org.eclipse.jetty.client.security.Authorization;
+import org.eclipse.jetty.client.security.Authentication;
 import org.eclipse.jetty.client.security.RealmResolver;
+import org.eclipse.jetty.client.security.SecurityListener;
 import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.security.Password;
@@ -96,7 +98,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     private Timeout _timeoutQ = new Timeout();
     private Timeout _idleTimeoutQ = new Timeout();
     private Address _proxy;
-    private Authorization _proxyAuthentication;
+    private Authentication _proxyAuthentication;
     private Set<String> _noProxy;
     private int _maxRetries = 3;
     private int _maxRedirects = 20;
@@ -106,12 +108,12 @@ public class HttpClient extends HttpBuffers implements Attributes
     private String _keyStoreLocation;
     private String _keyStoreType = "JKS";
     private String _keyStorePassword;
-    private String _keyManagerAlgorithm = "SunX509";
+    private String _keyManagerAlgorithm = (Security.getProperty("ssl.KeyManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.KeyManagerFactory.algorithm"));
     private String _keyManagerPassword;
     private String _trustStoreLocation;
     private String _trustStoreType = "JKS";
     private String _trustStorePassword;
-    private String _trustManagerAlgorithm = "SunX509";
+    private String _trustManagerAlgorithm = (Security.getProperty("ssl.TrustManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.TrustManagerFactory.algorithm"));
 
     private SSLContext _sslContext;
 
@@ -270,6 +272,12 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    /** Set a RealmResolver for client Authentication.
+     * If a realmResolver is set, then the HttpDestinations created by 
+     * this client will instantiate a {@link SecurityListener} so that
+     * BASIC and DIGEST authentication can be performed.
+     * @param resolver
+     */
     public void setRealmResolver(RealmResolver resolver)
     {
         _realmResolver = resolver;
@@ -277,7 +285,7 @@ public class HttpClient extends HttpBuffers implements Attributes
 
     /* ------------------------------------------------------------ */
     /**
-     * returns the SecurityRealmResolver registered with the HttpClient or null
+     * returns the SecurityRealmResolver reg_realmResolveristered with the HttpClient or null
      *
      * @return
      */
@@ -713,13 +721,13 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    public Authorization getProxyAuthentication()
+    public Authentication getProxyAuthentication()
     {
         return _proxyAuthentication;
     }
 
     /* ------------------------------------------------------------ */
-    public void setProxyAuthentication(Authorization authentication)
+    public void setProxyAuthentication(Authentication authentication)
     {
         _proxyAuthentication = authentication;
     }

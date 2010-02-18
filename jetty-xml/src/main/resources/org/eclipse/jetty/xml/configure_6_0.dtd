@@ -16,7 +16,6 @@ Values themselves may be configured objects that are created with the
 Values are matched to arguments on a best effort approach, but types
 my be specified if a match is not achieved.
 
-$Id: configure_1_3.dtd,v 1.2 2005/10/26 20:48:48 gregwilkins Exp $
 -->
 
 <!ENTITY % CONFIG "Set|Get|Put|Call|New|Ref|Array|Map|Property">
@@ -26,6 +25,7 @@ $Id: configure_1_3.dtd,v 1.2 2005/10/26 20:48:48 gregwilkins Exp $
 <!ENTITY % IMPLIEDCLASSATTR "class NMTOKEN #IMPLIED" >
 <!ENTITY % CLASSATTR "class NMTOKEN #REQUIRED" >
 <!ENTITY % NAMEATTR "name NMTOKEN #REQUIRED" >
+<!ENTITY % IMPLIEDNAMEATTR "name NMTOKEN #IMPLIED" >
 <!ENTITY % DEFAULTATTR "default CDATA #IMPLIED" >
 <!ENTITY % IDATTR "id NMTOKEN #IMPLIED" >
 <!ENTITY % REQUIREDIDATTR "id NMTOKEN #REQUIRED" >
@@ -130,7 +130,7 @@ elements they are added as strings before being converted to any
 specified type.
 -->
 <!ELEMENT Arg ( %VALUE; )* >
-<!ATTLIST Arg %TYPEATTR; >
+<!ATTLIST Arg %TYPEATTR; %IMPLIEDNAMEATTR;  >
 
 
 <!--

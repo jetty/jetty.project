@@ -135,9 +135,8 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     private String _protocol= "TLS";
     private String _provider;
     private String _secureRandomAlgorithm; // cert algorithm
-    private String _sslKeyManagerFactoryAlgorithm = (Security.getProperty("ssl.KeyManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.KeyManagerFactory.algorithm")); // cert algorithm
-    private String _sslTrustManagerFactoryAlgorithm = (Security.getProperty("ssl.TrustManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.TrustManagerFactory.algorithm")); // cert algorithm
-    
+    private String _sslKeyManagerFactoryAlgorithm = DEFAULT_KEYSTORE_ALGORITHM;
+    private String _sslTrustManagerFactoryAlgorithm = DEFAULT_TRUSTSTORE_ALGORITHM;
     private String _truststorePath;
     private String _truststoreType = "JKS"; // type of the key store
 

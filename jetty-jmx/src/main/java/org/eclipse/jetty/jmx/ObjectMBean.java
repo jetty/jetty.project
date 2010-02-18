@@ -648,7 +648,7 @@ public class ObjectMBean implements DynamicMBean
         }
         catch (Exception e)
         {
-            Log.warn(Log.EXCEPTION, e);
+            Log.warn(name+": "+metaData, e);
             throw new IllegalArgumentException(e.toString());
         }
     }

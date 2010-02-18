@@ -76,7 +76,7 @@ public class JDBCSessionManager extends AbstractSessionManager
     
     private ConcurrentHashMap _sessions;
     protected long _saveIntervalSec = 60; //only persist changes to session access times every 60 secs
-    
+  
     /**
      * SessionData
      *
@@ -215,7 +215,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         
         public synchronized void setExpiryTime (long time)
         {
-            _expiryTime=time;
+            _expiryTime=time;      
         }
         
         public synchronized long getExpiryTime ()
@@ -280,6 +280,7 @@ public class JDBCSessionManager extends AbstractSessionManager
          {
              super(data.getCreated(), data.getId());
              _data=data;
+             _data.setMaxIdleMs(_dftMaxIdleSecs*1000);
              _values=data.getAttributeMap();
          }
         
@@ -335,7 +336,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             try
             {
                 if (_dirty)
-                {
+                { 
                     //The session attributes have changed, write to the db, ensuring
                     //http passivation/activation listeners called
                     willPassivate();
@@ -343,8 +344,9 @@ public class JDBCSessionManager extends AbstractSessionManager
                     didActivate();
                 }
                 else if ((_data._accessed - _data._lastSaved) >= (getSaveInterval() * 1000))
+                {  
                     updateSessionAccessTime(_data);
-                
+                }
             }
             catch (Exception e)
             {
@@ -430,6 +432,24 @@ public class JDBCSessionManager extends AbstractSessionManager
     }
 
    
+    
+    /**
+     * A method that can be implemented in subclasses to support
+     * distributed caching of sessions. This method will be
+     * called whenever the session is written to the database
+     * because the session data has changed.
+     * 
+     * This could be used eg with a JMS backplane to notify nodes
+     * that the session has changed and to delete the session from
+     * the node's cache, and re-read it from the database.
+     * @param idInCluster
+     */
+    public void cacheInvalidate (Session session)
+    {
+        
+    }
+    
+    
     /** 
      * A session has been requested by it's id on this node.
      * 
@@ -455,37 +475,46 @@ public class JDBCSessionManager extends AbstractSessionManager
         {        
             try
             {                
-                //check if we need to reload the session - don't do it on every call
+                //check if we need to reload the session - 
+                //as an optimization, don't reload on every access
                 //to reduce the load on the database. This introduces a window of 
                 //possibility that the node may decide that the session is local to it,
                 //when the session has actually been live on another node, and then
                 //re-migrated to this node. This should be an extremely rare occurrence,
                 //as load-balancers are generally well-behaved and consistently send 
-                //sessions to the same node, changing only iff that node fails.
+                //sessions to the same node, changing only iff that node fails. 
                 SessionData data = null;
                 long now = System.currentTimeMillis();
                 if (Log.isDebugEnabled()) Log.debug("now="+now+
                         " lastSaved="+(session==null?0:session._data._lastSaved)+
                         " interval="+(_saveIntervalSec * 1000)+
                         " difference="+(now - (session==null?0:session._data._lastSaved)));
+                
                 if (session==null || ((now - session._data._lastSaved) >= (_saveIntervalSec * 1000)))
-                {
+                {       
                     data = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
                 }
                 else
+                {
                     data = session._data;
+                }
                 
                 if (data != null)
                 {
                     if (!data.getLastNode().equals(getIdManager().getWorkerName()) || session==null)
                     {
-                        //session last used on a different node, or we don't have it in memory
-                        session = new Session(data);
-                        _sessions.put(idInCluster, session);
-                        session.didActivate();
-                        //TODO is this the best way to do this? Or do this on the way out using
-                        //the _dirty flag?
-                        updateSessionNode(data);
+                        
+                        //if the session in the database has not already expired
+                        if (data._expiryTime > System.currentTimeMillis())
+                        {
+                            //session last used on a different node, or we don't have it in memory
+                            session = new Session(data);
+                            _sessions.put(idInCluster, session);
+                            session.didActivate();
+                            //TODO is this the best way to do this? Or do this on the way out using
+                            //the _dirty flag?
+                            updateSessionNode(data);
+                        }
                     }
                     else
                         if (Log.isDebugEnabled()) Log.debug("Session not stale "+session._data);
@@ -589,13 +618,15 @@ public class JDBCSessionManager extends AbstractSessionManager
      */
     protected void invalidateSession (String idInCluster)
     {
+        Session session = null;
         synchronized (this)
         {
-            Session session = (Session)_sessions.get(idInCluster);
-            if (session != null)
-            {
-                session.invalidate();
-            }
+            session = (Session)_sessions.get(idInCluster);
+        }
+        
+        if (session != null)
+        {
+            session.invalidate();
         }
     }
    
@@ -608,17 +639,19 @@ public class JDBCSessionManager extends AbstractSessionManager
     @Override
     protected void removeSession(String idInCluster)
     {
+        Session session = null;
         synchronized (this)
         {
-           try
-           {
-               Session session = (Session)_sessions.remove(idInCluster);
-               deleteSession(session._data);
-           }
-           catch (Exception e)
-           {
-               Log.warn("Problem deleting session id="+idInCluster, e);
-           }
+            session = (Session)_sessions.remove(idInCluster);
+        }
+        try
+        {
+            if (session != null)
+                deleteSession(session._data);
+        }
+        catch (Exception e)
+        {
+            Log.warn("Problem deleting session id="+idInCluster, e);
         }
     }
 
@@ -633,22 +666,23 @@ public class JDBCSessionManager extends AbstractSessionManager
     {
         if (session==null)
             return;
-        
+
         synchronized (this)
         {
             _sessions.put(session.getClusterId(), session);
-            //TODO or delay the store until exit out of session? If we crash before we store it
-            //then session data will be lost.
-            try
-            {
-                session.willPassivate();
-                storeSession(((JDBCSessionManager.Session)session)._data);
-                session.didActivate();
-            }
-            catch (Exception e)
-            {
-                Log.warn("Unable to store new session id="+session.getId() , e);
-            }
+        }
+        
+        //TODO or delay the store until exit out of session? If we crash before we store it
+        //then session data will be lost.
+        try
+        {
+            session.willPassivate();
+            storeSession(((JDBCSessionManager.Session)session)._data);
+            session.didActivate();
+        }
+        catch (Exception e)
+        {
+            Log.warn("Unable to store new session id="+session.getId() , e);
         }
     }
 
@@ -674,38 +708,36 @@ public class JDBCSessionManager extends AbstractSessionManager
     public void removeSession(AbstractSessionManager.Session session, boolean invalidate)
     {
         // Remove session from context and global maps
-        synchronized (_sessionIdManager)
+        boolean removed = false;
+        
+        synchronized (this)
         {
-            boolean removed = false;
-            
-            synchronized (this)
+            //take this session out of the map of sessions for this context
+            if (getSession(session.getClusterId()) != null)
             {
-                //take this session out of the map of sessions for this context
-                if (_sessions.get(session.getClusterId()) != null)
-                {
-                    removed = true;
-                    removeSession(session.getClusterId());
-                }
-            }   
-            
-            if (removed)
-            {
-                // Remove session from all context and global id maps
-                _sessionIdManager.removeSession(session);
-                if (invalidate)
-                    _sessionIdManager.invalidateAll(session.getClusterId());
+                removed = true;
+                removeSession(session.getClusterId());
             }
         }
-        
-        if (invalidate && _sessionListeners!=null)
+
+        if (removed)
         {
-            HttpSessionEvent event=new HttpSessionEvent(session);
-            for (int i=LazyList.size(_sessionListeners); i-->0;)
-                ((HttpSessionListener)LazyList.get(_sessionListeners,i)).sessionDestroyed(event);
-        }
-        if (!invalidate)
-        {
-            session.willPassivate();
+            // Remove session from all context and global id maps
+            _sessionIdManager.removeSession(session);
+            
+            if (invalidate)
+                _sessionIdManager.invalidateAll(session.getClusterId());
+            
+            if (invalidate && _sessionListeners!=null)
+            {
+                HttpSessionEvent event=new HttpSessionEvent(session);
+                for (int i=LazyList.size(_sessionListeners); i-->0;)
+                    ((HttpSessionListener)LazyList.get(_sessionListeners,i)).sessionDestroyed(event);
+            }
+            if (!invalidate)
+            {
+                session.willPassivate();
+            }
         }
     }
     
@@ -733,14 +765,12 @@ public class JDBCSessionManager extends AbstractSessionManager
             {
                 String sessionId = (String)itor.next();
                 if (Log.isDebugEnabled()) Log.debug("Expiring session id "+sessionId);
+                
                 Session session = (Session)_sessions.get(sessionId);
                 if (session != null)
                 {
                     session.timeout();
                     itor.remove();
-                    int count = this._sessions.size();
-                    if (count < this._minSessions)
-                        this._minSessions=count;
                 }
                 else
                 {

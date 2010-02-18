@@ -19,8 +19,8 @@ import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelper;
 import org.osgi.framework.Bundle;
 
 /**
- * Default implementation of the BundleClassLoaderHelper.
- * Uses introspection to support equinox-3.5 and felix-2.0.0
+ * Default implementation of the BundleClassLoaderHelper. Uses introspection to
+ * support equinox-3.5 and felix-2.0.0
  */
 public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
 {
@@ -51,8 +51,8 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
                 isFelix = false;
             }
         }
-//        System.err.println("isEquinox=" + isEquinox);
-//        System.err.println("isFelix=" + isFelix);
+        // System.err.println("isEquinox=" + isEquinox);
+        // System.err.println("isFelix=" + isFelix);
     }
 
     /**
@@ -76,7 +76,8 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
             }
             catch (ClassNotFoundException e)
             {
-                // should not happen as we are called if the bundle is started anyways.
+                // should not happen as we are called if the bundle is started
+                // anyways.
                 e.printStackTrace();
             }
         }
@@ -138,8 +139,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
             // and return the private field m_classLoader of ModuleImpl
             if (Felix_BundleImpl_m_modules_field == null)
             {
-                Felix_BundleImpl_m_modules_field = bundle.getClass().getClassLoader()
-                    .loadClass("org.apache.felix.framework.BundleImpl").getDeclaredField(
+                Felix_BundleImpl_m_modules_field = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.BundleImpl").getDeclaredField(
                         "m_modules");
                 Felix_BundleImpl_m_modules_field.setAccessible(true);
             }
@@ -152,21 +152,25 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
                 Felix_ModuleImpl_m_classLoader_field.setAccessible(true);
             }
             // first make sure that the classloader is ready:
-            // the m_classLoader field must be initialized by the ModuleImpl.getClassLoader() private method.
+            // the m_classLoader field must be initialized by the
+            // ModuleImpl.getClassLoader() private method.
             ClassLoader cl = (ClassLoader)Felix_ModuleImpl_m_classLoader_field.get(currentModuleImpl);
             if (cl == null)
             {
                 // looks like it was not ready:
-                // the m_classLoader field must be initialized by the ModuleImpl.getClassLoader() private method.
+                // the m_classLoader field must be initialized by the
+                // ModuleImpl.getClassLoader() private method.
                 // this call will do that.
                 bundle.loadClass("java.lang.Object");
                 cl = (ClassLoader)Felix_ModuleImpl_m_classLoader_field.get(currentModuleImpl);
-                // System.err.println("Got the bundle class loader of felix_: " + cl);
+                // System.err.println("Got the bundle class loader of felix_: "
+                // + cl);
                 return cl;
             }
             else
             {
-                // System.err.println("Got the bundle class loader of felix: " + cl);
+                // System.err.println("Got the bundle class loader of felix: " +
+                // cl);
                 return cl;
             }
         }

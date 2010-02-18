@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /* ------------------------------------------------------------ */
@@ -55,7 +56,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public class Server extends HandlerWrapper implements Attributes
 {
-    private static final ShutdownHookThread hookThread = new ShutdownHookThread();
     private static final String _version;
     static
     {
@@ -121,7 +121,9 @@ public class Server extends HandlerWrapper implements Attributes
     {
         _stopAtShutdown=stop;
         if (stop)
-            hookThread.add(this);
+            ShutdownThread.register(this);
+        else
+            ShutdownThread.deregister(this);
     }
     
     /* ------------------------------------------------------------ */
@@ -190,7 +192,7 @@ public class Server extends HandlerWrapper implements Attributes
     protected void doStart() throws Exception
     {
         if (getStopAtShutdown())
-            hookThread.add(this);
+            ShutdownThread.register(this);
         
         Log.info("jetty-"+_version);
         HttpGenerator.setServerVersion(_version);
@@ -245,7 +247,8 @@ public class Server extends HandlerWrapper implements Attributes
             }
         }
         if (Log.isDebugEnabled())
-            Log.debug(dump());
+            System.err.println(dump());
+        
         mex.ifExceptionThrow();
     }
 
@@ -310,7 +313,7 @@ public class Server extends HandlerWrapper implements Attributes
         }
        
         mex.ifExceptionThrow();
-        hookThread.remove(this);
+        ShutdownThread.deregister(this);
     }
 
     /* ------------------------------------------------------------ */
@@ -517,119 +520,6 @@ public class Server extends HandlerWrapper implements Attributes
             return;
         _dependentBeans.remove(o);
         _container.removeBean(o);
-    }
-    
- 
-    
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /**
-     * ShutdownHook thread for stopping all servers.
-     * 
-     * Thread is hooked first time list of servers is changed.
-     */
-    private static class ShutdownHookThread extends Thread
-    {
-        private boolean _hooked = false;
-        private final Set<Server> _servers = new CopyOnWriteArraySet<Server>();
-
-        /**
-         * Hooks this thread for shutdown.
-         * 
-         * @see java.lang.Runtime#addShutdownHook(java.lang.Thread)
-         */
-        private void createShutdownHook()
-        {
-            if (!_hooked)
-            {
-                try
-                {
-                    Method shutdownHook = java.lang.Runtime.class.getMethod("addShutdownHook", Thread.class);
-                    shutdownHook.invoke(Runtime.getRuntime(), this);
-                    _hooked = true;
-                }
-                catch (Exception e)
-                {
-                    if (Log.isDebugEnabled())
-                        Log.debug("No shutdown hook in JVM ", e);
-                }
-            }
-        }
-
-        /**
-         * Add Server to servers list.
-         */
-        public void add(Server server)
-        {
-            _servers.add(server);
-            if (server.getStopAtShutdown())
-                createShutdownHook();
-        }
-
-        /**
-         * Contains Server in servers list?
-         */
-        public boolean contains(Server server)
-        {
-            return _servers.contains(server);
-        }
-
-        public Iterable<Server> getServers()
-        {
-            return _servers;
-        }
-        
-        /**
-         * Clear list of Servers.
-         */
-        public void clear()
-        {
-            _servers.clear();
-        }
-
-        /**
-         * Remove Server from list.
-         */
-        public boolean remove(Server server)
-        {
-            createShutdownHook();
-            return _servers.remove(server);
-        }
-
-        /**
-         * Stop all Servers in list.
-         */
-        @Override
-        public void run()
-        {
-            setName("Shutdown");
-            Log.info("Shutdown hook executing");
-            for (Server svr : _servers)
-            {
-                if (svr == null || !svr.getStopAtShutdown() || !svr.isRunning())
-                    continue;
-                try
-                {
-                    svr.stop();
-                }
-                catch (Exception e)
-                {
-                    Log.warn(e);
-                }
-                Log.info("Shutdown hook complete");
-
-                // Try to avoid JVM crash
-                try
-                {
-                    Thread.sleep(1000);
-                }
-                catch (Exception e)
-                {
-                    Log.warn(e);
-                }
-            }
-        }
     }
 
     /* ------------------------------------------------------------ */

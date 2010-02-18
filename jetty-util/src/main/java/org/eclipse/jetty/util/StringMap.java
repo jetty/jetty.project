@@ -46,8 +46,8 @@ public class StringMap extends AbstractMap implements Externalizable
     protected boolean _ignoreCase=false;
     protected NullEntry _nullEntry=null;
     protected Object _nullValue=null;
-	protected HashSet _entrySet=new HashSet(3);
-	protected Set _umEntrySet=Collections.unmodifiableSet(_entrySet);
+    protected HashSet _entrySet=new HashSet(3);
+    protected Set _umEntrySet=Collections.unmodifiableSet(_entrySet);
     
     /* ------------------------------------------------------------ */
     /** Constructor. 

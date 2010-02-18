@@ -1,7 +1,8 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Jetty :: OSGi :: Boot
+Bundle-Name: Jetty OSGi bootstrap
 Bundle-SymbolicName: org.eclipse.jetty.osgi.boot;singleton:=true
+Bundle-Vendor: Mort Bay Consulting
 Bundle-Version: 7.0.1.qualifier
 Bundle-Activator: org.eclipse.jetty.osgi.boot.JettyBootstrapActivator
 Import-Package: javax.mail;resolution:=optional,
@@ -23,7 +24,12 @@ Import-Package: javax.mail;resolution:=optional,
  org.osgi.service.cm;version="1.2.0",
  org.osgi.service.packageadmin,
  org.osgi.service.startlevel;version="1.0",
- org.xml.sax
+ org.osgi.service.url;version="1.0.0",
+ org.osgi.util.tracker;version="1.3.0",
+ org.xml.sax,
+ org.slf4j;resolution:=optional,
+ org.slf4j.spi;resolution:=optional, 
+ org.slf4j.helpers;resolution:=optional
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Require-Bundle: org.eclipse.jetty.ajp;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.annotations;bundle-version="[7.0,8)";resolution:=optional,
@@ -42,6 +48,7 @@ Require-Bundle: org.eclipse.jetty.ajp;bundle-version="[7.0,8)";resolution:=optio
  org.eclipse.jetty.servlets;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.util;bundle-version="[7.0,8)",
  org.eclipse.jetty.webapp;bundle-version="[7.0,8)",
+ org.eclipse.jetty.websocket;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.xml;bundle-version="[7.0,8)"
 Export-Package: org.eclipse.jetty.osgi.boot,
  org.eclipse.jetty.osgi.boot.utils

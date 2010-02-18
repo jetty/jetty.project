@@ -32,6 +32,7 @@ public class StdErrLog implements Logger
 {    
     private static DateCache _dateCache;
     
+    private final static String LN = System.getProperty("line.separator");
     private final static boolean __debug = 
         Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.DEBUG",System.getProperty("org.eclipse.jetty.util.log.stderr.DEBUG","false")));
     private boolean _debug = __debug;
@@ -286,12 +287,12 @@ public class StdErrLog implements Logger
     
     private void format(Throwable th)
     {
-        _buffer.append('\n');
+        _buffer.append(LN);
         format(th.toString());
         StackTraceElement[] elements = th.getStackTrace();
         for (int i=0;elements!=null && i<elements.length;i++)
         {
-            _buffer.append("\n\tat ");
+            _buffer.append(LN).append("\tat ");
             format(elements[i].toString());
         }
     }

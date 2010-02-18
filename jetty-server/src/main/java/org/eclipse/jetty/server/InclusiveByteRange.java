@@ -70,7 +70,7 @@ public class InclusiveByteRange
      * @param size Size of the resource.
      * @return LazyList of satisfiable ranges
      */
-    public static List satisfiableRanges(Enumeration headers, boolean allowRelativeRange, long size)
+    public static List satisfiableRanges(Enumeration headers, long size)
     {
         Object satRanges=null;
         
@@ -126,11 +126,6 @@ public class InclusiveByteRange
 
                         if (first < size)
                         {
-                            // Relative range end points not allowed (in some cases)
-                            if ((!allowRelativeRange) && ((first < 0) || (last < 0)))
-                            {
-                                continue headers;
-                            }
                             InclusiveByteRange range = new InclusiveByteRange(first,last);
                             satRanges = LazyList.add(satRanges,range);
                         }

@@ -64,6 +64,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * </ul>
      * 
      * @param strict the strict to set
+     * @see #setRoles(Set)
+     * @see #setConstraintMappings(ConstraintMapping[], Set)
      */
     public void setStrict(boolean strict)
     {
@@ -128,9 +130,23 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 }
             }
         }
+        setRoles(roles);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the known roles.
+     * This may be overridden by a subsequent call to {@link #setConstraintMappings(ConstraintMapping[])} or
+     * {@link #setConstraintMappings(ConstraintMapping[], Set)}.
+     * @see #setStrict(boolean)
+     * @param roles The known roles (or null to determine them from the mappings)
+     */
+    public void setRoles(Set<String> roles)
+    {
+        if (isStarted())
+            throw new IllegalStateException("Started");
         
         this._roles = roles;
-
     }
 
     /* ------------------------------------------------------------ */

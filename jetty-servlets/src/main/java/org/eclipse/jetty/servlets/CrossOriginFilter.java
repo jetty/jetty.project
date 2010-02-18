@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -128,7 +127,7 @@ public class CrossOriginFilter implements Filter
         allowedMethods.addAll(Arrays.asList(allowedMethodsConfig.split(",")));
 
         String allowedHeadersConfig = config.getInitParameter(ALLOWED_HEADERS_PARAM);
-        if (allowedHeadersConfig == null) allowedHeadersConfig = "X-Requested-With";
+        if (allowedHeadersConfig == null) allowedHeadersConfig = "X-Requested-With,Content-Type,Accept";
         allowedHeaders.addAll(Arrays.asList(allowedHeadersConfig.split(",")));
 
         String preflightMaxAgeConfig = config.getInitParameter(PREFLIGHT_MAX_AGE_PARAM);
@@ -235,7 +234,7 @@ public class CrossOriginFilter implements Filter
         // 5.2.9
         response.setHeader(ACCESS_CONTROL_ALLOW_METHODS_HEADER, commify(allowedMethods));
         // 5.2.10
-        response.setHeader(ACCESS_CONTROL_ALLOW_HEADERS_HEADER, commify(this.allowedHeaders));
+        response.setHeader(ACCESS_CONTROL_ALLOW_HEADERS_HEADER, commify(allowedHeaders));
     }
 
     private boolean isMethodAllowed(HttpServletRequest request)
@@ -255,17 +254,16 @@ public class CrossOriginFilter implements Filter
     {
         String accessControlRequestHeaders = request.getHeader(ACCESS_CONTROL_REQUEST_HEADERS_HEADER);
         Log.debug("{} is {}", ACCESS_CONTROL_REQUEST_HEADERS_HEADER, accessControlRequestHeaders);
-        boolean result = false;
+        boolean result = true;
         if (accessControlRequestHeaders != null)
         {
-            result = true;
             String[] headers = accessControlRequestHeaders.split(",");
             for (String header : headers)
             {
                 boolean headerAllowed = false;
                 for (String allowedHeader : allowedHeaders)
                 {
-                    if (header.equalsIgnoreCase(allowedHeader))
+                    if (header.trim().equalsIgnoreCase(allowedHeader.trim()))
                     {
                         headerAllowed = true;
                         break;

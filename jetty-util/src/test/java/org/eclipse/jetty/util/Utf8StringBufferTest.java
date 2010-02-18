@@ -56,19 +56,11 @@ public class Utf8StringBufferTest extends junit.framework.TestCase
         byte[] bytes = source.getBytes(StringUtil.__UTF8);
         bytes[3]=(byte)0xc0;
         bytes[4]=(byte)0x00;
-        
+
         Utf8StringBuffer buffer = new Utf8StringBuffer();
-        try
-        {
-            for (int i=0;i<bytes.length;i++)
-                buffer.append(bytes[i]);
-            buffer.toString();
-            assertTrue(false);
-        }
-        catch(Exception e)
-        {
-            assertTrue(e.toString().indexOf("!utf8")>=0);
-        }
+        for (int i=0;i<bytes.length;i++)
+            buffer.append(bytes[i]);
+        assertEquals("abc?",buffer.toString());
     }
     
     

@@ -84,6 +84,7 @@ public class HttpOutput extends ServletOutputStream
     {
         _buf.wrap(b, off, len);
         write(_buf);
+        _buf.wrap(AbstractGenerator.NO_BYTES);
     }
 
     /* ------------------------------------------------------------ */
@@ -95,6 +96,7 @@ public class HttpOutput extends ServletOutputStream
     {
         _buf.wrap(b);
         write(_buf);
+        _buf.wrap(AbstractGenerator.NO_BYTES);
     }
 
     /* ------------------------------------------------------------ */

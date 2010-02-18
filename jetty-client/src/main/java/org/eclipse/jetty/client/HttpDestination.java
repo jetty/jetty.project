@@ -20,7 +20,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
-import org.eclipse.jetty.client.security.Authorization;
+import org.eclipse.jetty.client.HttpClient.Connector;
+import org.eclipse.jetty.client.security.Authentication;
 import org.eclipse.jetty.client.security.SecurityListener;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeaders;
@@ -46,7 +47,7 @@ public class HttpDestination
     private ArrayBlockingQueue<Object> _newQueue = new ArrayBlockingQueue<Object>(10, true);
     private int _newConnection = 0;
     private Address _proxy;
-    private Authorization _proxyAuthentication;
+    private Authentication _proxyAuthentication;
     private PathMap _authorizations;
     private List<HttpCookie> _cookies;
 
@@ -107,7 +108,7 @@ public class HttpDestination
             return _connections.size();
         }
     }
-    
+
     public int getIdleConnections()
     {
         synchronized (this)
@@ -115,8 +116,8 @@ public class HttpDestination
             return _idle.size();
         }
     }
-    
-    public void addAuthorization(String pathSpec, Authorization authorization)
+
+    public void addAuthorization(String pathSpec, Authentication authorization)
     {
         synchronized (this)
         {
@@ -154,11 +155,10 @@ public class HttpDestination
 
         while ((connection == null) && (connection = getIdleConnection()) == null && timeout>0)
         {
-            int totalConnections = 0;
             boolean starting = false;
             synchronized (this)
             {
-                totalConnections = _connections.size() + _pendingConnections;
+                int totalConnections = _connections.size() + _pendingConnections;
                 if (totalConnections < _maxConnections)
                 {
                     _newConnection++;
@@ -211,8 +211,6 @@ public class HttpDestination
 
     public HttpConnection getIdleConnection() throws IOException
     {
-        long now = _client.getNow();
-        long idleTimeout=_client.getIdleTimeout();
         HttpConnection connection = null;
         while (true)
         {
@@ -245,7 +243,9 @@ public class HttpDestination
             {
                 _pendingConnections++;
             }
-            _client._connector.startConnection(this);
+            final Connector connector=_client._connector;
+            if (connector!=null)
+                connector.startConnection(this);
         }
         catch (Exception e)
         {
@@ -317,6 +317,7 @@ public class HttpDestination
             }
             else if (_queue.size() == 0)
             {
+                connection.setIdleTimeout();
                 _idle.add(connection);
             }
             else
@@ -365,7 +366,7 @@ public class HttpDestination
             {
                 if (_queue.size() == 0)
                 {
-                    connection.setIdleTimeout(_client.getNow()+_client.getIdleTimeout());
+                    connection.setIdleTimeout();
                     _idle.add(connection);
                 }
                 else
@@ -405,7 +406,7 @@ public class HttpDestination
             if (!_queue.isEmpty() && _client.isStarted())
                 startNewConnection();
         }
-        
+
     }
 
     public void send(HttpExchange ex) throws IOException
@@ -474,7 +475,7 @@ public class HttpDestination
         // Add any known authorizations
         if (_authorizations != null)
         {
-            Authorization auth = (Authorization)_authorizations.match(ex.getURI());
+            Authentication auth = (Authentication)_authorizations.match(ex.getURI());
             if (auth != null)
                 (auth).setCredentials(ex);
         }
@@ -536,12 +537,12 @@ public class HttpDestination
         return _proxy;
     }
 
-    public Authorization getProxyAuthentication()
+    public Authentication getProxyAuthentication()
     {
         return _proxyAuthentication;
     }
 
-    public void setProxyAuthentication(Authorization authentication)
+    public void setProxyAuthentication(Authentication authentication)
     {
         _proxyAuthentication = authentication;
     }

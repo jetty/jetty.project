@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class ContentExchange extends CachedExchange
 {
-    private int _contentLength = 1024;
+    private int _bufferSize = 4096;
     private String _encoding = "utf-8";
     private ByteArrayOutputStream _responseContent;
     private File _fileForUpload;
@@ -60,6 +60,14 @@ public class ContentExchange extends CachedExchange
     }
 
     @Override
+    protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+    {
+        if (_responseContent!=null)
+            _responseContent.reset();
+        super.onResponseStatus(version,status,reason);
+    }
+
+    @Override
     protected void onResponseHeader(Buffer name, Buffer value) throws IOException
     {
         super.onResponseHeader(name, value);
@@ -67,13 +75,18 @@ public class ContentExchange extends CachedExchange
         switch (header)
         {
             case HttpHeaders.CONTENT_LENGTH_ORDINAL:
-                _contentLength = BufferUtil.toInt(value);
+                _bufferSize = BufferUtil.toInt(value);
                 break;
             case HttpHeaders.CONTENT_TYPE_ORDINAL:
                 String mime = StringUtil.asciiToLowerCase(value.toString());
                 int i = mime.indexOf("charset=");
                 if (i > 0)
+                {
                     _encoding = mime.substring(i + 8);
+                    i = _encoding.indexOf(';');
+                    if (i > 0)
+                        _encoding = _encoding.substring(0, i);
+                }
                 break;
         }
     }
@@ -83,7 +96,7 @@ public class ContentExchange extends CachedExchange
     {
         super.onResponseContent(content);
         if (_responseContent == null)
-            _responseContent = new ByteArrayOutputStream(_contentLength);
+            _responseContent = new ByteArrayOutputStream(_bufferSize);
         content.writeTo(_responseContent);
     }
 
@@ -96,22 +109,7 @@ public class ContentExchange extends CachedExchange
             setRequestContentSource(getInputStream());
         }
         else
-        {
-            InputStream requestContentStream = getRequestContentSource();
-            if (requestContentStream != null)
-            {
-                if (requestContentStream.markSupported())
-                {
-                    setRequestContent(null);
-                    requestContentStream.reset();
-                }
-                else
-                {
-                    throw new IOException("Unsupported retry attempt");
-                }
-            }
-        }
-        super.onRetry();
+            super.onRetry();
     }
 
     private InputStream getInputStream() throws IOException

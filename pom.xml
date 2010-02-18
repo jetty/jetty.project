@@ -20,7 +20,7 @@
     <jta-spec-version>1.1.1</jta-spec-version>
     <junit-version>3.8.2</junit-version>
     <mail-version>1.4</mail-version>
-    <slf4j-version>1.5.6</slf4j-version>
+    <slf4j-version>1.5.10</slf4j-version>
     <eclipse-compiler-version>3.1.1</eclipse-compiler-version>
     <cometd-version>1.0.beta4</cometd-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -147,6 +147,7 @@
     <module>jetty-policy</module>
     <module>jetty-start</module>
     <module>test-jetty-webapp</module>
+    <module>jetty-osgi</module>
     <module>test-continuation</module>
     <module>test-continuation-jetty6</module>
     <module>test-jetty-servlet</module>
@@ -215,6 +216,8 @@
     configure settings.xml for jetty.eclipse.website server entry
     > mvn -Paggregate-site javadoc:aggregate jxr:jxr
     > mvn -N site:deploy
+    or
+    > mvn -N site:sshdeploy     (for ssh users w/passphrase and ssh-agent)
    -->
   <profiles>
     <profile>

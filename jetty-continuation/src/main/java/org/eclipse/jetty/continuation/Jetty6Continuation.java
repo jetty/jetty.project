@@ -7,6 +7,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
 
+import org.mortbay.log.Log;
+
 
 
 /* ------------------------------------------------------------ */
@@ -36,6 +38,11 @@ public class Jetty6Continuation implements ContinuationFilter.FilteredContinuati
 
     public Jetty6Continuation(ServletRequest request, org.mortbay.util.ajax.Continuation continuation)
     {
+        if (!ContinuationFilter._initialized)
+        {
+            Log.warn("!ContinuationFilter installed");
+            throw new IllegalStateException("!ContinuationFilter installed");
+        }
         _request=request;
         _j6Continuation=continuation;
     }

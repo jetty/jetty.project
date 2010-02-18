@@ -26,6 +26,7 @@ import javax.servlet.ServletResponse;
  */
 public class ContinuationFilter implements Filter
 {
+    static boolean _initialized;
     static boolean __debug; // shared debug status
     private boolean _faux;
     private boolean _jetty6;
@@ -65,6 +66,7 @@ public class ContinuationFilter implements Filter
                     " faux="+_faux+
                     " filtered="+_filtered+
                     " servlet3="+ContinuationSupport.__servlet3);
+        _initialized=true;
     }
 
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException

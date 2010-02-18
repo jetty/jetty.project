@@ -110,8 +110,6 @@ public class Utf8StringBuffer
                     throw new IllegalArgumentException("!utf8");
                 }
                 
-                if (_bits==0)
-                    throw new IllegalArgumentException("!utf8");
             }
         }
         else

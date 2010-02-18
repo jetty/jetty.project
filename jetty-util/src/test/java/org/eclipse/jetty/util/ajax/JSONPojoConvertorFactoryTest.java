@@ -26,8 +26,10 @@ public class JSONPojoConvertorFactoryTest extends TestCase {
         JSON jsonOut = new JSON();
         JSON jsonIn = new JSON();
         
-        JSON.registerConvertor(Object.class, new JSONPojoConvertorFactory(jsonOut));
-        JSON.registerConvertor(Object.class, new JSONPojoConvertorFactory(jsonIn));
+        jsonOut.addConvertor(Object.class, new JSONPojoConvertorFactory(jsonOut));
+        jsonOut.addConvertor(Enum.class, new JSONEnumConvertor());
+        jsonIn.addConvertor(Object.class, new JSONPojoConvertorFactory(jsonIn));
+        jsonIn.addConvertor(Enum.class, new JSONEnumConvertor());
         
         Foo foo = new Foo();
         foo._name = "Foo @ " + System.currentTimeMillis();
@@ -43,6 +45,7 @@ public class JSONPojoConvertorFactoryTest extends TestCase {
         Bar bar = new Bar("Hello", true, new Baz("World", Boolean.FALSE, foo), new Baz[]{
             new Baz("baz0", Boolean.TRUE, null), new Baz("baz1", Boolean.FALSE, null)
         });
+        bar.setColor(Color.Green);
         
         String s = jsonOut.toJSON(bar);
         
@@ -60,7 +63,10 @@ public class JSONPojoConvertorFactoryTest extends TestCase {
         assertTrue(br.getBazs().length==2);
         assertEquals(br.getBazs()[0].getMessage(), "baz0");
         assertEquals(br.getBazs()[1].getMessage(), "baz1");
+        assertEquals(Color.Green,br.getColor());
     }
+
+    enum Color { Red, Green, Blue };
     
     public static class Bar
     {
@@ -68,6 +74,7 @@ public class JSONPojoConvertorFactoryTest extends TestCase {
         private Baz _baz;
         private boolean _boolean1;
         private Baz[] _bazs;
+        private Color _color;
         
         public Bar()
         {
@@ -94,7 +101,8 @@ public class JSONPojoConvertorFactoryTest extends TestCase {
                 .append("\ntitle: ").append(getTitle())
                 .append("\nboolean1: ").append(isBoolean1())
                 .append("\nnullTest: ").append(getNullTest())
-                .append("\nbaz: ").append(getBaz()).toString();
+                .append("\nbaz: ").append(getBaz())
+                .append("\ncolor: ").append(_color).toString();
         }
         
         public void setTitle(String title)
@@ -147,6 +155,17 @@ public class JSONPojoConvertorFactoryTest extends TestCase {
         {
             return _bazs;
         }
+
+        public Color getColor()
+        {
+            return _color;
+        }
+        
+        public void setColor(Color color)
+        {
+            _color = color;
+        }
+        
     }
     
     public static class Baz

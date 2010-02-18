@@ -172,12 +172,12 @@ public class SecurityListener extends HttpEventListenerWrapper
                     }
                     else if ("digest".equalsIgnoreCase(type))
                     {
-                        _destination.addAuthorization("/",new DigestAuthorization(realm,details));
+                        _destination.addAuthorization("/",new DigestAuthentication(realm,details));
                         
                     }
                     else if ("basic".equalsIgnoreCase(type))
                     {
-                        _destination.addAuthorization(pathSpec,new BasicAuthorization(realm));
+                        _destination.addAuthorization(pathSpec,new BasicAuthentication(realm));
                     }
                     
                     break;

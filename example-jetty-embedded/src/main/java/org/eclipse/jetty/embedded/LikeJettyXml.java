@@ -15,8 +15,9 @@ package org.eclipse.jetty.embedded;
 
 import java.lang.management.ManagementFactory;
 
-import org.eclipse.jetty.deploy.ContextDeployer;
-import org.eclipse.jetty.deploy.WebAppDeployer;
+import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.deploy.providers.ContextProvider;
+import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Connector;
@@ -27,6 +28,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
@@ -58,6 +60,8 @@ public class LikeJettyXml
         connector.setPort(8080);
         connector.setMaxIdleTime(30000);
         connector.setConfidentialPort(8443);
+        connector.setStatsOn(true);
+        
         server.setConnectors(new Connector[]
         { connector });
 
@@ -68,6 +72,7 @@ public class LikeJettyXml
         ssl_connector.setKeyPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
         ssl_connector.setTruststore(jetty_home + "/etc/keystore");
         ssl_connector.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        ssl_connector.setStatsOn(true);
         server.addConnector(ssl_connector);
 
         HandlerCollection handlers = new HandlerCollection();
@@ -75,25 +80,31 @@ public class LikeJettyXml
         RequestLogHandler requestLogHandler = new RequestLogHandler();
         handlers.setHandlers(new Handler[]
         { contexts, new DefaultHandler(), requestLogHandler });
-        server.setHandler(handlers);
-
         
+        StatisticsHandler stats = new StatisticsHandler();
+        stats.setHandler(handlers);
+        
+        server.setHandler(stats);
+
         // Setup deployers
+        DeploymentManager deployer = new DeploymentManager();
+        deployer.setContexts(contexts);
+        server.addBean(deployer);   
         
-        ContextDeployer deployer0 = new ContextDeployer();
-        deployer0.setContexts(contexts);
-        deployer0.setConfigurationDir(jetty_home + "/contexts");
-        deployer0.setScanInterval(1);
-        server.addBean(deployer0);
+        ContextProvider context_provider = new ContextProvider();
+        context_provider.setMonitoredDir(jetty_home + "/contexts");
+        context_provider.setScanInterval(2);
+        server.addBean(context_provider);
+        deployer.addAppProvider(context_provider);
 
-        WebAppDeployer deployer1 = new WebAppDeployer();
-        deployer1.setContexts(contexts);
-        deployer1.setWebAppDir(jetty_home + "/webapps");
-        deployer1.setParentLoaderPriority(false);
-        deployer1.setExtract(true);
-        deployer1.setAllowDuplicates(false);
-        deployer1.setDefaultsDescriptor(jetty_home + "/etc/webdefault.xml");
-        server.addBean(deployer1);
+        WebAppProvider webapp_provider = new WebAppProvider();
+        webapp_provider.setMonitoredDir(jetty_home + "/webapps");
+        webapp_provider.setParentLoaderPriority(false);
+        webapp_provider.setExtractWars(true);
+        webapp_provider.setScanInterval(2);
+        webapp_provider.setDefaultsDescriptor(jetty_home + "/etc/webdefault.xml");
+        webapp_provider.setContextXmlDir(jetty_home + "/contexts");
+        deployer.addAppProvider(webapp_provider);
 
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");

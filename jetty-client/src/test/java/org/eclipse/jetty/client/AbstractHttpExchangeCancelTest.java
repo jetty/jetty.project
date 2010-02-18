@@ -291,7 +291,6 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
     {
         try
         {
-            System.err.println("doing it");
             TestHttpExchange exchange = new TestHttpExchange();
             exchange.setAddress(newAddress());
             exchange.setURI("/?action=throw");
@@ -306,7 +305,6 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         }
         finally
         {
-            System.err.println("OVER");
         }
     }
 

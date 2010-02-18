@@ -24,12 +24,12 @@ import junit.framework.TestCase;
 public class InclusiveByteRangeTest extends TestCase
 {
     @SuppressWarnings("unchecked")
-    private void assertInvalidRange(String rangeString, boolean allowRelativeRange)
+    private void assertInvalidRange(String rangeString)
     {
         Vector strings = new Vector();
         strings.add(rangeString);
 
-        List ranges = InclusiveByteRange.satisfiableRanges(strings.elements(),allowRelativeRange,200);
+        List ranges = InclusiveByteRange.satisfiableRanges(strings.elements(),200);
         assertNull("Invalid Range [" + rangeString + "] should result in no satisfiable ranges",ranges);
     }
     
@@ -41,9 +41,9 @@ public class InclusiveByteRangeTest extends TestCase
         assertEquals(msg + " - header range string",expectedHeader,actualRange.toHeaderRangeString(size));
     }
 
-    private void assertSimpleRange(int expectedFirst, int expectedLast, String rangeId, int size, boolean allowRelativeRanges)
+    private void assertSimpleRange(int expectedFirst, int expectedLast, String rangeId, int size)
     {
-        InclusiveByteRange range = parseRange(rangeId,size,allowRelativeRanges);
+        InclusiveByteRange range = parseRange(rangeId,size);
 
         assertEquals("Range [" + rangeId + "] - first",expectedFirst,range.getFirst(size));
         assertEquals("Range [" + rangeId + "] - last",expectedLast,range.getLast(size));
@@ -52,25 +52,25 @@ public class InclusiveByteRangeTest extends TestCase
     }
 
     @SuppressWarnings("unchecked")
-    private InclusiveByteRange parseRange(String rangeString, int size, boolean allowRelativeRange)
+    private InclusiveByteRange parseRange(String rangeString, int size)
     {
         Vector strings = new Vector();
         strings.add(rangeString);
 
-        List ranges = InclusiveByteRange.satisfiableRanges(strings.elements(),allowRelativeRange,size);
+        List ranges = InclusiveByteRange.satisfiableRanges(strings.elements(),size);
         assertNotNull("Satisfiable Ranges should not be null",ranges);
         assertEquals("Satisfiable Ranges of [" + rangeString + "] count",1,ranges.size());
         return (InclusiveByteRange)ranges.get(0);
     }
 
     @SuppressWarnings("unchecked")
-    private List<InclusiveByteRange> parseRanges(String rangeString, int size, boolean allowRelativeRange)
+    private List<InclusiveByteRange> parseRanges(String rangeString, int size)
     {
         Vector strings = new Vector();
         strings.add(rangeString);
 
         List<InclusiveByteRange> ranges;
-        ranges = InclusiveByteRange.satisfiableRanges(strings.elements(),allowRelativeRange,size);
+        ranges = InclusiveByteRange.satisfiableRanges(strings.elements(),size);
         assertNotNull("Satisfiable Ranges should not be null",ranges);
         return ranges;
     }
@@ -83,19 +83,11 @@ public class InclusiveByteRangeTest extends TestCase
     
     public void testInvalidRanges()
     {
-        boolean relativeRange = true;
-
         // Invalid if parsing "Range" header
-        assertInvalidRange("bytes=a-b",relativeRange); // letters invalid
-        assertInvalidRange("byte=10-3",relativeRange); // key is bad
-        assertInvalidRange("onceuponatime=5-10",relativeRange); // key is bad
-        assertInvalidRange("bytes=300-310",relativeRange); // outside of size (200) 
-        
-        // Invalid if parsing "Content-Range" header 
-        relativeRange = false;
-        assertInvalidRange("bytes=-5",relativeRange); // relative from end
-        assertInvalidRange("bytes=10-",relativeRange); // relative from start
-        assertInvalidRange("bytes=250-300",relativeRange); // outside of size (200)
+        assertInvalidRange("bytes=a-b"); // letters invalid
+        assertInvalidRange("byte=10-3"); // key is bad
+        assertInvalidRange("onceuponatime=5-10"); // key is bad
+        assertInvalidRange("bytes=300-310"); // outside of size (200) 
     }
 
     /**
@@ -103,13 +95,12 @@ public class InclusiveByteRangeTest extends TestCase
      */
     public void testMultipleAbsoluteRanges()
     {
-        boolean relativeRange = false;
         int size = 50;
         String rangeString;
 
         rangeString = "bytes=5-20,35-65";
 
-        List<InclusiveByteRange> ranges = parseRanges(rangeString,size,relativeRange);
+        List<InclusiveByteRange> ranges = parseRanges(rangeString,size);
         assertEquals("Satisfiable Ranges of [" + rangeString + "] count",2,ranges.size());
         assertRange("Range [" + rangeString + "]",5,20,size,ranges.get(0));
         assertRange("Range [" + rangeString + "]",35,49,size,ranges.get(1));
@@ -124,7 +115,7 @@ public class InclusiveByteRangeTest extends TestCase
 
         rangeString = "bytes=5-20,35-65,-5";
 
-        List<InclusiveByteRange> ranges = parseRanges(rangeString,50,true);
+        List<InclusiveByteRange> ranges = parseRanges(rangeString,50);
         assertEquals("Satisfiable Ranges of [" + rangeString + "] count",3,ranges.size());
         assertRange("Range [" + rangeString + "]",5,20,50,ranges.get(0));
         assertRange("Range [" + rangeString + "]",35,49,50,ranges.get(1));
@@ -137,7 +128,7 @@ public class InclusiveByteRangeTest extends TestCase
 
         rangeString = "bytes=5-20,15-25";
 
-        List<InclusiveByteRange> ranges = parseRanges(rangeString,200,true);
+        List<InclusiveByteRange> ranges = parseRanges(rangeString,200);
         assertEquals("Satisfiable Ranges of [" + rangeString + "] count",2,ranges.size());
         assertRange("Range [" + rangeString + "]",5,20,200,ranges.get(0));
         assertRange("Range [" + rangeString + "]",15,25,200,ranges.get(1));
@@ -146,10 +137,9 @@ public class InclusiveByteRangeTest extends TestCase
     public void testMultipleRangesSplit()
     {
         String rangeString;
-
         rangeString = "bytes=5-10,15-20";
 
-        List<InclusiveByteRange> ranges = parseRanges(rangeString,200,true);
+        List<InclusiveByteRange> ranges = parseRanges(rangeString,200);
         assertEquals("Satisfiable Ranges of [" + rangeString + "] count",2,ranges.size());
         assertRange("Range [" + rangeString + "]",5,10,200,ranges.get(0));
         assertRange("Range [" + rangeString + "]",15,20,200,ranges.get(1));
@@ -157,12 +147,9 @@ public class InclusiveByteRangeTest extends TestCase
 
     public void testSimpleRange()
     {
-        boolean relativeRange = true;
-
-        assertSimpleRange(5,10,"bytes=5-10",200,relativeRange);
-        assertSimpleRange(195,199,"bytes=-5",200,relativeRange);
-        assertSimpleRange(50,119,"bytes=50-150",120,relativeRange);
-        assertSimpleRange(50,119,"bytes=50-",120,relativeRange);
+        assertSimpleRange(5,10,"bytes=5-10",200);
+        assertSimpleRange(195,199,"bytes=-5",200);
+        assertSimpleRange(50,119,"bytes=50-150",120);
+        assertSimpleRange(50,119,"bytes=50-",120);
     }
-
 }

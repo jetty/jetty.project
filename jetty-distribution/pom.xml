@@ -10,7 +10,6 @@
   <packaging>pom</packaging>
   <properties>
     <assembly.directory>target/distribution</assembly.directory>
-    <slf4j.version>1.5.6</slf4j.version>
   </properties>
    <build>
     <plugins>
@@ -389,6 +388,15 @@
                   <outputDirectory>${assembly.directory}/lib</outputDirectory>
                   <destFileName>servlet-api-3.0.jar</destFileName>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-websocket</artifactId>
+                  <version>${project.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                </artifactItem>
               </artifactItems>
             </configuration>
           </execution>
@@ -516,6 +524,11 @@
       <groupId>${servlet.spec.groupId}</groupId>
       <artifactId>${servlet.spec.artifactId}</artifactId>
       <version>${servlet.spec.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-websocket</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 </project>

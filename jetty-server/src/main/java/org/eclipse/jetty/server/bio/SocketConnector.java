@@ -27,7 +27,6 @@ import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.HttpConnection;
@@ -239,25 +238,16 @@ public class SocketConnector extends AbstractConnector
                     {
                         if (isLowResources())
                         {
-                            int lrmit = getLowResourceMaxIdleTime();
+                            int lrmit = getLowResourcesMaxIdleTime();
                             if (lrmit>=0 && _sotimeout!= lrmit)
                             {
                                 _sotimeout=lrmit;
                                 _socket.setSoTimeout(_sotimeout);
                             }
                         }
-                    }                    
-                    try
-                    {
-                        _connection.handle();
-                    }
-                    catch (UpgradeConnectionException e)
-                    {
-                        Log.debug(e.toString());
-                        Log.ignore(e);
-                        setConnection(e.getConnection());
-                        continue;
-                    }
+                    }  
+
+                    _connection=_connection.handle();
                 }
             }
             catch (EofException e)

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <!-- =============================================================== -->
 <!-- Configuration for starting up Jetty using inetd/xinetd          -->
@@ -32,11 +32,11 @@ service jetty
 
 -->
 
-<Configure id="Server" class="org.mortbay.jetty.Server">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
     <Call name="addConnector">
       <Arg>
           <!-- Inherited channel (from inetd/xinetd) -->
-          <New class="org.mortbay.jetty.nio.InheritedChannelConnector">
+          <New class="org.eclipse.jetty.server.nio.InheritedChannelConnector">
 
 
             <!-- Optional. Fallback in case System.inheritedChannel() does not give a ServerSocketChannel 

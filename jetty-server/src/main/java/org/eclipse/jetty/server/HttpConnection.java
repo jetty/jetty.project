@@ -46,7 +46,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.UncheckedIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
-import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -364,7 +363,7 @@ public class HttpConnection implements Connection
     }
 
     /* ------------------------------------------------------------ */
-    public void handle() throws IOException
+    public Connection handle() throws IOException
     {
         // Loop while more in buffer
         boolean more_in_buffer =true; // assume true until proven otherwise
@@ -426,7 +425,7 @@ public class HttpConnection implements Connection
                         }
 
                         if (!progress)
-                            return;
+                            return this;
                     }
                     progress=false;
                 }
@@ -450,6 +449,16 @@ public class HttpConnection implements Connection
 
                     if (_parser.isComplete() && _generator.isComplete() && !_endp.isBufferingOutput())
                     {
+                        if (_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
+                        {
+                            Connection connection = (Connection)_request.getAttribute("org.eclipse.jetty.io.Connection");
+                            if (connection!=null)
+                            {
+                                _parser.reset(true);
+                                return connection;
+                            }
+                        }
+                        
                         if (!_generator.isPersistent())
                         {
                             _parser.reset(true);
@@ -481,6 +490,7 @@ public class HttpConnection implements Connection
             setCurrentConnection(null);
             _handling=false;
         }
+        return this;
     }
 
     /* ------------------------------------------------------------ */
@@ -563,10 +573,6 @@ public class HttpConnection implements Connection
                         server.handleAsync(this);
                     }
                 }
-                catch (UpgradeConnectionException e)
-                {
-                    throw e;
-                }
                 catch (ContinuationThrowable e)
                 {
                     Log.ignore(e);
@@ -600,18 +606,11 @@ public class HttpConnection implements Connection
                     async_exception=e;
                     
                     error=true;
-                    if (info==null)
-                    {
-                        Log.debug(_uri+": "+e);
-                        _request.setHandled(true);
-                        _generator.sendError(400, null, null, true);
-                    }
-                    else
-                    {
-                        Log.debug(""+_uri,e);
-                        _request.setHandled(true);
-                        _generator.sendError(500, null, null, true);
-                    }
+                    Log.warn(_uri+": "+e);
+                    Log.debug(e);
+                    _request.setHandled(true);
+                    _generator.sendError(info==null?400:500, null, null, true);
+                    
                 }
                 finally
                 {
@@ -967,7 +966,7 @@ public class HttpConnection implements Connection
                     _generator.setHead(_head);
 
                     if (_server.getSendDateHeader())
-                        _responseFields.put(HttpHeaders.DATE_BUFFER, _request.getTimeStampBuffer(),_request.getTimeStamp());
+                        _generator.setDate(_request.getTimeStampBuffer());
 
                     if (!_host)
                     {

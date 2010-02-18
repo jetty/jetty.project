@@ -187,8 +187,8 @@ public class JSONPojoConvertor implements JSON.Convertor
                 catch(Exception e)
                 {
                     // TODO throw exception?
-                    Log.warn("{} property '{}' not set. (errors)", _pojoClass.getName(), 
-                            setter.getPropertyName());
+                    Log.warn(_pojoClass.getName()+"#"+setter.getPropertyName()+" not set from "+
+                            (entry.getValue().getClass().getName())+"="+entry.getValue().toString());
                     log(e);
                 }
             }
@@ -222,7 +222,8 @@ public class JSONPojoConvertor implements JSON.Convertor
     {
         Log.ignore(t);
     }
-    
+
+    /* ------------------------------------------------------------ */
     public static class Setter
     {
         protected String _propertyName;
@@ -286,8 +287,18 @@ public class JSONPojoConvertor implements JSON.Convertor
         protected void invokeObject(Object obj, Object value) throws IllegalArgumentException, 
             IllegalAccessException, InvocationTargetException
         {
-            if(_numberType!=null && value instanceof Number)
+            
+            if (_type.isEnum())
+            {
+                if (value instanceof Enum)
+                    _method.invoke(obj, new Object[]{value});
+                else
+                    _method.invoke(obj, new Object[]{Enum.valueOf((Class<? extends Enum>)_type,value.toString())});
+            }
+            else if(_numberType!=null && value instanceof Number)
+            {
                 _method.invoke(obj, new Object[]{_numberType.getActualValue((Number)value)});
+            }
             else if(_componentType!=null && value.getClass().isArray())
             {
                 if(_numberType==null)

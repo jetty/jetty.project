@@ -142,7 +142,13 @@ public class HashSessionManager extends AbstractSessionManager
     @Override
     public int getSessions()
     {
-        return _sessions.size();
+        int sessions=super.getSessions();
+        if (Log.isDebugEnabled())
+        {
+            if (_sessions.size()!=sessions)
+                Log.warn("sessions: "+_sessions.size()+"!="+sessions);
+        }
+        return sessions;
     }
 
 
@@ -297,9 +303,6 @@ public class HashSessionManager extends AbstractSessionManager
                 if (idleTime>0&&session._accessed+idleTime<System.currentTimeMillis())
                 {
                     session.timeout();
-                    int nbsess=this._sessions.size();
-                    if (nbsess<this._minSessions)
-                        this._minSessions=nbsess;
                 }
             }
         }
@@ -432,7 +435,7 @@ public class HashSessionManager extends AbstractSessionManager
             }
         }
         
-        _sessionsLoaded = true;
+         _sessionsLoaded = true;
     }
 
     /* ------------------------------------------------------------ */

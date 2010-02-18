@@ -31,6 +31,7 @@ import junit.framework.TestCase;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  *
@@ -153,7 +154,7 @@ public class HttpConnectionTest extends TestCase
         response=connector.getResponses("GET /foo/bar%c0%00 HTTP/1.1\n"+
                 "Host: localhost\n"+
                 "\015\012");
-        checkContains(response,0,"HTTP/1.1 400");
+        checkContains(response,0,"pathInfo=/foo/bar?");
 
         response=connector.getResponses("GET /foo/bar%c1 HTTP/1.1\n"+
                 "Host: localhost\n"+
@@ -232,7 +233,7 @@ public class HttpConnectionTest extends TestCase
             offset = checkContains(response,offset,"HTTP/1.1 200");
             offset = checkContains(response,offset,"encoding=unknown");
             offset = checkContains(response,offset,"/R1");
-            offset = checkContains(response,offset,"12345");
+            offset = checkContains(response,offset,"UnsupportedEncodingException");
 
 
         }
@@ -245,6 +246,87 @@ public class HttpConnectionTest extends TestCase
         }
     }
 
+
+    
+    /* --------------------------------------------------------------- */
+    public void testUnconsumedError() throws Exception
+    {        
+
+        String response=null;
+        String requests=null;
+        int offset=0;
+
+        offset=0; 
+        requests="GET /R1?read=1&error=500 HTTP/1.1\n"+
+        "Host: localhost\n"+
+        "Transfer-Encoding: chunked\n"+
+        "Content-Type: text/plain; charset=utf-8\n"+
+        "\015\012"+
+        "5;\015\012"+
+        "12345\015\012"+
+        "5;\015\012"+
+        "67890\015\012"+
+        "0;\015\012\015\012"+
+        "GET /R2 HTTP/1.1\n"+
+        "Host: localhost\n"+
+        "Content-Type: text/plain; charset=utf-8\n"+
+        "Content-Length: 10\n"+
+        "\n"+
+        "abcdefghij\n";
+
+        response=connector.getResponses(requests);
+        offset = checkContains(response,offset,"HTTP/1.1 500");
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        offset = checkContains(response,offset,"/R2");
+        offset = checkContains(response,offset,"encoding=UTF-8");
+        offset = checkContains(response,offset,"abcdefghij");
+        
+    }
+    
+    /* --------------------------------------------------------------- */
+    public void testUnconsumedException() throws Exception
+    {        
+        String response=null;
+        String requests=null;
+        int offset=0;
+
+        offset=0; 
+        requests="GET /R1?read=1&ISE=true HTTP/1.1\n"+
+        "Host: localhost\n"+
+        "Transfer-Encoding: chunked\n"+
+        "Content-Type: text/plain; charset=utf-8\n"+
+        "\015\012"+
+        "5;\015\012"+
+        "12345\015\012"+
+        "5;\015\012"+
+        "67890\015\012"+
+        "0;\015\012\015\012"+
+        "GET /R2 HTTP/1.1\n"+
+        "Host: localhost\n"+
+        "Content-Type: text/plain; charset=utf-8\n"+
+        "Content-Length: 10\n"+
+        "\n"+
+        "abcdefghij\n";
+
+        Logger logger=null;
+        try
+        {
+            if (!Log.isDebugEnabled())
+            {
+                logger=Log.getLog();
+                Log.setLog(null);
+            }
+            response=connector.getResponses(requests);
+            offset = checkContains(response,offset,"HTTP/1.1 500");
+            offset = checkContains(response,offset,"Connection: close");
+            checkNotContained(response,offset,"HTTP/1.1 200");
+        }
+        finally
+        {
+            if (logger!=null)
+                Log.setLog(logger);
+        }
+    }
 
     public void testConnection ()
     {

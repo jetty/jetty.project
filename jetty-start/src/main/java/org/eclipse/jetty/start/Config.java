@@ -834,7 +834,6 @@ public class Config
 
     private List<String> processDynamicSectionIdentifier(String dynamicPathId,List<String> sections) throws IOException
     {
-        String section=null;
         String rawPath;
         boolean deep;
         
@@ -848,12 +847,6 @@ public class Config
             deep=true;
             rawPath = fixPath(dynamicPathId.substring(0,dynamicPathId.length() - 2));
         }
-        else if (dynamicPathId.indexOf('/')>1 && !dynamicPathId.endsWith("/"))
-        {
-            section=dynamicPathId.substring(dynamicPathId.lastIndexOf('/')+1);
-            rawPath=dynamicPathId.substring(0,dynamicPathId.lastIndexOf('/'));
-            deep=true;
-        }
         else 
         {
             String msg = "Illegal dynamic path [" + dynamicPathId + "]";
@@ -864,10 +857,8 @@ public class Config
         if (!parentDir.exists())
             return sections;
         debug("dynamic: " + parentDir);
-        
-        File dirs[] = section!=null
-        ?new File[]{new File(parentDir,section)}   
-        :parentDir.listFiles(new FileFilter()
+
+        File dirs[] = parentDir.listFiles(new FileFilter()
         {
             public boolean accept(File path)
             {
@@ -883,9 +874,8 @@ public class Config
         for (File dir : dirs)
         {
             String id = dir.getName();
-            if (_classpaths.keySet().contains(id))
-                continue;
-            _classpaths.put(id,new Classpath());
+            if (!_classpaths.keySet().contains(id))
+                _classpaths.put(id, new Classpath());
             
             dyn_sections.clear();
             if (sections!=null)

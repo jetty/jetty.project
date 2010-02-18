@@ -7,27 +7,25 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.io.ConnectedEndPoint;
-import org.eclipse.jetty.io.UpgradeConnectionException;
-import org.eclipse.jetty.server.HttpConnection;
-
 
 /* ------------------------------------------------------------ */
 /**
- * Servlet to ugrade connections to WebSocket
+ * Servlet to upgrade connections to WebSocket
  * <p>
  * The request must have the correct upgrade headers, else it is
  * handled as a normal servlet request.
  * <p>
  * The initParameter "bufferSize" can be used to set the buffer size,
  * which is also the max frame byte size (default 8192).
+ * <p>
+ * The initParameter "maxIdleTime" can be used to set the time in ms
+ * that a websocket may be idle before closing (default 300,000).
+ * 
  */
 public abstract class WebSocketServlet extends HttpServlet
 {
-    WebSocketBuffers _buffers;
+    WebSocketFactory _websocket;
        
-    
     /* ------------------------------------------------------------ */
     /**
      * @see javax.servlet.GenericServlet#init()
@@ -36,7 +34,10 @@ public abstract class WebSocketServlet extends HttpServlet
     public void init() throws ServletException
     {
         String bs=getInitParameter("bufferSize");
-        _buffers = new WebSocketBuffers(bs==null?8192:Integer.parseInt(bs));
+        _websocket = new WebSocketFactory(bs==null?8192:Integer.parseInt(bs));
+        String mit=getInitParameter("maxIdleTime");
+        if (mit!=null)
+            _websocket.setMaxIdleTime(Integer.parseInt(mit));
     }
 
     /* ------------------------------------------------------------ */
@@ -46,35 +47,29 @@ public abstract class WebSocketServlet extends HttpServlet
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        if ("WebSocket".equals(request.getHeader("Upgrade")) &&
-            "HTTP/1.1".equals(request.getProtocol()))
+        if ("WebSocket".equals(request.getHeader("Upgrade")))
         {
-            WebSocket websocket=doWebSocketConnect(request,request.getHeader("WebSocket-Protocol"));
+            String protocol=request.getHeader("WebSocket-Protocol");
+            WebSocket websocket=doWebSocketConnect(request,protocol);
+
+            String host=request.getHeader("Host");
+            String origin=request.getHeader("Origin");
+            origin=checkOrigin(request,host,origin);
             
             if (websocket!=null)
-            {
-                HttpConnection http = HttpConnection.getCurrentConnection();
-                ConnectedEndPoint endp = (ConnectedEndPoint)http.getEndPoint();
-                WebSocketConnection connection = new WebSocketConnection(_buffers,endp,http.getTimeStamp(),websocket);
-
-                response.setHeader("Upgrade","WebSocket");
-                response.addHeader("Connection","Upgrade");
-                response.sendError(101,"Web Socket Protocol Handshake");
-                response.flushBuffer();
-
-                connection.fill(((HttpParser)http.getParser()).getHeaderBuffer());
-                connection.fill(((HttpParser)http.getParser()).getBodyBuffer());
-                
-                websocket.onConnect(connection);
-                throw new UpgradeConnectionException(connection);
-            }
+                _websocket.upgrade(request,response,websocket,origin,protocol);
             else
-            {
                 response.sendError(503);
-            }
         }
         else
             super.service(request,response);
+    }
+
+    protected String checkOrigin(HttpServletRequest request, String host, String origin)
+    {
+        if (origin==null)
+            origin=host;
+        return origin;
     }
     
     abstract protected WebSocket doWebSocketConnect(HttpServletRequest request,String protocol);

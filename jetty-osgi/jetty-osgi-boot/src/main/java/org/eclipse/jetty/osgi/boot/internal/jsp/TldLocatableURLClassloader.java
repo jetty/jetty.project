@@ -18,12 +18,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 /**
- * Tricky url classloader.
- * In fact we don't want a real URLClassLoader: we want OSGi to provide its classloader
- * and let it does.
- * But to let {@link org.apache.jasper.compiler.TldLocationsCache} find the core tlds inside the jars
- * we must be a URLClassLoader that returns an array of jars where tlds are stored
- * when the method getURLs is called.
+ * Tricky url classloader. In fact we don't want a real URLClassLoader: we want
+ * OSGi to provide its classloader and let it does. But to let
+ * {@link org.apache.jasper.compiler.TldLocationsCache} find the core tlds
+ * inside the jars we must be a URLClassLoader that returns an array of jars
+ * where tlds are stored when the method getURLs is called.
  */
 public class TldLocatableURLClassloader extends URLClassLoader
 {
@@ -38,7 +37,7 @@ public class TldLocatableURLClassloader extends URLClassLoader
 
     /**
      * @return the jars that contains tlds so that TldLocationsCache or
-     * TldScanner can find them.
+     *         TldScanner can find them.
      */
     @Override
     public URL[] getURLs()

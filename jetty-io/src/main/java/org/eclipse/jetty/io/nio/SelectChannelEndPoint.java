@@ -24,7 +24,6 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.UpgradeConnectionException;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -32,9 +31,6 @@ import org.eclipse.jetty.util.thread.Timeout;
 /* ------------------------------------------------------------ */
 /**
  * An Endpoint that can be scheduled by {@link SelectorManager}.
- * 
- * 
- *
  */
 public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, AsyncEndPoint, ConnectedEndPoint
 {
@@ -59,16 +55,25 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
 
         _manager = selectSet.getManager();
         _selectSet = selectSet;
-        _connection = _manager.newConnection(channel,this);
         _dispatched = false;
         _redispatched = false;
-        _open=true;
-        _manager.endPointOpened(this);
-        
+        _open=true;       
         _key = key;
+
+        _connection = _manager.newConnection(channel,this);
+        _manager.endPointOpened(this); 
+        
         scheduleIdle();
     }
 
+    /* ------------------------------------------------------------ */
+    public SelectionKey getSelectionKey()
+    {
+        synchronized (this)
+        {
+            return _key;
+        }
+    }
     
     /* ------------------------------------------------------------ */
     public SelectorManager getSelectManager()
@@ -280,7 +285,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                         updateKey();
                         this.wait(timeoutMs);
 
-                        if (_readBlocked && timeoutMs<(_selectSet.getNow()-start))
+                        timeoutMs -= _selectSet.getNow()-start;
+                        if (_readBlocked && timeoutMs<=0)
                             return false;
                     }
                     catch (InterruptedException e)
@@ -317,7 +323,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                         updateKey();
                         this.wait(timeoutMs);
 
-                        if (_writeBlocked && timeoutMs<(_selectSet.getNow()-start))
+                        timeoutMs -= _selectSet.getNow()-start;
+                        if (_writeBlocked && timeoutMs<=0)
                             return false;
                     }
                     catch (InterruptedException e)
@@ -462,14 +469,16 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
             {
                 try
                 {
-                    _connection.handle();
-                }
-                catch (UpgradeConnectionException e)
-                {
-                    Log.debug(e.toString());
-                    Log.ignore(e);
-                    setConnection(e.getConnection());
-                    continue;
+                    while(true)
+                    {
+                        final Connection next = _connection.handle();
+                        if (next!=_connection)
+                        {  
+                            _connection=next;
+                            continue;
+                        }
+                        break;
+                    }
                 }
                 catch (ClosedChannelException e)
                 {

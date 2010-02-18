@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 public class ErrorHandler extends AbstractHandler
 {
     boolean _showStacks=true;
+    String _cacheControl="must-revalidate,no-cache,no-store";
     
     /* ------------------------------------------------------------ */
     /* 
@@ -51,8 +52,9 @@ public class ErrorHandler extends AbstractHandler
         String method = request.getMethod();
         if(!method.equals(HttpMethods.GET) && !method.equals(HttpMethods.POST) && !method.equals(HttpMethods.HEAD))
             return;
-        response.setContentType(MimeTypes.TEXT_HTML_8859_1);        
-        response.setHeader(HttpHeaders.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
+        response.setContentType(MimeTypes.TEXT_HTML_8859_1);    
+        if (_cacheControl!=null)
+            response.setHeader(HttpHeaders.CACHE_CONTROL, _cacheControl);
         ByteArrayISO8859Writer writer= new ByteArrayISO8859Writer(4096);
         handleErrorPage(request, writer, connection.getResponse().getStatus(), connection.getResponse().getReason());
         writer.flush();
@@ -140,6 +142,24 @@ public class ErrorHandler extends AbstractHandler
         }
     }
         
+
+    /* ------------------------------------------------------------ */
+    /** Get the cacheControl.
+     * @return the cacheControl header to set on error responses.
+     */
+    public String getCacheControl()
+    {
+        return _cacheControl;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the cacheControl.
+     * @param cacheControl the cacheControl header to set on error responses.
+     */
+    public void setCacheControl(String cacheControl)
+    {
+        _cacheControl = cacheControl;
+    }
 
     /* ------------------------------------------------------------ */
     /**

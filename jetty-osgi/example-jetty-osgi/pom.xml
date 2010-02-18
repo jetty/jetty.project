@@ -1,0 +1,110 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.osgi</groupId>
+    <artifactId>jetty-osgi-project</artifactId>
+    <version>7.0.2-SNAPSHOT</version>
+  </parent>
+  <artifactId>example-jetty-osgi</artifactId>
+  <name>Jetty :: OSGi :: Example</name>
+  <packaging>pom</packaging>
+  <properties>
+    <assembly.directory>target/osgi-example</assembly.directory>
+    <slf4j.version>1.5.6</slf4j.version>
+  </properties>
+   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <property name="orbit.base.url" value="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles" />
+                <mkdir dir="${assembly.directory}/plugins" />
+                <mkdir dir="${assembly.directory}/configuration" />
+                <get src="${orbit.base.url}/javax.servlet_2.5.0.v200806031605.jar" dest="${assembly.directory}/plugins/javax.servlet_2.5.0.v200806031605.jar" usetimestamp="true" verbose="true" />
+		<copy file="src/configuration/config.ini" todir="${assembly.directory}/configuration" />
+              </tasks>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>2.1</version>
+        <executions>
+          <execution>
+            <id>copy plugins</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${assembly.directory}/plugins</outputDirectory>
+	      <excludeArtifactIds>servlet-api,osgi</excludeArtifactIds>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>2.1</version>
+        <executions>
+          <execution>
+            <id>copy osgi</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${assembly.directory}</outputDirectory>
+	      <includeArtifactIds>osgi</includeArtifactIds>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>test-jetty-webapp</artifactId>
+      <type>war</type>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-deploy</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-osgi-boot-warurl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-osgi-boot</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.eclipse</groupId>
+    	<artifactId>osgi</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.eclipse.osgi</groupId>
+        <artifactId>services</artifactId>
+    </dependency>
+  </dependencies>
+</project>

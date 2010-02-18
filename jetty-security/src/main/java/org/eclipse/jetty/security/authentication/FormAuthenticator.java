@@ -99,7 +99,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (error!=null)
             setErrorPage(error);
         String dispatch=configuration.getInitParameter(FormAuthenticator.__FORM_DISPATCH);
-        _dispatch = dispatch==null?_dispatch:Boolean.getBoolean(dispatch);
+        _dispatch = dispatch==null?_dispatch:Boolean.valueOf(dispatch);
     }
 
     /* ------------------------------------------------------------ */
@@ -158,7 +158,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (!mandatory)
             return _deferred;
         
-        if (isLoginOrErrorPage(uri))
+        if (isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo())))
             return Authentication.NOT_CHECKED;
             
         HttpSession session = request.getSession(true);

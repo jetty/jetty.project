@@ -90,8 +90,8 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     private String _protocol="TLS";
     private String _provider;
     private String _secureRandomAlgorithm; // cert algorithm
-    private String _sslKeyManagerFactoryAlgorithm="SunX509"; 
-    private String _sslTrustManagerFactoryAlgorithm="SunX509"; 
+    private String _sslKeyManagerFactoryAlgorithm=DEFAULT_KEYSTORE_ALGORITHM; 
+    private String _sslTrustManagerFactoryAlgorithm=DEFAULT_TRUSTSTORE_ALGORITHM; 
     private String _truststorePath;
     private String _truststoreType="JKS"; // type of the key store
     private SSLContext _context;

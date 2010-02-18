@@ -23,4 +23,8 @@ public class HttpStatusCodeTest extends TestCase
         assertNull("Invalid code: 190", HttpStatus.getCode(190));
     }
 
+    public void testHttpMethod()
+    {
+        assertEquals("GET",HttpMethods.GET_BUFFER.toString());
+    }
 }

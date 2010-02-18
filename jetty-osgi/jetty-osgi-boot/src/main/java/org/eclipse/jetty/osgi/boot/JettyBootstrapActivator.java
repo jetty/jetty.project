@@ -30,25 +30,24 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 
 /**
- * Experiment: bootstrap jetty's complete distrib from an OSGi bundle.
- * Progress:
+ * Experiment: bootstrap jetty's complete distrib from an OSGi bundle. Progress:
  * <ol>
- * <li> basic servlet [ok]</li>
- * <li> basic jetty.xml [ok]</li>
- * <li> basic jetty.xml and jetty-plus.xml [ok]</li>
- * <li> basic jsp [ok with modifications]
- *   <ul>
- *     <li>Needed to modify the headers of jdt.core-3.1.1 so that its dependency on 
- * eclipse.runtime, eclipse.resources and eclipse.text are optional.
- * Also we should depend on the latest jdt.core from eclipse-3.5 not from eclipse-3.1.1
+ * <li>basic servlet [ok]</li>
+ * <li>basic jetty.xml [ok]</li>
+ * <li>basic jetty.xml and jetty-plus.xml [ok]</li>
+ * <li>basic jsp [ok with modifications]
+ * <ul>
+ * <li>Needed to modify the headers of jdt.core-3.1.1 so that its dependency on
+ * eclipse.runtime, eclipse.resources and eclipse.text are optional. Also we
+ * should depend on the latest jdt.core from eclipse-3.5 not from eclipse-3.1.1
  * although that will require actual changes to jasper as some internal APIs of
  * jdt.core have changed.</li>
- *     <li>Modifications to org.mortbay.jetty.jsp-2.1-glassfish:
- * made all imports to ant, xalan and sun packages optional.</li>
- *   </ul>
+ * <li>Modifications to org.mortbay.jetty.jsp-2.1-glassfish: made all imports to
+ * ant, xalan and sun packages optional.</li>
+ * </ul>
  * </li>
- * <li> jsp with tag-libs [ok]</li>
- * <li> test-jndi with atomikos and derby inside ${jetty.home}/lib/ext [ok]</li>
+ * <li>jsp with tag-libs [ok]</li>
+ * <li>test-jndi with atomikos and derby inside ${jetty.home}/lib/ext [ok]</li>
  * </ul>
  */
 public class JettyBootstrapActivator implements BundleActivator
@@ -68,21 +67,22 @@ public class JettyBootstrapActivator implements BundleActivator
 
     /**
      * Setup a new jetty Server, registers it as a service. Setup the Service
-     * tracker for the jetty ContextHandlers that are in charge of deploying the webapps.
-     * Setup the BundleListener that supports the extender pattern for the
-     * jetty ContextHandler.
+     * tracker for the jetty ContextHandlers that are in charge of deploying the
+     * webapps. Setup the BundleListener that supports the extender pattern for
+     * the jetty ContextHandler.
      * 
      * @param context
      */
     public void start(BundleContext context) throws Exception
     {
         INSTANCE = this;
-        
-        //track other bundles and fragments attached to this bundle that we should activate.
+
+        // track other bundles and fragments attached to this bundle that we
+        // should activate.
         _packageAdminServiceTracker = new PackageAdminServiceTracker(context);
-        
-        
-        // todo: replace all this by the ManagedFactory so that we can start multiple jetty servers.
+
+        // todo: replace all this by the ManagedFactory so that we can start
+        // multiple jetty servers.
         _server = new Server();
         // expose the server as a service.
         _registeredServer = context.registerService(_server.getClass().getName(),_server,new Properties());
@@ -105,7 +105,8 @@ public class JettyBootstrapActivator implements BundleActivator
     /*
      * (non-Javadoc)
      * 
-     * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
+     * @see
+     * org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
      */
     public void stop(BundleContext context) throws Exception
     {
@@ -142,21 +143,20 @@ public class JettyBootstrapActivator implements BundleActivator
     }
 
     /**
-     * Helper method that creates a new org.jetty.webapp.WebAppContext and 
+     * Helper method that creates a new org.jetty.webapp.WebAppContext and
      * registers it as an OSGi service. The tracker
      * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
      * 
      * @param context
      *            The current bundle context
      * @param webappFolderPath
-     *            The path to the root of the webapp. Must be a path relative 
-     *            to bundle; either an absolute path.
+     *            The path to the root of the webapp. Must be a path relative to
+     *            bundle; either an absolute path.
      * @param contextPath
      *            The context path. Must start with "/"
      * @throws Exception
      */
-    public static void registerWebapplication(Bundle contributor,
-            String webappFolderPath, String contextPath) throws Exception
+    public static void registerWebapplication(Bundle contributor, String webappFolderPath, String contextPath) throws Exception
     {
         WebAppContext contextHandler = new WebAppContext();
         Properties dic = new Properties();
@@ -164,41 +164,44 @@ public class JettyBootstrapActivator implements BundleActivator
         dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH,contextPath);
         contributor.getBundleContext().registerService(ContextHandler.class.getName(),contextHandler,dic);
     }
+
     /**
-     * Helper method that creates a new org.jetty.webapp.WebAppContext and 
+     * Helper method that creates a new org.jetty.webapp.WebAppContext and
      * registers it as an OSGi service. The tracker
      * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
      * 
      * @param context
      *            The current bundle context
      * @param webappFolderPath
-     *            The path to the root of the webapp. Must be a path relative 
-     *            to bundle; either an absolute path.
+     *            The path to the root of the webapp. Must be a path relative to
+     *            bundle; either an absolute path.
      * @param contextPath
      *            The context path. Must start with "/"
-     * @param thisBundleInstallationOverride The location to a folder where the context file is located
-     *            This overrides the default behavior that consists of using the location
-     *            where the bundle is installed. Useful when in fact the webapp contributed is not inside a bundle.
+     * @param thisBundleInstallationOverride
+     *            The location to a folder where the context file is located
+     *            This overrides the default behavior that consists of using the
+     *            location where the bundle is installed. Useful when in fact
+     *            the webapp contributed is not inside a bundle.
      * @throws Exception
      */
-    public static void registerWebapplication(Bundle contributor,
-            String webappFolderPath, String contextPath,
-            Dictionary<String, String> dic) throws Exception
+    public static void registerWebapplication(Bundle contributor, String webappFolderPath, String contextPath, Dictionary<String, String> dic) throws Exception
     {
         WebAppContext contextHandler = new WebAppContext();
-        dic.put(OSGiWebappConstants.SERVICE_PROP_WAR, webappFolderPath);
-        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH, contextPath);
+        dic.put(OSGiWebappConstants.SERVICE_PROP_WAR,webappFolderPath);
+        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH,contextPath);
         contributor.getBundleContext().registerService(ContextHandler.class.getName(),contextHandler,dic);
     }
 
     /**
-     * Helper method that creates a new skeleton of a ContextHandler and registers it as an OSGi service.
-     * The tracker {@link JettyContextHandlerServiceTracker}  will do the actual deployment.
+     * Helper method that creates a new skeleton of a ContextHandler and
+     * registers it as an OSGi service. The tracker
+     * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
      * 
      * @param contributor
      *            The bundle that registers a new context
      * @param contextFilePath
-     *            The path to the file inside the bundle that defines the context.
+     *            The path to the file inside the bundle that defines the
+     *            context.
      * @throws Exception
      */
     public static void registerContext(Bundle contributor, String contextFilePath) throws Exception
@@ -207,23 +210,26 @@ public class JettyBootstrapActivator implements BundleActivator
     }
 
     /**
-     * Helper method that creates a new skeleton of a ContextHandler and registers it as an OSGi service.
-     * The tracker {@link JettyContextHandlerServiceTracker}  will do the actual deployment.
+     * Helper method that creates a new skeleton of a ContextHandler and
+     * registers it as an OSGi service. The tracker
+     * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
      * 
      * @param contributor
      *            The bundle that registers a new context
      * @param contextFilePath
-     *            The path to the file inside the bundle that defines the context.
-     * @param thisBundleInstallationOverride The location to a folder where the context file is located
-     *            This overrides the default behavior that consists of using the location
-     *            where the bundle is installed. Useful when in fact the webapp contributed is not inside a bundle.
+     *            The path to the file inside the bundle that defines the
+     *            context.
+     * @param thisBundleInstallationOverride
+     *            The location to a folder where the context file is located
+     *            This overrides the default behavior that consists of using the
+     *            location where the bundle is installed. Useful when in fact
+     *            the webapp contributed is not inside a bundle.
      * @throws Exception
      */
-    public static void registerContext(Bundle contributor, String contextFilePath,
-            Dictionary<String,String> dic) throws Exception
+    public static void registerContext(Bundle contributor, String contextFilePath, Dictionary<String, String> dic) throws Exception
     {
         ContextHandler contextHandler = new ContextHandler();
-        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH, contextFilePath);
+        dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH,contextFilePath);
         contributor.getBundleContext().registerService(ContextHandler.class.getName(),contextHandler,dic);
     }
 

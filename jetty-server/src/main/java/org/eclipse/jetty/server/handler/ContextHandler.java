@@ -493,6 +493,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         setEventListeners((EventListener[])LazyList.addToArray(getEventListeners(), listener, EventListener.class));
     }
+    
+   
+    /**
+     * Apply any necessary restrictions on a programmatically added
+     * listener.
+     * 
+     * Superclasses should implement.
+     * 
+     * @param listener
+     */
+    public void restrictEventListener (EventListener listener)
+    {
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -651,11 +664,24 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             ServletContextEvent event= new ServletContextEvent(_scontext);
             for (int i= 0; i < LazyList.size(_contextListeners); i++)
             {
-                ((ServletContextListener)LazyList.get(_contextListeners, i)).contextInitialized(event);
+                callContextInitialized(((ServletContextListener)LazyList.get(_contextListeners, i)), event);
             }
         }
-
     }
+    
+    
+    
+    public void callContextInitialized (ServletContextListener l, ServletContextEvent e)
+    {
+        l.contextInitialized(e);
+    }
+    
+    public void callContextDestroyed (ServletContextListener l, ServletContextEvent e)
+    {
+        l.contextDestroyed(e);
+    }
+    
+    
     
     /* ------------------------------------------------------------ */
     /* 
@@ -957,7 +983,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                     final int s=LazyList.size(_requestListeners);
                     final ServletRequestEvent sre = new ServletRequestEvent(_scontext,request);
                     for(int i=0;i<s;i++)
-                        ((ServletRequestListener)LazyList.get(_requestListeners,i)).requestInitialized(sre);
+                        ((ServletRequestListener)LazyList.get(_requestListeners,i)).requestDestroyed(sre);
                 }
                 
                 if (_requestAttributeListeners!=null)
@@ -1466,6 +1492,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         protected int _majorVersion = 3;
         protected int _minorVersion = 0;
+        protected boolean _enabled = true; //whether or not the dynamic API is enabled for callers
 
         /* ------------------------------------------------------------ */
         protected Context()
@@ -2025,6 +2052,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         @Override
         public void addListener(String className)
         {
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            
             try
             {
                 Class<? extends EventListener> clazz = _classLoader==null?Loader.loadClass(ContextHandler.class,className):_classLoader.loadClass(className);
@@ -2038,16 +2068,23 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
         @Override
         public <T extends EventListener> void addListener(T t)
-        {
+        {            
+            if (!_enabled)
+                throw new UnsupportedOperationException();
             ContextHandler.this.addEventListener(t);
         }
 
         @Override
         public void addListener(Class<? extends EventListener> listenerClass)
-        {
+        {            
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+
             try
             {
-                ContextHandler.this.addEventListener(createListener(listenerClass));
+                EventListener e = createListener(listenerClass);
+                ContextHandler.this.addEventListener(e);
+                ContextHandler.this.restrictEventListener(e);
             }
             catch (ServletException e)
             {
@@ -2111,8 +2148,23 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         @Override
         public void declareRoles(String... roleNames)
         {
+            if (!isStarting())
+                throw new IllegalStateException ();
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            
             // TODO Auto-generated method stub
             
+        }
+
+        public void setEnabled(boolean enabled)
+        {
+            _enabled = enabled;
+        }
+
+        public boolean isEnabled()
+        {
+            return _enabled;
         }
     }
 }

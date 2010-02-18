@@ -123,9 +123,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
         {
             Thread.sleep(1);
         }
-            
-        if (_threads.size()>0)
-            Log.warn(_threads.size()+" threads could not be stopped");
+        Thread.yield();
+        int size=_threads.size();
+        if (size>0)
+            Log.warn(size+" threads could not be stopped");
         
         synchronized (_joinLock)
         {

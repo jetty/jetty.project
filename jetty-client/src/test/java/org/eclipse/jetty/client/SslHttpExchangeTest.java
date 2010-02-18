@@ -53,6 +53,7 @@ public class SslHttpExchangeTest extends HttpExchangeTest
         connector.setKeystore(keystore);
         connector.setPassword("storepwd");
         connector.setKeyPassword("keypwd");
+	connector.setAllowRenegotiate(true);
 
         _server.setConnectors(new Connector[]
         { connector });

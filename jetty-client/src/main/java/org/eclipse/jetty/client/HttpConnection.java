@@ -18,11 +18,12 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.client.security.Authorization;
+import org.eclipse.jetty.client.security.Authentication;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeaderValues;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpVersions;
@@ -78,7 +79,7 @@ public class HttpConnection implements Connection
     {
         return -1;
     }
-    
+
     public void setReserved (boolean reserved)
     {
         _reserved = reserved;
@@ -132,7 +133,7 @@ public class HttpConnection implements Connection
         }
     }
 
-    public void handle() throws IOException
+    public Connection handle() throws IOException
     {
         if (_exchange != null)
             _exchange.associate(this);
@@ -170,7 +171,7 @@ public class HttpConnection implements Connection
                                 Log.warn("Unexpected data received but no request sent");
                                 close();
                             }
-                            return;
+                            return this;
                         }
                     }
                     if (!_exchange.isAssociated())
@@ -250,7 +251,7 @@ public class HttpConnection implements Connection
                             if (_generator.flushBuffer()>0)
                                 continue;
                         }
-                        return;
+                        return this;
                     }
                 }
                 catch (Throwable e)
@@ -358,8 +359,12 @@ public class HttpConnection implements Connection
         finally
         {
             if (_exchange != null && _exchange.isAssociated())
+            {
                 _exchange.disassociate();
+            }
         }
+        
+        return this;
     }
 
     public boolean isIdle()
@@ -399,12 +404,14 @@ public class HttpConnection implements Connection
                 // TODO suppress port 80 or 443
                 uri = (_destination.isSecure()?HttpSchemes.HTTPS:HttpSchemes.HTTP) + "://" + _destination.getAddress().getHost() + ":"
                         + _destination.getAddress().getPort() + uri;
-                Authorization auth = _destination.getProxyAuthentication();
+                Authentication auth = _destination.getProxyAuthentication();
                 if (auth != null)
                     auth.setCredentials(_exchange);
             }
 
-            _generator.setRequest(_exchange.getMethod(), uri);
+            String method=_exchange.getMethod();
+            _generator.setRequest(method, uri);
+            _parser.setHeadResponse(HttpMethods.HEAD.equalsIgnoreCase(method));
 
             HttpFields requestHeaders = _exchange.getRequestFields();
             if (_exchange.getVersion() >= HttpVersions.HTTP_1_1_ORDINAL)
@@ -544,10 +551,23 @@ public class HttpConnection implements Connection
 
     public void close() throws IOException
     {
-        _endp.close();
+        try
+        {
+            _endp.close();
+        }
+        finally
+        {
+            HttpExchange exchange=_exchange;
+            if (exchange!=null)
+            {
+                int status = exchange.getStatus();
+                if (status>HttpExchange.STATUS_START && status<HttpExchange.STATUS_COMPLETED)
+                    System.err.println("\nCLOSE "+exchange);
+            }
+        }
     }
 
-    public void setIdleTimeout(long expire)
+    public void setIdleTimeout()
     {
         synchronized (this)
         {
@@ -557,7 +577,7 @@ public class HttpConnection implements Connection
                 throw new IllegalStateException();
         }
     }
-    
+
     public boolean cancelIdleTimeout()
     {
         synchronized (this)
@@ -568,10 +588,10 @@ public class HttpConnection implements Connection
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     private class TimeoutTask extends Timeout.Task
     {
         @Override
@@ -617,5 +637,4 @@ public class HttpConnection implements Connection
             }
         }
     }
-
 }

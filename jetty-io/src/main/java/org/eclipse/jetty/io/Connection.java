@@ -17,7 +17,13 @@ import java.io.IOException;
 
 public interface Connection
 {
-    void handle() throws IOException, UpgradeConnectionException;
+    /* ------------------------------------------------------------ */
+    /**
+     * Handle the connection.
+     * @return The Connection to use for the next handling of the connection. This allows protocol upgrades.
+     * @throws IOException
+     */
+    Connection handle() throws IOException;
     
     long getTimeStamp();
 

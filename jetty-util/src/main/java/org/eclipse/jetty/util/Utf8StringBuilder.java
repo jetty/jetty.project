@@ -107,9 +107,6 @@ public class Utf8StringBuilder
                 {
                     throw new IllegalArgumentException("!utf8");
                 }
-                
-                if (_bits==0)
-                    throw new IllegalArgumentException("!utf8");
             }
         }
         else

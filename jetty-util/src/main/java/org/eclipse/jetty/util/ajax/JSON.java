@@ -271,6 +271,8 @@ public class JSON
             appendNumber(buffer,(Number)object);
         else if (object instanceof Boolean)
             appendBoolean(buffer,(Boolean)object);
+        else if (object instanceof Character)
+            appendString(buffer,object.toString());
         else if (object instanceof String)
             appendString(buffer,(String)object);
         else
@@ -500,9 +502,9 @@ public class JSON
     }
 
     /* ------------------------------------------------------------ */
-    protected Map newMap()
+    protected Map<String,Object> newMap()
     {
-        return new HashMap();
+        return new HashMap<String,Object>();
     }
 
     /* ------------------------------------------------------------ */
@@ -511,6 +513,7 @@ public class JSON
         return new Object[size];
     }
 
+    /* ------------------------------------------------------------ */
     protected JSON contextForArray()
     {
         return this;
@@ -784,7 +787,10 @@ public class JSON
                     case 'u':
                         complete("undefined",source);
                         return null;
-
+                    case 'N':
+                        complete("NaN",source);
+                        return null;
+                        
                     case '/':
                         comment_state=1;
                         break;
@@ -814,7 +820,7 @@ public class JSON
     {
         if (source.next()!='{')
             throw new IllegalStateException();
-        Map map=newMap();
+        Map<String,Object> map=newMap();
 
         char next=seekTo("\"}",source);
 

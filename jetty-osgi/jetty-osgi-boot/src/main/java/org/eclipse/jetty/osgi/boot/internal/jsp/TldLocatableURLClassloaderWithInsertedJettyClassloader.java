@@ -17,8 +17,10 @@ package org.eclipse.jetty.osgi.boot.internal.jsp;
 import java.net.URL;
 
 /**
- * Add a classloader to the org.apache.jasper.compiler.TldLocatableURLClassloader.
- * Hopefuly not necessary: still experimenting.
+ * Add a classloader to the
+ * org.apache.jasper.compiler.TldLocatableURLClassloader. Hopefuly not
+ * necessary: still experimenting.
+ * 
  * @see TldLocatableURLClassloader
  */
 public class TldLocatableURLClassloaderWithInsertedJettyClassloader extends TldLocatableURLClassloader
@@ -26,10 +28,19 @@ public class TldLocatableURLClassloaderWithInsertedJettyClassloader extends TldL
 
     private ClassLoader _internalClassLoader;
 
-    public TldLocatableURLClassloaderWithInsertedJettyClassloader(ClassLoader osgiClassLoader,
-            ClassLoader internalClassLoader, URL[] jarsWithTldsInside)
+    /**
+     * 
+     * @param osgiClassLoader
+     *            The parent classloader
+     * @param internalClassLoader
+     *            The classloader that will be at the same level than the
+     *            jarsWithTldsInside
+     * @param jarsWithTldsInside
+     *            jars that are scanned for tld files.
+     */
+    public TldLocatableURLClassloaderWithInsertedJettyClassloader(ClassLoader osgiClassLoaderParent, ClassLoader internalClassLoader, URL[] jarsWithTldsInside)
     {
-        super(osgiClassLoader, jarsWithTldsInside);
+        super(osgiClassLoaderParent,jarsWithTldsInside);
         _internalClassLoader = internalClassLoader;
     }
 

@@ -63,8 +63,8 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
 public class SelectChannelConnector extends AbstractNIOConnector 
 {
     protected ServerSocketChannel _acceptChannel;
-    private long _lowResourcesConnections;
-    private long _lowResourcesMaxIdleTime;
+    private int _lowResourcesConnections;
+    private int _lowResourcesMaxIdleTime;
 
     private final SelectorManager _manager = new SelectorManager()
     {
@@ -201,12 +201,17 @@ public class SelectChannelConnector extends AbstractNIOConnector
             {
                 // Create a new server socket
                 _acceptChannel = ServerSocketChannel.open();
+                // Set to blocking mode
+                _acceptChannel.configureBlocking(true);
 
                 // Bind the server socket to the local host and port
                 _acceptChannel.socket().setReuseAddress(getReuseAddress());
                 InetSocketAddress addr = getHost()==null?new InetSocketAddress(getPort()):new InetSocketAddress(getHost(),getPort());
                 _acceptChannel.socket().bind(addr,getAcceptQueueSize());
 
+                if (_acceptChannel.socket().getLocalPort()==-1)
+                    throw new IOException("Server channel not bound");
+                
                 // Set to non blocking mode
                 _acceptChannel.configureBlocking(false);
                 
@@ -226,7 +231,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     /**
      * @return the lowResourcesConnections
      */
-    public long getLowResourcesConnections()
+    public int getLowResourcesConnections()
     {
         return _lowResourcesConnections;
     }
@@ -236,9 +241,9 @@ public class SelectChannelConnector extends AbstractNIOConnector
      * Set the number of connections, which if exceeded places this manager in low resources state.
      * This is not an exact measure as the connection count is averaged over the select sets.
      * @param lowResourcesConnections the number of connections
-     * @see {@link #setLowResourcesMaxIdleTime(long)}
+     * @see {@link #setLowResourcesMaxIdleTime(int)}
      */
-    public void setLowResourcesConnections(long lowResourcesConnections)
+    public void setLowResourcesConnections(int lowResourcesConnections)
     {
         _lowResourcesConnections=lowResourcesConnections;
     }
@@ -247,7 +252,8 @@ public class SelectChannelConnector extends AbstractNIOConnector
     /**
      * @return the lowResourcesMaxIdleTime
      */
-    public long getLowResourcesMaxIdleTime()
+    @Override
+    public int getLowResourcesMaxIdleTime()
     {
         return _lowResourcesMaxIdleTime;
     }
@@ -259,28 +265,12 @@ public class SelectChannelConnector extends AbstractNIOConnector
      * in order to gracefully handle high load situations.
      * @param lowResourcesMaxIdleTime the period in ms that a connection is allowed to be idle when resources are low.
      * @see {@link #setMaxIdleTime(long)}
-     * @deprecated use {@link #setLowResourceMaxIdleTime(int)}
-     */
-    @Deprecated
-    public void setLowResourcesMaxIdleTime(long lowResourcesMaxIdleTime)
-    {
-        _lowResourcesMaxIdleTime=lowResourcesMaxIdleTime;
-        super.setLowResourceMaxIdleTime((int)lowResourcesMaxIdleTime); // TODO fix the name duplications
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the period in ms that a connection is allowed to be idle when this there are more
-     * than {@link #getLowResourcesConnections()} connections.  This allows the server to rapidly close idle connections
-     * in order to gracefully handle high load situations.
-     * @param lowResourcesMaxIdleTime the period in ms that a connection is allowed to be idle when resources are low.
-     * @see {@link #setMaxIdleTime(long)}
      */
     @Override
-    public void setLowResourceMaxIdleTime(int lowResourcesMaxIdleTime)
+    public void setLowResourcesMaxIdleTime(int lowResourcesMaxIdleTime)
     {
         _lowResourcesMaxIdleTime=lowResourcesMaxIdleTime;
-        super.setLowResourceMaxIdleTime(lowResourcesMaxIdleTime); 
+        super.setLowResourcesMaxIdleTime(lowResourcesMaxIdleTime); 
     }
 
     

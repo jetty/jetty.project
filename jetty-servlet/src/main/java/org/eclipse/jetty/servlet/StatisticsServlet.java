@@ -116,15 +116,17 @@ public class StatisticsServlet extends HttpServlet
         sb.append("    <requestsActive>").append(_statsHandler.getRequestsActive()).append("</requestsActive>\n");
         sb.append("    <requestsActiveMax>").append(_statsHandler.getRequestsActiveMax()).append("</requestsActiveMax>\n");
         sb.append("    <requestsTimeTotal>").append(_statsHandler.getRequestTimeTotal()).append("</requestsTimeTotal>\n");
-        sb.append("    <requestsTimeAverage>").append(_statsHandler.getRequestTimeAverage()).append("</requestsTimeAverage>\n");
+        sb.append("    <requestsTimeMean>").append(_statsHandler.getRequestTimeMean()).append("</requestsTimeMean>\n");
         sb.append("    <requestsTimeMax>").append(_statsHandler.getRequestTimeMax()).append("</requestsTimeMax>\n");
+        sb.append("    <requestsTimeStdDev>").append(_statsHandler.getRequestTimeStdDev()).append("</requestsTimeStdDev>\n");
 
         sb.append("    <dispatched>").append(_statsHandler.getDispatched()).append("</dispatched>\n");
         sb.append("    <dispatchedActive>").append(_statsHandler.getDispatchedActive()).append("</dispatchedActive>\n");
         sb.append("    <dispatchedActiveMax>").append(_statsHandler.getDispatchedActiveMax()).append("</dispatchedActiveMax>\n");
         sb.append("    <dispatchedTimeTotal>").append(_statsHandler.getDispatchedTimeTotal()).append("</dispatchedTimeTotal>\n");
-        sb.append("    <dispatchedTimeAverage>").append(_statsHandler.getDispatchedTimeAverage()).append("</dispatchedTimeAverage>\n");
+        sb.append("    <dispatchedTimeMean").append(_statsHandler.getDispatchedTimeMean()).append("</dispatchedTimeMean>\n");
         sb.append("    <dispatchedTimeMax>").append(_statsHandler.getDispatchedTimeMax()).append("</dispatchedTimeMax>\n");
+        sb.append("    <dispatchedTimeStdDev").append(_statsHandler.getDispatchedTimeStdDev()).append("</dispatchedTimeStdDev>\n");
         
         sb.append("    <requestsSuspended>").append(_statsHandler.getSuspends()).append("</requestsSuspended>\n");
         sb.append("    <requestsExpired>").append(_statsHandler.getExpires()).append("</requestsExpired>\n");
@@ -151,16 +153,15 @@ public class StatisticsServlet extends HttpServlet
             	sb.append("    <statsOnMs>").append(connector.getStatsOnMs()).append("</statsOnMs>\n");
             	sb.append("    <connections>").append(connector.getConnections()).append("</connections>\n");
             	sb.append("    <connectionsOpen>").append(connector.getConnectionsOpen()).append("</connectionsOpen>\n");
-            	sb.append("    <connectionsOpenMin>").append(connector.getConnectionsOpenMin()).append("</connectionsOpenMin>\n");
             	sb.append("    <connectionsOpenMax>").append(connector.getConnectionsOpenMax()).append("</connectionsOpenMax>\n");
             	sb.append("    <connectionsDurationTotal>").append(connector.getConnectionsDurationTotal()).append("</connectionsDurationTotal>\n");
-            	sb.append("    <connectionsDurationAve>").append(connector.getConnectionsDurationAve()).append("</connectionsDurationAve>\n");
-            	sb.append("    <connectionsDurationMin>").append(connector.getConnectionsDurationMin()).append("</connectionsDurationMin>\n");
+            	sb.append("    <connectionsDurationMean>").append(connector.getConnectionsDurationMean()).append("</connectionsDurationMean>\n");
             	sb.append("    <connectionsDurationMax>").append(connector.getConnectionsDurationMax()).append("</connectionsDurationMax>\n");
+                sb.append("    <connectionsDurationStdDev>").append(connector.getConnectionsDurationStdDev()).append("</connectionsDurationStdDev>\n");
                 sb.append("    <requests>").append(connector.getRequests()).append("</requests>\n");
-                sb.append("    <connectionsRequestsAve>").append(connector.getConnectionsRequestsAve()).append("</connectionsRequestsAve>\n");
-                sb.append("    <connectionsRequestsMin>").append(connector.getConnectionsRequestsMin()).append("</connectionsRequestsMin>\n");
+                sb.append("    <connectionsRequestsMean>").append(connector.getConnectionsRequestsMean()).append("</connectionsRequestsMean>\n");
                 sb.append("    <connectionsRequestsMax>").append(connector.getConnectionsRequestsMax()).append("</connectionsRequestsMax>\n");
+                sb.append("    <connectionsRequestsStdDev>").append(connector.getConnectionsRequestsStdDev()).append("</connectionsRequestsStdDev>\n");
             }
             sb.append("    </connector>\n");
         }
@@ -193,16 +194,15 @@ public class StatisticsServlet extends HttpServlet
                 sb.append("Statistics gathering started ").append(connector.getStatsOnMs()).append("ms ago").append("<br />\n");
                 sb.append("Total connections: ").append(connector.getConnections()).append("<br />\n");
                 sb.append("Current connections open: ").append(connector.getConnectionsOpen());
-                sb.append("Min concurrent connections open: ").append(connector.getConnectionsOpenMin()).append("<br />\n");
                 sb.append("Max concurrent connections open: ").append(connector.getConnectionsOpenMax()).append("<br />\n");
                 sb.append("Total connections duration: ").append(connector.getConnectionsDurationTotal()).append("<br />\n");
-                sb.append("Average connection duration: ").append(connector.getConnectionsDurationAve()).append("<br />\n");
-                sb.append("Min connection duration: ").append(connector.getConnectionsDurationMin()).append("<br />\n");
+                sb.append("Mean connection duration: ").append(connector.getConnectionsDurationMean()).append("<br />\n");
                 sb.append("Max connection duration: ").append(connector.getConnectionsDurationMax()).append("<br />\n");
+                sb.append("Connection duration standard deviation: ").append(connector.getConnectionsDurationStdDev()).append("<br />\n");
                 sb.append("Total requests: ").append(connector.getRequests()).append("<br />\n");
-                sb.append("Average requests per connection: ").append(connector.getConnectionsRequestsAve()).append("<br />\n");
-                sb.append("Min requests per connection: ").append(connector.getConnectionsRequestsMin()).append("<br />\n");
+                sb.append("Mean requests per connection: ").append(connector.getConnectionsRequestsMean()).append("<br />\n");
                 sb.append("Max requests per connection: ").append(connector.getConnectionsRequestsMax()).append("<br />\n");
+                sb.append("Requests per connection standard deviation: ").append(connector.getConnectionsRequestsStdDev()).append("<br />\n");
             }
             else
             {

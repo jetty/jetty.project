@@ -403,8 +403,21 @@ public class WebInfConfiguration implements Configuration
                     !web_app.isDirectory())
                             )
             {
-                // Then extract it if necessary to the temporary location
-                File extractedWebAppDir= new File(context.getTempDirectory(), "webapp");
+                // Look for sibling directory.
+                File extractedWebAppDir = null;
+
+                if (war!=null)
+                {
+                    // look for a sibling like "foo/" to a "foo.war"
+                    File warfile=Resource.newResource(war).getFile();
+                    File sibling = new File(warfile.getParent(),warfile.getName().substring(0,warfile.getName().length()-4));
+                    if (sibling.exists() && sibling.isDirectory() && sibling.canWrite())
+                        extractedWebAppDir=sibling;
+                }
+                
+                if (extractedWebAppDir==null)
+                    // Then extract it if necessary to the temporary location
+                    extractedWebAppDir= new File(context.getTempDirectory(), "webapp");
 
                 if (web_app.getFile()!=null && web_app.getFile().isDirectory())
                 {
@@ -444,8 +457,8 @@ public class WebInfConfiguration implements Configuration
                 Log.warn("Web application not found " + war);
                 throw new java.io.FileNotFoundException(war);
             }
-
         
+            
             context.setBaseResource(web_app);
             
             if (Log.isDebugEnabled())
@@ -456,6 +469,7 @@ public class WebInfConfiguration implements Configuration
         
         // Do we need to extract WEB-INF/lib?
         Resource web_inf= web_app.addPath("WEB-INF/");
+       
         if (web_inf instanceof ResourceCollection ||
             web_inf.exists() && 
             web_inf.isDirectory() && 
@@ -465,12 +479,35 @@ public class WebInfConfiguration implements Configuration
             if (extractedWebInfDir.exists())
                 extractedWebInfDir.delete();
             extractedWebInfDir.mkdir();
+            Resource web_inf_lib = web_inf.addPath("lib/");
             File webInfDir=new File(extractedWebInfDir,"WEB-INF");
             webInfDir.mkdir();
-            Log.info("Extract " + web_inf + " to " + webInfDir);
-            web_inf.copyTo(webInfDir);
+            
+            if (web_inf_lib.exists())
+            {
+                File webInfLibDir = new File(webInfDir, "lib");
+                webInfLibDir.mkdir();
+
+                Log.info("Copying WEB-INF/lib " + web_inf_lib + " to " + webInfLibDir);
+                web_inf_lib.copyTo(webInfLibDir);
+            }
+
+            Resource web_inf_classes = web_inf.addPath("classes/");
+            if (web_inf_classes.exists())
+            {
+                File webInfClassesDir = new File(webInfDir, "classes");
+                webInfClassesDir.mkdir();
+                Log.info("Copying WEB-INF/classes from "+web_inf_classes+" to "+webInfClassesDir.getAbsolutePath());
+                web_inf_classes.copyTo(webInfClassesDir);
+            }
+            
             web_inf=Resource.newResource(extractedWebInfDir.toURL());
+            
             ResourceCollection rc = new ResourceCollection(new Resource[]{web_inf,web_app});
+            
+            if (Log.isDebugEnabled())
+                Log.debug("context.resourcebase = "+rc);
+            
             context.setBaseResource(rc);
         }       
     }

@@ -56,6 +56,11 @@ public class Holder<T> extends AbstractLifeCycle
         _source=source;
     }
     
+    public Source getSource()
+    {
+        return _source;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @return True if this holder was created for a specific instance.

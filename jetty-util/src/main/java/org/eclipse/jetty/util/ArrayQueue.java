@@ -35,7 +35,7 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     protected Object[] _elements;
     protected int _nextE;
     protected int _nextSlot;
-    protected int _size;
+    protected volatile int _size;
     protected int _growCapacity;
   
     /* ------------------------------------------------------------ */

@@ -28,7 +28,7 @@
         <artifactId>services</artifactId>
     </dependency>
   </dependencies>
-  
+
   <build>
     <plugins>
       <plugin>
@@ -67,12 +67,12 @@
           </execution>
         </executions>
         <configuration>
-          <archive>               
+          <archive>
             <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
       </plugin>
     </plugins>
   </build>
-  
+
 </project>

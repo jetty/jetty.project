@@ -4,6 +4,7 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ThreadLocalBuffers;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
+import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 
 
 /* ------------------------------------------------------------ */
@@ -16,10 +17,12 @@ import org.eclipse.jetty.io.nio.DirectNIOBuffer;
  */
 public class WebSocketBuffers
 {
+    final private int _bufferSize;
     final private ThreadLocalBuffers _buffers;
     
     public WebSocketBuffers(final int bufferSize)
     {
+        _bufferSize=bufferSize;
         _buffers = new ThreadLocalBuffers()
         {
             @Override
@@ -31,7 +34,7 @@ public class WebSocketBuffers
             @Override
             protected Buffer newBuffer(int size)
             {
-                return new ByteArrayBuffer(bufferSize);
+                return new IndirectNIOBuffer(bufferSize);
             }
             
             @Override
@@ -55,5 +58,10 @@ public class WebSocketBuffers
     public void returnBuffer(Buffer buffer)
     {
         _buffers.returnBuffer(buffer);
+    }
+
+    public int getBufferSize()
+    {
+        return _bufferSize;
     }
 }

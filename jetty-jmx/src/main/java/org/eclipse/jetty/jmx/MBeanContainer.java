@@ -15,9 +15,10 @@ package org.eclipse.jetty.jmx;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 import javax.management.MBeanServer;
@@ -30,27 +31,45 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Container.Relationship;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.thread.ShutdownThread;
 
+
+/* ------------------------------------------------------------ */
+/**
+ * Container class for the MBean instances 
+ */
 public class MBeanContainer extends AbstractLifeCycle implements Container.Listener
 {
     private final MBeanServer _server;
-    private final WeakHashMap _beans = new WeakHashMap();
-    private final HashMap _unique = new HashMap();
+    private final WeakHashMap<Object, ObjectName> _beans = new WeakHashMap<Object, ObjectName>();
+    private final HashMap<String, Integer> _unique = new HashMap<String, Integer>();
+    private final MultiMap<ObjectName> _relations = new MultiMap<ObjectName>();
     private String _domain = null;
-    private MultiMap _relations = new MultiMap();
-    
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Lookup an object name by instance
+     * 
+     * @param object instance for which object name is looked up
+     * @return object name associated with specified instance, or null if not found
+     */
     public synchronized ObjectName findMBean(Object object)
     {
         ObjectName bean = (ObjectName)_beans.get(object);
         return bean==null?null:bean; 
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Lookup an instance by object name
+     * 
+     * @param oname object name of instance 
+     * @return instance associated with specified object name, or null if not found
+     */
     public synchronized Object findBean(ObjectName oname)
     {
-        for (Iterator iter = _beans.entrySet().iterator(); iter.hasNext();)
+        for (Map.Entry<Object, ObjectName> entry : _beans.entrySet())
         {
-            Map.Entry entry = (Map.Entry) iter.next();
             ObjectName bean = (ObjectName)entry.getValue();
             if (bean.equals(oname))
                 return entry.getKey();
@@ -58,30 +77,65 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         return null;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Constructs MBeanContainer
+     * 
+     * @param server instance of MBeanServer for use by container
+     */
     public MBeanContainer(MBeanServer server)
     {
-        this._server = server;
+        _server = server;
+
+        try
+        {
+            start();
+        }
+        catch (Exception e)
+        {
+            Log.ignore(e);
+        }
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve instance of MBeanServer used by container
+     * 
+     * @return instance of MBeanServer
+     */
     public MBeanServer getMBeanServer()
     {
         return _server;
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * Set domain to be used to add MBeans
+     * 
+     * @param domain domain name
+     */
     public void setDomain (String domain)
     {
-        _domain =domain;
+        _domain = domain;
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve domain name used to add MBeans
+     * 
+     * @return domain name
+     */
     public String getDomain()
     {
         return _domain;
     }
     
-    public void doStart()
-    {
-    }
-
+    /* ------------------------------------------------------------ */
+    /**
+     * Implementation of Container.Listener interface
+     * 
+     * @see org.eclipse.jetty.util.component.Container.Listener#add(org.eclipse.jetty.util.component.Container.Relationship)
+     */
     public synchronized void add(Relationship relationship)
     {   
         ObjectName parent=(ObjectName)_beans.get(relationship.getParent());
@@ -100,10 +154,14 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         
         if (parent!=null && child!=null)
             _relations.add(parent,relationship);
-        
-        
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Implementation of Container.Listener interface
+     * 
+     * @see org.eclipse.jetty.util.component.Container.Listener#remove(org.eclipse.jetty.util.component.Container.Relationship)
+     */
     public synchronized void remove(Relationship relationship)
     {
         ObjectName parent=(ObjectName)_beans.get(relationship.getParent());
@@ -112,21 +170,26 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
             _relations.removeValue(parent,relationship);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Implementation of Container.Listener interface
+     * 
+     * @see org.eclipse.jetty.util.component.Container.Listener#removeBean(java.lang.Object)
+     */
     public synchronized void removeBean(Object obj)
     {
         ObjectName bean=(ObjectName)_beans.remove(obj);
 
         if (bean!=null)
         {
-            List r=_relations.getValues(bean);
-            if (r!=null && r.size()>0)
+            List<Relationship> beanRelations = _relations.getValues(bean);
+            if (beanRelations!=null && beanRelations.size()>0)
             {
-                Log.debug("Unregister {}", r);
-                Iterator iter = new ArrayList(r).iterator();
-                while (iter.hasNext())
+                Log.debug("Unregister {}", beanRelations);
+                List<Relationship> removeList = new ArrayList<Relationship>(beanRelations);
+                for (Relationship relation : removeList)
                 {
-                    Relationship rel = (Relationship)iter.next();
-                    rel.getContainer().update(rel.getParent(),rel.getChild(),null,rel.getRelationship(),true);
+                    relation.getContainer().update(relation.getParent(),relation.getChild(),null,relation.getRelationship(),true);
                 }
             }
             
@@ -146,6 +209,12 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         }
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * Implementation of Container.Listener interface
+     * 
+     * @see org.eclipse.jetty.util.component.Container.Listener#addBean(java.lang.Object)
+     */
     public synchronized void addBean(Object obj)
     {
         try
@@ -218,57 +287,29 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         }
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * Perform actions needed to start lifecycle
+     *
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
+     */
+    public void doStart()
+    {
+        ShutdownThread.register(this);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Perform actions needed to stop lifecycle
+     *
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
+     */
     public void doStop()
     {
-        while (_beans.size()>0)
-            removeBean(_beans.keySet().iterator().next());
-    }
-    
-    private class ShutdownHook extends Thread
-    {
-        private final ObjectName mletName;
-        private final ObjectName adaptorName;
-        private final ObjectName processorName;
-
-        public ShutdownHook(ObjectName mletName, ObjectName adaptorName, ObjectName processorName)
+        Set<Object> removeSet = new HashSet<Object>(_beans.keySet());
+        for (Object removeObj : removeSet)
         {
-            this.mletName = mletName;
-            this.adaptorName = adaptorName;
-            this.processorName = processorName;
-        }
-
-        public void run()
-        {
-            halt();
-            unregister(processorName);
-            unregister(adaptorName);
-            unregister(mletName);
-        }
-
-        private void halt()
-        {
-            try
-            {
-                _server.invoke(adaptorName, "stop", null, null);
-            }
-            catch (Exception e)
-            {
-                Log.warn(e);
-            }
-        }
-
-        private void unregister(ObjectName objectName)
-        {
-            try
-            {
-                _server.unregisterMBean(objectName);
-                Log.debug("Unregistered " + objectName);
-            }
-            catch (Exception e)
-            {
-                Log.warn(e);
-            }
+            removeBean(removeObj);
         }
     }
-    
 }

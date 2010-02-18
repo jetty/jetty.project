@@ -90,6 +90,7 @@ public class WebSocketTest extends TestCase
         ByteArrayBuffer out = _connector.getResponses(buffer,true);
         
         String response = StringUtil.printable(out.asArray());
+        System.err.println(response);
         
         assertTrue(response.startsWith("HTTP/1.1 101 Web Socket Protocol Handshake"));
         assertTrue(response.contains("Upgrade: WebSocket"));
@@ -114,7 +115,7 @@ public class WebSocketTest extends TestCase
             _outbound=outbound;
             try
             {
-                _outbound.sendMessage(SENTINEL_FRAME,"Roger That");
+                _outbound.sendMessage("Roger That");
             }
             catch (IOException e)
             {

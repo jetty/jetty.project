@@ -2,7 +2,40 @@ jetty-8.0.0.M0-SNAPSHOT
  + Updated servlet 3.0 spec 20090417
  + Merged 7.0.1.v20091116
 
-jetty-7.0.1.v20091116 16 November 2009
+jetty-7.0.2-SNAPSHOT
+ + JSON parses NaN as null
+ + 290765 Reset input for HttpExchange retry.
+ + 296765 JMX Connector Server and ShutdownThread
+ + 297421 Hide server/system classes from WebAppClassLoader.getResources
+ + 297783 Handle HEAD reponses in HttpClient
+ + 298144 Unit test for jetty-client connecting to a server that uses Basic Auth
+ + 298145 Reorganized test harness to separate the HTTP PUT and HTTP GET test URLs
+ + 298234 Unit test for jetty-client handling different HTTP error codes
+ + 298667 DeploymentManager uses ContextProvider and WebAppProvider
+ + 299455 Enum support in JSONPojoConvertor
+ + 300178 HttpClients opens too many connections that are immediately closed
+ + 300733 Jars from lib/ext are not visible for my web application
+ + 300933 AbstractConnector uses concurrent objects for stats
+ + 301089 Improve statistics available in StatisticsHandler and AbstractConnector
+ + 302018 Improve statistics available in AbstractSessionHandler
+ + 302198 Rename HttpClient authorization classes to Authentication
+ + 302244 invalid configuration boolean conversion in FormAuthenticator
+ + 302246 redirect loop using form authenticator
+ + 302556 CrossOriginFilter does not work correctly when Access-Control-Request-Headers header is not present
+ + 302669 WebInfConfiguration.unpack() unpacks WEB-INF/* from a ResourceCollection, breaking JSP reloading with ResourceCollections
+ + JETTY-776 Make new session-tests module to concentrate all reusable session clustering test code
+ + JETTY-910 Allow request listeners to access session
+ + JETTY-983 Range handling cleanup
+ + JETTY-1151 JETTY-1098 allow UTF-8 with 0 carry bits
+ + JETTY-1153 System property for UrlEncoded charset
+ + JETTY-1155 HttpConnection.close notifies HttpExchange
+ + JETTY-1156 SSL blocking close with JVM Bug busy key fix
+ + JETTY-1157 Don't hold array passed in write(byte[])
+ + JETTY-1177 Allow error handler to set cacheControl
+ + JETTY-1179 Persistant session tables created on MySQL use wrong datatype
+ + COMETD-46 reset ContentExchange response content on resend
+
+jetty-7.0.1.v20091125 25 November 2009
  + 274251 DefaultServlet supports exact match mode.
  + 288401 HttpExchange.cancel() Method Unimplemented
  + 289027 deobfuscate HttpClient SSL passwords
@@ -44,6 +77,8 @@ jetty-7.0.1.v20091116 16 November 2009
  + Moved centralized logging and verifier back to sandbox
  + 294345 Support for HTTP/301 + HTTP/302 response codes
  + CVE-2009-3555 Prevent SSL renegotiate for SSL vulnerability
+ + 295421 Cannot reset() a newly created HttpExchange: IllegalStateException 0 => 0
+ + 295562 CrossOriginFilter does not work with default values in Chrome and Safari
 
 jetty-7.0.0.v20091005 5 October 2009
 291340 Race condition in onException() notifications

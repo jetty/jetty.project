@@ -18,6 +18,7 @@ import java.net.Socket;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLContext;
 
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -67,7 +68,17 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
             {
                 try
                 {
-                    connection.handle();
+                    Connection con = connection;
+                    while(true)
+                    {
+                        final Connection next = con.handle();
+                        if (next!=con)
+                        {  
+                            con=next;
+                            continue;
+                        }
+                        break;
+                    }
                 }
                 catch (IOException e)
                 {
