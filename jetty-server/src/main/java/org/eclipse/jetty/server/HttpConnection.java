@@ -70,7 +70,19 @@ import org.eclipse.jetty.util.thread.Timeout;
  * The connection state is held by 3 separate state machines: The request state, the 
  * response state and the continuation state.  All three state machines must be driven
  * to completion for every request, and all three can complete in any order.
- * 
+ * </p>
+ * <p>
+ * The HttpConnection support protocol upgrade.  If on completion of a request, the
+ * response code is 101 (switch protocols), then the org.eclipse.jetty.io.Connection
+ * request attribute is checked to see if there is a new Connection instance. If so,
+ * the new connection is returned from {@link #handle()} and is used for future 
+ * handling of the underlying connection.   Note that for switching protocols that
+ * don't use 101 responses (eg CONNECT), the response should be sent and then the
+ * status code changed to 101 before returning from the handler.  Implementors 
+ * of new Connection types should be careful to extract any buffered data from
+ * (HttpParser)http.getParser()).getHeaderBuffer() and 
+ * (HttpParser)http.getParser()).getBodyBuffer() to initialise their new connection.
+ * </p>
  *
  */
 public class HttpConnection implements Connection

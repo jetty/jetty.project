@@ -15,12 +15,25 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 
+/* ------------------------------------------------------------ */
+/** Abstract Connection used by Jetty Connectors.
+ * <p>
+ * Jetty will call the handle method of a connection when there is work 
+ * to be done on the connection.  For blocking connections, this is soon 
+ * as the connection is open and handle will keep being called until the 
+ * connection is closed.   For non-blocking connections, handle will only
+ * be called if there are bytes to be read or the connection becomes writable
+ * after being write blocked.
+ * 
+ * @see org.eclipse.jetty.io.nio.SelectorManager
+ */
 public interface Connection
 {
     /* ------------------------------------------------------------ */
     /**
      * Handle the connection.
-     * @return The Connection to use for the next handling of the connection. This allows protocol upgrades.
+     * @return The Connection to use for the next handling of the connection. 
+     * This allows protocol upgrades and support for CONNECT.
      * @throws IOException
      */
     Connection handle() throws IOException;
