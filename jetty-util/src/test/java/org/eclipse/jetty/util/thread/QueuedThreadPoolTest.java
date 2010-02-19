@@ -21,8 +21,9 @@ import junit.framework.TestCase;
 public class QueuedThreadPoolTest extends TestCase
 {
     final AtomicInteger _jobs=new AtomicInteger();
+    volatile long _sleep=100;
     
-    class Job implements Runnable
+    class RunningJob implements Runnable
     {
         public volatile boolean _running=true;
         public void run()
@@ -30,7 +31,7 @@ public class QueuedThreadPoolTest extends TestCase
             try 
             {
                 while(_running)
-                    Thread.sleep(100);
+                    Thread.sleep(_sleep);
             }
             catch(Exception e)
             {
@@ -39,10 +40,13 @@ public class QueuedThreadPoolTest extends TestCase
       
             _jobs.incrementAndGet();
         }
-    };    
+    };   
+    
+    
     
     public void testThreadPool() throws Exception
     {        
+        _sleep=100;
         QueuedThreadPool tp= new QueuedThreadPool();
         tp.setMinThreads(5);
         tp.setMaxThreads(10);
@@ -57,7 +61,7 @@ public class QueuedThreadPoolTest extends TestCase
         assertEquals(5,tp.getThreads());
         assertEquals(5,tp.getIdleThreads());
         
-        Job job=new Job();
+        RunningJob job=new RunningJob();
         tp.dispatch(job);
         Thread.sleep(200);
         assertEquals(5,tp.getThreads());
@@ -67,10 +71,10 @@ public class QueuedThreadPoolTest extends TestCase
         assertEquals(5,tp.getThreads());
         assertEquals(5,tp.getIdleThreads());
 
-        Job[] jobs = new Job[5];
+        RunningJob[] jobs = new RunningJob[5];
         for (int i=0;i<jobs.length;i++)
         {
-            jobs[i]=new Job();
+            jobs[i]=new RunningJob();
             tp.dispatch(jobs[i]);
         }
         Thread.sleep(200);
@@ -78,7 +82,7 @@ public class QueuedThreadPoolTest extends TestCase
         Thread.sleep(1000);
         assertEquals(5,tp.getThreads());
         
-        job=new Job();
+        job=new RunningJob();
         tp.dispatch(job);
         assertEquals(6,tp.getThreads());
         
@@ -100,10 +104,10 @@ public class QueuedThreadPoolTest extends TestCase
         assertEquals(5,tp.getThreads());
         
         
-        jobs = new Job[15];
+        jobs = new RunningJob[15];
         for (int i=0;i<jobs.length;i++)
         {
-            jobs[i]=new Job();
+            jobs[i]=new RunningJob();
             tp.dispatch(jobs[i]);
         }
         assertEquals(10,tp.getThreads());
@@ -128,10 +132,63 @@ public class QueuedThreadPoolTest extends TestCase
 
         tp.stop();
     }
-    
+
+    public void testShrink() throws Exception
+    {
+        Runnable job = new Runnable()
+        {
+            public void run()
+            {
+                try 
+                {
+                    Thread.sleep(_sleep);
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+            
+        };
+        
+        QueuedThreadPool tp= new QueuedThreadPool();
+        tp.setMinThreads(2);
+        tp.setMaxThreads(10);
+        tp.setMaxIdleTimeMs(400);
+        tp.setThreadsPriority(Thread.NORM_PRIORITY-1);
+        
+        tp.start();
+        Thread.sleep(100);
+        assertEquals(2,tp.getThreads());
+        assertEquals(2,tp.getIdleThreads());
+        _sleep=200;
+        tp.dispatch(job);
+        tp.dispatch(job);
+        for (int i=0;i<20;i++)
+            tp.dispatch(job);
+        Thread.sleep(100);
+        assertEquals(10,tp.getThreads());
+        assertEquals(0,tp.getIdleThreads());
+        
+        _sleep=1;
+        for (int i=0;i<500;i++)
+        {
+            tp.dispatch(job);
+            Thread.sleep(10);
+            if (i%100==0)
+            {
+                System.err.println(i+" threads="+tp.getThreads()+" idle="+tp.getIdleThreads());
+            }
+        }
+        System.err.println("500 threads="+tp.getThreads()+" idle="+tp.getIdleThreads());
+        assertEquals(2,tp.getThreads());
+        assertEquals(2,tp.getIdleThreads());
+        
+    }
 
     public void testMaxStopTime() throws Exception
     {
+        _sleep=100;
         QueuedThreadPool tp= new QueuedThreadPool();
         tp.setMaxStopTimeMs(500);
         tp.start();
