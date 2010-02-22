@@ -131,7 +131,6 @@ public class IPAccessHandler extends HandlerWrapper
         String path = idx > 0 ? addrPath.substring(idx) : null;
         if (path!=null && path.length()>1 && path.charAt(1)=='*')
             path=path.substring(1);
-        System.err.println("addr="+addr+" path="+path);
 
         PathMap map = addrMap.get(addr);
         if (map==null)
