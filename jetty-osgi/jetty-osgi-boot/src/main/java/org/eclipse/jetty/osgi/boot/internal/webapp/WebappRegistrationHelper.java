@@ -276,7 +276,7 @@ public class WebappRegistrationHelper
             properties.put("jetty.host",System.getProperty("jetty.host",""));
             properties.put("jetty.port",System.getProperty("jetty.port","8080"));
             properties.put("jetty.port.ssl",System.getProperty("jetty.port.ssl","8443"));
-            
+
             while (tokenizer.hasMoreTokens())
             {
                 String etcFile = tokenizer.nextToken().trim();
@@ -345,20 +345,6 @@ public class WebappRegistrationHelper
      */
     private void init()
     {
-
-        // [Hugues] if no jndi is setup let's do it.
-        // we could also get the bundle for jetty-jndi and open the
-        // corresponding properties file
-        // instead of hardcoding the values: but they are unlikely to change.
-        if (System.getProperty("java.naming.factory.initial") == null)
-        {
-            System.setProperty("java.naming.factory.initial","org.eclipse.jetty.jndi.InitialContextFactory");
-        }
-        if (System.getProperty("java.naming.factory.url.pkgs") == null)
-        {
-            System.setProperty("java.naming.factory.url.pkgs","org.eclipse.jetty.jndi");
-        }
-
         // Get the context handler
         _ctxtHandler = (ContextHandlerCollection)_server.getChildHandlerByClass(ContextHandlerCollection.class);
         

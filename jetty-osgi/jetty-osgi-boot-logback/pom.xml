@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.osgi</groupId>
-  <artifactId>org.eclipse.jetty.osgi.boot.logback</artifactId>
+  <artifactId>jetty-osgi-boot-logback</artifactId>
   <name>Jetty :: OSGi :: Boot Logback</name>
   <description>Jetty OSGi Boot Logback bundle</description>
   <dependencies>
@@ -61,7 +61,7 @@
             <configuration>
               <tasks>
                 <replace file="target/classes/META-INF/MANIFEST.MF"
-                    token="Bundle-Version: 7.0.1.qualifier"
+                    token="Bundle-Version: 7.0.2.qualifier"
                     value="Bundle-Version: ${parsedVersion.osgiVersion}"/>
               </tasks>
             </configuration>

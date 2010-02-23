@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Jetty OSGi bootstrap
 Bundle-SymbolicName: org.eclipse.jetty.osgi.boot;singleton:=true
 Bundle-Vendor: Mort Bay Consulting
-Bundle-Version: 7.0.1.qualifier
+Bundle-Version: 7.0.2.qualifier
 Bundle-Activator: org.eclipse.jetty.osgi.boot.JettyBootstrapActivator
 Import-Package: javax.mail;resolution:=optional,
  javax.mail.event;resolution:=optional,

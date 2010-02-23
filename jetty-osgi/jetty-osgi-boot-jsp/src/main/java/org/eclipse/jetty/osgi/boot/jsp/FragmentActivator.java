@@ -36,6 +36,11 @@ public class FragmentActivator implements BundleActivator
      */
     public void start(BundleContext context) throws Exception {
         WebappRegistrationHelper.JSP_REGISTRATION_HELPERS.add(new WebappRegistrationCustomizerImpl());
+//        try {
+//        FragmentActivator.class.getClassLoader().loadClass("does.not.exist");
+//        } catch (Throwable t) {
+//            t.printStackTrace();
+//        }
     }
 
     /**

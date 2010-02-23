@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: OSGi HttpService provided by equinox HttpServiceServlet deployed on jetty
 Bundle-SymbolicName: org.eclipse.jetty.osgi.httpservice
-Bundle-Version: 7.0.1.qualifier
+Bundle-Version: 7.0.2.qualifier
 Bundle-Vendor: Mort Bay Consulting
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Import-Package: javax.servlet;version="2.5.0",

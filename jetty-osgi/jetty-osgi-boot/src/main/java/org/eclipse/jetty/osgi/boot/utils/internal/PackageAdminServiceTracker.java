@@ -94,7 +94,8 @@ public class PackageAdminServiceTracker implements ServiceListener
             // find a convention to look for a class inside the fragment.
             try
             {
-                Class<?> c = Class.forName(frag.getSymbolicName() + ".FragmentActivator");
+                String fragmentActivator = frag.getSymbolicName() + ".FragmentActivator";
+                Class<?> c = Class.forName(fragmentActivator);
                 if (c != null)
                 {
                     BundleActivator bActivator = (BundleActivator)c.newInstance();
