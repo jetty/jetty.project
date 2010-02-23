@@ -570,6 +570,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /* -------------------------------------------------------- */
     public class Registration extends HolderRegistration implements ServletRegistration.Dynamic
     {
+        protected MultipartConfigElement _multipartConfig;       
+        
         public Set<String> addMapping(String... urlPatterns)
         {
             illegalStateIfContextStarted();
@@ -631,12 +633,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         @Override
         public void setMultipartConfig(MultipartConfigElement element) 
         {
+            _multipartConfig = element;
         }
         
         public MultipartConfigElement getMultipartConfig()
         {
-            //TODO
-            return null;
+            return _multipartConfig;
         }
 
         @Override

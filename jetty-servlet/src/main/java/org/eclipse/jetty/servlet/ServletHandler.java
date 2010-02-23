@@ -378,6 +378,9 @@ public class ServletHandler extends ScopedHandler
             {
                 old_scope=baseRequest.getUserIdentityScope();
                 baseRequest.setUserIdentityScope(servlet_holder);
+                
+                //if this servlet supports multipart-mime, configure the request with it
+                baseRequest.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, ((ServletHolder.Registration)servlet_holder.getRegistration()).getMultipartConfig());
 
                 // start manual inline of nextScope(target,baseRequest,request,response);
                 if (false)

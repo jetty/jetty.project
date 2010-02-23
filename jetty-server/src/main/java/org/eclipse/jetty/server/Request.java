@@ -35,6 +35,7 @@ import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -72,6 +73,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.MultiPartInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -110,6 +112,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Request implements HttpServletRequest
 {
+    public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.multipartConfig";
     private static final String __ASYNC_FWD="org.eclipse.asyncfwd";
     private static final Collection __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int __NONE=0, _STREAM=1, __READER=2;
@@ -166,6 +169,8 @@ public class Request implements HttpServletRequest
 
     private Buffer _timeStampBuffer;
     private HttpURI _uri;
+    
+    private MultiPartInputStream _multiPartInputStream; //if the request is a multi-part mime
     
     /* ------------------------------------------------------------ */
     public Request()
@@ -1365,6 +1370,7 @@ public class Request implements HttpServletRequest
         if (_savedNewSessions!=null)
             _savedNewSessions.clear();
         _savedNewSessions=null;
+        _multiPartInputStream = null;
     }
     
     /* ------------------------------------------------------------ */
@@ -1831,17 +1837,27 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public Part getPart(String name) throws IllegalArgumentException
-    {
-        // TODO Auto-generated method stub
-        return null;
+    public Part getPart(String name) throws IOException, ServletException
+    {        
+        if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
+            return null;
+        
+        if (_multiPartInputStream == null)
+            _multiPartInputStream = new MultiPartInputStream(getInputStream(), getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT));
+        
+        return _multiPartInputStream.getPart(name);
     }
 
     /* ------------------------------------------------------------ */
-    public Collection<Part> getParts()
+    public Collection<Part> getParts() throws IOException, ServletException
     {
-        // TODO Auto-generated method stub
-        return null;
+        if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
+            return Collections.emptyList();
+        
+        if (_multiPartInputStream == null)
+            _multiPartInputStream = new MultiPartInputStream(getInputStream(), getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT));
+        
+        return _multiPartInputStream.getParts();
     }
 
     /* ------------------------------------------------------------ */

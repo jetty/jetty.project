@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -31,15 +32,19 @@ import java.util.StringTokenizer;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.Part;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.MultiPartInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
@@ -55,7 +60,9 @@ import org.eclipse.jetty.util.TypeUtil;
  * If the init paramter "delete" is set to "true", any files created will be deleted when the
  * current request returns.
  * 
+ * Use init parameter "maxFileSize" to set the max size file that can be uploaded.
  * 
+ * Use init parameter "maxRequestSize" to limit the size of the multipart request.
  * 
  */
 public class MultiPartFilter implements Filter
@@ -65,6 +72,8 @@ public class MultiPartFilter implements Filter
     private boolean _deleteFiles;
     private ServletContext _context;
     private int _fileOutputBuffer = 0;
+    private long _maxFileSize = -1L;
+    private long _maxRequestSize = -1L;
 
     /* ------------------------------------------------------------------------------- */
     /**
@@ -77,6 +86,13 @@ public class MultiPartFilter implements Filter
         String fileOutputBuffer = filterConfig.getInitParameter("fileOutputBuffer");
         if(fileOutputBuffer!=null)
             _fileOutputBuffer = Integer.parseInt(fileOutputBuffer);
+        String maxFileSize = filterConfig.getInitParameter("maxFileSize");
+        if (maxFileSize != null)
+            _maxFileSize = Long.parseLong(maxFileSize.trim());
+        String maxRequestSize = filterConfig.getInitParameter("maxRequestSize");
+        if (maxRequestSize != null)
+            _maxRequestSize = Long.parseLong(maxRequestSize.trim());
+        
         _context=filterConfig.getServletContext();
     }
 
@@ -95,14 +111,7 @@ public class MultiPartFilter implements Filter
             return;
         }
         
-        BufferedInputStream in = new BufferedInputStream(request.getInputStream());
-        String content_type=srequest.getContentType();
-        
-        // TODO - handle encodings
-        
-        String boundary="--"+value(content_type.substring(content_type.indexOf("boundary=")));
-        byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
-        
+        //Get current parameters so we can merge into them
         MultiMap params = new MultiMap();
         for (Iterator i = request.getParameterMap().entrySet().iterator();i.hasNext();)
         {
@@ -113,185 +122,50 @@ public class MultiPartFilter implements Filter
             else
                 params.add(entry.getKey(),value);
         }
+        // TODO - handle encodings
         
+        BufferedInputStream in = new BufferedInputStream(request.getInputStream());
+        String content_type=srequest.getContentType();
+        
+        MultipartConfigElement config = new MultipartConfigElement(tempdir.getCanonicalPath(), _maxFileSize, _maxRequestSize, _fileOutputBuffer);
+        MultiPartInputStream mpis = new MultiPartInputStream(in, content_type, config);
+        
+
         try
         {
-            // Get first boundary
-            byte[] bytes=TypeUtil.readLine(in);
-            String line=bytes==null?null:new String(bytes,"UTF-8");
-            if(line==null || !line.equals(boundary))
+            Collection<Part> parts = mpis.getParts();
+            if (parts != null)
             {
-                throw new IOException("Missing initial multi part boundary");
-            }
-            
-            // Read each part
-            boolean lastPart=false;
-            String content_disposition=null;
-            while(!lastPart)
-            {
-                while(true)
+                for (Part p:parts)
                 {
-                    bytes=TypeUtil.readLine(in);
-                    // If blank line, end of part headers
-                    if(bytes==null || bytes.length==0)
-                        break;
-                    line=new String(bytes,"UTF-8");
-                    
-                    // place part header key and value in map
-                    int c=line.indexOf(':',0);
-                    if(c>0)
+                    MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
+                    if (mp.getFile() != null)
                     {
-                        String key=line.substring(0,c).trim().toLowerCase();
-                        String value=line.substring(c+1,line.length()).trim();
-                        if(key.equals("content-disposition"))
-                            content_disposition=value;
-                    }
-                }
-                // Extract content-disposition
-                boolean form_data=false;
-                if(content_disposition==null)
-                {
-                    throw new IOException("Missing content-disposition");
-                }
-                
-                StringTokenizer tok=new StringTokenizer(content_disposition,";");
-                String name=null;
-                String filename=null;
-                while(tok.hasMoreTokens())
-                {
-                    String t=tok.nextToken().trim();
-                    String tl=t.toLowerCase();
-                    if(t.startsWith("form-data"))
-                        form_data=true;
-                    else if(tl.startsWith("name="))
-                        name=value(t);
-                    else if(tl.startsWith("filename="))
-                        filename=value(t);
-                }
-                
-                // Check disposition
-                if(!form_data)
-                {
-                    continue;
-                }
-                //It is valid for reset and submit buttons to have an empty name.
-                //If no name is supplied, the browser skips sending the info for that field.
-                //However, if you supply the empty string as the name, the browser sends the
-                //field, with name as the empty string. So, only continue this loop if we
-                //have not yet seen a name field.
-                if(name==null)
-                {
-                    continue;
-                }
-                
-                OutputStream out=null;
-                File file=null;
-                try
-                {
-                    if (filename!=null && filename.length()>0)
-                    {
-                        file = File.createTempFile("MultiPart", "", tempdir);
-                        out = new FileOutputStream(file);
-                        if(_fileOutputBuffer>0)
-                            out = new BufferedOutputStream(out, _fileOutputBuffer);
-                        request.setAttribute(name,file);
-                        params.add(name, filename);
-                        
+                        request.setAttribute(mp.getName(),mp.getFile());
+                        if (mp.getContentDispositionFilename() != null)
+                            params.add(mp.getName(), mp.getContentDispositionFilename());
                         if (_deleteFiles)
                         {
-                            file.deleteOnExit();
+                            mp.getFile().deleteOnExit();
+
                             ArrayList files = (ArrayList)request.getAttribute(FILES);
                             if (files==null)
                             {
                                 files=new ArrayList();
                                 request.setAttribute(FILES,files);
                             }
-                            files.add(file);
+                            files.add(mp.getFile());
                         }
-                        
                     }
                     else
-                        out=new ByteArrayOutputStream();
-                    
-                    int state=-2;
-                    int c;
-                    boolean cr=false;
-                    boolean lf=false;
-                    
-                    // loop for all lines`
-                    while(true)
                     {
-                        int b=0;
-                        while((c=(state!=-2)?state:in.read())!=-1)
-                        {
-                            state=-2;
-                            // look for CR and/or LF
-                            if(c==13||c==10)
-                            {
-                                if(c==13)
-                                    state=in.read();
-                                break;
-                            }
-                            // look for boundary
-                            if(b>=0&&b<byteBoundary.length&&c==byteBoundary[b])
-                                b++;
-                            else
-                            {
-                                // this is not a boundary
-                                if(cr)
-                                    out.write(13);
-                                if(lf)
-                                    out.write(10);
-                                cr=lf=false;
-                                if(b>0)
-                                    out.write(byteBoundary,0,b);
-                                b=-1;
-                                out.write(c);
-                            }
-                        }
-                        // check partial boundary
-                        if((b>0&&b<byteBoundary.length-2)||(b==byteBoundary.length-1))
-                        {
-                            if(cr)
-                                out.write(13);
-                            if(lf)
-                                out.write(10);
-                            cr=lf=false;
-                            out.write(byteBoundary,0,b);
-                            b=-1;
-                        }
-                        // boundary match
-                        if(b>0||c==-1)
-                        {
-                            if(b==byteBoundary.length)
-                                lastPart=true;
-                            if(state==10)
-                                state=-2;
-                            break;
-                        }
-                        // handle CR LF
-                        if(cr)
-                            out.write(13);
-                        if(lf)
-                            out.write(10);
-                        cr=(c==13);
-                        lf=(c==10||state==10);
-                        if(state==10)
-                            state=-2;
+                        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                        IO.copy(p.getInputStream(), bytes);
+                        params.add(p.getName(), bytes.toByteArray());
                     }
                 }
-                finally
-                {
-                    out.close();
-                }
-                
-                if (file==null)
-                {
-                    bytes = ((ByteArrayOutputStream)out).toByteArray();
-                    params.add(name,bytes);
-                }
             }
-        
+
             // handle request
             chain.doFilter(new Wrapper(srequest,params),response);
         }
