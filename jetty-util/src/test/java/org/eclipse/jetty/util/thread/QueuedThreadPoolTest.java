@@ -121,9 +121,6 @@ public class QueuedThreadPoolTest extends TestCase
         assertTrue(threads<10);
         Thread.sleep(1100);
         assertTrue(tp.getThreads()<threads);
-        threads=tp.getThreads();
-        Thread.sleep(1100);
-        assertTrue(tp.getThreads()<threads);
         
         for (int i=9;i<jobs.length;i++)
             jobs[i]._running=false;
