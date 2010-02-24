@@ -145,8 +145,6 @@ public class WebInfConfiguration implements Configuration
             Resource lib= web_inf.addPath("lib/");
             if (lib.exists() || lib.isDirectory())
                 ((WebAppClassLoader)context.getClassLoader()).addJars(lib);
-            
-            System.err.println("Added web-inf/lib jars to "+context.getClassLoader()+" which is a "+context.getClassLoader().getClass().getName());
         }
         
         // Look for extra resource
