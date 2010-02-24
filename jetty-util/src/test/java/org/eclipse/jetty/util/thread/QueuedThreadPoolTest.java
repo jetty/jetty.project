@@ -166,7 +166,7 @@ public class QueuedThreadPoolTest extends TestCase
         assertEquals(10,tp.getThreads());
         assertEquals(0,tp.getIdleThreads());
         
-        _sleep=1;
+        _sleep=5;
         for (int i=0;i<500;i++)
         {
             tp.dispatch(job);
@@ -177,6 +177,8 @@ public class QueuedThreadPoolTest extends TestCase
             }
         }
         System.err.println("500 threads="+tp.getThreads()+" idle="+tp.getIdleThreads());
+        Thread.sleep(100);
+        System.err.println("600 threads="+tp.getThreads()+" idle="+tp.getIdleThreads());
         assertEquals(2,tp.getThreads());
         assertEquals(2,tp.getIdleThreads());
         
