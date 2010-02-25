@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Jetty OSGi bootstrap
 Bundle-SymbolicName: org.eclipse.jetty.osgi.boot;singleton:=true
 Bundle-Vendor: Mort Bay Consulting
-Bundle-Version: 7.0.1.qualifier
+Bundle-Version: 8.0.0.M0.qualifier
 Bundle-Activator: org.eclipse.jetty.osgi.boot.JettyBootstrapActivator
 Import-Package: javax.mail;resolution:=optional,
  javax.mail.event;resolution:=optional,
@@ -30,26 +30,26 @@ Import-Package: javax.mail;resolution:=optional,
  org.slf4j;resolution:=optional,
  org.slf4j.spi;resolution:=optional, 
  org.slf4j.helpers;resolution:=optional
-Bundle-RequiredExecutionEnvironment: J2SE-1.5
-Require-Bundle: org.eclipse.jetty.ajp;bundle-version="[7.0,8)";resolution:=optional,
- org.eclipse.jetty.annotations;bundle-version="[7.0,8)";resolution:=optional,
- org.eclipse.jetty.client;bundle-version="[7.0,8)";resolution:=optional,
- org.eclipse.jetty.continuation;bundle-version="[7.0,8)";resolution:=optional,
- org.eclipse.jetty.deploy;bundle-version="[7.0,8)",
- org.eclipse.jetty.http;bundle-version="[7.0,8)",
- org.eclipse.jetty.io;bundle-version="[7.0,8)",
- org.eclipse.jetty.jmx;bundle-version="[7.0,8)";resolution:=optional,
- org.eclipse.jetty.jndi;bundle-version="[7.0,8)";resolution:=optional,
- org.eclipse.jetty.plus;bundle-version="[7.0,8.0)";resolution:=optional,
- org.eclipse.jetty.rewrite;bundle-version="[7.0,8)";resolution:=optional,
- org.eclipse.jetty.security;bundle-version="[7.0,8)";resolution:=optional,
- org.eclipse.jetty.server;bundle-version="[7.0,8)",
- org.eclipse.jetty.servlet;bundle-version="[7.0,8)",
- org.eclipse.jetty.servlets;bundle-version="[7.0,8)";resolution:=optional,
- org.eclipse.jetty.util;bundle-version="[7.0,8)",
- org.eclipse.jetty.webapp;bundle-version="[7.0,8)",
- org.eclipse.jetty.websocket;bundle-version="[7.0,8)";resolution:=optional,
- org.eclipse.jetty.xml;bundle-version="[7.0,8)"
+Bundle-RequiredExecutionEnvironment: J2SE-1.6
+Require-Bundle: org.eclipse.jetty.ajp;bundle-version="[8,9)";resolution:=optional,
+ org.eclipse.jetty.annotations;bundle-version="[8,9)";resolution:=optional,
+ org.eclipse.jetty.client;bundle-version="[8,9)";resolution:=optional,
+ org.eclipse.jetty.continuation;bundle-version="[8,9)";resolution:=optional,
+ org.eclipse.jetty.deploy;bundle-version="[8,9)",
+ org.eclipse.jetty.http;bundle-version="[8,9)",
+ org.eclipse.jetty.io;bundle-version="[8,9)",
+ org.eclipse.jetty.jmx;bundle-version="[8,9)";resolution:=optional,
+ org.eclipse.jetty.jndi;bundle-version="[8,9)";resolution:=optional,
+ org.eclipse.jetty.plus;bundle-version="[8,9)";resolution:=optional,
+ org.eclipse.jetty.rewrite;bundle-version="[8,9)";resolution:=optional,
+ org.eclipse.jetty.security;bundle-version="[8,9)";resolution:=optional,
+ org.eclipse.jetty.server;bundle-version="[8,9)",
+ org.eclipse.jetty.servlet;bundle-version="[8,9)",
+ org.eclipse.jetty.servlets;bundle-version="[8,9)";resolution:=optional,
+ org.eclipse.jetty.util;bundle-version="[8,9)",
+ org.eclipse.jetty.webapp;bundle-version="[8,9)",
+ org.eclipse.jetty.websocket;bundle-version="[8,9)";resolution:=optional,
+ org.eclipse.jetty.xml;bundle-version="[8,9)"
 Export-Package: org.eclipse.jetty.osgi.boot,
  org.eclipse.jetty.osgi.boot.utils
 Bundle-ActivationPolicy: lazy

@@ -3,17 +3,15 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Jetty-OSGi-Jasper integration
 Fragment-Host: org.eclipse.jetty.osgi.boot
 Bundle-SymbolicName: org.eclipse.jetty.osgi.boot.jsp;singleton:=true
-Bundle-Version: 7.0.1.qualifier
+Bundle-Version: 8.0.0.M0.qualifier
 Bundle-Vendor: Mort Bay Consulting
-Bundle-RequiredExecutionEnvironment: J2SE-1.5
-Require-Bundle: org.mortbay.jetty.jsp-2.1-glassfish,
- org.mortbay.jetty.jsp-api-2.1-glassfish
-Import-Package: javax.el;version="2.1",
- javax.servlet.jsp;version="2.1",
- javax.servlet.jsp.el;version="2.1",
- javax.servlet.jsp.jstl.core;version="2.1",
- javax.servlet.jsp.jstl.fmt;version="2.1",
- javax.servlet.jsp.jstl.sql;version="2.1",
- javax.servlet.jsp.jstl.tlv;version="2.1",
- javax.servlet.jsp.resources;version="2.1",
- javax.servlet.jsp.tagext;version="2.1"
+Bundle-RequiredExecutionEnvironment: J2SE-1.6
+Import-Package: javax.el;version="2.2",
+ javax.servlet.jsp;version="2.2",
+ javax.servlet.jsp.el;version="2.2",
+ javax.servlet.jsp.jstl.core;version="2.2",
+ javax.servlet.jsp.jstl.fmt;version="2.2",
+ javax.servlet.jsp.jstl.sql;version="2.2",
+ javax.servlet.jsp.jstl.tlv;version="2.2",
+ javax.servlet.jsp.resources;version="2.2",
+ javax.servlet.jsp.tagext;version="2.2"
