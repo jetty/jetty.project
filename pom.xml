@@ -251,7 +251,7 @@
       <properties>
         <servlet.spec.groupId>org.mortbay.jetty</servlet.spec.groupId>
         <servlet.spec.artifactId>servlet-api</servlet.spec.artifactId>
-        <servlet.spec.version>3.0-SNAPSHOT</servlet.spec.version>
+        <servlet.spec.version>3.0.20100224</servlet.spec.version>
       </properties>
     </profile>
   </profiles>
