@@ -19,7 +19,8 @@
   </properties>
   <modules>
     <module>jetty-osgi-boot</module>
-    <module>jetty-osgi-boot-jsp</module>
+    <!-- remove until jsp jars available in main maven repo -->
+    <!-- module>jetty-osgi-boot-jsp</module -->
     <!-- logback is currently under CQs -->
     <module>jetty-osgi-boot-logback</module>
     <module>jetty-osgi-boot-warurl</module>
