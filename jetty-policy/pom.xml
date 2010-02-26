@@ -16,6 +16,37 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>${felix.bundle.version}</version>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <id>generate-manifest</id>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <configuration>
+              <instructions>
+                <Export-Package>org.eclipse.jetty.policy.*</Export-Package>
+              </instructions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!--
+        Required for OSGI
+        -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>               
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
