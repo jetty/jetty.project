@@ -70,7 +70,7 @@
     <dependency>
       <groupId>org.mortbay.jetty</groupId> 
       <artifactId>servlet-api</artifactId>
-      <version>3.0.PFD20090525</version>
+      <version>3.0.20100224</version>
       <scope>provided</scope>
     </dependency> 
     <dependency>

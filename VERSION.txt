@@ -32,6 +32,7 @@ jetty-7.0.2-SNAPSHOT
  + JETTY-1184 shrink thread pool even with frequent small jobs
  + COMETD-46 reset ContentExchange response content on resend
  + Added IPAccessHandler
+ + Updated Servlet3Continuation to final 3.0.20100224
 
 jetty-7.0.1.v20091125 25 November 2009
  + 274251 DefaultServlet supports exact match mode.

@@ -33,9 +33,19 @@ public class Servlet3Continuation implements Continuation
         {
         }
 
+        public void onError(AsyncEvent event) throws IOException
+        {
+        }
+
+        public void onStartAsync(AsyncEvent event) throws IOException
+        {
+            event.getAsyncContext().addListener(this);
+        }
+
         public void onTimeout(AsyncEvent event) throws IOException
         {
             _initial=false;
+            event.getAsyncContext().dispatch();
         }
     };
 
@@ -48,15 +58,24 @@ public class Servlet3Continuation implements Continuation
     {
         _request=request;
     }
-    
 
     public void addContinuationListener(final ContinuationListener listener)
     {
-        _request.addAsyncListener(new AsyncListener()
+        _context.addListener(new AsyncListener()
         {
             public void onComplete(final AsyncEvent event) throws IOException
             {
                 listener.onComplete(Servlet3Continuation.this);
+            }
+
+            public void onError(AsyncEvent event) throws IOException
+            {
+                listener.onComplete(Servlet3Continuation.this);
+            }
+
+            public void onStartAsync(AsyncEvent event) throws IOException
+            {
+                event.getAsyncContext().addListener(this);
             }
 
             public void onTimeout(AsyncEvent event) throws IOException
@@ -117,25 +136,25 @@ public class Servlet3Continuation implements Continuation
 
     public void setTimeout(long timeoutMs)
     {
-        _request.setAsyncTimeout(timeoutMs);
+        _context.setTimeout(timeoutMs);
     }
 
     public void suspend(ServletResponse response)
     {
         _response=response;
         _responseWrapped=response instanceof ServletResponseWrapper;
-        _request.addAsyncListener(_listener);
         _resumed=false;
         _expired=false;
         _context=_request.startAsync();
+        _context.addListener(_listener);
     }
 
     public void suspend()
     {
-        _request.addAsyncListener(_listener);
         _resumed=false;
         _expired=false;
         _context=_request.startAsync();
+        _context.addListener(_listener);
     }
 
     public boolean isResponseWrapped()
