@@ -1,4 +1,4 @@
-jetty-8.0.0.M0-SNAPSHOT
+jetty-8.0.0.M0 28 February 2010
  + Updated servlet 3.0 spec 20100224
  + Merged 7.0.1.v20091116
  + Updated to cometd 1.0.1
