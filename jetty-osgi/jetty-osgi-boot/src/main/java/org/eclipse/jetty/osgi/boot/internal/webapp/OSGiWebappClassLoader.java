@@ -17,7 +17,12 @@ package org.eclipse.jetty.osgi.boot.internal.webapp;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.jar.JarFile;
@@ -81,6 +86,46 @@ public class OSGiWebappClassLoader extends WebAppClassLoader
     private void computeLibsAlreadyInOSGiClassLoader()
     {
         // TODO
+    }
+
+    @Override
+    public Enumeration<URL> getResources(String name) throws IOException
+    {
+        Enumeration<URL> osgiUrls = _osgiBundleClassLoader.getResources(name);
+        Enumeration<URL> urls = super.getResources(name);
+        if (_lookInOsgiFirst)
+        {
+            return Collections.enumeration(toList(osgiUrls, urls));
+        }
+        else
+        {
+            return Collections.enumeration(toList(urls, osgiUrls));
+        }
+    }
+    
+    @Override
+    public URL getResource(String name)
+    {
+        if (_lookInOsgiFirst)
+        {
+            URL url = _osgiBundleClassLoader.getResource(name);
+            return url != null ? url : super.getResource(name);
+        }
+        else 
+        {
+            URL url = super.getResource(name);
+            return url != null ? url : _osgiBundleClassLoader.getResource(name);
+        }       
+    }
+    
+    private List<URL> toList(Enumeration<URL> e, Enumeration<URL> e2)
+    {
+        List<URL> list = new ArrayList<URL>();
+        while (e!=null && e.hasMoreElements())
+            list.add(e.nextElement());
+        while (e2!=null && e2.hasMoreElements())
+            list.add(e.nextElement());
+        return list;
     }
 
     /**
