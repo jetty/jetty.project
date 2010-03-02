@@ -78,7 +78,7 @@ public class Dump extends HttpServlet
     {
         if(request.getPathInfo()!=null && request.getPathInfo().toLowerCase().indexOf("script")!=-1)
         {
-            response.sendRedirect(getServletContext().getContextPath() + "/dump/info");
+            response.sendRedirect(response.encodeRedirectURL(getServletContext().getContextPath() + "/dump/info"));
             return;
         }
             
@@ -325,7 +325,7 @@ public class Dump extends HttpServlet
         if (redirect != null && redirect.length() > 0)
         {
             response.getOutputStream().println("THIS SHOULD NOT BE SEEN!");
-            response.sendRedirect(redirect);
+            response.sendRedirect(response.encodeRedirectURL(redirect));
             try
             {
                 response.getOutputStream().println("THIS SHOULD NOT BE SEEN!");

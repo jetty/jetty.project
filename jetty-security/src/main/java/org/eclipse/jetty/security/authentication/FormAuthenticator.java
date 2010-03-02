@@ -154,7 +154,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (uri==null)
             uri=URIUtil.SLASH;
 
-        mandatory|=uri.endsWith(__J_SECURITY_CHECK);
+        mandatory|=isJSecurityCheck(uri);
         if (!mandatory)
             return _deferred;
         
@@ -166,7 +166,7 @@ public class FormAuthenticator extends LoginAuthenticator
         try
         {
             // Handle a request for authentication.
-            if (uri.endsWith(__J_SECURITY_CHECK))
+            if (isJSecurityCheck(uri))
             {
                 final String username = request.getParameter(__J_USERNAME);
                 final String password = request.getParameter(__J_PASSWORD);
@@ -213,7 +213,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 }
                 else
                 {
-                    response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formErrorPage));
+                    response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(),_formErrorPage)));
                 }
                 
                 return Authentication.SEND_FAILURE;
@@ -260,7 +260,7 @@ public class FormAuthenticator extends LoginAuthenticator
             }
             else
             {
-                response.sendRedirect(URIUtil.addPaths(request.getContextPath(),_formLoginPage));
+                response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(),_formLoginPage)));
             }
             return Authentication.SEND_CONTINUE;
             
@@ -275,7 +275,21 @@ public class FormAuthenticator extends LoginAuthenticator
             throw new ServerAuthException(e);
         }
     }
-
+    
+    /* ------------------------------------------------------------ */
+    public boolean isJSecurityCheck(String uri)
+    {
+        int jsc = uri.indexOf(__J_SECURITY_CHECK);
+        
+        if (jsc<0)
+            return false;
+        int e=jsc+__J_SECURITY_CHECK.length();
+        if (e==uri.length())
+            return true;
+        char c = uri.charAt(e);
+        return c==';'||c=='#'||c=='/'||c=='?';
+    }
+    
     /* ------------------------------------------------------------ */
     public boolean isLoginOrErrorPage(String pathInContext)
     {

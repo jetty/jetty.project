@@ -19,6 +19,7 @@ jetty-7.0.2-SNAPSHOT
  + 302246 redirect loop using form authenticator
  + 302556 CrossOriginFilter does not work correctly when Access-Control-Request-Headers header is not present
  + 302669 WebInfConfiguration.unpack() unpacks WEB-INF/* from a ResourceCollection, breaking JSP reloading with ResourceCollections
+ + 304307 JETTY-1133 Handle ;jsessionid in FROM Auth
  + JETTY-776 Make new session-tests module to concentrate all reusable session clustering test code
  + JETTY-910 Allow request listeners to access session
  + JETTY-983 Range handling cleanup

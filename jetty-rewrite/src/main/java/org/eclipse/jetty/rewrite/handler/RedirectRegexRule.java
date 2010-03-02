@@ -57,7 +57,7 @@ public class RedirectRegexRule extends RegexRule
             target=target.replaceAll("\\$"+g,group);
         }
 
-        response.sendRedirect(target);
+        response.sendRedirect(response.encodeRedirectURL(target));
         return target;
     }
 }

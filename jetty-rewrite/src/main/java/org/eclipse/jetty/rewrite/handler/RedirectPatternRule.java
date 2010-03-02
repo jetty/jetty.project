@@ -49,7 +49,7 @@ public class RedirectPatternRule extends PatternRule
      */
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        response.sendRedirect(_location);
+        response.sendRedirect(response.encodeRedirectURL(_location));
         return target;
     }
 

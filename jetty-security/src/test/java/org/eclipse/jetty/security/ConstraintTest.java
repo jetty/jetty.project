@@ -301,7 +301,6 @@ public class ConstraintTest extends TestCase
         response = _connector.getResponses("GET /ctx/testLoginPage HTTP/1.0\r\n"+
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "\r\n");
-        System.err.println(response);
         assertTrue(response.indexOf(" 200 OK") > 0);
         assertTrue(response.indexOf("URI=/ctx/testLoginPage") > 0);
         
@@ -330,6 +329,58 @@ public class ConstraintTest extends TestCase
 
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 403"));
+        assertTrue(response.indexOf("!role") > 0);
+    }
+
+    public void testFormNoCookies()
+            throws Exception
+    {
+        _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
+        _security.setStrict(false);
+        _server.start();
+
+        String response;
+
+        response = _connector.getResponses("GET /ctx/noauth/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+
+        response = _connector.getResponses("GET /ctx/forbid/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 403 Forbidden"));
+
+        response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.indexOf(" 302 Found") > 0);
+        assertTrue(response.indexOf("/ctx/testLoginPage") > 0);
+        int jsession=response.indexOf(";jsessionid=");
+        String session = response.substring(jsession + 12, response.indexOf("\r\n",jsession));
+        
+        response = _connector.getResponses("GET /ctx/testLoginPage;jsessionid="+session+" HTTP/1.0\r\n"+
+                "\r\n");
+        assertTrue(response.indexOf(" 200 OK") > 0);
+        assertTrue(response.indexOf("URI=/ctx/testLoginPage") > 0);
+        
+        response = _connector.getResponses("POST /ctx/j_security_check;jsessionid="+session+" HTTP/1.0\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: 31\r\n" +
+                "\r\n" +
+        "j_username=user&j_password=wrong\r\n");
+        assertTrue(response.indexOf("Location") > 0);
+
+        response = _connector.getResponses("POST /ctx/j_security_check;jsessionid="+session+" HTTP/1.0\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: 35\r\n" +
+                "\r\n" +
+                "j_username=user&j_password=password\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 302 "));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf("/ctx/auth/info") > 0);
+
+        response = _connector.getResponses("GET /ctx/auth/info;jsessionid="+session+" HTTP/1.0\r\n" +
+                "\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+
+        response = _connector.getResponses("GET /ctx/admin/info;jsessionid="+session+" HTTP/1.0\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 403"));
         assertTrue(response.indexOf("!role") > 0);
