@@ -29,7 +29,6 @@ public interface SslConnector extends Connector
     
     /** String name of keystore password property. */
     public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
-
     
     /* ------------------------------------------------------------ */
     /**
@@ -44,6 +43,20 @@ public interface SslConnector extends Connector
      * {@link SSLEngine#setEnabledCipherSuites(String[])}
      */
     public abstract void setExcludeCipherSuites(String[] cipherSuites);
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The array of Ciphersuite names to include in
+     * {@link SSLEngine#setEnabledCipherSuites(String[])}
+     */
+    public abstract String[] getIncludeCipherSuites();
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param cipherSuites The array of Ciphersuite names to include in 
+     * {@link SSLEngine#setEnabledCipherSuites(String[])}
+     */
+    public abstract void setIncludeCipherSuites(String[] cipherSuites);
 
     /* ------------------------------------------------------------ */
     /**

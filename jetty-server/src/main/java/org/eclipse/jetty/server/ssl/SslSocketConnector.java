@@ -22,11 +22,9 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.security.KeyStore;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.net.ssl.HandshakeCompletedEvent;
@@ -70,58 +68,10 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class SslSocketConnector extends SocketConnector  implements SslConnector
 {
-    /**
-     * The name of the SSLSession attribute that will contain any cached information.
-     */
-    static final String CACHED_INFO_ATTR = CachedInfo.class.getName();
-
-    /**
-     * Return the chain of X509 certificates used to negotiate the SSL Session.
-     * <p>
-     * Note: in order to do this we must convert a javax.security.cert.X509Certificate[], as used by
-     * JSSE to a java.security.cert.X509Certificate[],as required by the Servlet specs.
-     * 
-     * @param sslSession the javax.net.ssl.SSLSession to use as the source of the cert chain.
-     * @return the chain of java.security.cert.X509Certificates used to negotiate the SSL
-     *         connection. <br>
-     *         Will be null if the chain is missing or empty.
-     */
-    private static X509Certificate[] getCertChain(SSLSession sslSession)
-    {
-        try
-        {
-            javax.security.cert.X509Certificate javaxCerts[] = sslSession.getPeerCertificateChain();
-            if (javaxCerts == null || javaxCerts.length == 0)
-                return null;
-
-            int length = javaxCerts.length;
-            X509Certificate[] javaCerts = new X509Certificate[length];
-
-            java.security.cert.CertificateFactory cf = java.security.cert.CertificateFactory.getInstance("X.509");
-            for (int i = 0; i < length; i++)
-            {
-                byte bytes[] = javaxCerts[i].getEncoded();
-                ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
-                javaCerts[i] = (X509Certificate) cf.generateCertificate(stream);
-            }
-
-            return javaCerts;
-        }
-        catch (SSLPeerUnverifiedException pue)
-        {
-            return null;
-        }
-        catch (Exception e)
-        {
-            Log.warn(Log.EXCEPTION, e);
-            return null;
-        }
-    }
-
-  
-
     /** Default value for the cipher Suites. */
     private String _excludeCipherSuites[] = null;
+    /** Default value for the included cipher Suites. */
+    private String _includeCipherSuites[]=null;
     
     /** Default value for the keystore location path. */
     private String _keystorePath=DEFAULT_KEYSTORE ;
@@ -300,50 +250,20 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         
         SocketEndPoint socket_end_point = (SocketEndPoint)endpoint;
         SSLSocket sslSocket = (SSLSocket)socket_end_point.getTransport();
-        
-        try
-        {
-            SSLSession sslSession = sslSocket.getSession();
-            String cipherSuite = sslSession.getCipherSuite();
-            Integer keySize;
-            String idStr;
-            X509Certificate[] certs;
+        SSLSession sslSession = sslSocket.getSession();
 
-            CachedInfo cachedInfo = (CachedInfo) sslSession.getValue(CACHED_INFO_ATTR);
-            if (cachedInfo != null)
-            {
-                keySize = cachedInfo.getKeySize();
-                certs = cachedInfo.getCerts();
-                idStr = cachedInfo.getIdStr();
-            }
-            else
-            {
-                keySize = new Integer(ServletSSL.deduceKeyLength(cipherSuite));
-                certs = getCertChain(sslSession);
-                byte[] idBytes = sslSession.getId();
-                idStr = TypeUtil.toHexString(idBytes);
-                cachedInfo = new CachedInfo(keySize, certs,idStr);
-                sslSession.putValue(CACHED_INFO_ATTR, cachedInfo);
-            }
-
-            if (certs != null)
-                request.setAttribute("javax.servlet.request.X509Certificate", certs);
-            else if (_needClientAuth) // Sanity check
-                throw new IllegalStateException("no client auth");
-            
-            request.setAttribute("javax.servlet.request.ssl_session_id", idStr);
-            request.setAttribute("javax.servlet.request.cipher_suite", cipherSuite);
-            request.setAttribute("javax.servlet.request.key_size", keySize);
-        }
-        catch (Exception e)
-        {
-            Log.warn(Log.EXCEPTION, e);
-        }
+        SslCertificates.customize(sslSession,endpoint,request);
     }
 
     /* ------------------------------------------------------------ */    
     public String[] getExcludeCipherSuites() {
         return _excludeCipherSuites;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String[] getIncludeCipherSuites()
+    {
+        return _includeCipherSuites;
     }
 
     /* ------------------------------------------------------------ */
@@ -473,22 +393,46 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
             if (_needClientAuth)
                 socket.setNeedClientAuth(_needClientAuth);
 
-            if (_excludeCipherSuites != null && _excludeCipherSuites.length >0) 
+            if ((_excludeCipherSuites!=null&&_excludeCipherSuites.length>0)
+                	|| (_includeCipherSuites!=null&&_includeCipherSuites.length>0))
             {
-                List excludedCSList = Arrays.asList(_excludeCipherSuites);
+            	List<String> includedCSList;
+                if (_includeCipherSuites!=null)
+                {
+                	includedCSList = Arrays.asList(_includeCipherSuites);
+                } else {
+                	includedCSList = new ArrayList<String>();
+                }
+                List<String> excludedCSList;
+                if (_excludeCipherSuites!=null)
+                {
+                	excludedCSList = Arrays.asList(_excludeCipherSuites);
+                } else {
+                	excludedCSList = new ArrayList<String>();
+                }
                 String[] enabledCipherSuites = socket.getEnabledCipherSuites();
-            	List enabledCSList = new ArrayList(Arrays.asList(enabledCipherSuites));
-            	Iterator exIter = excludedCSList.iterator();
+                List<String> enabledCSList=Arrays.asList(enabledCipherSuites);
+                
+                String[] supportedCipherSuites = socket.getSupportedCipherSuites();
+                List<String> supportedCSList=Arrays.asList(supportedCipherSuites);
+                
+            	for (String cipherName : includedCSList)
+                {
+                    if ((!enabledCSList.contains(cipherName))
+                    		&& supportedCSList.contains(cipherName))
+                    {
+                        enabledCSList.add(cipherName);
+                    }
+                }
 
-                while (exIter.hasNext())
-            	{
-            	    String cipherName = (String)exIter.next();
+                for (String cipherName : excludedCSList)
+                {
                     if (enabledCSList.contains(cipherName))
                     {
                         enabledCSList.remove(cipherName);
                     }
-            	}
-                enabledCipherSuites = (String[])enabledCSList.toArray(new String[enabledCSList.size()]);
+                }
+                enabledCipherSuites=enabledCSList.toArray(new String[0]);
 
                 socket.setEnabledCipherSuites(enabledCipherSuites);
             }
@@ -513,6 +457,12 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      */
     public void setExcludeCipherSuites(String[] cipherSuites) {
         this._excludeCipherSuites = cipherSuites;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setIncludeCipherSuites(String[] cipherSuites)
+    {
+        this._includeCipherSuites=cipherSuites;
     }
 
     /* ------------------------------------------------------------ */
@@ -655,42 +605,6 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     {
         return _handshakeTimeout;
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Simple bundle of information that is cached in the SSLSession. Stores the effective keySize
-     * and the client certificate chain.
-     */
-    private class CachedInfo
-    {
-        private final X509Certificate[] _certs;
-        private final Integer _keySize;
-        private final String _idStr;
- 
-
-        CachedInfo(Integer keySize, X509Certificate[] certs,String id)
-        {
-            this._keySize = keySize;
-            this._certs = certs;
-            this._idStr = id;
-        }
-
-        X509Certificate[] getCerts()
-        {
-            return _certs;
-        }
-
-        Integer getKeySize()
-        {
-            return _keySize;
-        }
-        
-        String getIdStr ()
-        {
-            return _idStr;
-        }
-    }
-    
 
     /* ------------------------------------------------------------ */
     public class SslConnection extends ConnectorEndPoint
