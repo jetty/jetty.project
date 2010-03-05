@@ -1,4 +1,4 @@
-jetty-7.0.2-SNAPSHOT
+jetty-7.0.2.RC0
  + JSON parses NaN as null
  + 290765 Reset input for HttpExchange retry.
  + 292799 WebAppDeployer - start a started context?
