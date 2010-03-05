@@ -131,7 +131,7 @@ public class HttpFields
             int day_of_month = gc.get(Calendar.DAY_OF_MONTH);
             int month = gc.get(Calendar.MONTH);
             int year = gc.get(Calendar.YEAR);
-            year = year % 100;
+            year = year % 10000;
 
             int epoch = (int) ((date / 1000) % (60 * 60 * 24));
             int seconds = epoch % 60;
@@ -147,8 +147,9 @@ public class HttpFields
             buf.append('-');
             buf.append(MONTHS[month]);
             buf.append('-');
-            StringUtil.append2digits(buf, year);
-
+            StringUtil.append2digits(buf, year/100);
+            StringUtil.append2digits(buf, year%100);
+            
             buf.append(' ');
             StringUtil.append2digits(buf, hours);
             buf.append(':');
@@ -183,12 +184,24 @@ public class HttpFields
 
     /* ------------------------------------------------------------ */
     /**
-     * Format "EEE, dd-MMM-yy HH:mm:ss 'GMT'" for cookies
+     * Format "EEE, dd-MMM-yyyy HH:mm:ss 'GMT'" for cookies
      */
     public static void formatCookieDate(StringBuilder buf, long date)
     {
         __dateGenerator.get().formatCookieDate(buf,date);
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Format "EEE, dd-MMM-yyyy HH:mm:ss 'GMT'" for cookies
+     */
+    public static String formatCookieDate(long date)
+    {
+        StringBuilder buf = new StringBuilder(28);
+        formatCookieDate(buf, date);
+        return buf.toString();
+    }
+    
 
 
     /* ------------------------------------------------------------ */
@@ -274,14 +287,16 @@ public class HttpFields
     
     
     
-    public final static String __01Jan1970 = formatDate(0).trim();
-    public final static Buffer __01Jan1970_BUFFER = new ByteArrayBuffer(__01Jan1970);
+    public final static String __01Jan1970=formatCookieDate(0);
+    public final static Buffer __01Jan1970_BUFFER=new ByteArrayBuffer(__01Jan1970);
 
     /* -------------------------------------------------------------- */
     protected final ArrayList<Field> _fields = new ArrayList<Field>(20);
     protected final HashMap<Buffer,Field> _bufferMap = new HashMap<Buffer,Field>(32);
     protected int _revision;
 
+   
+    
     /* ------------------------------------------------------------ */
     /**
      * Constructor.

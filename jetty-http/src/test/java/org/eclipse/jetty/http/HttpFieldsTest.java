@@ -369,7 +369,7 @@ public class HttpFieldsTest extends TestCase
 
         fields.clear();
         fields.addSetCookie("everything","value","domain","path",0,"comment",true,true,0);
-        assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01 Jan 1970 00:00:00 GMT;Secure;HttpOnly",fields.getStringField("Set-Cookie"));
+        assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Secure;HttpOnly",fields.getStringField("Set-Cookie"));
  
         fields.clear();
         fields.addSetCookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,2);
