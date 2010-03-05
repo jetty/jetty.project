@@ -167,8 +167,13 @@ public class HttpGenerator extends AbstractGenerator
             if (!_endp.isOpen())
                 throw new EofException();
             flushBuffer();
-            if (_content != null && _content.length()>0 || _bufferChunked) 
-                throw new IllegalStateException("FULL");
+            if (_content != null && _content.length()>0) 
+            {
+                Buffer nc=_buffers.getBuffer(_content.length()+content.length());
+                nc.put(_content);
+                nc.put(content);
+                _content=nc;
+            }
         }
 
         _content = content;
@@ -186,7 +191,7 @@ public class HttpGenerator extends AbstractGenerator
             // Make _content a direct buffer
             _bypass = true;
         }
-        else
+        else if (!_bufferChunked)
         {
             // Yes - so we better check we have a buffer
             if (_buffer == null) 

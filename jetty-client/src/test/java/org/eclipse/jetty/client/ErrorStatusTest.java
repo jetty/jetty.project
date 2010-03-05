@@ -92,7 +92,7 @@ public class ErrorStatusTest
     protected void doPutFail(int status)
         throws Exception
     {
-        System.err.println(getName());
+        // System.err.println(getName());
     
         startClient(getRealm());
 
@@ -115,7 +115,7 @@ public class ErrorStatusTest
     protected void doGetFail(int status)
         throws Exception
     {
-        System.err.println(getName());
+        // System.err.println(getName());
     
         startClient(getRealm());
 

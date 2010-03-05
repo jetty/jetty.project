@@ -34,7 +34,10 @@ public class SslHttpExchangeTest extends HttpExchangeTest
         _scheme="https://";
         startServer();
         _httpClient=new HttpClient();
-        // _httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        _httpClient.setIdleTimeout(2000);
+        _httpClient.setTimeout(2500);
+        _httpClient.setConnectTimeout(1000);
+        _httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
         _httpClient.setConnectorType(HttpClient.CONNECTOR_SOCKET);
         _httpClient.setMaxConnectionsPerAddress(2);
         _httpClient.start();

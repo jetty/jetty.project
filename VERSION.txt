@@ -25,6 +25,8 @@ jetty-7.0.2-SNAPSHOT
  + 304532 Skip some tests on IBM JVMs until resolved
  + 304658 Inconsistent Expires date format in Set-Cookie headers with maxAge=0
  + 304698 org.eclipse.jetty.http.HttpFields$DateGenerator.formatCookieDate() uses wrong (?) date format
+ + 304781 Reset HttpExchange timeout on slow request content.
+ + 304801 SSL connections FULL fix
  + JETTY-776 Make new session-tests module to concentrate all reusable session clustering test code
  + JETTY-910 Allow request listeners to access session
  + JETTY-983 Range handling cleanup

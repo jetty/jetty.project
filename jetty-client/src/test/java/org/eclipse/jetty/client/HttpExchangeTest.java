@@ -27,7 +27,6 @@ import junit.framework.TestCase;
 import org.eclipse.jetty.client.security.ProxyAuthorization;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EofException;
@@ -56,6 +55,9 @@ public class HttpExchangeTest extends TestCase
     {
         startServer();
         _httpClient=new HttpClient();
+        _httpClient.setIdleTimeout(2000);
+        _httpClient.setTimeout(2500);
+        _httpClient.setConnectTimeout(1000);
         _httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
         _httpClient.setMaxConnectionsPerAddress(_maxConnectionsPerAddress);
         _httpClient.start();
@@ -256,7 +258,68 @@ public class HttpExchangeTest extends TestCase
             Thread.sleep(5);
         }
     }
+    
+    public void testSlowPost() throws Exception
+    {
+        ContentExchange httpExchange=new ContentExchange()
+        {
+        };
+        //httpExchange.setURL(_scheme+"localhost:"+_port+"/");
+        httpExchange.setURL(_scheme+"localhost:"+_port);
+        httpExchange.setMethod(HttpMethods.POST);
 
+        final String data="012345678901234567890123456789012345678901234567890123456789";
+
+        InputStream content = new InputStream()
+        {
+            int _index=0;
+
+            @Override
+            public int read() throws IOException
+            {
+                if (_index>=data.length())
+                    return -1;
+
+                return data.charAt(_index++);
+            }
+
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException
+            {
+                if (_index>=data.length())
+                    return -1;
+
+                //System.err.println("sleep "+_index);
+                try
+                {
+                    Thread.sleep(250);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+                
+                int l=0;
+
+                while (l<5 && _index<data.length() && l<len)
+                    b[off+l++]=(byte)data.charAt(_index++);
+                return l;
+            }
+
+        };
+        
+        httpExchange.setRequestContentSource(content);
+        //httpExchange.setRequestContent(new ByteArrayBuffer(data));
+
+        _httpClient.send(httpExchange);
+
+        int status = httpExchange.waitForDone();
+        //httpExchange.waitForStatus(HttpExchange.STATUS_COMPLETED);
+        String result=httpExchange.getResponseContent();
+        assertEquals(HttpExchange.STATUS_COMPLETED, status);
+        assertEquals(data,result);
+    }
+    
     public void testProxy() throws Exception
     {
         if (_scheme.equals("https://"))
@@ -327,7 +390,7 @@ public class HttpExchangeTest extends TestCase
         }
         catch (EofException e)
         {
-            System.err.println(e);
+            System.err.println("HttpExchangeTest#copyStream: "+e);
         }
         catch (IOException e)
         {
