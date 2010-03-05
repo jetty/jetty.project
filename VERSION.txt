@@ -1,6 +1,7 @@
 jetty-7.0.2-SNAPSHOT
  + JSON parses NaN as null
  + 290765 Reset input for HttpExchange retry.
+ + 294799 when configuring a webapp, don't look for WEB-INF/jetty6-web.xml
  + 296569 removeLifeCycleListener() has no effect
  + 296765 JMX Connector Server and ShutdownThread
  + 297421 Hide server/system classes from WebAppClassLoader.getResources

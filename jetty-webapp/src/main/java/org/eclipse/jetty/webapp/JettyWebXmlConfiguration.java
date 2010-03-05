@@ -58,7 +58,7 @@ public class JettyWebXmlConfiguration implements Configuration
         if(web_inf!=null&&web_inf.isDirectory())
         {
             // do jetty.xml file
-            Resource jetty=web_inf.addPath("jetty6-web.xml");
+            Resource jetty=web_inf.addPath("jetty7-web.xml");
             if(!jetty.exists())
                 jetty=web_inf.addPath("jetty-web.xml");
             if(!jetty.exists())
