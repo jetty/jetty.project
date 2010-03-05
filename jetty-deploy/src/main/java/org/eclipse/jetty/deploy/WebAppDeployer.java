@@ -295,7 +295,7 @@ public class WebAppDeployer extends AbstractLifeCycle
             _deployed.add(wah);
             
             if (_contexts.isStarted())
-                _contexts.start();  // TODO Multi exception
+                wah.start();  // TODO Multi exception
         }
     }
     
