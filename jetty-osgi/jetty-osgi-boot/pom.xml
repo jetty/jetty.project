@@ -38,12 +38,10 @@
             <phase>process-resources</phase>
             <configuration>
               <tasks>
-                <replace file="target/classes/META-INF/MANIFEST.MF"
-                    token="Bundle-Version: 7.0.2.qualifier"
-                    value="Bundle-Version: ${parsedVersion.osgiVersion}"/>
+                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 7.0.2.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
                 <copy todir="target/classes/jettyhome">
                     <fileset dir="jettyhome">
-                        <exclude name="**/*.log"/>
+                        <exclude name="**/*.log" />
                     </fileset>
                 </copy>
               </tasks>
