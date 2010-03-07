@@ -779,6 +779,14 @@ public class WebappRegistrationHelper
     {
         // rfc66
         wah.setAttribute(OSGiWebappConstants.RFC66_OSGI_BUNDLE_CONTEXT,contributor.getBundleContext());
+
+        //spring-dm-1.2.1 looks for the BundleContext as a different attribute.
+        //not a spec... but if we want to support 
+        //org.springframework.osgi.web.context.support.OsgiBundleXmlWebApplicationContext
+        //then we need to do this to:
+        wah.setAttribute("org.springframework.osgi.web." + BundleContext.class.getName(),
+                        contributor.getBundleContext());
+        
     }
 
     /**
@@ -842,6 +850,12 @@ public class WebappRegistrationHelper
             // rfc-66:
             context.setAttribute(OSGiWebappConstants.RFC66_OSGI_BUNDLE_CONTEXT,bundle.getBundleContext());
 
+            //spring-dm-1.2.1 looks for the BundleContext as a different attribute.
+            //not a spec... but if we want to support 
+            //org.springframework.osgi.web.context.support.OsgiBundleXmlWebApplicationContext
+            //then we need to do this to:
+            context.setAttribute("org.springframework.osgi.web." + BundleContext.class.getName(),
+                            bundle.getBundleContext());
             return context;
         }
         catch (FileNotFoundException e)
