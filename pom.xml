@@ -8,7 +8,7 @@
   </parent>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>7.0.2-SNAPSHOT</version>
+  <version>7.0.2.RC0</version>
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
@@ -26,9 +26,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   <scm>
-    <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags/jetty-7.0.1</connection>
-    <developerConnection>scm:svn:svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags/jetty-7.0.1</developerConnection>
-    <url>http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags/jetty-7.0.1</url>
+    <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags/jetty-project-7.0.2.RC0</connection>
+    <developerConnection>scm:svn:svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags/jetty-project-7.0.2.RC0</developerConnection>
+    <url>http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags/jetty-project-7.0.2.RC0</url>
   </scm>
   <build>
     <defaultGoal>install</defaultGoal>

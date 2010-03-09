@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>7.0.2-SNAPSHOT</version>
+    <version>7.0.2.RC0</version>
   </parent>
   <artifactId>test-webapp-rfc2616</artifactId>
   <name>Jetty Tests :: WebApp :: RFC2616</name>

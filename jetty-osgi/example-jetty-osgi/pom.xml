@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>7.0.2-SNAPSHOT</version>
+    <version>7.0.2.RC0</version>
   </parent>
   <artifactId>example-jetty-osgi</artifactId>
   <name>Jetty :: OSGi :: Example</name>
