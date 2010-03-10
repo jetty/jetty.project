@@ -6,14 +6,14 @@ Bundle-SymbolicName: org.eclipse.jetty.osgi.boot.jsp;singleton:=true
 Bundle-Version: 7.0.2.qualifier
 Bundle-Vendor: Mort Bay Consulting
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
-Require-Bundle: org.mortbay.jetty.jsp-2.1-glassfish,
- org.mortbay.jetty.jsp-api-2.1-glassfish
-Import-Package: javax.el;version="2.1",
- javax.servlet.jsp;version="2.1",
- javax.servlet.jsp.el;version="2.1",
- javax.servlet.jsp.jstl.core;version="2.1",
- javax.servlet.jsp.jstl.fmt;version="2.1",
- javax.servlet.jsp.jstl.sql;version="2.1",
- javax.servlet.jsp.jstl.tlv;version="2.1",
+Require-Bundle: org.mortbay.jetty.jsp-2.1-glassfish
+Import-Package: javax.el;version="1.0.0";resolution:=optional,
+ javax.servlet.jsp;version="2.1.0",
+ javax.servlet.jsp.el;version="2.1.0",
+ javax.servlet.jsp.jstl.core;version="1.2.0";resolution:=optional,
+ javax.servlet.jsp.jstl.fmt;version="1.2.0";resolution:=optional,
+ javax.servlet.jsp.jstl.sql;version="1.2.0";resolution:=optional,
+ javax.servlet.jsp.jstl.tlv;version="1.2.0";resolution:=optional,
  javax.servlet.jsp.resources;version="2.1",
- javax.servlet.jsp.tagext;version="2.1"
+ javax.servlet.jsp.tagext;version="2.1",
+ javax.servlet.resources;version="2.5.0"
