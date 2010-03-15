@@ -783,7 +783,7 @@ public class HttpExchange
             { 
                 _requestContent.reset();
             }
-         }
+        }
     }
 
     /**
