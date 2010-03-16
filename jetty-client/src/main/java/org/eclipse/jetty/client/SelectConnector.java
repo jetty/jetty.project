@@ -162,6 +162,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         SocketChannel channel = SocketChannel.open();
         Address address = destination.isProxied() ? destination.getProxy() : destination.getAddress();
         channel.configureBlocking( false );
+        channel.socket().setTcpNoDelay(true);
         channel.connect(address.toSocketAddress());
         _selectorManager.register( channel, destination );
         ConnectTimeout connectTimeout = new ConnectTimeout(channel, destination);
@@ -211,7 +212,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         protected void endPointClosed(SelectChannelEndPoint endpoint)
         {
         }
-        
+
         @Override
         protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
         {

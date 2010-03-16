@@ -47,6 +47,7 @@ jetty-7.0.2.RC0
  + Added IPAccessHandler
  + Updated Servlet3Continuation to final 3.0.20100224
  + 305997 Coalesce buffers in ChannelEndPoint.flush()
+ + 306028 Enable TCP_NODELAY by default in client connectors
 
 jetty-7.0.1.v20091125 25 November 2009
  + 274251 DefaultServlet supports exact match mode.
