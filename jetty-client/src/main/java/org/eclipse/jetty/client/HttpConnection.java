@@ -33,6 +33,7 @@ import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -430,7 +431,7 @@ public class HttpConnection implements Connection
             {
                 requestHeaders.putLongField(HttpHeaders.CONTENT_LENGTH, requestContent.length());
                 _generator.completeHeader(requestHeaders,false);
-                _generator.addContent(requestContent,true);
+                _generator.addContent(new View(requestContent),true);
             }
             else
             {

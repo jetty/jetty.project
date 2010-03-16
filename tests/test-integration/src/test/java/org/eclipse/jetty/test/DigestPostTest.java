@@ -10,6 +10,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import junit.framework.TestCase;
+
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.security.Realm;
@@ -20,7 +22,6 @@ import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.server.Connector;
@@ -33,8 +34,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-
-import junit.framework.TestCase;
 
 
 public class DigestPostTest extends TestCase
@@ -55,6 +54,7 @@ public class DigestPostTest extends TestCase
     public volatile static String _received = null;
     private Server _server;
 
+    @Override
     public void setUp()
     {
         try
@@ -100,6 +100,7 @@ public class DigestPostTest extends TestCase
     /* (non-Javadoc)
      * @see junit.framework.TestCase#tearDown()
      */
+    @Override
     protected void tearDown() throws Exception
     {
         _server.stop();
