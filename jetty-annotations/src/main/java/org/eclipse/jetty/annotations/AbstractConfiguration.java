@@ -209,8 +209,12 @@ public abstract class AbstractConfiguration implements Configuration
             return false;
         
         //no ordering, jar cannot be excluded
-        if (orderedJars == null || orderedJars.isEmpty())
+        if (orderedJars == null)
             return false;
+        
+        //ordering that excludes all jars
+        if (orderedJars.isEmpty())
+            return true;
         
         //ordering applied, check jar is in it
         String fullname = jar.getName();

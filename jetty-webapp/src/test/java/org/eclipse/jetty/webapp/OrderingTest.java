@@ -86,8 +86,7 @@ public class OrderingTest extends TestCase
         String result = "";
         for (Fragment f:orderedList)
             result+=(f._name);
-        
-        System.err.println("Result: "+result);
+
         if (!checkResult(result, outcomes))
             fail("No outcome matched "+result);
     }
@@ -396,6 +395,58 @@ public class OrderingTest extends TestCase
     throws Exception
     {
         // A,B,C
+        WebAppContext wac = new WebAppContext();
+        WebXmlProcessor processor = new WebXmlProcessor(wac);
+        processor._ordering = processor.new AbsoluteOrdering();
+        ((AbsoluteOrdering)processor._ordering).add("A");
+        ((AbsoluteOrdering)processor._ordering).add("B");
+        ((AbsoluteOrdering)processor._ordering).add("C");
+        
+        Fragment f1 = new Fragment((Resource)null, processor);
+        f1._name = "A";
+        processor._webFragmentNameMap.put(f1._name, f1);
+        
+        Fragment f2 = new Fragment((Resource)null, processor);
+        f2._name="B";
+        processor._webFragmentNameMap.put(f2._name, f2);
+        
+        Fragment f3 = new Fragment((Resource)null, processor);
+        f3._name="C";
+        processor._webFragmentNameMap.put(f3._name, f3);
+        
+        Fragment f4 = new Fragment((Resource)null, processor);
+        f4._name="D"; 
+        processor._webFragmentNameMap.put(f4._name, f4);
+        
+        Fragment f5 = new Fragment((Resource)null, processor);
+        f5._name="E";
+        processor._webFragmentNameMap.put(f5._name, f5);
+        
+        Fragment f6 = new Fragment((Resource)null, processor);
+        f6._name=Fragment.NAMELESS+"1";
+        processor._webFragmentNameMap.put(f6._name, f6);
+        
+        List<Fragment> list = processor._ordering.order();
+        String[] outcomes = {"ABC"};
+        String result = "";
+        for (Fragment f:list)
+            result += f._name;
+        
+        if (!checkResult(result, outcomes))
+            fail("No outcome matched "+result);
+    }
+    
+    public void testAbsoluteOrdering3 ()
+    throws Exception
+    {
+        //empty <absolute-ordering>
+        
+        WebAppContext wac = new WebAppContext();
+        WebXmlProcessor processor = new WebXmlProcessor(wac);
+        processor._ordering = processor.new AbsoluteOrdering();
+        
+        List<Fragment> list = processor._ordering.order();
+        assertTrue(list.isEmpty());
     }
     
     public boolean checkResult (String result, String[] outcomes)

@@ -46,8 +46,8 @@ public class TestAnnotationConfiguration extends TestCase
         Resource r = Resource.newResource("file:///home/janb/file.jar");
         List<String> orderedJars = new ArrayList<String>();
         
-        //no ordering, nothing is excluded
-        assertFalse(config.isExcluded(r, orderedJars));
+        //empty ordering excludes all jars
+        assertTrue(config.isExcluded(r, orderedJars));
         
         //an ordering with name included
         orderedJars.add("file.jar");

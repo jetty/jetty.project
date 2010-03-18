@@ -187,7 +187,9 @@ public class WebXmlProcessor
             }
             
             //3. if <other> was specified, insert the leftovers
-            orderedList.addAll(index, others.values());
+            if (_hasOther)
+                orderedList.addAll((index < 0? 0: index), others.values());
+            
             return orderedList;
         }
         
@@ -574,36 +576,37 @@ public class WebXmlProcessor
         _webFragmentRoots.add(frag);
         if (frag.getName() != null)
             _webFragmentNameMap.put(frag.getName(), frag);
+
+        //If web.xml has specified an absolute ordering, ignore any relative ordering in the fragment
+        if (_ordering != null && _ordering.isAbsolute())
+            return;
         
         if (frag.isOrdered())
         {
-            if (frag.isOrdered())
-            {
-                if (_ordering == null)
-                    _ordering = new RelativeOrdering();
+            if (_ordering == null)
+                _ordering = new RelativeOrdering();
 
-                switch (frag.getOtherType())
+            switch (frag.getOtherType())
+            {
+                case None:
                 {
-                    case None:
-                    {
-                        ((RelativeOrdering)_ordering).addNoOthers(frag);
-                        break;
-                    }
-                    case Before:
-                    { 
-                        ((RelativeOrdering)_ordering).addBeforeOthers(frag);
-                        break;
-                    }
-                    case After:
-                    {
-                        ((RelativeOrdering)_ordering).addAfterOthers(frag);
-                        break;
-                    }
-                } 
-            }
+                    ((RelativeOrdering)_ordering).addNoOthers(frag);
+                    break;
+                }
+                case Before:
+                { 
+                    ((RelativeOrdering)_ordering).addBeforeOthers(frag);
+                    break;
+                }
+                case After:
+                {
+                    ((RelativeOrdering)_ordering).addAfterOthers(frag);
+                    break;
+                }
+            } 
         }
     }
-    
+
 
     
     public void orderFragments ()
