@@ -28,7 +28,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *
  * Apply the ServletContainerInitializers. 
  */
-public class ContainerInitializerConfiguration extends AbstractConfiguration
+public class ContainerInitializerConfiguration 
 {
     public static final String CONTAINER_INITIALIZERS = "org.eclipse.jetty.containerInitializers";
 

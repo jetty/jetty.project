@@ -17,6 +17,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.servlet.ServletContext;
+
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
@@ -81,28 +83,27 @@ public abstract class AbstractConfiguration implements Configuration
         
         List<Fragment> frags = webXmlProcessor.getFragments();
         
-        //Get the web-inf lib jars who have a web-fragment.xml that is not metadata-complete (or is not set)
+        // + get all WEB-INF/lib jars
+        // + those that are not in ORDERED_LIBS are ignored (they are excluded by ordering)
+        // + those that have web-fragment.xml and metadata-complete are ignored
+        
         ArrayList<URI> webInfUris = new ArrayList<URI>();
         List<Resource> jarResources = (List<Resource>)context.getAttribute(WEB_INF_JAR_RESOURCES);
-        
+        List<String> orderedJars = (List<String>)context.getAttribute(ServletContext.ORDERED_LIBS);
         for (Resource r : jarResources)
         {          
             URI uri  = r.getURI();
-            Descriptor d = null;
-            for (Descriptor frag: frags)
-            {
-                Resource fragResource = frag.getResource(); //eg jar:file:///a/b/c/foo.jar!/META-INF/web-fragment.xml
-                if (Resource.isContainedIn(fragResource,r))
-                {
-                    d = frag;
-                    break;
-                }
-            }
-
-            //if there was no web-fragment.xml for the jar, or there was one 
-            //and its metadata is NOT complete, we want to exame it for annotations
-            if (d == null || (d != null && d.getMetaDataComplete() != MetaDataComplete.True))
+            Fragment f = getFragmentFromJar(r, frags);
+           
+            //check if the jar has a web-fragment.xml
+            if (f == null) //no web-fragment.xml, so scan it 
                 webInfUris.add(uri);
+            else
+            {
+                //check if web-fragment is metadata-complete and if it has been excluded from ordering
+                if (!isMetaDataComplete(f) && !isExcluded(r, orderedJars))
+                    webInfUris.add(uri);
+            }
         }
  
        parser.parse(webInfUris.toArray(new URI[webInfUris.size()]), 
@@ -177,5 +178,48 @@ public abstract class AbstractConfiguration implements Configuration
             }, true);
         }
         
+    }
+    
+    public Fragment getFragmentFromJar (Resource jar,  List<Fragment> frags)
+    throws Exception
+    {
+        //check if the jar has a web-fragment.xml
+        Fragment d = null;
+        for (Fragment frag: frags)
+        {
+            Resource fragResource = frag.getResource(); //eg jar:file:///a/b/c/foo.jar!/META-INF/web-fragment.xml
+            if (Resource.isContainedIn(fragResource,jar))
+            {
+                d = frag;
+                break;
+            }
+        }
+        return d;
+    }
+    
+    
+    public boolean isMetaDataComplete (Descriptor d)
+    {
+        return (d!=null && d.getMetaDataComplete() == MetaDataComplete.True);
+    }
+    
+    public boolean isExcluded (Resource jar, List<String> orderedJars)
+    {       
+        if (jar == null)
+            return false;
+        
+        //no ordering, jar cannot be excluded
+        if (orderedJars == null || orderedJars.isEmpty())
+            return false;
+        
+        //ordering applied, check jar is in it
+        String fullname = jar.getName();
+        int i = fullname.indexOf(".jar");          
+        int j = fullname.lastIndexOf("/", i);
+        String name = fullname.substring(j+1,i+4);
+        if (orderedJars.contains(name))
+            return false;
+  
+        return true;
     }
 }

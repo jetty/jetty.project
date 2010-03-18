@@ -18,11 +18,12 @@ import org.eclipse.jetty.annotations.ResourcesAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class TestResourceAnnotations extends TestCase
 {
-    
+ 
     public void testResourceAnnotations ()
     throws Exception
     {
