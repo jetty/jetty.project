@@ -1061,7 +1061,15 @@ public class ServletHandler extends ScopedHandler
             _servletPathMap=pm;
         }
         
-        
+        // flush filter chain cache
+        if (_chainCache!=null)
+        {
+            for (int i=_chainCache.length;i-->0;)
+            {
+                if (_chainCache[i]!=null)
+                    _chainCache[i].clear();
+            }
+        }
 
         if (Log.isDebugEnabled()) 
         {
