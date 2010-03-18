@@ -171,39 +171,30 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             _sessionIdManager.start();
 
         // Look for a session cookie name
-        String tmp=_context.getInitParameter(SessionManager.__SessionCookieProperty);
-        if (tmp!=null)
-            _sessionCookie=tmp;
-
-        tmp=_context.getInitParameter(SessionManager.__SessionIdPathParameterNameProperty);
-        if (tmp!=null)
+        if (_context!=null)
         {
-            setSessionIdPathParameterName(tmp);
-        }
+            String tmp=_context.getInitParameter(SessionManager.__SessionCookieProperty);
+            if (tmp!=null)
+                _sessionCookie=tmp;
 
-        // set up the max session cookie age if it isn't already
-        if (_maxCookieAge==-1)
-        {
-            if (_context!=null)
+            tmp=_context.getInitParameter(SessionManager.__SessionIdPathParameterNameProperty);
+            if (tmp!=null)
+                setSessionIdPathParameterName(tmp);
+
+            // set up the max session cookie age if it isn't already
+            if (_maxCookieAge==-1)
             {
-                String str=_context.getInitParameter(SessionManager.__MaxAgeProperty);
-                if (str!=null)
-                    _maxCookieAge=Integer.parseInt(str.trim());
+                tmp=_context.getInitParameter(SessionManager.__MaxAgeProperty);
+                if (tmp!=null)
+                    _maxCookieAge=Integer.parseInt(tmp.trim());
             }
-        }
-        // set up the session domain if it isn't already
-        if (_sessionDomain==null)
-        {
-            // only try the context initParams
-            if (_context!=null)
-                _sessionDomain=_context.getInitParameter(SessionManager.__SessionDomainProperty);
-        }
 
-        // set up the sessionPath if it isn't already
-        if (_sessionPath==null)
-        {
-            // only the context initParams
-            if (_context!=null)
+            // set up the session domain if it isn't already
+            if (_sessionDomain==null)
+                _sessionDomain=_context.getInitParameter(SessionManager.__SessionDomainProperty);
+
+            // set up the sessionPath if it isn't already
+            if (_sessionPath==null)
                 _sessionPath=_context.getInitParameter(SessionManager.__SessionPathProperty);
         }
 

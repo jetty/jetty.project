@@ -182,10 +182,7 @@ public class SessionHandler extends ScopedHandler
             }
 
             // start manual inline of nextScope(target,baseRequest,request,response);
-            //noinspection ConstantIfStatement
-            if (false)
-                nextScope(target,baseRequest,request,response);
-            else if (_nextScope!=null)
+            if (_nextScope!=null)
                 _nextScope.doScope(target,baseRequest,request, response);
             else if (_outerScope!=null)
                 _outerScope.doHandle(target,baseRequest,request, response);
@@ -203,12 +200,16 @@ public class SessionHandler extends ScopedHandler
                 //leaving context, free up the session
                 if (session!=null)
                     _sessionManager.complete(session);
-                baseRequest.setSessionManager(old_session_manager);
-                baseRequest.setSession(old_session);
+                
+                // Leave last session in place
+                if (old_session_manager!=null )
+                {
+                    baseRequest.setSessionManager(old_session_manager);
+                    baseRequest.setSession(old_session);
+                }
             }
         }
     }
-    
 
     /* ------------------------------------------------------------ */
     /*

@@ -25,6 +25,7 @@ import junit.framework.TestCase;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.session.SessionHandler;
 
 public class AsyncContextTest extends TestCase
 {
@@ -37,7 +38,11 @@ public class AsyncContextTest extends TestCase
     {
         _connector = new LocalConnector();
         _server.setConnectors(new Connector[]{ _connector });
-        _server.setHandler(_handler);
+        
+        SessionHandler session = new SessionHandler();
+        session.setHandler(_handler);
+        
+        _server.setHandler(session);
         _server.start();
     }
 
@@ -245,7 +250,8 @@ public class AsyncContextTest extends TestCase
                             try
                             {
                                 Thread.sleep(_resumeAfter);
-                                asyncContext.dispatch();
+                                if(((HttpServletRequest)asyncContext.getRequest()).getSession(true).getId()!=null)
+                                    asyncContext.dispatch();
                             }
                             catch(Exception e)
                             {
