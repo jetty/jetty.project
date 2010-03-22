@@ -45,7 +45,9 @@ jetty-7.0.2.RC0
  + JETTY-1179 Persistant session tables created on MySQL use wrong datatype
  + JETTY-1184 shrink thread pool even with frequent small jobs
  + JETTY-1133 Handle multiple URL ; parameters
+ + JETTY-1174 Close rather than finish Gzipstreams to avoid JVM leak
  + JETTY-1192 Fixed Digested POST
+ + JETTY-1199 FindBugs cleanups
  + COMETD-46 reset ContentExchange response content on resend
  + Added IPAccessHandler
  + Updated Servlet3Continuation to final 3.0.20100224
