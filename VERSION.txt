@@ -1,5 +1,6 @@
 jetty-7.0.2.SNAPSHOT
  + 306783 - NPE in StdErrLog when Throwable is null
+ + 306840 - Suppress content-length in requests with no content
 
 jetty-7.0.2.RC0
  + JSON parses NaN as null
