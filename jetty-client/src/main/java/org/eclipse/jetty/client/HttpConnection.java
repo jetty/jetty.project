@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.ssl.SslSelectChannelEndPoint;
 import org.eclipse.jetty.io.Buffer;
@@ -49,6 +50,7 @@ public class HttpConnection implements Connection
     private HttpGenerator _generator;
     private HttpParser _parser;
     private boolean _http11 = true;
+    private int _status;
     private Buffer _connectionHeader;
     private Buffer _requestContentChunk;
     private boolean _requestComplete;
@@ -332,6 +334,22 @@ public class HttpConnection implements Connection
                             {
                                 _exchange.disassociate();
                                 _exchange = null;
+                                
+                                if (_status==HttpStatus.SWITCHING_PROTOCOLS_101)
+                                {
+                                    HttpConnection switched=_exchange.onSwitchProtocol(_endp);
+                                    if (switched!=null)
+                                    {    
+                                        // switched protocol!
+                                        HttpExchange exchange = _pipeline;
+                                        _pipeline = null;
+                                        if (exchange!=null)
+                                            _destination.send(exchange);
+
+                                        return switched;
+                                    }
+                                }
+
 
                                 if (_pipeline == null)
                                 {
@@ -356,6 +374,7 @@ public class HttpConnection implements Connection
                                         send(exchange);
                                     }
                                 }
+
                             }
                         }
                     }
@@ -398,6 +417,7 @@ public class HttpConnection implements Connection
     {
         synchronized (this)
         {
+            _status=0;
             if (_exchange.getStatus() != HttpExchange.STATUS_WAITING_FOR_COMMIT)
                 throw new IllegalStateException();
 
@@ -500,6 +520,7 @@ public class HttpConnection implements Connection
             if (exchange!=null)
             {
                 _http11 = HttpVersions.HTTP_1_1_BUFFER.equals(version);
+                _status=status;
                 exchange.getEventListener().onResponseStatus(version,status,reason);
                 exchange.setStatus(HttpExchange.STATUS_PARSING_HEADERS);
             }
