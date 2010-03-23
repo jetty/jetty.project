@@ -544,33 +544,38 @@ public class AsyncContinuation implements AsyncContext, Continuation
     protected void scheduleTimeout()
     {
         EndPoint endp=_connection.getEndPoint();
-        if (endp.isBlocking())
+        if (_timeoutMs>0)
         {
-            synchronized(this)
+            if (endp.isBlocking())
             {
-                _expireAt = System.currentTimeMillis()+_timeoutMs;
-                long wait=_timeoutMs;
-                while (_expireAt>0 && wait>0)
+                synchronized(this)
                 {
-                    try
+                    _expireAt = System.currentTimeMillis()+_timeoutMs;
+                    long wait=_timeoutMs;
+                    while (_expireAt>0 && wait>0)
                     {
-                        this.wait(wait);
+                        try
+                        {
+                            this.wait(wait);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            Log.ignore(e);
+                        }
+                        wait=_expireAt-System.currentTimeMillis();
                     }
-                    catch (InterruptedException e)
-                    {
-                        Log.ignore(e);
-                    }
-                    wait=_expireAt-System.currentTimeMillis();
-                }
 
-                if (_expireAt>0 && wait<=0)
-                {
-                    expired();
-                }
-            }            
+                    if (_expireAt>0 && wait<=0)
+                    {
+                        expired();
+                    }
+                }            
+            }
+            else
+            {
+                _connection.scheduleTimeout(_event,_timeoutMs);
+            }
         }
-        else
-            _connection.scheduleTimeout(_event,_timeoutMs);
     }
 
     /* ------------------------------------------------------------ */

@@ -147,7 +147,8 @@ public interface Continuation
      * 
      * @param timeoutMs
      *            The time in milliseconds to wait before expiring this
-     *            continuation after a call to {@link #suspend()} or {@link #suspend(ServletResponse)}
+     *            continuation after a call to {@link #suspend()} or {@link #suspend(ServletResponse)}.
+     *            A timeout of <=0 means the continuation will never expire.
      */
     void setTimeout(long timeoutMs);
 
