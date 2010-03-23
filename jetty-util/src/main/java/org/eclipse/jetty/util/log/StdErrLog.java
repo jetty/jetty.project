@@ -226,18 +226,18 @@ public class StdErrLog implements Logger
     
     private void format(String msg, Object arg0, Object arg1)
     {
-        int i0=msg.indexOf("{}");
+        int i0=msg==null?-1:msg.indexOf("{}");
         int i1=i0<0?-1:msg.indexOf("{}",i0+2);
         
         if (i0>=0)
         {
             format(msg.substring(0,i0));
-            format(String.valueOf(arg0));
+            format(String.valueOf(arg0==null?"null":arg0));
             
             if (i1>=0)
             {
                 format(msg.substring(i0+2,i1));
-                format(String.valueOf(arg1));
+                format(String.valueOf(arg1==null?"null":arg1));
                 format(msg.substring(i1+2));
             }
             else
@@ -268,32 +268,40 @@ public class StdErrLog implements Logger
     
     private void format(String msg)
     {
-        for (int i=0;i<msg.length();i++)
-        {
-            char c=msg.charAt(i);
-            if (Character.isISOControl(c))
+        if (msg == null)
+            _buffer.append("null");
+        else
+            for (int i=0;i<msg.length();i++)
             {
-                if (c=='\n')
-                    _buffer.append('|');
-                else if (c=='\r')
-                    _buffer.append('<');
+                char c=msg.charAt(i);
+                if (Character.isISOControl(c))
+                {
+                    if (c=='\n')
+                        _buffer.append('|');
+                    else if (c=='\r')
+                        _buffer.append('<');
+                    else
+                        _buffer.append('?');
+                }
                 else
-                    _buffer.append('?');
+                    _buffer.append(c);
             }
-            else
-                _buffer.append(c);
-        }
     }
     
     private void format(Throwable th)
     {
-        _buffer.append(LN);
-        format(th.toString());
-        StackTraceElement[] elements = th.getStackTrace();
-        for (int i=0;elements!=null && i<elements.length;i++)
+        if (th == null)
+            _buffer.append("null");
+        else
         {
-            _buffer.append(LN).append("\tat ");
-            format(elements[i].toString());
+            _buffer.append('\n');
+            format(th.toString());
+            StackTraceElement[] elements = th.getStackTrace();
+            for (int i=0;elements!=null && i<elements.length;i++)
+            {
+                _buffer.append("\n\tat ");
+                format(elements[i].toString());
+            }
         }
     }
     

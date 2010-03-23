@@ -1,3 +1,6 @@
+jetty-7.0.2.SNAPSHOT
+ + 306783 - NPE in StdErrLog when Throwable is null
+
 jetty-7.0.2.RC0
  + JSON parses NaN as null
  + 290765 Reset input for HttpExchange retry.
