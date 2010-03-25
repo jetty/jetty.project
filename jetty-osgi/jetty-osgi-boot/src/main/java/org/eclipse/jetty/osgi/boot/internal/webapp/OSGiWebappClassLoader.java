@@ -124,7 +124,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader
         while (e!=null && e.hasMoreElements())
             list.add(e.nextElement());
         while (e2!=null && e2.hasMoreElements())
-            list.add(e.nextElement());
+            list.add(e2.nextElement());
         return list;
     }
 
