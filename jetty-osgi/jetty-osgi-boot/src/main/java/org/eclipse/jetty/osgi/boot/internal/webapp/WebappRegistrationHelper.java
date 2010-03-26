@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
@@ -252,19 +251,18 @@ public class WebappRegistrationHelper
             // makes sure there is access to all the jetty's bundles
 
             File jettyHomeF = new File(jettyHome);
+            URLClassLoader libExtClassLoader = null;
             try
             {
-                URLClassLoader libExtClassLoader = LibExtClassLoaderHelper.createLibEtcClassLoaderHelper(jettyHomeF,_server,JettyBootstrapActivator.class
-                        .getClassLoader());
-                URL[] jarsWithTlds = getJarsWithTlds();
-                _commonParentClassLoaderForWebapps = jarsWithTlds == null?libExtClassLoader:new TldLocatableURLClassloader(libExtClassLoader,getJarsWithTlds());
+            	libExtClassLoader = LibExtClassLoaderHelper.createLibEtcClassLoaderHelper(jettyHomeF,_server,
+            			JettyBootstrapActivator.class.getClassLoader());
             }
             catch (MalformedURLException e)
             {
                 e.printStackTrace();
             }
 
-            Thread.currentThread().setContextClassLoader(_commonParentClassLoaderForWebapps);
+            Thread.currentThread().setContextClassLoader(libExtClassLoader);
 
             String jettyetc = System.getProperty(OSGiWebappConstants.SYS_PROP_JETTY_ETC_FILES,"etc/jetty.xml");
             StringTokenizer tokenizer = new StringTokenizer(jettyetc,";,");
@@ -296,8 +294,7 @@ public class WebappRegistrationHelper
                         HandlerCollection handlers = new HandlerCollection();
                         ContextHandlerCollection contexts = new ContextHandlerCollection();
                         RequestLogHandler requestLogHandler = new RequestLogHandler();
-                        handlers.setHandlers(new Handler[]
-                        { contexts, new DefaultHandler(), requestLogHandler });
+                        handlers.setHandlers(new Handler[] { contexts, new DefaultHandler(), requestLogHandler });
                         _server.setHandler(handlers);
                     }
                 }
@@ -322,6 +319,18 @@ public class WebappRegistrationHelper
 
             init();
 
+            //now that we have an app provider we can call the registration customizer.
+            try
+            {
+                URL[] jarsWithTlds = getJarsWithTlds();
+                _commonParentClassLoaderForWebapps = jarsWithTlds == null?libExtClassLoader:new TldLocatableURLClassloader(libExtClassLoader,getJarsWithTlds());
+            }
+            catch (MalformedURLException e)
+            {
+                e.printStackTrace();
+            }
+
+            
             _server.start();
         }
         catch (Throwable t)
@@ -756,7 +765,7 @@ public class WebappRegistrationHelper
         ArrayList<URL> res = new ArrayList<URL>();
         for (WebappRegistrationCustomizer regCustomizer : JSP_REGISTRATION_HELPERS)
         {
-            URL[] urls = regCustomizer.getJarsWithTlds(BUNDLE_FILE_LOCATOR_HELPER);
+            URL[] urls = regCustomizer.getJarsWithTlds(_provider, BUNDLE_FILE_LOCATOR_HELPER);
             for (URL url : urls)
             {
                 if (!res.contains(url))

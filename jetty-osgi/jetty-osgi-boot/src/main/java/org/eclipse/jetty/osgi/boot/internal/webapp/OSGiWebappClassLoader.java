@@ -64,7 +64,6 @@ public class OSGiWebappClassLoader extends WebAppClassLoader
     static
     {
         addClassThatIdentifiesAJarThatMustBeRejected(HttpServlet.class);
-        // addClassThatIdentifiesAJarThatMustBeRejected(HttpServlet.class);
     }
 
     private ClassLoader _osgiBundleClassLoader;

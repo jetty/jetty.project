@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
 import org.osgi.framework.Bundle;
@@ -30,22 +31,46 @@ import org.osgi.framework.FrameworkUtil;
  * Plug bundles that contains tld files so that jasper will discover them
  * and set them up in jetty.
  * 
- * For example: -Djetty.osgi.tldbundles=org.springframework.web.servlet,com.opensymphony.module.sitemesh
+ * For example: -Dorg.eclipse.jetty.osgi.tldbundles=org.springframework.web.servlet,com.opensymphony.module.sitemesh
+ * Otherwise use an attribute to the WebAppDeployer
+ * &lt;New class="org.eclipse.jetty.deploy.providers.WebAppProvider"&gt;
+ * ....
+ *   &lt;Set name="tldBundles"&gt;&ltProperty name="org.eclipse.jetty.osgi.tldsbundles" default="" /&gt;&lt;/Set&gt;
+ * &lt;New&gt;
  */
 public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistrationCustomizer
 {
-	
-	public static final String SYS_PROP_TLD_BUNDLES = "jetty.osgi.tldbundles";
+	/**
+	 * To plug into jasper bundles that contain tld files
+	 * please use a list of bundle's symbolic names:
+	 *  -Djetty.osgi.tldbundles=org.springframework.web.servlet,com.opensymphony.module.sitemesh
+	 */
+	public static final String SYS_PROP_TLD_BUNDLES = "org.eclipse.jetty.osgi.tldbundles";
     
-	private static Collection<String> getTldBundles()
+	/**
+	 * Union of the tld bundles defined system wide and the one defines as an attribute of the AppProvider.
+	 * @param provider
+	 * @return
+	 */
+	private static Collection<String> getTldBundles(OSGiAppProvider provider)
 	{
 		String sysprop = System.getProperty(SYS_PROP_TLD_BUNDLES);
-		if (sysprop == null)
+		String att = (String)provider.getTldBundles();
+		if (sysprop == null && att == null)
 		{
 			return Collections.emptySet();
 		}
+		if (att == null)
+		{
+			att = sysprop;
+		}
+		else if (sysprop != null)
+		{
+			att = att + "," + sysprop;
+		}
+			
 		Collection<String> tldbundles = new HashSet<String>();
-		StringTokenizer tokenizer = new StringTokenizer(sysprop, ", \n\r\t", false);
+		StringTokenizer tokenizer = new StringTokenizer(att, ", \n\r\t", false);
 		while (tokenizer.hasMoreTokens())
 		{
 			tldbundles.add(tokenizer.nextToken());
@@ -57,7 +82,7 @@ public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistra
 	 * @return The location of the jars that contain tld files.
 	 * Jasper will discover them.
 	 */
-    public URL[] getJarsWithTlds(BundleFileLocatorHelper locatorHelper) throws Exception
+    public URL[] getJarsWithTlds(OSGiAppProvider provider, BundleFileLocatorHelper locatorHelper) throws Exception
     {
     	List<URL> urls = new ArrayList<URL>();
     	//naive way of finding those bundles.
@@ -68,7 +93,7 @@ public class PluggableWebAppRegistrationCustomizerImpl implements WebappRegistra
     	//and mirroring those in the MANIFEST.MF
     	
     	Bundle[] bundles = FrameworkUtil.getBundle(PluggableWebAppRegistrationCustomizerImpl.class).getBundleContext().getBundles();
-    	Collection<String> tldbundles = getTldBundles();
+    	Collection<String> tldbundles = getTldBundles(provider);
     	for (Bundle bundle : bundles)
     	{
     		if (tldbundles.contains(bundle.getSymbolicName()))
