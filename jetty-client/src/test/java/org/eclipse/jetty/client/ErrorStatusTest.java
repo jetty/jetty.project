@@ -89,11 +89,39 @@ public class ErrorStatusTest
         doGetFail(HttpStatus.INTERNAL_SERVER_ERROR_500);    
     }
     
+    public void testPostBadRequest() 
+        throws Exception
+    {
+        doPostFail(HttpStatus.BAD_REQUEST_400);
+    }
+
+    public void testPostUnauthorized()
+        throws Exception
+    {
+        doPostFail(HttpStatus.UNAUTHORIZED_401);
+    }
+
+    public void testPostForbidden()
+        throws Exception
+    {
+        doPostFail(HttpStatus.FORBIDDEN_403);
+    }
+
+    public void testPostNotFound()
+        throws Exception
+    {
+        doPostFail(HttpStatus.NOT_FOUND_404);
+    }
+
+    public void testPostServerError()
+        throws Exception
+    {
+        doPostFail(HttpStatus.INTERNAL_SERVER_ERROR_500);
+    }
+
     protected void doPutFail(int status)
         throws Exception
     {
-        // System.err.println(getName());
-    
         startClient(getRealm());
 
         ContentExchange putExchange = new ContentExchange();
@@ -115,8 +143,6 @@ public class ErrorStatusTest
     protected void doGetFail(int status)
         throws Exception
     {
-        // System.err.println(getName());
-    
         startClient(getRealm());
 
         ContentExchange getExchange = new ContentExchange();
@@ -138,6 +164,27 @@ public class ErrorStatusTest
         assertEquals(status, responseStatus);
     }
     
+    protected void doPostFail(int status)
+        throws Exception
+    {
+        startClient(getRealm());
+    
+        ContentExchange postExchange = new ContentExchange();
+        postExchange.setURL(getBaseUrl() + "test");
+        postExchange.setMethod(HttpMethods.POST);
+        postExchange.setRequestHeader("X-Response-Status",Integer.toString(status));
+        postExchange.setRequestContent(new ByteArrayBuffer(getContent().getBytes()));
+        
+        getClient().send(postExchange);
+        int state = postExchange.waitForDone();
+                
+        int responseStatus = postExchange.getResponseStatus();
+        
+        stopClient();
+    
+        assertEquals(status, responseStatus);            
+    }
+
     protected void configureServer(Server server)
         throws Exception
     {
@@ -154,10 +201,10 @@ public class ErrorStatusTest
         root.addServlet( servletHolder, "/*" );    
 
         Handler status = new StatusHandler();
-        Handler puthdl = new PutHandler(getBasePath());
+        Handler test = new TestHandler(getBasePath());
         
         HandlerCollection handlers = new HandlerCollection();
-        handlers.setHandlers(new Handler[]{status, puthdl, root});
+        handlers.setHandlers(new Handler[]{status, test, root});
         server.setHandler( handlers ); 
     }
     

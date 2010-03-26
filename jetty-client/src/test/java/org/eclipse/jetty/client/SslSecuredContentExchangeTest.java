@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,18 +27,18 @@ import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
-public class SecuredContentExchangeTest
-    extends ContentExchangeTest
+public class SslSecuredContentExchangeTest
+extends ContentExchangeTest
 { 
     protected void configureServer(Server server)
         throws Exception
     {
-        setProtocol("http");
+        setProtocol("https");
         setRealm(new Realm()
                  {
                      public String getId()
@@ -56,9 +57,13 @@ public class SecuredContentExchangeTest
                      }
                  });
                         
-        SelectChannelConnector connector = new SelectChannelConnector();
+        SslSelectChannelConnector connector = new SslSelectChannelConnector();
+        String keystore = new File("src/test/resources/keystore").getAbsolutePath();   
+        connector.setKeystore(keystore);
+        connector.setPassword("storepwd");
+        connector.setKeyPassword("keypwd");
         server.addConnector(connector);
-        
+
         LoginService loginService = new HashLoginService("MyRealm","src/test/resources/realm.properties");
         server.addBean(loginService); 
 

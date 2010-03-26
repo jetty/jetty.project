@@ -16,7 +16,9 @@ package org.eclipse.jetty.client;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.eclipse.jetty.client.ContentExchangeTest.TestHandler;
 import org.eclipse.jetty.client.security.Realm;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -31,31 +33,95 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
-public class SecuredContentExchangeTest
-    extends ContentExchangeTest
-{ 
+public class SecuredErrorStatusTest
+    extends ErrorStatusTest
+{  
+    private Realm _testRealm;
+    private Realm _dummyRealm;
+    
+    public void testPutUnauthorized()
+        throws Exception
+    {
+        setRealm(null);
+        
+        doPutFail(HttpStatus.UNAUTHORIZED_401);
+        
+        setRealm(_testRealm);
+    }
+    
+    public void testPutWrongPassword()
+        throws Exception
+    {
+        setRealm(_dummyRealm);
+        
+        doPutFail(HttpStatus.UNAUTHORIZED_401);
+        
+        setRealm(_testRealm);
+    }
+    
+    public void testGetUnauthorized()
+        throws Exception
+    {
+        setRealm(null);
+        
+        doGetFail(HttpStatus.UNAUTHORIZED_401);
+        
+        setRealm(_testRealm);
+    }
+    
+    public void testGetWrongPassword()
+        throws Exception
+    {
+        setRealm(_dummyRealm);
+        
+        doGetFail(HttpStatus.UNAUTHORIZED_401); 
+        
+        setRealm(_testRealm);
+    }
+
     protected void configureServer(Server server)
         throws Exception
     {
         setProtocol("http");
-        setRealm(new Realm()
-                 {
-                     public String getId()
-                     {
-                         return "MyRealm";
-                     }
-                
-                     public String getPrincipal()
-                     {
-                         return "jetty";
-                     }
-                
-                     public String getCredentials()
-                     {
-                         return "jetty";
-                     }
-                 });
-                        
+        
+        _testRealm = new Realm()
+                         {
+                             public String getId()
+                             {
+                                 return "MyRealm";
+                             }
+                               
+                             public String getPrincipal()
+                             {
+                                 return "jetty";
+                             }
+                          
+                             public String getCredentials()
+                             {
+                                 return "jetty";
+                             }
+                         };
+                         
+        _dummyRealm = new Realm()
+                          {
+                              public String getId()
+                              {
+                                  return "MyRealm";
+                              }
+                    
+                              public String getPrincipal()
+                              {
+                                  return "jetty";
+                              }
+                                                   
+                              public String getCredentials()
+                              {
+                                  return "dummy";
+                              }
+                          };
+                          
+        setRealm(_testRealm);
+        
         SelectChannelConnector connector = new SelectChannelConnector();
         server.addConnector(connector);
         
@@ -82,7 +148,7 @@ public class SecuredContentExchangeTest
         security.setAuthenticator(new BasicAuthenticator());
         security.setLoginService(loginService);
         security.setStrict(false);
-        
+                
         ServletContextHandler root = new ServletContextHandler();
         root.setContextPath("/");
         root.setResourceBase(getBasePath());
@@ -90,10 +156,11 @@ public class SecuredContentExchangeTest
         servletHolder.setInitParameter( "gzip", "true" );
         root.addServlet( servletHolder, "/*" );    
 
-        Handler handler = new TestHandler(getBasePath());       
+        Handler status = new StatusHandler();
+        Handler test = new TestHandler(getBasePath());
         
         HandlerCollection handlers = new HandlerCollection();
-        handlers.setHandlers(new Handler[]{handler, root});
-        security.setHandler(handlers);
+        handlers.setHandlers(new Handler[]{status, test, root});
+        security.setHandler(handlers); 
     }
 }
