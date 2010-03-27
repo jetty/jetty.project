@@ -312,7 +312,7 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
     {
         HttpClient httpClient = getHttpClient();
         httpClient.stop();
-        httpClient.setTimeout(2000);
+        httpClient.setTimeout(1000);
         httpClient.start();
 
         TestHttpExchange exchange = new TestHttpExchange();
@@ -395,6 +395,7 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         @Override
         protected void onException(Throwable ex)
         {
+            // ex.printStackTrace();
             this.failed = true;
         }
 
