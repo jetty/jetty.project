@@ -693,6 +693,41 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
 
         response.assertStatusOK("8.2.3 expect 100");
     }
+    /**
+     * Test Message Transmission Requirements -- Acceptable bad client behavior, Expect 100 with body content.
+     * 
+     * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
+     */
+    @Test
+    public void test8_2_UnexpectWithBody() throws Exception
+    {
+        // Expect with body
+
+        StringBuffer req3 = new StringBuffer();
+        req3.append("GET /redirect/R1 HTTP/1.1\n");
+        req3.append("Host: localhost\n");
+        req3.append("Expect: 100-continue\n"); // Valid Expect header.
+        req3.append("Content-Type: text/plain\n");
+        req3.append("Content-Length: 8\n");
+        req3.append("\n");
+        req3.append("123456\r\n");
+        req3.append("GET /echo/R1 HTTP/1.1\n");
+        req3.append("Host: localhost\n");
+        req3.append("Content-Type: text/plain\n");
+        req3.append("Content-Length: 8\n");
+        req3.append("Connection: close\n");
+        req3.append("\n");
+        req3.append("87654321"); // Body
+
+        List<HttpResponseTester> responses = http.requests(req3);
+        
+        response=responses.get(0);
+        response.assertStatus("8.2.3 ignored no 100",302);
+        
+        response=responses.get(1);
+        response.assertStatus("8.2.3 ignored no 100",200);
+        response.assertBody("87654321\n");
+    }
 
     /**
      * Test Message Transmission Requirements

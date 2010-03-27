@@ -638,10 +638,22 @@ public class HttpConnection implements Connection
 
                 if (_expect100Continue)
                 {
-                    // Continue not sent so don't parse any content
+                    // We didn't send a 100 continues, but if there is
+                    // content, then the client obviously ignored us and 
+                    // we need to read it.   If there is no content, then
+                    // we should not expect any to arrive and should skip
+                    // it
                     _expect100Continue = false;
                     if (_parser instanceof HttpParser)
-                        ((HttpParser)_parser).setState(HttpParser.STATE_END);
+                    {
+                        HttpParser parser=(HttpParser)_parser;
+                        
+                        // is there already content?
+                        if ((parser.getHeaderBuffer()==null || parser.getHeaderBuffer().length()<2) &&
+                            (parser.getBodyBuffer()==null || parser.getBodyBuffer().length()<1))
+                            // No - so let's not expect it.
+                            ((HttpParser)_parser).setState(HttpParser.STATE_END);
+                    }
                 }
 
                 if(_endp.isOpen())
