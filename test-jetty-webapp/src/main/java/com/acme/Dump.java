@@ -38,9 +38,16 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
 
 
 
@@ -76,6 +83,15 @@ public class Dump extends HttpServlet
     @Override
     public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
+        // Handle a dump of data
+        final String data= request.getParameter("data");
+        final String chars= request.getParameter("chars");
+        final String block= request.getParameter("block");
+        final String dribble= request.getParameter("dribble");
+        final boolean flush= request.getParameter("flush")!=null?Boolean.parseBoolean(request.getParameter("flush")):false;
+
+        
+        
         if(request.getPathInfo()!=null && request.getPathInfo().toLowerCase().indexOf("script")!=-1)
         {
             response.sendRedirect(response.encodeRedirectURL(getServletContext().getContextPath() + "/dump/info"));
@@ -158,7 +174,7 @@ public class Dump extends HttpServlet
                     {
                         response.setContentType("text/html");
                         response.getOutputStream().println("<h1>COMPLETED</h1>"); 
-                        Continuation continuation = ContinuationSupport.getContinuation(request,response);
+                        Continuation continuation = ContinuationSupport.getContinuation(request);
                         continuation.complete();
                     }
                     catch (IOException e)
@@ -178,6 +194,29 @@ public class Dump extends HttpServlet
                 Continuation continuation = ContinuationSupport.getContinuation(request);
                 continuation.setTimeout(Long.parseLong(request.getParameter("suspend")));
                 continuation.suspend();
+                
+                continuation.addContinuationListener(new ContinuationListener()
+                {   
+                    public void onTimeout(Continuation continuation)
+                    {
+                        response.addHeader("Dump","onTimeout");
+                        try
+                        {
+                            dump(response,data,chars,block,dribble,flush);
+                            continuation.complete();
+                        }
+                        catch (IOException e)
+                        {
+                            Log.ignore(e);
+                        }
+                    }
+                    
+                    public void onComplete(Continuation continuation)
+                    {
+                        response.addHeader("Dump","onComplete");
+                    }
+                });
+                
                 continuation.undispatch();
             }
             catch(Exception e)
@@ -198,103 +237,8 @@ public class Dump extends HttpServlet
         }
 
         // Handle a dump of data
-        String data= request.getParameter("data");
-        String block= request.getParameter("block");
-        String dribble= request.getParameter("dribble");
-        boolean flush= request.getParameter("flush")!=null?Boolean.parseBoolean(request.getParameter("flush")):false;
-        if (data != null && data.length() > 0)
-        {
-            long d=Long.parseLong(data);
-            int b=(block!=null&&block.length()>0)?Integer.parseInt(block):50;
-            byte[] buf=new byte[b];
-            for (int i=0;i<b;i++)
-            {
-                
-                buf[i]=(byte)('0'+(i%10));
-                if (i%10==9)
-                    buf[i]=(byte)'\n';
-            }
-            buf[0]='o';
-            OutputStream out=response.getOutputStream();
-            response.setContentType("text/plain");
-            while (d > 0)
-            {
-                if (b==1)
-                {
-                    out.write(d%80==0?'\n':'.');
-                    d--;
-                }
-                else if (d>=b)
-                {
-                    out.write(buf);
-                    d=d-b;
-                }
-                else
-                {
-                    out.write(buf,0,(int)d);
-                    d=0;
-                }
-                
-                if (dribble!=null)
-                {
-                    out.flush();
-                    try
-                    {
-                        Thread.sleep(Long.parseLong(dribble));
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                        break;
-                    }
-                }
-                
-            }
-            
-            if (flush)
-                out.flush();
-            
+        if (dump(response,data,chars,block,dribble,flush))
             return;
-        }
-
-        // Handle a dump of data
-        String chars= request.getParameter("chars");
-        if (chars != null && chars.length() > 0)
-        {
-            long d=Long.parseLong(chars);
-            int b=(block!=null&&block.length()>0)?Integer.parseInt(block):50;
-            char[] buf=new char[b];
-            for (int i=0;i<b;i++)
-            {
-                buf[i]=(char)('0'+(i%10));
-                if (i%10==9)
-                    buf[i]='\n';
-            }
-            buf[0]='o';
-            response.setContentType("text/plain");
-            PrintWriter out=response.getWriter();
-            while (d > 0 && !out.checkError())
-            {
-                if (b==1)
-                {
-                    out.write(d%80==0?'\n':'.');
-                    d--;
-                }
-                else if (d>=b)
-                {
-                    out.write(buf);
-                    d=d-b;
-                }
-                else
-                {
-                    out.write(buf,0,(int)d);
-                    d=0;
-                }
-            }
-            return;
-        }
-
-        
         
         // handle an exception
         String info= request.getPathInfo();
@@ -799,6 +743,7 @@ public class Dump extends HttpServlet
 
     }
 
+
     /* ------------------------------------------------------------ */
     @Override
     public String getServletInfo()
@@ -872,6 +817,101 @@ public class Dump extends HttpServlet
         }
     }
 
+    private boolean dump(HttpServletResponse response, String data, String chars, String block, String dribble, boolean flush) throws IOException
+    {
+        if (data != null && data.length() > 0)
+        {
+            long d=Long.parseLong(data);
+            int b=(block!=null&&block.length()>0)?Integer.parseInt(block):50;
+            byte[] buf=new byte[b];
+            for (int i=0;i<b;i++)
+            {
+                
+                buf[i]=(byte)('0'+(i%10));
+                if (i%10==9)
+                    buf[i]=(byte)'\n';
+            }
+            buf[0]='o';
+            OutputStream out=response.getOutputStream();
+            response.setContentType("text/plain");
+            while (d > 0)
+            {
+                if (b==1)
+                {
+                    out.write(d%80==0?'\n':'.');
+                    d--;
+                }
+                else if (d>=b)
+                {
+                    out.write(buf);
+                    d=d-b;
+                }
+                else
+                {
+                    out.write(buf,0,(int)d);
+                    d=0;
+                }
+                
+                if (dribble!=null)
+                {
+                    out.flush();
+                    try
+                    {
+                        Thread.sleep(Long.parseLong(dribble));
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                        break;
+                    }
+                }
+                
+            }
+            
+            if (flush)
+                out.flush();
+            
+            return true;
+        }
+
+        // Handle a dump of data
+        if (chars != null && chars.length() > 0)
+        {
+            long d=Long.parseLong(chars);
+            int b=(block!=null&&block.length()>0)?Integer.parseInt(block):50;
+            char[] buf=new char[b];
+            for (int i=0;i<b;i++)
+            {
+                buf[i]=(char)('0'+(i%10));
+                if (i%10==9)
+                    buf[i]='\n';
+            }
+            buf[0]='o';
+            response.setContentType("text/plain");
+            PrintWriter out=response.getWriter();
+            while (d > 0 && !out.checkError())
+            {
+                if (b==1)
+                {
+                    out.write(d%80==0?'\n':'.');
+                    d--;
+                }
+                else if (d>=b)
+                {
+                    out.write(buf);
+                    d=d-b;
+                }
+                else
+                {
+                    out.write(buf,0,(int)d);
+                    d=0;
+                }
+            }
+            return true;
+        }    
+        return false;
+    }
+    
     private String notag(String s)
     {
         if (s==null)
@@ -880,5 +920,21 @@ public class Dump extends HttpServlet
         s=StringUtil.replace(s,"<","&lt;");
         s=StringUtil.replace(s,">","&gt;");
         return s;
+    }
+    
+
+    public static void main(String[] args) throws Exception
+    {
+        Server server = new Server(8080);
+        ContextHandler context = new ContextHandler();
+        context.setContextPath("/");
+        server.setHandler(context);
+        
+        ServletHandler handler = new ServletHandler();
+        context.setHandler(handler);
+        handler.addServletWithMapping(Dump.class.getName(),"/");
+
+        server.start();
+        server.join();
     }
 }

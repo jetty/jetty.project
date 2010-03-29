@@ -369,7 +369,7 @@ public class Timeout
          * outside of any synchronization scope and may be delayed. 
          * 
          */
-        protected void expired(){}
+        public void expired(){}
 
     }
 

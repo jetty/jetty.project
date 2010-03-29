@@ -305,7 +305,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         }
 
         @Override
-        protected void expired()
+        public void expired()
         {
             _connectingChannels.remove(channel);
             if (channel.isConnectionPending())

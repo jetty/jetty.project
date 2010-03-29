@@ -837,7 +837,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public class AsyncEventState extends Timeout.Task
+    public class AsyncEventState extends Timeout.Task implements Runnable
     {
         private final ServletContext _suspendedContext;
         private final ServletRequest _request;
@@ -886,6 +886,11 @@ public class AsyncContinuation implements AsyncContext, Continuation
         public void expired()
         {
             AsyncContinuation.this.expired();
+        }
+        
+        public void run()
+        {
+            AsyncContinuation.this.expired();  
         }
     }
 }
