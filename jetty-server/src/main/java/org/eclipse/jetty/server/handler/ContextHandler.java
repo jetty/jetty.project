@@ -1076,7 +1076,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 getServer().getContainer().removeBean(old);
             if (value!=null)
             {
-                _logger.info("Managing "+name);
+                if (_logger.isDebugEnabled()) _logger.debug("Managing "+name);
                 getServer().getContainer().addBean(value);
             }
         }

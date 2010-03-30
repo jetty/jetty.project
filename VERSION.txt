@@ -6,6 +6,7 @@ jetty-7.0.2.SNAPSHOT
  + 306880 Support for UPGRADE in HttpClient
  + 306884 Suspend with timeout <=0 never expires
  + 306782 httpbis interpretation of 100 continues. Body never skipped
+ + Take excess logging statements out of startup
 
 jetty-7.0.2.RC0
  + JSON parses NaN as null

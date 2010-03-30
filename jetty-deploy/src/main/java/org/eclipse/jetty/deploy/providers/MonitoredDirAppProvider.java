@@ -91,7 +91,7 @@ public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppPro
     {
         public void fileAdded(String filename) throws Exception
         {
-            Log.debug("added ",  filename);
+            if (Log.isDebugEnabled()) Log.debug("added ",  filename);
             addConfiguredContextApp(filename);
         }
 
@@ -99,14 +99,13 @@ public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppPro
         {
             System.err.println("changed "+filename);
             // TODO should this not be an add/remove?
-            Log.debug("changed ",  filename);
+            if (Log.isDebugEnabled()) Log.debug("changed ",  filename);
             addConfiguredContextApp(filename);
         }
 
         public void fileRemoved(String filename) throws Exception
         {
-            System.err.println("removed "+filename);
-            Log.debug("removed ",  filename);
+            if (Log.isDebugEnabled()) Log.debug("removed ",  filename);
             
             // TODO: How to determine ID from filename that doesn't exist?
             // TODO: we probably need a map from discovered filename to resulting App
@@ -217,14 +216,13 @@ public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppPro
     @Override
     protected void doStart() throws Exception
     {
-        Log.info(this.getClass().getSimpleName() + ".doStart()");
         if (_monitoredDir == null)
         {
             throw new IllegalStateException("No configuration dir specified");
         }
 
         File scandir = _monitoredDir.getFile();
-        Log.info("Deployment monitor " + scandir+ " at intervale "+_scanInterval);
+        Log.info("Deployment monitor " + scandir+ " at interval "+_scanInterval);
         _scanner=new Scanner();
         _scanner.setScanDirs(Collections.singletonList(scandir));
         _scanner.setScanInterval(_scanInterval);

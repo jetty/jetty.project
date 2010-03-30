@@ -53,7 +53,7 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     {
         public void fileAdded(String filename) throws Exception
         {
-            Log.debug("added ",filename);
+            if (Log.isDebugEnabled()) Log.debug("added ",filename);
             App app = ScanningAppProvider.this.createApp(filename);
             if (app != null)
             {
@@ -64,7 +64,7 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
 
         public void fileChanged(String filename) throws Exception
         {
-            Log.debug("changed ",filename);
+            if (Log.isDebugEnabled()) Log.debug("changed ",filename);
             App app = _appMap.remove(filename);
             if (app != null)
             {
@@ -80,7 +80,7 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
 
         public void fileRemoved(String filename) throws Exception
         {
-            Log.debug("removed ",filename);
+            if (Log.isDebugEnabled()) Log.debug("removed ",filename);
             App app = _appMap.remove(filename);
             if (app != null)
                 _deploymentManager.removeApp(app);
@@ -118,14 +118,14 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     @Override
     protected void doStart() throws Exception
     {
-        Log.info(this.getClass().getSimpleName() + ".doStart()");
+        if (Log.isDebugEnabled()) Log.debug(this.getClass().getSimpleName() + ".doStart()");
         if (_monitoredDir == null)
         {
             throw new IllegalStateException("No configuration dir specified");
         }
 
         File scandir = _monitoredDir.getFile();
-        Log.info("Deployment monitor " + scandir + " at intervale " + _scanInterval);
+        Log.info("Deployment monitor " + scandir + " at interval " + _scanInterval);
         _scanner = new Scanner();
         _scanner.setScanDirs(Collections.singletonList(scandir));
         _scanner.setScanInterval(_scanInterval);
