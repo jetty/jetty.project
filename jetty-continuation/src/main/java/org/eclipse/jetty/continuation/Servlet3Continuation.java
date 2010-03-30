@@ -1,6 +1,8 @@
 package org.eclipse.jetty.continuation;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -27,41 +29,46 @@ public class Servlet3Continuation implements Continuation
     private final ServletRequest _request;
     private ServletResponse _response;
     private AsyncContext _context;
-    private final AsyncListener _listener = new AsyncListener()
-    {
-        public void onComplete(AsyncEvent event) throws IOException
-        {
-        }
-
-        public void onError(AsyncEvent event) throws IOException
-        {
-        }
-
-        public void onStartAsync(AsyncEvent event) throws IOException
-        {
-            event.getAsyncContext().addListener(this);
-        }
-
-        public void onTimeout(AsyncEvent event) throws IOException
-        {
-            _initial=false;
-            event.getAsyncContext().dispatch();
-        }
-    };
-
+    private List<AsyncListener> _listeners=new ArrayList<AsyncListener>(); 
     private volatile boolean _initial=true;
     private volatile boolean _resumed=false;
     private volatile boolean _expired=false;
     private volatile boolean _responseWrapped=false;
-    
+
+    private long _timeoutMs=-1;
+
+    /* ------------------------------------------------------------ */
     public Servlet3Continuation(ServletRequest request)
     {
         _request=request;
+
+        _listeners.add(new AsyncListener()
+        {
+            public void onComplete(AsyncEvent event) throws IOException
+            {
+            }
+
+            public void onError(AsyncEvent event) throws IOException
+            {
+            }
+
+            public void onStartAsync(AsyncEvent event) throws IOException
+            {
+                event.getAsyncContext().addListener(this);
+            }
+
+            public void onTimeout(AsyncEvent event) throws IOException
+            {
+                _initial=false;
+                event.getAsyncContext().dispatch();
+            }
+        });
     }
 
+    /* ------------------------------------------------------------ */
     public void addContinuationListener(final ContinuationListener listener)
     {
-        _context.addListener(new AsyncListener()
+        AsyncListener wrapped = new AsyncListener()
         {
             public void onComplete(final AsyncEvent event) throws IOException
             {
@@ -83,9 +90,15 @@ public class Servlet3Continuation implements Continuation
                 _expired=true;
                 listener.onTimeout(Servlet3Continuation.this);
             }
-        });
+        };
+        
+        if (_context==null)
+            _context.addListener(wrapped);
+        else
+            _listeners.add(wrapped);
     }
 
+    /* ------------------------------------------------------------ */
     public void complete()
     {
         AsyncContext context=_context;
@@ -94,37 +107,44 @@ public class Servlet3Continuation implements Continuation
         _context.complete();
     }
 
+    /* ------------------------------------------------------------ */
     public ServletResponse getServletResponse()
     {
         return _response;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isExpired()
     {
         return _expired;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isInitial()
     {
         // TODO - this is not perfect if non continuation API is used directly
         return _initial&&_request.getDispatcherType()!=DispatcherType.ASYNC;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isResumed()
     {
         return _resumed;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isSuspended()
     {
         return _request.isAsyncStarted();
     }
 
+    /* ------------------------------------------------------------ */
     public void keepWrappers()
     {
         _responseWrapped=true;
     }
 
+    /* ------------------------------------------------------------ */
     public void resume()
     {
         AsyncContext context=_context;
@@ -134,11 +154,15 @@ public class Servlet3Continuation implements Continuation
         _context.dispatch();
     }
 
+    /* ------------------------------------------------------------ */
     public void setTimeout(long timeoutMs)
     {
-        _context.setTimeout(timeoutMs);
+        _timeoutMs=timeoutMs;
+        if (_context!=null)
+            _context.setTimeout(timeoutMs);
     }
 
+    /* ------------------------------------------------------------ */
     public void suspend(ServletResponse response)
     {
         _response=response;
@@ -146,17 +170,25 @@ public class Servlet3Continuation implements Continuation
         _resumed=false;
         _expired=false;
         _context=_request.startAsync();
-        _context.addListener(_listener);
+        _context.setTimeout(_timeoutMs);
+        for (AsyncListener listener:_listeners)
+            _context.addListener(listener);
+        _listeners.clear();
     }
 
+    /* ------------------------------------------------------------ */
     public void suspend()
     {
         _resumed=false;
         _expired=false;
         _context=_request.startAsync();
-        _context.addListener(_listener);
+        _context.setTimeout(_timeoutMs);
+        for (AsyncListener listener:_listeners)
+            _context.addListener(listener);
+        _listeners.clear();
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isResponseWrapped()
     {
         return _responseWrapped;

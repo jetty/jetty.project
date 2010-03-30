@@ -6,6 +6,7 @@ jetty-7.0.2.SNAPSHOT
  + 306880 Support for UPGRADE in HttpClient
  + 306884 Suspend with timeout <=0 never expires
  + 306782 httpbis interpretation of 100 continues. Body never skipped
+ + 307589 updated servlet 3.0 continuations for final API
  + Take excess logging statements out of startup
  + Ensure webapps with no WEB-INF don't scan WEB-INF/lib
  + Allow Configuration array to be set on Server instance for all web apps
