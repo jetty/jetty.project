@@ -16,20 +16,11 @@
     <!-- Server Thread Pool                                          -->
     <!-- =========================================================== -->
     <Set name="ThreadPool">
-      <!-- Default queued blocking threadpool 
-      -->
+      <!-- Default queued blocking threadpool -->
       <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
         <Set name="minThreads">10</Set>
         <Set name="maxThreads">200</Set>
       </New>
-
-      <!-- Optional Java 5 bounded threadpool with job queue 
-      <New class="org.eclipse.jetty.util.thread.ExecutorThreadPool">     
-        <Arg name="coreSize" type="int">25</Arg>
-        <Arg name="maxSize" type="int">50</Arg>
-        <Arg name="maxIdleMs" type="long">30000</Arg>
-      </New>
-      -->
     </Set>
 
 
@@ -136,65 +127,6 @@
         </New>
       </Arg>
     </Call>
-
-    <!-- =========================================================== -->
-    <!-- Configure the context deployer                              -->
-    <!-- A context deployer will deploy contexts described in        -->
-    <!-- configuration files discovered in a directory.              -->
-    <!-- The configuration directory can be scanned for hot          -->
-    <!-- deployments at the configured scanInterval.                 -->
-    <!--                                                             -->
-    <!-- This deployer is configured to deploy contexts configured   -->
-    <!-- in the $JETTY_HOME/contexts directory                       -->
-    <!--                                                             -->
-    <!-- =========================================================== -->
-    <!-- 
-    <Call name="addBean">
-      <Arg>
-        <New class="org.eclipse.jetty.deploy.ContextDeployer">
-          <Set name="contexts"><Ref id="Contexts"/></Set>
-          <Set name="configurationDir"><SystemProperty name="jetty.home" default="."/>/contexts</Set>
-          <Set name="scanInterval">5</Set>
-          <Call name="setAttribute">
-            <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-            <Arg>.*/jsp-api-[^/]*\.jar$|.*/jsp-[^/]*\.jar$</Arg>
-          </Call>
-        </New>
-      </Arg>
-    </Call>
-      -->
-
-    <!-- =========================================================== -->
-    <!-- Configure the webapp deployer.                              -->
-    <!-- A webapp  deployer will deploy standard webapps discovered  -->
-    <!-- in a directory at startup, without the need for additional  -->
-    <!-- configuration files.    It does not support hot deploy or   -->
-    <!-- non standard contexts (see ContextDeployer above).          -->
-    <!--                                                             -->
-    <!-- This deployer is configured to deploy webapps from the      -->
-    <!-- $JETTY_HOME/webapps directory                               -->
-    <!--                                                             -->
-    <!-- Normally only one type of deployer need be used.            -->
-    <!--                                                             -->
-    <!-- =========================================================== -->
-    <!-- 
-    <Call name="addBean">
-      <Arg>
-        <New class="org.eclipse.jetty.deploy.WebAppDeployer">
-          <Set name="contexts"><Ref id="Contexts"/></Set>
-          <Set name="webAppDir"><SystemProperty name="jetty.home" default="."/>/webapps</Set>
-          <Set name="parentLoaderPriority">false</Set>
-          <Set name="extract">true</Set>
-          <Set name="allowDuplicates">false</Set>
-          <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Set>
-          <Call name="setAttribute">
-            <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-            <Arg>.*/jsp-api-[^/]*\.jar$|.*/jsp-[^/]*\.jar$</Arg>
-          </Call>
-        </New>
-      </Arg>
-    </Call>
-      -->
 
     <!-- =========================================================== -->
     <!-- Configure Authentication Login Service                      -->
