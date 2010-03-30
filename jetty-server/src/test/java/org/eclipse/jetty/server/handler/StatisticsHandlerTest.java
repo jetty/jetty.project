@@ -338,7 +338,7 @@ public class StatisticsHandlerTest extends TestCase
                     Continuation continuation = ContinuationSupport.getContinuation(httpRequest);
                     if (continuationHandle.get() == null)
                     {
-                        continuation.setTimeout(10);
+                        continuation.setTimeout(100);
                         continuation.suspend();
                         continuationHandle.set(continuation);
                     }

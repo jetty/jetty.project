@@ -638,30 +638,12 @@ public class HttpConnection implements Connection
 
                 if (_expect100Continue)
                 {
-                    // We didn't send a response, but if there is
-                    // content, then the client obviously ignored 100 mechanism
-                    // and  we need to read it.   If there is no content, then
-                    // we should not expect any to arrive and should skip
-                    // it
+                    Log.debug("100 continues not sent");
+                    // We didn't send 100 continues, but the latest interpretation
+                    // of the spec (see httpbis) is that the client will either
+                    // send the body anyway, or close.  So we no longer need to
+                    // do anything special here.
                     _expect100Continue = false;
-                    if (_parser instanceof HttpParser )
-                    {
-                        HttpParser parser=(HttpParser)_parser;
-                        
-                        // if response is committed, then _expect100Continue was not cleared
-                        // in commitResponse(boolean) or completeResponse(), so any data that
-                        // is available must have arrived after the commit and should be a new
-                        // request. So we should skip any unexpected content for this request.
-
-                        if (_generator.isCommitted())
-                            ((HttpParser)_parser).setState(HttpParser.STATE_END);
-                                
-                        // else if there is not already content, then let's not expect any.
-                        else if (
-                            ((parser.getHeaderBuffer()==null || parser.getHeaderBuffer().length()<2) &&
-                             (parser.getBodyBuffer()==null || parser.getBodyBuffer().length()<1)))
-                            ((HttpParser)_parser).setState(HttpParser.STATE_END);
-                    }
                 }
 
                 if(_endp.isOpen())
@@ -693,20 +675,6 @@ public class HttpConnection implements Connection
     {
         if (!_generator.isCommitted())
         {
-            if (_expect100Continue && _parser instanceof HttpParser)
-            {
-                // We didn't send a 100 continues, so if there is
-                // content, then the client obviously ignored the spec
-                // and sent the body anyway. So we can cancel the 
-                // expected status.
-                HttpParser parser=(HttpParser)_parser;
-              
-                // is there already content?
-                if ((parser.getHeaderBuffer()!=null && parser.getHeaderBuffer().length()>=2) ||
-                    (parser.getBodyBuffer()!=null && parser.getBodyBuffer().length()>0))
-                    _expect100Continue = false; // 100 mechanism has been ignored.
-            }
-            
             _generator.setResponse(_response.getStatus(), _response.getReason());
             try
             {
@@ -738,20 +706,6 @@ public class HttpConnection implements Connection
     {
         if (!_generator.isCommitted())
         {
-            if (_expect100Continue && _parser instanceof HttpParser)
-            {
-                // We didn't send a 100 continues, so if there is
-                // content, then the client obviously ignored the spec
-                // and sent the body anyway. So we can cancel the 
-                // expected status.
-                HttpParser parser=(HttpParser)_parser;
-              
-                // is there already content?
-                if ((parser.getHeaderBuffer()!=null && parser.getHeaderBuffer().length()>=2) ||
-                    (parser.getBodyBuffer()!=null && parser.getBodyBuffer().length()>0))
-                    _expect100Continue = false; // 100 mechanism has been ignored.
-            }
-            
             _generator.setResponse(_response.getStatus(), _response.getReason());
             try
             {

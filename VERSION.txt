@@ -5,7 +5,7 @@ jetty-7.0.2.SNAPSHOT
  + 306840 Suppress content-length in requests with no content
  + 306880 Support for UPGRADE in HttpClient
  + 306884 Suspend with timeout <=0 never expires
- + 306782 Don't skip content if 100 not sent, but content available
+ + 306782 httpbis interpretation of 100 continues. Body never skipped
 
 jetty-7.0.2.RC0
  + JSON parses NaN as null
