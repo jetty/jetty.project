@@ -10,6 +10,9 @@
   <artifactId>jetty-osgi-boot</artifactId>
   <name>Jetty :: OSGi :: Boot</name>
   <description>Jetty OSGi Boot bundle</description>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.boot</bundle-symbolic-name>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -74,6 +77,12 @@
             <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
+      </plugin>
+      <!-- always include the sources to be able to prepare the eclipse-jetty-SDK feature
+      with a snapshot. -->
+      <plugin>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-source-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

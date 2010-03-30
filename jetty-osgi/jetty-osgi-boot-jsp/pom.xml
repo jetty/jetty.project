@@ -10,6 +10,9 @@
   <artifactId>jetty-osgi-boot-jsp</artifactId>
   <name>Jetty :: OSGi :: Boot JSP</name>
   <description>Jetty OSGi Boot JSP bundle</description>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.jsp</bundle-symbolic-name>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -83,6 +86,12 @@
             <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
+      </plugin>
+      <!-- always include the sources to be able to prepare the eclipse-jetty-SDK feature
+      with a snapshot. -->
+      <plugin>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-source-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

@@ -10,6 +10,9 @@
   <artifactId>jetty-httpservice</artifactId>
   <name>Jetty :: OSGi :: HttpService</name>
   <description>Jetty OSGi HttpService bundle</description>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.httpservice</bundle-symbolic-name>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.equinox.http</groupId>
@@ -26,19 +29,6 @@
   </dependencies>
 
   <build>
-    <!-- resources>
-        <resource>
-            <directory>META-INF/..</directory>
-            <excludes>
-                <exclude>**/.*</exclude>
-            </excludes>
-            <includes>
-                <include>contexts</include>
-            </includes>
-        </resource>
-    </resources -->
-
-  
     <plugins>
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
@@ -81,6 +71,12 @@
             <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
+      </plugin>
+      <!-- always include the sources to be able to prepare the eclipse-jetty-SDK feature
+      with a snapshot. -->
+      <plugin>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-source-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

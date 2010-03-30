@@ -8,6 +8,9 @@
   <artifactId>jetty-xml</artifactId>
   <name>Jetty :: XML utilities</name>
   <description>The jetty xml utilities.</description>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.xml</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>
@@ -39,14 +42,6 @@
        <plugin>
          <groupId>org.apache.maven.plugins</groupId>
          <artifactId>maven-source-plugin</artifactId>
-         <executions>
-           <execution>
-             <id>attach-sources</id>
-             <goals>
-               <goal>jar</goal>
-             </goals>
-           </execution>
-         </executions>
       </plugin>
 <!--
       <plugin>

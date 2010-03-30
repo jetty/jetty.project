@@ -8,6 +8,9 @@
   <artifactId>jetty-util</artifactId>
   <name>Jetty :: Utilities</name>
   <description>Utility classes for Jetty</description>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.util</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>
@@ -57,6 +60,12 @@
           </execution>
         </executions>
       </plugin>
+     <!-- Always create the source bundle. the configuration is inherited by the parent pom. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+      </plugin>
+
     </plugins>
   </build>
   <dependencies>
