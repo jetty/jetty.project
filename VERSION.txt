@@ -8,6 +8,7 @@ jetty-7.0.2.SNAPSHOT
  + 306782 httpbis interpretation of 100 continues. Body never skipped
  + Take excess logging statements out of startup
  + Ensure webapps with no WEB-INF don't scan WEB-INF/lib
+ + Allow Configuration array to be set on Server instance for all web apps
 
 jetty-7.0.2.RC0
  + JSON parses NaN as null

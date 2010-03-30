@@ -74,7 +74,7 @@ public class WebAppContext extends ServletContextHandler
         "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
         "org.eclipse.jetty.webapp.TagLibConfiguration"
     } ;
-    private String[] _configurationClasses=__dftConfigurationClasses;
+    private String[] _configurationClasses=null;
     private Configuration[] _configurations;
     private String _defaultsDescriptor=WEB_DEFAULTS_XML;
     private String _descriptor=null;
@@ -650,31 +650,19 @@ public class WebAppContext extends ServletContextHandler
     {
         if (_configurations!=null)
             return;
-        if (_configurationClasses==null)
-            _configurationClasses=__dftConfigurationClasses;
-        
-        int configsLen = _configurationClasses.length;
 
-        @SuppressWarnings("unchecked")
-        List<Configuration> serverConfigs = (List<Configuration>)getServer().getAttribute(SERVER_CONFIG);
+        //look for a Server attribute with the list of names of Configuration classes
+        //to apply to every web app. If not present, use our defaults.
+        String[] serverConfigs = (String[])getServer().getAttribute(SERVER_CONFIG);
         if (serverConfigs != null)
-        {
-            configsLen += serverConfigs.size();
-        }
-
-        _configurations = new Configuration[configsLen];
+            _configurationClasses = serverConfigs;
+        if (_configurationClasses == null)
+            _configurationClasses=__dftConfigurationClasses;
+       
+        _configurations = new Configuration[_configurationClasses.length];
         for (int i = 0; i < _configurationClasses.length; i++)
         {
             _configurations[i]=(Configuration)Loader.loadClass(this.getClass(), _configurationClasses[i]).newInstance();
-        }
-
-        if (serverConfigs != null)
-        {
-            int offset = _configurationClasses.length;
-            for (int i = 0, n = serverConfigs.size(); i < n; i++)
-            {
-                _configurations[i + offset] = serverConfigs.get(i);
-            }
         }
     }
     
