@@ -128,24 +128,31 @@ public abstract class AbstractConfiguration implements Configuration
     throws Exception
     {
         Log.debug("Scanning classes in WEB-INF/classes");
-        parser.parse(context.getWebInf().addPath("classes/"), 
-                    new ClassNameResolver()
+        if (context.getWebInf() != null)
         {
-            public boolean isExcluded (String name)
+            Resource classesDir = context.getWebInf().addPath("classes/");
+            if (classesDir.exists())
             {
-                if (context.isSystemClass(name)) return true;
-                if (context.isServerClass(name)) return false;
-                return false;
-            }
+                parser.parse(classesDir, 
+                             new ClassNameResolver()
+                {
+                    public boolean isExcluded (String name)
+                    {
+                        if (context.isSystemClass(name)) return true;
+                        if (context.isServerClass(name)) return false;
+                        return false;
+                    }
 
-            public boolean shouldOverride (String name)
-            {
-                //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
-                if (context.isParentLoaderPriority())
-                    return false;
-                return true;
+                    public boolean shouldOverride (String name)
+                    {
+                        //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
+                        if (context.isParentLoaderPriority())
+                            return false;
+                        return true;
+                    }
+                });
             }
-        });
+        }
     }
     
     public void parse25Classes (final WebAppContext context, final AnnotationParser parser)
