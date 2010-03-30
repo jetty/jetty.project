@@ -41,11 +41,6 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.bio.SocketConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 
@@ -920,21 +915,5 @@ public class Dump extends HttpServlet
         s=StringUtil.replace(s,"<","&lt;");
         s=StringUtil.replace(s,">","&gt;");
         return s;
-    }
-    
-
-    public static void main(String[] args) throws Exception
-    {
-        Server server = new Server(8080);
-        ContextHandler context = new ContextHandler();
-        context.setContextPath("/");
-        server.setHandler(context);
-        
-        ServletHandler handler = new ServletHandler();
-        context.setHandler(handler);
-        handler.addServletWithMapping(Dump.class.getName(),"/");
-
-        server.start();
-        server.join();
     }
 }
