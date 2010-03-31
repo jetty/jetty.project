@@ -13,7 +13,6 @@ import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
 
 
-
 /* ------------------------------------------------------------ */
 /**
  * This implementation of Continuation is used by {@link ContinuationSupport}
@@ -171,6 +170,7 @@ public class Servlet3Continuation implements Continuation
         _expired=false;
         _context=_request.startAsync();
         _context.setTimeout(_timeoutMs);
+        
         for (AsyncListener listener:_listeners)
             _context.addListener(listener);
         _listeners.clear();
@@ -183,6 +183,7 @@ public class Servlet3Continuation implements Continuation
         _expired=false;
         _context=_request.startAsync();
         _context.setTimeout(_timeoutMs);
+                
         for (AsyncListener listener:_listeners)
             _context.addListener(listener);
         _listeners.clear();
@@ -194,7 +195,6 @@ public class Servlet3Continuation implements Continuation
         return _responseWrapped;
     }
 
-
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.continuation.Continuation#getAttribute(java.lang.String)
@@ -203,7 +203,6 @@ public class Servlet3Continuation implements Continuation
     {
         return _request.getAttribute(name);
     }
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -222,7 +221,6 @@ public class Servlet3Continuation implements Continuation
     {
         _request.setAttribute(name,attribute);
     }
-
 
     /* ------------------------------------------------------------ */
     /**
