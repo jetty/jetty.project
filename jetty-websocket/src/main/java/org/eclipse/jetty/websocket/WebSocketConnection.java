@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -94,11 +95,10 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
             {
                 int flushed=_generator.flush();
                 int filled=_parser.parseNext();
-
-                more = flushed>0 || filled>0 || !_parser.isBufferEmpty() || !_generator.isBufferEmpty();
                 
-                // System.err.println("flushed="+flushed+" filled="+filled+" more="+more+" p.e="+_parser.isBufferEmpty()+" g.e="+_generator.isBufferEmpty());
-                
+                // TODO remove this potential busy loop. more should be true if content was parsed even if no bytes were filled!
+                more = flushed>0 || filled>0 || !_parser.isBufferEmpty(); 
+                                
                 if (filled<0 || flushed<0)
                 {
                     _endp.close();
@@ -115,7 +115,12 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         finally
         {
             if (_endp.isOpen())
+            {
                 _idle.access(_endp);
+                
+                if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)
+                    ((AsyncEndPoint)_endp).scheduleWrite();
+            }
             else
                 // TODO - not really the best way
                 _websocket.onDisconnect();
@@ -147,6 +152,8 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         _generator.addFrame(WebSocket.SENTINEL_FRAME,content,_maxIdleTimeMs);
         _generator.flush();
+        if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)
+            ((AsyncEndPoint)_endp).scheduleWrite();
         _idle.access(_endp);
     }
 
@@ -154,6 +161,8 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         _generator.addFrame(frame,content,_maxIdleTimeMs);
         _generator.flush();
+        if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)
+            ((AsyncEndPoint)_endp).scheduleWrite();
         _idle.access(_endp);
     }
 
@@ -161,6 +170,8 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         _generator.addFrame(frame,content,_maxIdleTimeMs);
         _generator.flush();
+        if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)
+            ((AsyncEndPoint)_endp).scheduleWrite();
         _idle.access(_endp);
     }
 
@@ -168,6 +179,8 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         _generator.addFrame(frame,content,offset,length,_maxIdleTimeMs);
         _generator.flush();
+        if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)
+            ((AsyncEndPoint)_endp).scheduleWrite();
         _idle.access(_endp);
     }
 

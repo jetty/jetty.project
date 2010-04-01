@@ -1,3 +1,7 @@
+
+jetty-7.1-SNAPSHOT
+ + 307898 Handle large/async websocket messages
+
 jetty-7.0.2.v20100331
  + 297552 Don't call Continuation timeouts from acceptor tick
  + 298236 Additional unit tests for jetty-client

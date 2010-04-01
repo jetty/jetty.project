@@ -28,4 +28,21 @@ public interface AsyncEndPoint extends EndPoint
      */
     public boolean isReadyForDispatch();
     
+
+    /* ------------------------------------------------------------ */
+    /** Set the writable status.
+     * The writable status is considered next time the async scheduling
+     * is calculated.
+     * 
+     * @param writable true if the endpoint is known to be writable or false
+     * if it is known to not be writable.
+     */
+    public void setWritable(boolean writable);
+
+    /* ------------------------------------------------------------ */
+    /** Schedule a write dispatch.
+     * Set the endpoint to not be writable and schedule a dispatch when
+     * it becomes writable.
+     */
+    public void scheduleWrite();
 }

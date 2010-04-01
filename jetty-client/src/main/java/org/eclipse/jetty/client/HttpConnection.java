@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.ssl.SslSelectChannelEndPoint;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -127,7 +128,7 @@ public class HttpConnection implements Connection
             }
             else
             {
-                SelectChannelEndPoint scep = (SelectChannelEndPoint)_endp;
+                AsyncEndPoint scep = (AsyncEndPoint)_endp;
                 scep.scheduleWrite();
             }
             _destination.getHttpClient().schedule(_timeout);

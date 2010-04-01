@@ -39,6 +39,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Parser;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -494,8 +495,8 @@ public class HttpConnection implements Connection
                         Log.debug("return with suspended request");
                         more_in_buffer=false;
                     }
-                    else if (_generator.isCommitted() && !_generator.isComplete() && _endp instanceof SelectChannelEndPoint) // TODO remove SelectChannel dependency
-                        ((SelectChannelEndPoint)_endp).setWritable(false);
+                    else if (_generator.isCommitted() && !_generator.isComplete() && _endp instanceof AsyncEndPoint) 
+                        ((AsyncEndPoint)_endp).setWritable(false);
                 }
             }
         }
