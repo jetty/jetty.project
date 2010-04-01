@@ -39,7 +39,7 @@ public class WebSocketGenerator
         if (_buffer.space() == 0)
             expelBuffer(blockFor);
 
-        if ((frame & WebSocket.LENGTH_FRAME) == WebSocket.LENGTH_FRAME)
+        if (isLengthFrame(frame))
         {
             // Send a length delimited frame
 
@@ -77,7 +77,7 @@ public class WebSocketGenerator
             remaining -= chunk;
             if (_buffer.space() > 0)
             {
-                if (frame == WebSocket.SENTINEL_FRAME)
+                if (!isLengthFrame(frame))
                     _buffer.put((byte)0xFF);
                 // Gently flush the data, issuing a non-blocking write
                 flushBuffer();
@@ -88,7 +88,7 @@ public class WebSocketGenerator
                 expelBuffer(blockFor);
                 if (remaining == 0)
                 {
-                    if (frame == WebSocket.SENTINEL_FRAME)
+                    if (!isLengthFrame(frame))
                         _buffer.put((byte)0xFF);
                     // Gently flush the data, issuing a non-blocking write
                     flushBuffer();
@@ -97,57 +97,20 @@ public class WebSocketGenerator
         }
     }
 
+    private boolean isLengthFrame(byte frame)
+    {
+        return (frame & WebSocket.LENGTH_FRAME) == WebSocket.LENGTH_FRAME;
+    }
+
     public synchronized void addFrame(byte frame, String content, int blockFor) throws IOException
     {
         byte[] bytes = content.getBytes("UTF-8");
         addFrame(frame, bytes, 0, bytes.length, blockFor);
     }
 
-    private synchronized void checkSpace(int needed, long blockFor)
-        throws IOException
+    public synchronized int flush(long blockFor) throws IOException
     {
-        int space=_buffer.space();
-
-        if (space<needed)
-        {
-            if (_endp.isBlocking())
-            {
-                try
-                {
-                    flushBuffer();
-                    _buffer.compact();
-                    space=_buffer.space();
-                }
-                catch(IOException e)
-                {
-                    throw e;
-                }
-            }
-            else
-            {
-                flushBuffer();
-                _buffer.compact();
-                space=_buffer.space();
-
-                if (space<needed && _buffer.length()>0 && _endp.blockWritable(blockFor))
-                {
-                    flushBuffer();
-                    _buffer.compact();
-                    space=_buffer.space();
-                }
-            }
-
-            if (space<needed)
-            {
-                _endp.close();
-                throw new IOException("Full Timeout");
-            }
-        }
-    }
-
-    public synchronized int flush(long blockFor)
-    {
-        return 0;
+        return expelBuffer(blockFor);
     }
 
     public synchronized int flush() throws IOException
@@ -176,9 +139,9 @@ public class WebSocketGenerator
         return 0;
     }
 
-    private synchronized void expelBuffer(long blockFor) throws IOException
+    private synchronized int expelBuffer(long blockFor) throws IOException
     {
-        flushBuffer();
+        int result = flushBuffer();
         _buffer.compact();
         if (!_endp.isBlocking())
         {
@@ -190,10 +153,11 @@ public class WebSocketGenerator
                 if (!ready)
                     throw new IOException("Write timeout");
 
-                flushBuffer();
+                result += flushBuffer();
                 _buffer.compact();
             }
         }
+        return result;
     }
 
     public synchronized boolean isBufferEmpty()

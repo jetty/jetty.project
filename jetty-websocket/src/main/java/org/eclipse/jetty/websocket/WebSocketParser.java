@@ -12,9 +12,9 @@ import org.eclipse.jetty.util.log.Log;
 
 
 /* ------------------------------------------------------------ */
-/** 
+/**
  * Parser the WebSocket protocol.
- * 
+ *
  */
 public class WebSocketParser
 {
@@ -35,7 +35,7 @@ public class WebSocketParser
     /* ------------------------------------------------------------ */
     /**
      * @param buffers The buffers to use for parsing.  Only the {@link Buffers#getBuffer()} is used.
-     * This should be a direct buffer if binary data is mostly used or an indirect buffer if utf-8 data 
+     * This should be a direct buffer if binary data is mostly used or an indirect buffer if utf-8 data
      * is mostly used.
      * @param endp
      * @param handler
@@ -58,10 +58,10 @@ public class WebSocketParser
     {
         return _buffer;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Parse to next event.
-     * Parse to the next {@link EventHandler} event or until no more data is 
+     * Parse to the next {@link EventHandler} event or until no more data is
      * available. Fill data from the {@link EndPoint} only as necessary.
      * @return An indication of progress or otherwise. -1 indicates EOF, 0 indicates
      * that no bytes were read and no messages parsed. A positive number indicates either
@@ -71,7 +71,7 @@ public class WebSocketParser
     {
         if (_buffer==null)
             _buffer=_buffers.getBuffer();
-        
+
         int total_filled=0;
 
         // Loop until an datagram call back or can't fill anymore
@@ -85,11 +85,11 @@ public class WebSocketParser
             {
                 // compact to mark (set at start of data)
                 _buffer.compact();
-                
+
                 // if no space, then the data is too big for buffer
-                if (_buffer.space() == 0) 
-                    throw new IllegalStateException("FULL");   
-                
+                if (_buffer.space() == 0)
+                    throw new IllegalStateException("FULL");
+
                 // catch IOExceptions (probably EOF) and try to parse what we have
                 try
                 {
@@ -167,14 +167,14 @@ public class WebSocketParser
                         _buffer.skip(_length);
                         _state=STATE_START;
                         _handler.onFrame(_frame,data);
-                        
+
                         if (_buffer.length()==0)
                         {
                             _buffers.returnBuffer(_buffer);
                             _buffer=null;
                         }
-                        
-                        return 1;  // the number of messages handled.
+
+                        return total_filled;
                 }
             }
         }
@@ -190,10 +190,10 @@ public class WebSocketParser
             _buffer.put(buffer);
             buffer.clear();
         }
-        
-            
+
+
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
