@@ -87,24 +87,22 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     
     public Connection handle() throws IOException
     {
-        boolean more=true;
+        boolean progress=true;
         
         try
         {
-            while (more)
+            while (progress)
             {
                 int flushed=_generator.flush();
                 int filled=_parser.parseNext();
                 
-                // TODO remove this potential busy loop. more should be true if content was parsed even if no bytes were filled!
-                more = flushed>0 || filled>0 || !_parser.isBufferEmpty(); 
+                progress = flushed>0 || filled>0; 
                                 
                 if (filled<0 || flushed<0)
                 {
                     _endp.close();
                     break;
                 }
-                
             }
         }
         catch(IOException e)

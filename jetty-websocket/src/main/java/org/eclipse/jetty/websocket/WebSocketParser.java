@@ -63,7 +63,9 @@ public class WebSocketParser
     /** Parse to next event.
      * Parse to the next {@link EventHandler} event or until no more data is 
      * available. Fill data from the {@link EndPoint} only as necessary.
-     * @return total bytes filled or -1 for EOF
+     * @return An indication of progress or otherwise. -1 indicates EOF, 0 indicates
+     * that no bytes were read and no messages parsed. A positive number indicates either
+     * the bytes filled or the messages parsed.
      */
     public int parseNext()
     {
@@ -172,7 +174,7 @@ public class WebSocketParser
                             _buffer=null;
                         }
                         
-                        return total_filled;
+                        return 1;  // the number of messages handled.
                 }
             }
         }
