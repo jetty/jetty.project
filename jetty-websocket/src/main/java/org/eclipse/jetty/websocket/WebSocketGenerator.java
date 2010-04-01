@@ -1,6 +1,7 @@
 package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
+import java.math.BigInteger;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
@@ -9,8 +10,8 @@ import org.eclipse.jetty.io.EndPoint;
 /* ------------------------------------------------------------ */
 /** WebSocketGenerator.
  * This class generates websocket packets.
- * It is fully synchronized because it is likely that async 
- * threads will call the addMessage methods while other 
+ * It is fully synchronized because it is likely that async
+ * threads will call the addMessage methods while other
  * threads are flushing the generator.
  */
 public class WebSocketGenerator
@@ -18,135 +19,95 @@ public class WebSocketGenerator
     final private WebSocketBuffers _buffers;
     final private EndPoint _endp;
     private Buffer _buffer;
-    
+
     public WebSocketGenerator(WebSocketBuffers buffers, EndPoint endp)
     {
         _buffers=buffers;
         _endp=endp;
     }
 
-    synchronized public void addFrame(byte frame,byte[] content, int blockFor) throws IOException
+    public synchronized void addFrame(byte frame,byte[] content, int blockFor) throws IOException
     {
         addFrame(frame,content,0,content.length,blockFor);
     }
-    
-    synchronized public void addFrame(byte frame,byte[] content, int offset, int length, int blockFor) throws IOException
+
+    public synchronized void addFrame(byte frame,byte[] content, int offset, int length, int blockFor) throws IOException
     {
         if (_buffer==null)
             _buffer=_buffers.getDirectBuffer();
-        
-        if ((frame&0x80)==0x80)
+
+        if (_buffer.space() == 0)
+            expelBuffer(blockFor);
+
+        if ((frame & WebSocket.LENGTH_FRAME) == WebSocket.LENGTH_FRAME)
         {
-            // Send in a length delimited frame
-            
-            // maximum of 3 byte length == 21 bits
-            if (length>2097152)
-                throw new IllegalArgumentException("too big");
-            int length_bytes=(length>16384)?3:(length>128)?2:1;
-            int needed=length+1+length_bytes;
-            checkSpace(needed,blockFor);
-            
+            // Send a length delimited frame
+
             _buffer.put(frame);
+            if (_buffer.space() == 0)
+                expelBuffer(blockFor);
 
-            switch (length_bytes)
+            // How many bytes we need for the length ?
+            // We have 7 bits available, so log2(length) / 7 + 1
+            // For example, 50000 bytes is 2 8-bytes: 11000011 01010000
+            // but we need to write it in 3 7-bytes 0000011 0000110 1010000
+            // 65536 == 1 00000000 00000000 => 100 0000000 0000000
+            int lengthBytes = new BigInteger(String.valueOf(length)).bitLength() / 7 + 1;
+            for (int i = lengthBytes - 1; i >= 0; --i)
             {
-                case 3:
-                    _buffer.put((byte)(0x80|(length>>14)));
-                case 2:
-                    _buffer.put((byte)(0x80|(0x7f&(length>>7))));
-                case 1:
-                    _buffer.put((byte)(0x7f&length));
+                byte lengthByte = (byte)(0x80 | (0x7F & (length >> 7 * i)));
+                _buffer.put(lengthByte);
+                if (_buffer.space() == 0)
+                    expelBuffer(blockFor);
             }
-
-            _buffer.put(content,offset,length);
         }
         else
         {
-            // send in a sentinel frame
-            int needed=length+2;
-            checkSpace(needed,blockFor);
-
             _buffer.put(frame);
-            _buffer.put(content,offset,length);
-            _buffer.put((byte)0xFF);
         }
-    }
-    
-    synchronized public void addFrame(byte frame, String content, int blockFor) throws IOException
-    {
-        Buffer byte_buffer=_buffers.getBuffer();
-        try
+
+        if (_buffer.space() == 0)
+            expelBuffer(blockFor);
+
+        int remaining = length;
+        while (remaining > 0)
         {
-            byte[] array=byte_buffer.array();
-
-            int chars = content.length();
-            int bytes = 0;
-            final int limit=array.length-6;
-
-            for (int i = 0; i < chars; i++)
+            int chunk = remaining < _buffer.space() ? remaining : _buffer.space();
+            _buffer.put(content, offset + (length - remaining), chunk);
+            remaining -= chunk;
+            if (_buffer.space() > 0)
             {
-                int code = content.charAt(i);
-
-                if (bytes>=limit)
-                    throw new IllegalArgumentException("frame too large");
-
-                if ((code & 0xffffff80) == 0) 
+                if (frame == WebSocket.SENTINEL_FRAME)
+                    _buffer.put((byte)0xFF);
+                // Gently flush the data, issuing a non-blocking write
+                flushBuffer();
+            }
+            else
+            {
+                // Forcibly flush the data, issuing a blocking write
+                expelBuffer(blockFor);
+                if (remaining == 0)
                 {
-                    array[bytes++]=(byte)(code);
-                }
-                else if((code&0xfffff800)==0)
-                {
-                    array[bytes++]=(byte)(0xc0|(code>>6));
-                    array[bytes++]=(byte)(0x80|(code&0x3f));
-                }
-                else if((code&0xffff0000)==0)
-                {
-                    array[bytes++]=(byte)(0xe0|(code>>12));
-                    array[bytes++]=(byte)(0x80|((code>>6)&0x3f));
-                    array[bytes++]=(byte)(0x80|(code&0x3f));
-                }
-                else if((code&0xff200000)==0)
-                {
-                    array[bytes++]=(byte)(0xf0|(code>>18));
-                    array[bytes++]=(byte)(0x80|((code>>12)&0x3f));
-                    array[bytes++]=(byte)(0x80|((code>>6)&0x3f));
-                    array[bytes++]=(byte)(0x80|(code&0x3f));
-                }
-                else if((code&0xf4000000)==0)
-                {
-                    array[bytes++]=(byte)(0xf8|(code>>24));
-                    array[bytes++]=(byte)(0x80|((code>>18)&0x3f));
-                    array[bytes++]=(byte)(0x80|((code>>12)&0x3f));
-                    array[bytes++]=(byte)(0x80|((code>>6)&0x3f));
-                    array[bytes++]=(byte)(0x80|(code&0x3f));
-                }
-                else if((code&0x80000000)==0)
-                {
-                    array[bytes++]=(byte)(0xfc|(code>>30));
-                    array[bytes++]=(byte)(0x80|((code>>24)&0x3f));
-                    array[bytes++]=(byte)(0x80|((code>>18)&0x3f));
-                    array[bytes++]=(byte)(0x80|((code>>12)&0x3f));
-                    array[bytes++]=(byte)(0x80|((code>>6)&0x3f));
-                    array[bytes++]=(byte)(0x80|(code&0x3f));
-                }
-                else
-                {
-                    array[bytes++]=(byte)('?');
+                    if (frame == WebSocket.SENTINEL_FRAME)
+                        _buffer.put((byte)0xFF);
+                    // Gently flush the data, issuing a non-blocking write
+                    flushBuffer();
                 }
             }
-            addFrame(frame,array,0,bytes,blockFor);
-        }
-        finally
-        {
-            _buffers.returnBuffer(byte_buffer);
         }
     }
-    
-    private void checkSpace(int needed, long blockFor)
+
+    public synchronized void addFrame(byte frame, String content, int blockFor) throws IOException
+    {
+        byte[] bytes = content.getBytes("UTF-8");
+        addFrame(frame, bytes, 0, bytes.length, blockFor);
+    }
+
+    private synchronized void checkSpace(int needed, long blockFor)
         throws IOException
     {
         int space=_buffer.space();
-        
+
         if (space<needed)
         {
             if (_endp.isBlocking())
@@ -175,7 +136,7 @@ public class WebSocketGenerator
                     space=_buffer.space();
                 }
             }
-            
+
             if (space<needed)
             {
                 _endp.close();
@@ -184,12 +145,12 @@ public class WebSocketGenerator
         }
     }
 
-    synchronized public int flush(long blockFor)
+    public synchronized int flush(long blockFor)
     {
         return 0;
     }
 
-    synchronized public int flush() throws IOException
+    public synchronized int flush() throws IOException
     {
         int flushed = flushBuffer();
         if (_buffer!=null && _buffer.length()==0)
@@ -199,12 +160,12 @@ public class WebSocketGenerator
         }
         return flushed;
     }
-    
-    private int flushBuffer() throws IOException
+
+    private synchronized int flushBuffer() throws IOException
     {
         if (!_endp.isOpen())
-            return -1;
-        
+            throw new IOException("Closed");
+
         if (_buffer!=null)
         {
             int flushed =_endp.flush(_buffer);
@@ -215,7 +176,27 @@ public class WebSocketGenerator
         return 0;
     }
 
-    synchronized public boolean isBufferEmpty()
+    private synchronized void expelBuffer(long blockFor) throws IOException
+    {
+        flushBuffer();
+        _buffer.compact();
+        if (!_endp.isBlocking())
+        {
+            while (_buffer.space()==0)
+            {
+                // TODO: in case the I/O system signals write ready, but when we attempt to write we cannot
+                // TODO: we should decrease the blockFor timeout instead of waiting again the whole timeout
+                boolean ready = _endp.blockWritable(blockFor);
+                if (!ready)
+                    throw new IOException("Write timeout");
+
+                flushBuffer();
+                _buffer.compact();
+            }
+        }
+    }
+
+    public synchronized boolean isBufferEmpty()
     {
         return _buffer==null || _buffer.length()==0;
     }
