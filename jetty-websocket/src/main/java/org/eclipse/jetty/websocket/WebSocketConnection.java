@@ -62,6 +62,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
             }
         });
         
+        // TODO should these be AsyncEndPoint checks/calls?
         if (_endp instanceof SelectChannelEndPoint)
         {
             final SelectChannelEndPoint scep=(SelectChannelEndPoint)_endp;
@@ -115,9 +116,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
             if (_endp.isOpen())
             {
                 _idle.access(_endp);
-                
-                if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)
-                    ((AsyncEndPoint)_endp).scheduleWrite();
+                checkWriteable();
             }
             else
                 // TODO - not really the best way
@@ -150,8 +149,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         _generator.addFrame(WebSocket.SENTINEL_FRAME,content,_maxIdleTimeMs);
         _generator.flush();
-        if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)
-            ((AsyncEndPoint)_endp).scheduleWrite();
+        checkWriteable();
         _idle.access(_endp);
     }
 
@@ -159,8 +157,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         _generator.addFrame(frame,content,_maxIdleTimeMs);
         _generator.flush();
-        if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)
-            ((AsyncEndPoint)_endp).scheduleWrite();
+        checkWriteable();
         _idle.access(_endp);
     }
 
@@ -168,8 +165,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         _generator.addFrame(frame,content,_maxIdleTimeMs);
         _generator.flush();
-        if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)
-            ((AsyncEndPoint)_endp).scheduleWrite();
+        checkWriteable();
         _idle.access(_endp);
     }
 
@@ -177,8 +173,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         _generator.addFrame(frame,content,offset,length,_maxIdleTimeMs);
         _generator.flush();
-        if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)
-            ((AsyncEndPoint)_endp).scheduleWrite();
+        checkWriteable();
         _idle.access(_endp);
     }
 
@@ -198,6 +193,13 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     public void fill(Buffer buffer)
     {
         _parser.fill(buffer);
+    }
+
+
+    private void checkWriteable()
+    {
+        if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)
+            ((AsyncEndPoint)_endp).scheduleWrite();
     }
     
     private interface IdleCheck
