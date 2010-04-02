@@ -1,6 +1,7 @@
 
 jetty-7.1-SNAPSHOT
  + 307898 Handle large/async websocket messages
+ + JETTY-1202 Use platform default algorithm for SecureRandom
 
 jetty-7.0.2.v20100331
  + 297552 Don't call Continuation timeouts from acceptor tick

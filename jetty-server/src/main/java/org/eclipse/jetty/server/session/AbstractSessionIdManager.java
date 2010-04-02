@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Random;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -27,35 +26,45 @@ import org.eclipse.jetty.util.log.Log;
 public abstract class AbstractSessionIdManager extends AbstractLifeCycle implements SessionIdManager
 {
     private final static String __NEW_SESSION_ID="org.eclipse.jetty.server.newSessionId";  
-    protected final static String SESSION_ID_RANDOM_ALGORITHM = "SHA1PRNG";
-    protected final static String SESSION_ID_RANDOM_ALGORITHM_ALT = "IBMSecureRandom";
     
     protected Random _random;
     protected boolean _weakRandom;
     protected String _workerName;
-    protected final Server _server;
     
-    
-    public AbstractSessionIdManager(Server server)
+    /* ------------------------------------------------------------ */
+    public AbstractSessionIdManager()
     {
-        _server=server;
     }
     
-    
-    public AbstractSessionIdManager(Server server, Random random)
+    /* ------------------------------------------------------------ */
+    public AbstractSessionIdManager(Random random)
     {
         _random=random;
-        _server=server;
     }
 
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Get the workname. If set, the workername is dot appended to the session
+     * ID and can be used to assist session affinity in a load balancer.
+     * 
+     * @return String or null
+     */
     public String getWorkerName()
     {
         return _workerName;
     }
-    
-    public void setWorkerName (String name)
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the workname. If set, the workername is dot appended to the session
+     * ID and can be used to assist session affinity in a load balancer.
+     * 
+     * @param workerName
+     */
+    public void setWorkerName(String workerName)
     {
-        _workerName=name;
+        _workerName=workerName;
     }
 
     /* ------------------------------------------------------------ */
@@ -70,6 +79,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         _random=random;
         _weakRandom=false;
     }
+    
+    /* ------------------------------------------------------------ */
     /** 
      * Create a new session id if necessary.
      * 
@@ -93,25 +104,26 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
             if (new_id!=null&&idInUse(new_id))
                 return new_id;
 
-            
-            
             // pick a new unique ID!
             String id=null;
             while (id==null||id.length()==0||idInUse(id))
             {
-                long r=_weakRandom
+                long r0=_weakRandom
                 ?(hashCode()^Runtime.getRuntime().freeMemory()^_random.nextInt()^(((long)request.hashCode())<<32))
                 :_random.nextLong();
-                r^=created;
-                if (request!=null && request.getRemoteAddr()!=null)
-                    r^=request.getRemoteAddr().hashCode();
-                if (r<0)
-                    r=-r;
-                id=Long.toString(r,36);
+                if (r0<0)
+                    r0=-r0;
+                long r1=_weakRandom
+                ?(hashCode()^Runtime.getRuntime().freeMemory()^_random.nextInt()^(((long)request.hashCode())<<32))
+                :_random.nextLong();
+                if (r1<0)
+                    r1=-r1;
+                id=Long.toString(r0,36)+Long.toString(r1,36);
                 
                 //add in the id of the node to ensure unique id across cluster
                 //NOTE this is different to the node suffix which denotes which node the request was received on
-                id=_workerName + id;
+                if (_workerName!=null)
+                    id=_workerName + id;
             }
 
             request.setAttribute(__NEW_SESSION_ID,id);
@@ -119,16 +131,20 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         }
     }
 
-    
+    /* ------------------------------------------------------------ */
     @Override
-    public void doStart()
+    protected void doStart() throws Exception
     {
        initRandom();
     }
-
     
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doStop() throws Exception
+    {
+    }
     
-    
+    /* ------------------------------------------------------------ */
     /**
      * Set up a random number generator for the sessionids.
      * 
@@ -140,21 +156,13 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         {
             try
             {
-                _random=SecureRandom.getInstance(SESSION_ID_RANDOM_ALGORITHM);
+                _random=new SecureRandom();
             }
-            catch (NoSuchAlgorithmException e)
+            catch (Exception e)
             {
-                try
-                {
-                    _random=SecureRandom.getInstance(SESSION_ID_RANDOM_ALGORITHM_ALT);
-                    _weakRandom=false;
-                }
-                catch (NoSuchAlgorithmException e_alt)
-                {
-                    Log.warn("Could not generate SecureRandom for session-id randomness",e);
-                    _random=new Random();
-                    _weakRandom=true;
-                }
+                Log.warn("Could not generate SecureRandom for session-id randomness",e);
+                _random=new Random();
+                _weakRandom=true;
             }
         }
         _random.setSeed(_random.nextLong()^System.currentTimeMillis()^hashCode()^Runtime.getRuntime().freeMemory()); 
