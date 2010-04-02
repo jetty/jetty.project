@@ -127,12 +127,8 @@ public class WebSocketGenerator
             throw new IOException("Closed");
 
         if (_buffer!=null)
-        {
-            int flushed =_endp.flush(_buffer);
-            if (flushed>0)
-                _buffer.skip(flushed);
-            return flushed;
-        }
+            return _endp.flush(_buffer);
+
         return 0;
     }
 

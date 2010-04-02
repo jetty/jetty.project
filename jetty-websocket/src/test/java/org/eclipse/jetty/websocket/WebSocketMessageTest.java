@@ -64,6 +64,9 @@ public class WebSocketMessageTest extends TestCase
                 "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
+        // Make sure the read times out if there are problems with the implementation
+        socket.setSoTimeout(1000);
+
         InputStream input = socket.getInputStream();
         BufferedReader reader = new BufferedReader(new InputStreamReader(input, "ISO-8859-1"));
         String responseLine = reader.readLine();
@@ -112,6 +115,9 @@ public class WebSocketMessageTest extends TestCase
                 "Connection: Upgrade\r\n" +
                 "\r\n").getBytes("ISO-8859-1"));
         output.flush();
+
+        // Make sure the read times out if there are problems with the implementation
+        socket.setSoTimeout(1000);
 
         InputStream input = socket.getInputStream();
         BufferedReader reader = new BufferedReader(new InputStreamReader(input, "ISO-8859-1"));
