@@ -134,7 +134,7 @@ public class WebSocketMessageTest extends TestCase
         byte[] data = message.toString().getBytes("UTF-8");
         _serverWebSocket.outbound.sendMessage(WebSocket.LENGTH_FRAME, data);
 
-        // I know the format of the message will be: 0x80 0x84 0x80 0x80 ...
+        // Length of the message is 65536, so the length will be encoded as 0x84 0x80 0x00
         int frame = input.read();
         assertEquals(0x80, frame);
         int length1 = input.read();
@@ -142,7 +142,7 @@ public class WebSocketMessageTest extends TestCase
         int length2 = input.read();
         assertEquals(0x80, length2);
         int length3 = input.read();
-        assertEquals(0x80, length3);
+        assertEquals(0x00, length3);
         int read = 0;
         while (read < data.length)
         {

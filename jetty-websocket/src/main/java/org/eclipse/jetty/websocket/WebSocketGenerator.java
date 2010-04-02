@@ -39,13 +39,11 @@ public class WebSocketGenerator
         if (_buffer.space() == 0)
             expelBuffer(blockFor);
 
+        bufferPut(frame, blockFor);
+
         if (isLengthFrame(frame))
         {
             // Send a length delimited frame
-
-            _buffer.put(frame);
-            if (_buffer.space() == 0)
-                expelBuffer(blockFor);
 
             // How many bytes we need for the length ?
             // We have 7 bits available, so log2(length) / 7 + 1
@@ -53,21 +51,13 @@ public class WebSocketGenerator
             // but we need to write it in 3 7-bytes 0000011 0000110 1010000
             // 65536 == 1 00000000 00000000 => 100 0000000 0000000
             int lengthBytes = new BigInteger(String.valueOf(length)).bitLength() / 7 + 1;
-            for (int i = lengthBytes - 1; i >= 0; --i)
+            for (int i = lengthBytes - 1; i > 0; --i)
             {
                 byte lengthByte = (byte)(0x80 | (0x7F & (length >> 7 * i)));
-                _buffer.put(lengthByte);
-                if (_buffer.space() == 0)
-                    expelBuffer(blockFor);
+                bufferPut(lengthByte, blockFor);
             }
+            bufferPut((byte)(0x7F & length), blockFor);
         }
-        else
-        {
-            _buffer.put(frame);
-        }
-
-        if (_buffer.space() == 0)
-            expelBuffer(blockFor);
 
         int remaining = length;
         while (remaining > 0)
@@ -97,9 +87,16 @@ public class WebSocketGenerator
         }
     }
 
-    private boolean isLengthFrame(byte frame)
+    private synchronized boolean isLengthFrame(byte frame)
     {
         return (frame & WebSocket.LENGTH_FRAME) == WebSocket.LENGTH_FRAME;
+    }
+
+    private synchronized void bufferPut(byte datum, long blockFor) throws IOException
+    {
+        _buffer.put(datum);
+        if (_buffer.space() == 0)
+            expelBuffer(blockFor);
     }
 
     public synchronized void addFrame(byte frame, String content, int blockFor) throws IOException

@@ -57,7 +57,7 @@ public class WebSocketGeneratorTest extends TestCase
         _generator.addFrame((byte)0x84,"Hell\uFF4F W\uFF4Frld".getBytes(StringUtil.__UTF8),0);
         _generator.flush();
         assertEquals(0x84,0xff&_out.get());
-        assertEquals(0x80|15,0xff&_out.get());
+        assertEquals(15,0xff&_out.get());
         assertEquals('H',_out.get());
         assertEquals('e',_out.get());
         assertEquals('l',_out.get());
@@ -86,7 +86,7 @@ public class WebSocketGeneratorTest extends TestCase
         _generator.flush();
         assertEquals(0x85,0xff&_out.get());
         assertEquals(0x80|(b.length>>7),0xff&_out.get());
-        assertEquals(0x80|(0x7f&b.length),0xff&_out.get());
+        assertEquals(0x7f&b.length,0xff&_out.get());
         for (int i=0;i<b.length;i++)
             assertEquals('0'+(i%10),0xff&_out.get());
     }
