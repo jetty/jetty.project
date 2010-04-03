@@ -11,7 +11,7 @@
   <name>Jetty :: OSGi :: Boot Logback</name>
   <description>Jetty OSGi Boot Logback bundle</description>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.logback</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.boot.logback</bundle-symbolic-name>
   </properties>
   <dependencies>
     <dependency>

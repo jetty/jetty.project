@@ -11,7 +11,7 @@
   <name>Jetty :: OSGi :: Boot JSP</name>
   <description>Jetty OSGi Boot JSP bundle</description>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.jsp</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.boot.jsp</bundle-symbolic-name>
   </properties>
   <dependencies>
     <dependency>

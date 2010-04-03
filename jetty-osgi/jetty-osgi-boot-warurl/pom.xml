@@ -11,7 +11,7 @@
   <name>Jetty :: OSGi :: Boot :: Warurl</name>
   <description>Jetty OSGi Boot-Warurl bundle</description>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.warurl</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.boot.warurl</bundle-symbolic-name>
   </properties>
   <dependencies>
     <dependency>
