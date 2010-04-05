@@ -245,7 +245,7 @@ public class ResponseTest extends TestCase
         response.setContentType("foo/bar; other=xyz");
         assertEquals("foo/bar; other=xyz",response.getContentType());
         response.getWriter();
-        assertEquals("foo/bar; other=xyz charset=ISO-8859-1",response.getContentType());
+        assertEquals("foo/bar; other=xyz;charset=ISO-8859-1",response.getContentType());
         response.setContentType("foo2/bar2");
         assertEquals("foo2/bar2;charset=ISO-8859-1",response.getContentType());
 
@@ -253,9 +253,9 @@ public class ResponseTest extends TestCase
 
         response.setCharacterEncoding("utf-8");
         response.setContentType("text/html; other=xyz");
-        assertEquals("text/html; other=xyz charset=utf-8",response.getContentType());
+        assertEquals("text/html; other=xyz;charset=utf-8",response.getContentType());
         response.getWriter();
-        assertEquals("text/html; other=xyz charset=utf-8",response.getContentType());
+        assertEquals("text/html; other=xyz;charset=utf-8",response.getContentType());
         response.setContentType("text/xml");
         assertEquals("text/xml;charset=UTF-8",response.getContentType());
     }

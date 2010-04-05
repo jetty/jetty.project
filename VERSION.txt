@@ -1,5 +1,6 @@
 
 jetty-7.1-SNAPSHOT
+ + 307847 Fixed combining mime type parameters
  + 307898 Handle large/async websocket messages
  + JETTY-1202 Use platform default algorithm for SecureRandom
 
@@ -15,6 +16,60 @@ jetty-7.0.2.v20100331
  + Take excess logging statements out of startup
  + Ensure webapps with no WEB-INF don't scan WEB-INF/lib
  + Allow Configuration array to be set on Server instance for all web apps
+
+jetty-6.1.23 2 April 2010
+ + JSON parses NaN as null
+ + Updated JSP to 2.1.v20091210
+ + COMETD-28 Improved concurrency usage in Bayeux and channel handling
+ + COMETD-46 reset ContentExchange content on resend
+ + COMETD-58 Extension.rcv() return null causes NPE in AbstractBayeux.PublishHandler.publish
+ + COMETD-59 AcknowledgeExtension does not handle null channel in Message
+ + COMETD-62 Delay add listeners until after client construction
+ + 296569 removeLifeCycleListener() has no effect
+ + 292800 ContextDeployer - recursive setting is undone by FilenameFilter
+ + 300178 HttpClients opens too many connections that are immediately closed
+ + 304658 Inconsistent Expires date format in Set-Cookie headers with maxAge=0
+ + 304698 org.eclipse.jetty.http.HttpFields$DateGenerator.formatCookieDate() uses wrong (?) date format
+ + 306331 Session manager is kept after call to doScope
+ + 306840 suppress content-length in requests without content
+ + Remove references to old content in HttpClient client tests for www.sun.com
+ + JETTY-875 Allow setting of advice field in response to Handshake
+ + JETTY-983 Range handling cleanup
+ + JETTY-1133 Handle multiple URL ; parameters
+ + JETTY-1134 BayeuxClient: Connect msg should be sent as array
+ + JETTY-1149 transient should be volatile in AbstractLifeCycle
+ + JETTY-1153 System property for UrlEncoded charset
+ + JETTY-1155 HttpConnection.close notifies HttpExchange
+ + JETTY-1156 SSL blocking close with JVM Bug busy key fix
+ + JETTY-1157 Don't hold array passed in write(byte[])
+ + JETTY-1158 NPE in StdErrLog when Throwable is null
+ + JETTY-1161 An Extension that measures round-trip delay for cometd messages.
+ + JETTY-1162 Add support for async/sync message delivery to BayeuxClient
+ + JETTY-1163 AJP13 forces 8859-1 encoding
+ + JETTY-1168 Don't hold sessionIdManager lock when invalidating sessions
+ + JETTY-1170 NPE on client when server-side extension returns null
+ + JETTY-1174 Close rather than finish Gzipstreams to avoid JVM leak
+ + JETTY-1174 Memory leak in ChannelImpl/ContinuationClient
+ + JETTY-1175 NPE in TimesyncExtension
+ + JETTY-1176 NPE in StatisticsExtension if client is null
+ + JETTY-1177 Allow error handler to set cacheControl
+ + JETTY-1178 Make continuation servlet to log the incoming JSON in case of parsing errors
+ + JETTY-1180 Extension methods are wrongly called
+ + JETTY-1182 COMETD-76 do not lock client while sending messages.
+ + JETTY-1182 Reduce synchronization in ContinuationCometdServlet
+ + JETTY-1183 AcknowledgedMessagesClientExtension does not handle correctly message resend when client long polls again
+ + JETTY-1186 Better document JMX setup in jetty-jmx.xml
+ + JETTY-1188 Null old jobs in QueuedThreadPool
+ + JETTY-1191 Limit size of ChannelId cache
+ + JETTY-1192 Fixed Digested POST and HttpExchange onRetry
+ + JETTY-1193 Exception details are lost in AbstractCometdServlet.getMessages
+ + JETTY-1195 Coalesce buffers in ChannelEndPoint.flush()
+ + JETTY-1196 Enable TCP_NODELAY by default in client connectors
+ + JETTY-1197 SetUID module test fails when using Java 1.6 to build
+ + JETTY-1199 FindBugs cleanups
+ + JETTY-1205 Memory leak in browser-to-client mapping
+ + JETTY-1207 NPE protection in FormAuthenticator
+ + JETTY-1202 Use platfrom default algorithm for SecureRandom
 
 jetty-7.0.2.RC0
  + JSON parses NaN as null
@@ -4388,10 +4443,6 @@ Jetty-1.0.1
 Jetty-1.0
  + First release in com.eclipse package structure
  + Included Util, JDBC, HTML, HTTP, Jetty
-
-
-
-
 
 
 
