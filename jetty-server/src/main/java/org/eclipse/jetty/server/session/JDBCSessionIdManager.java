@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.log.Log;
 public class JDBCSessionIdManager extends AbstractSessionIdManager
 {    
     protected final HashSet<String> _sessionIds = new HashSet();
+    protected Server _server;
     protected String _driverClassName;
     protected String _connectionUrl;
     protected DataSource _datasource;
@@ -152,12 +153,14 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     
     public JDBCSessionIdManager(Server server)
     {
-        super(server);
+        super();
+        _server=server;
     }
     
     public JDBCSessionIdManager(Server server, Random random)
     {
-       super(server, random);
+       super(random);
+       _server=server;
     }
 
     /**

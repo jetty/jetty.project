@@ -70,7 +70,7 @@ public class ConnectionTest extends TestCase
             CountDownLatch latch = new CountDownLatch(1);
             HttpExchange exchange = new ConnectionExchange(latch);
             // Using a IP address has a different behavior than using a host name
-            exchange.setAddress(new Address("1.2.3.4", 8080));
+            exchange.setAddress(new Address("127.0.0.1", 1));
             exchange.setURI("/");
             httpClient.send(exchange);
 
@@ -99,7 +99,7 @@ public class ConnectionTest extends TestCase
             CountDownLatch latch = new CountDownLatch(1);
             HttpExchange exchange = new ConnectionExchange(latch);
             // Using a IP address has a different behavior than using a host name
-            exchange.setAddress(new Address("1.2.3.4", 8080));
+            exchange.setAddress(new Address("127.0.0.1", 1));
             exchange.setURI("/");
             httpClient.send(exchange);
 
@@ -183,6 +183,13 @@ public class ConnectionTest extends TestCase
 
         @Override
         protected void onConnectionFailed(Throwable ex)
+        {
+            if (latch!=null)
+                latch.countDown();
+        }
+        
+        @Override
+        protected void onException(Throwable x)
         {
             if (latch!=null)
                 latch.countDown();

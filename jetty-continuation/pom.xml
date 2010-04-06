@@ -8,6 +8,9 @@
   <artifactId>jetty-continuation</artifactId>
   <name>Jetty :: Continuation</name>
   <description>Asynchronous API</description>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.continuation</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>
@@ -55,23 +58,16 @@
        <plugin>
          <groupId>org.apache.maven.plugins</groupId>
          <artifactId>maven-source-plugin</artifactId>
-         <executions>
-           <execution>
-             <id>attach-sources</id>
-             <goals>
-               <goal>jar</goal>
-             </goals>
-           </execution>
-         </executions>
       </plugin>
     </plugins>
   </build>
   <dependencies>
-      <dependency>
-         <groupId>${servlet.spec.groupId}</groupId>
-         <artifactId>${servlet.spec.artifactId}</artifactId>
-         <scope>provided</scope>
-       </dependency>
+    <dependency>
+     <groupId>${servlet.spec.groupId}</groupId>
+     <artifactId>${servlet.spec.artifactId}</artifactId>
+     <version>${servlet.spec.version}</version>
+     <scope>provided</scope>
+    </dependency>
     <dependency>
       <groupId>org.mortbay.jetty</groupId> 
       <artifactId>jetty-util</artifactId>

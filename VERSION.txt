@@ -3,6 +3,134 @@ jetty-8.0-SNAPSHOT
  + Ensure <absolute-ordering> in web.xml overrides relative <ordering> in fragments
  + Ensure empty <absolute-ordering> implies exclusion of all fragments
  + Ensure servlet-api jar class inheritance hierarchy is scanned
+ + 307847 Fixed combining mime type parameters
+ + 307898 Handle large/async websocket messages
+ + JETTY-1202 Use platform default algorithm for SecureRandom
+ + Merged 7.0.2.v20100331
+
+
+jetty-7.0.2.v20100331
+ + 297552 Don't call Continuation timeouts from acceptor tick
+ + 298236 Additional unit tests for jetty-client
+ + 306783 NPE in StdErrLog when Throwable is null
+ + 306840 Suppress content-length in requests with no content
+ + 306880 Support for UPGRADE in HttpClient
+ + 306884 Suspend with timeout <=0 never expires
+ + 306782 httpbis interpretation of 100 continues. Body never skipped
+ + 307589 updated servlet 3.0 continuations for final API
+ + Take excess logging statements out of startup
+ + Ensure webapps with no WEB-INF don't scan WEB-INF/lib
+ + Allow Configuration array to be set on Server instance for all web apps
+
+jetty-6.1.23 2 April 2010
+ + JSON parses NaN as null
+ + Updated JSP to 2.1.v20091210
+ + COMETD-28 Improved concurrency usage in Bayeux and channel handling
+ + COMETD-46 reset ContentExchange content on resend
+ + COMETD-58 Extension.rcv() return null causes NPE in AbstractBayeux.PublishHandler.publish
+ + COMETD-59 AcknowledgeExtension does not handle null channel in Message
+ + COMETD-62 Delay add listeners until after client construction
+ + 296569 removeLifeCycleListener() has no effect
+ + 292800 ContextDeployer - recursive setting is undone by FilenameFilter
+ + 300178 HttpClients opens too many connections that are immediately closed
+ + 304658 Inconsistent Expires date format in Set-Cookie headers with maxAge=0
+ + 304698 org.eclipse.jetty.http.HttpFields$DateGenerator.formatCookieDate() uses wrong (?) date format
+ + 306331 Session manager is kept after call to doScope
+ + 306840 suppress content-length in requests without content
+ + Remove references to old content in HttpClient client tests for www.sun.com
+ + JETTY-875 Allow setting of advice field in response to Handshake
+ + JETTY-983 Range handling cleanup
+ + JETTY-1133 Handle multiple URL ; parameters
+ + JETTY-1134 BayeuxClient: Connect msg should be sent as array
+ + JETTY-1149 transient should be volatile in AbstractLifeCycle
+ + JETTY-1153 System property for UrlEncoded charset
+ + JETTY-1155 HttpConnection.close notifies HttpExchange
+ + JETTY-1156 SSL blocking close with JVM Bug busy key fix
+ + JETTY-1157 Don't hold array passed in write(byte[])
+ + JETTY-1158 NPE in StdErrLog when Throwable is null
+ + JETTY-1161 An Extension that measures round-trip delay for cometd messages.
+ + JETTY-1162 Add support for async/sync message delivery to BayeuxClient
+ + JETTY-1163 AJP13 forces 8859-1 encoding
+ + JETTY-1168 Don't hold sessionIdManager lock when invalidating sessions
+ + JETTY-1170 NPE on client when server-side extension returns null
+ + JETTY-1174 Close rather than finish Gzipstreams to avoid JVM leak
+ + JETTY-1174 Memory leak in ChannelImpl/ContinuationClient
+ + JETTY-1175 NPE in TimesyncExtension
+ + JETTY-1176 NPE in StatisticsExtension if client is null
+ + JETTY-1177 Allow error handler to set cacheControl
+ + JETTY-1178 Make continuation servlet to log the incoming JSON in case of parsing errors
+ + JETTY-1180 Extension methods are wrongly called
+ + JETTY-1182 COMETD-76 do not lock client while sending messages.
+ + JETTY-1182 Reduce synchronization in ContinuationCometdServlet
+ + JETTY-1183 AcknowledgedMessagesClientExtension does not handle correctly message resend when client long polls again
+ + JETTY-1186 Better document JMX setup in jetty-jmx.xml
+ + JETTY-1188 Null old jobs in QueuedThreadPool
+ + JETTY-1191 Limit size of ChannelId cache
+ + JETTY-1192 Fixed Digested POST and HttpExchange onRetry
+ + JETTY-1193 Exception details are lost in AbstractCometdServlet.getMessages
+ + JETTY-1195 Coalesce buffers in ChannelEndPoint.flush()
+ + JETTY-1196 Enable TCP_NODELAY by default in client connectors
+ + JETTY-1197 SetUID module test fails when using Java 1.6 to build
+ + JETTY-1199 FindBugs cleanups
+ + JETTY-1205 Memory leak in browser-to-client mapping
+ + JETTY-1207 NPE protection in FormAuthenticator
+ + JETTY-1202 Use platfrom default algorithm for SecureRandom
+
+jetty-7.0.2.RC0
+ + JSON parses NaN as null
+ + 290765 Reset input for HttpExchange retry.
+ + 292799 WebAppDeployer - start a started context?
+ + 292800 ContextDeployer - recursive setting is undone by FilenameFilter
+ + 294799 when configuring a webapp, don't look for WEB-INF/jetty6-web.xml
+ + 296569 removeLifeCycleListener() has no effect
+ + 296765 JMX Connector Server and ShutdownThread
+ + 297421 Hide server/system classes from WebAppClassLoader.getResources
+ + 297783 Handle HEAD reponses in HttpClient
+ + 298144 Unit test for jetty-client connecting to a server that uses Basic Auth
+ + 298145 Reorganized test harness to separate the HTTP PUT and HTTP GET test URLs
+ + 298234 Unit test for jetty-client handling different HTTP error codes
+ + 298667 DeploymentManager uses ContextProvider and WebAppProvider
+ + 299455 Enum support in JSONPojoConvertor
+ + 300178 HttpClients opens too many connections that are immediately closed
+ + 300733 Jars from lib/ext are not visible for my web application
+ + 300933 AbstractConnector uses concurrent objects for stats
+ + 301089 Improve statistics available in StatisticsHandler and AbstractConnector
+ + 302018 Improve statistics available in AbstractSessionHandler
+ + 302198 Rename HttpClient authorization classes to Authentication
+ + 302244 invalid configuration boolean conversion in FormAuthenticator
+ + 302246 redirect loop using form authenticator
+ + 302556 CrossOriginFilter does not work correctly when Access-Control-Request-Headers header is not present
+ + 302669 WebInfConfiguration.unpack() unpacks WEB-INF/* from a ResourceCollection, breaking JSP reloading with ResourceCollections
+ + 303526 Added include cyphers
+ + 304307 Handle ;jsessionid in FROM Auth
+ + 304532 Skip some tests on IBM JVMs until resolved
+ + 304658 Inconsistent Expires date format in Set-Cookie headers with maxAge=0
+ + 304698 org.eclipse.jetty.http.HttpFields$DateGenerator.formatCookieDate() uses wrong (?) date format
+ + 304781 Reset HttpExchange timeout on slow request content.
+ + 304801 SSL connections FULL fix
+ + 306330 Flush filter chain cache after Invoker servlet
+ + 306331 Session manager is kept after call to doScope
+ + JETTY-776 Make new session-tests module to concentrate all reusable session clustering test code
+ + JETTY-910 Allow request listeners to access session
+ + JETTY-983 Range handling cleanup
+ + JETTY-1151 JETTY-1098 allow UTF-8 with 0 carry bits
+ + JETTY-1153 System property for UrlEncoded charset
+ + JETTY-1155 HttpConnection.close notifies HttpExchange
+ + JETTY-1156 SSL blocking close with JVM Bug busy key fix
+ + JETTY-1157 Don't hold array passed in write(byte[])
+ + JETTY-1163 AJP13 forces 8859-1 encoding
+ + JETTY-1177 Allow error handler to set cacheControl
+ + JETTY-1179 Persistant session tables created on MySQL use wrong datatype
+ + JETTY-1184 shrink thread pool even with frequent small jobs
+ + JETTY-1133 Handle multiple URL ; parameters
+ + JETTY-1174 Close rather than finish Gzipstreams to avoid JVM leak
+ + JETTY-1192 Fixed Digested POST
+ + JETTY-1199 FindBugs cleanups
+ + COMETD-46 reset ContentExchange response content on resend
+ + Added IPAccessHandler
+ + Updated Servlet3Continuation to final 3.0.20100224
+ + 305997 Coalesce buffers in ChannelEndPoint.flush()
+ + 306028 Enable TCP_NODELAY by default in client connectors
 
 
 jetty-8.0.0.M0 28 February 2010
@@ -4327,10 +4455,6 @@ Jetty-1.0.1
 Jetty-1.0
  + First release in com.eclipse package structure
  + Included Util, JDBC, HTML, HTTP, Jetty
-
-
-
-
 
 
 

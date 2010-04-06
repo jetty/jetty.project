@@ -12,6 +12,7 @@
 // ========================================================================
 package org.eclipse.jetty.osgi.boot.utils;
 
+import org.eclipse.jetty.osgi.boot.utils.internal.DefaultBundleClassLoaderHelper;
 import org.osgi.framework.Bundle;
 
 /**
@@ -34,6 +35,9 @@ public interface BundleClassLoaderHelper
 
     /** The name of the custom implementation for this interface in a fragment. */
     public static final String CLASS_NAME = "org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelperImpl";
+
+    /** The default instance supports felix and equinox */
+    public static BundleClassLoaderHelper DEFAULT = new DefaultBundleClassLoaderHelper();
 
     /**
      * @return The classloader of a given bundle. Assuming the bundle is

@@ -37,6 +37,7 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -46,6 +47,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.IO;
 
 /**
  * HttpServer Tester.
@@ -75,23 +77,25 @@ public class SSLEngineTest extends TestCase
     private static final String RESPONSE1="HTTP/1.1 200 OK\n"+"Connection: close\n"+"Server: Jetty("+JETTY_VERSION+")\n"+'\n'+HELLO_WORLD;
 
     private static final TrustManager[] s_dummyTrustManagers=new TrustManager[]
-    { new X509TrustManager()
-    {
-        public java.security.cert.X509Certificate[] getAcceptedIssuers()
+    { 
+        new X509TrustManager()
         {
-            return null;
+            public java.security.cert.X509Certificate[] getAcceptedIssuers()
+            {
+                return null;
+            }
+
+            public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType)
+
+            {
+            }
+
+            public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
+
+            {
+            }
         }
-
-        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType)
-
-        {
-        }
-
-        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
-
-        {
-        }
-    } };
+    };
 
     Server server;
     SslSelectChannelConnector connector;
@@ -113,6 +117,8 @@ public class SSLEngineTest extends TestCase
         connector.setKeystore(keystore);
         connector.setPassword("storepwd");
         connector.setKeyPassword("keypwd");
+        connector.setRequestBufferSize(512);
+        connector.setRequestHeaderSize(512);
 
         server.setConnectors(new Connector[]
         { connector });
@@ -134,16 +140,45 @@ public class SSLEngineTest extends TestCase
     {
     	
     }
+
+    /**
+     * Feed the server the entire request at once.
+     * 
+     * @throws Exception
+     */
+    public void testBigResponse() throws Exception
+    {
+        SSLContext ctx=SSLContext.getInstance("SSLv3");
+        ctx.init(null,s_dummyTrustManagers,new java.security.SecureRandom());
+
+        int port=connector.getLocalPort();
+
+        Socket client=ctx.getSocketFactory().createSocket("localhost",port);
+        OutputStream os=client.getOutputStream();
+
+        String request = 
+            "GET /?dump=102400 HTTP/1.1\r\n"+
+            "Host: localhost:8080\r\n"+
+            "Connection: close\r\n"+
+            "\r\n";
+        
+        os.write(request.getBytes());
+        os.flush();
+        
+        String response = IO.toString(client.getInputStream());
+        
+        assertTrue(response.length()>102400);
+    }
     
     /**
      * Feed the server the entire request at once.
      * 
      * @throws Exception
      */
-    public void /*test*/RequestJettyHttps() throws Exception
+    public void testRequestJettyHttps() throws Exception
     {
-        final int loops=100;
-        final int numConns=100;
+        final int loops=10;
+        final int numConns=10;
 
         Socket[] client=new Socket[numConns];
 
@@ -259,15 +294,21 @@ public class SSLEngineTest extends TestCase
         {
             // System.err.println("HANDLE "+request.getRequestURI());
             String ssl_id = (String)request.getAttribute("javax.servlet.request.ssl_session_id");
-            //assertNotNull(ssl_id);
-            PrintWriter out=response.getWriter();
+            assertNotNull(ssl_id);
 
-            try
+            if (request.getParameter("dump")!=null)
             {
+                ServletOutputStream out=response.getOutputStream();
+                byte[] buf = new byte[Integer.valueOf(request.getParameter("dump"))];
+                for (int i=0;i<buf.length;i++)
+                    buf[i]=(byte)('0'+(i%10));
+                out.write(buf);
+                out.close();
+            }   
+            else
+            {
+                PrintWriter out=response.getWriter();
                 out.print(HELLO_WORLD);
-            }
-            finally
-            {
                 out.close();
             }
         }
@@ -352,6 +393,7 @@ public class SSLEngineTest extends TestCase
             server.stop();
         }
     }
+
 
     public static class StreamHandler extends AbstractHandler
     {

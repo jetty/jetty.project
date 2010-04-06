@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
@@ -252,19 +251,18 @@ public class WebappRegistrationHelper
             // makes sure there is access to all the jetty's bundles
 
             File jettyHomeF = new File(jettyHome);
+            URLClassLoader libExtClassLoader = null;
             try
             {
-                URLClassLoader libExtClassLoader = LibExtClassLoaderHelper.createLibEtcClassLoaderHelper(jettyHomeF,_server,JettyBootstrapActivator.class
-                        .getClassLoader());
-                URL[] jarsWithTlds = getJarsWithTlds();
-                _commonParentClassLoaderForWebapps = jarsWithTlds == null?libExtClassLoader:new TldLocatableURLClassloader(libExtClassLoader,getJarsWithTlds());
+            	libExtClassLoader = LibExtClassLoaderHelper.createLibEtcClassLoaderHelper(jettyHomeF,_server,
+            			JettyBootstrapActivator.class.getClassLoader());
             }
             catch (MalformedURLException e)
             {
                 e.printStackTrace();
             }
 
-            Thread.currentThread().setContextClassLoader(_commonParentClassLoaderForWebapps);
+            Thread.currentThread().setContextClassLoader(libExtClassLoader);
 
             String jettyetc = System.getProperty(OSGiWebappConstants.SYS_PROP_JETTY_ETC_FILES,"etc/jetty.xml");
             StringTokenizer tokenizer = new StringTokenizer(jettyetc,";,");
@@ -276,7 +274,7 @@ public class WebappRegistrationHelper
             properties.put("jetty.host",System.getProperty("jetty.host",""));
             properties.put("jetty.port",System.getProperty("jetty.port","8080"));
             properties.put("jetty.port.ssl",System.getProperty("jetty.port.ssl","8443"));
-            
+
             while (tokenizer.hasMoreTokens())
             {
                 String etcFile = tokenizer.nextToken().trim();
@@ -296,8 +294,7 @@ public class WebappRegistrationHelper
                         HandlerCollection handlers = new HandlerCollection();
                         ContextHandlerCollection contexts = new ContextHandlerCollection();
                         RequestLogHandler requestLogHandler = new RequestLogHandler();
-                        handlers.setHandlers(new Handler[]
-                        { contexts, new DefaultHandler(), requestLogHandler });
+                        handlers.setHandlers(new Handler[] { contexts, new DefaultHandler(), requestLogHandler });
                         _server.setHandler(handlers);
                     }
                 }
@@ -322,6 +319,18 @@ public class WebappRegistrationHelper
 
             init();
 
+            //now that we have an app provider we can call the registration customizer.
+            try
+            {
+                URL[] jarsWithTlds = getJarsWithTlds();
+                _commonParentClassLoaderForWebapps = jarsWithTlds == null?libExtClassLoader:new TldLocatableURLClassloader(libExtClassLoader,getJarsWithTlds());
+            }
+            catch (MalformedURLException e)
+            {
+                e.printStackTrace();
+            }
+
+            
             _server.start();
         }
         catch (Throwable t)
@@ -345,20 +354,6 @@ public class WebappRegistrationHelper
      */
     private void init()
     {
-
-        // [Hugues] if no jndi is setup let's do it.
-        // we could also get the bundle for jetty-jndi and open the
-        // corresponding properties file
-        // instead of hardcoding the values: but they are unlikely to change.
-        if (System.getProperty("java.naming.factory.initial") == null)
-        {
-            System.setProperty("java.naming.factory.initial","org.eclipse.jetty.jndi.InitialContextFactory");
-        }
-        if (System.getProperty("java.naming.factory.url.pkgs") == null)
-        {
-            System.setProperty("java.naming.factory.url.pkgs","org.eclipse.jetty.jndi");
-        }
-
         // Get the context handler
         _ctxtHandler = (ContextHandlerCollection)_server.getChildHandlerByClass(ContextHandlerCollection.class);
         
@@ -770,7 +765,7 @@ public class WebappRegistrationHelper
         ArrayList<URL> res = new ArrayList<URL>();
         for (WebappRegistrationCustomizer regCustomizer : JSP_REGISTRATION_HELPERS)
         {
-            URL[] urls = regCustomizer.getJarsWithTlds(BUNDLE_FILE_LOCATOR_HELPER);
+            URL[] urls = regCustomizer.getJarsWithTlds(_provider, BUNDLE_FILE_LOCATOR_HELPER);
             for (URL url : urls)
             {
                 if (!res.contains(url))
@@ -793,6 +788,14 @@ public class WebappRegistrationHelper
     {
         // rfc66
         wah.setAttribute(OSGiWebappConstants.RFC66_OSGI_BUNDLE_CONTEXT,contributor.getBundleContext());
+
+        //spring-dm-1.2.1 looks for the BundleContext as a different attribute.
+        //not a spec... but if we want to support 
+        //org.springframework.osgi.web.context.support.OsgiBundleXmlWebApplicationContext
+        //then we need to do this to:
+        wah.setAttribute("org.springframework.osgi.web." + BundleContext.class.getName(),
+                        contributor.getBundleContext());
+        
     }
 
     /**
@@ -856,6 +859,12 @@ public class WebappRegistrationHelper
             // rfc-66:
             context.setAttribute(OSGiWebappConstants.RFC66_OSGI_BUNDLE_CONTEXT,bundle.getBundleContext());
 
+            //spring-dm-1.2.1 looks for the BundleContext as a different attribute.
+            //not a spec... but if we want to support 
+            //org.springframework.osgi.web.context.support.OsgiBundleXmlWebApplicationContext
+            //then we need to do this to:
+            context.setAttribute("org.springframework.osgi.web." + BundleContext.class.getName(),
+                            bundle.getBundleContext());
             return context;
         }
         catch (FileNotFoundException e)

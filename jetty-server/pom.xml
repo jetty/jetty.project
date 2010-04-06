@@ -9,6 +9,9 @@
   <name>Jetty :: Server Core</name>
   <description>The core jetty server artifact.</description>
   <url>${jetty.url}</url>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>
@@ -57,14 +60,6 @@
        <plugin>
          <groupId>org.apache.maven.plugins</groupId>
          <artifactId>maven-source-plugin</artifactId>
-         <executions>
-           <execution>
-             <id>attach-sources</id>
-             <goals>
-               <goal>jar</goal>
-             </goals>
-           </execution>
-         </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

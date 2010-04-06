@@ -66,14 +66,10 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class SslSelectChannelConnector extends SelectChannelConnector implements SslConnector
 {
-    /**
-     * The name of the SSLSession attribute that will contain any cached
-     * information.
-     */
-    static final String CACHED_INFO_ATTR=CachedInfo.class.getName();
-
-    /** Default value for the cipher Suites. */
+    /** Default value for the excluded cipher Suites. */
     private String _excludeCipherSuites[]=null;
+    /** Default value for the included cipher Suites. */
+    private String _includeCipherSuites[]=null;
 
     /** Default value for the keystore location path. */
     private String _keystorePath=DEFAULT_KEYSTORE;
@@ -112,37 +108,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      *         negotiate the SSL connection. <br>
      *         Will be null if the chain is missing or empty.
      */
-    private static X509Certificate[] getCertChain(SSLSession sslSession)
-    {
-        try
-        {
-            javax.security.cert.X509Certificate javaxCerts[]=sslSession.getPeerCertificateChain();
-            if (javaxCerts==null||javaxCerts.length==0)
-                return null;
-
-            int length=javaxCerts.length;
-            X509Certificate[] javaCerts=new X509Certificate[length];
-
-            java.security.cert.CertificateFactory cf=java.security.cert.CertificateFactory.getInstance("X.509");
-            for (int i=0; i<length; i++)
-            {
-                byte bytes[]=javaxCerts[i].getEncoded();
-                ByteArrayInputStream stream=new ByteArrayInputStream(bytes);
-                javaCerts[i]=(X509Certificate)cf.generateCertificate(stream);
-            }
-
-            return javaCerts;
-        }
-        catch (SSLPeerUnverifiedException pue)
-        {
-            return null;
-        }
-        catch (Exception e)
-        {
-            Log.warn(Log.EXCEPTION,e);
-            return null;
-        }
-    }
 
   
     /* ------------------------------------------------------------ */
@@ -176,47 +141,12 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     {
         super.customize(endpoint,request);
         request.setScheme(HttpSchemes.HTTPS);
-        
+
         SslSelectChannelEndPoint sslHttpChannelEndpoint=(SslSelectChannelEndPoint)endpoint;
-        
         SSLEngine sslEngine=sslHttpChannelEndpoint.getSSLEngine();
-
-        try
-        {
-            SSLSession sslSession=sslEngine.getSession();
-            String cipherSuite=sslSession.getCipherSuite();
-            Integer keySize;
-            X509Certificate[] certs;
-            String idStr;
-
-            CachedInfo cachedInfo=(CachedInfo)sslSession.getValue(CACHED_INFO_ATTR);
-            if (cachedInfo!=null)
-            {
-                keySize=cachedInfo.getKeySize();
-                certs=cachedInfo.getCerts();
-                idStr=cachedInfo.getIdStr();
-            }
-            else
-            {
-                keySize=new Integer(ServletSSL.deduceKeyLength(cipherSuite));
-                certs=getCertChain(sslSession);
-                byte[] bytes = sslSession.getId();
-                idStr = TypeUtil.toHexString(bytes);
-                cachedInfo=new CachedInfo(keySize,certs,idStr);
-                sslSession.putValue(CACHED_INFO_ATTR,cachedInfo);
-            }
-
-            if (certs!=null)
-                request.setAttribute("javax.servlet.request.X509Certificate",certs);
-
-            request.setAttribute("javax.servlet.request.cipher_suite",cipherSuite);
-            request.setAttribute("javax.servlet.request.key_size",keySize);
-            request.setAttribute("javax.servlet.request.ssl_session_id", idStr);
-        }
-        catch (Exception e)
-        {
-            Log.warn(Log.EXCEPTION,e);
-        }
+        SSLSession sslSession=sslEngine.getSession();
+        
+        SslCertificates.customize(sslSession,endpoint,request);
     }
 
     /* ------------------------------------------------------------ */
@@ -262,6 +192,24 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     public void setExcludeCipherSuites(String[] cipherSuites)
     {
         this._excludeCipherSuites=cipherSuites;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getExcludeCipherSuites()
+     */
+    public String[] getIncludeCipherSuites()
+    {
+        return _includeCipherSuites;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setExcludeCipherSuites(java.lang.String[])
+     */
+    public void setIncludeCipherSuites(String[] cipherSuites)
+    {
+        this._includeCipherSuites=cipherSuites;
     }
 
     /* ------------------------------------------------------------ */
@@ -594,22 +542,50 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     /* ------------------------------------------------------------ */
     protected SSLEngine createSSLEngine() throws IOException
     {
-        SSLEngine engine=null;
+        SSLEngine engine = null;
         try
         {
-            engine=_context.createSSLEngine();
+            engine = _context.createSSLEngine();
             engine.setUseClientMode(false);
-            
+
             if (_wantClientAuth)
                 engine.setWantClientAuth(_wantClientAuth);
             if (_needClientAuth)
                 engine.setNeedClientAuth(_needClientAuth);
-            
-            if (_excludeCipherSuites!=null&&_excludeCipherSuites.length>0)
+
+            if ((_excludeCipherSuites != null && _excludeCipherSuites.length > 0) || (_includeCipherSuites != null && _includeCipherSuites.length > 0))
             {
-                List<String> excludedCSList=Arrays.asList(_excludeCipherSuites);
-                String[] enabledCipherSuites=engine.getEnabledCipherSuites();
-                List<String> enabledCSList=new ArrayList<String>(Arrays.asList(enabledCipherSuites));
+                List<String> includedCSList;
+                if (_includeCipherSuites != null)
+                {
+                    includedCSList = Arrays.asList(_includeCipherSuites);
+                }
+                else
+                {
+                    includedCSList = new ArrayList<String>();
+                }
+                List<String> excludedCSList;
+                if (_excludeCipherSuites != null)
+                {
+                    excludedCSList = Arrays.asList(_excludeCipherSuites);
+                }
+                else
+                {
+                    excludedCSList = new ArrayList<String>();
+                }
+                String[] enabledCipherSuites = engine.getEnabledCipherSuites();
+                List<String> enabledCSList = new ArrayList<String>(Arrays.asList(enabledCipherSuites));
+
+                String[] supportedCipherSuites = engine.getSupportedCipherSuites();
+                List<String> supportedCSList = Arrays.asList(supportedCipherSuites);
+
+                for (String cipherName : includedCSList)
+                {
+                    if ((!enabledCSList.contains(cipherName)) && supportedCSList.contains(cipherName))
+                    {
+                        enabledCSList.add(cipherName);
+                    }
+                }
 
                 for (String cipherName : excludedCSList)
                 {
@@ -618,7 +594,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
                         enabledCSList.remove(cipherName);
                     }
                 }
-                enabledCipherSuites=enabledCSList.toArray(new String[enabledCSList.size()]);
+                enabledCipherSuites = enabledCSList.toArray(new String[0]);
 
                 engine.setEnabledCipherSuites(enabledCipherSuites);
             }
@@ -731,42 +707,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         {
             if (keystoreInputStream != null)
             	keystoreInputStream.close();
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /**
-     * Simple bundle of information that is cached in the SSLSession. Stores the
-     * effective keySize and the client certificate chain.
-     */
-    private class CachedInfo
-    {
-        private final X509Certificate[] _certs;
-        private final Integer _keySize;
-        private final String _idStr;
-
-        CachedInfo(Integer keySize, X509Certificate[] certs,String idStr)
-        {
-            this._keySize=keySize;
-            this._certs=certs;
-            this._idStr=idStr;
-        }
-
-        X509Certificate[] getCerts()
-        {
-            return _certs;
-        }
-
-        Integer getKeySize()
-        {
-            return _keySize;
-        }
-        
-        String getIdStr()
-        {
-            return _idStr;
         }
     }
 

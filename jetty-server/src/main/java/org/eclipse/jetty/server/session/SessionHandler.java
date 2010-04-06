@@ -186,10 +186,7 @@ public class SessionHandler extends ScopedHandler
             }
 
             // start manual inline of nextScope(target,baseRequest,request,response);
-            //noinspection ConstantIfStatement
-            if (false)
-                nextScope(target,baseRequest,request,response);
-            else if (_nextScope!=null)
+            if (_nextScope!=null)
                 _nextScope.doScope(target,baseRequest,request, response);
             else if (_outerScope!=null)
                 _outerScope.doHandle(target,baseRequest,request, response);
@@ -207,12 +204,16 @@ public class SessionHandler extends ScopedHandler
                 //leaving context, free up the session
                 if (session!=null)
                     _sessionManager.complete(session);
-                baseRequest.setSessionManager(old_session_manager);
-                baseRequest.setSession(old_session);
+                
+                // Leave last session in place
+                if (old_session_manager!=null )
+                {
+                    baseRequest.setSessionManager(old_session_manager);
+                    baseRequest.setSession(old_session);
+                }
             }
         }
     }
-    
 
     /* ------------------------------------------------------------ */
     /*
@@ -284,20 +285,26 @@ public class SessionHandler extends ScopedHandler
         {
             String uri = request.getRequestURI();
 
-            int semi = uri.lastIndexOf(';');
-            if (semi>=0)
+            String prefix=sessionManager.getSessionIdPathParameterNamePrefix();
+            if (prefix!=null)
             {
-                // check if there is a url encoded session param.
-                String param=sessionManager.getSessionIdPathParameterName();
-                if (param!=null)
-                {
-                    int p=uri.indexOf(param,semi+1);
-                    if (p>0)
+                int s = uri.indexOf(prefix);
+                if (s>=0)
+                {   
+                    s+=prefix.length();
+                    int i=s;
+                    while (i<uri.length())
                     {
-                        requested_session_id = uri.substring(p+param.length()+1);
-                        requested_session_id_from_cookie = false;
-                        if(Log.isDebugEnabled())Log.debug("Got Session ID "+requested_session_id+" from URL");
+                        char c=uri.charAt(i);
+                        if (c==';'||c=='#'||c=='?'||c=='/')
+                            break;
+                        i++;
                     }
+
+                    requested_session_id = uri.substring(s,i);
+                    requested_session_id_from_cookie = false;
+                    if(Log.isDebugEnabled())
+                        Log.debug("Got Session ID "+requested_session_id+" from URL");                    
                 }
             }
         }

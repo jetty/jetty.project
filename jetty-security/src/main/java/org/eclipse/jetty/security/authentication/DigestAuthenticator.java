@@ -62,7 +62,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
-        if (mandatory)
+        if (!mandatory)
             return _deferred;
         
         HttpServletRequest request = (HttpServletRequest)req;
@@ -114,8 +114,9 @@ public class DigestAuthenticator extends LoginAuthenticator
                                     digest.qop = tok;
                                 else if ("uri".equalsIgnoreCase(name))
                                     digest.uri = tok;
-                                else if ("response".equalsIgnoreCase(name)) digest.response = tok;
-                                break;
+                                else if ("response".equalsIgnoreCase(name)) 
+                                    digest.response = tok;
+                                name=null;
                             }
                     }
                 }

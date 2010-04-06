@@ -90,7 +90,7 @@ public class SecuredContentExchangeTest
         servletHolder.setInitParameter( "gzip", "true" );
         root.addServlet( servletHolder, "/*" );    
 
-        Handler handler = new PutHandler(getBasePath());       
+        Handler handler = new TestHandler(getBasePath());       
         
         HandlerCollection handlers = new HandlerCollection();
         handlers.setHandlers(new Handler[]{handler, root});

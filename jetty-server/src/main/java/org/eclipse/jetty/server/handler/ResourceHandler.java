@@ -302,7 +302,7 @@ public class ResourceHandler extends AbstractHandler
         {
             if (!request.getPathInfo().endsWith(URIUtil.SLASH))
             {
-                response.sendRedirect(URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH));
+                response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH)));
                 return;
             }
             

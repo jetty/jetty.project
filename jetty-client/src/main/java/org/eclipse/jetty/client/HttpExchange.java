@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.log.Log;
@@ -518,7 +519,6 @@ public class HttpExchange
     public void setRequestContent(Buffer requestContent)
     {
         _requestContent = requestContent;
-        _requestContent.mark(_requestContent.getIndex());
     }
 
     /**
@@ -528,9 +528,7 @@ public class HttpExchange
     {
         _requestContentSource = stream;
         if (_requestContentSource.markSupported())
-        {
             _requestContentSource.mark(Integer.MAX_VALUE);
-        }
     }
 
     /**
@@ -660,6 +658,13 @@ public class HttpExchange
     }
 
     /**
+     */
+    protected HttpConnection onSwitchProtocol(EndPoint enpd) throws IOException
+    {
+        return null;
+    }
+    
+    /**
      * Callback called when the request headers have been sent to the server.
      * This implementation does nothing.
      * @throws IOException allowed to be thrown by overriding code
@@ -777,13 +782,6 @@ public class HttpExchange
                 throw new IOException("Unsupported retry attempt");
             }
         }
-        else
-        {
-            if (_requestContent != null)
-            { 
-                _requestContent.reset();
-            }
-         }
     }
 
     /**

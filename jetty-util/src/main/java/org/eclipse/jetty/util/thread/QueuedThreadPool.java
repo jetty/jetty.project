@@ -449,25 +449,21 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
                                 job=_jobs.take();
                             else
                             {
-                                job=_jobs.poll(_maxIdleTimeMs,TimeUnit.MILLISECONDS);
-                                
-                                if (job==null)
+                                // maybe we should shrink?
+                                final int size=_threadsStarted.get();
+                                if (size>_minThreads)
                                 {
-                                    // maybe we should shrink?
-                                    final int size=_threadsStarted.get();
-                                    if (size>_minThreads)
+                                    long last=_lastShrink.get();
+                                    long now=System.currentTimeMillis();
+                                    if (last==0 || (now-last)>_maxIdleTimeMs)
                                     {
-                                        long last=_lastShrink.get();
-                                        long now=System.currentTimeMillis();
-                                        if (last==0 || (now-last)>_maxIdleTimeMs)
-                                        {
-                                            shrink=_lastShrink.compareAndSet(last,now) &&
-                                            _threadsStarted.compareAndSet(size,size-1);
-                                            if (shrink)
-                                                return;
-                                        }
+                                        shrink=_lastShrink.compareAndSet(last,now) &&
+                                        _threadsStarted.compareAndSet(size,size-1);
+                                        if (shrink)
+                                            return;
                                     }
                                 }
+                                job=_jobs.poll(_maxIdleTimeMs,TimeUnit.MILLISECONDS);
                             }
                         }
                     }

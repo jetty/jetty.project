@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
+import org.eclipse.jetty.util.thread.Timeout.Task;
 
 
 /* ------------------------------------------------------------ */
@@ -750,7 +751,18 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 
                 // tick over the timers
                 _idleTimeout.tick(now);
-                _timeout.tick(now);
+                
+                _timeout.setNow(now);
+                Task task = _timeout.expired();
+                while (task!=null)
+                {
+                    if (task instanceof Runnable)
+                        dispatch((Runnable)task);
+                    else
+                        task.expired();
+                        
+                    task = _timeout.expired();
+                }
             }
             catch (CancelledKeyException e)
             {
@@ -783,6 +795,12 @@ public abstract class SelectorManager extends AbstractLifeCycle
         }
 
         /* ------------------------------------------------------------ */
+        /**
+         * @param task The task to timeout. If it implements Runnable, then 
+         * expired will be called from a dispatched thread.
+         * 
+         * @param timeoutMs
+         */
         public void scheduleTimeout(Timeout.Task task, long timeoutMs)
         {
             _timeout.schedule(task, timeoutMs);

@@ -39,6 +39,28 @@ public class HttpGeneratorTest extends TestCase
     {
         super(arg0);
     }
+
+    public void testRequest()
+        throws Exception
+    {
+        Buffer bb=new ByteArrayBuffer(8096);
+        Buffer sb=new ByteArrayBuffer(1500);
+        HttpFields fields = new HttpFields();
+        ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
+        HttpGenerator hg = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
+        
+        fields.add("Host","something");
+        fields.add("User-Agent","test");
+        
+        hg.setRequest("GET","/index.html");
+        hg.setVersion(11);
+        hg.completeHeader(fields,true);
+        hg.complete();
+        
+        assertTrue(endp.getOut().toString().indexOf("GET /index.html HTTP/1.1")==0);
+        assertTrue(endp.getOut().toString().indexOf("Content-Length")==-1);
+        
+    }
     
     public void testHTTP()
     	throws Exception

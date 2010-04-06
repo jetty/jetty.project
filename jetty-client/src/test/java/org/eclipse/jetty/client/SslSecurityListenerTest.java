@@ -44,6 +44,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
+import org.eclipse.jetty.util.log.Log;
 
 /**
  * Functional testing.
@@ -100,6 +101,14 @@ public class SslSecurityListenerTest extends TestCase
 
     public void testSslGet() throws Exception
     {
+        // TODO Resolve problems on IBM JVM https://bugs.eclipse.org/bugs/show_bug.cgi?id=304532
+        if (System.getProperty("java.vendor").toLowerCase().indexOf("ibm")>=0)
+        {
+            Log.warn("Skipped SSL testSslGet on IBM JVM");
+            return;
+        }
+        
+        
         final CyclicBarrier barrier = new CyclicBarrier(2);
         
         ContentExchange httpExchange = new ContentExchange(true)
@@ -112,10 +121,8 @@ public class SslSecurityListenerTest extends TestCase
             }
         };
         
-        // httpExchange.setURL("https://dav.codehaus.org/user/jesse/index.html");
-        httpExchange.setURL("https://localhost:" + _port + "/");
+        httpExchange.setURL("https://127.0.0.1:" + _port + "/");
         httpExchange.setMethod(HttpMethods.GET);
-        // httpExchange.setRequestHeader("Connection","close");
 
         _httpClient.send(httpExchange);
         
@@ -123,7 +130,6 @@ public class SslSecurityListenerTest extends TestCase
         
         assertEquals(HttpServletResponse.SC_OK,httpExchange.getResponseStatus());
 
-        // System.err.println(httpExchange.getResponseContent());
         assertTrue(httpExchange.getResponseContent().length()>400);
         
     }

@@ -664,6 +664,12 @@ public class DoSFilter implements Filter
             else
                 _rateTrackers.remove(_id);
         }
+
+        @Override
+        public String toString()
+        {
+            return "RateTracker/"+_id+"/"+_type;
+        }
     }
     
     class FixedRateTracker extends RateTracker
@@ -673,6 +679,7 @@ public class DoSFilter implements Filter
             super(id,type,numRecentRequestsTracked);
         }
 
+        @Override
         public boolean isRateExceeded(long now)
         {
             // rate limit is never exceeded, but we keep track of the request timestamps
@@ -685,6 +692,12 @@ public class DoSFilter implements Filter
             }
 
             return false;
-        }        
+        }
+        
+        @Override
+        public String toString()
+        {
+            return "Fixed"+super.toString();
+        }
     }
 }

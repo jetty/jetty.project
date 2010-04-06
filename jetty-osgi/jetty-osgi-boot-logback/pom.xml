@@ -7,9 +7,12 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.osgi</groupId>
-  <artifactId>org.eclipse.jetty.osgi.boot.logback</artifactId>
+  <artifactId>jetty-osgi-boot-logback</artifactId>
   <name>Jetty :: OSGi :: Boot Logback</name>
   <description>Jetty OSGi Boot Logback bundle</description>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.boot.logback</bundle-symbolic-name>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
@@ -60,7 +63,7 @@
             <phase>process-resources</phase>
             <configuration>
               <tasks>
-                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 7.0.1.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
+                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 8.0.0.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
               </tasks>
             </configuration>
             <goals>
@@ -91,6 +94,12 @@
             <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
+      </plugin>
+      <!-- always include the sources to be able to prepare the eclipse-jetty-SDK feature
+      with a snapshot. -->
+      <plugin>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-source-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

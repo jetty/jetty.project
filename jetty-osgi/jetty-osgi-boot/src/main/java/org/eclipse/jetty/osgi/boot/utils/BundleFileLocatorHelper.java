@@ -14,6 +14,7 @@ package org.eclipse.jetty.osgi.boot.utils;
 
 import java.io.File;
 
+import org.eclipse.jetty.osgi.boot.utils.internal.DefaultFileLocatorHelper;
 import org.osgi.framework.Bundle;
 
 /**
@@ -27,6 +28,10 @@ public interface BundleFileLocatorHelper
 
     /** The name of the custom implementation for this interface in a fragment. */
     public static final String CLASS_NAME = "org.eclipse.jetty.osgi.boot.utils.FileLocatorHelperImpl";
+
+    /** The default instance supports felix and equinox */
+    public static BundleFileLocatorHelper DEFAULT = new DefaultFileLocatorHelper();
+
 
     /**
      * Works with equinox, felix, nuxeo and probably more. Not exactly in the

@@ -664,33 +664,38 @@ public class AsyncContinuation implements AsyncContext, Continuation
     protected void scheduleTimeout()
     {
         EndPoint endp=_connection.getEndPoint();
-        if (endp.isBlocking())
+        if (_timeoutMs>0)
         {
-            synchronized(this)
+            if (endp.isBlocking())
             {
-                _expireAt = System.currentTimeMillis()+_timeoutMs;
-                long wait=_timeoutMs;
-                while (_expireAt>0 && wait>0)
+                synchronized(this)
                 {
-                    try
+                    _expireAt = System.currentTimeMillis()+_timeoutMs;
+                    long wait=_timeoutMs;
+                    while (_expireAt>0 && wait>0)
                     {
-                        this.wait(wait);
+                        try
+                        {
+                            this.wait(wait);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            Log.ignore(e);
+                        }
+                        wait=_expireAt-System.currentTimeMillis();
                     }
-                    catch (InterruptedException e)
-                    {
-                        Log.ignore(e);
-                    }
-                    wait=_expireAt-System.currentTimeMillis();
-                }
 
-                if (_expireAt>0 && wait<=0)
-                {
-                    expired();
-                }
-            }            
+                    if (_expireAt>0 && wait<=0)
+                    {
+                        expired();
+                    }
+                }            
+            }
+            else
+            {
+                _connection.scheduleTimeout(_event._timeout,_timeoutMs);
+            }
         }
-        else
-            _connection.scheduleTimeout(_event._timeout,_timeoutMs);
     }
 
     /* ------------------------------------------------------------ */
@@ -962,19 +967,29 @@ public class AsyncContinuation implements AsyncContext, Continuation
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public class AsyncEventState extends AsyncEvent
+    public class AsyncTimeout extends Timeout.Task implements Runnable
     {
-        private final ServletContext _suspendedContext;
-        private ServletContext _dispatchContext;
-        private String _path;
-        private Timeout.Task _timeout= new Timeout.Task()
-        {
             @Override
             public void expired()
             {
                 AsyncContinuation.this.expired();
             }
-        };
+
+            @Override
+            public void run()
+            {
+                AsyncContinuation.this.expired();
+            }
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    public class AsyncEventState extends AsyncEvent
+    {
+        private final ServletContext _suspendedContext;
+        private ServletContext _dispatchContext;
+        private String _path;
+        private Timeout.Task _timeout=  new AsyncTimeout();
         
         public AsyncEventState(ServletContext context, ServletRequest request, ServletResponse response)
         {
@@ -1001,7 +1016,5 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             return _path;
         }
-
-        
     }
 }

@@ -493,7 +493,7 @@ public class URIUtil
             }     
             
             // Do the delete
-            if (skip<=0 && delStart>=0 && delStart>=0)
+            if (skip<=0 && delStart>=0 && delEnd>=delStart)
             {  
                 buf.delete(delStart,delEnd);
                 delStart=delEnd=-1;

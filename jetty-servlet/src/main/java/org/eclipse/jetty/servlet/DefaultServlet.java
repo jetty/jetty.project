@@ -762,9 +762,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         {
             // Parse the satisfiable ranges
             List ranges =InclusiveByteRange.satisfiableRanges(reqRanges,content_length);
-            
-            System.err.println(ranges+" "+request.getHeader(HttpHeaders.RANGE)+" "+content_length);
-            
+                        
             //  if there are no satisfiable ranges, send 416 response
             if (ranges==null || ranges.size()==0)
             {

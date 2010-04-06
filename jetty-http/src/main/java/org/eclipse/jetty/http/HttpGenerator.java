@@ -167,8 +167,13 @@ public class HttpGenerator extends AbstractGenerator
             if (!_endp.isOpen())
                 throw new EofException();
             flushBuffer();
-            if (_content != null && _content.length()>0 || _bufferChunked) 
-                throw new IllegalStateException("FULL");
+            if (_content != null && _content.length()>0) 
+            {
+                Buffer nc=_buffers.getBuffer(_content.length()+content.length());
+                nc.put(_content);
+                nc.put(content);
+                _content=nc;
+            }
         }
 
         _content = content;
@@ -186,7 +191,7 @@ public class HttpGenerator extends AbstractGenerator
             // Make _content a direct buffer
             _bypass = true;
         }
-        else
+        else if (!_bufferChunked)
         {
             // Yes - so we better check we have a buffer
             if (_buffer == null) 
@@ -483,6 +488,7 @@ public class HttpGenerator extends AbstractGenerator
         HttpFields.Field transfer_encoding = null;
         boolean keep_alive = false;
         boolean close=false;
+        boolean content_type=false;
         StringBuilder connection = null;
 
         if (fields != null)
@@ -511,6 +517,7 @@ public class HttpGenerator extends AbstractGenerator
                         if (BufferUtil.isPrefix(MimeTypes.MULTIPART_BYTERANGES_BUFFER, field.getValueBuffer())) _contentLength = HttpTokens.SELF_DEFINING_CONTENT;
 
                         // write the field to the header buffer
+                        content_type=true;
                         field.put(_header);
                         break;
 
@@ -654,7 +661,7 @@ public class HttpGenerator extends AbstractGenerator
                 {
                     // we have seen all the _content there is
                     _contentLength = _contentWritten;
-                    if (content_length == null)
+                    if (content_length == null && (_method==null || _contentLength>0 || content_type ))
                     {
                         // known length but not actually set.
                         _header.put(HttpHeaders.CONTENT_LENGTH_BUFFER);

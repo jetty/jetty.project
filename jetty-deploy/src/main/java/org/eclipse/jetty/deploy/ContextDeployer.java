@@ -393,11 +393,11 @@ public class ContextDeployer extends AbstractLifeCycle
             {
                 try
                 {
-                    if (name.endsWith(".xml")&&dir.equals(getConfigurationDir().getFile()))
+                    if (name.endsWith(".xml"))
                         return true;
                     return false;
                 }
-                catch (IOException e)
+                catch (Exception e)
                 {
                     Log.warn(e);
                     return false;

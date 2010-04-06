@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -68,6 +69,7 @@ public class ContentExchangeTest
     private Realm _realm;
     private String _protocol;
     private String _baseUrl;
+    private String _requestContent;
 
     public void setUp()
         throws Exception
@@ -164,6 +166,26 @@ public class ContentExchangeTest
         assertEquals(HttpStatus.OK_200,responseStatus);
     }
     
+    public void testPost() throws Exception
+    {
+        startClient(_realm);
+    
+        ContentExchange postExchange = new ContentExchange();
+        postExchange.setURL(getBaseUrl() + "test");
+        postExchange.setMethod(HttpMethods.POST);
+        postExchange.setRequestContent(new ByteArrayBuffer(_content.getBytes()));
+   
+        _client.send(postExchange);
+        int state = postExchange.waitForDone();
+    
+        int responseStatus = postExchange.getResponseStatus();
+ 
+        stopClient();
+    
+        assertEquals(HttpStatus.OK_200,responseStatus);
+        assertEquals(_content,_requestContent);
+    }
+    
     protected void configureServer(Server server)
         throws Exception
     {
@@ -172,7 +194,7 @@ public class ContentExchangeTest
         SelectChannelConnector connector = new SelectChannelConnector();
         server.addConnector(connector);
 
-        Handler handler = new PutHandler(getBasePath());
+        Handler handler = new TestHandler(getBasePath());
         
         ServletContextHandler root = new ServletContextHandler();
         root.setContextPath("/");
@@ -263,10 +285,10 @@ public class ContentExchangeTest
         }
     }
 
-    protected static class PutHandler extends AbstractHandler {
+    protected class TestHandler extends AbstractHandler {
         private final String resourcePath;
 
-        public PutHandler(String repositoryPath) {
+        public TestHandler(String repositoryPath) {
             this.resourcePath = repositoryPath;
         }
 
@@ -274,29 +296,51 @@ public class ContentExchangeTest
                 HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
         {
-            if (baseRequest.isHandled() || !baseRequest.getMethod().equals("PUT")) {
+            if (baseRequest.isHandled())
+            {
                 return;
             }
 
-            baseRequest.setHandled(true);
-
-            File file = new File(resourcePath, URLDecoder.decode(request.getPathInfo()));
-            file.getParentFile().mkdirs();
-            file.deleteOnExit();
+            OutputStream out = null;
             
-            FileOutputStream out = new FileOutputStream(file);
-            ServletInputStream in = request.getInputStream();
-            try
+            if (baseRequest.getMethod().equals("PUT"))
             {
-                copyStream( in, out );
-            }
-            finally
-            {
-                in.close();
-                out.close();
-            }
+            	baseRequest.setHandled(true);
 
-            response.setStatus(HttpServletResponse.SC_CREATED);
+            	File file = new File(resourcePath, URLDecoder.decode(request.getPathInfo()));
+            	file.getParentFile().mkdirs();
+            	file.deleteOnExit();
+            
+            	out = new FileOutputStream(file);
+
+	            response.setStatus(HttpServletResponse.SC_CREATED);
+            }
+            
+            if (baseRequest.getMethod().equals("POST"))
+            {
+            	baseRequest.setHandled(true);
+            	out = new ByteArrayOutputStream();
+
+	        response.setStatus(HttpServletResponse.SC_OK);
+            }
+            
+            if (out != null)
+            {
+                ServletInputStream in = request.getInputStream();
+	            try
+	            {
+	                copyStream( in, out );
+	            }
+	            finally
+	            {
+	                in.close();
+	                out.close();
+	            }
+	            
+	            if (!(out instanceof FileOutputStream))
+	            	_requestContent = out.toString();
+            }
+            
         }
     }
 }

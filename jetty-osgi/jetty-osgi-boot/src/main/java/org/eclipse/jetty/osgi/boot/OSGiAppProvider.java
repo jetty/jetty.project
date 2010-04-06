@@ -46,6 +46,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     private boolean _extractWars = false;
     private boolean _parentLoaderPriority = false;
     private String _defaultsDescriptor;
+    private String _tldBundles;
 
     /**
      * When a context file corresponds to a deployed bundle and is changed we
@@ -289,6 +290,24 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     public void setContextXmlDir(String contextsDir)
     {
         setMonitoredDir(contextsDir);
+    }
+    
+    /**
+     * @param tldBundles Comma separated list of bundles that contain tld jars
+     * that should be setup on the jetty instances created here.
+     */
+    public void setTldBundles(String tldBundles)
+    {
+    	_tldBundles = tldBundles;
+    }
+    
+    /**
+     * @return The list of bundles that contain tld jars that should be setup
+     * on the jetty instances created here.
+     */
+    public String getTldBundles()
+    {
+    	return _tldBundles;
     }
 
 }

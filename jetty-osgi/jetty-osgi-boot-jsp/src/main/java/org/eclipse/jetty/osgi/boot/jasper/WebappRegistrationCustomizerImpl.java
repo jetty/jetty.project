@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2009 Intalio, Inc.
+// Copyright (c) 2009-2010 Intalio, Inc.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 import javax.servlet.Servlet;
 import javax.servlet.jsp.JspContext;
@@ -26,6 +27,7 @@ import org.apache.jasper.compiler.Localizer;
 import org.apache.jasper.runtime.TldScanner;
 import org.apache.jasper.xmlparser.ParserUtils;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
+import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
 import org.osgi.framework.Bundle;
@@ -36,10 +38,36 @@ import org.xml.sax.SAXException;
 
 /**
  * Fix various shortcomings with the way jasper parses the tld files.
+ * Plugs the JSTL tlds assuming that they are packaged with the bundle that contains the JSTL classes.
+ * 
  */
 public class WebappRegistrationCustomizerImpl implements WebappRegistrationCustomizer
 {
     
+	/**
+	 * Default name of a class that belongs to the jstl bundle.
+	 * From that class we locate the corresponding bundle and register it
+	 * as a bundle that contains tld files.
+	 */
+	private static String DEFAULT_JSTL_BUNDLE_CLASS = "org.apache.taglibs.standard.tag.el.core.WhenTag";
+	//used to be "org.apache.jasper.runtime.JspFactoryImpl" but now 
+	//the standard tag library implementation are stored in a separate bundle.
+	
+	//DISABLED please use the tld bundle argument for the OSGiAppProvider
+//	/**
+//	 * Default name of a class that belongs to the bundle where the Java server Faces tld files are defined.
+//	 * This is the sun's reference implementation. 
+//	 */
+//	private static String DEFAUT_JSF_IMPL_CLASS = "com.sun.faces.config.ConfigureListener";
+
+	/**
+	 * Default jsp factory implementation.
+	 * Idally jasper is osgified and we can use services.
+	 * In the mean time we statically set the jsp factory implementation.
+	 * bug #299733
+	 */
+	private static String DEFAULT_JSP_FACTORY_IMPL_CLASS = "org.apache.jasper.runtime.JspFactoryImpl";
+	
     public WebappRegistrationCustomizerImpl()
     {
         fixupDtdResolution();
@@ -66,7 +94,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
                 //however its bundles does not import the jasper package
                 //so it fails. let's help things out:
                 fact = (JspFactory)JettyBootstrapActivator.class.getClassLoader()
-                    .loadClass("org.apache.jasper.runtime.JspFactoryImpl").newInstance();
+                    .loadClass(DEFAULT_JSP_FACTORY_IMPL_CLASS).newInstance();
                 JspFactory.setDefaultFactory(fact);
             }
     
@@ -93,37 +121,61 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
      * @return
      * @throws Exception
      */
-    public URL[] getJarsWithTlds(BundleFileLocatorHelper locatorHelper) throws Exception
+    public URL[] getJarsWithTlds(OSGiAppProvider provider, BundleFileLocatorHelper locatorHelper) throws Exception
     {
-        Bundle jasperBundler = FrameworkUtil.getBundle(TldScanner.class);
-        File jasperLocation = locatorHelper.getBundleInstallLocation(jasperBundler);
-        if (jasperLocation.isDirectory())
-        {
-            // try to find the jar files inside this folder
-            ArrayList<URL> urls = new ArrayList<URL>();
-            for (File f : jasperLocation.listFiles())
-            {
-                if (f.getName().endsWith(".jar") && f.isFile())
-                {
-                    urls.add(f.toURI().toURL());
-                }
-                else if (f.isDirectory() && f.getName().equals("lib"))
-                {
-                    for (File f2 : jasperLocation.listFiles())
-                    {
-                        if (f2.getName().endsWith(".jar") && f2.isFile())
-                        {
-                            urls.add(f2.toURI().toURL());
-                        }
-                    }
-                }
-            }
-            return urls.toArray(new URL[urls.size()]);
-        }
-        else
-        {
-            return new URL[] { jasperLocation.toURI().toURL() };
-        }
+    	HashSet<Class<?>> classesToAddToTheTldBundles = new HashSet<Class<?>>();
+
+    	//Look for the jstl bundle
+    	//We assume the jstl's tlds are defined there.
+    	//We assume that the jstl bundle is imported by this bundle
+    	//So we can look for this class using this bundle's classloader:
+    	Class<?> jstlClass = WebappRegistrationCustomizerImpl.class.getClassLoader().loadClass(DEFAULT_JSTL_BUNDLE_CLASS);
+    	
+    	classesToAddToTheTldBundles.add(jstlClass);
+    	
+//    	//should we also take care of the JSF?
+//    	try
+//    	{
+//    		jstlClass = WebappRegistrationCustomizerImpl.class.getClassLoader().loadClass(DEFAUT_JSF_IMPL_CLASS);
+//    		classesToAddToTheTldBundles.add(jstlClass);
+//    	}
+//    	catch (Throwable t)
+//    	{
+//    		//never mind we can live without JSF it is optional.
+//    	}
+        ArrayList<URL> urls = new ArrayList<URL>();
+    	for (Class<?> cl : classesToAddToTheTldBundles)
+    	{
+	        Bundle tldBundle = FrameworkUtil.getBundle(cl);
+	        File tldBundleLocation = locatorHelper.getBundleInstallLocation(tldBundle);
+	        if (tldBundleLocation.isDirectory())
+	        {
+	            // try to find the jar files inside this folder
+	            for (File f : tldBundleLocation.listFiles())
+	            {
+	                if (f.getName().endsWith(".jar") && f.isFile())
+	                {
+	                    urls.add(f.toURI().toURL());
+	                }
+	                else if (f.isDirectory() && f.getName().equals("lib"))
+	                {
+	                    for (File f2 : tldBundleLocation.listFiles())
+	                    {
+	                        if (f2.getName().endsWith(".jar") && f2.isFile())
+	                        {
+	                            urls.add(f2.toURI().toURL());
+	                        }
+	                    }
+	                }
+	            }
+	            
+	        }
+	        else
+	        {
+	            urls.add(tldBundleLocation.toURI().toURL());
+	        }
+    	}
+    	return urls.toArray(new URL[urls.size()]);
     }
 	
     /**

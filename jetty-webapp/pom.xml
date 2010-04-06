@@ -8,6 +8,9 @@
   <artifactId>jetty-webapp</artifactId>
   <name>Jetty :: Webapp Application Support</name>
   <description>Jetty web application support</description>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>
+  </properties>
   <build>
     <resources>
       <resource><directory>src/main/resources</directory></resource>
@@ -81,17 +84,8 @@
       </plugin>
       <!-- always include sources since jetty-xbean makes use of them -->
       <plugin>
-        <groupId>org.apache.maven.plugins
-        </groupId>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

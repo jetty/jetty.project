@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -17,7 +18,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     final long _timestamp;
     final WebSocket _websocket;
     final int _maxIdleTimeMs=300000;
-    
+
     public WebSocketConnection(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, long maxIdleTime)
     {
         _endp = endpoint;
@@ -27,7 +28,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         _parser = new WebSocketParser(buffers, endpoint, new WebSocketParser.EventHandler()
         {
             public void onFrame(byte frame, String data)
-            {   
+            {
                 try
                 {
                     _websocket.onMessage(frame,data);
@@ -41,13 +42,13 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
                     Log.warn(th);
                 }
             }
-            
+
             public void onFrame(byte frame, Buffer buffer)
             {
                 try
                 {
                     byte[] array=buffer.array();
-                    
+
                     _websocket.onMessage(frame,array,buffer.getIndex(),buffer.length());
                 }
                 catch(ThreadDeath th)
@@ -60,7 +61,8 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
                 }
             }
         });
-        
+
+        // TODO should these be AsyncEndPoint checks/calls?
         if (_endp instanceof SelectChannelEndPoint)
         {
             final SelectChannelEndPoint scep=(SelectChannelEndPoint)_endp;
@@ -79,32 +81,29 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
             _idle = new IdleCheck()
             {
                 public void access(EndPoint endp)
-                {}  
+                {}
             };
-        }  
+        }
     }
-    
+
     public Connection handle() throws IOException
     {
-        boolean more=true;
-        
+        boolean progress=true;
+
         try
         {
-            while (more)
+            while (progress)
             {
                 int flushed=_generator.flush();
                 int filled=_parser.parseNext();
 
-                more = flushed>0 || filled>0 || !_parser.isBufferEmpty() || !_generator.isBufferEmpty();
-                
-                // System.err.println("flushed="+flushed+" filled="+filled+" more="+more+" p.e="+_parser.isBufferEmpty()+" g.e="+_generator.isBufferEmpty());
-                
+                progress = flushed>0 || filled>0;
+
                 if (filled<0 || flushed<0)
                 {
                     _endp.close();
                     break;
                 }
-                
             }
         }
         catch(IOException e)
@@ -115,7 +114,10 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         finally
         {
             if (_endp.isOpen())
+            {
                 _idle.access(_endp);
+                checkWriteable();
+            }
             else
                 // TODO - not really the best way
                 _websocket.onDisconnect();
@@ -127,7 +129,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         return _endp!=null&&_endp.isOpen();
     }
-    
+
     public boolean isIdle()
     {
         return _parser.isBufferEmpty() && _generator.isBufferEmpty();
@@ -145,29 +147,27 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
 
     public void sendMessage(String content) throws IOException
     {
-        _generator.addFrame(WebSocket.SENTINEL_FRAME,content,_maxIdleTimeMs);
-        _generator.flush();
-        _idle.access(_endp);
+        sendMessage(WebSocket.SENTINEL_FRAME,content);
     }
 
     public void sendMessage(byte frame, String content) throws IOException
     {
         _generator.addFrame(frame,content,_maxIdleTimeMs);
         _generator.flush();
+        checkWriteable();
         _idle.access(_endp);
     }
 
     public void sendMessage(byte frame, byte[] content) throws IOException
     {
-        _generator.addFrame(frame,content,_maxIdleTimeMs);
-        _generator.flush();
-        _idle.access(_endp);
+        sendMessage(frame, content, 0, content.length);
     }
 
     public void sendMessage(byte frame, byte[] content, int offset, int length) throws IOException
     {
         _generator.addFrame(frame,content,offset,length,_maxIdleTimeMs);
         _generator.flush();
+        checkWriteable();
         _idle.access(_endp);
     }
 
@@ -188,7 +188,14 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         _parser.fill(buffer);
     }
-    
+
+
+    private void checkWriteable()
+    {
+        if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)
+            ((AsyncEndPoint)_endp).scheduleWrite();
+    }
+
     private interface IdleCheck
     {
         void access(EndPoint endp);

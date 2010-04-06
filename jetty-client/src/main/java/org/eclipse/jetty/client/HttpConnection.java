@@ -26,13 +26,16 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.ssl.SslSelectChannelEndPoint;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -48,6 +51,7 @@ public class HttpConnection implements Connection
     private HttpGenerator _generator;
     private HttpParser _parser;
     private boolean _http11 = true;
+    private int _status;
     private Buffer _connectionHeader;
     private Buffer _requestContentChunk;
     private boolean _requestComplete;
@@ -124,7 +128,7 @@ public class HttpConnection implements Connection
             }
             else
             {
-                SelectChannelEndPoint scep = (SelectChannelEndPoint)_endp;
+                AsyncEndPoint scep = (AsyncEndPoint)_endp;
                 scep.scheduleWrite();
             }
             _destination.getHttpClient().schedule(_timeout);
@@ -141,7 +145,6 @@ public class HttpConnection implements Connection
         try
         {
             int no_progress = 0;
-            long flushed = 0;
 
             boolean failed = false;
             while (_endp.isBufferingInput() || _endp.isOpen())
@@ -204,9 +207,10 @@ public class HttpConnection implements Connection
                         {
                             if (_exchange == null)
                                 continue;
-                            flushed = _generator.flushBuffer();
-                            io += flushed;
                         }
+                        
+                        long flushed = _generator.flushBuffer();
+                        io += flushed;
 
                         if (!_generator.isComplete())
                         {
@@ -216,11 +220,15 @@ public class HttpConnection implements Connection
                                 if (_requestContentChunk == null || _requestContentChunk.length() == 0)
                                 {
                                     _requestContentChunk = _exchange.getRequestContentChunk();
+                                    _destination.getHttpClient().schedule(_timeout);
+
                                     if (_requestContentChunk != null)
                                         _generator.addContent(_requestContentChunk,false);
                                     else
                                         _generator.complete();
-                                    io += _generator.flushBuffer();
+
+                                    flushed = _generator.flushBuffer();
+                                    io += flushed;
                                 }
                             }
                             else
@@ -235,12 +243,12 @@ public class HttpConnection implements Connection
                     }
 
                     // If we are not ended then parse available
-                    if (!_parser.isComplete() && _generator.isCommitted())
+                    if (!_parser.isComplete() && (_generator.isComplete() || _generator.isCommitted() && !_endp.isBlocking()))
                     {
                         long filled = _parser.parseAvailable();
                         io += filled;
                     }
-
+                    
                     if (io > 0)
                         no_progress = 0;
                     else if (no_progress++ >= 2 && !_endp.isBlocking())
@@ -248,7 +256,8 @@ public class HttpConnection implements Connection
                         // SSL may need an extra flush as it may have made "no progress" while actually doing a handshake.
                         if (_endp instanceof SslSelectChannelEndPoint && !_generator.isComplete() && !_generator.isEmpty())
                         {
-                            if (_generator.flushBuffer()>0)
+                            long flushed = _generator.flushBuffer();
+                            if (flushed>0)
                                 continue;
                         }
                         return this;
@@ -326,6 +335,22 @@ public class HttpConnection implements Connection
                             {
                                 _exchange.disassociate();
                                 _exchange = null;
+                                
+                                if (_status==HttpStatus.SWITCHING_PROTOCOLS_101)
+                                {
+                                    HttpConnection switched=_exchange.onSwitchProtocol(_endp);
+                                    if (switched!=null)
+                                    {    
+                                        // switched protocol!
+                                        HttpExchange exchange = _pipeline;
+                                        _pipeline = null;
+                                        if (exchange!=null)
+                                            _destination.send(exchange);
+
+                                        return switched;
+                                    }
+                                }
+
 
                                 if (_pipeline == null)
                                 {
@@ -350,6 +375,7 @@ public class HttpConnection implements Connection
                                         send(exchange);
                                     }
                                 }
+
                             }
                         }
                     }
@@ -392,6 +418,7 @@ public class HttpConnection implements Connection
     {
         synchronized (this)
         {
+            _status=0;
             if (_exchange.getStatus() != HttpExchange.STATUS_WAITING_FOR_COMMIT)
                 throw new IllegalStateException();
 
@@ -425,7 +452,7 @@ public class HttpConnection implements Connection
             {
                 requestHeaders.putLongField(HttpHeaders.CONTENT_LENGTH, requestContent.length());
                 _generator.completeHeader(requestHeaders,false);
-                _generator.addContent(requestContent,true);
+                _generator.addContent(new View(requestContent),true);
             }
             else
             {
@@ -494,6 +521,7 @@ public class HttpConnection implements Connection
             if (exchange!=null)
             {
                 _http11 = HttpVersions.HTTP_1_1_BUFFER.equals(version);
+                _status=status;
                 exchange.getEventListener().onResponseStatus(version,status,reason);
                 exchange.setStatus(HttpExchange.STATUS_PARSING_HEADERS);
             }
@@ -551,20 +579,7 @@ public class HttpConnection implements Connection
 
     public void close() throws IOException
     {
-        try
-        {
-            _endp.close();
-        }
-        finally
-        {
-            HttpExchange exchange=_exchange;
-            if (exchange!=null)
-            {
-                int status = exchange.getStatus();
-                if (status>HttpExchange.STATUS_START && status<HttpExchange.STATUS_COMPLETED)
-                    System.err.println("\nCLOSE "+exchange);
-            }
-        }
+        _endp.close();
     }
 
     public void setIdleTimeout()

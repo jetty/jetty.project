@@ -54,6 +54,9 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
             socket = SocketFactory.getDefault().createSocket();
         }
 
+        socket.setSoTimeout(_httpClient.getSoTimeout());
+        socket.setTcpNoDelay(true);
+
         Address address = destination.isProxied() ? destination.getProxy() : destination.getAddress();
         socket.connect(address.toSocketAddress(), _httpClient.getConnectTimeout());
 
@@ -73,7 +76,7 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
                     {
                         final Connection next = con.handle();
                         if (next!=con)
-                        {  
+                        {
                             con=next;
                             continue;
                         }

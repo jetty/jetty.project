@@ -309,7 +309,7 @@ public class CGI extends HttpServlet
                         String value = line.substring(k+1).trim();
                         if ("Location".equals(key))
                         {
-                            res.sendRedirect(value);
+                            res.sendRedirect(res.encodeRedirectURL(value));
                         }
                         else if ("Status".equals(key))
                         {

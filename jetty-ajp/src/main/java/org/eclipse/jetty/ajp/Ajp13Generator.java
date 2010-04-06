@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ajp;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 
 import org.eclipse.jetty.http.AbstractGenerator;
@@ -26,6 +27,7 @@ import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 
@@ -736,7 +738,7 @@ public class Ajp13Generator extends AbstractGenerator
     }
 
     /* ------------------------------------------------------------ */
-    private void addString(String str)
+    private void addString(String str) throws UnsupportedEncodingException
     {
         if (str == null)
         {
@@ -746,7 +748,7 @@ public class Ajp13Generator extends AbstractGenerator
 
         // TODO - need to use a writer to convert, to avoid this hacky
         // conversion and temp buffer
-        byte[] b = str.getBytes();
+        byte[] b = str.getBytes(StringUtil.__ISO_8859_1);
 
         addInt(b.length);
 

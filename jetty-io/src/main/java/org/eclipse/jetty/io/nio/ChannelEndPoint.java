@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.io.nio;
@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.log.Log;
 
 
 /**
- * 
+ *
  *
  * To change the template for this generated type comment go to
  * Window - Preferences - Java - Code Generation - Code and Comments
@@ -41,9 +41,9 @@ public class ChannelEndPoint implements EndPoint
     protected final Socket _socket;
     protected InetSocketAddress _local;
     protected InetSocketAddress _remote;
-    
+
     /**
-     * 
+     *
      */
     public ChannelEndPoint(ByteChannel channel)
     {
@@ -51,23 +51,23 @@ public class ChannelEndPoint implements EndPoint
         this._channel = channel;
         _socket=(channel instanceof SocketChannel)?((SocketChannel)channel).socket():null;
     }
-    
+
     public boolean isBlocking()
     {
         return  !(_channel instanceof SelectableChannel) || ((SelectableChannel)_channel).isBlocking();
     }
-    
+
     public boolean blockReadable(long millisecs) throws IOException
     {
         return true;
     }
-    
+
     public boolean blockWritable(long millisecs) throws IOException
     {
         return true;
     }
 
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#isOpen()
      */
     public boolean isOpen()
@@ -139,7 +139,7 @@ public class ChannelEndPoint implements EndPoint
         {
             throw new IOException("Not Implemented");
         }
-        
+
         return len;
     }
 
@@ -203,9 +203,9 @@ public class ChannelEndPoint implements EndPoint
 
         Buffer buf0 = header==null?null:header.buffer();
         Buffer buf1 = buffer==null?null:buffer.buffer();
-        
+
         if (_channel instanceof GatheringByteChannel &&
-            header!=null && header.length()!=0 && buf0 instanceof NIOBuffer && 
+            header!=null && header.length()!=0 && buf0 instanceof NIOBuffer &&
             buffer!=null && buffer.length()!=0 && buf1 instanceof NIOBuffer)
         {
             final NIOBuffer nbuf0 = (NIOBuffer)buf0;
@@ -235,7 +235,7 @@ public class ChannelEndPoint implements EndPoint
 
                             // do the gathering write.
                             length=(int)((GatheringByteChannel)_channel).write(_gather2);
-                            
+
                             int hl=header.length();
                             if (length>hl)
                             {
@@ -246,7 +246,7 @@ public class ChannelEndPoint implements EndPoint
                             {
                                 header.skip(length);
                             }
-                            
+
                         }
                         finally
                         {
@@ -267,8 +267,20 @@ public class ChannelEndPoint implements EndPoint
         }
         else
         {
-            // TODO - consider copying buffers buffer and trailer into header if there is space!
-            
+            if (header!=null)
+            {
+                if (buffer!=null && buffer.length()>0 && header.space()>buffer.length())
+                {
+                    header.put(buffer);
+                    buffer.clear();
+                }
+                if (trailer!=null && trailer.length()>0 && header.space()>trailer.length())
+                {
+                    header.put(trailer);
+                    trailer.clear();
+                }
+            }
+
             // flush header
             if (header!=null && header.length()>0)
                 length=flush(header);
@@ -284,7 +296,7 @@ public class ChannelEndPoint implements EndPoint
                  trailer!=null && trailer.length()>0)
                 length+=flush(trailer);
         }
-        
+
         return length;
     }
 
@@ -298,50 +310,50 @@ public class ChannelEndPoint implements EndPoint
 
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getLocalAddr()
      */
     public String getLocalAddr()
     {
         if (_socket==null)
             return null;
-        
+
         if (_local==null)
             _local=(InetSocketAddress)_socket.getLocalSocketAddress();
-        
+
        if (_local==null || _local.getAddress()==null || _local.getAddress().isAnyLocalAddress())
            return StringUtil.ALL_INTERFACES;
-        
+
         return _local.getAddress().getHostAddress();
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getLocalHost()
      */
     public String getLocalHost()
     {
         if (_socket==null)
             return null;
-        
+
         if (_local==null)
             _local=(InetSocketAddress)_socket.getLocalSocketAddress();
-        
+
        if (_local==null || _local.getAddress()==null || _local.getAddress().isAnyLocalAddress())
            return StringUtil.ALL_INTERFACES;
-        
+
         return _local.getAddress().getCanonicalHostName();
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getLocalPort()
      */
     public int getLocalPort()
     {
         if (_socket==null)
             return 0;
-        
+
         if (_local==null)
             _local=(InetSocketAddress)_socket.getLocalSocketAddress();
         if (_local==null)
@@ -350,31 +362,31 @@ public class ChannelEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getRemoteAddr()
      */
     public String getRemoteAddr()
     {
         if (_socket==null)
             return null;
-        
+
         if (_remote==null)
             _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
-        
+
         if (_remote==null)
             return null;
         return _remote.getAddress().getHostAddress();
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getRemoteHost()
      */
     public String getRemoteHost()
     {
         if (_socket==null)
             return null;
-        
+
         if (_remote==null)
             _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
 
@@ -384,14 +396,14 @@ public class ChannelEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getRemotePort()
      */
     public int getRemotePort()
     {
         if (_socket==null)
             return 0;
-        
+
         if (_remote==null)
             _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
 
@@ -399,7 +411,7 @@ public class ChannelEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getConnection()
      */
     public Object getTransport()
@@ -410,7 +422,7 @@ public class ChannelEndPoint implements EndPoint
     /* ------------------------------------------------------------ */
     public void flush()
         throws IOException
-    {   
+    {
     }
 
     /* ------------------------------------------------------------ */
