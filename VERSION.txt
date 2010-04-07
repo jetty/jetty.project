@@ -1,5 +1,6 @@
 
 jetty-7.1-SNAPSHOT
+ + 306349 ProxyServlet does not work unless deployed at /
  + 307847 Fixed combining mime type parameters
  + 307898 Handle large/async websocket messages
  + JETTY-1202 Use platform default algorithm for SecureRandom
