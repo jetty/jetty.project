@@ -4,10 +4,11 @@ jetty-7.1-SNAPSHOT
  + 306349 ProxyServlet does not work unless deployed at /
  + 307847 Fixed combining mime type parameters
  + 307898 Handle large/async websocket messages
+ + 308009 ObjectMBean incorrectly casts getTargetException() to Exception
+ + 308420 convert jetty-plus.xml to use DeploymentManager 
  + JETTY-1202 Use platform default algorithm for SecureRandom
  + Fix jetty-plus.xml reference to addLifeCycle
  + Add AnnotationConfiguration to jetty-plus.xml
- + 308420 convert jetty-plus.xml to use DeploymentManager 
 
 jetty-7.0.2.v20100331
  + 297552 Don't call Continuation timeouts from acceptor tick
