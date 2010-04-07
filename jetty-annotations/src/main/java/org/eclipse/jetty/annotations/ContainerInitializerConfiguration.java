@@ -46,49 +46,52 @@ public class ContainerInitializerConfiguration  implements Configuration
         List<ContainerInitializer> initializers = (List<ContainerInitializer>)context.getAttribute(CONTAINER_INITIALIZERS);
         MultiMap classMap = (MultiMap)context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
         
-        for (ContainerInitializer i : initializers)
+        if (initializers != null)
         {
-            //We have already found the classes that directly have an annotation that was in the HandlesTypes
-            //annotation of the ServletContainerInitializer. For each of those classes, walk the inheritance
-            //hierarchy to find classes that extend or implement them.
-            if (i.getAnnotatedTypeNames() != null)
+            for (ContainerInitializer i : initializers)
             {
-                Set<String> annotatedClassNames = new HashSet<String>(i.getAnnotatedTypeNames());
-                for (String name : annotatedClassNames)
+                //We have already found the classes that directly have an annotation that was in the HandlesTypes
+                //annotation of the ServletContainerInitializer. For each of those classes, walk the inheritance
+                //hierarchy to find classes that extend or implement them.
+                if (i.getAnnotatedTypeNames() != null)
                 {
-                    //add the class with the annotation
-                    i.addApplicableTypeName(name);
-                    //add the classes that inherit the annotation
-                    List<String> implementsOrExtends = (List<String>)classMap.getValues(name);
-                    if (implementsOrExtends != null && !implementsOrExtends.isEmpty())
-                        addInheritedTypes(classMap, i, implementsOrExtends);
-                }
-            }
-
-            
-            //Now we need to look at the HandlesTypes classes that were not annotations. We need to
-            //find all classes that extend or implement them.
-            if (i.getInterestedTypes() != null)
-            {
-                for (Class c : i.getInterestedTypes())
-                {
-                    if (!c.isAnnotation())
+                    Set<String> annotatedClassNames = new HashSet<String>(i.getAnnotatedTypeNames());
+                    for (String name : annotatedClassNames)
                     {
-                        //add the classes that implement or extend the class.
-                        //TODO but not including the class itself?
-                        List<String> implementsOrExtends = (List<String>)classMap.getValues(c.getName());
+                        //add the class with the annotation
+                        i.addApplicableTypeName(name);
+                        //add the classes that inherit the annotation
+                        List<String> implementsOrExtends = (List<String>)classMap.getValues(name);
                         if (implementsOrExtends != null && !implementsOrExtends.isEmpty())
                             addInheritedTypes(classMap, i, implementsOrExtends);
                     }
                 }
+
+
+                //Now we need to look at the HandlesTypes classes that were not annotations. We need to
+                //find all classes that extend or implement them.
+                if (i.getInterestedTypes() != null)
+                {
+                    for (Class c : i.getInterestedTypes())
+                    {
+                        if (!c.isAnnotation())
+                        {
+                            //add the classes that implement or extend the class.
+                            //TODO but not including the class itself?
+                            List<String> implementsOrExtends = (List<String>)classMap.getValues(c.getName());
+                            if (implementsOrExtends != null && !implementsOrExtends.isEmpty())
+                                addInheritedTypes(classMap, i, implementsOrExtends);
+                        }
+                    }
+                }
+                //instantiate ServletContainerInitializers, call doStart
+                i.callStartup(context);
             }
-            //instantiate ServletContainerInitializers, call doStart
-            i.callStartup(context);
+
+            //TODO Email from Jan Luehe 18 August: after all ServletContainerInitializers have been
+            //called, need to check to see if there are any ServletRegistrations remaining
+            //that are "preliminary" and fail the deployment if so.
         }
-        
-        //TODO Email from Jan Luehe 18 August: after all ServletContainerInitializers have been
-        //called, need to check to see if there are any ServletRegistrations remaining
-        //that are "preliminary" and fail the deployment if so.
     }
 
     public void deconfigure(WebAppContext context) throws Exception

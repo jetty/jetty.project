@@ -7,6 +7,7 @@ jetty-8.0-SNAPSHOT
  + 307898 Handle large/async websocket messages
  + JETTY-1202 Use platform default algorithm for SecureRandom
  + Merged 7.0.2.v20100331
+ + Add NPE protection to ContainerInitializerConfiguration
 
 
 jetty-7.0.2.v20100331
