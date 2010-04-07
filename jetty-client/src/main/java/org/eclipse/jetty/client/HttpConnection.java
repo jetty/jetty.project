@@ -333,16 +333,17 @@ public class HttpConnection implements Connection
                             no_progress = 0;
                             if (_exchange != null)
                             {
+                                HttpExchange exchange=_exchange;
                                 _exchange.disassociate();
                                 _exchange = null;
                                 
                                 if (_status==HttpStatus.SWITCHING_PROTOCOLS_101)
                                 {
-                                    HttpConnection switched=_exchange.onSwitchProtocol(_endp);
+                                    Connection switched=exchange.onSwitchProtocol(_endp);
                                     if (switched!=null)
                                     {    
                                         // switched protocol!
-                                        HttpExchange exchange = _pipeline;
+                                        exchange = _pipeline;
                                         _pipeline = null;
                                         if (exchange!=null)
                                             _destination.send(exchange);
@@ -350,7 +351,6 @@ public class HttpConnection implements Connection
                                         return switched;
                                     }
                                 }
-
 
                                 if (_pipeline == null)
                                 {
@@ -364,13 +364,13 @@ public class HttpConnection implements Connection
                                         if (!isReserved())
                                             _destination.returnConnection(this,close);
 
-                                        HttpExchange exchange = _pipeline;
+                                        exchange = _pipeline;
                                         _pipeline = null;
                                         _destination.send(exchange);
                                     }
                                     else
                                     {
-                                        HttpExchange exchange = _pipeline;
+                                        exchange = _pipeline;
                                         _pipeline = null;
                                         send(exchange);
                                     }

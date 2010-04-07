@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.util.IO;
 
 /**
  * Functional testing for HttpExchange.
@@ -377,7 +378,7 @@ public class HttpExchangeTest extends TestCase
 
 
     }
-    public static void copyStream(InputStream in, OutputStream out)
+    public static void copyStrxeam(InputStream in, OutputStream out)
     {
         try
         {
@@ -443,7 +444,7 @@ public class HttpExchangeTest extends TestCase
                     else
                     {
                         // System.err.println("HANDLING "+request.getMethod());
-                        copyStream(request.getInputStream(),response.getOutputStream());
+                        IO.copy(request.getInputStream(),response.getOutputStream());
                     }
                 }
                 catch(IOException e)

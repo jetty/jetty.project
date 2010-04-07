@@ -19,6 +19,11 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     final WebSocket _websocket;
     final int _maxIdleTimeMs=300000;
 
+    public WebSocketConnection(WebSocket websocket, EndPoint endpoint)
+    {
+        this(websocket,endpoint,new WebSocketBuffers(8192),System.currentTimeMillis(),300000);
+    }
+    
     public WebSocketConnection(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, long maxIdleTime)
     {
         _endp = endpoint;
