@@ -55,28 +55,25 @@
   <!-- =========================================================== -->
   <!-- Deploy all webapps in webapps-plus                          -->
   <!-- =========================================================== -->
-  <!-- Uncomment the following to set up a WebAppDeployer that will -->
-  <!-- deploy webapps from a directory called webapps-plus. Note    -->
-  <!-- that you will need to create this directory first!           -->
+  <!-- Uncomment the following to set up a deployer that will      -->
+  <!-- deploy webapps from a directory called webapps-plus. Note   -->
+  <!-- that you will need to create this directory first!          -->
   <!--
-    <Call name="addLifeCycle">
-      <Arg>
-        <New class="org.eclipse.jetty.deploy.WebAppDeployer">
-          <Set name="contexts"><Ref id="Contexts"/></Set>
-          <Set name="webAppDir"><SystemProperty name="jetty.home" default="."/>/webapps-plus</Set>
-          <Set name="parentLoaderPriority">false</Set>
-          <Set name="extract">true</Set>
-          <Set name="allowDuplicates">false</Set>
-          <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Set>
-          <Set name="configurationClasses"><Ref id="plusConfig"/></Set>
-          <Call name="setAttribute">
-            <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-            <Arg>.*/jsp-api-[^/]*\.jar$|.*/jsp-[^/]*\.jar$</Arg>
-          </Call>
-        </New>
-      </Arg>
-    </Call>
-   -->
-
+  <Ref id="DeploymentManager">
+      <Call name="addAppProvider">
+        <Arg>
+          <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+            <Set name="monitoredDir"><Property name="jetty.home" default="." />/webapps-plus</Set>
+            <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Set>
+            <Set name="scanInterval">5</Set>
+            <Set name="contextXmlDir"><Property name="jetty.home" default="." />/contexts</Set>
+            <Set name="parentLoaderPriority">false</Set>
+            <Set name="extractWars">true</Set>
+            <Set name="configurationClasses"><Ref id="plusConfig"/></Set>
+          </New>
+        </Arg>
+      </Call>
+  </Ref>
+  -->
 </Configure>
 

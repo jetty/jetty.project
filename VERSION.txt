@@ -7,6 +7,7 @@ jetty-7.1-SNAPSHOT
  + JETTY-1202 Use platform default algorithm for SecureRandom
  + Fix jetty-plus.xml reference to addLifeCycle
  + Add AnnotationConfiguration to jetty-plus.xml
+ + 308420 convert jetty-plus.xml to use DeploymentManager 
 
 jetty-7.0.2.v20100331
  + 297552 Don't call Continuation timeouts from acceptor tick
