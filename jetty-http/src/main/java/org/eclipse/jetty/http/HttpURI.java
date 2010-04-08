@@ -15,6 +15,8 @@ package org.eclipse.jetty.http;
 
 import java.io.UnsupportedEncodingException;
 
+import javax.net.ssl.HostnameVerifier;
+
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -109,6 +111,80 @@ public class HttpURI
         _rawString=null;
         parse2(raw,offset,length);
     }
+    
+
+    public void parseConnect(byte[] raw,int offset, int length)
+    {
+        _rawString=null;
+        _encoded=false;
+        _raw=raw;
+        int i=offset;
+        int e=offset+length;
+        int state=AUTH;
+        int m=offset;
+        _end=offset+length;
+        _scheme=offset;
+        _authority=offset;
+        _host=offset;
+        _port=_end;
+        _portValue=-1;
+        _path=_end;
+        _param=_end;
+        _query=_end;
+        _fragment=_end;
+        
+        loop: while (i<e)
+        {
+            char c=(char)(0xff&_raw[i]);
+            int s=i++;
+            
+            switch (state)
+            {
+                case AUTH:
+                {
+                    switch (c)
+                    {
+                        case ':':
+                        {
+                            _port = s;
+                            break loop;
+                        }
+                        case '[':
+                        {
+                            state = IPV6;
+                            break;
+                        }
+                    }
+                    continue;
+                }
+
+                case IPV6:
+                {
+                    switch (c)
+                    {
+                        case '/':
+                        {
+                            throw new IllegalArgumentException("No closing ']' for " + StringUtil.toString(_raw,offset,length,URIUtil.__CHARSET));
+                        }
+                        case ']':
+                        {
+                            state = AUTH;
+                            break;
+                        }
+                    }
+
+                    continue;
+                }
+            }
+        }
+
+        if (_port<_path)
+            _portValue=TypeUtil.parseInt(_raw, _port+1, _path-_port-1,10);
+        else
+            throw new IllegalArgumentException("No port");
+        _path=offset;
+    }
+    
     
     private void parse2(byte[] raw,int offset, int length)
     {

@@ -836,7 +836,20 @@ public class HttpConnection implements Connection
 
             try
             {
-                _uri.parse(uri.array(), uri.getIndex(), uri.length());
+                switch (HttpMethods.CACHE.getOrdinal(method))
+                {
+                  case HttpMethods.CONNECT_ORDINAL:
+                      _uri.parseConnect(uri.array(), uri.getIndex(), uri.length());
+                      break;
+                
+                  case HttpMethods.HEAD_ORDINAL:
+                      _head=true;
+                      // fall through
+                      
+                  default:
+                      _uri.parse(uri.array(), uri.getIndex(), uri.length());
+                }
+                
                 _request.setUri(_uri);
 
                 if (version==null)
@@ -851,8 +864,6 @@ public class HttpConnection implements Connection
                     if (_version <= 0) _version = HttpVersions.HTTP_1_0_ORDINAL;
                     _request.setProtocol(version.toString());
                 }
-
-                _head = method == HttpMethods.HEAD_BUFFER; // depends on method being decached.
             }
             catch (Exception e)
             {

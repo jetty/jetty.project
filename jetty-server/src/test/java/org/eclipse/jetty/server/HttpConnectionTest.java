@@ -491,6 +491,31 @@ public class HttpConnectionTest extends TestCase
         }
 
     }
+    
+    public void testCONNECT()
+    {
+        String response = null;
+
+        try
+        {
+            int offset=0;
+
+            response=connector.getResponses("CONNECT www.webtide.com:8080 HTTP/1.1\n"+
+                                           "Host: myproxy:8888\015\012"+
+                                           "\015\012");
+            System.err.println("RESPONSE:"+response);
+            offset = checkContains(response,offset,"HTTP/1.1 200");
+
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            assertTrue(false);
+            if (response!=null)
+                 System.err.println(response);
+        }
+
+    }
 
     private int checkContains(String s,int offset,String c)
     {

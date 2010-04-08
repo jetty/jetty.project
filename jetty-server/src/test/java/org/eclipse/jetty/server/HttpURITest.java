@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 
 public class HttpURITest extends TestCase
 {
@@ -183,6 +184,36 @@ public class HttpURITest extends TestCase
             uri.parse(encoding_tests[t][0]);
             assertEquals(""+t,encoding_tests[t][1],uri.getDecodedPath());
             
+        }
+    }
+
+    String[][] connect_tests=
+    { 
+       /* 0*/ {"  localhost:8080  ","localhost","8080"}, 
+       /* 1*/ {"  127.0.0.1:8080  ","127.0.0.1","8080"}, 
+       /* 2*/ {"  [127::0::0::1]:8080  ","[127::0::0::1]","8080"}, 
+       /* 3*/ {"  error  ",null,null}, 
+       /* 4*/ {"  http://localhost:8080/  ",null,null}, 
+    };
+    
+    public void testCONNECT()
+        throws Exception
+    {
+        HttpURI uri = new HttpURI();
+        for (int i=0;i<connect_tests.length;i++)
+        {
+            try
+            {
+                ByteArrayBuffer buf = new ByteArrayBuffer(connect_tests[i][0]);
+                uri.parseConnect(buf.array(),2,buf.length()-4);
+                assertEquals("path"+i,connect_tests[i][1]+":"+connect_tests[i][2],uri.getPath());
+                assertEquals("host"+i,connect_tests[i][1],uri.getHost());
+                assertEquals("port"+i,Integer.parseInt(connect_tests[i][2]),uri.getPort());
+            }
+            catch(Exception e)
+            {
+                assertNull("error"+i,connect_tests[i][1]);
+            }       
         }
     }
 }
