@@ -377,6 +377,8 @@ public class HttpConnection implements Connection
     /* ------------------------------------------------------------ */
     public Connection handle() throws IOException
     {
+        Connection connection = this;
+        
         // Loop while more in buffer
         boolean more_in_buffer =true; // assume true until proven otherwise
         boolean progress=true;
@@ -462,32 +464,38 @@ public class HttpConnection implements Connection
                 {
                     more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
 
+                    // Is this request/response round complete?
                     if (_parser.isComplete() && _generator.isComplete() && !_endp.isBufferingOutput())
                     {
-                        if (_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
-                        {
-                            Connection connection = (Connection)_request.getAttribute("org.eclipse.jetty.io.Connection");
-                            if (connection!=null)
-                            {
-                                _parser.reset(true);
-                                return connection;
-                            }
-                        }
+                        // look for a switched connection instance?
+                        Connection switched=(_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
+                        ?(Connection)_request.getAttribute("org.eclipse.jetty.io.Connection"):null;
                         
-                        if (!_generator.isPersistent())
+                        // have we switched?
+                        if (switched!=null)
                         {
                             _parser.reset(true);
-                            more_in_buffer=false;
-                        }
-
-                        if (more_in_buffer)
-                        {
-                            reset(false);
-                            more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput(); 
+                            _generator.reset(true);
+                            connection=switched;
                         }
                         else
-                            reset(true);
-                        progress=true;
+                        {
+                            // No switch, so cleanup and reset
+                            if (!_generator.isPersistent())
+                            {
+                                _parser.reset(true);
+                                more_in_buffer=false;
+                            }
+
+                            if (more_in_buffer)
+                            {
+                                reset(false);
+                                more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput(); 
+                            }
+                            else
+                                reset(true);
+                            progress=true;
+                        }
                     }
 
                     if (_request.isAsyncStarted())
@@ -505,7 +513,7 @@ public class HttpConnection implements Connection
             setCurrentConnection(null);
             _handling=false;
         }
-        return this;
+        return connection;
     }
 
     /* ------------------------------------------------------------ */
