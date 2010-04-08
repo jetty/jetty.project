@@ -839,7 +839,8 @@ public class HttpConnection implements Connection
                 switch (HttpMethods.CACHE.getOrdinal(method))
                 {
                   case HttpMethods.CONNECT_ORDINAL:
-                      _uri.parseConnect(uri.array(), uri.getIndex(), uri.length());
+                      // _uri.parseConnect(uri.array(), uri.getIndex(), uri.length());
+                      _uri.parse("http://"+uri+"/");
                       break;
                 
                   case HttpMethods.HEAD_ORDINAL:
