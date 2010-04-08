@@ -1,4 +1,4 @@
-jetty-8.0-SNAPSHOT
+jetty-8.0.0.M1 8 April 2010
  + 306350 Ensure jars excluded by ordering are not scanned for annotations
  + Ensure <absolute-ordering> in web.xml overrides relative <ordering> in fragments
  + Ensure empty <absolute-ordering> implies exclusion of all fragments
