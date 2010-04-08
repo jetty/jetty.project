@@ -20,6 +20,8 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Enumeration;
 import java.util.HashSet;
 
@@ -200,19 +202,19 @@ public class ProxyServlet implements Servlet
                 if (request.getQueryString()!=null)
                     uri+="?"+request.getQueryString();
 
-		HttpURI url=proxyHttpURI(request.getScheme(),
-		                         request.getServerName(),
-		                         request.getServerPort(),
-		                         uri);
-		
-		if (debug!=0)
-		    _log.debug(debug+" proxy "+uri+"-->"+url);
-		    
-		if (url==null)
-		{
-		    response.sendError(HttpServletResponse.SC_FORBIDDEN);
-		    return;
-		}
+                HttpURI url=proxyHttpURI(request.getScheme(),
+                                         request.getServerName(),
+                                         request.getServerPort(),
+                                         uri);
+                
+                if (debug!=0)
+                    _log.debug(debug+" proxy "+uri+"-->"+url);
+                    
+                if (url==null)
+                {
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    return;
+                }
 
                 HttpExchange exchange = new HttpExchange()
                 {
@@ -299,7 +301,7 @@ public class ProxyServlet implements Servlet
 
                 exchange.setScheme(HttpSchemes.HTTPS.equals(request.getScheme())?HttpSchemes.HTTPS_BUFFER:HttpSchemes.HTTP_BUFFER);
                 exchange.setMethod(request.getMethod());
-		exchange.setURL(url.toString());
+                exchange.setURL(url.toString());
                 exchange.setVersion(request.getProtocol());
                 
                 if (debug!=0)
@@ -452,53 +454,84 @@ public class ProxyServlet implements Servlet
     /**
      * Transparent Proxy.
      * 
-     * This convenience extension to ProxyServlet configures the servlet
-     * as a transparent proxy.   The servlet is configured with init parameter:<ul>
-     * <li> ProxyTo - a URI like http://host:80/context to which the request is proxied.
-     * <li> Prefix  - a URI prefix that is striped from the start of the forwarded URI.
+     * This convenience extension to ProxyServlet configures the servlet as a transparent proxy. 
+     * The servlet is configured with init parameters:
+     * <ul>
+     * <li>ProxyTo - a URI like http://host:80/context to which the request is proxied.
+     * <li>Prefix - a URI prefix that is striped from the start of the forwarded URI.
      * </ul>
-     * For example, if a request was received at /foo/bar and the ProxyTo was  http://host:80/context
+     * For example, if a request was received at /foo/bar and the ProxyTo was http://host:80/context 
      * and the Prefix was /foo, then the request would be proxied to http://host:80/context/bar
-     *
+     * 
      */
     public static class Transparent extends ProxyServlet
     {
         String _prefix;
         String _proxyTo;
-        
+
         public Transparent()
-        {    
-        }
-        
-        public Transparent(String prefix,String server, int port)
         {
-            _prefix=prefix;
-            _proxyTo="http://"+server+":"+port;
+        }
+
+        public Transparent(String prefix, String host, int port)
+        {
+            this(prefix,"http",host,port,null);
+        }
+
+        public Transparent(String prefix, String schema, String host, int port, String path)
+        {
+            try
+            {
+                if (prefix != null)
+                {
+                    _prefix = new URI(prefix).normalize().toString();
+                }
+                _proxyTo = new URI(schema,null,host,port,path,null,null).normalize().toString();
+            }
+            catch (URISyntaxException ex)
+            {
+                _log.debug("Invalid URI syntax",ex);
+            }
         }
 
         @Override
         public void init(ServletConfig config) throws ServletException
         {
-            if (config.getInitParameter("ProxyTo")!=null)
-                _proxyTo=config.getInitParameter("ProxyTo");
-            if (config.getInitParameter("Prefix")!=null)
-                _prefix=config.getInitParameter("Prefix");
-            if (_proxyTo==null)
-                throw new UnavailableException("No ProxyTo");
             super.init(config);
-            _log.info(_name+" @ "+(_prefix==null?"-":_prefix)+ " to "+_proxyTo);
+
+            String prefix = config.getInitParameter("Prefix");
+            _prefix = prefix == null?_prefix:prefix;
+
+            // Adjust prefix value to account for context path
+            String contextPath = _context.getContextPath();
+            _prefix = _prefix == null?contextPath:(contextPath + _prefix);
+
+            String proxyTo = config.getInitParameter("ProxyTo");
+            _proxyTo = proxyTo == null?_proxyTo:proxyTo;
+
+            if (_proxyTo == null)
+                throw new UnavailableException("ProxyTo parameter is requred.");
+
+            if (!_prefix.startsWith("/"))
+                throw new UnavailableException("Prefix parameter must start with a '/'.");
+
+            _log.info(_name + " @ " + _prefix + " to " + _proxyTo);
         }
-        
+
         @Override
         protected HttpURI proxyHttpURI(final String scheme, final String serverName, int serverPort, final String uri) throws MalformedURLException
         {
-            if (_prefix!=null && !uri.startsWith(_prefix))
-                return null;
+            try
+            {
+                if (!uri.startsWith(_prefix))
+                    return null;
 
-            if (_prefix!=null)
-                return new HttpURI(_proxyTo+uri.substring(_prefix.length()));
-            return new HttpURI(_proxyTo+uri);
+                return new HttpURI(new URI(_proxyTo + uri.substring(_prefix.length())).normalize().toString());
+            }
+            catch (URISyntaxException ex)
+            {
+                throw new MalformedURLException(ex.getMessage());
+            }
         }
     }
-
 }

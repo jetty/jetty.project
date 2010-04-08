@@ -1,8 +1,9 @@
-jetty-8.0-SNAPSHOT
+jetty-8.0.0.M1 8 April 2010
  + 306350 Ensure jars excluded by ordering are not scanned for annotations
  + Ensure <absolute-ordering> in web.xml overrides relative <ordering> in fragments
  + Ensure empty <absolute-ordering> implies exclusion of all fragments
  + Ensure servlet-api jar class inheritance hierarchy is scanned
+ + 306349 ProxyServlet does not work unless deployed at /
  + 307847 Fixed combining mime type parameters
  + 307898 Handle large/async websocket messages
  + JETTY-1202 Use platform default algorithm for SecureRandom

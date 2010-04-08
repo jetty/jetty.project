@@ -31,6 +31,7 @@ public class WebAppProvider extends ScanningAppProvider
     private boolean _parentLoaderPriority = false;
     private String _defaultsDescriptor;
     private Filter _filter;
+    private String[] _configurationClasses;
 
     private static class Filter implements FilenameFilter
     {
@@ -167,6 +168,26 @@ public class WebAppProvider extends ScanningAppProvider
         }
     }
     
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param configurations The configuration class names.
+     */
+    public void setConfigurationClasses(String[] configurations)
+    {
+        _configurationClasses = configurations==null?null:(String[])configurations.clone();
+    }  
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * 
+     */
+    public String[] getConfigurationClasses()
+    {
+        return _configurationClasses;
+    }
+    
+    
     /* ------------------------------------------------------------ */
     public ContextHandler createContextHandler(final App app) throws Exception
     {
@@ -208,6 +229,8 @@ public class WebAppProvider extends ScanningAppProvider
             wah.setDefaultsDescriptor(_defaultsDescriptor);
         wah.setExtractWAR(_extractWars);
         wah.setParentLoaderPriority(_parentLoaderPriority);
+        if (_configurationClasses != null)
+            wah.setConfigurationClasses(_configurationClasses);
 
         return wah; 
     }
