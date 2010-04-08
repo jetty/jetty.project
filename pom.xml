@@ -192,7 +192,7 @@
     <module>jetty-policy</module>
     <module>jetty-start</module>
     <module>test-jetty-webapp</module>
-    <module>jetty-osgi</module>
+    <!-- module>jetty-osgi</module -->
     <module>test-continuation</module>
     <module>test-continuation-jetty6</module>
     <module>test-jetty-servlet</module>
