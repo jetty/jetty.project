@@ -9,6 +9,7 @@ jetty-8.0.0.M1 8 April 2010
  + JETTY-1202 Use platform default algorithm for SecureRandom
  + Merged 7.0.2.v20100331
  + Add NPE protection to ContainerInitializerConfiguration
+ + Temporarily remove jetty-osgi module to clarify jsp version compatibility
 
 
 jetty-7.0.2.v20100331
