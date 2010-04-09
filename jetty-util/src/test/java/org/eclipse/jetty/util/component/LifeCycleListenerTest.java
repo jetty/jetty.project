@@ -178,7 +178,7 @@ public class LifeCycleListenerTest extends TestCase
     
    
 
-    private class TestListener implements LifeCycle.Listener
+    private class TestListener extends AbstractLifeCycle.AbstractLifeCycleListener
     {
 
         private boolean failure = false;

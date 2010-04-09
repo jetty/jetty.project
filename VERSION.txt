@@ -3,6 +3,7 @@ jetty-7.1-SNAPSHOT
  + 294563 Websocket client connection
  + 297104 Improve handling of CONNECT method
  + 306349 ProxyServlet does not work unless deployed at /
+ + 307294 Add AbstractLifeCycle.AbstractLifeCycleListener implementation
  + 307847 Fixed combining mime type parameters
  + 307898 Handle large/async websocket messages
  + 308009 ObjectMBean incorrectly casts getTargetException() to Exception
