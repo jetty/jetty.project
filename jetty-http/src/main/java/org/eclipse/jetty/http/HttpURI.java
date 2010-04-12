@@ -4,18 +4,16 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.http;
 
 import java.io.UnsupportedEncodingException;
-
-import javax.net.ssl.HostnameVerifier;
 
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -39,12 +37,12 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
  * <li>{@link #getQuery()} - query</li>
  * <li>{@link #getFragment()} - fragment</li>
  * </ul>
- * 
+ *
  */
 public class HttpURI
 {
-    private static final byte[] __empty={}; 
-    private final static int 
+    private static final byte[] __empty={};
+    private final static int
     START=0,
     AUTH_OR_PATH=1,
     SCHEME_OR_PATH=2,
@@ -55,7 +53,7 @@ public class HttpURI
     PARAM=8,
     QUERY=9,
     ASTERISK=10;
-    
+
     boolean _partial=false;
     byte[] _raw=__empty;
     String _rawString;
@@ -70,14 +68,14 @@ public class HttpURI
     int _fragment;
     int _end;
     boolean _encoded=false;
-    
+
     final Utf8StringBuilder _utf8b = new Utf8StringBuilder(64);
-    
+
     public HttpURI()
     {
-        
-    } 
-    
+
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * @param parsePartialAuth If True, parse auth without prior scheme, else treat all URIs starting with / as paths
@@ -86,32 +84,32 @@ public class HttpURI
     {
         _partial=parsePartialAuth;
     }
-    
+
     public HttpURI(String raw)
     {
         _rawString=raw;
         byte[] b = raw.getBytes();
         parse(b,0,b.length);
     }
-    
+
     public HttpURI(byte[] raw,int offset, int length)
     {
         parse2(raw,offset,length);
     }
-    
+
     public void parse(String raw)
     {
         byte[] b = raw.getBytes();
         parse2(b,0,b.length);
         _rawString=raw;
     }
-    
+
     public void parse(byte[] raw,int offset, int length)
     {
         _rawString=null;
         parse2(raw,offset,length);
     }
-    
+
 
     public void parseConnect(byte[] raw,int offset, int length)
     {
@@ -132,12 +130,12 @@ public class HttpURI
         _param=_end;
         _query=_end;
         _fragment=_end;
-        
+
         loop: while (i<e)
         {
             char c=(char)(0xff&_raw[i]);
             int s=i++;
-            
+
             switch (state)
             {
                 case AUTH:
@@ -184,8 +182,8 @@ public class HttpURI
             throw new IllegalArgumentException("No port");
         _path=offset;
     }
-    
-    
+
+
     private void parse2(byte[] raw,int offset, int length)
     {
         _encoded=false;
@@ -208,7 +206,7 @@ public class HttpURI
         {
             char c=(char)(0xff&_raw[i]);
             int s=i++;
-            
+
             state: switch (state)
             {
                 case START:
@@ -237,14 +235,14 @@ public class HttpURI
                             _path=s;
                             state=ASTERISK;
                             break;
-                            
+
                         default:
                             if (Character.isLetterOrDigit(c))
                                 state=SCHEME_OR_PATH;
                             else
                                 throw new IllegalArgumentException("!(SCHEME|PATH|AUTH):"+StringUtil.toString(_raw,offset,length,URIUtil.__CHARSET));
                     }
-                    
+
                     continue;
                 }
 
@@ -261,16 +259,16 @@ public class HttpURI
                     {
                         i--;
                         state=PATH;
-                    }  
+                    }
                     else
                     {
                         _host=m;
                         _port=m;
                         state=PATH;
-                    }  
+                    }
                     continue;
                 }
-                
+
                 case SCHEME_OR_PATH:
                 {
                     // short cut for http and https
@@ -295,7 +293,7 @@ public class HttpURI
                             c=':';
                         }
                     }
-                    
+
                     switch (c)
                     {
                         case ':':
@@ -314,20 +312,20 @@ public class HttpURI
                             }
                             break;
                         }
-                        
+
                         case '/':
                         {
                             state = PATH;
                             break;
                         }
-                        
+
                         case ';':
                         {
                             _param = s;
                             state = PARAM;
                             break;
                         }
-                        
+
                         case '?':
                         {
                             _param = s;
@@ -335,7 +333,7 @@ public class HttpURI
                             state = QUERY;
                             break;
                         }
-                        
+
                         case '#':
                         {
                             _param = s;
@@ -346,7 +344,7 @@ public class HttpURI
                     }
                     continue;
                 }
-                
+
                 case AUTH:
                 {
                     switch (c)
@@ -397,7 +395,7 @@ public class HttpURI
 
                     continue;
                 }
-                
+
                 case PORT:
                 {
                     if (c=='/')
@@ -410,7 +408,7 @@ public class HttpURI
                     }
                     continue;
                 }
-                
+
                 case PATH:
                 {
                     switch (c)
@@ -442,7 +440,7 @@ public class HttpURI
                     }
                     continue;
                 }
-                
+
                 case PARAM:
                 {
                     switch (c)
@@ -462,7 +460,7 @@ public class HttpURI
                     }
                     continue;
                 }
-                
+
                 case QUERY:
                 {
                     if (c=='#')
@@ -472,7 +470,7 @@ public class HttpURI
                     }
                     continue;
                 }
-                
+
                 case ASTERISK:
                 {
                     throw new IllegalArgumentException("only '*'");
@@ -483,62 +481,62 @@ public class HttpURI
         if (_port<_path)
             _portValue=TypeUtil.parseInt(_raw, _port+1, _path-_port-1,10);
     }
-    
+
     private String toUtf8String(int offset,int length)
     {
         _utf8b.reset();
         _utf8b.append(_raw,offset,length);
         return _utf8b.toString();
     }
-    
+
     public String getScheme()
     {
         if (_scheme==_authority)
             return null;
         int l=_authority-_scheme;
-        if (l==5 && 
-            _raw[_scheme]=='h' && 
-            _raw[_scheme+1]=='t' && 
-            _raw[_scheme+2]=='t' && 
+        if (l==5 &&
+            _raw[_scheme]=='h' &&
+            _raw[_scheme+1]=='t' &&
+            _raw[_scheme+2]=='t' &&
             _raw[_scheme+3]=='p' )
             return HttpSchemes.HTTP;
-        if (l==6 && 
-            _raw[_scheme]=='h' && 
-            _raw[_scheme+1]=='t' && 
-            _raw[_scheme+2]=='t' && 
-            _raw[_scheme+3]=='p' && 
+        if (l==6 &&
+            _raw[_scheme]=='h' &&
+            _raw[_scheme+1]=='t' &&
+            _raw[_scheme+2]=='t' &&
+            _raw[_scheme+3]=='p' &&
             _raw[_scheme+4]=='s' )
             return HttpSchemes.HTTPS;
-        
+
         return toUtf8String(_scheme,_authority-_scheme-1);
     }
-    
+
     public String getAuthority()
     {
         if (_authority==_path)
             return null;
         return toUtf8String(_authority,_path-_authority);
     }
-    
+
     public String getHost()
     {
         if (_host==_port)
             return null;
         return toUtf8String(_host,_port-_host);
     }
-    
+
     public int getPort()
     {
         return _portValue;
     }
-    
+
     public String getPath()
     {
         if (_path==_param)
             return null;
         return toUtf8String(_path,_param-_path);
     }
-    
+
     public String getDecodedPath()
     {
         if (_path==_param)
@@ -551,7 +549,7 @@ public class HttpURI
         for (int i=_path;i<_param;i++)
         {
             byte b = _raw[i];
-            
+
             if (b=='%')
             {
                 if ((i+2)>=_param)
@@ -564,13 +562,13 @@ public class HttpURI
                 n++;
                 continue;
             }
-            
+
             if (bytes==null)
             {
                 bytes=new byte[length];
                 System.arraycopy(_raw,_path,bytes,0,n);
             }
-            
+
             bytes[n++]=b;
         }
 
@@ -581,47 +579,47 @@ public class HttpURI
         _utf8b.append(bytes,0,n);
         return _utf8b.toString();
     }
-    
+
     public String getPathAndParam()
     {
         if (_path==_query)
             return null;
         return toUtf8String(_path,_query-_path);
     }
-    
+
     public String getCompletePath()
     {
         if (_path==_end)
             return null;
         return toUtf8String(_path,_end-_path);
     }
-    
+
     public String getParam()
     {
         if (_param==_query)
             return null;
         return toUtf8String(_param+1,_query-_param-1);
     }
-    
+
     public String getQuery()
     {
         if (_query==_fragment)
             return null;
         return toUtf8String(_query+1,_fragment-_query-1);
     }
-    
+
     public String getQuery(String encoding)
     {
         if (_query==_fragment)
             return null;
         return StringUtil.toString(_raw,_query+1,_fragment-_query-1,encoding);
     }
-    
+
     public boolean hasQuery()
     {
         return (_fragment>_query);
     }
-    
+
     public String getFragment()
     {
         if (_fragment==_end)
@@ -629,7 +627,7 @@ public class HttpURI
         return toUtf8String(_fragment+1,_end-_fragment-1);
     }
 
-    public void decodeQueryTo(MultiMap parameters) 
+    public void decodeQueryTo(MultiMap parameters)
     {
         if (_query==_fragment)
             return;
@@ -637,12 +635,12 @@ public class HttpURI
         UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters,_utf8b);
     }
 
-    public void decodeQueryTo(MultiMap parameters, String encoding) 
+    public void decodeQueryTo(MultiMap parameters, String encoding)
         throws UnsupportedEncodingException
     {
         if (_query==_fragment)
             return;
-       
+
         if (encoding==null || StringUtil.isUTF8(encoding))
             UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters);
         else
@@ -656,7 +654,7 @@ public class HttpURI
         _rawString="";
         _encoded=false;
     }
-    
+
     @Override
     public String toString()
     {
@@ -664,10 +662,10 @@ public class HttpURI
             _rawString=toUtf8String(_scheme,_end-_scheme);
         return _rawString;
     }
-    
+
     public void writeTo(Utf8StringBuilder buf)
     {
         buf.append(_raw,_scheme,_end-_scheme);
     }
-    
+
 }
