@@ -39,9 +39,9 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class TestFilter implements Filter
 {
-    private final Set<String> _allowed = new HashSet<String>();
+    private boolean _remote;
     private ServletContext _context;
-    boolean remote;
+    private final Set<String> _allowed = new HashSet<String>();
     
     /* ------------------------------------------------------------ */
     /* 
@@ -50,7 +50,7 @@ public class TestFilter implements Filter
     public void init(FilterConfig filterConfig) throws ServletException
     {
         _context= filterConfig.getServletContext();
-        remote=Boolean.parseBoolean(_context.getInitParameter("remote"));
+        _remote=Boolean.parseBoolean(_context.getInitParameter("remote"));
         _allowed.add("/favicon.ico");
         _allowed.add("/jetty_banner.gif");
         _allowed.add("/remote.html");
@@ -66,7 +66,7 @@ public class TestFilter implements Filter
         String from = request.getRemoteHost();
         String to = request.getServerName();
         
-        if ((!remote&&!from.equals("localhost")&&!from.startsWith("127.0.0.")||
+        if ((!_remote&&!from.equals("localhost")&&!from.startsWith("127.0.0.")||
              !to.equals("localhost")&&!to.startsWith("127.0.0.")) &&
              !_allowed.contains(((HttpServletRequest)request).getServletPath()))
         {
