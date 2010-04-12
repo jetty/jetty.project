@@ -14,6 +14,8 @@
 package com.acme;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -25,15 +27,21 @@ import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
 
 /* ------------------------------------------------------------ */
 /** TestFilter.
  * 
- *
+ * This filter checks for a none local request, and if the init parameter
+ * "remote" is not set to true, then all non local requests are forwarded
+ * to /remote.html
+ * 
  */
 public class TestFilter implements Filter
 {
+    private final Set<String> _allowed = new HashSet<String>();
     private ServletContext _context;
+    boolean remote;
     
     /* ------------------------------------------------------------ */
     /* 
@@ -42,6 +50,10 @@ public class TestFilter implements Filter
     public void init(FilterConfig filterConfig) throws ServletException
     {
         _context= filterConfig.getServletContext();
+        remote=Boolean.parseBoolean(_context.getInitParameter("remote"));
+        _allowed.add("/favicon.ico");
+        _allowed.add("/jetty_banner.gif");
+        _allowed.add("/remote.html");
     }
 
     /* ------------------------------------------------------------ */
@@ -51,6 +63,17 @@ public class TestFilter implements Filter
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException
     {
+        String from = request.getRemoteHost();
+        String to = request.getServerName();
+        
+        if ((!remote&&!from.equals("localhost")&&!from.startsWith("127.0.0.")||
+             !to.equals("localhost")&&!to.startsWith("127.0.0.")) &&
+             !_allowed.contains(((HttpServletRequest)request).getServletPath()))
+        {
+            ((HttpServletResponse)response).sendRedirect("/remote.html");
+            return;
+        }
+        
         Integer old_value=null;
         ServletRequest r = request;
         while (r instanceof ServletRequestWrapper)

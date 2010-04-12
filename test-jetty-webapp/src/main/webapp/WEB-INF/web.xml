@@ -18,18 +18,32 @@
   </listener>
 
   <filter>
+    <filter-name>TestFilter</filter-name>
+    <filter-class>com.acme.TestFilter</filter-class>
+    <init-param>
+      <param-name>remote</param-name>
+      <param-value>false</param-value>
+    </init-param>
+  </filter>
+  <filter-mapping>
+    <filter-name>TestFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+
+  <filter>
     <filter-name>QoSFilter</filter-name>
     <filter-class>org.eclipse.jetty.servlets.QoSFilter</filter-class>
     <init-param>
       <param-name>maxRequests</param-name>
       <param-value>20</param-value>
     </init-param>
-  </filter>
-  
+  </filter>  
   <filter-mapping>
     <filter-name>QoSFilter</filter-name>
     <url-pattern>/*</url-pattern>
   </filter-mapping>
+
 
   <filter>
     <filter-name>MultiPart</filter-name>
@@ -44,6 +58,7 @@
     <url-pattern>/dump/*</url-pattern>
   </filter-mapping>
   
+
   <filter>
     <filter-name>GzipFilter</filter-name>
     <filter-class>org.eclipse.jetty.servlets.IncludableGzipFilter</filter-class>

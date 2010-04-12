@@ -1,0 +1,31 @@
+<HTML>
+  <HEAD>
+    <TITLE>Powered By Jetty</TITLE>
+    <META http-equiv="Pragma" content="no-cache">
+    <META http-equiv="Cache-Control" content="no-cache,no-store">
+  </HEAD>
+<BODY>
+<A HREF="http://jetty.eclipse.org"><IMG SRC="jetty_banner.gif"></A>
+<h1>Welcome to Jetty 7 - REMOTE ACCESS!!</h1>
+<p>
+This is the Test webapp for the Jetty 7 HTTP Server and Servlet Container.  
+For more information about Jetty, please visit our
+<a href="http://jetty.eclipse.org">website</a>
+or <a href="http://docs.codehaus.org/display/JETTY/Jetty+Wiki">wiki</a>. 
+Commercial support for Jetty is available via <a href="http://www.webtide.com">webtide</a>.
+</p>
+<p>
+This is a test context that serves several demo filters and servlets.  However, these
+test servlets are not safe for deployment on the internet as (by design) they contain 
+cross domain scripting vulnerabilities and reveal private information.  This page
+is displayed because you have access the context from a non local IP address.
+You can disable the remote address checking by editing the web.xml and changing the
+"remote" init parameter to true for the TestFilter. Once the webapp has been reconfigured,
+you can access the demonstrations <a href="index.html">here</a>, or <a href="http://127.0.0.1:8080/">here</a>
+if you can access the local machine.
+<p>
+
+This webapp is deployed in $JETTY_HOME/webapp/test and configured by $JETTY_HOME/contexts/test.xml
+
+</BODY>
+</HTML>
