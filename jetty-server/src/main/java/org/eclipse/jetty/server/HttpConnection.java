@@ -574,7 +574,7 @@ public class HttpConnection implements Connection
                 {
                     _uri.getPort();
                     info=URIUtil.canonicalPath(_uri.getDecodedPath());
-                    if (info==null)
+                    if (info==null && !_request.getMethod().equals(HttpMethods.CONNECT))
                         throw new HttpException(400);
                     _request.setPathInfo(info);
 
@@ -837,7 +837,7 @@ public class HttpConnection implements Connection
                 switch (HttpMethods.CACHE.getOrdinal(method))
                 {
                   case HttpMethods.CONNECT_ORDINAL:
-                       _uri.parseConnect(uri.array(), uri.getIndex(), uri.length());
+                      _uri.parseConnect(uri.array(), uri.getIndex(), uri.length());
                       break;
 
                   case HttpMethods.HEAD_ORDINAL:

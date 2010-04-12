@@ -758,11 +758,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             if (connector==null || !_connectors.contains(connector))
                 return false;
         }
-
-
-        if (target.startsWith(_contextPath))
+                
+        // Are we not the root context?
+        if (_contextPath.length()>1)
         {
-            if (_contextPath.length()==target.length() && _contextPath.length()>1 &&!_allowNullPathInfo)
+            // reject requests that are not for us
+            if (!target.startsWith(_contextPath))
+                return false;
+            if (target.length()>_contextPath.length() && target.charAt(_contextPath.length())!='/')
+                return false;
+            
+            // redirect null path infos
+            if (!_allowNullPathInfo && _contextPath.length()==target.length())
             {
                 // context request must end with /
                 baseRequest.setHandled(true);
@@ -772,14 +779,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                     response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH));
                 return false;
             }
-        }
-        else
-        {
-            if (HttpMethods.CONNECT.equalsIgnoreCase(baseRequest.getMethod()) && "/".equals(_contextPath))
-                return true;
-
-            // Not for this context!
-            return false;
         }
 
         return true;
