@@ -109,6 +109,7 @@ public class WebSocketUpgradeTest extends TestCase
             @Override
             protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
             {
+                waitFor(2);
                 _results.add(new Integer(status));
                 super.onResponseStatus(version,status,reason);
             }
@@ -120,23 +121,28 @@ public class WebSocketUpgradeTest extends TestCase
             @Override
             protected Connection onSwitchProtocol(EndPoint endp) throws IOException
             {
+                waitFor(3);
                 WebSocketConnection connection = new WebSocketConnection(clientWS,endp);
-                // wait for 101.
-                try
-                {
-                    int c=10;
-                    while(_results.size()==0 && c-->0)
-                        Thread.sleep(100);
-                }
-                catch(InterruptedException e)
-                {
-                    e.printStackTrace();
-                }
+                
                 _results.add("onSwitchProtocol");
                 _results.add(connection);
                 clientWS.onConnect(connection);
                 return connection;
             }    
+            
+            private void waitFor(int results)
+            {
+                try
+                {
+                    int c=10;
+                    while(_results.size()<results && c-->0)
+                        Thread.sleep(10);
+                }
+                catch(InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+            }
         };
         
         httpExchange.setURL("http://localhost:"+_port+"/");
