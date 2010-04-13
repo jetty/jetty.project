@@ -24,6 +24,7 @@ public class StdErrLogTest extends TestCase
     {
         StdErrLog log = new StdErrLog();
         log.setDebugEnabled(true);
+        log.setHideStacks(true);
         
         try {
             log.info("Testing info(msg,null,null) - {} {}",null,null);
@@ -52,9 +53,9 @@ public class StdErrLogTest extends TestCase
         }
         catch (NullPointerException npe)
         {
-            assertTrue("NullPointerException in StdErrLog.", false);
             System.err.println(npe);
             npe.printStackTrace();
+            assertTrue("NullPointerException in StdErrLog.", false);
         }
     }
 }

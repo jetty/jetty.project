@@ -132,7 +132,7 @@ public class StdErrLog implements Logger
                 tag(d,ms,":DBUG:");
                 format(msg);
                 if (_hideStacks)
-                    format(th.toString());
+                    format(String.valueOf(th));
                 else
                     format(th);
                 System.err.println(_buffer.toString());
@@ -203,7 +203,7 @@ public class StdErrLog implements Logger
             tag(d,ms,":WARN:");
             format(msg);
             if (_hideStacks)
-                format(th.toString());
+                format(String.valueOf(th));
             else
                 format(th);
             System.err.println(_buffer.toString());
