@@ -197,7 +197,13 @@ public class Server extends HandlerWrapper implements Attributes
         HttpGenerator.setServerVersion(_version);
         MultiException mex=new MultiException();
 
-        Iterator itor = _dependentBeans.iterator();
+        if (_threadPool==null)
+        {
+            QueuedThreadPool tp=new QueuedThreadPool();
+            setThreadPool(tp);
+        }
+        
+        Iterator<Object> itor = _dependentBeans.iterator();
         while (itor.hasNext())
         {   
             try
@@ -207,12 +213,6 @@ public class Server extends HandlerWrapper implements Attributes
                     ((LifeCycle)o).start(); 
             }
             catch (Throwable e) {mex.add(e);}
-        }
-        
-        if (_threadPool==null)
-        {
-            QueuedThreadPool tp=new QueuedThreadPool();
-            setThreadPool(tp);
         }
         
         if (_sessionIdManager!=null)
@@ -298,7 +298,7 @@ public class Server extends HandlerWrapper implements Attributes
         
         if (!_dependentBeans.isEmpty())
         {
-            ListIterator itor = _dependentBeans.listIterator(_dependentBeans.size());
+            ListIterator<Object> itor = _dependentBeans.listIterator(_dependentBeans.size());
             while (itor.hasPrevious())
             {
                 try
