@@ -410,9 +410,9 @@ public class ProxyHandler extends AbstractHandler
             {
                 ready.await(timeout, TimeUnit.MILLISECONDS);
             }
-            catch (InterruptedException x)
+            catch (final InterruptedException x)
             {
-                throw new IOException(x);
+                throw new IOException(){{initCause(x);}};
             }
         }
 
