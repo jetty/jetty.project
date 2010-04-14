@@ -1,6 +1,5 @@
 
 jetty-7.1-SNAPSHOT
- + 286889 Allow System and Server classes to be set on Server instance and when applied to all webapps
  + 294563 Websocket client connection
  + 297104 Improve handling of CONNECT method
  + 306349 ProxyServlet does not work unless deployed at /
