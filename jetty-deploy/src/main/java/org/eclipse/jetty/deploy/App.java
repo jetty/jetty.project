@@ -15,20 +15,8 @@
 // ========================================================================
 package org.eclipse.jetty.deploy;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.xml.XmlConfiguration;
-import org.xml.sax.SAXException;
 
 /**
  * The information about an App that is managed by the {@link DeploymentManager}

@@ -15,10 +15,10 @@ package org.eclipse.jetty.deploy;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.deploy.providers.MonitoredDirAppProvider;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;

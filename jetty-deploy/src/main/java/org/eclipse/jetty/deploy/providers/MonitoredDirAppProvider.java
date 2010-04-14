@@ -17,7 +17,6 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;

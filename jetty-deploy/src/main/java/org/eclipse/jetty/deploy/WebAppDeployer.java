@@ -15,6 +15,7 @@ package org.eclipse.jetty.deploy;
 
 import java.util.ArrayList;
 
+import org.eclipse.jetty.deploy.providers.MonitoredDirAppProvider;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;

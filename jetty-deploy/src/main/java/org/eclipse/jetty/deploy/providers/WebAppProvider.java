@@ -4,18 +4,14 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.ConfigurationManager;
 import org.eclipse.jetty.deploy.WebAppDeployer;
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.xml.XmlConfiguration;
 
 
 /* ------------------------------------------------------------ */
