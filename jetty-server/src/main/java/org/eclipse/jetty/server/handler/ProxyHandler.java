@@ -44,7 +44,7 @@ public class ProxyHandler extends AbstractHandler
     private volatile int _connectTimeout = 5000;
     private volatile int _writeTimeout = 30000;
     private volatile ThreadPool _threadPool;
-    private volatile ThreadPool _privateThreadPool;
+    private volatile boolean _privateThreadPool;
 
     /**
      * <p>Constructor to be used to make this proxy work via HTTP CONNECT.</p>
@@ -102,8 +102,8 @@ public class ProxyHandler extends AbstractHandler
         super.setServer(server);
 
         server.getContainer().update(this,null,_selectorManager,"selectManager");
-
-        if (_privateThreadPool!=null)
+        
+        if (_privateThreadPool)
             server.getContainer().update(this,null,_privateThreadPool,"threadpool",true);
         else
             _threadPool=server.getThreadPool();
@@ -123,8 +123,9 @@ public class ProxyHandler extends AbstractHandler
     public void setThreadPool(ThreadPool threadPool)
     {
         if (getServer()!=null)
-            getServer().getContainer().update(this,_privateThreadPool,threadPool,"threadpool",true);
-        _threadPool=_privateThreadPool=threadPool;
+            getServer().getContainer().update(this,_privateThreadPool?_threadPool:null,threadPool,"threadpool",true);
+        _privateThreadPool=threadPool!=null;
+        _threadPool=threadPool;
     }
 
     @Override
@@ -133,7 +134,10 @@ public class ProxyHandler extends AbstractHandler
         super.doStart();
 
         if (_threadPool==null)
+        {
             _threadPool=getServer().getThreadPool();
+            _privateThreadPool=false;
+        }
         if (_threadPool instanceof LifeCycle && !((LifeCycle)_threadPool).isRunning())
             ((LifeCycle)_threadPool).start();
 
@@ -163,7 +167,7 @@ public class ProxyHandler extends AbstractHandler
         _selectorManager.stop();
 
         ThreadPool threadPool = _threadPool;
-        if (threadPool != null && threadPool instanceof LifeCycle)
+        if (_privateThreadPool && _threadPool != null && threadPool instanceof LifeCycle)
             ((LifeCycle)threadPool).stop();
 
         super.doStop();
