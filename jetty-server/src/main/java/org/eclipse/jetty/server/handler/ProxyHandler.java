@@ -335,6 +335,19 @@ public class ProxyHandler extends AbstractHandler
     }
 
     /**
+     * <p>Reads (with non-blocking semantic) into the given {@code buffer} from the given {@code endPoint}.</p>
+     * @param endPoint the endPoint to read from
+     * @param buffer the buffer to read data into
+     * @return the number of bytes read (possibly 0 since the read is non-blocking)
+     * or -1 if the channel has been closed remotely
+     * @throws IOException if the endPoint cannot be read
+     */
+    protected int read(EndPoint endPoint, Buffer buffer) throws IOException
+    {
+        return endPoint.fill(buffer);
+    }
+
+    /**
      * <p>Writes (with blocking semantic) the given buffer of data onto the given endPoint.</p>
      *
      * @param endPoint the endPoint to write to
@@ -451,7 +464,7 @@ public class ProxyHandler extends AbstractHandler
 
             while (true)
             {
-                int read = _endPoint.fill(_buffer);
+                int read = read(_endPoint, _buffer);
 
                 if (read == -1)
                 {
@@ -551,7 +564,7 @@ public class ProxyHandler extends AbstractHandler
 
             while (true)
             {
-                int read = _endPoint.fill(_buffer);
+                int read = read(_endPoint, _buffer);
 
                 if (read == -1)
                 {
