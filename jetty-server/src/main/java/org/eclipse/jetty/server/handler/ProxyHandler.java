@@ -28,6 +28,12 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
+ * <p>Implementation of a tunnelling proxy that supports HTTP CONNECT and transparent proxy.</p>
+ * <p>To work as CONNECT proxy, objects of this class must be instantiated using the no-arguments
+ * constructor, since the remote server information will be present in the CONNECT URI.</p>
+ * <p>To work as transparent proxy, objects of this class must be instantiated using the string
+ * argument constructor, passing the remote host address and port in the form {@code host:port}.</p>
+ *
  * @version $Revision$ $Date$
  */
 public class ProxyHandler extends AbstractHandler
@@ -40,31 +46,51 @@ public class ProxyHandler extends AbstractHandler
     private volatile ThreadPool _threadPool;
     private volatile ThreadPool _privateThreadPool;
 
+    /**
+     * <p>Constructor to be used to make this proxy work via HTTP CONNECT.</p>
+     */
     public ProxyHandler()
     {
         this(null);
     }
 
+    /**
+     * <p>Constructor to be used to make this proxy work as transparent proxy.</p>
+     *
+     * @param serverAddress the address of the remote server in the form {@code host:port}
+     */
     public ProxyHandler(String serverAddress)
     {
         _serverAddress = serverAddress;
     }
 
+    /**
+     * @return the timeout, in milliseconds, to connect to the remote server
+     */
     public int getConnectTimeout()
     {
         return _connectTimeout;
     }
 
+    /**
+     * @param connectTimeout the timeout, in milliseconds, to connect to the remote server
+     */
     public void setConnectTimeout(int connectTimeout)
     {
         _connectTimeout = connectTimeout;
     }
 
+    /**
+     * @return the timeout, in milliseconds, to write data to a peer
+     */
     public int getWriteTimeout()
     {
         return _writeTimeout;
     }
 
+    /**
+     * @param writeTimeout the timeout, in milliseconds, to write data to a peer
+     */
     public void setWriteTimeout(int writeTimeout)
     {
         _writeTimeout = writeTimeout;
@@ -83,16 +109,16 @@ public class ProxyHandler extends AbstractHandler
             _threadPool=server.getThreadPool();
     }
 
-    /** Get the threadPool.
-     * @return the threadPool
+    /**
+     * @return the thread pool
      */
     public ThreadPool getThreadPool()
     {
         return _threadPool;
     }
 
-    /** Set the threadPool.
-     * @param threadPool the threadPool to set
+    /**
+     * @param the thread pool
      */
     public void setThreadPool(ThreadPool threadPool)
     {
@@ -160,41 +186,61 @@ public class ProxyHandler extends AbstractHandler
     }
 
     /**
-     * <p>Handles a CONNECT request.</p>
+     * <p>Handles a tunnelling request, either a CONNECT or a transparent request.</p>
      * <p>CONNECT requests may have authentication headers such as <code>Proxy-Authorization</code>
      * that authenticate the client with the proxy.</p>
+     *
      * @param request the http request
      * @param response the http response
-     * @param connectURI the CONNECT URI
+     * @param serverAddress the remote server address in the form {@code host:port}
      * @throws ServletException if an application error occurs
      * @throws IOException if an I/O error occurs
      */
-    protected void handle(HttpServletRequest request, HttpServletResponse response, String connectURI) throws ServletException, IOException
+    protected void handle(HttpServletRequest request, HttpServletResponse response, String serverAddress) throws ServletException, IOException
     {
-        boolean proceed = handleAuthentication(request, response, connectURI);
+        boolean proceed = handleAuthentication(request, response, serverAddress);
         if (!proceed)
             return;
 
-        String host = connectURI;
+        String host = serverAddress;
         int port = 80;
         boolean secure = false;
-        int colon = connectURI.indexOf(':');
+        int colon = serverAddress.indexOf(':');
         if (colon > 0)
         {
-            host = connectURI.substring(0, colon);
-            port = Integer.parseInt(connectURI.substring(colon + 1));
+            host = serverAddress.substring(0, colon);
+            port = Integer.parseInt(serverAddress.substring(colon + 1));
             secure = isTunnelSecure(host, port);
         }
 
         setupTunnel(request, response, host, port, secure);
     }
 
+    /**
+     * <p>Returns whether the given {@code host} and {@code port} identify a SSL communication channel.<p>
+     * <p>Default implementation returns true if the {@code port} is 443.</p>
+     *
+     * @param host the host to connect to
+     * @param port the port to connect to
+     * @return true if the communication channel is confidential, false otherwise
+     */
     protected boolean isTunnelSecure(String host, int port)
     {
         return port == 443;
     }
 
-    protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String connectURI) throws ServletException, IOException
+    /**
+     * <p>Handles the authentication before setting up the tunnel to the remote server.</p>
+     * <p>The default implementation returns true.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param address the address of the remote server in the form {@code host:port}.
+     * @return true to allow to connect to the remote host, false otherwise
+     * @throws ServletException to report a server error to the caller
+     * @throws IOException to report a server error to the caller
+     */
+    protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address) throws ServletException, IOException
     {
         return true;
     }
@@ -250,6 +296,14 @@ public class ProxyHandler extends AbstractHandler
         return new ProxyToServerConnection(secure, buffer);
     }
 
+    /**
+     * <p>Establishes a connection to the remote server.</p>
+     * @param request the HTTP request that initiated the tunnel
+     * @param host the host to connect to
+     * @param port the port to connect to
+     * @return a {@link SocketChannel} connected to the remote server
+     * @throws IOException if the connection cannot be established
+     */
     protected SocketChannel connect(HttpServletRequest request, String host, int port) throws IOException
     {
         _logger.debug("Establishing connection to {}:{}", host, port);
@@ -281,7 +335,8 @@ public class ProxyHandler extends AbstractHandler
     }
 
     /**
-     * Writes (with blocking semantic) the given buffer of data onto the given endPoint
+     * <p>Writes (with blocking semantic) the given buffer of data onto the given endPoint.</p>
+     *
      * @param endPoint the endPoint to write to
      * @param buffer the buffer to write
      * @throws IOException if the buffer cannot be written
