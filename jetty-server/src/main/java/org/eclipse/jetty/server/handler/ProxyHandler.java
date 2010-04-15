@@ -25,7 +25,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
@@ -77,13 +76,13 @@ public class ProxyHandler extends AbstractHandler
         super.setServer(server);
 
         server.getContainer().update(this,null,_selectorManager,"selectManager");
-        
+
         if (_privateThreadPool!=null)
             server.getContainer().update(this,null,_privateThreadPool,"threadpool",true);
         else
             _threadPool=server.getThreadPool();
     }
-    
+
     /** Get the threadPool.
      * @return the threadPool
      */
@@ -106,7 +105,7 @@ public class ProxyHandler extends AbstractHandler
     protected void doStart() throws Exception
     {
         super.doStart();
-        
+
         if (_threadPool==null)
             _threadPool=getServer().getThreadPool();
         if (_threadPool instanceof LifeCycle && !((LifeCycle)_threadPool).isRunning())
@@ -148,12 +147,12 @@ public class ProxyHandler extends AbstractHandler
     {
         if (HttpMethods.CONNECT.equalsIgnoreCase(request.getMethod()))
         {
-            _logger.info("CONNECT request for {}", request.getRequestURI(), null);
+            _logger.debug("CONNECT request for {}", request.getRequestURI(), null);
             handle(request, response, request.getRequestURI());
         }
         else
         {
-            _logger.info("Plain request for {}", _serverAddress, null);
+            _logger.debug("Plain request for {}", _serverAddress, null);
             if (_serverAddress == null)
                 throw new ServletException("Parameter 'serverAddress' cannot be null");
             handle(request, response, _serverAddress);
@@ -253,12 +252,12 @@ public class ProxyHandler extends AbstractHandler
 
     protected SocketChannel connect(HttpServletRequest request, String host, int port) throws IOException
     {
-        _logger.info("Establishing connection to {}:{}", host, port);
+        _logger.debug("Establishing connection to {}:{}", host, port);
         // Connect to remote server
         SocketChannel channel = SocketChannel.open();
         channel.socket().setTcpNoDelay(true);
         channel.socket().connect(new InetSocketAddress(host, port), getConnectTimeout());
-        _logger.info("Established connection to {}:{}", host, port);
+        _logger.debug("Established connection to {}:{}", host, port);
         return channel;
     }
 
@@ -272,7 +271,7 @@ public class ProxyHandler extends AbstractHandler
         // so that Jetty understands that it has to upgrade the connection
         request.setAttribute("org.eclipse.jetty.io.Connection", connection);
         response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
-        _logger.info("Upgraded connection to {}", connection, null);
+        _logger.debug("Upgraded connection to {}", connection, null);
     }
 
     private void register(SocketChannel channel, ProxyToServerConnection proxyToServer) throws IOException
@@ -287,7 +286,7 @@ public class ProxyHandler extends AbstractHandler
      * @param buffer the buffer to write
      * @throws IOException if the buffer cannot be written
      */
-    private void write(EndPoint endPoint, Buffer buffer) throws IOException
+    protected void write(EndPoint endPoint, Buffer buffer) throws IOException
     {
         if (buffer == null)
             return;
@@ -310,7 +309,7 @@ public class ProxyHandler extends AbstractHandler
                 buffer.compact();
             }
         }
-        _logger.info("Written {}/{} bytes " + endPoint, builder, length);
+        _logger.debug("Written {}/{} bytes " + endPoint, builder, length);
     }
 
     private class Manager extends SelectorManager
@@ -388,7 +387,7 @@ public class ProxyHandler extends AbstractHandler
 
         public Connection handle() throws IOException
         {
-            _logger.info("ProxyToServer: handle entered");
+            _logger.debug("ProxyToServer: handle entered");
             if (_data != null)
             {
                 write(_endPoint, _data);
@@ -401,7 +400,7 @@ public class ProxyHandler extends AbstractHandler
 
                 if (read == -1)
                 {
-                    _logger.info("ProxyToServer: closed connection {}", _endPoint, null);
+                    _logger.debug("ProxyToServer: closed connection {}", _endPoint, null);
                     _toClient.close();
                     break;
                 }
@@ -409,10 +408,10 @@ public class ProxyHandler extends AbstractHandler
                 if (read == 0)
                     break;
 
-                _logger.info("ProxyToServer: read {} bytes {}", read, _endPoint);
+                _logger.debug("ProxyToServer: read {} bytes {}", read, _endPoint);
                 write(_toClient._endPoint, _buffer);
             }
-            _logger.info("ProxyToServer: handle exited");
+            _logger.debug("ProxyToServer: handle exited");
             return this;
         }
 
@@ -487,7 +486,7 @@ public class ProxyHandler extends AbstractHandler
 
         public Connection handle() throws IOException
         {
-            _logger.info("ClientToProxy: handle entered");
+            _logger.debug("ClientToProxy: handle entered");
 
             if (_firstTime)
             {
@@ -501,7 +500,7 @@ public class ProxyHandler extends AbstractHandler
 
                 if (read == -1)
                 {
-                    _logger.info("ClientToProxy: closed connection {}", _endPoint, null);
+                    _logger.debug("ClientToProxy: closed connection {}", _endPoint, null);
                     _toServer.close();
                     break;
                 }
@@ -509,10 +508,10 @@ public class ProxyHandler extends AbstractHandler
                 if (read == 0)
                     break;
 
-                _logger.info("ClientToProxy: read {} bytes {}", read, _endPoint);
+                _logger.debug("ClientToProxy: read {} bytes {}", read, _endPoint);
                 write(_toServer._endPoint, _buffer);
             }
-            _logger.info("ClientToProxy: handle exited");
+            _logger.debug("ClientToProxy: handle exited");
             return this;
         }
 
