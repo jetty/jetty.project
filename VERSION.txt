@@ -9,6 +9,7 @@ jetty-7.1-SNAPSHOT
  + 308009 ObjectMBean incorrectly casts getTargetException() to Exception
  + 308420 convert jetty-plus.xml to use DeploymentManager 
  + 308925 Protect the test webapp from remote access
+ + 309466 Removed synchronization from StdErrLog
  + JETTY-1202 Use platform default algorithm for SecureRandom
  + Fix jetty-plus.xml reference to addLifeCycle
  + Add AnnotationConfiguration to jetty-plus.xml
