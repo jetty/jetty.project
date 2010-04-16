@@ -1,82 +1,51 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.BufferedReader;
-import java.io.EOFException;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.TestCase;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 
 /**
  * @version $Revision$ $Date$
  */
-public class ProxyHandlerConnectTest extends TestCase
+public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
 {
-    private Server server;
-    private Connector serverConnector;
-    private Server proxy;
-    private Connector proxyConnector;
-
     @Override
-    protected void setUp() throws Exception
+    protected void configureServer(Server server)
     {
-        server = new Server();
-        serverConnector = new SelectChannelConnector();
-        server.addConnector(serverConnector);
         server.setHandler(new ServerHandler());
-        server.start();
-
-        proxy = new Server();
-        proxyConnector = new SelectChannelConnector();
-        proxy.addConnector(proxyConnector);
-        proxy.setHandler(new ProxyHandler());
-        proxy.start();
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    public void testCONNECT() throws Exception
     {
-        proxy.stop();
-        proxy.join();
-
-        server.stop();
-        server.join();
-    }
-
-    public void testHttpConnect() throws Exception
-    {
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
         String request = "" +
-                "CONNECT localhost:" + serverConnector.getLocalPort() + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
+                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
                 "\r\n";
-        Socket socket = new Socket("localhost", proxyConnector.getLocalPort());
+        Socket socket = newSocket();
         try
         {
             OutputStream output = socket.getOutputStream();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
             output.write(request.getBytes("UTF-8"));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
-            InputStream input = socket.getInputStream();
             Response response = readResponse(input);
             System.err.println(response);
-            assertEquals("200", response.code);
+            assertEquals("200", response.getCode());
         }
         finally
         {
@@ -84,37 +53,38 @@ public class ProxyHandlerConnectTest extends TestCase
         }
     }
 
-    public void testHttpConnectWithNormalRequest() throws Exception
+    public void testCONNECTAndGET() throws Exception
     {
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
         String request = "" +
-                "CONNECT localhost:" + serverConnector.getLocalPort() + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
+                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
                 "\r\n";
-        Socket socket = new Socket("localhost", proxyConnector.getLocalPort());
+        Socket socket = newSocket();
         try
         {
             OutputStream output = socket.getOutputStream();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
             output.write(request.getBytes("UTF-8"));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
-            InputStream input = socket.getInputStream();
             Response response = readResponse(input);
             System.err.println(response);
-            assertEquals("200", response.code);
+            assertEquals("200", response.getCode());
 
-            String echoURI = "GET /echo";
             request = "" +
-                    echoURI + " HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
+                    "GET /echo" + " HTTP/1.1\r\n" +
+                    "Host: " + hostPort + "\r\n" +
                     "\r\n";
             output.write(request.getBytes("UTF-8"));
             output.flush();
 
             response = readResponse(input);
             System.err.println(response);
-            assertEquals("200", response.code);
-            assertEquals(echoURI, response.body);
+            assertEquals("200", response.getCode());
+            assertEquals("GET /echo", response.getBody());
         }
         finally
         {
@@ -122,34 +92,35 @@ public class ProxyHandlerConnectTest extends TestCase
         }
     }
 
-    public void testHttpConnectWithPipelinedRequest() throws Exception
+    public void testCONNECTAndGETPipelined() throws Exception
     {
-        String pipelinedMethodURI = "GET /echo";
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
         String request = "" +
-                "CONNECT localhost:" + serverConnector.getLocalPort() + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
+                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
                 "\r\n" +
-                pipelinedMethodURI + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
+                "GET /echo" + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
                 "\r\n";
-        Socket socket = new Socket("localhost", proxyConnector.getLocalPort());
+        Socket socket = newSocket();
         try
         {
             OutputStream output = socket.getOutputStream();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
             output.write(request.getBytes("UTF-8"));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
-            InputStream input = socket.getInputStream();
             Response response = readResponse(input);
             System.err.println(response);
-            assertEquals("200", response.code);
+            assertEquals("200", response.getCode());
 
             // The pipelined request must have gone up to the server as is
             response = readResponse(input);
             System.err.println(response);
-            assertEquals("200", response.code);
-            assertEquals(pipelinedMethodURI, response.body);
+            assertEquals("200", response.getCode());
+            assertEquals("GET /echo", response.getBody());
         }
         finally
         {
@@ -157,24 +128,80 @@ public class ProxyHandlerConnectTest extends TestCase
         }
     }
 
-    public void testHttpConnectWithNoRequestServerClose() throws Exception
+    public void testCONNECTAndMultipleGETs() throws Exception
     {
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
         String request = "" +
-                "CONNECT localhost:" + serverConnector.getLocalPort() + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
+                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
                 "\r\n";
-        Socket socket = new Socket("localhost", proxyConnector.getLocalPort());
+        Socket socket = newSocket();
         try
         {
             OutputStream output = socket.getOutputStream();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
             output.write(request.getBytes("UTF-8"));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
-            InputStream input = socket.getInputStream();
             Response response = readResponse(input);
             System.err.println(response);
-            assertEquals("200", response.code);
+            assertEquals("200", response.getCode());
+
+            for (int i = 0; i < 10; ++i)
+            {
+                request = "" +
+                        "GET /echo" + " HTTP/1.1\r\n" +
+                        "Host: " + hostPort + "\r\n" +
+                        "\r\n";
+                output.write(request.getBytes("UTF-8"));
+                output.flush();
+
+                response = readResponse(input);
+                System.err.println(response);
+                assertEquals("200", response.getCode());
+                assertEquals("GET /echo", response.getBody());
+            }
+        }
+        finally
+        {
+            socket.close();
+        }
+    }
+
+    public void testCONNECTAndGETServerStop() throws Exception
+    {
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String request = "" +
+                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
+                "\r\n";
+        Socket socket = newSocket();
+        try
+        {
+            OutputStream output = socket.getOutputStream();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            // Expect 200 OK from the CONNECT request
+            Response response = readResponse(input);
+            System.err.println(response);
+            assertEquals("200", response.getCode());
+
+            request = "" +
+                    "GET /echo HTTP/1.1\r\n" +
+                    "Host: " + hostPort + "\r\n" +
+                    "\r\n";
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            response = readResponse(input);
+            System.err.println(response);
+            assertEquals("200", response.getCode());
+            assertEquals("GET /echo", response.getBody());
 
             // Idle server is shut down
             server.stop();
@@ -189,28 +216,30 @@ public class ProxyHandlerConnectTest extends TestCase
         }
     }
 
-    public void testHttpConnectWithRequestServerClose() throws Exception
+    public void testCONNECTAndGETAndServerSideClose() throws Exception
     {
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
         String request = "" +
-                "CONNECT localhost:" + serverConnector.getLocalPort() + " HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
+                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
                 "\r\n";
-        Socket socket = new Socket("localhost", proxyConnector.getLocalPort());
+        Socket socket = newSocket();
         try
         {
             OutputStream output = socket.getOutputStream();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
             output.write(request.getBytes("UTF-8"));
             output.flush();
 
             // Expect 200 OK from the CONNECT request
-            InputStream input = socket.getInputStream();
             Response response = readResponse(input);
             System.err.println(response);
-            assertEquals("200", response.code);
+            assertEquals("200", response.getCode());
 
             request = "" +
                     "GET /close HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
+                    "Host: " + hostPort + "\r\n" +
                     "\r\n";
             output.write(request.getBytes("UTF-8"));
             output.flush();
@@ -224,57 +253,103 @@ public class ProxyHandlerConnectTest extends TestCase
         }
     }
 
-    private Response readResponse(InputStream input) throws IOException
+    public void testCONNECTAndPOSTAndGET() throws Exception
     {
-        // Simplified parser for HTTP responses
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-        String line = reader.readLine();
-        if (line == null)
-            throw new EOFException();
-        Matcher responseLine = Pattern.compile("HTTP/1\\.1\\s+(\\d+)").matcher(line);
-        assertTrue(responseLine.lookingAt());
-        String code = responseLine.group(1);
-
-        Map<String, String> headers = new LinkedHashMap<String, String>();
-        while ((line = reader.readLine()) != null)
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String request = "" +
+                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
+                "\r\n";
+        Socket socket = newSocket();
+        try
         {
-            if (line.trim().length() == 0)
-                break;
+            OutputStream output = socket.getOutputStream();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            Matcher header = Pattern.compile("([^:]+):\\s*(.*)").matcher(line);
-            assertTrue(header.lookingAt());
-            String headerName = header.group(1);
-            String headerValue = header.group(2);
-            headers.put(headerName.toLowerCase(), headerValue.toLowerCase());
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            // Expect 200 OK from the CONNECT request
+            Response response = readResponse(input);
+            System.err.println(response);
+            assertEquals("200", response.getCode());
+
+            request = "" +
+                    "POST /echo HTTP/1.1\r\n" +
+                    "Host: " + hostPort + "\r\n" +
+                    "Content-Length: 5\r\n" +
+                    "\r\n" +
+                    "HELLO";
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            response = readResponse(input);
+            System.err.println(response);
+            assertEquals("200", response.getCode());
+            assertEquals("POST /echo\r\nHELLO", response.getBody());
+
+            request = "" +
+                    "GET /echo" + " HTTP/1.1\r\n" +
+                    "Host: " + hostPort + "\r\n" +
+                    "\r\n";
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            response = readResponse(input);
+            System.err.println(response);
+            assertEquals("200", response.getCode());
+            assertEquals("GET /echo", response.getBody());
         }
-
-        StringBuilder body = new StringBuilder();
-        if (headers.containsKey("content-length"))
+        finally
         {
-            int length = Integer.parseInt(headers.get("content-length"));
-            for (int i = 0; i < length; ++i)
-                body.append((char)reader.read());
+            socket.close();
         }
-        else if ("chunked".equals(headers.get("transfer-encoding")))
-        {
-            while ((line = reader.readLine()) != null)
-            {
-                if ("0".equals(line))
-                {
-                    reader.readLine();
-                    break;
-                }
-
-                body.append(reader.readLine());
-                reader.readLine();
-            }
-        }
-
-        return new Response(code, headers, body.toString().trim());
     }
 
-    public class TestServlet extends HttpServlet
+    public void testCONNECTAndPOSTWithBigBody() throws Exception
     {
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String request = "" +
+                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
+                "\r\n";
+        Socket socket = newSocket();
+        try
+        {
+            OutputStream output = socket.getOutputStream();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            // Expect 200 OK from the CONNECT request
+            Response response = readResponse(input);
+            System.err.println(response);
+            assertEquals("200", response.getCode());
+
+            StringBuilder body = new StringBuilder();
+            String chunk = "0123456789ABCDEF";
+            for (int i = 0; i < 1024; ++i)
+                body.append(chunk);
+
+            request = "" +
+                    "POST /echo HTTP/1.1\r\n" +
+                    "Host: " + hostPort + "\r\n" +
+                    "Content-Length: " + body.length() + "\r\n" +
+                    "\r\n" +
+                    body;
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            response = readResponse(input);
+            System.err.println(response);
+            assertEquals("200", response.getCode());
+            assertEquals("POST /echo\r\n" + body, response.getBody());
+        }
+        finally
+        {
+            socket.close();
+        }
     }
 
     private class ServerHandler extends AbstractHandler
@@ -288,41 +363,30 @@ public class ProxyHandlerConnectTest extends TestCase
             {
                 StringBuilder builder = new StringBuilder();
                 builder.append(httpRequest.getMethod()).append(" ").append(uri);
+                if (httpRequest.getQueryString() != null)
+                    builder.append("?").append(httpRequest.getQueryString());
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                InputStream input = httpRequest.getInputStream();
+                int read = -1;
+                while ((read = input.read()) >= 0)
+                    baos.write(read);
+                baos.close();
+
                 System.err.println("server echoing:\r\n" + builder);
                 ServletOutputStream output = httpResponse.getOutputStream();
                 output.println(builder.toString());
+                output.write(baos.toByteArray());
             }
             else if ("/close".equals(uri))
             {
                 request.getConnection().getEndPoint().close();
                 System.err.println("server closed");
             }
-        }
-    }
-
-    private class Response
-    {
-        private final String code;
-        private final Map<String, String> headers;
-        private final String body;
-
-        private Response(String code, Map<String, String> headers, String body)
-        {
-            this.code = code;
-            this.headers = headers;
-            this.body = body;
-        }
-
-        @Override
-        public String toString()
-        {
-            StringBuilder builder = new StringBuilder();
-            builder.append(code).append("\r\n");
-            for (Map.Entry<String, String> entry : headers.entrySet())
-                builder.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
-            builder.append("\r\n");
-            builder.append(body);
-            return builder.toString();
+            else
+            {
+                throw new ServletException();
+            }
         }
     }
 }

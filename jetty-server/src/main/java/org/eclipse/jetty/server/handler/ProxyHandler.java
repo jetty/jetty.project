@@ -19,6 +19,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -36,32 +37,23 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  *
  * @version $Revision$ $Date$
  */
-public class ProxyHandler extends AbstractHandler
+public class ProxyHandler extends HandlerWrapper
 {
     private final Logger _logger = Log.getLogger(getClass().getName());
     private final SelectorManager _selectorManager = new Manager();
-    private final String _serverAddress;
     private volatile int _connectTimeout = 5000;
     private volatile int _writeTimeout = 30000;
     private volatile ThreadPool _threadPool;
     private volatile boolean _privateThreadPool;
 
-    /**
-     * <p>Constructor to be used to make this proxy work via HTTP CONNECT.</p>
-     */
     public ProxyHandler()
     {
         this(null);
     }
 
-    /**
-     * <p>Constructor to be used to make this proxy work as transparent proxy.</p>
-     *
-     * @param serverAddress the address of the remote server in the form {@code host:port}
-     */
-    public ProxyHandler(String serverAddress)
+    public ProxyHandler(Handler handler)
     {
-        _serverAddress = serverAddress;
+        setHandler(handler);
     }
 
     /**
@@ -102,7 +94,7 @@ public class ProxyHandler extends AbstractHandler
         super.setServer(server);
 
         server.getContainer().update(this,null,_selectorManager,"selectManager");
-        
+
         if (_privateThreadPool)
             server.getContainer().update(this,null,_privateThreadPool,"threadpool",true);
         else
@@ -118,7 +110,7 @@ public class ProxyHandler extends AbstractHandler
     }
 
     /**
-     * @param the thread pool
+     * @param threadPool the thread pool
      */
     public void setThreadPool(ThreadPool threadPool)
     {
@@ -173,24 +165,22 @@ public class ProxyHandler extends AbstractHandler
         super.doStop();
     }
 
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         if (HttpMethods.CONNECT.equalsIgnoreCase(request.getMethod()))
         {
             _logger.debug("CONNECT request for {}", request.getRequestURI(), null);
-            handle(request, response, request.getRequestURI());
+            handleConnect(request, response, request.getRequestURI());
         }
         else
         {
-            _logger.debug("Plain request for {}", _serverAddress, null);
-            if (_serverAddress == null)
-                throw new ServletException("Parameter 'serverAddress' cannot be null");
-            handle(request, response, _serverAddress);
+            super.handle(target, baseRequest, request, response);
         }
     }
 
     /**
-     * <p>Handles a tunnelling request, either a CONNECT or a transparent request.</p>
+     * <p>Handles a CONNECT request.</p>
      * <p>CONNECT requests may have authentication headers such as <code>Proxy-Authorization</code>
      * that authenticate the client with the proxy.</p>
      *
@@ -200,7 +190,7 @@ public class ProxyHandler extends AbstractHandler
      * @throws ServletException if an application error occurs
      * @throws IOException if an I/O error occurs
      */
-    protected void handle(HttpServletRequest request, HttpServletResponse response, String serverAddress) throws ServletException, IOException
+    protected void handleConnect(HttpServletRequest request, HttpServletResponse response, String serverAddress) throws ServletException, IOException
     {
         boolean proceed = handleAuthentication(request, response, serverAddress);
         if (!proceed)
@@ -208,51 +198,14 @@ public class ProxyHandler extends AbstractHandler
 
         String host = serverAddress;
         int port = 80;
-        boolean secure = false;
         int colon = serverAddress.indexOf(':');
         if (colon > 0)
         {
             host = serverAddress.substring(0, colon);
             port = Integer.parseInt(serverAddress.substring(colon + 1));
-            secure = isTunnelSecure(host, port);
         }
 
-        setupTunnel(request, response, host, port, secure);
-    }
-
-    /**
-     * <p>Returns whether the given {@code host} and {@code port} identify a SSL communication channel.<p>
-     * <p>Default implementation returns true if the {@code port} is 443.</p>
-     *
-     * @param host the host to connect to
-     * @param port the port to connect to
-     * @return true if the communication channel is confidential, false otherwise
-     */
-    protected boolean isTunnelSecure(String host, int port)
-    {
-        return port == 443;
-    }
-
-    /**
-     * <p>Handles the authentication before setting up the tunnel to the remote server.</p>
-     * <p>The default implementation returns true.</p>
-     *
-     * @param request the HTTP request
-     * @param response the HTTP response
-     * @param address the address of the remote server in the form {@code host:port}.
-     * @return true to allow to connect to the remote host, false otherwise
-     * @throws ServletException to report a server error to the caller
-     * @throws IOException to report a server error to the caller
-     */
-    protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address) throws ServletException, IOException
-    {
-        return true;
-    }
-
-    protected void setupTunnel(HttpServletRequest request, HttpServletResponse response, String host, int port, boolean secure) throws IOException
-    {
-        SocketChannel channel = connect(request, host, port);
-        channel.configureBlocking(false);
+        SocketChannel channel = connectToServer(request, host, port);
 
         // Transfer unread data from old connection to new connection
         // We need to copy the data to avoid races:
@@ -280,14 +233,40 @@ public class ProxyHandler extends AbstractHandler
             }
         }
 
-        // Setup connections, before registering the channel to avoid races
-        // where the server sends data before the connections are set up
-        ProxyToServerConnection proxyToServer = newProxyToServerConnection(secure, buffer);
+        ClientToProxyConnection clientToProxy = prepareConnections(channel, buffer);
+
+        // CONNECT expects a 200 response
+        response.setStatus(HttpServletResponse.SC_OK);
+        // Flush it so that the client receives it
+        response.flushBuffer();
+
+        upgradeConnection(request, response, clientToProxy);
+    }
+
+    private ClientToProxyConnection prepareConnections(SocketChannel channel, Buffer buffer)
+    {
+        HttpConnection httpConnection = HttpConnection.getCurrentConnection();
+        ProxyToServerConnection proxyToServer = newProxyToServerConnection(buffer);
         ClientToProxyConnection clientToProxy = newClientToProxyConnection(channel, httpConnection.getEndPoint(), httpConnection.getTimeStamp());
         clientToProxy.setConnection(proxyToServer);
         proxyToServer.setConnection(clientToProxy);
+        return clientToProxy;
+    }
 
-        upgradeConnection(request, response, clientToProxy);
+    /**
+     * <p>Handles the authentication before setting up the tunnel to the remote server.</p>
+     * <p>The default implementation returns true.</p>
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param address the address of the remote server in the form {@code host:port}.
+     * @return true to allow to connect to the remote host, false otherwise
+     * @throws ServletException to report a server error to the caller
+     * @throws IOException to report a server error to the caller
+     */
+    protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address) throws ServletException, IOException
+    {
+        return true;
     }
 
     protected ClientToProxyConnection newClientToProxyConnection(SocketChannel channel, EndPoint endPoint, long timeStamp)
@@ -295,9 +274,16 @@ public class ProxyHandler extends AbstractHandler
         return new ClientToProxyConnection(channel, endPoint, timeStamp);
     }
 
-    protected ProxyToServerConnection newProxyToServerConnection(boolean secure, IndirectNIOBuffer buffer)
+    protected ProxyToServerConnection newProxyToServerConnection(Buffer buffer)
     {
-        return new ProxyToServerConnection(secure, buffer);
+        return new ProxyToServerConnection(buffer);
+    }
+
+    private SocketChannel connectToServer(HttpServletRequest request, String host, int port) throws IOException
+    {
+        SocketChannel channel = connect(request, host, port);
+        channel.configureBlocking(false);
+        return channel;
     }
 
     /**
@@ -321,10 +307,6 @@ public class ProxyHandler extends AbstractHandler
 
     private void upgradeConnection(HttpServletRequest request, HttpServletResponse response, Connection connection) throws IOException
     {
-        // CONNECT expects a 200 response
-        response.setStatus(HttpServletResponse.SC_OK);
-        // Flush it so that the client receives it
-        response.flushBuffer();
         // Set the new connection as request attribute and change the status to 101
         // so that Jetty understands that it has to upgrade the connection
         request.setAttribute("org.eclipse.jetty.io.Connection", connection);
@@ -358,10 +340,10 @@ public class ProxyHandler extends AbstractHandler
      * @param buffer the buffer to write
      * @throws IOException if the buffer cannot be written
      */
-    protected void write(EndPoint endPoint, Buffer buffer) throws IOException
+    protected int write(EndPoint endPoint, Buffer buffer) throws IOException
     {
         if (buffer == null)
-            return;
+            return 0;
 
         int length = buffer.length();
         StringBuilder builder = new StringBuilder();
@@ -382,6 +364,7 @@ public class ProxyHandler extends AbstractHandler
             }
         }
         _logger.debug("Written {}/{} bytes " + endPoint, builder, length);
+        return length;
     }
 
     private class Manager extends SelectorManager
@@ -396,16 +379,7 @@ public class ProxyHandler extends AbstractHandler
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey selectionKey) throws IOException
         {
-            ProxyToServerConnection proxyToServer = (ProxyToServerConnection)selectionKey.attachment();
-            if (proxyToServer._secure)
-            {
-                throw new UnsupportedOperationException();
-//                return new SslSelectChannelEndPoint(???, channel, selectSet, selectionKey, sslContext.createSSLEngine(address.host, address.port));
-            }
-            else
-            {
-                return new SelectChannelEndPoint(channel, selectSet, selectionKey);
-            }
+            return new SelectChannelEndPoint(channel, selectSet, selectionKey);
         }
 
         @Override
@@ -445,46 +419,64 @@ public class ProxyHandler extends AbstractHandler
     {
         private final CountDownLatch _ready = new CountDownLatch(1);
         private final Buffer _buffer = new IndirectNIOBuffer(1024);
-        private final boolean _secure;
         private volatile Buffer _data;
         private volatile ClientToProxyConnection _toClient;
         private volatile long _timestamp;
         private volatile SelectChannelEndPoint _endPoint;
 
-        public ProxyToServerConnection(boolean secure, Buffer data)
+        public ProxyToServerConnection(Buffer data)
         {
-            _secure = secure;
             _data = data;
         }
 
         public Connection handle() throws IOException
         {
-            _logger.debug("ProxyToServer: handle entered");
-            if (_data != null)
+            _logger.debug("ProxyToServer: begin reading from server");
+            try
             {
-                write(_endPoint, _data);
-                _data = null;
-            }
-
-            while (true)
-            {
-                int read = read(_endPoint, _buffer);
-
-                if (read == -1)
+                if (_data != null)
                 {
-                    _logger.debug("ProxyToServer: closed connection {}", _endPoint, null);
-                    _toClient.close();
-                    break;
+                    int written = write(_endPoint, _data);
+                    _logger.debug("ProxyToServer: written to server {} bytes", written, null);
+                    _data = null;
                 }
 
-                if (read == 0)
-                    break;
+                while (true)
+                {
+                    int read = read(_endPoint, _buffer);
 
-                _logger.debug("ProxyToServer: read {} bytes {}", read, _endPoint);
-                write(_toClient._endPoint, _buffer);
+                    if (read == -1)
+                    {
+                        _logger.debug("ProxyToServer: server closed connection {}", _endPoint, null);
+                        close();
+                        break;
+                    }
+
+                    if (read == 0)
+                        break;
+
+                    _logger.debug("ProxyToServer: read from server {} bytes {}", read, _endPoint);
+                    int written = write(_toClient._endPoint, _buffer);
+                    _logger.debug("ProxyToServer: written to client {} bytes", written, null);
+                }
+                return this;
             }
-            _logger.debug("ProxyToServer: handle exited");
-            return this;
+            catch (IOException x)
+            {
+                _logger.warn("ProxyToServer: Unexpected exception", x);
+                close();
+                throw x;
+            }
+            catch (RuntimeException x)
+            {
+                _logger.warn("ProxyToServer: Unexpected exception", x);
+                close();
+                throw x;
+            }
+            finally
+            {
+                _logger.debug("ProxyToServer: end reading from server");
+            }
         }
 
         public void setConnection(ClientToProxyConnection connection)
@@ -505,6 +497,7 @@ public class ProxyHandler extends AbstractHandler
         public void setEndPoint(SelectChannelEndPoint endpoint)
         {
             _endPoint = endpoint;
+            _logger.debug("ProxyToServer: {}", _endPoint, null);
         }
 
         public boolean isIdle()
@@ -534,9 +527,35 @@ public class ProxyHandler extends AbstractHandler
             }
         }
 
-        public void close() throws IOException
+        public void closeClient() throws IOException
+        {
+            _toClient.closeClient();
+        }
+
+        public void closeServer() throws IOException
         {
             _endPoint.close();
+        }
+
+        public void close()
+        {
+            try
+            {
+                closeClient();
+            }
+            catch (IOException x)
+            {
+                _logger.debug("ProxyToServer: Unexpected exception closing the client", x);
+            }
+
+            try
+            {
+                closeServer();
+            }
+            catch (IOException x)
+            {
+                _logger.debug("ProxyToServer: Unexpected exception closing the server", x);
+            }
         }
     }
 
@@ -554,37 +573,57 @@ public class ProxyHandler extends AbstractHandler
             _channel = channel;
             _endPoint = endPoint;
             _timestamp = timestamp;
+            _logger.debug("ClientToProxy: {}", _endPoint, null);
         }
 
         public Connection handle() throws IOException
         {
-            _logger.debug("ClientToProxy: handle entered");
-
-            if (_firstTime)
+            _logger.debug("ClientToProxy: begin reading from client");
+            try
             {
-                _firstTime = false;
-                register(_channel, _toServer);
-            }
-
-            while (true)
-            {
-                int read = read(_endPoint, _buffer);
-
-                if (read == -1)
+                if (_firstTime)
                 {
-                    _logger.debug("ClientToProxy: closed connection {}", _endPoint, null);
-                    _toServer.close();
-                    break;
+                    _firstTime = false;
+                    register(_channel, _toServer);
+                    _logger.debug("ClientToProxy: registered channel {} with connection {}", _channel, _toServer);
                 }
 
-                if (read == 0)
-                    break;
+                while (true)
+                {
+                    int read = read(_endPoint, _buffer);
 
-                _logger.debug("ClientToProxy: read {} bytes {}", read, _endPoint);
-                write(_toServer._endPoint, _buffer);
+                    if (read == -1)
+                    {
+                        _logger.debug("ClientToProxy: client closed connection {}", _endPoint, null);
+                        close();
+                        break;
+                    }
+
+                    if (read == 0)
+                        break;
+
+                    _logger.debug("ClientToProxy: read from client {} bytes {}", read, _endPoint);
+                    int written = write(_toServer._endPoint, _buffer);
+                    _logger.debug("ClientToProxy: written to server {} bytes", written, null);
+                }
+                return this;
             }
-            _logger.debug("ClientToProxy: handle exited");
-            return this;
+            catch (IOException x)
+            {
+                _logger.warn("ClientToProxy: Unexpected exception", x);
+                close();
+                throw x;
+            }
+            catch (RuntimeException x)
+            {
+                _logger.warn("ClientToProxy: Unexpected exception", x);
+                close();
+                throw x;
+            }
+            finally
+            {
+                _logger.debug("ClientToProxy: end reading from client");
+            }
         }
 
         public long getTimeStamp()
@@ -607,9 +646,35 @@ public class ProxyHandler extends AbstractHandler
             _toServer = connection;
         }
 
-        public void close() throws IOException
+        public void closeClient() throws IOException
         {
             _endPoint.close();
+        }
+
+        public void closeServer() throws IOException
+        {
+            _toServer.closeServer();
+        }
+
+        public void close()
+        {
+            try
+            {
+                closeClient();
+            }
+            catch (IOException x)
+            {
+                _logger.debug("ClientToProxy: Unexpected exception closing the client", x);
+            }
+
+            try
+            {
+                closeServer();
+            }
+            catch (IOException x)
+            {
+                _logger.debug("ClientToProxy: Unexpected exception closing the server", x);
+            }
         }
     }
 }
