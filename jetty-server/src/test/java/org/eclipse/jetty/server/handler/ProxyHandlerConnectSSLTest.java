@@ -69,7 +69,6 @@ public class ProxyHandlerConnectSSLTest extends AbstractProxyHandlerTest
 
             // Expect 200 OK from the CONNECT request
             Response response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
 
             // Be sure the buffered input does not have anything buffered
@@ -90,7 +89,6 @@ public class ProxyHandlerConnectSSLTest extends AbstractProxyHandlerTest
                 output.flush();
 
                 response = readResponse(input);
-                System.err.println(response);
                 assertEquals("200", response.getCode());
                 assertEquals("GET /echo", response.getBody());
             }
@@ -123,7 +121,6 @@ public class ProxyHandlerConnectSSLTest extends AbstractProxyHandlerTest
 
             // Expect 200 OK from the CONNECT request
             Response response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
 
             // Be sure the buffered input does not have anything buffered
@@ -148,7 +145,6 @@ public class ProxyHandlerConnectSSLTest extends AbstractProxyHandlerTest
                     output.flush();
 
                     response = readResponse(input);
-                    System.err.println(response);
                     assertEquals("200", response.getCode());
                     assertEquals("POST /echo?param=" + i + "\r\nHELLO", response.getBody());
                 }
@@ -212,7 +208,6 @@ public class ProxyHandlerConnectSSLTest extends AbstractProxyHandlerTest
                     baos.write(read);
                 baos.close();
 
-                System.err.println("server echoing:\r\n" + builder);
                 ServletOutputStream output = httpResponse.getOutputStream();
                 output.println(builder.toString());
                 output.write(baos.toByteArray());

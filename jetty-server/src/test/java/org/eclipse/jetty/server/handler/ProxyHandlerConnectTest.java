@@ -44,7 +44,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
 
             // Expect 200 OK from the CONNECT request
             Response response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
         }
         finally
@@ -71,7 +70,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
 
             // Expect 200 OK from the CONNECT request
             Response response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
 
             request = "" +
@@ -82,7 +80,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
             output.flush();
 
             response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
             assertEquals("GET /echo", response.getBody());
         }
@@ -113,12 +110,10 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
 
             // Expect 200 OK from the CONNECT request
             Response response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
 
             // The pipelined request must have gone up to the server as is
             response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
             assertEquals("GET /echo", response.getBody());
         }
@@ -146,7 +141,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
 
             // Expect 200 OK from the CONNECT request
             Response response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
 
             for (int i = 0; i < 10; ++i)
@@ -159,7 +153,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
                 output.flush();
 
                 response = readResponse(input);
-                System.err.println(response);
                 assertEquals("200", response.getCode());
                 assertEquals("GET /echo", response.getBody());
             }
@@ -188,7 +181,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
 
             // Expect 200 OK from the CONNECT request
             Response response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
 
             request = "" +
@@ -199,7 +191,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
             output.flush();
 
             response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
             assertEquals("GET /echo", response.getBody());
 
@@ -234,7 +225,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
 
             // Expect 200 OK from the CONNECT request
             Response response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
 
             request = "" +
@@ -271,7 +261,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
 
             // Expect 200 OK from the CONNECT request
             Response response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
 
             request = "" +
@@ -284,7 +273,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
             output.flush();
 
             response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
             assertEquals("POST /echo\r\nHELLO", response.getBody());
 
@@ -296,7 +284,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
             output.flush();
 
             response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
             assertEquals("GET /echo", response.getBody());
         }
@@ -324,7 +311,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
 
             // Expect 200 OK from the CONNECT request
             Response response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
 
             StringBuilder body = new StringBuilder();
@@ -342,7 +328,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
             output.flush();
 
             response = readResponse(input);
-            System.err.println(response);
             assertEquals("200", response.getCode());
             assertEquals("POST /echo\r\n" + body, response.getBody());
         }
@@ -373,7 +358,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
                     baos.write(read);
                 baos.close();
 
-                System.err.println("server echoing:\r\n" + builder);
                 ServletOutputStream output = httpResponse.getOutputStream();
                 output.println(builder.toString());
                 output.write(baos.toByteArray());
@@ -381,7 +365,6 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
             else if ("/close".equals(uri))
             {
                 request.getConnection().getEndPoint().close();
-                System.err.println("server closed");
             }
             else
             {
