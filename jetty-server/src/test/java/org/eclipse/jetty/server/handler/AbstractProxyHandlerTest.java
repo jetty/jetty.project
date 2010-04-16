@@ -17,7 +17,7 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 /**
  * @version $Revision$ $Date$
  */
-public class AbstractProxyHandlerTest extends TestCase
+public abstract class AbstractProxyHandlerTest extends TestCase
 {
     protected Server server;
     protected Connector serverConnector;
