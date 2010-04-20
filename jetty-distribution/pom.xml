@@ -385,10 +385,38 @@
                   <includes>**</includes>
                   <outputDirectory>${assembly.directory}/lib</outputDirectory>
                 </artifactItem>
+		<!--
+                <artifactItem>
+                  <groupId>org.mortbay.jetty</groupId>
+                  <artifactId>jsp-api-2.1-glassfish</artifactId>
+                  <version>${jsp-2-1-version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly.directory}/lib/jsp</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.mortbay.jetty</groupId>
+                  <artifactId>jsp-2.1-glassfish</artifactId>
+                  <version>${jsp-2-1-version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly.directory}/lib/jsp</outputDirectory>
+                </artifactItem>               
+		-->
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-jsp-2.1</artifactId>
+                  <version>${project.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly.directory}/lib/jsp</outputDirectory>
+                </artifactItem>
               </artifactItems>
             </configuration>
           </execution>
-          <!--
           <execution>
             <phase>generate-resources</phase>
             <goals>
@@ -396,34 +424,27 @@
             </goals>
             <configuration>
               <artifactItems>
-               <artifactItem>
-                  <groupId>org.apache.geronimo.specs</groupId>
-                  <artifactId>geronimo-annotation_1.0_spec</artifactId>
-                  <version>1.1.1</version>
-                  <outputDirectory>${assembly.directory}/lib/annotations</outputDirectory>
-              </artifactItem>
-              <artifactItem>
-                  <groupId>asm</groupId>
-                  <artifactId>asm-commons</artifactId>
-                  <version>3.1</version>
-                  <outputDirectory>${assembly.directory}/lib/annotations</outputDirectory>
-              </artifactItem>
-              <artifactItem>
-                  <groupId>asm</groupId>
-                  <artifactId>asm</artifactId>
-                  <version>3.1</version>
-                  <outputDirectory>${assembly.directory}/lib/annotations</outputDirectory>
-              </artifactItem>
-              <artifactItem>
-                  <groupId>asm</groupId>
-                  <artifactId>asm-tree</artifactId>
-                  <version>3.1</version>
-                  <outputDirectory>${assembly.directory}/lib/annotations</outputDirectory>
-              </artifactItem>
+		<artifactItem>
+		  <groupId>org.eclipse.jdt</groupId>
+		  <artifactId>core</artifactId>
+		  <version>${eclipse-compiler-version}</version>
+		  <outputDirectory>${assembly.directory}/lib/jsp</outputDirectory>
+		</artifactItem>
+		<artifactItem>
+		  <groupId>org.mortbay.jetty</groupId>
+		  <artifactId>jsp-api-2.1-glassfish</artifactId>
+		  <version>${jsp-2-1-version}</version>
+		  <outputDirectory>${assembly.directory}/lib/jsp</outputDirectory>
+		</artifactItem>
+		<artifactItem>
+		  <groupId>org.mortbay.jetty</groupId>
+		  <artifactId>jsp-2.1-glassfish</artifactId>
+		  <version>${jsp-2-1-version}</version>
+		  <outputDirectory>${assembly.directory}/lib/jsp</outputDirectory>
+		</artifactItem>
               </artifactItems>
             </configuration>
           </execution>
-          -->
         </executions>
       </plugin>
       <plugin>
@@ -513,5 +534,20 @@
       <artifactId>jetty-websocket</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jsp-api-2.1-glassfish</artifactId>
+      <version>${jsp-2-1-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jsp-2.1-glassfish</artifactId>
+      <version>${jsp-2-1-version}</version>
+    </dependency>               
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jsp-2.1</artifactId>
+      <version>${project.version}</version>
+    </dependency>               
   </dependencies>
 </project>

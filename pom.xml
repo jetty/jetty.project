@@ -24,6 +24,7 @@
     <eclipse-compiler-version>3.1.1</eclipse-compiler-version>
     <cometd-version>1.0.beta4</cometd-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <jsp-2-1-version>2.1.v20091210</jsp-2-1-version>
   </properties>
   <scm>
     <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk</connection>
@@ -180,6 +181,7 @@
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
     <module>jetty-servlets</module>
+    <module>jetty-jsp-2.1</module>
     <module>jetty-deploy</module>
     <module>jetty-ajp</module>
     <module>jetty-jmx</module>

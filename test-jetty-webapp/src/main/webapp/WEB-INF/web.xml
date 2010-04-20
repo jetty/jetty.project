@@ -231,17 +231,19 @@
     <servlet-name>TransparentProxy</servlet-name>
     <servlet-class>org.eclipse.jetty.servlets.ProxyServlet$Transparent</servlet-class>
     <init-param>
-      <param-name>Prefix</param-name><param-value>/google</param-value>
+      <param-name>Prefix</param-name><param-value>/javadoc</param-value>
     </init-param>
     <init-param>
-      <param-name>ProxyTo</param-name><param-value>http://www.google.com</param-value>
+      <param-name>ProxyTo</param-name><param-value>http://download.eclipse.org/jetty/stable-7/apidocs</param-value>
+    </init-param>
+    <init-param>
+      <param-name>HostHeader</param-name><param-value>download.eclipse.org</param-value>
     </init-param>
     <load-on-startup>1</load-on-startup>
   </servlet>
-  
   <servlet-mapping>
     <servlet-name>TransparentProxy</servlet-name>
-    <url-pattern>/google/*</url-pattern>
+    <url-pattern>/javadoc/*</url-pattern>
   </servlet-mapping>
   
   <error-page>
@@ -299,12 +301,10 @@
     </user-data-constraint>
   </security-constraint>
 
-<!--
   <login-config>
     <auth-method>BASIC</auth-method>
     <realm-name>Test Realm</realm-name>
   </login-config>
--->
 
 <!--
   <login-config>
@@ -313,6 +313,7 @@
   </login-config>
 -->
 
+<!--
   <login-config>
     <auth-method>FORM</auth-method>
     <realm-name>Test Realm</realm-name>
@@ -321,6 +322,7 @@
        <form-error-page>/logonError.html?param=test</form-error-page>
     </form-login-config>
   </login-config>
+-->
   
   <session-config>
     <session-timeout>5</session-timeout>
