@@ -21,7 +21,7 @@
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
-              <includes>**</includes>
+              <includes>META-INF/**,org/eclipse/**,com/sun/org/apache/commons/logging/impl/JettyLog.class</includes>
               <excludes>**/MANIFEST.MF,javax/**</excludes>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
@@ -78,6 +78,12 @@
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
       <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jsp-2.1</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 </project>
