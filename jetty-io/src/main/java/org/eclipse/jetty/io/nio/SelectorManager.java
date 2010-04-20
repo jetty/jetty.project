@@ -104,6 +104,10 @@ public abstract class SelectorManager extends AbstractLifeCycle
      */
     public void register(SocketChannel channel, Object att)
     {
+        // The ++ increment here is not atomic, but it does not matter.
+        // so long as the value changes sometimes, then connections will
+        // be distributed over the available sets.
+        
         int s=_set++; 
         s=s%_selectSets;
         SelectSet[] sets=_selectSet;
