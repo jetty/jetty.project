@@ -940,8 +940,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         {
             if (_nioCache!=null)
                 _nioCache.stop();
-            if (_bioCache!=null)
-                _bioCache.stop();
         }
         catch(Exception e)
         {
@@ -949,7 +947,19 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
         finally
         {
-            super.destroy();
+	    try
+	    {
+		if (_bioCache!=null)
+		    _bioCache.stop();
+	    }
+	    catch(Exception e)
+	    {
+		Log.warn(Log.EXCEPTION,e);
+	    }
+	    finally
+	    {
+                super.destroy();
+	    }
         }
     }
 
