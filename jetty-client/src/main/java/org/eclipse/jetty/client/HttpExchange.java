@@ -15,6 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.security.SecurityListener;
@@ -822,7 +823,14 @@ public class HttpExchange
         {
             try
             {
-                HttpExchange.this.onException(ex);
+                if (ex instanceof SocketTimeoutException ||
+                    ex.getCause() instanceof SocketTimeoutException)
+                {
+                    Log.debug(ex);
+                    HttpExchange.this.onExpire();
+                }
+                else
+                    HttpExchange.this.onException(ex);
             }
             finally
             {
