@@ -15,6 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -295,8 +296,19 @@ public class HttpDestination
             if (_queue.size() > 0)
             {
                 HttpExchange ex = _queue.removeFirst();
-                ex.setStatus(HttpExchange.STATUS_EXCEPTED);
-                ex.getEventListener().onException(throwable);
+
+                if (throwable instanceof SocketTimeoutException ||
+                    throwable.getCause() instanceof SocketTimeoutException)
+                {
+                    Log.debug(throwable);
+                    ex.setStatus(HttpExchange.STATUS_EXPIRED);
+                    ex.getEventListener().onExpire();
+                }
+                else
+                {
+                    ex.setStatus(HttpExchange.STATUS_EXCEPTED);
+                    ex.getEventListener().onException(throwable);
+                }
             }
         }
     }
