@@ -827,6 +827,7 @@ public class HttpExchange
                     ex.getCause() instanceof SocketTimeoutException)
                 {
                     Log.debug(ex);
+                    setStatus(HttpExchange.STATUS_EXPIRED);
                     HttpExchange.this.onExpire();
                 }
                 else
