@@ -14,6 +14,8 @@
 
 package org.eclipse.jetty.client;
 
+import org.eclipse.jetty.util.log.Log;
+
 /**
  * @version $Revision$ $Date$
  */
@@ -42,4 +44,19 @@ public class BlockingHttpExchangeCancelTest extends AbstractHttpExchangeCancelTe
     {
         return httpClient;
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.client.AbstractHttpExchangeCancelTest#testHttpExchangeOnExpire()
+     */
+    @Override
+    public void testHttpExchangeOnExpire() throws Exception
+    {
+        boolean enabled=Log.getLog().isDebugEnabled();
+        Log.getLog().setDebugEnabled(true);
+        super.testHttpExchangeOnExpire();
+        Log.getLog().setDebugEnabled(enabled);
+    }
+    
+    
 }
