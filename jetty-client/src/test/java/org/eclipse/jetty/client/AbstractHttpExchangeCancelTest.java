@@ -15,6 +15,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -315,48 +316,7 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         httpClient.setTimeout(1000);
         httpClient.start();
 
-        System.err.println("\n\n\nStart testHttpExchangeOnExpire "+this.getClass());
-        TestHttpExchange exchange = new TestHttpExchange()
-        {
-
-            /* ------------------------------------------------------------ */
-            /**
-             * @see org.eclipse.jetty.client.AbstractHttpExchangeCancelTest.TestHttpExchange#onException(java.lang.Throwable)
-             */
-            @Override
-            protected void onException(Throwable ex)
-            {
-                System.err.println("!!! onException");
-                ex.printStackTrace();
-                // TODO Auto-generated method stub
-                super.onException(ex);
-            }
-
-            /* ------------------------------------------------------------ */
-            /**
-             * @see org.eclipse.jetty.client.AbstractHttpExchangeCancelTest.TestHttpExchange#onExpire()
-             */
-            @Override
-            protected void onExpire()
-            {
-                System.err.println("EXPIRED");
-                // TODO Auto-generated method stub
-                super.onExpire();
-            }
-
-            /* ------------------------------------------------------------ */
-            /**
-             * @see org.eclipse.jetty.client.HttpExchange#onConnectionFailed(java.lang.Throwable)
-             */
-            @Override
-            protected void onConnectionFailed(Throwable x)
-            {
-                x.printStackTrace();
-                // TODO Auto-generated method stub
-                super.onConnectionFailed(x);
-            }
-            
-        };
+        TestHttpExchange exchange = new TestHttpExchange();
         exchange.setAddress(newAddress());
         exchange.setURI("/?action=wait5000");
 
@@ -364,7 +324,7 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
 
         int status = exchange.waitForDone();
         
-        assertEquals(HttpExchange.STATUS_EXPIRED, status);
+        assertTrue(HttpExchange.STATUS_EXPIRED==status||HttpExchange.STATUS_EXCEPTED==status);
         assertFalse(exchange.isResponseCompleted());
         assertFalse(exchange.isFailed());
         assertTrue(exchange.isExpired());
@@ -437,8 +397,11 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         @Override
         protected void onException(Throwable ex)
         {
-            // ex.printStackTrace();
-            this.failed = true;
+            if (ex instanceof SocketTimeoutException ||
+                ex.getCause() instanceof SocketTimeoutException)
+                expired=true;
+            else
+                failed = true;
         }
 
         public boolean isFailed()
