@@ -315,13 +315,54 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         httpClient.setTimeout(1000);
         httpClient.start();
 
-        TestHttpExchange exchange = new TestHttpExchange();
+        System.err.println("Start testHttpExchangeOnExpire");
+        TestHttpExchange exchange = new TestHttpExchange()
+        {
+
+            /* ------------------------------------------------------------ */
+            /**
+             * @see org.eclipse.jetty.client.AbstractHttpExchangeCancelTest.TestHttpExchange#onException(java.lang.Throwable)
+             */
+            @Override
+            protected void onException(Throwable ex)
+            {
+                ex.printStackTrace();
+                // TODO Auto-generated method stub
+                super.onException(ex);
+            }
+
+            /* ------------------------------------------------------------ */
+            /**
+             * @see org.eclipse.jetty.client.AbstractHttpExchangeCancelTest.TestHttpExchange#onExpire()
+             */
+            @Override
+            protected void onExpire()
+            {
+                System.err.println("EXPIRED");
+                // TODO Auto-generated method stub
+                super.onExpire();
+            }
+
+            /* ------------------------------------------------------------ */
+            /**
+             * @see org.eclipse.jetty.client.HttpExchange#onConnectionFailed(java.lang.Throwable)
+             */
+            @Override
+            protected void onConnectionFailed(Throwable x)
+            {
+                x.printStackTrace();
+                // TODO Auto-generated method stub
+                super.onConnectionFailed(x);
+            }
+            
+        };
         exchange.setAddress(newAddress());
         exchange.setURI("/?action=wait5000");
 
         httpClient.send(exchange);
 
         int status = exchange.waitForDone();
+        
         assertEquals(HttpExchange.STATUS_EXPIRED, status);
         assertFalse(exchange.isResponseCompleted());
         assertFalse(exchange.isFailed());
