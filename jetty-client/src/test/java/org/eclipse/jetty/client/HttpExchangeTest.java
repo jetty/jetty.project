@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,12 +31,14 @@ import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
 
 /**
  * Functional testing for HttpExchange.
@@ -124,7 +127,6 @@ public class HttpExchangeTest extends TestCase
                 protected void onRequestCommitted()
                 {
                     result="committed";
-                    // System.err.println(n+" Request committed: "+close);
                 }
 
                 @Override
@@ -137,13 +139,11 @@ public class HttpExchangeTest extends TestCase
                 protected void onResponseStatus(Buffer version, int status, Buffer reason)
                 {
                     result="status";
-                    // System.err.println(n+" Response Status: " + version+" "+status+" "+reason);
                 }
 
                 @Override
                 protected void onResponseHeader(Buffer name, Buffer value)
                 {
-                    // System.err.println(n+" Response header: " + name + " = " + value);
                 }
 
                 @Override
@@ -157,14 +157,12 @@ public class HttpExchangeTest extends TestCase
                 protected void onResponseContent(Buffer content)
                 {
                     len+=content.length();
-                    // System.err.println(n+" Response content:" + content.length());
                 }
 
                 @Override
                 protected void onResponseComplete()
                 {
                     result="complete";
-                    // System.err.println(n+" Response completed "+len);
                     if (len==2009)
                         latch.countDown();
                     else
@@ -244,7 +242,7 @@ public class HttpExchangeTest extends TestCase
 
     public void testGetWithContentExchange() throws Exception
     {
-        for (int i=0;i<200;i++)
+        for (int i=0;i<100;i++)
         {
             ContentExchange httpExchange=new ContentExchange();
             httpExchange.setURL(_scheme+"localhost:"+_port+"/?i="+i);
@@ -259,7 +257,48 @@ public class HttpExchangeTest extends TestCase
             Thread.sleep(5);
         }
     }
-    
+
+    public void testBigPostWithContentExchange() throws Exception
+    {   
+        Log.getLog().setDebugEnabled(true);
+        
+        int size =32;
+        ContentExchange httpExchange=new ContentExchange();
+
+        Buffer babuf = new ByteArrayBuffer(size*36*1024);
+        Buffer niobuf = new DirectNIOBuffer(size*36*1024);
+
+        byte[] bytes="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes();
+
+        for (int i=0;i<size*1024;i++)
+        {
+            babuf.put(bytes);
+            niobuf.put(bytes);
+        }
+        
+        httpExchange.setURL(_scheme+"localhost:"+_port+"/");
+        httpExchange.setMethod(HttpMethods.POST);
+        httpExchange.setRequestContentType("application/data");
+        httpExchange.setRequestContent(babuf);
+        
+        _httpClient.send(httpExchange);
+        int status = httpExchange.waitForDone();
+        String result=httpExchange.getResponseContent();
+        assertEquals(babuf.length(),result.length());
+        assertEquals(HttpExchange.STATUS_COMPLETED, status);
+
+        httpExchange.reset();
+        httpExchange.setURL(_scheme+"localhost:"+_port+"/");
+        httpExchange.setMethod(HttpMethods.POST);
+        httpExchange.setRequestContentType("application/data");
+        httpExchange.setRequestContent(niobuf);
+        _httpClient.send(httpExchange);
+        status = httpExchange.waitForDone();
+        result=httpExchange.getResponseContent();
+        assertEquals(niobuf.length(),result.length());
+        assertEquals(HttpExchange.STATUS_COMPLETED, status);
+    }
+
     public void testSlowPost() throws Exception
     {
         ContentExchange httpExchange=new ContentExchange()
@@ -290,7 +329,6 @@ public class HttpExchangeTest extends TestCase
                 if (_index>=data.length())
                     return -1;
 
-                //System.err.println("sleep "+_index);
                 try
                 {
                     Thread.sleep(250);
@@ -404,6 +442,8 @@ public class HttpExchangeTest extends TestCase
         _server=new Server();
         _server.setGracefulShutdown(500);
         _connector=new SelectChannelConnector();
+        
+        _connector.setMaxIdleTime(3000000);
 
         _connector.setPort(0);
         _server.setConnectors(new Connector[] { _connector });
@@ -425,13 +465,11 @@ public class HttpExchangeTest extends TestCase
 
                     if (request.getServerName().equals("jetty.eclipse.org"))
                     {
-                        // System.err.println("HANDLING Proxy");
                         response.getOutputStream().println("Proxy request: "+request.getRequestURL());
                         response.getOutputStream().println(request.getHeader(HttpHeaders.PROXY_AUTHORIZATION));
                     }
                     else if (request.getMethod().equalsIgnoreCase("GET"))
                     {
-                        // System.err.println("HANDLING Hello "+request.getRequestURI());
                         response.getOutputStream().println("<hello>");
                         for (; i<100; i++)
                         {
@@ -443,8 +481,11 @@ public class HttpExchangeTest extends TestCase
                     }
                     else
                     {
-                        // System.err.println("HANDLING "+request.getMethod());
-                        IO.copy(request.getInputStream(),response.getOutputStream());
+                        response.setContentType(request.getContentType());
+                        int size=request.getContentLength();
+                        ByteArrayOutputStream bout = new ByteArrayOutputStream(size>0?size:32768);
+                        IO.copy(request.getInputStream(),bout);
+                        response.getOutputStream().write(bout.toByteArray());
                     }
                 }
                 catch(IOException e)
@@ -459,7 +500,6 @@ public class HttpExchangeTest extends TestCase
                 }
                 finally
                 {
-                    // System.err.println("HANDLED "+i);
                 }
             }
         });

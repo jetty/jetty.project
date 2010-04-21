@@ -59,7 +59,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     private final ByteBuffer _outBuffer;
     private final NIOBuffer _outNIOBuffer;
 
-    private final NIOBuffer[] _reuseBuffer=new NIOBuffer[2];
     private final ByteBuffer[] _gather=new ByteBuffer[2];
 
     private boolean _closing=false;
@@ -260,10 +259,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 _buffers.returnBuffer(_inNIOBuffer);
             if (_outNIOBuffer!=null)
                 _buffers.returnBuffer(_outNIOBuffer);
-            if (_reuseBuffer[0]!=null)
-                _buffers.returnBuffer(_reuseBuffer[0]);
-            if (_reuseBuffer[1]!=null)
-                _buffers.returnBuffer(_reuseBuffer[1]);
         }   
     }
 
@@ -712,34 +707,25 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
     
     /* ------------------------------------------------------------ */
-    private ByteBuffer extractOutputBuffer(Buffer buffer,int n)
+    private ByteBuffer extractOutputBuffer(Buffer buffer)
     {
         if (buffer.buffer() instanceof NIOBuffer)
-        {
-            NIOBuffer nBuf=(NIOBuffer)buffer.buffer();
-            return nBuf.getByteBuffer();
-        }
-        else
-        {
-            if (_reuseBuffer[n]==null)
-                _reuseBuffer[n] = (NIOBuffer)_buffers.getBuffer(_session.getApplicationBufferSize());
-            NIOBuffer buf = _reuseBuffer[n];
-            buf.clear();
-            buf.put(buffer);
-            return buf.getByteBuffer();
-        }
+            return ((NIOBuffer)buffer.buffer()).getByteBuffer();
+        
+        return ByteBuffer.wrap(buffer.array());
     }
 
     /* ------------------------------------------------------------ */
     private int wrap(final Buffer header, final Buffer buffer) throws IOException
     {
-        _gather[0]=extractOutputBuffer(header,0);
+        _gather[0]=extractOutputBuffer(header);
+        
         synchronized(_gather[0])
         {
             _gather[0].position(header.getIndex());
             _gather[0].limit(header.putIndex());
 
-            _gather[1]=extractOutputBuffer(buffer,1);
+            _gather[1]=extractOutputBuffer(buffer);
 
             synchronized(_gather[1])
             {
@@ -810,9 +796,11 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     /* ------------------------------------------------------------ */
     private int wrap(final Buffer buffer) throws IOException
     {
-        _gather[0]=extractOutputBuffer(buffer,0);
+        _gather[0]=extractOutputBuffer(buffer);
         synchronized(_gather[0])
         {
+            ByteBuffer bb;
+            
             _gather[0].position(buffer.getIndex());
             _gather[0].limit(buffer.putIndex());
 
