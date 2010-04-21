@@ -260,8 +260,6 @@ public class HttpExchangeTest extends TestCase
 
     public void testBigPostWithContentExchange() throws Exception
     {   
-        Log.getLog().setDebugEnabled(true);
-        
         int size =32;
         ContentExchange httpExchange=new ContentExchange();
 
