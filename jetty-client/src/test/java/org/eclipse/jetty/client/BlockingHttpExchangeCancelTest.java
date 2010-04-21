@@ -44,25 +44,5 @@ public class BlockingHttpExchangeCancelTest extends AbstractHttpExchangeCancelTe
     {
         return httpClient;
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.client.AbstractHttpExchangeCancelTest#testHttpExchangeOnExpire()
-     */
-    @Override
-    public void testHttpExchangeOnExpire() throws Exception
-    {
-        boolean enabled=Log.getLog().isDebugEnabled();
-        Log.getLog().setDebugEnabled(true);
-        try
-        {
-            super.testHttpExchangeOnExpire();
-        }
-        finally
-        {
-            Log.getLog().setDebugEnabled(enabled);
-        }
-    }
-    
-    
+   
 }
