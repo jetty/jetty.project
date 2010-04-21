@@ -214,23 +214,28 @@ public class HttpConnection implements Connection
 
                         if (!_generator.isComplete())
                         {
-                            InputStream in = _exchange.getRequestContentSource();
-                            if (in != null)
+                            if (_exchange!=null)
                             {
-                                if (_requestContentChunk == null || _requestContentChunk.length() == 0)
+                                InputStream in = _exchange.getRequestContentSource();
+                                if (in != null)
                                 {
-                                    _requestContentChunk = _exchange.getRequestContentChunk();
-                                    _destination.getHttpClient().schedule(_timeout);
+                                    if (_requestContentChunk == null || _requestContentChunk.length() == 0)
+                                    {
+                                        _requestContentChunk = _exchange.getRequestContentChunk();
+                                        _destination.getHttpClient().schedule(_timeout);
 
-                                    if (_requestContentChunk != null)
-                                        _generator.addContent(_requestContentChunk,false);
-                                    else
-                                        _generator.complete();
+                                        if (_requestContentChunk != null)
+                                            _generator.addContent(_requestContentChunk,false);
+                                        else
+                                            _generator.complete();
 
-                                    flushed = _generator.flushBuffer();
-                                    io += flushed;
+                                        flushed = _generator.flushBuffer();
+                                        io += flushed;
+                                    }
                                 }
-                            }
+                                else
+                                    _generator.complete();
+                            }                            
                             else
                                 _generator.complete();
                         }
