@@ -54,8 +54,18 @@ public class BlockingHttpExchangeCancelTest extends AbstractHttpExchangeCancelTe
     {
         boolean enabled=Log.getLog().isDebugEnabled();
         Log.getLog().setDebugEnabled(true);
-        super.testHttpExchangeOnExpire();
-        Log.getLog().setDebugEnabled(enabled);
+        boolean ok=false;
+        try
+        {
+            super.testHttpExchangeOnExpire();
+            ok=true;
+        }
+        finally
+        {
+            Log.getLog().setDebugEnabled(enabled);
+            if (!ok)
+                System.exit(1);
+        }
     }
     
     

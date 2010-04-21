@@ -326,6 +326,7 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
             @Override
             protected void onException(Throwable ex)
             {
+                System.err.println("!!! onException");
                 ex.printStackTrace();
                 // TODO Auto-generated method stub
                 super.onException(ex);
