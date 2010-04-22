@@ -19,7 +19,6 @@ import java.net.MalformedURLException;
 import java.security.PermissionCollection;
 import java.util.EventListener;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpSessionActivationListener;
@@ -30,6 +29,7 @@ import javax.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HandlerContainer;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
@@ -74,7 +74,7 @@ public class WebAppContext extends ServletContextHandler
         "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
         "org.eclipse.jetty.webapp.TagLibConfiguration"
     } ;
-    private String[] _configurationClasses=null;
+    private String[] _configurationClasses=__dftConfigurationClasses;
     private Configuration[] _configurations;
     private String _defaultsDescriptor=WEB_DEFAULTS_XML;
     private String _descriptor=null;
@@ -113,6 +113,8 @@ public class WebAppContext extends ServletContextHandler
     private Map _resourceAliases;
     private boolean _ownClassLoader=false;
     private boolean _configurationDiscovered=true;
+    private boolean _configurationClassesSet=false;
+    private boolean _configurationsSet=false;
 
     public static ContextHandler getCurrentWebAppContext()
     {
@@ -644,21 +646,27 @@ public class WebAppContext extends ServletContextHandler
         return _parentLoaderPriority;
     }
     
+    
+    /* ------------------------------------------------------------ */
+    public String[] getDefaultConfigurationClasses ()
+    {
+        return __dftConfigurationClasses;
+    }
+    
+    
     /* ------------------------------------------------------------ */
     protected void loadConfigurations()
     	throws Exception
     {
+        //if the configuration instances have been set explicitly, use them
         if (_configurations!=null)
             return;
 
-        //look for a Server attribute with the list of names of Configuration classes
-        //to apply to every web app. If not present, use our defaults.
-        String[] serverConfigs = (String[])getServer().getAttribute(SERVER_CONFIG);
-        if (serverConfigs != null)
-            _configurationClasses = serverConfigs;
-        if (_configurationClasses == null)
-            _configurationClasses=__dftConfigurationClasses;
-       
+        //if the configuration classnames have been set explicitly use them
+        if (!_configurationClassesSet){
+            System.err.println("DEFAULTS");
+            _configurationClasses=__dftConfigurationClasses;}
+
         _configurations = new Configuration[_configurationClasses.length];
         for (int i = 0; i < _configurationClasses.length; i++)
         {
@@ -695,6 +703,7 @@ public class WebAppContext extends ServletContextHandler
     public void setConfigurationClasses(String[] configurations)
     {
         _configurationClasses = configurations==null?null:(String[])configurations.clone();
+        _configurationClassesSet = true;
     }
     
     /* ------------------------------------------------------------ */
@@ -704,6 +713,7 @@ public class WebAppContext extends ServletContextHandler
     public void setConfigurations(Configuration[] configurations)
     {
         _configurations = configurations==null?null:(Configuration[])configurations.clone();
+        _configurationsSet = true;
     }
 
     /* ------------------------------------------------------------ */
@@ -949,6 +959,24 @@ public class WebAppContext extends ServletContextHandler
     public void setLogUrlOnStart(boolean logOnStart)
     {
         this._logUrlOnStart = logOnStart;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public void setServer(Server server)
+    {
+        super.setServer(server);
+        //if we haven't been given a set of configuration instances to 
+        //use, and we haven't been given a set of configuration classes
+        //to use, use the configuration classes that came from the
+        //Server (if there are any)
+        if (!_configurationsSet && !_configurationClassesSet && server != null)
+        {
+            String[] serverConfigs = (String[])server.getAttribute(SERVER_CONFIG);
+            if (serverConfigs != null)
+                setConfigurationClasses(serverConfigs);
+        }
     }
 
     /* ------------------------------------------------------------ */
