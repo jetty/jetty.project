@@ -1,58 +1,60 @@
-Usage: java -jar start.jar [options] [properties] [configs]
+Usage: java -jar start.jar [options...] [properties...] [configs...]
 
   The start.jar builds a classpath and executes a main java class with
   a classloader built from that classpath.  By default the start.jar
   mechanism is configured to start the jetty server, but it can be 
   configured to start any java main class.
 
-Common Options:
+Command Line Options:
   --help           This help / usage information.
-  --version        Print the version information for Jetty, then exit.
-  --stop           Stop the running Jetty instance.
-
-Advanced Options:
+  
+  --version        Print the version information for Jetty and
+                   dependent jars, then exit.
                    
-  --list-options   List available options, then exit.
-                   (see OPTION property in section below)
-                   
+  --list-options   List the details of each classpath OPTION
+                                    
   --dry-run        Print the command line that the start.jar generates,
                    then exit. This may be used to generate command lines
                    when the start.ini includes -X or -D arguments.
-                   On unix, the resulting command line can be run with 
-                     eval $(java -jar start.jar --dry-run)
-                   This is more efficient than the --exec option, which
-                   creates a second JVM instance
                    
   --exec           Run the generated command line (see --dry-run) in 
                    a sub processes.  This can be used when start.ini
                    contains -X or -D arguments, but creates an extra
                    JVM instance.
                    
+  
   --secure         Enable Security:
                      * JVM Security Manager
                      * Security Policies
                      * Secure Logging
                      * Audit Logging
-                   
-  If the file start.ini exists in the working directory, then it's each line
-  of it's contents is prepended to the as an argument to the command line.
+                     
+  --stop           Stop the running Jetty instance.
+                     
 
 System Properties:
   These are set with a command line like "java -Dname=value ..." and are
   accessible via the java.lang.System#getProperty(String) API.
   Some key system properties are:
+  
     org.eclipse.jetty.util.log.class=[class]   
       A Low Level Jetty Logger Implementation to use
       (default: org.eclipse.jetty.util.log.Slf4jLog)
+      
     org.eclipse.jetty.util.log.DEBUG=[boolean]
       Debug logging for the stderr and javautil Loggers. Slf4j
       and other loggers must be separately configured for debug.
       (default: false)
+      
     org.eclipse.jetty.util.log.IGNORED=[boolean]
       Ignored exceptions are logged, independent of DEBUG settings
       (default: false)
 
-Start Properties:
+    com.sun.management.jmxremote
+      Enable remote JMX management in Sun JVMS.
+      
+      
+Properties:
   These are set with a command line like "java -jar start.jar name=value"
   and only affect the start mechanism.  Some of these are defined in the 
   default start.config and will not be available if another configuration
@@ -61,29 +63,47 @@ Start Properties:
     path=[directory]
       An additional class path element to add to the started class path. Typically
       this is used to add directories of classes and/or resources
+      
     lib=[directory]
       An additional library directory to add to the started class path. This must
       be a (deep) directory of jars
+      
     STOP.PORT=[number]
       The port to use to stop the running Jetty server.
       Required along with STOP.KEY if you want to use the --stop option above.
+      
     STOP.KEY=[alphanumeric]
       The passphrase defined to stop the server.
       Requried along with STOP.PORT if you want to use the --stop option above.
+      
     DEBUG=true
       Enable debug on the start mechanism and sets the
       org.eclipse.jetty.util.log.stderr.DEBUG system property to true. 
       (default: false)
-    OPTIONS=[option,option,...]
-      Classpath Options to use.  By convention, option names starting with capitals
-      will include associated options (eg Server includes jetty-server, jetty-webapp,
-      jetty-deploy, etc). An option starting with a lowercase letter includes 
-      just the direct dependencies of the option (eg jsp includes just jetty-jsp 
-      module and it's dependencies).
-      (default: "default,*")
       
-@OPTIONS@
+    OPTIONS=[option,option,...]
+      Enable classpath OPTIONS. Each options represents one or more jars 
+      to be added to the classpath. The options are defined in 
+      the start.config file and can be listed with --help or --list-options.
+      By convention, options starting with a capital letter (eg Server) 
+      are aggregations of other available options. Available OPTIONS:
 
-Configs:
-  XML Configurations to use.
-@CONFIGS@
+        @OPTIONS@
+
+
+Available Configurations:
+  By convention, configuration files are kept in $JETTY_HOME/etc.
+  The known configuration files are:
+  
+    @CONFIGS@
+
+
+Defaults:
+  A start.ini file may be used to specify default arguments to start.jar,
+  which are used if no command line arguments are provided and override 
+  the defaults in the start.config file. If arguments are provided on the
+  command line, the special "%start.ini" argument may be used to include
+  the start.ini arguments and merge any OPTIONS.  The current start.ini 
+  arguments are:
+
+    @STARTINI@

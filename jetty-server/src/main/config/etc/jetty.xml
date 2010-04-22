@@ -5,8 +5,13 @@
 <!-- Configure the Jetty Server                                      -->
 <!--                                                                 -->
 <!-- Documentation of this file format can be found at:              -->
-<!-- http://docs.codehaus.org/display/JETTY/jetty.xml                -->
+<!-- http://wiki.eclipse.org/Jetty/Reference/jetty.xml_syntax        -->
 <!--                                                                 -->
+<!-- Additional configuration files are available in $JETTY_HOME/etc -->
+<!-- and can be mixed in.  For example:                              -->
+<!--   java -jar start.jar etc/jetty.xml etc/jetty-ssl.xml           -->
+<!--                                                                 -->
+<!-- See start.ini file for the default configuraton files           -->
 <!-- =============================================================== -->
 
 
@@ -22,8 +27,6 @@
         <Set name="maxThreads">200</Set>
       </New>
     </Set>
-
-
 
     <!-- =========================================================== -->
     <!-- Set connectors                                              -->
@@ -44,26 +47,6 @@
       </Arg>
     </Call>
 
-    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    <!-- To add a HTTPS SSL connector                                    -->
-    <!-- mixin jetty-ssl.xml:                                            -->
-    <!--   java -jar start.jar etc/jetty.xml etc/jetty-ssl.xml           -->
-    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    
-    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    <!-- To add a HTTP blocking connector                                -->
-    <!-- mixin jetty-bio.xml:                                            -->
-    <!--   java -jar start.jar etc/jetty.xml etc/jetty-bio.xml           -->
-    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    
-    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    <!-- To allow Jetty to be started from xinetd                        -->
-    <!-- mixin jetty-xinetd.xml:                                         -->
-    <!--   java -jar start.jar etc/jetty.xml etc/jetty-xinetd.xml        -->
-    <!--                                                                 -->
-    <!-- See jetty-xinetd.xml for further instructions.                  -->
-    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-
     <!-- =========================================================== -->
     <!-- Set handler Collection Structure                            --> 
     <!-- =========================================================== -->
@@ -77,94 +60,10 @@
            <Item>
              <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
            </Item>
-           <Item>
-             <New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler"/>
-           </Item>
          </Array>
         </Set>
       </New>
     </Set>
-
-    <!-- =========================================================== -->
-    <!-- Configure the deployment manager                            -->
-    <!--                                                             -->
-    <!-- Sets up 2 monitored dir app providers that are configured   -->
-    <!-- to behave in a similaraly to the legacy ContextDeployer     -->
-    <!-- and WebAppDeployer from previous versions of Jetty.         -->
-    <!-- =========================================================== -->
-    <Call name="addBean">
-      <Arg>
-        <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
-          <Set name="contexts">
-            <Ref id="Contexts" />
-          </Set>
-          <Call name="setContextAttribute">
-            <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-            <Arg>.*/jsp-api-[^/]*\.jar$|.*/jsp-[^/]*\.jar$</Arg>
-          </Call>
-          <!-- Providers of Apps via Context XML files.
-               Configured to behave similar to the legacy ContextDeployer -->
-          <Call name="addAppProvider">
-            <Arg>
-              <New class="org.eclipse.jetty.deploy.providers.ContextProvider">
-                <Set name="monitoredDir"><Property name="jetty.home" default="." />/contexts</Set>
-                <Set name="scanInterval">5</Set>
-              </New>
-            </Arg>
-          </Call>
-          <!-- Providers of Apps via WAR file existence.
-               Configured to behave similar to the legacy WebAppDeployer -->
-          <Call name="addAppProvider">
-            <Arg>
-              <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
-                <Set name="monitoredDir"><Property name="jetty.home" default="." />/webapps</Set>
-                <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Set>
-                <Set name="scanInterval">5</Set>
-                <Set name="contextXmlDir"><Property name="jetty.home" default="." />/contexts</Set>
-              </New>
-            </Arg>
-          </Call>
-        </New>
-      </Arg>
-    </Call>
-
-    <!-- =========================================================== -->
-    <!-- Configure Authentication Login Service                      -->
-    <!-- Realms may be configured for the entire server here, or     -->
-    <!-- they can be configured for a specific web app in a context  -->
-    <!-- configuration (see $(jetty.home)/contexts/test.xml for an   -->
-    <!-- example).                                                   -->
-    <!-- =========================================================== -->
-    <Call name="addBean">
-      <Arg>
-        <New class="org.eclipse.jetty.security.HashLoginService">
-          <Set name="name">Test Realm</Set>
-          <Set name="config"><SystemProperty name="jetty.home" default="."/>/etc/realm.properties</Set>
-          <Set name="refreshInterval">0</Set>
-        </New>
-      </Arg>
-    </Call>
-
-    <!-- =========================================================== -->
-    <!-- Configure Request Log                                       -->
-    <!-- Request logs  may be configured for the entire server here, -->
-    <!-- or they can be configured for a specific web app in a       -->
-    <!-- contexts configuration (see $(jetty.home)/contexts/test.xml -->
-    <!-- for an example).                                            -->
-    <!-- =========================================================== -->
-    <Ref id="RequestLog">
-      <Set name="requestLog">
-        <New id="RequestLogImpl" class="org.eclipse.jetty.server.NCSARequestLog">
-          <Set name="filename"><SystemProperty name="jetty.home" default="."/>/logs/yyyy_mm_dd.request.log</Set>
-          <Set name="filenameDateFormat">yyyy_MM_dd</Set>
-          <Set name="retainDays">90</Set>
-          <Set name="append">true</Set>
-          <Set name="extended">false</Set>
-          <Set name="logCookies">false</Set>
-          <Set name="LogTimeZone">GMT</Set>
-        </New>
-      </Set>
-    </Ref>
 
     <!-- =========================================================== -->
     <!-- extra options                                               -->

@@ -63,7 +63,7 @@ public class Main
     private boolean _fromDaemon = false;
     private final Config _config = new Config();
     private Set<String> _sysProps = new HashSet<String>();
-    private List<String> _xArgs = new ArrayList<String>();
+    private List<String> _jvmArgs = new ArrayList<String>();
 
     private String _jettyHome;
 
@@ -86,16 +86,35 @@ public class Main
         {
             List<String> arguments = new ArrayList<String>();
 
-            arguments.addAll(loadStartIni()); // Add Arguments from start.ini (if it exists)
-            if (args.length>0)
-                arguments.addAll(Arrays.asList(args)); // Add Arguments on Command Line
+            // do we have any non option args
+            boolean has_args=false;
+            for (String arg : args)
+                has_args|=!arg.startsWith("-");
+                    
+            // if no non-option args, add the start.ini
+            if (!has_args)
+                arguments.addAll(loadStartIni()); // Add Arguments from start.ini (if it exists)
+
+            // add the command line args
+            for (String arg : args)
+            {
+                if ("%start.ini".equals(arg))
+                {
+                    arguments.addAll(loadStartIni());
+                    continue;
+                }
+
+                arguments.add(arg);
+            }
             
             // The XML Configuration Files to initialize with
             List<String> xmls = new ArrayList<String>();
 
+            // Process the arguments
             for (String arg : arguments)
             {
-                if ("--help".equals(arg))
+                
+                if ("--help".equals(arg) || "-?".equals(arg))
                 {
                     _showUsage = true;
                     continue;
@@ -148,12 +167,6 @@ public class Main
                     _secure = true;
                     continue;
                 }
-
-                if (arg.startsWith("-X"))
-                {
-                    _xArgs.add(arg);
-                    continue;
-                }
                 
                 if (arg.startsWith("-D"))
                 {
@@ -173,15 +186,28 @@ public class Main
                     continue;
                 }
 
+                if (arg.startsWith("-"))
+                {
+                    _jvmArgs.add(arg);
+                    continue;
+                }
+
                 // Is this a Property?
-                else if (arg.indexOf('=') >= 0)
+                if (arg.indexOf('=') >= 0)
                 {
                     String[] assign = arg.split("=",2);
 
                     switch(assign.length)
                     {
                         case 2:
-                            this._config.setProperty(assign[0],assign[1]);
+                            if ("OPTIONS".equals(assign[0]))
+                            {
+                                String opts[] = assign[1].split(",");
+                                for (String opt : opts)
+                                    _config.addActiveOption(opt);
+                            }
+                            else
+                                this._config.setProperty(assign[0],assign[1]);
                             break;
                         case 1:
                             this._config.setProperty(assign[0],null);
@@ -189,20 +215,12 @@ public class Main
                         default:
                             break;
                     }
+                    
                     continue;
                 }
 
                 // Anything else is considered an XML file.
                 xmls.add(arg);
-            }
-
-            // Special case for OPTIONS property
-            String options = _config.getProperty("OPTIONS");
-            if (options!=null)
-            {
-                String ids[] = options.split(",");
-                for (String id : ids)
-                    _config.addActiveOption(id);
             }
             
             start(xmls);
@@ -278,61 +296,81 @@ public class Main
 
             while ((line = buf.readLine()) != null)
             {
-                if (line.startsWith("@OPTIONS@"))
+                if (line.endsWith("@") && line.indexOf('@')!=line.lastIndexOf('@'))
                 {
-                    List<String> sortedOptions = new ArrayList<String>();
-                    sortedOptions.addAll(_config.getSectionIds());
-                    Collections.sort(sortedOptions);
+                    String indent=line.substring(0,line.indexOf("@"));
+                    String info=line.substring(line.indexOf('@'),line.lastIndexOf('@'));
 
-                    System.err.println("      Available OPTIONS: ");
+                    if (info.equals("@OPTIONS"))
+                    {
+                        List<String> sortedOptions = new ArrayList<String>();
+                        sortedOptions.addAll(_config.getSectionIds());
+                        Collections.sort(sortedOptions);
 
-                    for (String option : sortedOptions)
-                    {
-                        System.err.println("         [" + option + "]");
-                    }
-                }
-                else if (line.startsWith("@CONFIGS@"))
-                {
-                    System.err.println("    Configurations Available in ${jetty.home}/etc/: ");
-                    File etc = new File(System.getProperty("jetty.home","."),"etc");
-                    if (!etc.exists())
-                    {
-                        System.err.println("      Unable to find " + etc);
-                        continue;
-                    }
-
-                    if (!etc.isDirectory())
-                    {
-                        System.err.println("      Unable list dir " + etc);
-                        continue;
-                    }
-
-                    File configs[] = etc.listFiles(new FileFilter()
-                    {
-                        public boolean accept(File path)
+                        for (String option : sortedOptions)
                         {
-                            if (!path.isFile())
-                            {
-                                return false;
-                            }
-
-                            String name = path.getName().toLowerCase();
-                            return (name.startsWith("jetty") && name.endsWith(".xml"));
+                            if ("*".equals(option) || option.trim().length()==0)
+                                continue;
+                            System.out.print(indent);
+                            System.out.println(option);
                         }
-                    });
-
-                    List<File> configFiles = new ArrayList<File>();
-                    configFiles.addAll(Arrays.asList(configs));
-                    Collections.sort(configFiles);
-
-                    for (File configFile : configFiles)
+                    }
+                    else if (info.equals("@CONFIGS"))
                     {
-                        System.err.println("         etc/" + configFile.getName());
+                        File etc = new File(System.getProperty("jetty.home","."),"etc");
+                        if (!etc.exists() || !etc.isDirectory())
+                        {
+                            System.out.print(indent);
+                            System.out.println("Unable to find/list " + etc);
+                            continue;
+                        }
+
+                        File configs[] = etc.listFiles(new FileFilter()
+                        {
+                            public boolean accept(File path)
+                            {
+                                if (!path.isFile())
+                                {
+                                    return false;
+                                }
+
+                                String name = path.getName().toLowerCase();
+                                return (name.startsWith("jetty") && name.endsWith(".xml"));
+                            }
+                        });
+
+                        List<File> configFiles = new ArrayList<File>();
+                        configFiles.addAll(Arrays.asList(configs));
+                        Collections.sort(configFiles);
+
+                        for (File configFile : configFiles)
+                        {
+                            System.out.print(indent);
+                            System.out.print("etc/");
+                            System.out.println(configFile.getName());
+                        }
+                    }
+                    else if (info.equals("@STARTINI"))
+                    {
+                        List<String> ini = loadStartIni();
+                        if (ini!=null && ini.size()>0)
+                        {
+                            for (String a : ini)
+                            {
+                                System.out.print(indent);
+                                System.out.println(a);
+                            }
+                        }
+                        else
+                        {
+                            System.out.print(indent);
+                            System.out.println("none");
+                        }
                     }
                 }
                 else
                 {
-                    System.err.println(line);
+                    System.out.println(line);
                 }
             }
         }
@@ -380,7 +418,8 @@ public class Main
 
             if (invoked_class == null)
             {
-                usage();
+                System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
+                System.err.println("       java -jar start.jar --help  # for more information");
                 return;
             }
         }
@@ -516,7 +555,7 @@ public class Main
             return;
         }
         
-        if (_xArgs.size()>0 || _sysProps.size()>0)
+        if (_jvmArgs.size()>0 || _sysProps.size()>0)
             System.err.println("WARNING: System properties and/or JVM args set.  Consider using --dry-run or --exec");
 
         // Set current context class loader to what is selected.
@@ -609,18 +648,18 @@ public class Main
     {
         StringBuilder cmd = new StringBuilder();
         cmd.append(findJavaBin());
-        for (String x:_xArgs)
+        for (String x:_jvmArgs)
             cmd.append(' ').append(x);
         cmd.append(" -Djetty.home=").append(_jettyHome);
         for (String p:_sysProps)
         {
-            cmd.append(" -D").append(p);
+            cmd.append("   -D").append(p);
             String v=System.getProperty(p);
-            if (v!=null)
+            if (v!=null && v.length()>0)
                 cmd.append('=').append(v);
         }
-        cmd.append(" -cp ").append(classpath.toString());
-        cmd.append(' ').append(_config.getMainClassname());
+        cmd.append("   -cp ").append(classpath.toString());
+        cmd.append("   ").append(_config.getMainClassname());
         for (String xml : xmls)
         {
             cmd.append(' ').append(xml);

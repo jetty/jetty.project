@@ -145,6 +145,16 @@
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-deploy</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly.directory}</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-plus</artifactId>
                   <version>${project.version}</version>
                   <classifier>config</classifier>

@@ -12,6 +12,7 @@ jetty-7.1-SNAPSHOT
  + 309466 Removed synchronization from StdErrLog
  + 309765 Added JSP module
  + 310051 _configurationClasses now defaults to null in WebAppContext
+ + 310094 Improved start.jar usage and config files
  + JETTY-903 Stop both caches
  + JETTY-1200 SSL NIO Endpoint wraps non NIO buffers
  + JETTY-1202 Use platform default algorithm for SecureRandom
