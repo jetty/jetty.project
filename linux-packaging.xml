@@ -55,7 +55,7 @@
       <groupId>org.eclipse.jdt.core.compiler</groupId>
       <artifactId>ecj</artifactId>
       <debian available="false"/>
-      <redhat>eclipse-ecj</redhat>
+      <redhat>ecj</redhat>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jetty</groupId>
@@ -143,7 +143,7 @@
         <class>javax.mail.Session</class>
       </required-classes>
       <debian>libgnumail-java</debian>
-      <redhat available="false"/>
+      <redhat>sun-mail</redhat>
     </dependency>
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
@@ -194,7 +194,7 @@
       <groupId>javax.activation</groupId>
       <artifactId>activation</artifactId>
       <debian>libgnujav-java</debian>
-      <redhat available="false"/>
+      <redhat>sun-jaf</redhat>
     </dependency>
   </mapping>
   <!-- Excluding due to Geronimo Dependency Requirements -->
