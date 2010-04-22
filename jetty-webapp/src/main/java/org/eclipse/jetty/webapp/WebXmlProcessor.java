@@ -14,6 +14,7 @@
 package org.eclipse.jetty.webapp;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.EventListener;
@@ -654,6 +655,21 @@ public class WebXmlProcessor
                 _hasJSP = false;
                 _jspServletClass = servlet_class = "org.eclipse.jetty.servlet.NoJspServlet";
             }
+            
+            // set the JSP log
+            try
+            {
+                Class<?> logFactory = Loader.loadClass(this.getClass(),"org.eclipse.jetty.jsp.JettyLog");
+                Method init = logFactory.getMethod("init");
+                Log.debug("Init JSP loggging "+init);
+                init.invoke(null);
+            }
+            catch (Exception e)
+            {
+                Log.warn(e.toString());
+                Log.ignore(e);
+            }            
+            
             if (holder.getInitParameter("scratchdir") == null)
             {
                 File tmp = _context.getTempDirectory();

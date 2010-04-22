@@ -15,25 +15,6 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
-            <configuration>
-              <instructions>
-                <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
-                <Import-Package>!com.sun.appserv.*,!com.sun.common.util.*,!com.sun.el.*,!com.sun.enterprise.web.*,!com.sun.org.apache.commons.*,!org.apache.jasper.*,*</Import-Package>
-                <Fragment-Host>org.mortbay.jetty.jsp-2.1-glassfish</Fragment-Host>
-              </instructions>
-            </configuration>
-           </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <!--
         Required for OSGI
         -->

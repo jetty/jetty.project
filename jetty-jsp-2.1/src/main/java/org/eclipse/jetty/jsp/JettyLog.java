@@ -11,9 +11,10 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package com.sun.org.apache.commons.logging.impl;
+package org.eclipse.jetty.jsp;
 
 import com.sun.org.apache.commons.logging.Log;
+import com.sun.org.apache.commons.logging.LogFactory;
 
 /**
  * Log
@@ -23,8 +24,22 @@ import com.sun.org.apache.commons.logging.Log;
  **/
 public class JettyLog implements Log
 {
+    private static boolean __initialized=false;
+    
     private String _name;
     private org.eclipse.jetty.util.log.Logger _logger;
+    
+    public static void init()
+    {
+        synchronized (JettyLog.class)
+        {
+            if (!__initialized)
+            {
+                __initialized=true;
+                LogFactory.setLogImplClassName(JettyLog.class.getName());
+            }
+        }
+    }
     
     /**
      * 
