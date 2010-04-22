@@ -222,5 +222,10 @@
     <exclude>jetty-all-server</exclude>
     <exclude>jetty-all</exclude>
   </project>
+  <daemon>
+    <script>jetty-distribution/src/main/resources/bin/jetty.sh</script>
+    <debian>debian/jetty.init</debian>
+    <redhat>rpm/jetty.init</redhat>
+  </daemon>
 </linux-packaging>
 
