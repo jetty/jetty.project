@@ -279,11 +279,11 @@
     <!-- jetty-jndi by default -->
     <Call class="java.lang.System" name="setProperty">
       <Arg>java.naming.factory.initial</Arg>
-      <Arg><SystemProperty name="java.naming.factory.initial" default="org.eclipse.jetty.jndi.InitialContextFactory"/></Arg>
+      <Arg><Property name="java.naming.factory.initial" default="org.eclipse.jetty.jndi.InitialContextFactory"/></Arg>
     </Call>
     <Call class="java.lang.System" name="setProperty">
       <Arg>java.naming.factory.url.pkgs</Arg>
-      <Arg><SystemProperty name="java.naming.factory.url.pkgs" default="org.eclipse.jetty.jndi"/></Arg>
+      <Arg><Property name="java.naming.factory.url.pkgs" default="org.eclipse.jetty.jndi"/></Arg>
     </Call>
 
 </Configure>

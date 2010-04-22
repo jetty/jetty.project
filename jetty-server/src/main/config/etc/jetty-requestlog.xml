@@ -16,7 +16,7 @@
           <New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler">
 	    <Set name="requestLog">
 	      <New id="RequestLogImpl" class="org.eclipse.jetty.server.NCSARequestLog">
-		<Set name="filename"><SystemProperty name="jetty.home" default="."/>/logs/yyyy_mm_dd.request.log</Set>
+		<Set name="filename"><Property name="jetty.logs" default="./logs"/>/yyyy_mm_dd.request.log</Set>
 		<Set name="filenameDateFormat">yyyy_MM_dd</Set>
 		<Set name="retainDays">90</Set>
 		<Set name="append">true</Set>

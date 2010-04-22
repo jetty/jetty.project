@@ -11,7 +11,7 @@
     <!-- ======================================================== -->
     <Call class="java.lang.System" name="setProperty">
       <Arg>java.security.auth.login.config</Arg>
-      <Arg><SystemProperty name="jetty.home" default="." />/etc/login.conf</Arg>
+      <Arg><Property name="jetty.home" default="." />/etc/login.conf</Arg>
     </Call>
 
 

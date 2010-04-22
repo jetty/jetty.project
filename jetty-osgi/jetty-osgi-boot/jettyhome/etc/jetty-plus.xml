@@ -62,11 +62,11 @@
       <Arg>
         <New class="org.eclipse.jetty.deploy.WebAppDeployer">
           <Set name="contexts"><Ref id="Contexts"/></Set>
-          <Set name="webAppDir"><SystemProperty name="jetty.home" default="."/>/webapps-plus</Set>
+          <Set name="webAppDir"><Property name="jetty.home" default="."/>/webapps-plus</Set>
           <Set name="parentLoaderPriority">false</Set>
           <Set name="extract">true</Set>
           <Set name="allowDuplicates">false</Set>
-          <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Set>
+          <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
           <Set name="configurationClasses"><Ref id="plusConfig"/></Set>
           <Call name="setAttribute">
             <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>

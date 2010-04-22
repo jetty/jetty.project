@@ -787,15 +787,12 @@ public class XmlConfiguration
     {
         String id = node.getAttribute("id");
         String name = node.getAttribute("name");
-        Object defval = node.getAttribute("default");
+        String defval = node.getAttribute("default");
         Object prop=null;
         if (_propertyMap!=null && _propertyMap.containsKey(name))
-        {
             prop=_propertyMap.get(name);
-        }
-        else if (defval != null)
-            prop=defval;
-
+        else 
+            prop=System.getProperty(name,defval);
         if (id != null) 
             _idMap.put(id, prop);
         if (prop!=null)
