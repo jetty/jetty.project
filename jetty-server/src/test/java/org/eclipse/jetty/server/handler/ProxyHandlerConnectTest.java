@@ -89,6 +89,43 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
         }
     }
 
+    public void testCONNECT10AndGET() throws Exception
+    {
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String request = "" +
+                "CONNECT " + hostPort + " HTTP/1.0\r\n" +
+                "Host: " + hostPort + "\r\n" +
+                "\r\n";
+        Socket socket = newSocket();
+        try
+        {
+            OutputStream output = socket.getOutputStream();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            // Expect 200 OK from the CONNECT request
+            Response response = readResponse(input);
+            assertEquals("200", response.getCode());
+
+            request = "" +
+                    "GET /echo" + " HTTP/1.1\r\n" +
+                    "Host: " + hostPort + "\r\n" +
+                    "\r\n";
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            response = readResponse(input);
+            assertEquals("200", response.getCode());
+            assertEquals("GET /echo", response.getBody());
+        }
+        finally
+        {
+            socket.close();
+        }
+    }
+
     public void testCONNECTAndGETPipelined() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();

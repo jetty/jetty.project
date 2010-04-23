@@ -23,4 +23,10 @@ public class SocketServerTest extends HttpServerTestBase
     {
         super(new SocketConnector());
     }   
+    
+    @Override
+    public void testFlush() throws Exception
+    {
+        super.testFlush();
+    }
 }

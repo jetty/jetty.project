@@ -400,11 +400,19 @@ public class HttpServerTestBase extends TestCase
                         for (int c=0;c<1;c++)
                         {
                             String test=encoding[e]+"x"+b+"x"+w+"x"+c;
-                            URL url=new URL("http://"+HOST+":"+port+"/?writes="+w+"&block="+b+ (e==0?"":("&encoding="+encoding[e]))+(c==0?"&chars=true":""));
-                            InputStream in = (InputStream)url.getContent();
-                            String response=IO.toString(in,e==0?null:encoding[e]);
-                            
-                            assertEquals(test,b*w,response.length());
+                            try
+                            {
+                                URL url=new URL("http://"+HOST+":"+port+"/?writes="+w+"&block="+b+ (e==0?"":("&encoding="+encoding[e]))+(c==0?"&chars=true":""));
+                                InputStream in = (InputStream)url.getContent();
+                                String response=IO.toString(in,e==0?null:encoding[e]);
+
+                                assertEquals(test,b*w,response.length());
+                            }
+                            catch(Exception ex)
+                            {
+                                System.err.println(test);
+                                throw ex;
+                            }
                         }
                     }
                 }

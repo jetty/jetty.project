@@ -125,7 +125,7 @@ public abstract class AbstractProxyHandlerTest extends TestCase
     protected Socket newSocket() throws IOException
     {
         Socket socket = new Socket("localhost", proxyConnector.getLocalPort());
-        socket.setSoTimeout(5000);
+        socket.setSoTimeout(500000);
         return socket;
     }
 

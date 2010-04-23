@@ -2,6 +2,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
@@ -10,6 +11,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.Buffer;
@@ -171,7 +173,7 @@ public class ProxyHandler extends HandlerWrapper
         if (HttpMethods.CONNECT.equalsIgnoreCase(request.getMethod()))
         {
             _logger.debug("CONNECT request for {}", request.getRequestURI(), null);
-            handleConnect(request, response, request.getRequestURI());
+            handleConnect(baseRequest,request, response, request.getRequestURI());
         }
         else
         {
@@ -190,7 +192,7 @@ public class ProxyHandler extends HandlerWrapper
      * @throws ServletException if an application error occurs
      * @throws IOException if an I/O error occurs
      */
-    protected void handleConnect(HttpServletRequest request, HttpServletResponse response, String serverAddress) throws ServletException, IOException
+    protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress) throws ServletException, IOException
     {
         boolean proceed = handleAuthentication(request, response, serverAddress);
         if (!proceed)
@@ -237,8 +239,12 @@ public class ProxyHandler extends HandlerWrapper
 
         // CONNECT expects a 200 response
         response.setStatus(HttpServletResponse.SC_OK);
-        // Flush it so that the client receives it
-        response.flushBuffer();
+        
+        // Prevent close
+        ((HttpGenerator)baseRequest.getConnection().getGenerator()).setPersistent(true);
+        
+        // close to force last flush it so that the client receives it
+        response.getOutputStream().close();
 
         upgradeConnection(request, response, clientToProxy);
     }
@@ -608,15 +614,21 @@ public class ProxyHandler extends HandlerWrapper
                 }
                 return this;
             }
+            catch (ClosedChannelException x)
+            {
+                _logger.debug("ClientToProxy",x);
+                closeServer();
+                throw x;
+            }
             catch (IOException x)
             {
-                _logger.warn("ClientToProxy: Unexpected exception", x);
+                _logger.warn("ClientToProxy", x);
                 close();
                 throw x;
             }
             catch (RuntimeException x)
             {
-                _logger.warn("ClientToProxy: Unexpected exception", x);
+                _logger.warn("ClientToProxy", x);
                 close();
                 throw x;
             }

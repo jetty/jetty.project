@@ -117,6 +117,19 @@ public class Ajp13Generator extends AbstractGenerator
 
     /* ------------------------------------------------------------ */
     @Override
+    public boolean isRequest()
+    {
+        return false;
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public boolean isResponse()
+    {
+        return true;
+    }
+    /* ------------------------------------------------------------ */
+    @Override
     public void reset(boolean returnBuffers)
     {
         super.reset(returnBuffers);
@@ -142,8 +155,7 @@ public class Ajp13Generator extends AbstractGenerator
         _last = false;
         _head = false;
         _noContent = false;
-        _close = false;
-
+        _persistent = true;
 
        
 
@@ -342,8 +354,8 @@ public class Ajp13Generator extends AbstractGenerator
         _last = _last | allContentAdded;
 
         boolean has_server = false;
-        if (_version == HttpVersions.HTTP_1_0_ORDINAL)
-            _close = true;
+        if (_persistent==null)
+            _persistent=(_version > HttpVersions.HTTP_1_0_ORDINAL);
 
         // get a header buffer
         if (_header == null)

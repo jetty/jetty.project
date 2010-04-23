@@ -351,7 +351,20 @@ public class HttpGenerator extends AbstractGenerator
             Log.debug(e);
             throw new InterruptedIOException(e.toString());
         }
-        
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public boolean isRequest()
+    {
+        return _method!=null;
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public boolean isResponse()
+    {
+        return _method==null;
     }
     
     /* ------------------------------------------------------------ */
@@ -362,7 +375,7 @@ public class HttpGenerator extends AbstractGenerator
             return;
         
         // handle a reset 
-        if (_method==null && _status==0)
+        if (isResponse() && _status==0)
             throw new EofException();
 
         if (_last && !allContentAdded) 
@@ -375,10 +388,10 @@ public class HttpGenerator extends AbstractGenerator
         
         boolean has_server = false;
         
-        if (_method!=null)
+        if (isRequest())
         {
-            _close = false;
-            // Request
+            _persistent=true;
+            
             if (_version == HttpVersions.HTTP_0_9_ORDINAL)
             {
                 _contentLength = HttpTokens.NO_CONTENT;
@@ -402,18 +415,19 @@ public class HttpGenerator extends AbstractGenerator
         }
         else
         {
-            // Response
+            // Responses
+            
             if (_version == HttpVersions.HTTP_0_9_ORDINAL)
             {
-                _close = true;
+                _persistent = false;
                 _contentLength = HttpTokens.EOF_CONTENT;
                 _state = STATE_CONTENT;
                 return;
             }
             else
             {
-                if (_version == HttpVersions.HTTP_1_0_ORDINAL) 
-                    _close = true;
+                if (_persistent==null)
+                    _persistent= (_version > HttpVersions.HTTP_1_0_ORDINAL);
 
                 // add response line
                 Status status = _status<__status.length?__status[_status]:null;
@@ -528,7 +542,7 @@ public class HttpGenerator extends AbstractGenerator
                         break;
 
                     case HttpHeaders.CONNECTION_ORDINAL:
-                        if (_method!=null)
+                        if (isRequest())
                             field.put(_header);
                         
                         int connection_value = field.getValueOrdinal();
@@ -547,10 +561,10 @@ public class HttpGenerator extends AbstractGenerator
                                         {
                                             case HttpHeaderValues.CLOSE_ORDINAL:
                                                 close=true;
-                                                if (_method==null)
-                                                    _close=true;
+                                                if (isResponse())
+                                                    _persistent=false;
                                                 keep_alive=false;
-                                                if (_close && _method==null && _contentLength == HttpTokens.UNKNOWN_CONTENT) 
+                                                if (!_persistent && isResponse() && _contentLength == HttpTokens.UNKNOWN_CONTENT) 
                                                     _contentLength = HttpTokens.EOF_CONTENT;
                                                 break;
 
@@ -558,8 +572,8 @@ public class HttpGenerator extends AbstractGenerator
                                                 if (_version == HttpVersions.HTTP_1_0_ORDINAL)
                                                 {
                                                     keep_alive = true;
-                                                    if (_method==null) 
-                                                        _close = false;
+                                                    if (isResponse()) 
+                                                        _persistent = true;
                                                 }
                                                 break;
                                             
@@ -586,7 +600,7 @@ public class HttpGenerator extends AbstractGenerator
                             case HttpHeaderValues.UPGRADE_ORDINAL:
                             {
                                 // special case for websocket connection ordering
-                                if (_method==null)
+                                if (isResponse())
                                 {
                                     field.put(_header);
                                     continue;
@@ -595,9 +609,9 @@ public class HttpGenerator extends AbstractGenerator
                             case HttpHeaderValues.CLOSE_ORDINAL:
                             {
                                 close=true;
-                                if (_method==null)
-                                    _close=true;
-                                if (_close && _method==null && _contentLength == HttpTokens.UNKNOWN_CONTENT) 
+                                if (isResponse())
+                                    _persistent=false;
+                                if (!_persistent && isResponse() && _contentLength == HttpTokens.UNKNOWN_CONTENT) 
                                     _contentLength = HttpTokens.EOF_CONTENT;
                                 break;
                             }
@@ -606,8 +620,8 @@ public class HttpGenerator extends AbstractGenerator
                                 if (_version == HttpVersions.HTTP_1_0_ORDINAL)
                                 {
                                     keep_alive = true;
-                                    if (_method==null) 
-                                        _close = false;
+                                    if (isResponse()) 
+                                        _persistent=true;
                                 }
                                 break;
                             }
@@ -655,13 +669,13 @@ public class HttpGenerator extends AbstractGenerator
                 // written yet?
 
                 // Response known not to have a body
-                if (_contentWritten == 0 && _method==null && (_status < 200 || _status == 204 || _status == 304))
+                if (_contentWritten == 0 && isResponse() && (_status < 200 || _status == 204 || _status == 304))
                     _contentLength = HttpTokens.NO_CONTENT;
                 else if (_last)
                 {
                     // we have seen all the _content there is
                     _contentLength = _contentWritten;
-                    if (content_length == null && (_method==null || _contentLength>0 || content_type ))
+                    if (content_length == null && (isResponse() || _contentLength>0 || content_type ))
                     {
                         // known length but not actually set.
                         _header.put(HttpHeaders.CONTENT_LENGTH_BUFFER);
@@ -674,8 +688,8 @@ public class HttpGenerator extends AbstractGenerator
                 else
                 {
                     // No idea, so we must assume that a body is coming
-                    _contentLength = (_close || _version < HttpVersions.HTTP_1_1_ORDINAL ) ? HttpTokens.EOF_CONTENT : HttpTokens.CHUNKED_CONTENT;
-                    if (_method!=null && _contentLength==HttpTokens.EOF_CONTENT)
+                    _contentLength = (!_persistent || _version < HttpVersions.HTTP_1_1_ORDINAL ) ? HttpTokens.EOF_CONTENT : HttpTokens.CHUNKED_CONTENT;
+                    if (isRequest() && _contentLength==HttpTokens.EOF_CONTENT)
                     {
                         _contentLength=HttpTokens.NO_CONTENT;
                         _noContent=true;
@@ -684,12 +698,12 @@ public class HttpGenerator extends AbstractGenerator
                 break;
 
             case HttpTokens.NO_CONTENT:
-                if (content_length == null && _method==null && _status >= 200 && _status != 204 && _status != 304) 
+                if (content_length == null && isResponse() && _status >= 200 && _status != 204 && _status != 304) 
                     _header.put(CONTENT_LENGTH_0);
                 break;
 
             case HttpTokens.EOF_CONTENT:
-                _close = _method==null;
+                _persistent = isRequest();
                 break;
 
             case HttpTokens.CHUNKED_CONTENT:
@@ -720,12 +734,12 @@ public class HttpGenerator extends AbstractGenerator
         if (_contentLength==HttpTokens.EOF_CONTENT)
         {
             keep_alive=false;
-            _close=true;
+            _persistent=false;
         }
                
-        if (_method==null)
+        if (isResponse())
         {
-            if (_close && (close || _version > HttpVersions.HTTP_1_0_ORDINAL))
+            if (!_persistent && (close || _version > HttpVersions.HTTP_1_0_ORDINAL))
             {
                 _header.put(CONNECTION_CLOSE);
                 if (connection!=null)
@@ -872,7 +886,7 @@ public class HttpGenerator extends AbstractGenerator
                     {
                         if (_state == STATE_FLUSHING)
                             _state = STATE_END;
-                        if (_state==STATE_END && _close && _status!=100) 
+                        if (_state==STATE_END && !_persistent && _status!=100) 
                             _endp.close();
                     }
                     else

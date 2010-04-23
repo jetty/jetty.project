@@ -30,6 +30,18 @@ public class HttpWriterTest extends TestCase
         AbstractGenerator generator =  new AbstractGenerator(buffers,endp)
         {
             @Override
+            public boolean isRequest()
+            {
+                return false;
+            }
+            
+            @Override
+            public boolean isResponse()
+            {
+                return true;
+            }
+            
+            @Override
             public void completeHeader(HttpFields fields, boolean allContentAdded) throws IOException
             {
             }
