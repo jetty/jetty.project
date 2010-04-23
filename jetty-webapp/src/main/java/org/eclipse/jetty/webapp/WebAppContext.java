@@ -663,9 +663,8 @@ public class WebAppContext extends ServletContextHandler
             return;
 
         //if the configuration classnames have been set explicitly use them
-        if (!_configurationClassesSet){
-            System.err.println("DEFAULTS");
-            _configurationClasses=__dftConfigurationClasses;}
+        if (!_configurationClassesSet)
+            _configurationClasses=__dftConfigurationClasses;
 
         _configurations = new Configuration[_configurationClasses.length];
         for (int i = 0; i < _configurationClasses.length; i++)
