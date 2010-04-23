@@ -19,7 +19,7 @@ jetty-7.1-SNAPSHOT
  + Fix jetty-plus.xml reference to addLifeCycle
  + Add AnnotationConfiguration to jetty-plus.xml
 
-jetty-7.0.2.v20100331
+jetty-7.0.2.v20100331 31 March 2010
  + 297552 Don't call Continuation timeouts from acceptor tick
  + 298236 Additional unit tests for jetty-client
  + 306783 NPE in StdErrLog when Throwable is null
@@ -31,6 +31,17 @@ jetty-7.0.2.v20100331
  + Take excess logging statements out of startup
  + Ensure webapps with no WEB-INF don't scan WEB-INF/lib
  + Allow Configuration array to be set on Server instance for all web apps
+
+jetty-6.1.24 21 April 2010
+ + JETTY-903 Stop both caches
+ + JETTY-1198 reset idle timeout on request body chunks
+ + JETTY-1200 SSL NIO Endpoint wraps non NIO buffers
+ + JETTY-1211 SetUID loadlibrary name and debug
+ + 308925 Protect the test webapp from remote access
+ + COMETD-99 ClientImpl logs exceptions in listeners with "debug" level
+ + COMETD-100 ClientImpl logs "null" as clientId
+ + COMETD-107 Reloading the application with reload extension does not fire /meta/connect handlers until long poll timeout expires
+ + Upgraded to cometd 1.1.1 client
 
 jetty-6.1.23 2 April 2010
  + JSON parses NaN as null
