@@ -109,7 +109,7 @@ public abstract class AbstractGenerator implements Generator
         _last = false;
         _head = false;
         _noContent=false;
-        _persistent = true;
+        _persistent = null;
         _contentWritten = 0;
         _contentLength = HttpTokens.UNKNOWN_CONTENT;
         _date = null;
