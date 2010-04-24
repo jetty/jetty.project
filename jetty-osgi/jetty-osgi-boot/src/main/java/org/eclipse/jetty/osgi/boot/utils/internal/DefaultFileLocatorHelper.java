@@ -14,6 +14,7 @@ package org.eclipse.jetty.osgi.boot.utils.internal;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
@@ -209,5 +210,74 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             { jasperLocation };
         }
     }
+    
+
+	//introspection on equinox to invoke the getLocalURL method on BundleURLConnection
+	private static Method BUNDLE_URL_CONNECTION_getLocalURL = null;
+	private static Method BUNDLE_URL_CONNECTION_getFileURL = null;
+	/**
+	 * Only useful for equinox: on felix we get the file:// or jar:// url already.
+	 * Other OSGi implementations have not been tested
+	 * <p>
+	 * Get a URL to the bundle entry that uses a common protocol (i.e. file:
+	 * jar: or http: etc.).  
+	 * </p>
+	 * @return a URL to the bundle entry that uses a common protocol
+	 */
+	public static URL getLocalURL(URL url) {
+		if ("bundleresource".equals(url.getProtocol())) {
+			try {
+				URLConnection conn = url.openConnection();
+				if (BUNDLE_URL_CONNECTION_getLocalURL == null && 
+						conn.getClass().getName().equals(
+								"org.eclipse.osgi.framework.internal.core.BundleURLConnection")) {
+					BUNDLE_URL_CONNECTION_getLocalURL = conn.getClass().getMethod("getLocalURL", null);
+					BUNDLE_URL_CONNECTION_getLocalURL.setAccessible(true);
+				}
+				if (BUNDLE_URL_CONNECTION_getLocalURL != null) {
+					return (URL)BUNDLE_URL_CONNECTION_getLocalURL.invoke(conn, null);
+				}
+			} catch (Throwable t) {
+				t.printStackTrace();
+			}
+		}
+		return url;
+	}
+	/**
+	 * Only useful for equinox: on felix we get the file:// url already.
+	 * Other OSGi implementations have not been tested
+	 * <p>
+	 * Get a URL to the content of the bundle entry that uses the file: protocol.
+	 * The content of the bundle entry may be downloaded or extracted to the local
+	 * file system in order to create a file: URL.
+	 * @return a URL to the content of the bundle entry that uses the file: protocol
+	 * </p>
+	 */
+	public static URL getFileURL(URL url)
+	{
+		if ("bundleresource".equals(url.getProtocol()))
+		{
+			try
+			{
+				URLConnection conn = url.openConnection();
+				if (BUNDLE_URL_CONNECTION_getFileURL == null && 
+						conn.getClass().getName().equals(
+								"org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
+				{
+					BUNDLE_URL_CONNECTION_getFileURL = conn.getClass().getMethod("getFileURL", null);
+					BUNDLE_URL_CONNECTION_getFileURL.setAccessible(true);
+				}
+				if (BUNDLE_URL_CONNECTION_getFileURL != null)
+				{
+					return (URL)BUNDLE_URL_CONNECTION_getFileURL.invoke(conn, null);
+				}
+			}
+			catch (Throwable t)
+			{
+				t.printStackTrace();
+			}
+		}
+		return url;
+	}
 
 }

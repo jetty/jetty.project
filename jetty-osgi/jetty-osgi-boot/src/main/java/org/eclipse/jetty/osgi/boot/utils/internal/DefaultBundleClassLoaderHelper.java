@@ -14,6 +14,8 @@ package org.eclipse.jetty.osgi.boot.utils.internal;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLConnection;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelper;
 import org.osgi.framework.Bundle;
@@ -180,4 +182,5 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         }
         return null;
     }
+
 }
