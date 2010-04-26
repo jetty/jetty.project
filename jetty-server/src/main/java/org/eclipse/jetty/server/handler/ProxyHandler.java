@@ -5,13 +5,14 @@ import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.Buffer;
@@ -173,7 +174,7 @@ public class ProxyHandler extends HandlerWrapper
         if (HttpMethods.CONNECT.equalsIgnoreCase(request.getMethod()))
         {
             _logger.debug("CONNECT request for {}", request.getRequestURI(), null);
-            handleConnect(baseRequest,request, response, request.getRequestURI());
+            handleConnect(baseRequest, request, response, request.getRequestURI());
         }
         else
         {
@@ -186,6 +187,7 @@ public class ProxyHandler extends HandlerWrapper
      * <p>CONNECT requests may have authentication headers such as <code>Proxy-Authorization</code>
      * that authenticate the client with the proxy.</p>
      *
+     * @param baseRequest Jetty-specific http request
      * @param request the http request
      * @param response the http response
      * @param serverAddress the remote server address in the form {@code host:port}
@@ -235,25 +237,28 @@ public class ProxyHandler extends HandlerWrapper
             }
         }
 
-        ClientToProxyConnection clientToProxy = prepareConnections(channel, buffer);
+        ConcurrentMap<String, Object> context = new ConcurrentHashMap<String, Object>();
+        prepareContext(request, context);
+
+        ClientToProxyConnection clientToProxy = prepareConnections(context, channel, buffer);
 
         // CONNECT expects a 200 response
         response.setStatus(HttpServletResponse.SC_OK);
-        
+
         // Prevent close
-        ((HttpGenerator)baseRequest.getConnection().getGenerator()).setPersistent(true);
-        
-        // close to force last flush it so that the client receives it
+        baseRequest.getConnection().getGenerator().setPersistent(true);
+
+        // Close to force last flush it so that the client receives it
         response.getOutputStream().close();
 
         upgradeConnection(request, response, clientToProxy);
     }
 
-    private ClientToProxyConnection prepareConnections(SocketChannel channel, Buffer buffer)
+    private ClientToProxyConnection prepareConnections(ConcurrentMap<String, Object> context, SocketChannel channel, Buffer buffer)
     {
         HttpConnection httpConnection = HttpConnection.getCurrentConnection();
-        ProxyToServerConnection proxyToServer = newProxyToServerConnection(buffer);
-        ClientToProxyConnection clientToProxy = newClientToProxyConnection(channel, httpConnection.getEndPoint(), httpConnection.getTimeStamp());
+        ProxyToServerConnection proxyToServer = newProxyToServerConnection(context, buffer);
+        ClientToProxyConnection clientToProxy = newClientToProxyConnection(context, channel, httpConnection.getEndPoint(), httpConnection.getTimeStamp());
         clientToProxy.setConnection(proxyToServer);
         proxyToServer.setConnection(clientToProxy);
         return clientToProxy;
@@ -275,14 +280,14 @@ public class ProxyHandler extends HandlerWrapper
         return true;
     }
 
-    protected ClientToProxyConnection newClientToProxyConnection(SocketChannel channel, EndPoint endPoint, long timeStamp)
+    protected ClientToProxyConnection newClientToProxyConnection(ConcurrentMap<String, Object> context, SocketChannel channel, EndPoint endPoint, long timeStamp)
     {
-        return new ClientToProxyConnection(channel, endPoint, timeStamp);
+        return new ClientToProxyConnection(context, channel, endPoint, timeStamp);
     }
 
-    protected ProxyToServerConnection newProxyToServerConnection(Buffer buffer)
+    protected ProxyToServerConnection newProxyToServerConnection(ConcurrentMap<String, Object> context, Buffer buffer)
     {
-        return new ProxyToServerConnection(buffer);
+        return new ProxyToServerConnection(context, buffer);
     }
 
     private SocketChannel connectToServer(HttpServletRequest request, String host, int port) throws IOException
@@ -311,6 +316,10 @@ public class ProxyHandler extends HandlerWrapper
         return channel;
     }
 
+    protected void prepareContext(HttpServletRequest request, ConcurrentMap<String, Object> context)
+    {
+    }
+
     private void upgradeConnection(HttpServletRequest request, HttpServletResponse response, Connection connection) throws IOException
     {
         // Set the new connection as request attribute and change the status to 101
@@ -330,11 +339,12 @@ public class ProxyHandler extends HandlerWrapper
      * <p>Reads (with non-blocking semantic) into the given {@code buffer} from the given {@code endPoint}.</p>
      * @param endPoint the endPoint to read from
      * @param buffer the buffer to read data into
+     * @param context the context information related to the connection
      * @return the number of bytes read (possibly 0 since the read is non-blocking)
      * or -1 if the channel has been closed remotely
      * @throws IOException if the endPoint cannot be read
      */
-    protected int read(EndPoint endPoint, Buffer buffer) throws IOException
+    protected int read(EndPoint endPoint, Buffer buffer, ConcurrentMap<String, Object> context) throws IOException
     {
         return endPoint.fill(buffer);
     }
@@ -344,9 +354,11 @@ public class ProxyHandler extends HandlerWrapper
      *
      * @param endPoint the endPoint to write to
      * @param buffer the buffer to write
+     * @param context the context information related to the connection
      * @throws IOException if the buffer cannot be written
+     * @return the number of bytes written
      */
-    protected int write(EndPoint endPoint, Buffer buffer) throws IOException
+    protected int write(EndPoint endPoint, Buffer buffer, ConcurrentMap<String, Object> context) throws IOException
     {
         if (buffer == null)
             return 0;
@@ -425,13 +437,15 @@ public class ProxyHandler extends HandlerWrapper
     {
         private final CountDownLatch _ready = new CountDownLatch(1);
         private final Buffer _buffer = new IndirectNIOBuffer(1024);
+        private final ConcurrentMap<String, Object> _context;
         private volatile Buffer _data;
         private volatile ClientToProxyConnection _toClient;
         private volatile long _timestamp;
         private volatile SelectChannelEndPoint _endPoint;
 
-        public ProxyToServerConnection(Buffer data)
+        public ProxyToServerConnection(ConcurrentMap<String, Object> context, Buffer data)
         {
+            _context = context;
             _data = data;
         }
 
@@ -442,14 +456,14 @@ public class ProxyHandler extends HandlerWrapper
             {
                 if (_data != null)
                 {
-                    int written = write(_endPoint, _data);
+                    int written = write(_endPoint, _data, _context);
                     _logger.debug("ProxyToServer: written to server {} bytes", written, null);
                     _data = null;
                 }
 
                 while (true)
                 {
-                    int read = read(_endPoint, _buffer);
+                    int read = read(_endPoint, _buffer, _context);
 
                     if (read == -1)
                     {
@@ -462,7 +476,7 @@ public class ProxyHandler extends HandlerWrapper
                         break;
 
                     _logger.debug("ProxyToServer: read from server {} bytes {}", read, _endPoint);
-                    int written = write(_toClient._endPoint, _buffer);
+                    int written = write(_toClient._endPoint, _buffer, _context);
                     _logger.debug("ProxyToServer: written to client {} bytes", written, null);
                 }
                 return this;
@@ -568,14 +582,16 @@ public class ProxyHandler extends HandlerWrapper
     public class ClientToProxyConnection implements Connection
     {
         private final Buffer _buffer = new IndirectNIOBuffer(1024);
+        private final ConcurrentMap<String, Object> _context;
         private final SocketChannel _channel;
         private final EndPoint _endPoint;
         private final long _timestamp;
         private volatile ProxyToServerConnection _toServer;
         private boolean _firstTime = true;
 
-        public ClientToProxyConnection(SocketChannel channel, EndPoint endPoint, long timestamp)
+        public ClientToProxyConnection(ConcurrentMap<String, Object> context, SocketChannel channel, EndPoint endPoint, long timestamp)
         {
+            _context = context;
             _channel = channel;
             _endPoint = endPoint;
             _timestamp = timestamp;
@@ -596,7 +612,7 @@ public class ProxyHandler extends HandlerWrapper
 
                 while (true)
                 {
-                    int read = read(_endPoint, _buffer);
+                    int read = read(_endPoint, _buffer, _context);
 
                     if (read == -1)
                     {
@@ -609,7 +625,7 @@ public class ProxyHandler extends HandlerWrapper
                         break;
 
                     _logger.debug("ClientToProxy: read from client {} bytes {}", read, _endPoint);
-                    int written = write(_toServer._endPoint, _buffer);
+                    int written = write(_toServer._endPoint, _buffer, _context);
                     _logger.debug("ClientToProxy: written to server {} bytes", written, null);
                 }
                 return this;

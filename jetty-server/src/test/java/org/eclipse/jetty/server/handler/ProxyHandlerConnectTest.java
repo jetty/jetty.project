@@ -7,11 +7,15 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.channels.SocketChannel;
+import java.util.concurrent.ConcurrentMap;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 
@@ -355,6 +359,91 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
             for (int i = 0; i < 1024; ++i)
                 body.append(chunk);
 
+            request = "" +
+                    "POST /echo HTTP/1.1\r\n" +
+                    "Host: " + hostPort + "\r\n" +
+                    "Content-Length: " + body.length() + "\r\n" +
+                    "\r\n" +
+                    body;
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            response = readResponse(input);
+            assertEquals("200", response.getCode());
+            assertEquals("POST /echo\r\n" + body, response.getBody());
+        }
+        finally
+        {
+            socket.close();
+        }
+    }
+
+    public void testCONNECTAndPOSTWithContext() throws Exception
+    {
+        final String contextKey = "contextKey";
+        final String contextValue = "contextValue";
+
+        // Replace the default ProxyHandler with a subclass to test context information passing
+        proxy.stop();
+        proxy.setHandler(new ProxyHandler()
+        {
+            @Override
+            protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address) throws ServletException, IOException
+            {
+                request.setAttribute(contextKey, contextValue);
+                return super.handleAuthentication(request, response, address);
+            }
+
+            @Override
+            protected SocketChannel connect(HttpServletRequest request, String host, int port) throws IOException
+            {
+                assertEquals(contextValue, request.getAttribute(contextKey));
+                return super.connect(request, host, port);
+            }
+
+            @Override
+            protected void prepareContext(HttpServletRequest request, ConcurrentMap<String, Object> context)
+            {
+                // Transfer data from the HTTP request to the connection context
+                assertEquals(contextValue, request.getAttribute(contextKey));
+                context.put(contextKey, request.getAttribute(contextKey));
+            }
+
+            @Override
+            protected int read(EndPoint endPoint, Buffer buffer, ConcurrentMap<String, Object> context) throws IOException
+            {
+                assertEquals(contextValue, context.get(contextKey));
+                return super.read(endPoint, buffer, context);
+            }
+
+            @Override
+            protected int write(EndPoint endPoint, Buffer buffer, ConcurrentMap<String, Object> context) throws IOException
+            {
+                assertEquals(contextValue, context.get(contextKey));
+                return super.write(endPoint, buffer, context);
+            }
+        });
+        proxy.start();
+
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String request = "" +
+                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
+                "\r\n";
+        Socket socket = newSocket();
+        try
+        {
+            OutputStream output = socket.getOutputStream();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            // Expect 200 OK from the CONNECT request
+            Response response = readResponse(input);
+            assertEquals("200", response.getCode());
+
+            String body = "0123456789ABCDEF";
             request = "" +
                     "POST /echo HTTP/1.1\r\n" +
                     "Host: " + hostPort + "\r\n" +
