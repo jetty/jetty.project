@@ -10,6 +10,7 @@
   <name>Jetty :: Aggregate :: HTTP Client</name>
 
   <build>
+    <sourceDirectory>${project.build.directory}/sources</sourceDirectory>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -28,11 +29,25 @@
               <overWriteSnapshots>true</overWriteSnapshots>
             </configuration>
           </execution>
+          <execution>
+            <id>unpack-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <classifier>sources</classifier>
+              <includes>**/*</includes>
+              <excludes>META-INF/**</excludes>
+              <outputDirectory>${project.build.directory}/sources</outputDirectory>
+              <overWriteReleases>true</overWriteReleases>
+              <overWriteSnapshots>true</overWriteSnapshots>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins
-        </groupId>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
           <execution>
