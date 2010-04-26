@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.ajp;
@@ -16,16 +16,16 @@ package org.eclipse.jetty.ajp;
 import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.util.log.Log;
 
 /**
- * 
- * 
- * 
+ *
+ *
+ *
  */
 public class Ajp13SocketConnector extends SocketConnector
 {
@@ -47,8 +47,8 @@ public class Ajp13SocketConnector extends SocketConnector
         super.doStart();
         Log.info("AJP13 is not a secure protocol. Please protect port {}",Integer.toString(getLocalPort()));
     }
-    
-    
+
+
 
     /* ------------------------------------------------------------ */
     /* (non-Javadoc)
@@ -64,7 +64,7 @@ public class Ajp13SocketConnector extends SocketConnector
 
     /* ------------------------------------------------------------ */
     @Override
-    protected HttpConnection newHttpConnection(EndPoint endpoint)
+    protected Connection newConnection(EndPoint endpoint)
     {
         return new Ajp13Connection(this,endpoint,getServer());
     }
