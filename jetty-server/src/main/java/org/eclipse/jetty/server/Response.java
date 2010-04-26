@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Locale;
 
 import javax.servlet.ServletOutputStream;
@@ -288,14 +289,14 @@ public class Response implements HttpServletResponse
             ContextHandler.Context context = request.getContext();
             if (context!=null)
                 error_handler=context.getContextHandler().getErrorHandler();
+            if (error_handler==null)
+                error_handler = _connection.getConnector().getServer().getBean(ErrorHandler.class);
             if (error_handler!=null)
             {
-                // TODO - probably should reset these after the request?
                 request.setAttribute(Dispatcher.ERROR_STATUS_CODE,new Integer(code));
                 request.setAttribute(Dispatcher.ERROR_MESSAGE, message);
                 request.setAttribute(Dispatcher.ERROR_REQUEST_URI, request.getRequestURI());
                 request.setAttribute(Dispatcher.ERROR_SERVLET_NAME,request.getServletName());
-
                 error_handler.handle(null,_connection.getRequest(),_connection.getRequest(),this );
             }
             else

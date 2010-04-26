@@ -14,15 +14,11 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -497,6 +493,34 @@ public class Server extends HandlerWrapper implements Attributes
                 beans.add((T)o);
         }
         return beans;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Get dependent bean of a specific class.
+     * If more than one bean of the type exist, the first is returned.
+     * @see #addBean(Object)
+     * @param clazz
+     * @return bean or null
+     */
+    public <T> T getBean(Class<T> clazz)
+    {
+        Iterator<?> iter = _dependentBeans.iterator();
+        T t=null;
+        int count=0;
+        while (iter.hasNext())
+        {
+            Object o = iter.next();
+            if (clazz.isInstance(o))
+            {
+                count++;
+                if (t==null)
+                    t=(T)o;
+            }
+        }
+        if (count>1)
+            Log.debug("getBean({}) 1 of {}",clazz.getName(),count);
+        
+        return t;
     }
     
     /**

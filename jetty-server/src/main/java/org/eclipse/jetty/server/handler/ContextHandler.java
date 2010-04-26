@@ -578,13 +578,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             old_context=__context.get();
             __context.set(_scontext);
 
-            if (_errorHandler==null)
-                setErrorHandler(new ErrorHandler());
-
-
             // defers the calling of super.doStart()
             startContext();
-
 
             _availability=_shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE;
         }

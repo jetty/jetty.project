@@ -113,7 +113,6 @@ public class ServletContextHandler extends ContextHandler
         else if (parent instanceof HandlerCollection)
             ((HandlerCollection)parent).addHandler(this);
     }    
-
     
     /* ------------------------------------------------------------ */
     /** Get the defaultSecurityHandlerClass.

@@ -21,6 +21,7 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -60,6 +61,7 @@ public class ServletTester
     {
         try
         {
+            _server.addBean(new ErrorHandler());
             _server.setSendServerVersion(false);
             _server.addConnector(_connector);
             _server.setHandler(_context);

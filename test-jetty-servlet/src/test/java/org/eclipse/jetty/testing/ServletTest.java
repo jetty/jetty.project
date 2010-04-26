@@ -253,6 +253,8 @@ public class ServletTest extends TestCase
         out.put(request0.getBytes("iso8859-1"));
         String responses = tester.getResponses(out).toString();
         
+        System.err.println(responses);
+        
         int offset = responses.indexOf("HTTP/1.1 500");
         assertTrue(offset>=0);
         offset = responses.indexOf("Content-Length: ",offset);
