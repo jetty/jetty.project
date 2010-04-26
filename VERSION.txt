@@ -16,6 +16,7 @@ jetty-7.1.0-SNAPSHOT
  + JETTY-903 Stop both caches
  + JETTY-1200 SSL NIO Endpoint wraps non NIO buffers
  + JETTY-1202 Use platform default algorithm for SecureRandom
+ + JETTY-1212 handle long content lengths
  + Fix jetty-plus.xml reference to addLifeCycle
  + Add AnnotationConfiguration to jetty-plus.xml
  + 310467 Allow SocketConnector to create generic Connection objects

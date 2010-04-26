@@ -65,12 +65,12 @@ public class BufferUtilTest extends TestCase
     {
         int val[] =
         {
-            0,42,43,-44,-45,-2147483648,2147483647
+            0,42,43,-44,-45,Integer.MIN_VALUE,Integer.MAX_VALUE
         };
         
         String str[] =
         {
-            "0","42","43","-44","-45","-2147483648","2147483647"
+            "0","42","43","-44","-45",""+Integer.MIN_VALUE,""+Integer.MAX_VALUE
         };
         
         Buffer buffer = new ByteArrayBuffer(12);
@@ -79,6 +79,29 @@ public class BufferUtilTest extends TestCase
         {
             buffer.clear();
             BufferUtil.putDecInt(buffer,val[i]);
+            assertEquals("t"+i,str[i],BufferUtil.to8859_1_String(buffer));
+        }       
+    }
+    
+    public void testPutLong()
+    throws Exception
+    {
+        long val[] =
+        {
+                0L,42L,43L,-44L,-45L,Long.MIN_VALUE,Long.MAX_VALUE
+        };
+
+        String str[] =
+        {
+                "0","42","43","-44","-45",""+Long.MIN_VALUE,""+Long.MAX_VALUE
+        };
+
+        Buffer buffer = new ByteArrayBuffer(50);
+
+        for (int i=0;i<val.length;i++)
+        {
+            buffer.clear();
+            BufferUtil.putDecLong(buffer,val[i]);
             assertEquals("t"+i,str[i],BufferUtil.to8859_1_String(buffer));
         }       
     }

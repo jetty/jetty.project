@@ -254,9 +254,9 @@ public class BufferUtil
         {
             boolean started= false;
             // This assumes constant time int arithmatic
-            for (int i= 0; i < decDivisors.length; i++)
+            for (int i= 0; i < decDivisorsL.length; i++)
             {
-                if (n < decDivisors[i])
+                if (n < decDivisorsL[i])
                 {
                     if (started)
                         buffer.put((byte)'0');
@@ -264,25 +264,68 @@ public class BufferUtil
                 }
 
                 started= true;
-                long d= n / decDivisors[i];
+                long d= n / decDivisorsL[i];
                 buffer.put(DIGIT[(int)d]);
-                n= n - d * decDivisors[i];
+                n= n - d * decDivisorsL[i];
             }
         }
     }
     
     public static Buffer toBuffer(long value)
     {
-        ByteArrayBuffer buf=new ByteArrayBuffer(16);
+        ByteArrayBuffer buf=new ByteArrayBuffer(32);
         putDecLong(buf, value);
         return buf;
     }
 
     private final static int[] decDivisors=
-        { 1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1 };
+    { 
+        1000000000,
+        100000000,
+        10000000,
+        1000000,
+        100000,
+        10000,
+        1000,
+        100,
+        10,
+        1 
+    };
 
     private final static int[] hexDivisors=
-        { 0x10000000, 0x1000000, 0x100000, 0x10000, 0x1000, 0x100, 0x10, 1 };
+    {
+        0x10000000,
+        0x1000000, 
+        0x100000, 
+        0x10000, 
+        0x1000, 
+        0x100, 
+        0x10, 
+        0x1 
+    };
+
+    private final static long[] decDivisorsL=
+    { 
+        1000000000000000000L,
+        100000000000000000L,
+        10000000000000000L,
+        1000000000000000L,
+        100000000000000L,
+        10000000000000L,
+        1000000000000L,
+        100000000000L,
+        10000000000L,
+        1000000000L,
+        100000000L,
+        10000000L,
+        1000000L,
+        100000L,
+        10000L,
+        1000L,
+        100L,
+        10L,
+        1L 
+    };
 
 
     public static void putCRLF(Buffer buffer)
