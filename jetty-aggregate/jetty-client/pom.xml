@@ -39,6 +39,7 @@
               <classifier>sources</classifier>
               <includes>**/*</includes>
               <excludes>META-INF/**</excludes>
+              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
               <outputDirectory>${project.build.directory}/sources</outputDirectory>
               <overWriteReleases>true</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
