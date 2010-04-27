@@ -18,12 +18,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
@@ -39,40 +36,55 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
- *
+ * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
  */
-public class ConstraintTest extends TestCase
+public class ConstraintTest
 {
     private static final String TEST_REALM = "TestRealm";
+    private static Server _server;
+    private static LocalConnector _connector;
+    private static SessionHandler _session;
+    private ConstraintSecurityHandler _security;
 
-    Server _server = new Server();
-    LocalConnector _connector = new LocalConnector();
-    ContextHandler _context = new ContextHandler();
-    SessionHandler _session = new SessionHandler();
-    ConstraintSecurityHandler _security = new ConstraintSecurityHandler();
-    HashLoginService _loginService = new HashLoginService(TEST_REALM);
-
-    RequestHandler _handler = new RequestHandler();
-
+    @BeforeClass
+    public static void startServer()
     {
+        _server = new Server();
+        _connector = new LocalConnector();
         _server.setConnectors(new Connector[]{_connector});
-        _context.setContextPath("/ctx");
-        _server.setHandler(_context);
-        _context.setHandler(_session);
-        _session.setHandler(_security);
-        _security.setHandler(_handler);
 
+        ContextHandler _context = new ContextHandler();
+        _session = new SessionHandler();
+
+        HashLoginService _loginService = new HashLoginService(TEST_REALM);
         _loginService.putUser("user",new Password("password"));
         _loginService.putUser("user2",new Password("password"), new String[] {"user"});
         _loginService.putUser("admin",new Password("password"), new String[] {"user","administrator"});
+
+        _context.setContextPath("/ctx");
+        _server.setHandler(_context);
+        _context.setHandler(_session);
+
         _server.addBean(_loginService);
     }
 
-    public ConstraintTest(String arg0)
+    @Before
+    public void setupSecurity()
     {
-        super(arg0);
+        _security = new ConstraintSecurityHandler();
+        _session.setHandler(_security);
+        RequestHandler _handler = new RequestHandler();
+        _security.setHandler(_handler);
+
         Constraint constraint0 = new Constraint();
         constraint0.setAuthenticate(true);
         constraint0.setName("forbid");
@@ -111,7 +123,7 @@ public class ConstraintTest extends TestCase
         ConstraintMapping mapping4 = new ConstraintMapping();
         mapping4.setPathSpec("/testLoginPage");
         mapping4.setConstraint(constraint4);
-        
+
         Set<String> knownRoles=new HashSet<String>();
         knownRoles.add("user");
         knownRoles.add("administrator");
@@ -119,31 +131,21 @@ public class ConstraintTest extends TestCase
         _security.setConstraintMappings(new ConstraintMapping[]
                 {
                         mapping0, mapping1, mapping2, mapping3, mapping4
-                },knownRoles);
+                }, knownRoles);
     }
 
-    /*
-     * @see TestCase#setUp()
-     */
-    protected void setUp() throws Exception
+    @After
+    public void stopServer() throws Exception
     {
-        super.setUp();
-
+        if (_server.isRunning())
+        {
+            _server.stop();
+            _server.join();
+        }
     }
 
-    /*
-     * @see TestCase#tearDown()
-     */
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
-        _server.stop();
-    }
-
-
-
-    public void testConstraints()
-            throws Exception
+    @Test
+    public void testConstraints() throws Exception
     {
         ConstraintMapping[] mappings =_security.getConstraintMappings();
 
@@ -168,9 +170,8 @@ public class ConstraintTest extends TestCase
         assertFalse(mappings[3].getConstraint().getAuthenticate());
     }
 
-
-    public void testBasic()
-            throws Exception
+    @Test
+    public void testBasic() throws Exception
     {
         _security.setAuthenticator(new BasicAuthenticator());
         _security.setStrict(false);
@@ -226,8 +227,8 @@ public class ConstraintTest extends TestCase
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
     }
 
-    public void testFormDispatch()
-            throws Exception
+    @Test
+    public void testFormDispatch() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",true));
         _security.setStrict(false);
@@ -278,8 +279,8 @@ public class ConstraintTest extends TestCase
         assertTrue(response.indexOf("!role") > 0);
     }
 
-    public void testFormRedirect()
-            throws Exception
+    @Test
+    public void testFormRedirect() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
         _security.setStrict(false);
@@ -303,7 +304,7 @@ public class ConstraintTest extends TestCase
                 "\r\n");
         assertTrue(response.indexOf(" 200 OK") > 0);
         assertTrue(response.indexOf("URI=/ctx/testLoginPage") > 0);
-        
+
         response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
@@ -334,8 +335,8 @@ public class ConstraintTest extends TestCase
         assertTrue(response.indexOf("!role") > 0);
     }
 
-    public void testFormNoCookies()
-            throws Exception
+    @Test
+    public void testFormNoCookies() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
         _security.setStrict(false);
@@ -354,12 +355,12 @@ public class ConstraintTest extends TestCase
         assertTrue(response.indexOf("/ctx/testLoginPage") > 0);
         int jsession=response.indexOf(";jsessionid=");
         String session = response.substring(jsession + 12, response.indexOf("\r\n",jsession));
-        
+
         response = _connector.getResponses("GET /ctx/testLoginPage;jsessionid="+session+";other HTTP/1.0\r\n"+
                 "\r\n");
         assertTrue(response.indexOf(" 200 OK") > 0);
         assertTrue(response.indexOf("URI=/ctx/testLoginPage") > 0);
-        
+
         response = _connector.getResponses("POST /ctx/j_security_check;jsessionid="+session+";other HTTP/1.0\r\n" +
                 "Content-Type: application/x-www-form-urlencoded\r\n" +
                 "Content-Length: 31\r\n" +
@@ -386,8 +387,8 @@ public class ConstraintTest extends TestCase
         assertTrue(response.indexOf("!role") > 0);
     }
 
-    public void testStrictBasic()
-            throws Exception
+    @Test
+    public void testStrictBasic() throws Exception
     {
         _security.setAuthenticator(new BasicAuthenticator());
         _server.start();
@@ -448,11 +449,11 @@ public class ConstraintTest extends TestCase
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
     }
 
+    @Test
     public void testStrictFormDispatch()
             throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",true));
-
         _server.start();
 
         String response;
@@ -561,11 +562,10 @@ public class ConstraintTest extends TestCase
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
     }
 
-    public void testStrictFormRedirect()
-            throws Exception
+    @Test
+    public void testStrictFormRedirect() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
-
         _server.start();
 
         String response;
@@ -672,8 +672,8 @@ public class ConstraintTest extends TestCase
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
     }
 
-    public void testRoleRef()
-    throws Exception
+    @Test
+    public void testRoleRef() throws Exception
     {
         RoleCheckHandler check=new RoleCheckHandler();
         _security.setHandler(check);
@@ -704,9 +704,8 @@ public class ConstraintTest extends TestCase
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
     }
 
-
-    public void testDeferredBasic()
-            throws Exception
+    @Test
+    public void testDeferredBasic() throws Exception
     {
         _security.setAuthenticator(new BasicAuthenticator());
         _security.setStrict(false);
@@ -732,7 +731,7 @@ public class ConstraintTest extends TestCase
         assertTrue(response.indexOf("user=admin") > 0);
     }
 
-    class RequestHandler extends AbstractHandler
+    private class RequestHandler extends AbstractHandler
     {
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
         {
@@ -750,7 +749,7 @@ public class ConstraintTest extends TestCase
         }
     }
 
-    class RoleRefHandler extends HandlerWrapper
+    private class RoleRefHandler extends HandlerWrapper
     {
         /* ------------------------------------------------------------ */
         /**
@@ -794,7 +793,7 @@ public class ConstraintTest extends TestCase
         }
     }
 
-    class RoleCheckHandler extends AbstractHandler
+    private class RoleCheckHandler extends AbstractHandler
     {
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException
         {

@@ -8,6 +8,18 @@
   <artifactId>test-jetty-servlet</artifactId>
   <packaging>jar</packaging>
   <name>Test :: Jetty Servlet Tester</name>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <!-- DO NOT DEPLOY (or Release) -->
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

@@ -173,7 +173,7 @@ public class ProxyHandler extends HandlerWrapper
     {
         if (HttpMethods.CONNECT.equalsIgnoreCase(request.getMethod()))
         {
-            _logger.debug("CONNECT request for {}", request.getRequestURI(), null);
+            _logger.debug("CONNECT request for {}", request.getRequestURI());
             handleConnect(baseRequest, request, response, request.getRequestURI());
         }
         else
@@ -326,7 +326,7 @@ public class ProxyHandler extends HandlerWrapper
         // so that Jetty understands that it has to upgrade the connection
         request.setAttribute("org.eclipse.jetty.io.Connection", connection);
         response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
-        _logger.debug("Upgraded connection to {}", connection, null);
+        _logger.debug("Upgraded connection to {}", connection);
     }
 
     private void register(SocketChannel channel, ProxyToServerConnection proxyToServer) throws IOException
@@ -381,7 +381,7 @@ public class ProxyHandler extends HandlerWrapper
                 buffer.compact();
             }
         }
-        _logger.debug("Written {}/{} bytes " + endPoint, builder, length);
+        _logger.debug("Written {}/{} bytes {}", builder, length, endPoint);
         return length;
     }
 
@@ -457,7 +457,7 @@ public class ProxyHandler extends HandlerWrapper
                 if (_data != null)
                 {
                     int written = write(_endPoint, _data, _context);
-                    _logger.debug("ProxyToServer: written to server {} bytes", written, null);
+                    _logger.debug("ProxyToServer: written to server {} bytes", written);
                     _data = null;
                 }
 
@@ -467,7 +467,7 @@ public class ProxyHandler extends HandlerWrapper
 
                     if (read == -1)
                     {
-                        _logger.debug("ProxyToServer: server closed connection {}", _endPoint, null);
+                        _logger.debug("ProxyToServer: server closed connection {}", _endPoint);
                         close();
                         break;
                     }
@@ -477,7 +477,7 @@ public class ProxyHandler extends HandlerWrapper
 
                     _logger.debug("ProxyToServer: read from server {} bytes {}", read, _endPoint);
                     int written = write(_toClient._endPoint, _buffer, _context);
-                    _logger.debug("ProxyToServer: written to client {} bytes", written, null);
+                    _logger.debug("ProxyToServer: written to client {} bytes", written);
                 }
                 return this;
             }
@@ -517,7 +517,7 @@ public class ProxyHandler extends HandlerWrapper
         public void setEndPoint(SelectChannelEndPoint endpoint)
         {
             _endPoint = endpoint;
-            _logger.debug("ProxyToServer: {}", _endPoint, null);
+            _logger.debug("ProxyToServer: {}", _endPoint);
         }
 
         public boolean isIdle()
@@ -595,7 +595,7 @@ public class ProxyHandler extends HandlerWrapper
             _channel = channel;
             _endPoint = endPoint;
             _timestamp = timestamp;
-            _logger.debug("ClientToProxy: {}", _endPoint, null);
+            _logger.debug("ClientToProxy: {}", _endPoint);
         }
 
         public Connection handle() throws IOException
@@ -616,7 +616,7 @@ public class ProxyHandler extends HandlerWrapper
 
                     if (read == -1)
                     {
-                        _logger.debug("ClientToProxy: client closed connection {}", _endPoint, null);
+                        _logger.debug("ClientToProxy: client closed connection {}", _endPoint);
                         close();
                         break;
                     }
@@ -626,7 +626,7 @@ public class ProxyHandler extends HandlerWrapper
 
                     _logger.debug("ClientToProxy: read from client {} bytes {}", read, _endPoint);
                     int written = write(_toServer._endPoint, _buffer, _context);
-                    _logger.debug("ClientToProxy: written to server {} bytes", written, null);
+                    _logger.debug("ClientToProxy: written to server {} bytes", written);
                 }
                 return this;
             }

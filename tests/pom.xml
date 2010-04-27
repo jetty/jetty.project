@@ -28,6 +28,16 @@
   <name>Jetty Tests :: Parent</name>
   <packaging>pom</packaging>
   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <!-- DO NOT DEPLOY (or Release) -->
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
   <modules>
     <module>test-integration</module>
