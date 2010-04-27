@@ -44,11 +44,6 @@
           </archive>
         </configuration>
       </plugin>
-      <!-- always include sources since jetty-xbean makes use of them -->
-      <plugin>
-         <groupId>org.apache.maven.plugins</groupId>
-         <artifactId>maven-source-plugin</artifactId>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>

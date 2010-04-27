@@ -39,12 +39,6 @@
           </archive>
         </configuration>
       </plugin>
-      <!-- always include the sources to be able to prepare the eclipse-jetty-SDK feature
-      with a snapshot. -->
-      <plugin>
-         <groupId>org.apache.maven.plugins</groupId>
-         <artifactId>maven-source-plugin</artifactId>
-      </plugin>
     </plugins>
   </build>
   <dependencies>

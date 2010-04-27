@@ -60,12 +60,6 @@
           </execution>
         </executions>
       </plugin>
-     <!-- Always create the source bundle. the configuration is inherited by the parent pom. -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-      </plugin>
-
     </plugins>
   </build>
   <dependencies>
