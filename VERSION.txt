@@ -21,6 +21,7 @@ jetty-7.1.0-SNAPSHOT
  + Fix jetty-plus.xml reference to addLifeCycle
  + Add AnnotationConfiguration to jetty-plus.xml
  + 310467 Allow SocketConnector to create generic Connection objects
+ + 310603 Make Logger interface consistent
 
 jetty-7.0.2.v20100331 31 March 2010
  + 297552 Don't call Continuation timeouts from acceptor tick

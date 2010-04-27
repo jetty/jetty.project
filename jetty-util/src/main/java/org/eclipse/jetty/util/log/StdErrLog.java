@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.util.log;
@@ -17,28 +17,23 @@ import java.security.AccessControlException;
 
 import org.eclipse.jetty.util.DateCache;
 
-/*-----------------------------------------------------------------------*/
 /**
  * StdErr Logging. This implementation of the Logging facade sends all logs to
  * StdErr with minimal formatting.
- * 
+ *
  * If the system property "org.eclipse.jetty.util.log.DEBUG" is set, then debug
  * logs are printed if stderr is being used.
  * <p>
  * For named debuggers, the system property name+".DEBUG" is checked. If it is
  * not not set, then "org.eclipse.jetty.util.log.DEBUG" is used as the default.
- * 
  */
 public class StdErrLog implements Logger
 {
     private static DateCache _dateCache;
 
-    private final static String LN = System.getProperty("line.separator");
-    private final static boolean __debug = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.DEBUG",System.getProperty(
-            "org.eclipse.jetty.util.log.stderr.DEBUG","false")));
-    private boolean _debug = __debug;
-    private final String _name;
-    private boolean _hideStacks = false;
+    private final static boolean __debug = Boolean.parseBoolean(
+            System.getProperty("org.eclipse.jetty.util.log.DEBUG",
+                    System.getProperty("org.eclipse.jetty.util.log.stderr.DEBUG", "false")));
 
     static
     {
@@ -46,12 +41,15 @@ public class StdErrLog implements Logger
         {
             _dateCache = new DateCache("yyyy-MM-dd HH:mm:ss");
         }
-        catch (Exception e)
+        catch (Exception x)
         {
-            e.printStackTrace();
+            x.printStackTrace();
         }
-
     }
+
+    private boolean _debug = __debug;
+    private final String _name;
+    private boolean _hideStacks = false;
 
     public StdErrLog()
     {
@@ -60,11 +58,11 @@ public class StdErrLog implements Logger
 
     public StdErrLog(String name)
     {
-        this._name = name == null?"":name;
+        this._name = name == null ? "" : name;
 
         try
         {
-            _debug = Boolean.parseBoolean(System.getProperty(_name + ".DEBUG",Boolean.toString(__debug)));
+            _debug = Boolean.parseBoolean(System.getProperty(_name + ".DEBUG", Boolean.toString(__debug)));
         }
         catch (AccessControlException ace)
         {
@@ -77,16 +75,6 @@ public class StdErrLog implements Logger
         return _name;
     }
 
-    public boolean isDebugEnabled()
-    {
-        return _debug;
-    }
-
-    public void setDebugEnabled(boolean enabled)
-    {
-        _debug = enabled;
-    }
-
     public boolean isHideStacks()
     {
         return _hideStacks;
@@ -97,104 +85,92 @@ public class StdErrLog implements Logger
         _hideStacks = hideStacks;
     }
 
-    public void info(String msg)
+    public void warn(String msg, Object... args)
     {
-        String d = _dateCache.now();
-        int ms = _dateCache.lastMs();
         StringBuilder buffer = new StringBuilder(64);
-        tag(buffer,d,ms, ":INFO:");
-        format(buffer, msg);
-        System.err.println(buffer);
-
-    }
-
-    public void info(String msg, Object arg0, Object arg1)
-    {
-        String d = _dateCache.now();
-        int ms = _dateCache.lastMs();
-        StringBuilder buffer = new StringBuilder(64);
-        tag(buffer,d,ms, ":INFO:");
-        format(buffer,msg,arg0, arg1);
-        System.err.println(buffer);
-
-    }
-
-    public void debug(String msg, Throwable th)
-    {
-        if (_debug)
-        {
-            String d = _dateCache.now();
-            int ms = _dateCache.lastMs();
-            StringBuilder buffer = new StringBuilder(64);
-            tag(buffer,d,ms, ":DBUG:");
-            format(buffer, msg);
-            if (_hideStacks)
-                format(buffer, String.valueOf(th));
-            else
-                format(th, buffer);
-            System.err.println(buffer);
-        }
-    }
-
-    public void debug(String msg)
-    {
-        if (_debug)
-        {
-            String d = _dateCache.now();
-            int ms = _dateCache.lastMs();
-            StringBuilder buffer = new StringBuilder(64);
-            tag(buffer,d,ms, ":DBUG:");
-            format(buffer, msg);
-            System.err.println(buffer);
-        }
-    }
-
-    public void debug(String msg, Object arg0, Object arg1)
-    {
-        if (_debug)
-        {
-            String d = _dateCache.now();
-            int ms = _dateCache.lastMs();
-            StringBuilder buffer = new StringBuilder(64);
-            tag(buffer,d,ms, ":DBUG:");
-            format(buffer,msg,arg0, arg1);
-            System.err.println(buffer);
-        }
-    }
-
-    public void warn(String msg)
-    {
-        String d = _dateCache.now();
-        int ms = _dateCache.lastMs();
-        StringBuilder buffer = new StringBuilder(64);
-        tag(buffer,d,ms, ":WARN:");
-        format(buffer, msg);
+        format(buffer, ":WARN:", msg, args);
         System.err.println(buffer);
     }
 
-    public void warn(String msg, Object arg0, Object arg1)
+    public void warn(Throwable thrown)
     {
-        String d = _dateCache.now();
-        int ms = _dateCache.lastMs();
+        warn("", thrown);
+    }
+
+    public void warn(String msg, Throwable thrown)
+    {
         StringBuilder buffer = new StringBuilder(64);
-        tag(buffer,d,ms, ":WARN:");
-        format(buffer,msg,arg0, arg1);
+        format(buffer, ":WARN:", msg, thrown);
         System.err.println(buffer);
     }
 
-    public void warn(String msg, Throwable th)
+    public void info(String msg, Object... args)
+    {
+        StringBuilder buffer = new StringBuilder(64);
+        format(buffer, ":INFO:", msg, args);
+        System.err.println(buffer);
+    }
+
+    public void info(Throwable thrown)
+    {
+        info("", thrown);
+    }
+
+    public void info(String msg, Throwable thrown)
+    {
+        StringBuilder buffer = new StringBuilder(64);
+        format(buffer, ":INFO:", msg, thrown);
+        System.err.println(buffer);
+    }
+
+    public boolean isDebugEnabled()
+    {
+        return _debug;
+    }
+
+    public void setDebugEnabled(boolean enabled)
+    {
+        _debug = enabled;
+    }
+
+    public void debug(String msg, Object... args)
+    {
+        if (!_debug)
+            return;
+        StringBuilder buffer = new StringBuilder(64);
+        format(buffer, ":DBUG:", msg, args);
+        System.err.println(buffer);
+    }
+
+    public void debug(Throwable thrown)
+    {
+        debug("", thrown);
+    }
+
+    public void debug(String msg, Throwable thrown)
+    {
+        if (!_debug)
+            return;
+        StringBuilder buffer = new StringBuilder(64);
+        format(buffer, ":INFO:", msg, thrown);
+        System.err.println(buffer);
+    }
+
+    private void format(StringBuilder buffer, String level, String msg, Object... args)
     {
         String d = _dateCache.now();
         int ms = _dateCache.lastMs();
-        StringBuilder buffer = new StringBuilder(64);
-        tag(buffer,d,ms, ":WARN:");
-        format(buffer, msg);
-        if (_hideStacks)
-            format(buffer, String.valueOf(th));
+        tag(buffer, d, ms, level);
+        format(buffer, msg, args);
+    }
+
+    private void format(StringBuilder buffer, String level, String msg, Throwable thrown)
+    {
+        format(buffer, level, msg);
+        if (isHideStacks())
+            format(buffer, String.valueOf(thrown));
         else
-            format(th, buffer);
-        System.err.println(buffer);
-
+            format(buffer, thrown);
     }
 
     private void tag(StringBuilder buffer, String d, int ms, String tag)
@@ -210,79 +186,53 @@ public class StdErrLog implements Logger
         buffer.append(ms).append(tag).append(_name).append(':');
     }
 
-    private void format(StringBuilder buffer, String msg, Object arg0, Object arg1)
+    private void format(StringBuilder builder, String msg, Object... args)
     {
-        int i0 = msg == null?-1:msg.indexOf("{}");
-        int i1 = i0 < 0?-1:msg.indexOf("{}",i0 + 2);
-
-        if (i0 >= 0)
+        msg = String.valueOf(msg); // Avoids NPE
+        String braces = "{}";
+        int start = 0;
+        for (Object arg : args)
         {
-            format(buffer, msg.substring(0,i0));
-            format(buffer, String.valueOf(arg0 == null?"null":arg0));
+            int bracesIndex = msg.indexOf(braces, start);
+            if (bracesIndex < 0)
+                break;
+            escape(builder, msg.substring(start, bracesIndex));
+            builder.append(String.valueOf(arg));
+            start = bracesIndex + braces.length();
+        }
+        escape(builder, msg.substring(start));
+    }
 
-            if (i1 >= 0)
+    private void escape(StringBuilder builder, String string)
+    {
+        for (int i = 0; i < string.length(); ++i)
+        {
+            char c = string.charAt(i);
+            if (Character.isISOControl(c))
             {
-                format(buffer, msg.substring(i0 + 2,i1));
-                format(buffer, String.valueOf(arg1 == null?"null":arg1));
-                format(buffer, msg.substring(i1 + 2));
+                if (c == '\n')
+                    builder.append('|');
+                else if (c == '\r')
+                    builder.append('<');
+                else
+                    builder.append('?');
             }
             else
-            {
-                format(buffer, msg.substring(i0 + 2));
-                if (arg1 != null)
-                {
-                    buffer.append(' ');
-                    format(buffer, String.valueOf(arg1));
-                }
-            }
+                builder.append(c);
         }
-        else
+    }
+
+    private void format(StringBuilder buffer, Throwable thrown)
+    {
+        if (thrown == null)
         {
-            format(buffer, msg);
-            if (arg0 != null)
-            {
-                buffer.append(' ');
-                format(buffer, String.valueOf(arg0));
-            }
-            if (arg1 != null)
-            {
-                buffer.append(' ');
-                format(buffer, String.valueOf(arg1));
-            }
+            buffer.append("null");
         }
-    }
-
-    private void format(StringBuilder buffer, String msg)
-    {
-        if (msg == null)
-            buffer.append("null");
-        else
-            for (int i = 0; i < msg.length(); i++)
-            {
-                char c = msg.charAt(i);
-                if (Character.isISOControl(c))
-                {
-                    if (c == '\n')
-                        buffer.append('|');
-                    else if (c == '\r')
-                        buffer.append('<');
-                    else
-                        buffer.append('?');
-                }
-                else
-                    buffer.append(c);
-            }
-    }
-
-    private void format(Throwable th, StringBuilder buffer)
-    {
-        if (th == null)
-            buffer.append("null");
         else
         {
             buffer.append('\n');
-            format(buffer, th.toString());
-            StackTraceElement[] elements = th.getStackTrace();
+            format(buffer, thrown.toString());
+            StackTraceElement[] elements = thrown.getStackTrace();
             for (int i = 0; elements != null && i < elements.length; i++)
             {
                 buffer.append("\n\tat ");
