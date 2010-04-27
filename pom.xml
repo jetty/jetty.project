@@ -4,11 +4,11 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>12</version>
+    <version>14</version>
   </parent>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>7.1.0-SNAPSHOT</version>
+  <version>7.1.0.RC0</version>
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
@@ -27,9 +27,9 @@
     <jsp-2-1-version>2.1.v20091210</jsp-2-1-version>
   </properties>
   <scm>
-    <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk</connection>
-    <developerConnection>scm:svn:svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk</developerConnection>
-    <url>http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk</url>
+    <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags/jetty-7.1.0.RC0</connection>
+    <developerConnection>scm:svn:svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags/jetty-7.1.0.RC0</developerConnection>
+    <url>http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags/jetty-7.1.0.RC0</url>
   </scm>
   <build>
     <defaultGoal>install</defaultGoal>
@@ -45,7 +45,6 @@
       <plugin>
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
-          <tag>jetty-${project.version}</tag>
           <tagBase>svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags</tagBase>
         </configuration>
       </plugin>

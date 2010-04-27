@@ -1,4 +1,4 @@
-jetty-7.1.0-SNAPSHOT
+jetty-7.1.0.RC0 27 April 2010
  + 294563 Websocket client connection
  + 297104 Improve handling of CONNECT method
  + 306349 ProxyServlet does not work unless deployed at /
