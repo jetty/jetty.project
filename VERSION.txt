@@ -1,4 +1,5 @@
 jetty-7.1.0.RC1-SNAPSHOT
+ + 310703 Update test suite to JUnit4 - Module tests/test-integration
  + 308848 Update test suite to JUnit4 - Module jetty-ajp
  + 308869 Update test suite to JUnit4 - Module jetty-xml
  + 308868 Update test suite to JUnit4 - Module jetty-websocket

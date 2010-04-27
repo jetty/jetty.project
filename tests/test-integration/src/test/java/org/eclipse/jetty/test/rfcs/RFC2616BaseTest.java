@@ -32,28 +32,31 @@ import java.util.TimeZone;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.test.AbstractJettyTestCase;
+import org.eclipse.jetty.test.MavenTestingUtils;
 import org.eclipse.jetty.test.StringAssert;
 import org.eclipse.jetty.test.support.StringUtil;
 import org.eclipse.jetty.test.support.TestableJettyServer;
 import org.eclipse.jetty.test.support.rawhttp.HttpResponseTester;
 import org.eclipse.jetty.test.support.rawhttp.HttpSocket;
 import org.eclipse.jetty.test.support.rawhttp.HttpTesting;
-import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  * <a href="http://tools.ietf.org/html/rfc2616">RFC 2616</a> (HTTP/1.1) Test Case
  */
-public abstract class RFC2616BaseTest extends AbstractJettyTestCase
+public abstract class RFC2616BaseTest
 {
     private static final String ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
     /** STRICT RFC TESTS */
     private static final boolean STRICT = false;
+    private static TestableJettyServer server;
     private List<HttpResponseTester> responses;
     private HttpResponseTester response;
     private HttpTesting http;
-    private TestableJettyServer server;
 
     class TestFile
     {
@@ -78,13 +81,12 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         }
     }
 
-    @Override
-    @Before
-    public void setUp() throws Exception
+    public static void setUpServer(TestableJettyServer testableserver) throws Exception
     {
-        super.setUp();
-
-        File testWorkDir = new File(getTargetDir(),"work" + File.separator + getClass().getSimpleName() + File.separator + getName());
+        File targetDir = MavenTestingUtils.getTargetDir();
+        String testId = MavenTestingUtils.getTestID();
+        
+        File testWorkDir = new File(targetDir,"work" + File.separator + testId);
         if (!testWorkDir.exists())
         {
             testWorkDir.mkdirs();
@@ -92,21 +94,22 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
 
         System.setProperty("java.io.tmpdir",testWorkDir.getAbsolutePath());
 
-        server = getJettyServer();
+        server = testableserver;
         server.load();
         server.start();
+    }
+    
+    @Before
+    public void setUp() throws Exception
+    {
         http = new HttpTesting(getHttpClientSocket(),server.getServerPort());
     }
 
-    @Override
-    @After
-    public void tearDown() throws Exception
+    @AfterClass
+    public static void tearDownServer() throws Exception
     {
         server.stop();
-        super.tearDown();
     }
-
-    public abstract TestableJettyServer getJettyServer() throws IOException;
 
     public abstract HttpSocket getHttpClientSocket() throws Exception;
 
@@ -145,7 +148,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
 
         // Test formatting
         fields.putDateField("Date",expected.getTime().getTime());
-        assertEquals("3.3.1 RFC 822 preferred","Sun, 06 Nov 1994 08:49:37 GMT",fields.getStringField("Date"));
+        Assert.assertEquals("3.3.1 RFC 822 preferred","Sun, 06 Nov 1994 08:49:37 GMT",fields.getStringField("Date"));
     }
 
     /**
@@ -201,7 +204,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         req2.append("\n");
 
         responses = http.requests(req2);
-        assertEquals("Response Count",3,responses.size());
+        Assert.assertEquals("Response Count",3,responses.size());
 
         response = responses.get(0); // Response 1
         response.assertStatusOK("3.6.1 Transfer Codings / Response 1 Code");
@@ -246,7 +249,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         req3.append("\n");
 
         responses = http.requests(req3);
-        assertEquals("Response Count",3,responses.size());
+        Assert.assertEquals("Response Count",3,responses.size());
 
         response = responses.get(0); // Response 1
         response.assertStatusOK("3.6.1 Transfer Codings / Response 1 Code");
@@ -281,7 +284,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         req4.append("\n");
 
         responses = http.requests(req4);
-        assertEquals("Response Count",2,responses.size());
+        Assert.assertEquals("Response Count",2,responses.size());
 
         response = responses.get(0); // Response 1
         response.assertStatusOK("3.6.1 Transfer Codings / Response 1 Code");
@@ -305,12 +308,12 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         fields.put("Q","bbb;q=0.5,aaa,ccc;q=0.002,d;q=0,e;q=0.0001,ddd;q=0.001,aa2,abb;q=0.7");
         Enumeration<String> qualities = fields.getValues("Q",", \t");
         List<?> list = HttpFields.qualityList(qualities);
-        assertEquals("Quality parameters","aaa",HttpFields.valueParameters(list.get(0).toString(),null));
-        assertEquals("Quality parameters","aa2",HttpFields.valueParameters(list.get(1).toString(),null));
-        assertEquals("Quality parameters","abb",HttpFields.valueParameters(list.get(2).toString(),null));
-        assertEquals("Quality parameters","bbb",HttpFields.valueParameters(list.get(3).toString(),null));
-        assertEquals("Quality parameters","ccc",HttpFields.valueParameters(list.get(4).toString(),null));
-        assertEquals("Quality parameters","ddd",HttpFields.valueParameters(list.get(5).toString(),null));
+        Assert.assertEquals("Quality parameters","aaa",HttpFields.valueParameters(list.get(0).toString(),null));
+        Assert.assertEquals("Quality parameters","aa2",HttpFields.valueParameters(list.get(1).toString(),null));
+        Assert.assertEquals("Quality parameters","abb",HttpFields.valueParameters(list.get(2).toString(),null));
+        Assert.assertEquals("Quality parameters","bbb",HttpFields.valueParameters(list.get(3).toString(),null));
+        Assert.assertEquals("Quality parameters","ccc",HttpFields.valueParameters(list.get(4).toString(),null));
+        Assert.assertEquals("Quality parameters","ddd",HttpFields.valueParameters(list.get(5).toString(),null));
     }
 
     /**
@@ -340,7 +343,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         req1.append("\n");
 
         responses = http.requests(req1);
-        assertEquals("Response Count",2,responses.size());
+        Assert.assertEquals("Response Count",2,responses.size());
 
         response = responses.get(0);
         response.assertStatusOK("4.4.2 Message Length / Response Code");
@@ -377,7 +380,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         req2.append("7890AB");
 
         responses = http.requests(req2);
-        assertEquals("Response Count",2,responses.size());
+        Assert.assertEquals("Response Count",2,responses.size());
 
         response = responses.get(0); // response 1
         response.assertStatusOK("4.4.3 Ignore Content-Length / Response Code");
@@ -630,7 +633,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         req2.append("\n");
 
         responses = http.requests(req2);
-        assertEquals("Response Count",2,responses.size()); // Should not have a R3 response.
+        Assert.assertEquals("Response Count",2,responses.size()); // Should not have a R3 response.
 
         response = responses.get(0); // response 1
         response.assertStatusOK("8.1 Persistent Connections");
@@ -838,7 +841,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
 
         responses = http.requests(req2);
 
-        assertEquals("Response Count",2,responses.size()); // Should have 2 responses
+        Assert.assertEquals("Response Count",2,responses.size()); // Should have 2 responses
 
         response = responses.get(0); // Only interested in first response
         response.assertHeaderExists("9.2 OPTIONS","Allow");
@@ -1070,7 +1073,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         req2.append("\n");
 
         responses = http.requests(req2);
-        assertEquals("Response Count",2,responses.size());
+        Assert.assertEquals("Response Count",2,responses.size());
 
         response = responses.get(0);
         String specId = "10.3 Redirection HTTP/1.1 - basic (response 1)";
@@ -1522,16 +1525,16 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
             if (parts[i].trim().startsWith("boundary="))
             {
                 String boundparts[] = StringUtil.split(parts[i],'=');
-                assertEquals(msg + " Boundary parts.length",2,boundparts.length);
+                Assert.assertEquals(msg + " Boundary parts.length",2,boundparts.length);
                 boundary = boundparts[1];
             }
         }
 
-        assertNotNull(msg + " Should have found boundary in Content-Type header",boundary);
+        Assert.assertNotNull(msg + " Should have found boundary in Content-Type header",boundary);
 
         // Find boundary offsets within body
         List<HttpResponseTester> multiparts = response.findBodyMultiparts(boundary);
-        assertEquals(msg + " multiparts in body (count)",2,multiparts.size());
+        Assert.assertEquals(msg + " multiparts in body (count)",2,multiparts.size());
 
         // Validate multipart #1
         HttpResponseTester multipart1 = multiparts.get(0);
@@ -1584,16 +1587,16 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
             if (parts[i].trim().startsWith("boundary="))
             {
                 String boundparts[] = StringUtil.split(parts[i],'=');
-                assertEquals(msg + " Boundary parts.length",2,boundparts.length);
+                Assert.assertEquals(msg + " Boundary parts.length",2,boundparts.length);
                 boundary = boundparts[1];
             }
         }
 
-        assertNotNull(msg + " Should have found boundary in Content-Type header",boundary);
+        Assert.assertNotNull(msg + " Should have found boundary in Content-Type header",boundary);
 
         // Find boundary offsets within body
         List<HttpResponseTester> multiparts = response.findBodyMultiparts(boundary);
-        assertEquals(msg + " multiparts in body (count)",3,multiparts.size());
+        Assert.assertEquals(msg + " multiparts in body (count)",3,multiparts.size());
 
         // Validate multipart #1
         HttpResponseTester multipart1 = multiparts.get(0);
@@ -1767,7 +1770,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         responses = http.requests(req2);
         // Since R2 closes the connection, should only get 2 responses (R1 &
         // R2), not (R3)
-        assertEquals("Response Count",2,responses.size());
+        Assert.assertEquals("Response Count",2,responses.size());
 
         response = responses.get(0); // response 1
         specId = "19.6.2 Compatibility with previous HTTP - Keep-alive";
@@ -1808,7 +1811,7 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         req3.append("Connection: close\n");
         req3.append("\n");
         responses = http.requests(req3);
-        assertEquals("Response Count",3,responses.size());
+        Assert.assertEquals("Response Count",3,responses.size());
 
         specId = "19.6.2 Compatibility with HTTP/1.0- Keep-alive";
         response = responses.get(0);
@@ -1834,6 +1837,6 @@ public abstract class RFC2616BaseTest extends AbstractJettyTestCase
         String actual = sdf.format(new Date(actualTime));
         String expected = sdf.format(expectedTime.getTime());
 
-        assertEquals(msg,expected,actual);
+        Assert.assertEquals(msg,expected,actual);
     }
 }
