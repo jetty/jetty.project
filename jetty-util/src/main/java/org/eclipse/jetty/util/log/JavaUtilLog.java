@@ -126,8 +126,11 @@ public class JavaUtilLog implements Logger
             if (bracesIndex < 0)
             {
                 builder.append(msg.substring(start));
-                builder.append(" ");
-                builder.append(String.valueOf(arg));
+                if (arg != null)
+                {
+                    builder.append(" ");
+                    builder.append(arg);
+                }
                 start = msg.length();
             }
             else

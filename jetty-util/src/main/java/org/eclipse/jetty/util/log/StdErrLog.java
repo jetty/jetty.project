@@ -197,8 +197,11 @@ public class StdErrLog implements Logger
             if (bracesIndex < 0)
             {
                 escape(builder, msg.substring(start));
-                builder.append(" ");
-                builder.append(String.valueOf(arg));
+                if (arg != null)
+                {
+                    builder.append(" ");
+                    builder.append(arg);
+                }
                 start = msg.length();
             }
             else
