@@ -50,6 +50,7 @@ public class SocketConnector extends AbstractConnector
 {
     protected ServerSocket _serverSocket;
     protected final Set<EndPoint> _connections;
+    protected volatile int _localPort=-1;
 
     /* ------------------------------------------------------------ */
     /** Constructor.
@@ -73,6 +74,7 @@ public class SocketConnector extends AbstractConnector
         if (_serverSocket==null || _serverSocket.isClosed())
         _serverSocket= newServerSocket(getHost(),getPort(),getAcceptQueueSize());
         _serverSocket.setReuseAddress(getReuseAddress());
+        _localPort=_serverSocket.getLocalPort();
     }
 
     /* ------------------------------------------------------------ */
@@ -91,6 +93,7 @@ public class SocketConnector extends AbstractConnector
         if (_serverSocket!=null)
             _serverSocket.close();
         _serverSocket=null;
+        _localPort=-2;
     }
 
     /* ------------------------------------------------------------ */
@@ -133,9 +136,7 @@ public class SocketConnector extends AbstractConnector
     /* ------------------------------------------------------------------------------- */
     public int getLocalPort()
     {
-        if (_serverSocket==null || _serverSocket.isClosed())
-            return -1;
-        return _serverSocket.getLocalPort();
+        return _localPort;
     }
 
     /* ------------------------------------------------------------------------------- */

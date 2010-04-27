@@ -3,6 +3,7 @@ jetty-7.1.0.RC1-SNAPSHOT
  + 308869 Update test suite to JUnit4 - Module jetty-xml
  + 308868 Update test suite to JUnit4 - Module jetty-websocket
  + 308861 Update test suite to JUnit4 - Module jetty-security
+ + 310634 Get the localport when opening a server socket.
  
 jetty-7.1.0.RC0 27 April 2010
  + 294563 Websocket client connection

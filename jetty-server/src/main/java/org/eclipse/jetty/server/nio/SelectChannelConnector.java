@@ -65,6 +65,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     protected ServerSocketChannel _acceptChannel;
     private int _lowResourcesConnections;
     private int _lowResourcesMaxIdleTime;
+    private int _localPort=-1;
 
     private final SelectorManager _manager = new SelectorManager()
     {
@@ -154,6 +155,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
             if (_acceptChannel != null)
                 _acceptChannel.close();
             _acceptChannel = null;
+            _localPort=-2;
         }
     }
     
@@ -186,9 +188,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     {
         synchronized(this)
         {
-            if (_acceptChannel==null || !_acceptChannel.isOpen())
-                return -1;
-            return _acceptChannel.socket().getLocalPort();
+            return _localPort;
         }
     }
 
@@ -209,7 +209,8 @@ public class SelectChannelConnector extends AbstractNIOConnector
                 InetSocketAddress addr = getHost()==null?new InetSocketAddress(getPort()):new InetSocketAddress(getHost(),getPort());
                 _acceptChannel.socket().bind(addr,getAcceptQueueSize());
 
-                if (_acceptChannel.socket().getLocalPort()==-1)
+                _localPort=_acceptChannel.socket().getLocalPort();
+                if (_localPort==-1)
                     throw new IOException("Server channel not bound");
                 
                 // Set to non blocking mode
