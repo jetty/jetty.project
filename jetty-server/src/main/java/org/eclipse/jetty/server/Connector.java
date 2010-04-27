@@ -212,8 +212,8 @@ public interface Connector extends LifeCycle
     
     /* ------------------------------------------------------------ */
     /**
-     * @return The actual port the connector is listening on or -1 if there 
-     * is no port or the connector is not open.
+     * @return The actual port the connector is listening on or
+     * -1 if it has not been opened, or -2 if it has been closed.
      */
     int getLocalPort();
     

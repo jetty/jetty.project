@@ -210,7 +210,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
                 _acceptChannel.socket().bind(addr,getAcceptQueueSize());
 
                 _localPort=_acceptChannel.socket().getLocalPort();
-                if (_localPort==-1)
+                if (_localPort<=0)
                     throw new IOException("Server channel not bound");
                 
                 // Set to non blocking mode

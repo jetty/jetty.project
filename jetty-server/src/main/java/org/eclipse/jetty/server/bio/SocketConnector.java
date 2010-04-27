@@ -75,6 +75,9 @@ public class SocketConnector extends AbstractConnector
         _serverSocket= newServerSocket(getHost(),getPort(),getAcceptQueueSize());
         _serverSocket.setReuseAddress(getReuseAddress());
         _localPort=_serverSocket.getLocalPort();
+        if (_localPort<=0)
+            throw new IllegalStateException("port not allocated for "+this);
+            
     }
 
     /* ------------------------------------------------------------ */
