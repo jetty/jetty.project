@@ -19,6 +19,7 @@
     <ant-version>1.6.5</ant-version>
     <jta-spec-version>1.1.1</jta-spec-version>
     <junit-version>3.8.2</junit-version>
+    <junit4-version>4.8.1</junit4-version>
     <mail-version>1.4</mail-version>
     <slf4j-version>1.5.10</slf4j-version>
     <eclipse-compiler-version>3.1.1</eclipse-compiler-version>
@@ -65,7 +66,7 @@
             </execution>
           </executions>
         </plugin>
-        
+
       <!-- Build helper maven plugin sets the parsedVersion.osgiVersion property -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -80,7 +81,7 @@
             </goals>
           </execution>
         </executions>
-      </plugin>        
+      </plugin>
     </plugins>
     <pluginManagement>
       <plugins>
@@ -110,7 +111,7 @@
         <artifactId>maven-bundle-plugin</artifactId>
         <version>2.0.0</version>
         <extensions>true</extensions>
-        <configuration>        
+        <configuration>
           <instructions>
             <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
             <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
@@ -134,7 +135,7 @@
             </dependency>
           </dependencies>
        </plugin>
-       
+
        <!-- source maven plugin creates the source bundle and adds manifest -->
        <plugin>
           <inherited>true</inherited>
@@ -254,7 +255,7 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-  <!-- 
+  <!--
     Usage:
     configure settings.xml for jetty.eclipse.website server entry
     > mvn -Paggregate-site javadoc:aggregate jxr:jxr

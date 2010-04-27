@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.ajp;
@@ -18,26 +18,31 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.TypeUtil;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class Ajp13ConnectionTest extends TestCase
+import static org.junit.Assert.assertTrue;
+
+public class Ajp13ConnectionTest
 {
-    private Server _server;
-    private Ajp13SocketConnector _connector;
+    private static Server _server;
+    private static Ajp13SocketConnector _connector;
     private Socket _client;
 
-    protected void setUp() throws Exception
+    @BeforeClass
+    public static void startServer() throws Exception
     {
         _server=new Server();
         _connector=new Ajp13SocketConnector();
@@ -47,18 +52,28 @@ public class Ajp13ConnectionTest extends TestCase
         _server.setConnectors(new Connector[] { _connector });
         _server.setHandler(new Handler());
         _server.start();
-
-        _client=new Socket("localhost",_connector.getLocalPort());
-
     }
 
-    protected void tearDown() throws Exception
+    @AfterClass
+    public static void stopServer() throws Exception
     {
-        _client.close();
         _connector.close();
         _server.stop();
     }
 
+    @Before
+    public void openSocket() throws Exception
+    {
+        _client=new Socket("localhost",_connector.getLocalPort());
+    }
+
+    @After
+    public void closeSocket() throws Exception
+    {
+        _client.close();
+    }
+
+    @Test
     public void testPacket1() throws Exception
     {
         OutputStream os=_client.getOutputStream();
@@ -71,6 +86,7 @@ public class Ajp13ConnectionTest extends TestCase
         assertTrue(true);
     }
 
+    @Test
     public void testPacket2() throws Exception
     {
         OutputStream os=_client.getOutputStream();
@@ -83,6 +99,7 @@ public class Ajp13ConnectionTest extends TestCase
         assertTrue(true);
     }
 
+    @Test
     public void testPacket3() throws Exception
     {
         OutputStream os=_client.getOutputStream();
@@ -95,6 +112,7 @@ public class Ajp13ConnectionTest extends TestCase
         assertTrue(true);
     }
 
+    @Test
     public void testSSLPacketWithIntegerKeySize() throws Exception
     {
         OutputStream os=_client.getOutputStream();
@@ -107,6 +125,7 @@ public class Ajp13ConnectionTest extends TestCase
         assertTrue(true);
     }
 
+    @Test
     public void testSSLPacketWithStringKeySize() throws Exception
     {
         OutputStream os=_client.getOutputStream();
@@ -119,19 +138,21 @@ public class Ajp13ConnectionTest extends TestCase
         assertTrue(true);
     }
 
+    @Test
     public void testPacketWithBody() throws Exception
     {
         OutputStream os=_client.getOutputStream();
 
-        os.write(TypeUtil.fromHexString(getTestHeader()));        
+        os.write(TypeUtil.fromHexString(getTestHeader()));
         os.write(TypeUtil.fromHexString(getTestShortBody()));
         os.write(TypeUtil.fromHexString(getTestTinyBody()));
-        
+
         readResponse(_client);
 
         assertTrue(true);
     }
 
+    @Test
     public void testPacketWithChunkedBody() throws Exception
     {
         OutputStream os=_client.getOutputStream();
@@ -261,13 +282,13 @@ public class Ajp13ConnectionTest extends TestCase
     private String getTestTinyBody()
     {
         StringBuffer body = new StringBuffer("");
-        
+
         body.append("123400042d2d0d0a");
-       
+
         return  body.toString();
-        
+
     }
-    
+
     // TODO: char array instead of string?
     private String readResponse(Socket _client) throws IOException
     {
@@ -284,7 +305,7 @@ public class Ajp13ConnectionTest extends TestCase
                 sb.append(line);
                 sb.append('\n');
             }
-            
+
             return sb.toString();
         }
         finally
@@ -295,7 +316,7 @@ public class Ajp13ConnectionTest extends TestCase
             }
         }
     }
-    
+
     public static class Handler extends AbstractHandler
     {
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
