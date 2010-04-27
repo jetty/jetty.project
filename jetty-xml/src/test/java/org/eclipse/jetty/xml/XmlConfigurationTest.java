@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 public class XmlConfigurationTest
 {
     @Test
-    public static void testXmlParser() throws Exception
+    public void testXmlParser() throws Exception
     {
         XmlParser parser = new XmlParser();
 
@@ -55,7 +55,7 @@ public class XmlConfigurationTest
     }
 
     @Test
-    public static void testXmlConfiguration() throws Exception
+    public void testXmlConfiguration() throws Exception
     {
         Map properties = new HashMap();
         properties.put("whatever", "xxx");
