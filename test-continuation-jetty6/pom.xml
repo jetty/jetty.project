@@ -10,6 +10,16 @@
   <name>Test :: Continuation - (Jetty 6)</name>
   <description>Asynchronous API</description>
   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <!-- DO NOT DEPLOY (or Release) -->
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
   <dependencies>
     <dependency>
