@@ -1,3 +1,6 @@
+jetty-7.1.0.RC1-SNAPSHOT
+ + 308848 Update test suite to JUnit4 - Module jetty-ajp
+
 jetty-7.1.0.RC0 27 April 2010
  + 294563 Websocket client connection
  + 297104 Improve handling of CONNECT method
@@ -23,7 +26,6 @@ jetty-7.1.0.RC0 27 April 2010
  + 310467 Allow SocketConnector to create generic Connection objects
  + 310603 Make Logger interface consistent
  + 310605 Make a clean room implementation of the JSP logger bridge
- + 308848 Update test suite to JUnit4 - Module jetty-ajp
 
 jetty-7.0.2.v20100331 31 March 2010
  + 297552 Don't call Continuation timeouts from acceptor tick
