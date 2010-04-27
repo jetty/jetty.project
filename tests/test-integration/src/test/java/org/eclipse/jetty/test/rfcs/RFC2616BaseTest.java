@@ -31,7 +31,6 @@ import java.util.TimeZone;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.test.AbstractJettyTestCase;
 import org.eclipse.jetty.test.MavenTestingUtils;
 import org.eclipse.jetty.test.StringAssert;
 import org.eclipse.jetty.test.support.StringUtil;
@@ -42,7 +41,6 @@ import org.eclipse.jetty.test.support.rawhttp.HttpTesting;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
