@@ -2,7 +2,8 @@ jetty-7.1.0.RC1-SNAPSHOT
  + 308848 Update test suite to JUnit4 - Module jetty-ajp
  + 308869 Update test suite to JUnit4 - Module jetty-xml
  + 308868 Update test suite to JUnit4 - Module jetty-websocket
-
+ + 308861 Update test suite to JUnit4 - Module jetty-security
+ 
 jetty-7.1.0.RC0 27 April 2010
  + 294563 Websocket client connection
  + 297104 Improve handling of CONNECT method
