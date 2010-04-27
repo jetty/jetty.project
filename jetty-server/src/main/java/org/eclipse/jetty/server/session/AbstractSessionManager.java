@@ -1010,10 +1010,13 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             // Notify listeners and unbind values
             synchronized (this)
             {
-                if (_requests<=0)
-                    doInvalidate();
-                else
-                    _doInvalidate=true;
+                if (!_invalid)
+                {
+                    if (_requests<=0)
+                        doInvalidate();
+                    else
+                        _doInvalidate=true;
+                }
             }
         }
 
