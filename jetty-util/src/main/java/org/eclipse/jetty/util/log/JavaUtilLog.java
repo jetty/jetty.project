@@ -124,10 +124,18 @@ public class JavaUtilLog implements Logger
         {
             int bracesIndex = msg.indexOf(braces, start);
             if (bracesIndex < 0)
-                break;
-            builder.append(msg.substring(start, bracesIndex));
-            builder.append(String.valueOf(arg));
-            start = bracesIndex + braces.length();
+            {
+                builder.append(msg.substring(start));
+                builder.append(" ");
+                builder.append(String.valueOf(arg));
+                start = msg.length();
+            }
+            else
+            {
+                builder.append(msg.substring(start, bracesIndex));
+                builder.append(String.valueOf(arg));
+                start = bracesIndex + braces.length();
+            }
         }
         builder.append(msg.substring(start));
         return builder.toString();

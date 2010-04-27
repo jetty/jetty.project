@@ -195,10 +195,18 @@ public class StdErrLog implements Logger
         {
             int bracesIndex = msg.indexOf(braces, start);
             if (bracesIndex < 0)
-                break;
-            escape(builder, msg.substring(start, bracesIndex));
-            builder.append(String.valueOf(arg));
-            start = bracesIndex + braces.length();
+            {
+                escape(builder, msg.substring(start));
+                builder.append(" ");
+                builder.append(String.valueOf(arg));
+                start = msg.length();
+            }
+            else
+            {
+                escape(builder, msg.substring(start, bracesIndex));
+                builder.append(String.valueOf(arg));
+                start = bracesIndex + braces.length();
+            }
         }
         escape(builder, msg.substring(start));
     }
