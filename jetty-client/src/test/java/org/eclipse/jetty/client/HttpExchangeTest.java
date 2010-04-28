@@ -281,6 +281,8 @@ public class HttpExchangeTest extends TestCase
         
         _httpClient.send(httpExchange);
         int status = httpExchange.waitForDone();
+
+        assertEquals(HttpExchange.STATUS_COMPLETED,status);
         String result=httpExchange.getResponseContent();
         assertEquals(babuf.length(),result.length());
         assertEquals(HttpExchange.STATUS_COMPLETED, status);
