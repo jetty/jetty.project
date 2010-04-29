@@ -777,7 +777,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @param forwardedHostHeader
+     * @param forwardedServerHeader
      *            The header name for forwarded server (default
      *            x-forwarded-server)
      */
@@ -794,12 +794,12 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @param forwardedHostHeader
+     * @param forwardedRemoteAddressHeader
      *            The header name for forwarded for (default x-forwarded-for)
      */
-    public void setForwardedForHeader(String forwardedRemoteAddressHeade)
+    public void setForwardedForHeader(String forwardedRemoteAddressHeader)
     {
-        _forwardedForHeader = forwardedRemoteAddressHeade;
+        _forwardedForHeader = forwardedRemoteAddressHeader;
     }
 
     /* ------------------------------------------------------------ */

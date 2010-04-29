@@ -557,7 +557,6 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * @throws Exception 
      * @see org.eclipse.jetty.server.ssl.SslConnector#setSslContext(javax.net.ssl.SSLContext)
      */
     public SSLContext getSslContext()
@@ -578,7 +577,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     /* ------------------------------------------------------------ */
     /**
      * Set the value of the _wantClientAuth property. This property is used when
-     * {@link #newServerSocket(SocketAddress, int) opening server sockets}.
+     * {@link #newServerSocket(String, int, int) opening server sockets}.
      * 
      * @param wantClientAuth true iff we want client certificate authentication.
      * @see SSLServerSocket#setWantClientAuth
@@ -667,7 +666,8 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     /* ------------------------------------------------------------ */
     /**
      * Unsupported.
-     * @see org.eclipse.jetty.server.ssl.SslConnector#getAlgorithm()
+     * 
+     * @todo we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
      */
     public String getAlgorithm()
     {
@@ -677,7 +677,8 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     /* ------------------------------------------------------------ */
     /**
      * Unsupported.
-     * @see org.eclipse.jetty.server.ssl.SslConnector#setAlgorithm(java.lang.String)
+     * 
+     * @todo we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
      */
     public void setAlgorithm(String algorithm)
     {

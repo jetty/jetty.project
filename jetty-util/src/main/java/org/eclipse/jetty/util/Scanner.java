@@ -120,7 +120,7 @@ public class Scanner
 
     /**
      * Get the location of the directory to scan
-     * @return the first directory (of {@link #getScanDirs(List)} being scanned)
+     * @return the first directory (of {@link #getScanDirs()} being scanned)
      * @deprecated use getScanDirs() instead
      */
     @Deprecated

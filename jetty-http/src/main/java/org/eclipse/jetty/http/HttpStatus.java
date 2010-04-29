@@ -256,7 +256,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * </tr>
  * 
  * <tr>
- * <td>{@link #BAD_REQUEST}</td>
+ * <td>{@link #BAD_REQUEST_400}</td>
  * <td>400</td>
  * <td>Bad Request</td>
  * <td>
@@ -266,7 +266,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #UNAUTHORIZED}</td>
+ * <td>{@link #UNAUTHORIZED_401}</td>
  * <td>401</td>
  * <td>Unauthorized</td>
  * <td>
@@ -276,7 +276,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #PAYMENT_REQUIRED}</td>
+ * <td>{@link #PAYMENT_REQUIRED_402}</td>
  * <td>402</td>
  * <td>Payment Required</td>
  * <td>
@@ -286,7 +286,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #FORBIDDEN}</td>
+ * <td>{@link #FORBIDDEN_403}</td>
  * <td>403</td>
  * <td>Forbidden</td>
  * <td>
@@ -504,7 +504,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <a href="http://tools.ietf.org/html/rfc2518#section-10.3">Sec. 10.3</a></td>
  * </tr>
  * <tr>
- * <td>{@link #LOCKED}</td>
+ * <td>{@link #LOCKED_423}</td>
  * <td>423</td>
  * <td>Locked</td>
  * <td>&nbsp;</td>

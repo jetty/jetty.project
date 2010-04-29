@@ -99,7 +99,6 @@ public abstract class SelectorManager extends AbstractLifeCycle
     /** Register a channel
      * @param channel
      * @param att Attached Object
-     * @throws IOException
      */
     public void register(SocketChannel channel, Object att)
     {
@@ -121,7 +120,6 @@ public abstract class SelectorManager extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /** Register a {@link ServerSocketChannel}
      * @param acceptChannel
-     * @throws IOException
      */
     public void register(ServerSocketChannel acceptChannel)
     {

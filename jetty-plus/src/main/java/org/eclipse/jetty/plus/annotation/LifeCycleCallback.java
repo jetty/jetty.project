@@ -122,7 +122,7 @@ public abstract class LifeCycleCallback
      * @param clazz the class under inspection
      * @param methodName the method to find 
      * @param checkInheritance false on first entry, true if a superclass is being introspected
-     * @return
+     * @return the method
      */
     public Method findMethod (Package pack, Class clazz, String methodName, boolean checkInheritance)
     {

@@ -134,7 +134,7 @@ public abstract class NamingEntry
     /**
      * Get the unique name of the object
      * relative to the scope
-     * @return
+     * @return the unique jndi name of the object
      */
     public String getJndiName ()
     {
@@ -143,7 +143,7 @@ public abstract class NamingEntry
     
     /**
      * Get the object that is to be bound
-     * @return
+     * @return the object that is to be bound
      */
     public Object getObjectToBind()
     throws NamingException
@@ -155,7 +155,7 @@ public abstract class NamingEntry
     /**
      * Get the name of the object, fully
      * qualified with the scope
-     * @return
+     * @return the name of the object, fully qualified with the scope
      */
     public String getJndiNameInScope ()
     {

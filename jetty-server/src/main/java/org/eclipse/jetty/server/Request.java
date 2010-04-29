@@ -72,15 +72,15 @@ import org.eclipse.jetty.util.log.Log;
 /* ------------------------------------------------------------ */
 /** Jetty Request.
  * <p>
- * Implements {@link javax.servlet.http.HttpServletRequest} from the {@link javax.servlet.http} package.
+ * Implements {@link javax.servlet.http.HttpServletRequest} from the <code>javax.servlet.http</code> package.
  * </p>
  * <p>
  * The standard interface of mostly getters,
  * is extended with setters so that the request is mutable by the handlers that it is
  * passed to.  This allows the request object to be as lightweight as possible and not
- * actually implement any significant behaviour. For example<ul>
+ * actually implement any significant behavior. For example<ul>
  * 
- * <li>The {@link Request#getContextPath()} method will return null, until the requeset has been
+ * <li>The {@link Request#getContextPath()} method will return null, until the request has been
  * passed to a {@link ContextHandler} which matches the {@link Request#getPathInfo()} with a context
  * path and calls {@link Request#setContextPath(String)} as a result.</li>
  * 

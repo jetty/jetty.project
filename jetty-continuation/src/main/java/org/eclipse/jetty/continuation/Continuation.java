@@ -27,10 +27,10 @@ import javax.servlet.ServletResponseWrapper;
  * A continuation is a mechanism by which a HTTP Request can be suspended and
  * restarted after a timeout or an asynchronous event has occurred.
  * <p>
- * The continuation mechanism is a portable mechansim that will work 
- * asychronously without additional configuration of all jetty-7, 
+ * The continuation mechanism is a portable mechanism that will work 
+ * asynchronously without additional configuration of all jetty-7, 
  * jetty-8 and Servlet 3.0 containers.   With the addition of 
- * the {@link ContinuationFilter}, the mechansism will also work
+ * the {@link ContinuationFilter}, the mechanism will also work
  * asynchronously on jetty-6 and non-asynchronously on any 
  * servlet 2.5 container.
  * <p>
@@ -121,7 +121,7 @@ import javax.servlet.ServletResponseWrapper;
  * <h1>Continuation Timeout</h1>
  * <p>
  * If a continuation is suspended, but neither {@link #complete()} or {@link #resume()} is
- * called during the period set by {@link #setTimeout()}, then the continuation will
+ * called during the period set by {@link #setTimeout(long)}, then the continuation will
  * expire and {@link #isExpired()} will return true. 
  * </p>
  * <p>
@@ -245,7 +245,7 @@ public interface Continuation
      * within the filter chain and/or servlet service method), then the resume
      * does not take effect until the call to the filter chain and/or servlet
      * returns to the container. In this case both {@link #isSuspended()} and
-     * {@link isResumed()} return true. Multiple calls to resume are ignored.
+     * {@link #isResumed()} return true. Multiple calls to resume are ignored.
      * </p>
      * <p>
      * Typically resume() is used after a call to {@link #suspend()} with
@@ -276,7 +276,7 @@ public interface Continuation
      * within the filter chain and/or servlet service method), then the complete
      * does not take effect until the call to the filter chain and/or servlet
      * returns to the container. In this case both {@link #isSuspended()} and
-     * {@link isResumed()} return true.
+     * {@link #isResumed()} return true.
      * </p>
      * 
      * <p>

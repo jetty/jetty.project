@@ -40,10 +40,10 @@ public class NamingEntryUtil
      * resource. The pre-existing resource can be either in the webapp's
      * naming environment, or in the container's naming environment. Webapp's 
      * environment takes precedence over the server's namespace.
-     * 
+     *
+     * @param scope the scope of the lookup
      * @param asName the name to bind as
      * @param mappedName the name from the environment to link to asName
-     * @param namingEntryType
      * @throws NamingException
      */
     public static boolean bindToENC (Object scope, String asName, String mappedName)
@@ -72,7 +72,7 @@ public class NamingEntryUtil
      * 
      * @param scope
      * @param jndiName
-     * @return
+     * @return the naming entry for the given scope
      * @throws NamingException
      */
     public static NamingEntry lookupNamingEntry (Object scope, String jndiName)
@@ -115,7 +115,7 @@ public class NamingEntryUtil
      * 
      * @param scope 
      * @param clazz the type of the entry
-     * @return
+     * @return all NameEntries of a certain type in the given naming environment scope (server-wide names or context-specific names)
      * @throws NamingException
      */
     public static List lookupNamingEntries (Object scope, Class clazz)

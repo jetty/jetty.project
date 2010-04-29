@@ -471,7 +471,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
     /* ------------------------------------------------------------ */
     /**
-     * @throws Exception 
      * @see org.eclipse.jetty.server.ssl.SslConnector#setSslContext(javax.net.ssl.SSLContext)
      */
     public SSLContext getSslContext()

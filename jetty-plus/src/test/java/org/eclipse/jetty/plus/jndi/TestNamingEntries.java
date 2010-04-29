@@ -74,7 +74,7 @@ public class TestNamingEntries extends TestCase
          * @param arg1
          * @param arg2
          * @param arg3
-         * @return
+         * @return the object instance
          * @throws Exception
          */
         public Object getObjectInstance(Object arg0, Name arg1, Context arg2, Hashtable arg3) throws Exception
@@ -106,7 +106,7 @@ public class TestNamingEntries extends TestCase
         
         /** 
          * @see javax.naming.Referenceable#getReference()
-         * @return
+         * @return the reference
          * @throws NamingException
          */
         public Reference getReference() throws NamingException
@@ -130,7 +130,7 @@ public class TestNamingEntries extends TestCase
          * @param arg1
          * @param arg2
          * @param arg3
-         * @return
+         * @return the object instance
          * @throws Exception
          */
         public Object getObjectInstance(Object arg0, Name arg1, Context arg2, Hashtable arg3) throws Exception

@@ -241,7 +241,7 @@ public class UrlEncoded extends MultiMap
      * @param raw the byte[] containing the encoded parameters
      * @param offset the offset within raw to decode from
      * @param length the length of the section to decode
-     * @param map the {@link MultiMap} to use for decoding
+     * @param map the {@link MultiMap} to populate
      */
     public static void decodeUtf8To(byte[] raw,int offset, int length, MultiMap map)
     {
@@ -250,7 +250,11 @@ public class UrlEncoded extends MultiMap
 
     /* -------------------------------------------------------------- */
     /** Decoded parameters to Map.
-     * @param data the byte[] containing the encoded parameters
+     * @param raw the byte[] containing the encoded parameters
+     * @param offset the offset within raw to decode from
+     * @param length the length of the section to decode
+     * @param map the {@link MultiMap} to populate
+     * @param buffer the buffer to decode into
      */
     public static void decodeUtf8To(byte[] raw,int offset, int length, MultiMap map,Utf8StringBuilder buffer)
     {

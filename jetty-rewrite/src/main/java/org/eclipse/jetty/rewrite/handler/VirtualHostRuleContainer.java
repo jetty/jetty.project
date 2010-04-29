@@ -52,7 +52,7 @@ public class VirtualHostRuleContainer extends RuleContainer
 
     /* ------------------------------------------------------------ */
     /** Get the virtual hosts that the rules within this container will apply to
-     * @param virtualHosts Array of virtual hosts that the rules within this container are applied to. 
+     * @return Array of virtual hosts that the rules within this container are applied to. 
      * A null hostname or null/empty array means any hostname is acceptable.
      */
     public String[] getVirtualHosts()

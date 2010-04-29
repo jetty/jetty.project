@@ -183,7 +183,6 @@ public class Injection
     /**
      * Inject a value for a Resource from JNDI into an object
      * @param injectable
-     * @throws Exception
      */
     public void inject (Object injectable)
     { 
@@ -214,8 +213,8 @@ public class Injection
     
     /**
      * The Resource must already exist in the ENC of this webapp.
-     * @return
-     * @throws Exception
+     * @return the injected valud
+     * @throws NamingException
      */
     public Object lookupInjectedValue ()
     throws NamingException

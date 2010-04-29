@@ -75,11 +75,8 @@ import org.eclipse.jetty.util.thread.Timeout;
  * be allocated from a destination, so that multiple request sources are not multiplexed
  * over the same connection.
  *
- *
- *
- *
- * @see {@link HttpExchange}
- * @see {@link HttpDestination}
+ * @see HttpExchange
+ * @see HttpDestination
  */
 public class HttpClient extends HttpBuffers implements Attributes
 {
@@ -212,10 +209,6 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param name
-     * @return
-     */
     public void clearAttributes()
     {
         _attributes.clearAttributes();
@@ -287,7 +280,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     /**
      * returns the SecurityRealmResolver reg_realmResolveristered with the HttpClient or null
      *
-     * @return
+     * @return the SecurityRealmResolver reg_realmResolveristered with the HttpClient or null
      */
     public RealmResolver getRealmResolver()
     {

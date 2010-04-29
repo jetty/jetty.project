@@ -187,7 +187,6 @@ public class ResourceAnnotationHandler implements AnnotationHandler
      * 
      * This will generate a JNDI entry, and an Injection to be
      * processed when an instance of the class is created.
-     * @param injections
      */
     public void handleMethod(String className, String methodName, int access, String desc, String signature, String[] exceptions, String annotation,
                              List<Value> values)

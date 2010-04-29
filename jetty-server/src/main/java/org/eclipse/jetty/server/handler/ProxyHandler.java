@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
- * <p>Implementation of a tunnelling proxy that supports HTTP CONNECT and transparent proxy.</p>
+ * <p>Implementation of a tunneling proxy that supports HTTP CONNECT and transparent proxy.</p>
  * <p>To work as CONNECT proxy, objects of this class must be instantiated using the no-arguments
  * constructor, since the remote server information will be present in the CONNECT URI.</p>
  * <p>To work as transparent proxy, objects of this class must be instantiated using the string

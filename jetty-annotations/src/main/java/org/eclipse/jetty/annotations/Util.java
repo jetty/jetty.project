@@ -21,8 +21,6 @@ import org.objectweb.asm.Type;
 
 /**
  * Util
- *
- *
  */
 public class Util
 { 
@@ -37,8 +35,16 @@ public class Util
     /**
      * Check if the presented method belongs to a class that is one
      * of the classes with which a servlet container should be concerned.
-     * @param m
-     * @return
+     * @param c
+     * @return true if class is a type of one of the following: 
+     *          ({@link javax.servlet.Servlet}, 
+     *           {@link javax.servlet.Filter}, 
+     *           {@link javax.servlet.ServletContextListener},
+     *           {@link javax.servlet.ServletContextAttributeListener},
+     *           {@link javax.servlet.ServletRequestListener},
+     *           {@link javax.servlet.ServletRequestAttributeListener},
+     *           {@link javax.servlet.http.HttpSessionListener},
+     *           {@link javax.servlet.http.HttpSessionAttributeListener})
      */
     public static boolean isServletType (Class c)
     {    

@@ -24,7 +24,7 @@ import org.eclipse.jetty.server.Request;
 
 /* ------------------------------------------------------------ */
 /** HandlerList.
- * This extension of {@link org.eclipse.jetty.server.server.handler.HandlerCollection} will call
+ * This extension of {@link HandlerCollection} will call
  * each contained handler in turn until either an exception is thrown, the response 
  * is committed or a positive response status is set.
  */

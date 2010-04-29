@@ -182,7 +182,7 @@ public class LdapLoginModule extends AbstractLoginModule
      * roles are also an optional concept if required
      *
      * @param username
-     * @return
+     * @return the userinfo for the username
      * @throws Exception
      */
     public UserInfo getUserInfo(String username) throws Exception
@@ -367,7 +367,7 @@ public class LdapLoginModule extends AbstractLoginModule
      * then we try a binding authentication check, otherwise if we have the users encoded password then
      * we can try authentication via that mechanic
      *
-     * @return
+     * @return true if authenticated, false otherwise
      * @throws LoginException
      */
     public boolean login() throws LoginException
@@ -451,13 +451,13 @@ public class LdapLoginModule extends AbstractLoginModule
 
     /**
      * binding authentication check
-     * This methode of authentication works only if the user branch of the DIT (ldap tree)
-     * has an ACI (acces control instruction) that allow the access to any user or at least
+     * This method of authentication works only if the user branch of the DIT (ldap tree)
+     * has an ACI (access control instruction) that allow the access to any user or at least
      * for the user that logs in.
      *
      * @param username
      * @param password
-     * @return
+     * @return true always
      * @throws LoginException
      */
     public boolean bindingLogin(String username, Object password) throws LoginException, NamingException
@@ -610,7 +610,7 @@ public class LdapLoginModule extends AbstractLoginModule
     /**
      * get the context for connection
      *
-     * @return
+     * @return the environment details for the context
      */
     public Hashtable<Object, Object> getEnvironment()
     {

@@ -1434,7 +1434,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /** Context.
      * <p>
      * A partial implementation of  {@link javax.servlet.ServletContext}.
-     * A complete implementation is provided by the derived {@link org.eclipse.jetty.servlet.ServletContextHandler.Context}.
+     * A complete implementation is provided by the derived {@link ContextHandler}.
      * </p>
      *
      *

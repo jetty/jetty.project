@@ -26,7 +26,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 /* ------------------------------------------------------------ */
 /**
  *<p> Rewrite handler is responsible for managing the rules. Its capabilities
- * is not only limited for url rewrites such as RewritePatternRule or RewriteRegexRule. 
+ * is not only limited for URL rewrites such as RewritePatternRule or RewriteRegexRule. 
  * There is also handling for cookies, headers, redirection, setting status or error codes 
  * whenever the rule finds a match. 
  * 
@@ -283,7 +283,7 @@ public class RewriteHandler extends HandlerWrapper
 
     /* ------------------------------------------------------------ */
     /**
-     * @param originalPathAttribte If non null, this string will be used
+     * @param originalPathAttribute If non null, this string will be used
      * as the attribute name to store the original request path.
      */
     public void setOriginalPathAttribute(String originalPathAttribute)

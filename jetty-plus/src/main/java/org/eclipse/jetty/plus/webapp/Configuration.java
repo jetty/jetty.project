@@ -41,7 +41,7 @@ public class Configuration extends AbstractConfiguration
     
     
     /** 
-     * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#bindEnvEntry(java.lang.String, java.lang.String)
+     * @see AbstractConfiguration#bindEnvEntry(WebAppContext, String, Object)
      * @param name
      * @param value
      * @throws Exception
@@ -82,7 +82,7 @@ public class Configuration extends AbstractConfiguration
      * If a resource reference with the same name is in a jetty-env.xml
      * file, it will already have been bound.
      * 
-     * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#bindResourceRef(java.lang.String)
+     * @see AbstractConfiguration#bindResourceRef(WebAppContext, String, Class)
      * @param name
      * @throws Exception
      */
@@ -93,7 +93,7 @@ public class Configuration extends AbstractConfiguration
     }
 
     /** 
-     * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#bindResourceEnvRef(java.lang.String)
+     * @see AbstractConfiguration#bindResourceEnvRef(WebAppContext, String, Class)
      * @param name
      * @throws Exception
      */

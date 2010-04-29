@@ -165,7 +165,7 @@ public abstract class AbstractLoginModule implements LoginModule
 
     /** 
      * @see javax.security.auth.spi.LoginModule#commit()
-     * @return
+     * @return true if committed, false if not (likely not authenticated)
      * @throws LoginException
      */
     public boolean commit() throws LoginException
@@ -201,7 +201,7 @@ public abstract class AbstractLoginModule implements LoginModule
     
     /** 
      * @see javax.security.auth.spi.LoginModule#login()
-     * @return
+     * @return true if is authenticated, false otherwise
      * @throws LoginException
      */
     public boolean login() throws LoginException
@@ -252,7 +252,7 @@ public abstract class AbstractLoginModule implements LoginModule
 
     /** 
      * @see javax.security.auth.spi.LoginModule#logout()
-     * @return
+     * @return true always
      * @throws LoginException
      */
     public boolean logout() throws LoginException

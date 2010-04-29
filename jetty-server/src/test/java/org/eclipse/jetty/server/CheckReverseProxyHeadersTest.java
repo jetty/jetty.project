@@ -24,7 +24,7 @@ import junit.framework.TestCase;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
 /**
- * Test {@link AbstractConnector#checkForwardedHeaders(org.eclipse.io.EndPoint, Request)}.
+ * Test {@link AbstractConnector#checkForwardedHeaders(org.eclipse.jetty.io.EndPoint, Request)}.
  */
 public class CheckReverseProxyHeadersTest extends TestCase
 {

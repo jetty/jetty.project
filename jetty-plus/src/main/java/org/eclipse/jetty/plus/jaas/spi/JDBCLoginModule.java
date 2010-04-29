@@ -36,13 +36,9 @@ import org.eclipse.jetty.util.log.Log;
  *
  * <p><h4>Usage</h4>
  * <pre>
- */
-/*
  * </pre>
  *
- * @see 
  * @version 1.0 Tue Apr 15 2003
- * 
  */
 public class JDBCLoginModule extends AbstractDatabaseLoginModule
 {
@@ -52,14 +48,10 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
     private String dbPassword;
 
     
-
-  
-
-    
     /** 
      * Get a connection from the DriverManager
-     * @see org.eclipse.jetty.server.server.plus.jaas.spi.AbstractDatabaseLoginModule#getConnection()
-     * @return
+     * @see AbstractDatabaseLoginModule#getConnection()
+     * @return the connection for this datasource
      * @throws Exception
      */
     public Connection getConnection ()

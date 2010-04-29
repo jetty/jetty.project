@@ -44,14 +44,10 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 
-/* ------------------------------------------------------------ */
 /** Response.
  * <p>
- * Implements {@link javax.servlet.HttpServletResponse} from the {@link javax.servlet} package.
+ * Implements {@link javax.servlet.http.HttpServletResponse} from the <code>javax.servlet.http</code> package.
  * </p>
- *
- * 
- *
  */
 public class Response implements HttpServletResponse
 {

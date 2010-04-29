@@ -112,7 +112,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
          * depending on the way the db stores identifiers.
          * 
          * @param identifier
-         * @return
+         * @return the converted identifier
          */
         public String convertIdentifier (String identifier)
         {

@@ -27,13 +27,6 @@ import org.eclipse.jetty.util.log.Log;
  * Transaction
  *
  * Class to represent a JTA UserTransaction impl.
- * 
- * 
- */
-/**
- * Transaction
- *
- *
  */
 public class Transaction extends NamingEntry
 {
@@ -68,7 +61,7 @@ public class Transaction extends NamingEntry
      * Allow other bindings of UserTransaction.
      * 
      * These should be in ADDITION to java:comp/UserTransaction
-     * @see org.eclipse.jetty.server.server.plus.jndi.NamingEntry#bindToENC(java.lang.String)
+     * @see NamingEntry#bindToENC(java.lang.String)
      */
     public void bindToENC (String localName)
     throws NamingException

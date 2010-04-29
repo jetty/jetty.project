@@ -100,7 +100,7 @@ public class ServletHandler extends org.eclipse.jetty.servlet.ServletHandler
 
 
     /** 
-     * @see org.eclipse.jetty.servlet.servlet.ServletHandler#cusomizeFilterDestroy(javax.servlet.Filter)
+     * @see org.eclipse.jetty.servlet.ServletHandler#customizeFilterDestroy(Filter)
      */
     public Filter customizeFilterDestroy(Filter filter) throws Exception
     {
@@ -112,7 +112,7 @@ public class ServletHandler extends org.eclipse.jetty.servlet.ServletHandler
 
 
     /** 
-     * @see org.eclipse.jetty.servlet.servlet.ServletHandler#customizeServletDestroy(javax.servlet.Servlet)
+     * @see org.eclipse.jetty.servlet.ServletHandler#customizeServletDestroy(Servlet)
      */
     public Servlet customizeServletDestroy(Servlet servlet) throws Exception
     {

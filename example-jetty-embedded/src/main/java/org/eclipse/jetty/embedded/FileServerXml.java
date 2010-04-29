@@ -10,7 +10,8 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * This server is identical to {@link FileServer}, except that it
  * is configured via an {@link XmlConfiguration} config file that
  * does the identical work.
- * @see http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk/example-jetty-embedded/src/main/resources/fileserver.xml
+ * <p>
+ * See <a href="http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk/example-jetty-embedded/src/main/resources/fileserver.xml">fileserver.xml</a>
  */
 public class FileServerXml
 {

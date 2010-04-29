@@ -27,8 +27,7 @@ import javax.sql.DataSource;
  * A LoginModule that uses a DataSource to retrieve user authentication
  * and authorisation information.
  * 
- * @see org.eclipse.jetty.server.server.plus.jaas.spi.JDBCLoginModule
- *
+ * @see JDBCLoginModule
  */
 public class DataSourceLoginModule extends AbstractDatabaseLoginModule
 {
@@ -68,8 +67,8 @@ public class DataSourceLoginModule extends AbstractDatabaseLoginModule
 
     /** 
      * Get a connection from the DataSource
-     * @see org.eclipse.jetty.server.server.plus.jaas.spi.AbstractDatabaseLoginModule#getConnection()
-     * @return
+     * @see AbstractDatabaseLoginModule#getConnection()
+     * @return the connection for the datasource 
      * @throws Exception
      */
     public Connection getConnection ()

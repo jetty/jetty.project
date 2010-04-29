@@ -266,8 +266,6 @@ public class ContextHandlerCollection extends HandlerCollection
     /** Add a context handler.
      * @param contextPath  The context path to add
      * @return the ContextHandler just added
-     * @throws IllegalAccessException 
-     * @throws InstantiationException 
      */
     public ContextHandler addContext(String contextPath,String resourceBase) 
     {

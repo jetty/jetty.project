@@ -345,7 +345,6 @@ public abstract class AbstractConfiguration implements Configuration
          * @param node
          * @param jndiName
          * @param valueClass
-         * @return the type of the injectable
          */
         protected void initInjection (XmlParser.Node node, String jndiName, Class valueClass)
         {

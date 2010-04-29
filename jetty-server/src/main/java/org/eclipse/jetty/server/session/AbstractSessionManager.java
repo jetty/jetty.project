@@ -263,7 +263,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     
     /* ------------------------------------------------------------ */
     /**
-     * @see getSessionsMax()
+     * @see #getSessionsMax()
      */
     @Deprecated
     public int getMaxSessions()
@@ -301,7 +301,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
     /* ------------------------------------------------------------ */
     /**
-     * @see getSessionsMin()
+     * @deprecated always returns 0. no replacement available.
      */
     @Deprecated
     public int getMinSessions()
@@ -367,7 +367,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
     /* ------------------------------------------------------------ */
     /**
-     * @deprecated.  Need to review if it is needed.
+     * @deprecated  Need to review if it is needed.
      */
     public abstract Map getSessionMap();
 
@@ -448,7 +448,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     
     /* ------------------------------------------------------------ */
     /**
-     * @see statsReset()
+     * @see #statsReset()
      */
     @Deprecated
     public void resetStats()
@@ -793,12 +793,10 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /**
      *
      * <p>
-     * Implements {@link javax.servlet.HttpSession} from the {@link javax.servlet} package.
+     * Implements {@link javax.servlet.http.HttpSession} from the <code>javax.servlet</code> package.
      * </p>
      * 
      *

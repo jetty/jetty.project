@@ -26,7 +26,6 @@ public interface Logger
     /**
      * Formats and logs at warn level.
      * @param msg the formatting string
-     * @param arg the first argument
      * @param args the optional arguments
      */
     public void warn(String msg, Object... args);
@@ -47,7 +46,6 @@ public interface Logger
     /**
      * Formats and logs at info level.
      * @param msg the formatting string
-     * @param arg the first argument
      * @param args the optional arguments
      */
     public void info(String msg, Object... args);
@@ -79,7 +77,6 @@ public interface Logger
     /**
      * Formats and logs at debug level.
      * @param msg the formatting string
-     * @param arg the first argument
      * @param args the optional arguments
      */
     public void debug(String msg, Object... args);

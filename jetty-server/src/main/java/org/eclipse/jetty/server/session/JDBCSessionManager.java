@@ -440,7 +440,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * This could be used eg with a JMS backplane to notify nodes
      * that the session has changed and to delete the session from
      * the node's cache, and re-read it from the database.
-     * @param idInCluster
+     * @param session
      */
     public void cacheInvalidate (Session session)
     {
