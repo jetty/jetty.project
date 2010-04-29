@@ -387,8 +387,6 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
      * 
      * Makes necessary database tables and starts a Session
      * scavenger thread.
-     * 
-     * @see org.eclipse.jetty.server.session.AbstractSessionIdManager#doStart()
      */
     @Override
     public void doStart()
@@ -410,8 +408,6 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     
     /** 
      * Stop the scavenger.
-     * 
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
      */
     @Override
     public void doStop () 
@@ -431,7 +427,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     /**
      * Get a connection from the driver or datasource.
      * 
-     * @return
+     * @return the connection for the datasource
      * @throws SQLException
      */
     protected Connection getConnection ()

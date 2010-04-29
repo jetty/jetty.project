@@ -60,11 +60,11 @@ import org.eclipse.jetty.util.log.Log;
  * <p>
  * The interface {@link JSON.Generator} may be implemented by classes that know how to render themselves as JSON and
  * the {@link #toString(Object)} method will use {@link JSON.Generator#addJSON(StringBuffer)} to generate the JSON.
- * The class {@link JSON.Literal} may be used to hold pre-gnerated JSON object. 
+ * The class {@link JSON.Literal} may be used to hold pre-generated JSON object. 
  * <p>
- * The interface {@link Convertor} may be implemented to provide static convertors for objects that may be registered 
- * with {@link #registerConvertor(Class, org.eclipse.jetty.util.ajax.JSON.Convertor)}. These convertors are looked up by class, interface and
- * super class by {@link #getConvertor(Class)}.
+ * The interface {@link JSON.Convertor} may be implemented to provide static convertors for objects that may be registered 
+ * with {@link #registerConvertor(Class, org.eclipse.jetty.util.ajax.JSON.Convertor)}. 
+ * These convertors are looked up by class, interface and super class by {@link #getConvertor(Class)}.
  * </p>
  * 
  *
@@ -569,7 +569,7 @@ public class JSON
      * If no match is found for the class, then the interfaces for the class are tried. If still no
      * match is found, then the super class and it's interfaces are tried recursively.
      * @param forClass The class
-     * @return a {@link Convertor} or null if none were found.
+     * @return a {@link JSON.Convertor} or null if none were found.
      */
     protected Convertor getConvertor(Class forClass)
     {
@@ -595,7 +595,7 @@ public class JSON
 
     /* ------------------------------------------------------------ */
     /**
-     * Register a {@link Convertor} for a named class or interface.
+     * Register a {@link JSON.Convertor} for a named class or interface.
      * @param name name of a class or an interface that the convertor applies to
      * @param convertor the convertor
      */
@@ -609,7 +609,7 @@ public class JSON
      * Lookup a convertor for a named class.
      *
      * @param name name of the class
-     * @return a {@link Convertor} or null if none were found.
+     * @return a {@link JSON.Convertor} or null if none were found.
      */
     public Convertor getConvertorFor(String name)
     {

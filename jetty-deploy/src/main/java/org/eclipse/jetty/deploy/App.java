@@ -17,6 +17,7 @@ package org.eclipse.jetty.deploy;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.AttributesMap;
+import org.omg.CORBA.portable.ApplicationException;
 
 /**
  * The information about an App that is managed by the {@link DeploymentManager}
@@ -86,8 +87,8 @@ public class App
      * Create it if needed.
      * 
      * @return the {@link ContextHandler} to use for the App when fully started.
-     *         (Portions of which might be ignored when App is in the
-     *         {@link AppState#STAGED} state}
+     *         (Portions of which might be ignored when App is not yet 
+     *         {@link AppLifeCycle#DEPLOYED} or {@link AppLifeCycle#STARTED})
      * @throws Exception
      */
     public ContextHandler getContextHandler() throws Exception

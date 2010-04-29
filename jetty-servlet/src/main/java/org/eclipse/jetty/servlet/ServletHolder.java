@@ -469,9 +469,6 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.UserIdentity.Scope#getRunAsRole()
-     */
     public String getRunAsRole()
     {
         return _runAsRole;

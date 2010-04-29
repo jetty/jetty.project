@@ -363,13 +363,13 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     
     /* ------------------------------------------------------------ */
     /**
-     * @param addr The {@link SocketAddress address} that this server should listen on 
+     * @param host The host name that this server should listen on
+     * @param port the port that this server should listen on 
      * @param backlog See {@link ServerSocket#bind(java.net.SocketAddress, int)}
      * @return A new {@link ServerSocket socket object} bound to the supplied address with all other
      * settings as per the current configuration of this connector. 
-     * @see #setWantClientAuth
-     * @see #setNeedClientAuth
-     * @see #setCipherSuites
+     * @see #setWantClientAuth(boolean)
+     * @see #setNeedClientAuth(boolean)
      * @exception IOException
      */
 
@@ -576,10 +576,10 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * Set the value of the _wantClientAuth property. This property is used when
-     * {@link #newServerSocket(String, int, int) opening server sockets}.
+     * Set the value of the _wantClientAuth property. This property is used 
+     * internally when opening server sockets.
      * 
-     * @param wantClientAuth true iff we want client certificate authentication.
+     * @param wantClientAuth true if we want client certificate authentication.
      * @see SSLServerSocket#setWantClientAuth
      */
     public void setWantClientAuth(boolean wantClientAuth)

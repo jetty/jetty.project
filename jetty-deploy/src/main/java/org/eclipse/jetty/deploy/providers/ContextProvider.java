@@ -16,7 +16,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 
 /* ------------------------------------------------------------ */
 /** Context directory App Provider.
- * <p>This specialisation of {@link MonitoredDirAppProvider} is the
+ * <p>This specialization of {@link MonitoredDirAppProvider} is the
  * replacement for {@link ContextDeployer} and it will scan a directory
  * only for context.xml files.
  * @see ContextDeployer

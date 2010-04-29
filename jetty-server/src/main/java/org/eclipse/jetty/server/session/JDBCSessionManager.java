@@ -50,15 +50,15 @@ import org.eclipse.jetty.util.log.Log;
  * contextPath (of the context owning the session)
  * sessionId (unique in a context)
  * lastNode (name of node last handled session)
- * accessTime (time in ms session was accessed)
- * lastAccessTime (previous time in ms session was accessed)
- * createTime (time in ms session created)
- * cookieTime (time in ms session cookie created)
- * lastSavedTime (last time in ms session access times were saved)
- * expiryTime (time in ms that the session is due to expire)
+ * accessTime (time in milliseconds session was accessed)
+ * lastAccessTime (previous time in milliseconds session was accessed)
+ * createTime (time in milliseconds session created)
+ * cookieTime (time in milliseconds session cookie created)
+ * lastSavedTime (last time in milliseconds session access times were saved)
+ * expiryTime (time in milliseconds that the session is due to expire)
  * map (attribute map)
  * 
- * As an optimisation, to prevent thrashing the database, we do not persist
+ * As an optimization, to prevent thrashing the database, we do not persist
  * the accessTime and lastAccessTime every time the session is accessed. Rather,
  * we write it out every so often. The frequency is controlled by the saveIntervalSec
  * field.
@@ -272,7 +272,7 @@ public class JDBCSessionManager extends AbstractSessionManager
 
         /**
           * Session restored in database.
-          * @param row
+          * @param data
           */
          protected Session (SessionData data)
          {
@@ -538,8 +538,6 @@ public class JDBCSessionManager extends AbstractSessionManager
    
     /** 
      * Get all the sessions as a map of id to Session.
-     * 
-     * @see org.eclipse.jetty.server.session.AbstractSessionManager#getSessionMap()
      */
     @Override
     public Map getSessionMap()
@@ -815,7 +813,7 @@ public class JDBCSessionManager extends AbstractSessionManager
     /**
      * Load a session from the database
      * @param id
-     * @return
+     * @return the session data that was loaded
      * @throws Exception
      */
     protected SessionData loadSession (String id, String canonicalContextPath, String vhost)

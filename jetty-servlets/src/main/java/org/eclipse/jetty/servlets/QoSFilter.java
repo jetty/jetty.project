@@ -220,7 +220,7 @@ public class QoSFilter implements Filter
      * This method may be specialised to provide application specific priorities.
      * 
      * @param request
-     * @return
+     * @return the request priority
      */
     protected int getPriority(ServletRequest request)
     {

@@ -48,7 +48,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * 
  * <p>
  * The xml should configure the context and the instance is deployed to the {@link ContextHandlerCollection} specified
- * by {@link #setContexts(Server)}.
+ * by {@link Server#setHandler(org.eclipse.jetty.server.Handler)}.
  * 
  * <p>
  * Similarly, when one of these existing files is removed, the corresponding context is undeployed; when one of these
@@ -88,7 +88,7 @@ public class ContextDeployer extends AbstractLifeCycle
         /**
          * Handle a new deployment
          * 
-         * @see org.eclipse.jetty.util.Scanner.FileAddedListener#fileAdded(java.lang.String)
+         * @see org.eclipse.jetty.util.Scanner.DiscreteListener#fileAdded(java.lang.String)
          */
         public void fileAdded(String filename) throws Exception
         {
@@ -98,7 +98,7 @@ public class ContextDeployer extends AbstractLifeCycle
         /**
          * Handle a change to an existing deployment. Undeploy then redeploy.
          * 
-         * @see org.eclipse.jetty.util.Scanner.FileChangedListener#fileChanged(java.lang.String)
+         * @see org.eclipse.jetty.util.Scanner.DiscreteListener#fileChanged(java.lang.String)
          */
         public void fileChanged(String filename) throws Exception
         {
@@ -108,7 +108,7 @@ public class ContextDeployer extends AbstractLifeCycle
         /**
          * Handle an undeploy.
          * 
-         * @see org.eclipse.jetty.util.Scanner.FileRemovedListener#fileRemoved(java.lang.String)
+         * @see org.eclipse.jetty.util.Scanner.DiscreteListener#fileRemoved(java.lang.String)
          */
         public void fileRemoved(String filename) throws Exception
         {
@@ -123,8 +123,6 @@ public class ContextDeployer extends AbstractLifeCycle
 
     /**
      * Constructor
-     * 
-     * @throws Exception
      */
     public ContextDeployer() 
     {
@@ -245,7 +243,7 @@ public class ContextDeployer extends AbstractLifeCycle
     
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the directory
      * @deprecated use {@link #setContextsDir(String)}
      */
     @Deprecated
@@ -256,7 +254,7 @@ public class ContextDeployer extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the configuration directory
      * @deprecated use {@link #setContextsDir(String)}
      */
     @Deprecated
@@ -276,7 +274,7 @@ public class ContextDeployer extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the configuration manager
      */
     public ConfigurationManager getConfigurationManager()
     {
@@ -319,7 +317,7 @@ public class ContextDeployer extends AbstractLifeCycle
     /**
      * Get a contextAttribute that will be set for every Context deployed by this deployer.
      * @param name
-     * @return
+     * @return the attribute value
      */
     public Object getAttribute (String name)
     {

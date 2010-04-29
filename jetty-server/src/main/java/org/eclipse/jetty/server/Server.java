@@ -601,7 +601,7 @@ public class Server extends HandlerWrapper implements Attributes
 
     /* ------------------------------------------------------------ */
     /**
-     * Set graceful shutdown timeout.  If set, the {@link #doStop()} method will not immediately stop the 
+     * Set graceful shutdown timeout.  If set, the internal <code>doStop()</code> method will not immediately stop the 
      * server. Instead, all {@link Connector}s will be closed so that new connections will not be accepted
      * and all handlers that implement {@link Graceful} will be put into the shutdown mode so that no new requests
      * will be accepted, but existing requests can complete.  The server will then wait the configured timeout 

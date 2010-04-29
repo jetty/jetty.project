@@ -625,7 +625,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * Create a new session instance
      * @param request
-     * @return
+     * @return the new session
      */
     protected abstract Session newSession(HttpServletRequest request);
 

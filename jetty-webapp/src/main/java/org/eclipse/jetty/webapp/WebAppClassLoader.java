@@ -38,11 +38,11 @@ import org.eclipse.jetty.util.resource.Resource;
  * Specializes URLClassLoader with some utility and file mapping
  * methods.
  *
- * This loader defaults to the 2.3 servlet spec behaviour where non
+ * This loader defaults to the 2.3 servlet spec behavior where non
  * system classes are loaded from the classpath in preference to the
  * parent loader.  Java2 compliant loading, where the parent loader
  * always has priority, can be selected with the 
- * {@link org.eclipse.jetty.server.server.webapp.WebAppContext#setParentLoaderPriority(boolean)} 
+ * {@link org.eclipse.jetty.webapp.WebAppContext#setParentLoaderPriority(boolean)} 
  * method and influenced with {@link WebAppContext#isServerClass(String)} and 
  * {@link WebAppContext#isSystemClass(String)}.
  *
@@ -180,9 +180,6 @@ public class WebAppClassLoader extends URLClassLoader
     /** Add elements to the class path for the context from the jar and zip files found
      *  in the specified resource.
      * @param lib the resource that contains the jar and/or zip files.
-     * @param append true if the classpath entries are to be appended to any
-     * existing classpath, or false if they replace the existing classpath.
-     * @see #setClassPath(String)
      */
     public void addJars(Resource lib)
     {

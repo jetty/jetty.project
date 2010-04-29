@@ -49,15 +49,12 @@ public class ErrorPageErrorHandler extends ErrorHandler
     protected List _errorPageList; // list of ErrorCode by range 
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param context
-     */
     public ErrorPageErrorHandler()
     {}
 
     /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.server.handler.ErrorHandler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
+    /** 
+     * @see org.eclipse.jetty.server.handler.ErrorHandler#handle(String, Request, HttpServletRequest, HttpServletResponse)
      */
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
@@ -170,7 +167,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
     /** Add Error Page mapping for an exception class
      * This method is called as a result of an exception-type element in a web.xml file
      * or may be called directly
-     * @param code The class (or superclass) of the matching exceptions
+     * @param exception The exception
      * @param uri The URI of the error page.
      */
     public void addErrorPage(Class exception,String uri)

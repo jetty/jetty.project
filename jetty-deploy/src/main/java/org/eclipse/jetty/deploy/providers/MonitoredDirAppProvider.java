@@ -39,10 +39,8 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * AppProvider for Monitoring directories for contexts.
  * 
  * A Context may either be a WAR, a directory or an XML descriptor.
- * 
- * @deprecated - Use {@link ContextProvider} or {@link WebAppProvider}
  */
-public class MonitoredDirAppProvider extends AbstractLifeCycle implements AppProvider
+public abstract class MonitoredDirAppProvider extends AbstractLifeCycle implements AppProvider
 {
     class MonitoredFilenameFilter implements FilenameFilter
     {

@@ -50,8 +50,8 @@ import org.eclipse.jetty.util.resource.Resource;
  * {@link org.eclipse.jetty.security.ConstraintSecurityHandler}, {@link org.eclipse.jetty.server.session.SessionHandler}
  * and {@link org.eclipse.jetty.servlet.ServletHandler}.
  * The handlers are configured by pluggable configuration classes, with
- * the default being  {@link org.eclipse.jetty.server.server.webapp.WebXmlConfiguration} and
- * {@link org.eclipse.jetty.server.server.webapp.JettyWebXmlConfiguration}.
+ * the default being  {@link org.eclipse.jetty.webapp.WebXmlConfiguration} and
+ * {@link org.eclipse.jetty.webapp.JettyWebXmlConfiguration}.
  * 
  * @org.apache.xbean.XBean description="Creates a servlet web application at a given context from a resource base"
  * 
@@ -301,7 +301,7 @@ public class WebAppContext extends ServletContextHandler
      * <li>Web Fragments</li>
      * <li>META-INF/resource directories</li>
      * </ul>
-     * @param servlet3autoConfig the servlet3autoConfig to set
+     * @param discovered true if configuration discovery is enabled for automatic configuration from the context
      */
     public void setConfigurationDiscovered(boolean discovered)
     {

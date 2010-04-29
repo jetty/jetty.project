@@ -216,8 +216,6 @@ public class WebInfConfiguration implements Configuration
      * contents if dir already exists.
      * </li>
      * </ol>
-     * 
-     * @return
      */
     public void resolveTempDirectory (WebAppContext context)
     {
@@ -527,7 +525,7 @@ public class WebInfConfiguration implements Configuration
     /**
      * Check if the tmpDir itself is called "work", or if the tmpDir
      * is in a directory called "work".
-     * @return
+     * @return true if File is a temporary or work directory
      */
     public boolean isTempWorkDirectory (File tmpDir)
     {
@@ -543,13 +541,13 @@ public class WebInfConfiguration implements Configuration
     
     
     /**
-     * Create a canonical name for a webapp tmp directory.
+     * Create a canonical name for a webapp temp directory.
      * The form of the name is:
-     *  "Jetty_"+host+"_"+port+"__"+resourceBase+"_"+context+"_"+virtualhost+base36 hashcode of whole string
+     *  <code>"Jetty_"+host+"_"+port+"__"+resourceBase+"_"+context+"_"+virtualhost+base36_hashcode_of_whole_string</code>
      *  
      *  host and port uniquely identify the server
      *  context and virtual host uniquely identify the webapp
-     * @return
+     * @return the canonical name for the webapp temp directory
      */
     public String getCanonicalNameForWebAppTmpDir (WebAppContext context)
     {
@@ -640,7 +638,7 @@ public class WebInfConfiguration implements Configuration
     /**
      * Look for jars in WEB-INF/lib
      * @param context
-     * @return
+     * @return the list of jar resources found within context 
      * @throws Exception
      */
     protected List<Resource> findJars (WebAppContext context) 

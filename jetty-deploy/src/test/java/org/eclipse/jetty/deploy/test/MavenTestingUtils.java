@@ -93,7 +93,8 @@ public class MavenTestingUtils
      * 
      * @param test
      *            the junit 3.x testcase to base this new directory on.
-     * @return
+     * @return the File path to the testcase specific testing directory underneath the 
+     *            <code>${basedir}/target</code> sub directory
      */
     public static File getTargetTestingDir(TestCase test)
     {
@@ -105,7 +106,8 @@ public class MavenTestingUtils
      * 
      * @param testname
      *            the testname to create directory against.
-     * @return
+     * @return the File path to the testname sepecific testing directory underneath the
+     *            <code>${basedir}/target</code> sub directory
      */
     public static File getTargetTestingDir(String testname)
     {

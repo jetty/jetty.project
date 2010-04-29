@@ -66,9 +66,6 @@ import org.eclipse.jetty.util.log.Log;
  * 
  * Unless run as part of a {@link ServletContextHandler} or derivative, the {@link #initialize()}
  * method must be called manually after start().
- * 
- * @see org.eclipse.jetty.webapp.WebAppContext
- * 
  */
 public class ServletHandler extends ScopedHandler
 {
@@ -789,8 +786,8 @@ public class ServletHandler extends ScopedHandler
     /** Convenience method to add a servlet with a servlet mapping.
      * @param className
      * @param pathSpec
-     * @return
-     * @deprecated
+     * @return the ServletHolder
+     * @deprecated use {@link #addServletWithMapping(Class, String)} instead
      */
     public ServletHolder addServlet (String className, String pathSpec)
     {
@@ -824,7 +821,7 @@ public class ServletHandler extends ScopedHandler
     
     /* ------------------------------------------------------------ */
     /** 
-     * @see {@link #newFilterHolder(Class)}
+     * @see #newFilterHolder(Class)
      */
     public FilterHolder newFilterHolder()
     {
@@ -838,7 +835,7 @@ public class ServletHandler extends ScopedHandler
     }
     
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a filter.
+    /** Convenience method to add a filter.
      * @param filter  class of filter to create
      * @param pathSpec filter mappings for filter
      * @param dispatches see {@link FilterMapping#setDispatches(int)}
@@ -853,7 +850,7 @@ public class ServletHandler extends ScopedHandler
     }
     
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a filter.
+    /** Convenience method to add a filter.
      * @param className of filter
      * @param pathSpec filter mappings for filter
      * @param dispatches see {@link FilterMapping#setDispatches(int)}
@@ -870,7 +867,7 @@ public class ServletHandler extends ScopedHandler
     }
     
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a filter.
+    /** Convenience method to add a filter.
      * @param holder filter holder to add
      * @param pathSpec filter mappings for filter
      * @param dispatches see {@link FilterMapping#setDispatches(int)}
@@ -909,8 +906,8 @@ public class ServletHandler extends ScopedHandler
      * @param className
      * @param pathSpec
      * @param dispatches
-     * @return
-     * @deprecated
+     * @return the filter holder created
+     * @deprecated use {@link #addFilterWithMapping(Class, String, int)} instead
      */
     public FilterHolder addFilter (String className,String pathSpec,int dispatches)
     {
@@ -1336,7 +1333,7 @@ public class ServletHandler extends ScopedHandler
      * this method.
      * 
      * @param servlet
-     * @return
+     * @return the potentially customized servlet
      * @throws Exception
      */
     public Servlet customizeServlet (Servlet servlet)
@@ -1361,7 +1358,7 @@ public class ServletHandler extends ScopedHandler
      * this method.
      * 
      * @param filter
-     * @return
+     * @return the potentially customized filter
      * @throws Exception
      */
     public Filter customizeFilter (Filter filter)

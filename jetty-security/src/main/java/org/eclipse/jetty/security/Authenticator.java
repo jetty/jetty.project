@@ -68,7 +68,7 @@ public interface Authenticator
      * @param response
      * @param mandatory
      * @param validatedUser
-     * @return
+     * @return true if response is secure
      * @throws ServerAuthException
      */
     boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, User validatedUser) throws ServerAuthException;

@@ -521,7 +521,7 @@ public class HttpClient extends HttpBuffers implements Attributes
      * if a keystore location has been provided then client will attempt to use it as the keystore,
      * otherwise we simply ignore certificates and run with a loose ssl context.
      *
-     * @return
+     * @return the SSL context
      * @throws IOException
      */
     protected SSLContext getSSLContext() throws IOException

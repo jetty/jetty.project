@@ -229,8 +229,8 @@ public class SessionHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /** Look for a requested session ID in cookies and URI parameters
+     * @param baseRequest
      * @param request
-     * @param dispatch
      */
     protected void setRequestedId(Request baseRequest, HttpServletRequest request)
     {

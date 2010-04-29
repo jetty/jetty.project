@@ -173,7 +173,7 @@ public class Holder extends AbstractLifeCycle
     
     /* ------------------------------------------------------------ */
     /**
-     * @param className The className to set.
+     * @param held The class to hold
      */
     public void setHeldClass(Class held)
     {

@@ -601,7 +601,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      * handling (Eg configuration) before the call to super.doStart by this method
      * will start contained handlers.
      * @see org.eclipse.jetty.server.handler.ContextHandler.Context
-     * @see org.eclipse.jetty.webapp.WebAppContext
      */
     protected void startContext()
     	throws Exception
@@ -987,7 +986,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      * Called by {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)} when a
      * target within a context is determined.  If the target is protected, 404 is returned.
      * The default implementation always returns false.
-     * @see org.eclipse.jetty.webapp.WebAppContext#isProtectedTarget(String)
      */
     /* ------------------------------------------------------------ */
     protected boolean isProtectedTarget(String target)

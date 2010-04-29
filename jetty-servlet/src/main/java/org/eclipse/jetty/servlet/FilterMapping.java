@@ -193,11 +193,11 @@ public class FilterMapping
     /* ------------------------------------------------------------ */
     /**
      * @param dispatches The dispatches to set.
-     * @see Handler#DEFAULT
-     * @see Handler#REQUEST
-     * @see Handler#ERROR
-     * @see Handler#FORWARD
-     * @see Handler#INCLUDE
+     * @see #DEFAULT
+     * @see #REQUEST
+     * @see #ERROR
+     * @see #FORWARD
+     * @see #INCLUDE
      */
     public void setDispatches(int dispatches)
     {

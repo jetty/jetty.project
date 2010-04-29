@@ -277,7 +277,7 @@ public class DataSourceLoginService extends MappedLoginService
     /* ------------------------------------------------------------ */
     /** Load user's info from database.
      * 
-     * @param user
+     * @param userName
      */
     @Override
     protected UserIdentity loadUser (String userName)

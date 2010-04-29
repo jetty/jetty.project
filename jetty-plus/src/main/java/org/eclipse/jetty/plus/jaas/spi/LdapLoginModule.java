@@ -440,7 +440,7 @@ public class LdapLoginModule extends AbstractLoginModule
      * password supplied authentication check
      *
      * @param webCredential
-     * @return
+     * @return true if authenticated
      * @throws LoginException
      */
     protected boolean credentialLogin(Object webCredential) throws LoginException

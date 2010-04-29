@@ -90,7 +90,7 @@ import org.eclipse.jetty.util.log.Log;
  * and enables the ability to create new sessions.</li>
  * 
  * <li>The {@link Request#getServletPath()} method will return null until the request has been
- * passed to a {@link org.eclipse.jetty.servlet.ServletHandler} and the pathInfo matched
+ * passed to a <code>org.eclipse.jetty.servlet.ServletHandler</code> and the pathInfo matched
  * against the servlet URL patterns and {@link Request#setServletPath(String)} called as a result.</li>
  * </ul>
  * 
