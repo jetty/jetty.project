@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
@@ -43,7 +44,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpException;
-import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.server.Dispatcher;
@@ -75,9 +75,6 @@ import org.eclipse.jetty.util.resource.Resource;
  * so that they may be managed with JMX.
  *
  * @org.apache.xbean.XBean description="Creates a basic HTTP context"
- *
- *
- *
  */
 public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful
 {
@@ -603,7 +600,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      * call to super.doStart().   This allows derived classes to insert additional
      * handling (Eg configuration) before the call to super.doStart by this method
      * will start contained handlers.
-     * @see org.eclipse.jetty.Scope.Context
+     * @see org.eclipse.jetty.server.handler.ContextHandler.Context
      * @see org.eclipse.jetty.webapp.WebAppContext
      */
     protected void startContext()

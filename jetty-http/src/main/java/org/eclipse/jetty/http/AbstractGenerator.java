@@ -78,8 +78,7 @@ public abstract class AbstractGenerator implements Generator
      * Constructor.
      * 
      * @param buffers buffer pool
-     * @param headerBufferSize Size of the buffer to allocate for HTTP header
-     * @param contentBufferSize Size of the buffer to allocate for HTTP content
+     * @param io the end point
      */
     public AbstractGenerator(Buffers buffers, EndPoint io)
     {

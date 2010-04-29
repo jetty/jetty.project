@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.log.Log;
 /**
  * A wrapper for the {@link java.io.PrintWriter} that re-throws the instances of
  * {@link java.io.IOException} thrown by the underlying implementation of
- * {@link java.io.Writer} as {@link RunimeIOException} instances.
+ * {@link java.io.Writer} as {@link RuntimeIOException} instances.
  */
 public class UncheckedPrintWriter extends PrintWriter
 {   

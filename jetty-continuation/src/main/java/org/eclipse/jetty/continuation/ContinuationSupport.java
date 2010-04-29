@@ -147,10 +147,10 @@ public class ContinuationSupport
 
     /* ------------------------------------------------------------ */
     /**
-     * @param request
-     * @param response
+     * @param request the servlet request
+     * @param response the servlet response
      * @deprecated use {@link #getContinuation(ServletRequest)}
-     * @return
+     * @return the continuation
      */
     @Deprecated
     public static Continuation getContinuation(final ServletRequest request, final ServletResponse response)

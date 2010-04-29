@@ -55,7 +55,7 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
  * Map.
  * <p>
  * If the property
- * org.eclipse.jetty.servlet.AbstractSessionManager.23Notifications is set to
+ * <code>org.eclipse.jetty.servlet.AbstractSessionManager.23Notifications</code> is set to
  * true, the 2.3 servlet spec notification style will be used.
  * <p>
  *

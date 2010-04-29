@@ -936,7 +936,6 @@ public class HttpFields
      * Format a set cookie value
      * 
      * @param cookie The cookie.
-     * @param cookie2 If true, use the alternate cookie 2 header
      */
     public void addSetCookie(HttpCookie cookie)
     {
@@ -951,12 +950,19 @@ public class HttpFields
                 cookie.isHttpOnly(),
                 cookie.getVersion());
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Format a set cookie value
-     * @param cookie The cookie.
-     * @param cookie2 If true, use the alternate cookie 2 header
+     * 
+     * @param name the name
+     * @param value the value
+     * @param domain the domain
+     * @param path the path
+     * @param maxAge the maximum age
+     * @param comment the comment (only present on versions > 0)
+     * @param isSecure true if secure cookie
+     * @param isHttpOnly true if for http only
+     * @param version version of cookie logic to use (0 == default behavior)
      */
     public void addSetCookie(
             final String name, 
@@ -1236,7 +1242,7 @@ public class HttpFields
     /**
      * List values in quality order.
      * 
-     * @param enum Enumeration of values with quality parameters
+     * @param e Enumeration of values with quality parameters
      * @return values in quality order.
      */
     public static List qualityList(Enumeration e)

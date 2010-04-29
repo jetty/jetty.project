@@ -27,12 +27,10 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
-/** Jetty ThreadPool using java 5 ThreadPoolExecutor
+/** 
+ * Jetty ThreadPool using java 5 ThreadPoolExecutor
  * This class wraps a {@link ExecutorService} as a {@link ThreadPool} and 
- * {@link LifeCycle} interfaces so that it may be used by the Jetty {@link org.eclipse.jetty.Server}
- * 
- * 
- *
+ * {@link LifeCycle} interfaces so that it may be used by the Jetty {@link org.eclipse.jetty.server.Server}
  */
 public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool, LifeCycle
 {

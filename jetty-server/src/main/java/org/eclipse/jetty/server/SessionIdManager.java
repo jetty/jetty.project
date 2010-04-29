@@ -20,13 +20,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 
 /** Session ID Manager.
  * Manages session IDs across multiple contexts.
- * 
- *
- */
-/* ------------------------------------------------------------ */
-/**
- * 
- *
  */
 public interface SessionIdManager extends LifeCycle
 {
@@ -57,7 +50,7 @@ public interface SessionIdManager extends LifeCycle
     /**
      * @param request
      * @param created
-     * @return
+     * @return the new session id
      */
     public String newSessionId(HttpServletRequest request,long created);
     
@@ -68,7 +61,7 @@ public interface SessionIdManager extends LifeCycle
     /** Get a cluster ID from a node ID.
      * Strip node identifier from a located session ID.
      * @param nodeId
-     * @return
+     * @return the cluster id
      */
     public String getClusterId(String nodeId);
     

@@ -32,8 +32,8 @@ public abstract class PatternMatcher
      * Will iterate over the jar names, matching
      * all those starting with "aaa-" first, then "bbb-".
      *
-     * @param pattern
-     * @param loader
+     * @param pattern the pattern
+     * @param uris the uris to test the pattern against
      * @param isNullInclusive if true, an empty pattern means all names match, if false, none match
      * @throws Exception
      */

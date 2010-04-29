@@ -437,7 +437,7 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * Add a LifeCycle object to be started/stopped
      * along with the Server.
-     * @deprecated Use {@link #addBean(LifeCycle)}
+     * @deprecated Use {@link #addBean(Object)}
      * @param c
      */
     @Deprecated
@@ -452,7 +452,7 @@ public class Server extends HandlerWrapper implements Attributes
      * The bean will be added to the servers {@link Container}
      * and if it is a {@link LifeCycle} instance, it will be 
      * started/stopped along with the Server.
-     * @param c
+     * @param o the bean object to add
      */
     public void addBean(Object o)
     {

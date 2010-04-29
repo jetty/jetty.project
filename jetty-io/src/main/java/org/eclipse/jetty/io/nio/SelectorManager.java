@@ -39,7 +39,6 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  * <p>
  * This class works around a number of know JVM bugs. For details
  * see http://wiki.eclipse.org/Jetty/Feature/JVM_NIO_Bug
- *
  */
 public abstract class SelectorManager extends AbstractLifeCycle
 {
@@ -60,7 +59,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @param maxIdleTime The maximum period in milli seconds that a connection may be idle before it is closed.
-     * @see {@link #setLowResourcesMaxIdleTime(long)}
+     * @see #setLowResourcesMaxIdleTime(long)
      */
     public void setMaxIdleTime(long maxIdleTime)
     {
@@ -80,7 +79,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
     
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the max idle time
      */
     public long getMaxIdleTime()
     {
@@ -89,7 +88,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
     
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the number of select sets in use
      */
     public int getSelectSets()
     {
@@ -120,9 +119,8 @@ public abstract class SelectorManager extends AbstractLifeCycle
     }
     
     /* ------------------------------------------------------------ */
-    /** Register a serverchannel
+    /** Register a {@link ServerSocketChannel}
      * @param acceptChannel
-     * @return
      * @throws IOException
      */
     public void register(ServerSocketChannel acceptChannel)
@@ -148,7 +146,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
      * Set the number of connections, which if exceeded places this manager in low resources state.
      * This is not an exact measure as the connection count is averaged over the select sets.
      * @param lowResourcesConnections the number of connections
-     * @see {@link #setLowResourcesMaxIdleTime(long)}
+     * @see #setLowResourcesMaxIdleTime(long)
      */
     public void setLowResourcesConnections(long lowResourcesConnections)
     {
@@ -167,7 +165,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @param lowResourcesMaxIdleTime the period in ms that a connection is allowed to be idle when this SelectSet has more connections than {@link #getLowResourcesConnections()}
-     * @see {@link #setMaxIdleTime(long)}
+     * @see #setMaxIdleTime(long)
      */
     public void setLowResourcesMaxIdleTime(long lowResourcesMaxIdleTime)
     {
@@ -188,8 +186,8 @@ public abstract class SelectorManager extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @param key
-     * @return
+     * @param key the selection key
+     * @return the SocketChannel created on accept
      * @throws IOException 
      */
     protected abstract SocketChannel acceptChannel(SelectionKey key) throws IOException;
@@ -249,10 +247,11 @@ public abstract class SelectorManager extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
+     * Create a new end point
      * @param channel
      * @param selectSet
-     * @param sKey
-     * @return
+     * @param sKey the selection key
+     * @return the new endpoint {@link SelectChannelEndPoint}
      * @throws IOException
      */
     protected abstract SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey sKey) throws IOException;

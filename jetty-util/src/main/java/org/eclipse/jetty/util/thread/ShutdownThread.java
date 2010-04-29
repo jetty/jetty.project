@@ -52,7 +52,7 @@ public class ShutdownThread extends Thread
     /**
      * Returns the instance of the singleton
      * 
-     * @return
+     * @return the singleton instance of the {@link ShutdownThread}
      */
     public static ShutdownThread getInstance()
     {

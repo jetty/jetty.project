@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * </tr>
  * 
  * <tr>
- * <td>{@link #CONTINUE}</td>
+ * <td>{@link #CONTINUE_100}</td>
  * <td>100</td>
  * <td>Continue</td>
  * <td>&nbsp;</td>
@@ -49,7 +49,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #SWITCHING_PROTOCOLS}</td>
+ * <td>{@link #SWITCHING_PROTOCOLS_101}</td>
  * <td>101</td>
  * <td>Switching Protocols</td>
  * <td>&nbsp;</td>
@@ -58,7 +58,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #PROCESSING}</td>
+ * <td>{@link #PROCESSING_102}</td>
  * <td>102</td>
  * <td>Processing</td>
  * <td>&nbsp;</td>
@@ -73,7 +73,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * </tr>
  * 
  * <tr>
- * <td>{@link #OK}</td>
+ * <td>{@link #OK_200}</td>
  * <td>200</td>
  * <td>OK</td>
  * <td>
@@ -83,7 +83,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #CREATED}</td>
+ * <td>{@link #CREATED_201}</td>
  * <td>201</td>
  * <td>Created</td>
  * <td>
@@ -93,7 +93,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #ACCEPTED}</td>
+ * <td>{@link #ACCEPTED_202}</td>
  * <td>202</td>
  * <td>Accepted</td>
  * <td>
@@ -103,7 +103,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #NON_AUTHORITATIVE_INFORMATION}</td>
+ * <td>{@link #NON_AUTHORITATIVE_INFORMATION_203}</td>
  * <td>203</td>
  * <td>Non Authoritative Information</td>
  * <td>&nbsp;</td>
@@ -112,7 +112,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #NO_CONTENT}</td>
+ * <td>{@link #NO_CONTENT_204}</td>
  * <td>204</td>
  * <td>No Content</td>
  * <td>
@@ -122,7 +122,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #RESET_CONTENT}</td>
+ * <td>{@link #RESET_CONTENT_205}</td>
  * <td>205</td>
  * <td>Reset Content</td>
  * <td>&nbsp;</td>
@@ -131,7 +131,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #PARTIAL_CONTENT}</td>
+ * <td>{@link #PARTIAL_CONTENT_206}</td>
  * <td>206</td>
  * <td>Partial Content</td>
  * <td>&nbsp;</td>
@@ -140,7 +140,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #MULTI_STATUS}</td>
+ * <td>{@link #MULTI_STATUS_207}</td>
  * <td>207</td>
  * <td>Multi-Status</td>
  * <td>&nbsp;</td>
@@ -166,7 +166,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * </tr>
  * 
  * <tr>
- * <td>{@link #MULTIPLE_CHOICES}</td>
+ * <td>{@link #MULTIPLE_CHOICES_300}</td>
  * <td>300</td>
  * <td>Multiple Choices</td>
  * <td>
@@ -176,7 +176,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #MOVED_PERMANENTLY}</td>
+ * <td>{@link #MOVED_PERMANENTLY_301}</td>
  * <td>301</td>
  * <td>Moved Permanently</td>
  * <td>
@@ -186,7 +186,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #MOVED_TEMPORARILY}</td>
+ * <td>{@link #MOVED_TEMPORARILY_302}</td>
  * <td>302</td>
  * <td>Moved Temporarily</td>
  * <td>
@@ -195,7 +195,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #FOUND}</td>
+ * <td>{@link #FOUND_302}</td>
  * <td>302</td>
  * <td>Found</td>
  * <td>(was "<code>302 Moved Temporarily</code>")</td>
@@ -204,7 +204,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #SEE_OTHER}</td>
+ * <td>{@link #SEE_OTHER_303}</td>
  * <td>303</td>
  * <td>See Other</td>
  * <td>&nbsp;</td>
@@ -213,7 +213,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #NOT_MODIFIED}</td>
+ * <td>{@link #NOT_MODIFIED_304}</td>
  * <td>304</td>
  * <td>Not Modified</td>
  * <td>
@@ -223,7 +223,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #USE_PROXY}</td>
+ * <td>{@link #USE_PROXY_305}</td>
  * <td>305</td>
  * <td>Use Proxy</td>
  * <td>&nbsp;</td>
@@ -241,7 +241,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #TEMPORARY_REDIRECT}</td>
+ * <td>{@link #TEMPORARY_REDIRECT_307}</td>
  * <td>307</td>
  * <td>Temporary Redirect</td>
  * <td>&nbsp;</td>
@@ -296,7 +296,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #NOT_FOUND}</td>
+ * <td>{@link #NOT_FOUND_404}</td>
  * <td>404</td>
  * <td>Not Found</td>
  * <td>
@@ -306,7 +306,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #METHOD_NOT_ALLOWED}</td>
+ * <td>{@link #METHOD_NOT_ALLOWED_405}</td>
  * <td>405</td>
  * <td>Method Not Allowed</td>
  * <td>&nbsp;</td>
@@ -315,7 +315,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #NOT_ACCEPTABLE}</td>
+ * <td>{@link #NOT_ACCEPTABLE_406}</td>
  * <td>406</td>
  * <td>Not Acceptable</td>
  * <td>&nbsp;</td>
@@ -324,7 +324,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #PROXY_AUTHENTICATION_REQUIRED}</td>
+ * <td>{@link #PROXY_AUTHENTICATION_REQUIRED_407}</td>
  * <td>407</td>
  * <td>Proxy Authentication Required</td>
  * <td>&nbsp;</td>
@@ -333,7 +333,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #REQUEST_TIMEOUT}</td>
+ * <td>{@link #REQUEST_TIMEOUT_408}</td>
  * <td>408</td>
  * <td>Request Timeout</td>
  * <td>&nbsp;</td>
@@ -342,7 +342,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #CONFLICT}</td>
+ * <td>{@link #CONFLICT_409}</td>
  * <td>409</td>
  * <td>Conflict</td>
  * <td>&nbsp;</td>
@@ -352,7 +352,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #GONE}</td>
+ * <td>{@link #GONE_410}</td>
  * <td>410</td>
  * <td>Gone</td>
  * <td>&nbsp;</td>
@@ -362,7 +362,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #LENGTH_REQUIRED}</td>
+ * <td>{@link #LENGTH_REQUIRED_411}</td>
  * <td>411</td>
  * <td>Length Required</td>
  * <td>&nbsp;</td>
@@ -372,7 +372,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #PRECONDITION_FAILED}</td>
+ * <td>{@link #PRECONDITION_FAILED_412}</td>
  * <td>412</td>
  * <td>Precondition Failed</td>
  * <td>&nbsp;</td>
@@ -382,7 +382,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #REQUEST_ENTITY_TOO_LARGE}</td>
+ * <td>{@link #REQUEST_ENTITY_TOO_LARGE_413}</td>
  * <td>413</td>
  * <td>Request Entity Too Large</td>
  * <td>&nbsp;</td>
@@ -392,7 +392,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #REQUEST_URI_TOO_LONG}</td>
+ * <td>{@link #REQUEST_URI_TOO_LONG_414}</td>
  * <td>414</td>
  * <td>Request-URI Too Long</td>
  * <td>&nbsp;</td>
@@ -402,7 +402,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #UNSUPPORTED_MEDIA_TYPE}</td>
+ * <td>{@link #UNSUPPORTED_MEDIA_TYPE_415}</td>
  * <td>415</td>
  * <td>Unsupported Media Type</td>
  * <td>&nbsp;</td>
@@ -412,7 +412,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #REQUESTED_RANGE_NOT_SATISFIABLE}</td>
+ * <td>{@link #REQUESTED_RANGE_NOT_SATISFIABLE_416}</td>
  * <td>416</td>
  * <td>Requested Range Not Satisfiable</td>
  * <td>&nbsp;</td>
@@ -422,7 +422,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #EXPECTATION_FAILED}</td>
+ * <td>{@link #EXPECTATION_FAILED_417}</td>
  * <td>417</td>
  * <td>Expectation Failed</td>
  * <td>&nbsp;</td>
@@ -495,7 +495,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #UNPROCESSABLE_ENTITY}</td>
+ * <td>{@link #UNPROCESSABLE_ENTITY_422}</td>
  * <td>422</td>
  * <td>Unprocessable Entity</td>
  * <td>&nbsp;</td>
@@ -513,7 +513,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <a href="http://tools.ietf.org/html/rfc2518#section-10.4">Sec. 10.4</a></td>
  * </tr>
  * <tr>
- * <td>{@link #FAILED_DEPENDENCY}</td>
+ * <td>{@link #FAILED_DEPENDENCY_424}</td>
  * <td>424</td>
  * <td>Failed Dependency</td>
  * <td>&nbsp;</td>
@@ -528,7 +528,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * </tr>
  * 
  * <tr>
- * <td>{@link #INTERNAL_SERVER_ERROR}</td>
+ * <td>{@link #INTERNAL_SERVER_ERROR_500}</td>
  * <td>500</td>
  * <td>Internal Server Error</td>
  * <td>
@@ -538,7 +538,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #NOT_IMPLEMENTED}</td>
+ * <td>{@link #NOT_IMPLEMENTED_501}</td>
  * <td>501</td>
  * <td>Not Implemented</td>
  * <td>
@@ -548,7 +548,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #BAD_GATEWAY}</td>
+ * <td>{@link #BAD_GATEWAY_502}</td>
  * <td>502</td>
  * <td>Bad Gateway</td>
  * <td>
@@ -558,7 +558,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #SERVICE_UNAVAILABLE}</td>
+ * <td>{@link #SERVICE_UNAVAILABLE_503}</td>
  * <td>503</td>
  * <td>Service Unavailable</td>
  * <td>
@@ -568,7 +568,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #GATEWAY_TIMEOUT}</td>
+ * <td>{@link #GATEWAY_TIMEOUT_504}</td>
  * <td>504</td>
  * <td>Gateway Timeout</td>
  * <td>&nbsp;</td>
@@ -577,7 +577,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #HTTP_VERSION_NOT_SUPPORTED}</td>
+ * <td>{@link #HTTP_VERSION_NOT_SUPPORTED_505}</td>
  * <td>505</td>
  * <td>HTTP Version Not Supported</td>
  * <td>&nbsp;</td>
@@ -594,7 +594,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #INSUFFICIENT_STORAGE}</td>
+ * <td>{@link #INSUFFICIENT_STORAGE_507}</td>
  * <td>507</td>
  * <td>Insufficient Storage</td>
  * <td>&nbsp;</td>

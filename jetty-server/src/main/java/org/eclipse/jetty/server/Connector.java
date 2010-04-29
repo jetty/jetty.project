@@ -131,14 +131,14 @@ public interface Connector extends LifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @return The port to use when redirecting a request if a data constraint of integral is 
-     * required. See {@link org.eclipse.jetty.server.server.security.Constraint#getDataConstraint()}
+     * required. See {@link org.eclipse.jetty.http.security.Constraint#getDataConstraint()}
      */
     int getIntegralPort();
 
     /* ------------------------------------------------------------ */
     /**
      * @return The schema to use when redirecting a request if a data constraint of integral is 
-     * required. See {@link org.eclipse.jetty.server.server.security.Constraint#getDataConstraint()}
+     * required. See {@link org.eclipse.jetty.http.security.Constraint#getDataConstraint()}
      */
     String getIntegralScheme();
 
@@ -152,7 +152,7 @@ public interface Connector extends LifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @return The port to use when redirecting a request if a data constraint of confidential is 
-     * required. See {@link org.eclipse.jetty.server.server.security.Constraint#getDataConstraint()}
+     * required. See {@link org.eclipse.jetty.http.security.Constraint#getDataConstraint()}
      */
     int getConfidentialPort();
     
@@ -160,7 +160,7 @@ public interface Connector extends LifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @return The schema to use when redirecting a request if a data constraint of confidential is 
-     * required. See {@link org.eclipse.jetty.server.server.security.Constraint#getDataConstraint()}
+     * required. See {@link org.eclipse.jetty.http.security.Constraint#getDataConstraint()}
      */
     String getConfidentialScheme();
     
@@ -185,7 +185,6 @@ public interface Connector extends LifeCycle
     /** Persist an endpoint.
      * Called after every request if the connection is to remain open.
      * @param endpoint
-     * @param request
      * @throws IOException
      */
     void persist(EndPoint endpoint) throws IOException;

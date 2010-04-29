@@ -41,9 +41,6 @@ import org.eclipse.jetty.util.log.Log;
  * servers, and almost all web log analysis software can understand these
  * formats.
  * 
- * 
- * 
- * 
  * @org.apache.xbean.XBean element="ncsaLog"
  */
 public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
@@ -506,7 +503,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /**
      * Set the log file date format.
      * 
-     * @see {@link RolloverFileOutputStream#RolloverFileOutputStream(String, boolean, int, TimeZone, String, String)}
+     * @see RolloverFileOutputStream#RolloverFileOutputStream(String, boolean, int, TimeZone, String, String)
      * @param logFileDateFormat
      *                the logFileDateFormat to pass to
      *                {@link RolloverFileOutputStream}

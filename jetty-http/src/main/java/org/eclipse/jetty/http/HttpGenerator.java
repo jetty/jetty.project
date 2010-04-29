@@ -113,8 +113,7 @@ public class HttpGenerator extends AbstractGenerator
      * Constructor.
      * 
      * @param buffers buffer pool
-     * @param headerBufferSize Size of the buffer to allocate for HTTP header
-     * @param contentBufferSize Size of the buffer to allocate for HTTP content
+     * @param io the end point to use
      */
     public HttpGenerator(Buffers buffers, EndPoint io)
     {

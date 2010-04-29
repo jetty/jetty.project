@@ -35,8 +35,8 @@ public interface SessionManager extends LifeCycle
     /* ------------------------------------------------------------ */
     /**
      * Session cookie name.
-     * Defaults to JSESSIONID, but can be set with the
-     * org.eclipse.jetty.servlet.SessionCookie context init parameter.
+     * Defaults to <code>JSESSIONID</code>, but can be set with the
+     * <code>org.eclipse.jetty.servlet.SessionCookie</code> context init parameter.
      */
     public final static String __SessionCookieProperty = "org.eclipse.jetty.servlet.SessionCookie";
     public final static String __DefaultSessionCookie = "JSESSIONID";
@@ -45,8 +45,8 @@ public interface SessionManager extends LifeCycle
     /* ------------------------------------------------------------ */
     /**
      * Session id path parameter name.
-     * Defaults to jsessionid, but can be set with the
-     * org.eclipse.jetty.servlet.SessionIdPathParameterName context init parameter.
+     * Defaults to <code>jsessionid</code>, but can be set with the
+     * <code>org.eclipse.jetty.servlet.SessionIdPathParameterName</code> context init parameter.
      * If set to null or "none" no URL rewriting will be done.
      */
     public final static String __SessionIdPathParameterNameProperty = "org.eclipse.jetty.servlet.SessionIdPathParameterName";
@@ -109,7 +109,7 @@ public interface SessionManager extends LifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @return true if session cookies should be HTTP-only (Microsoft extension)
-     * @see Cookie#isHttpOnly()
+     * @see org.eclipse.jetty.http.HttpCookie#isHttpOnly()
      */
     public boolean getHttpOnly();
 

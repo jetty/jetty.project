@@ -33,9 +33,6 @@ import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
 /** SessionHandler.
- *
- * 
- *
  */
 public class SessionHandler extends ScopedHandler
 {

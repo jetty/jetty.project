@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 
-
 public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, Executor
 {
     private final AtomicInteger _threadsStarted = new AtomicInteger();
@@ -47,7 +46,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
     private int _maxStopTime=100;
 
     /* ------------------------------------------------------------------- */
-    /* Construct
+    /** Construct
      */
     public QueuedThreadPool()
     {
@@ -55,7 +54,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
     }
     
     /* ------------------------------------------------------------------- */
-    /* Construct
+    /** Construct
      */
     public QueuedThreadPool(int maxThreads)
     {
@@ -64,7 +63,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
     }
     
     /* ------------------------------------------------------------------- */
-    /* Construct
+    /** Construct
      */
     public QueuedThreadPool(BlockingQueue<Runnable> jobQ)
     {
@@ -508,7 +507,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
     /**
      * @param id The thread ID to stop.
      * @return true if the thread was found and stopped.
-     * @Deprecated Use {@link #interruptThread(long)} in preference
+     * @deprecated Use {@link #interruptThread(long)} in preference
      */
     @SuppressWarnings("deprecation")
     public boolean stopThread(long id)

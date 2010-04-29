@@ -120,7 +120,7 @@ public class Scanner
 
     /**
      * Get the location of the directory to scan
-     * @return
+     * @return the first directory (of {@link #getScanDirs(List)} being scanned)
      * @deprecated use getScanDirs() instead
      */
     @Deprecated
@@ -160,7 +160,7 @@ public class Scanner
 
     /**
      * Get any filter applied to files in the scan dir.
-     * @return
+     * @return the filename filter
      */
     public FilenameFilter getFilenameFilter ()
     {
@@ -310,7 +310,6 @@ public class Scanner
 
     /**
      * Recursively scan all files in the designated directories.
-     * @return Map of name of file to last modified time
      */
     public synchronized void scanFiles ()
     {

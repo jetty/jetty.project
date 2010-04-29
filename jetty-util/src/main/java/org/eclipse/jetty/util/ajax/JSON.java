@@ -187,7 +187,7 @@ public class JSON
 
     /* ------------------------------------------------------------ */
     /**
-     * @param s Stream containing JSON object or array.
+     * @param in Reader containing JSON object or array.
      * @param stripOuterComment If true, an outer comment around the JSON is ignored.
      * @return A Map, Object array or primitive array parsed from the JSON.
      */
@@ -211,7 +211,7 @@ public class JSON
     /* ------------------------------------------------------------ */
     /**
      * @deprecated use {@link #parse(Reader, boolean)}
-     * @param s Stream containing JSON object or array.
+     * @param in Stream containing JSON object or array.
      * @param stripOuterComment If true, an outer comment around the JSON is ignored.
      * @return A Map, Object array or primitive array parsed from the JSON.
      */
@@ -1388,7 +1388,7 @@ public class JSON
     /** Static JSON Convertor.
      * <p>
      * may be implemented to provide static convertors for objects that may be registered 
-     * with {@link JSON#registerConvertor(Class, org.eclipse.jetty.util.ajax.JSON.Convertor). 
+     * with {@link JSON#registerConvertor(Class, org.eclipse.jetty.util.ajax.JSON.Convertor)}. 
      * These convertors are looked up by class, interface and
      * super class by {@link JSON#getConvertor(Class)}.   Convertors should be used when the
      * classes to be converted cannot implement {@link Convertible} or {@link Generator}.

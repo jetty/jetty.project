@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  * </p>
  * <p>
  * When used with {@link org.eclipse.jetty.continuation.Continuation}, threadless waits are supported. When
- * a filter or servlet calls getEvent on a Continuation, a {@link org.eclipse.jetty.server.RetryRequest}
+ * a filter or servlet calls getEvent on a Continuation, a 
  * runtime exception is thrown to allow the thread to exit the current request handling. Jetty will
  * catch this exception and will not send a response to the client. Instead the thread is released
  * and the Continuation is placed on the timer queue. If the Continuation timeout expires, or it's
@@ -56,9 +56,6 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  * </p>
  * 
  * @org.apache.xbean.XBean element="nioConnector" description="Creates an NIO based socket connector"
- * 
- * 
- *
  */
 public class SelectChannelConnector extends AbstractNIOConnector 
 {
@@ -242,7 +239,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
      * Set the number of connections, which if exceeded places this manager in low resources state.
      * This is not an exact measure as the connection count is averaged over the select sets.
      * @param lowResourcesConnections the number of connections
-     * @see {@link #setLowResourcesMaxIdleTime(int)}
+     * @see #setLowResourcesMaxIdleTime(int)
      */
     public void setLowResourcesConnections(int lowResourcesConnections)
     {
@@ -265,7 +262,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
      * than {@link #getLowResourcesConnections()} connections.  This allows the server to rapidly close idle connections
      * in order to gracefully handle high load situations.
      * @param lowResourcesMaxIdleTime the period in ms that a connection is allowed to be idle when resources are low.
-     * @see {@link #setMaxIdleTime(long)}
+     * @see #setMaxIdleTime(long)
      */
     @Override
     public void setLowResourcesMaxIdleTime(int lowResourcesMaxIdleTime)
