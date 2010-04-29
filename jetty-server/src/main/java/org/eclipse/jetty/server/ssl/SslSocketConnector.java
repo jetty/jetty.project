@@ -411,10 +411,10 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
                 	excludedCSList = new ArrayList<String>();
                 }
                 String[] enabledCipherSuites = socket.getEnabledCipherSuites();
-                List<String> enabledCSList=Arrays.asList(enabledCipherSuites);
+                List<String> enabledCSList = new ArrayList<String>(Arrays.asList(enabledCipherSuites));
                 
                 String[] supportedCipherSuites = socket.getSupportedCipherSuites();
-                List<String> supportedCSList=Arrays.asList(supportedCipherSuites);
+                List<String> supportedCSList = Arrays.asList(supportedCipherSuites);
                 
             	for (String cipherName : includedCSList)
                 {
@@ -432,7 +432,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
                         enabledCSList.remove(cipherName);
                     }
                 }
-                enabledCipherSuites=enabledCSList.toArray(new String[0]);
+                enabledCipherSuites = enabledCSList.toArray(new String[enabledCSList.size()]);
 
                 socket.setEnabledCipherSuites(enabledCipherSuites);
             }
