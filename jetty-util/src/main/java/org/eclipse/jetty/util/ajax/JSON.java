@@ -71,7 +71,7 @@ import org.eclipse.jetty.util.log.Log;
  * <p>
  * The interface {@link JSON.Generator} may be implemented by classes that know
  * how to render themselves as JSON and the {@link #toString(Object)} method
- * will use {@link JSON.Generator#addJSON(StringBuffer)} to generate the JSON.
+ * will use {@link JSON.Generator#addJSON(Appendable)} to generate the JSON.
  * The class {@link JSON.Literal} may be used to hold pre-generated JSON object.
  * <p>
  * The interface {@link JSON.Convertor} may be implemented to provide static
