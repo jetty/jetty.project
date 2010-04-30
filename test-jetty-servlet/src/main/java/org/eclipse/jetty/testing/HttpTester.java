@@ -314,7 +314,7 @@ public class HttpTester
     /* ------------------------------------------------------------ */
     /**
      * @param cookie
-     * @see org.eclipse.jetty.http.HttpFields#addSetCookie(javax.servlet.http.Cookie)
+     * @see org.eclipse.jetty.http.HttpFields#addSetCookie(org.eclipse.jetty.http.HttpCookie)
      */
     public void addSetCookie(Cookie cookie)
     {
@@ -333,7 +333,7 @@ public class HttpTester
     /* ------------------------------------------------------------ */
     /**
      * @param name
-     * @return
+     * @return the header value as a date
      * @see org.eclipse.jetty.http.HttpFields#getDateField(java.lang.String)
      */
     public long getDateHeader(String name)
@@ -343,7 +343,7 @@ public class HttpTester
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the header value names
      * @see org.eclipse.jetty.http.HttpFields#getFieldNames()
      */
     public Enumeration getHeaderNames()
@@ -354,7 +354,7 @@ public class HttpTester
     /* ------------------------------------------------------------ */
     /**
      * @param name
-     * @return
+     * @return the header value as a long
      * @throws NumberFormatException
      * @see org.eclipse.jetty.http.HttpFields#getLongField(java.lang.String)
      */
@@ -366,7 +366,7 @@ public class HttpTester
     /* ------------------------------------------------------------ */
     /**
      * @param name
-     * @return
+     * @return the header value
      * @see org.eclipse.jetty.http.HttpFields#getStringField(java.lang.String)
      */
     public String getHeader(String name)
@@ -377,7 +377,7 @@ public class HttpTester
     /* ------------------------------------------------------------ */
     /**
      * @param name
-     * @return
+     * @return the header values
      * @see org.eclipse.jetty.http.HttpFields#getValues(java.lang.String)
      */
     public Enumeration getHeaderValues(String name)

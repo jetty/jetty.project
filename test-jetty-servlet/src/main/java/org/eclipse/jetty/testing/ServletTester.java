@@ -141,7 +141,7 @@ public class ServletTester
     /* ------------------------------------------------------------ */
     /** Create a Socket connector.
      * This methods adds a socket connector to the server
-     * @param locahost if true, only listen on local host, else listen on all interfaces.
+     * @param localhost if true, only listen on local host, else listen on all interfaces.
      * @return A URL to access the server via the socket connector.
      * @throws Exception
      */
@@ -213,7 +213,7 @@ public class ServletTester
     /* ------------------------------------------------------------ */
     /**
      * @param listener
-     * @see org.eclipse.jetty.handler.ContextHandler#addEventListener(java.util.EventListener)
+     * @see org.eclipse.jetty.server.handler.ContextHandler#addEventListener(java.util.EventListener)
      */
     public void addEventListener(EventListener listener)
     {
@@ -225,8 +225,8 @@ public class ServletTester
      * @param filterClass
      * @param pathSpec
      * @param dispatches
-     * @return
-     * @see org.eclipse.jetty.servlet.Scope#addFilter(java.lang.Class, java.lang.String, int)
+     * @return the FilterHolder
+     * @see org.eclipse.jetty.servlet.ServletContextHandler#addFilter(java.lang.Class, java.lang.String, int)
      */
     public FilterHolder addFilter(Class filterClass, String pathSpec, int dispatches)
     {
@@ -238,8 +238,8 @@ public class ServletTester
      * @param filterClass
      * @param pathSpec
      * @param dispatches
-     * @return
-     * @see org.eclipse.jetty.servlet.Scope#addFilter(java.lang.String, java.lang.String, int)
+     * @return the FilterHolder
+     * @see org.eclipse.jetty.servlet.ServletContextHandler#addFilter(java.lang.String, java.lang.String, int)
      */
     public FilterHolder addFilter(String filterClass, String pathSpec, int dispatches)
     {
@@ -250,8 +250,8 @@ public class ServletTester
     /**
      * @param servlet
      * @param pathSpec
-     * @return
-     * @see org.eclipse.jetty.servlet.Scope#addServlet(java.lang.Class, java.lang.String)
+     * @return the ServletHolder
+     * @see org.eclipse.jetty.servlet.ServletContextHandler#addServlet(java.lang.Class, java.lang.String)
      */
     public ServletHolder addServlet(Class servlet, String pathSpec)
     {
@@ -262,8 +262,8 @@ public class ServletTester
     /**
      * @param className
      * @param pathSpec
-     * @return
-     * @see org.eclipse.jetty.servlet.Scope#addServlet(java.lang.String, java.lang.String)
+     * @return the ServletHolder
+     * @see org.eclipse.jetty.servlet.ServletContextHandler#addServlet(java.lang.String, java.lang.String)
      */
     public ServletHolder addServlet(String className, String pathSpec)
     {
@@ -273,8 +273,8 @@ public class ServletTester
     /* ------------------------------------------------------------ */
     /**
      * @param name
-     * @return
-     * @see org.eclipse.jetty.handler.ContextHandler#getAttribute(java.lang.String)
+     * @return the Attribute object
+     * @see org.eclipse.jetty.servlet.ServletContextHandler#getAttribute(java.lang.String)
      */
     public Object getAttribute(String name)
     {
@@ -283,8 +283,8 @@ public class ServletTester
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
-     * @see org.eclipse.jetty.handler.ContextHandler#getAttributeNames()
+     * @return the Attribute Names
+     * @see org.eclipse.jetty.servlet.ServletContextHandler#getAttributeNames()
      */
     public Enumeration getAttributeNames()
     {
@@ -293,8 +293,8 @@ public class ServletTester
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
-     * @see org.eclipse.jetty.handler.ContextHandler#getAttributes()
+     * @return the attributes
+     * @see org.eclipse.jetty.servlet.ServletContextHandler#getAttributes()
      */
     public Attributes getAttributes()
     {
@@ -303,8 +303,8 @@ public class ServletTester
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
-     * @see org.eclipse.jetty.handler.ContextHandler#getResourceBase()
+     * @return the resource base
+     * @see org.eclipse.jetty.servlet.ServletContextHandler#getResourceBase()
      */
     public String getResourceBase()
     {
@@ -315,7 +315,7 @@ public class ServletTester
     /**
      * @param name
      * @param value
-     * @see org.eclipse.jetty.handler.ContextHandler#setAttribute(java.lang.String, java.lang.Object)
+     * @see org.eclipse.jetty.servlet.ServletContextHandler#setAttribute(java.lang.String, java.lang.Object)
      */
     public void setAttribute(String name, Object value)
     {
@@ -325,7 +325,7 @@ public class ServletTester
     /* ------------------------------------------------------------ */
     /**
      * @param classLoader
-     * @see org.eclipse.jetty.handler.ContextHandler#setClassLoader(java.lang.ClassLoader)
+     * @see org.eclipse.jetty.servlet.ServletContextHandler#setClassLoader(java.lang.ClassLoader)
      */
     public void setClassLoader(ClassLoader classLoader)
     {
@@ -335,7 +335,7 @@ public class ServletTester
     /* ------------------------------------------------------------ */
     /**
      * @param contextPath
-     * @see org.eclipse.jetty.handler.ContextHandler#setContextPath(java.lang.String)
+     * @see org.eclipse.jetty.servlet.ServletContextHandler#setContextPath(java.lang.String)
      */
     public void setContextPath(String contextPath)
     {
@@ -345,7 +345,7 @@ public class ServletTester
     /* ------------------------------------------------------------ */
     /**
      * @param eventListeners
-     * @see org.eclipse.jetty.handler.ContextHandler#setEventListeners(java.util.EventListener[])
+     * @see org.eclipse.jetty.servlet.ServletContextHandler#setEventListeners(java.util.EventListener[])
      */
     public void setEventListeners(EventListener[] eventListeners)
     {
@@ -355,7 +355,7 @@ public class ServletTester
     /* ------------------------------------------------------------ */
     /**
      * @param resourceBase
-     * @see org.eclipse.jetty.handler.ContextHandler#setResourceBase(java.lang.String)
+     * @see org.eclipse.jetty.servlet.ServletContextHandler#setResourceBase(java.lang.String)
      */
     public void setResourceBase(String resourceBase)
     {
