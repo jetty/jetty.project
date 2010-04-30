@@ -118,7 +118,7 @@ public class StringUtil
      * 
      * @param str
      *            input string.
-     * @return
+     * @return the same string, with any LF or CR returned as system default.
      */
     public static String toSystemLN(String str)
     {

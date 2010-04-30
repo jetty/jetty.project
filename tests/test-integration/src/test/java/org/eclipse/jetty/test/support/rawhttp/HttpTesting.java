@@ -144,7 +144,7 @@ public class HttpTesting
      * Read the raw response from the socket.
      * 
      * @param sock
-     * @return
+     * @return all of the the data from the socket as a String
      * @throws IOException
      */
     public String readRaw(Socket sock) throws IOException
@@ -157,10 +157,12 @@ public class HttpTesting
     }
 
     /**
-     * Read the raw response from the socket, reading whatever is available. Any SocketTimeoutException is consumed and just stops the reading.
+     * Read the raw response from the socket, reading whatever is available. 
+     * Any {@link SocketTimeoutException} is consumed and just stops the reading.
      * 
      * @param sock
-     * @return
+     * @return the raw data from the socket in string form, reading whatever is available.  
+     *          a {@link SocketTimeoutException} will result in the read stopping.
      * @throws IOException
      */
     public String readRawAvailable(Socket sock) throws IOException
@@ -190,7 +192,7 @@ public class HttpTesting
      * 
      * Note: not for HTTPS requests.
      * 
-     * @param request
+     * @param rawRequest
      *            the request
      * @return the response
      * @throws IOException

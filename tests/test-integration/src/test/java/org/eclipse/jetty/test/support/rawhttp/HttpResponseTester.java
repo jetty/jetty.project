@@ -226,7 +226,7 @@ public class HttpResponseTester
 
     /**
      * @param name
-     * @return
+     * @return the header value as a date
      * @see org.eclipse.jetty.http.HttpFields#getDateField(java.lang.String)
      */
     public long getDateHeader(String name)
@@ -236,7 +236,7 @@ public class HttpResponseTester
 
     /**
      * @param name
-     * @return
+     * @return the header value as a long
      * @throws NumberFormatException
      * @see org.eclipse.jetty.http.HttpFields#getLongField(java.lang.String)
      */
@@ -247,7 +247,7 @@ public class HttpResponseTester
 
     /**
      * @param name
-     * @return
+     * @return the header value
      * @see org.eclipse.jetty.http.HttpFields#getStringField(java.lang.String)
      */
     public String getHeader(String name)

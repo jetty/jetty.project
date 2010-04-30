@@ -93,7 +93,7 @@ public class MavenTestingUtils
      * 
      * @param test
      *            the junit 3.x testcase to base this new directory on.
-     * @return
+     * @return the dir in /target/ that uses the JUnit 3.x {@link TestCase#getName()} to make itself unique.
      */
     public static File getTargetTestingDir(TestCase test)
     {
@@ -105,7 +105,7 @@ public class MavenTestingUtils
      * 
      * @param testname
      *            the testname to create directory against.
-     * @return
+     * @return the dir in /target/ that uses the an arbitrary name.
      */
     public static File getTargetTestingDir(String testname)
     {
