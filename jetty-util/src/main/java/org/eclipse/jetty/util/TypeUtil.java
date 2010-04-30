@@ -448,17 +448,24 @@ public class TypeUtil
     }
 
     /* ------------------------------------------------------------ */
-    public static void toHex(byte b,StringBuilder buf)
+    public static void toHex(byte b,Appendable buf)
     {   
-        int bi=0xff&b;
-        int c='0'+(bi/16)%16;
-        if (c>'9')
-            c= 'A'+(c-'0'-10);
-        buf.append((char)c);
-        c='0'+bi%16;
-        if (c>'9')
-            c= 'A'+(c-'0'-10);
-        buf.append((char)c);
+        try
+        {
+            int bi=0xff&b;
+            int c='0'+(bi/16)%16;
+            if (c>'9')
+                c= 'A'+(c-'0'-10);
+            buf.append((char)c);
+            c='0'+bi%16;
+            if (c>'9')
+                c= 'A'+(c-'0'-10);
+            buf.append((char)c);
+        }
+        catch(IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
     
     /* ------------------------------------------------------------ */

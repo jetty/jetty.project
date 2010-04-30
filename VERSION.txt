@@ -7,6 +7,7 @@ jetty-7.1.0.RC1-SNAPSHOT
  + 310634 Get the localport when opening a server socket.
  + 310703 Update test suite to JUnit4 - Module tests/test-integration
  + 310918 Synchronize content exchange 
+ + 311154 Use Appendable in preference to StringBuilder/StringBuffer in APIs
  
 jetty-7.1.0.RC0 27 April 2010
  + 294563 Websocket client connection
