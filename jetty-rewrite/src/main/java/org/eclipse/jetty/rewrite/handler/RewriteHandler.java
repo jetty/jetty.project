@@ -30,31 +30,28 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  * There is also handling for cookies, headers, redirection, setting status or error codes 
  * whenever the rule finds a match. 
  * 
- * <p> The rules can be matched by the ff. options: pattern matching of PathMap 
- * (class PatternRule), regular expressions (class RegexRule) or certain conditions set 
- * (e.g. MsieSslRule - the requests must be in SSL mode).
+ * <p> The rules can be matched by the either: pattern matching of PathMap 
+ * (eg {@link PatternRule}), regular expressions (eg {@link RegexRule}) or certain conditions set 
+ * (eg {@link MsieSslRule} - the requests must be in SSL mode).
  * 
- * Here are the list of rules:
- * <ul>
- * <li> CookiePatternRule - adds a new cookie in response. </li>
- * <li> HeaderPatternRule - adds/modifies the HTTP headers in response. </li>
- * <li> RedirectPatternRule - sets the redirect location. </li>
- * <li> ResponsePatternRule - sets the status/error codes. </li>
- * <li> RewritePatternRule - rewrites the requested URI. </li>
- * <li> RewriteRegexRule - rewrites the requested URI using regular expression for pattern matching. </li>
- * <li> MsieSslRule - disables the keep alive on SSL for IE5 and IE6. </li>
- * <li> LegacyRule - the old version of rewrite. </li>
- * <li> ForwardedSchemeHeaderRule - set the scheme according to the headers present. </li>
- * </ul>
- *
- * <p> The rules can be grouped into rule containers (class RuleContainerRule), and will only 
+ * <p> The rules can be grouped into rule containers (class {@link RuleContainer}), and will only 
  * be applied if the request matches the conditions for their container
  * (e.g., by virtual host name)
- *
- * Here are a list of rule containers:
+ * 
+ * <p>The list of predefined rules is:
  * <ul>
- * <li> VirtualHostRuleContainerRule - checks whether the request matches one of a set of virtual host names.</li>
+ * <li> {@link CookiePatternRule} - adds a new cookie in response. </li>
+ * <li> {@link HeaderPatternRule} - adds/modifies the HTTP headers in response. </li>
+ * <li> {@link RedirectPatternRule} - sets the redirect location. </li>
+ * <li> {@link ResponsePatternRule} - sets the status/error codes. </li>
+ * <li> {@link RewritePatternRule} - rewrites the requested URI. </li>
+ * <li> {@link RewriteRegexRule} - rewrites the requested URI using regular expression for pattern matching. </li>
+ * <li> {@link MsieSslRule} - disables the keep alive on SSL for IE5 and IE6. </li>
+ * <li> {@link LegacyRule} - the old version of rewrite. </li>
+ * <li> {@link ForwardedSchemeHeaderRule} - set the scheme according to the headers present. </li>
+ * <li> {@link VirtualHostRuleContainer} - checks whether the request matches one of a set of virtual host names.</li>
  * </ul>
+ *
  * 
  * Here is a typical jetty.xml configuration would be: <pre>
  * 

@@ -172,8 +172,8 @@ public interface Continuation
      * the container with a suspended request, the thread is freed for other
      * tasks and the request is held until either:
      * <ul>
-     * <li>a call to {@link ServletRequest#resume()}.</li>
-     * <li>a call to {@link ServletRequest#complete()}.</li>
+     * <li>a call to {@link #resume()}.</li>
+     * <li>a call to {@link #complete()}.</li>
      * <li>the timeout expires.</li>
      * </ul>
      * <p>

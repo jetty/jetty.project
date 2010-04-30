@@ -20,6 +20,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
+import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -44,11 +45,11 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  * This connector is best used when there are a many connections that have idle periods.
  * </p>
  * <p>
- * When used with {@link org.eclipse.jetty.continuation.Continuation}, threadless waits are supported. When
- * a filter or servlet calls getEvent on a Continuation, a 
- * runtime exception is thrown to allow the thread to exit the current request handling. Jetty will
- * catch this exception and will not send a response to the client. Instead the thread is released
- * and the Continuation is placed on the timer queue. If the Continuation timeout expires, or it's
+ * When used with {@link org.eclipse.jetty.continuation.Continuation}, threadless waits are supported. 
+ * If a filter or servlet returns after calling {@link Continuation#suspend()} or when a
+ * runtime exception is thrown from a call to {@link Continuation#undispatch()}, Jetty will
+ * will not send a response to the client. Instead the thread is released and the Continuation is 
+ * placed on the timer queue. If the Continuation timeout expires, or it's
  * resume method is called, then the request is again allocated a thread and the request is retried.
  * The limitation of this approach is that request content is not available on the retried request,
  * thus if possible it should be read after the continuation or saved as a request attribute or as the

@@ -27,13 +27,17 @@ import org.eclipse.jetty.server.Server;
 /**
  * The Default Authenticator Factory.
  * Uses the {@link Configuration#getAuthMethod()} to select an {@link Authenticator} from: <ul>
- * <li>{@link BasicAuthenticator}</li>
- * <li>{@link DigestAuthenticator}</li>
- * <li>{@link FormAuthenticator}</li>
- * <li>{@link ClientCertAuthenticator}</li>
+ * <li>{@link org.eclipse.jetty.security.authentication.BasicAuthenticator}</li>
+ * <li>{@link org.eclipse.jetty.security.authentication.DigestAuthenticator}</li>
+ * <li>{@link org.eclipse.jetty.security.authentication.FormAuthenticator}</li>
+ * <li>{@link org.eclipse.jetty.security.authentication.ClientCertAuthenticator}</li>
  * </ul>
- * If {@link Configuration#isLazy()} is true, the Authenticator is wrapped with a {@link DeferredAuthenticator}
- * instance. The FormAuthenticator is always wrapped in a {@link SessionCachingAuthenticator}.
+ * All authenticators derived from {@link org.eclipse.jetty.security.authentication.LoginAuthenticator} are 
+ * wrapped with a {@link org.eclipse.jetty.security.authentication.DeferredAuthentication}
+ * instance, which is used if authentication is not mandatory.
+ * 
+ * The Authentications from the {@link org.eclipse.jetty.security.authentication.FormAuthenticator} are always wrapped in a 
+ * {@link org.eclipse.jetty.security.authentication.SessionAuthentication}
  * <p>
  * If a {@link LoginService} has not been set on this factory, then
  * the service is selected by searching the {@link Server#getBeans(Class)} results for
@@ -61,7 +65,6 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
         return authenticator;
     }
    
-
     /* ------------------------------------------------------------ */
     /**
      * @return the loginService

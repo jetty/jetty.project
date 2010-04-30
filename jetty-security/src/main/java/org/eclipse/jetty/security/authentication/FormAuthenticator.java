@@ -42,15 +42,16 @@ import org.eclipse.jetty.util.log.Log;
 /**
  * FORM Authenticator.
  * 
- * The form authenticator redirects unauthenticated requests to a log page
- * which should use a form to gather username/password from the user and send them
- * to the /j_security_check URI within the context.  FormAuthentication is intended
- * to be used together with the {@link SessionCachingAuthenticator} so that the
- * auth results may be associated with the session.
- *  
- * This authenticator implements form authentication will use dispatchers to
+ * <p>This authenticator implements form authentication will use dispatchers to
  * the login page if the {@link #__FORM_DISPATCH} init parameter is set to true.
- * Otherwise it will redirect.
+ * Otherwise it will redirect.</p>
+ * 
+ * <p>The form authenticator redirects unauthenticated requests to a log page
+ * which should use a form to gather username/password from the user and send them
+ * to the /j_security_check URI within the context.  FormAuthentication uses 
+ * {@link SessionAuthentication} to wrap Authentication results so that they
+ * are  associated with the session.</p>
+ *  
  * 
  */
 public class FormAuthenticator extends LoginAuthenticator

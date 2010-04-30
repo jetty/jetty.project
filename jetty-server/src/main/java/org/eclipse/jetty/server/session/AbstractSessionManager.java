@@ -54,10 +54,6 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
  * a specialized version of the Session inner class that provides an attribute
  * Map.
  * <p>
- * If the property
- * <code>org.eclipse.jetty.servlet.AbstractSessionManager.23Notifications</code> is set to
- * true, the 2.3 servlet spec notification style will be used.
- * <p>
  *
  * 
  */
