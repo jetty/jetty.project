@@ -285,7 +285,6 @@ public class HttpExchangeTest extends TestCase
         assertEquals(HttpExchange.STATUS_COMPLETED,status);
         String result=httpExchange.getResponseContent();
         assertEquals(babuf.length(),result.length());
-        assertEquals(HttpExchange.STATUS_COMPLETED, status);
 
         httpExchange.reset();
         httpExchange.setURL(_scheme+"localhost:"+_port+"/");
