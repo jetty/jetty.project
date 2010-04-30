@@ -59,9 +59,9 @@ public class HttpExchangeTest extends TestCase
     {
         startServer();
         _httpClient=new HttpClient();
-        _httpClient.setIdleTimeout(2000);
-        _httpClient.setTimeout(2500);
-        _httpClient.setConnectTimeout(1000);
+        _httpClient.setIdleTimeout(3000);
+        _httpClient.setTimeout(3500);
+        _httpClient.setConnectTimeout(2000);
         _httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
         _httpClient.setMaxConnectionsPerAddress(_maxConnectionsPerAddress);
         _httpClient.start();
