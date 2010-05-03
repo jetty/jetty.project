@@ -17,7 +17,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     final WebSocketGenerator _generator;
     final long _timestamp;
     final WebSocket _websocket;
-    final int _maxIdleTimeMs=300000;
+    final int _maxIdleTimeMs;
 
     public WebSocketConnection(WebSocket websocket, EndPoint endpoint)
     {
@@ -26,10 +26,15 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     
     public WebSocketConnection(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, long maxIdleTime)
     {
+        // TODO - can we use the endpoint idle mechanism?
+        if (endpoint instanceof AsyncEndPoint)
+            ((AsyncEndPoint)endpoint).cancelIdle();
+        
         _endp = endpoint;
         _timestamp = timestamp;
         _websocket = websocket;
         _generator = new WebSocketGenerator(buffers, _endp);
+        _maxIdleTimeMs=(int)maxIdleTime;
         _parser = new WebSocketParser(buffers, endpoint, new WebSocketParser.EventHandler()
         {
             public void onFrame(byte frame, String data)

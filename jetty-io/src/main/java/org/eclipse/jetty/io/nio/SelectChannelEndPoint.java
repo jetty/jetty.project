@@ -336,6 +336,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
             finally
             {
                 _writeBlocked=false;
+                if (_idleTask.isScheduled())
+                    scheduleIdle();
             }
         }
         return true;

@@ -549,6 +549,8 @@ public class HttpConnection implements Connection
         @Override
         public void headerComplete() throws IOException
         {
+            if (_endp instanceof AsyncEndPoint)
+                ((AsyncEndPoint)_endp).scheduleIdle();
             HttpExchange exchange = _exchange;
             if (exchange!=null)
                 exchange.setStatus(HttpExchange.STATUS_PARSING_CONTENT);
@@ -557,6 +559,8 @@ public class HttpConnection implements Connection
         @Override
         public void content(Buffer ref) throws IOException
         {
+            if (_endp instanceof AsyncEndPoint)
+                ((AsyncEndPoint)_endp).scheduleIdle();
             HttpExchange exchange = _exchange;
             if (exchange!=null)
                 exchange.getEventListener().onResponseContent(ref);
