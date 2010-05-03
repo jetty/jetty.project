@@ -16,10 +16,12 @@ package org.eclipse.jetty.webapp;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.PermissionCollection;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.jar.JarFile;
 
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
@@ -42,6 +44,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 
 /* ------------------------------------------------------------ */
 /** Web Application Context Handler.
@@ -116,14 +119,14 @@ public class WebAppContext extends ServletContextHandler
     private boolean _configurationClassesSet=false;
     private boolean _configurationsSet=false;
 
-    public static ContextHandler getCurrentWebAppContext()
+    public static WebAppContext getCurrentWebAppContext()
     {
         ContextHandler.Context context=ContextHandler.getCurrentContext();
         if (context!=null)
         {
             ContextHandler handler = context.getContextHandler();
             if (handler instanceof WebAppContext)
-                return handler;
+                return (WebAppContext)handler;
         }
         return null;
     }
@@ -132,6 +135,7 @@ public class WebAppContext extends ServletContextHandler
     public WebAppContext()
     {
         super(SESSIONS|SECURITY); 
+        _scontext=new Context();
         setErrorHandler(new ErrorPageErrorHandler());
     }
     
@@ -143,6 +147,7 @@ public class WebAppContext extends ServletContextHandler
     public WebAppContext(String webApp,String contextPath)
     {
         super(null,contextPath,SESSIONS|SECURITY);
+        _scontext=new Context();
         setContextPath(contextPath);
         setWar(webApp);
         setErrorHandler(new ErrorPageErrorHandler());
@@ -157,6 +162,7 @@ public class WebAppContext extends ServletContextHandler
     public WebAppContext(HandlerContainer parent, String webApp, String contextPath)
     {
         super(parent,contextPath,SESSIONS|SECURITY);
+        _scontext=new Context();
         setWar(webApp);
         setErrorHandler(new ErrorPageErrorHandler());
     }
@@ -167,7 +173,7 @@ public class WebAppContext extends ServletContextHandler
     public WebAppContext(SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
     {
         super(null,sessionHandler,securityHandler,servletHandler,errorHandler);
-        
+        _scontext=new Context();
         setErrorHandler(errorHandler!=null?errorHandler:new ErrorPageErrorHandler());
     }
 
@@ -992,4 +998,30 @@ public class WebAppContext extends ServletContextHandler
         
         super.startContext();
     }
+    
+    /* ------------------------------------------------------------ */
+    public class Context extends ServletContextHandler.Context
+    {
+        /* ------------------------------------------------------------ */
+        public URL getResource(String path) throws MalformedURLException
+        {
+            Resource resource=WebAppContext.this.getResource(path);
+            if (resource==null || !resource.exists())
+                return null;
+            
+            // Should we go to the original war?
+            if (resource.isDirectory() && resource instanceof ResourceCollection && !WebAppContext.this.isExtractWAR())
+            {
+                Resource[] resources = ((ResourceCollection)resource).getResources();
+                for (int i=resources.length;i-->0;)
+                {
+                    if (resources[i].getName().startsWith("jar:file"))
+                        return resources[i].getURL();
+                }
+            }
+                
+            return resource.getURL();
+        }
+    }
+
 }

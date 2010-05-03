@@ -14,6 +14,7 @@ jetty-7.1.0.RC1-SNAPSHOT
  + 310918 Synchronize content exchange
  + 311154 Use Appendable in preference to StringBuilder/StringBuffer in APIs
  + 308865 Update test suite to JUnit4 - Module jetty-start
+ + 309153 Hide extracted WEB-INF/lib when running a non-extracted war
 
 jetty-7.1.0.RC0 27 April 2010
  + 294563 Websocket client connection
