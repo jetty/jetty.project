@@ -992,7 +992,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             case NotSet:
             {
-                _processor.setOrigin("weclome-file-list", descriptor);
+                _processor.setOrigin("welcome-file-list", descriptor);
                 addWelcomeFiles(node);
                 break;
             }
@@ -1010,7 +1010,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 //if web-defaults set the welcome-file-list first and
                 //we're processing web.xml then reset the welcome-file-list
                 if (!(descriptor instanceof DefaultsDescriptor) && !(descriptor instanceof OverrideDescriptor) && !(descriptor instanceof Fragment))
+                {
                     _welcomeFiles = null;
+                }
                 addWelcomeFiles(node);
                 break;
             }
@@ -1022,7 +1024,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
             case WebFragment:
             {
-                //A web-fragment first set the welcome-file-list. Other descriptors just add.
+                //A web-fragment first set the welcome-file-list. Other descriptors just add. 
                 addWelcomeFiles(node);
                 break;
             }
@@ -1123,6 +1125,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             XmlParser.Node indexNode = (XmlParser.Node) iter.next();
             String welcome = indexNode.toString(false, true);
+            
+            System.err.println("ADDED WELCOME FILE "+welcome);
             
             //Servlet Spec 3.0 p. 74 welcome files are additive
             _welcomeFiles = LazyList.add(_welcomeFiles, welcome);
