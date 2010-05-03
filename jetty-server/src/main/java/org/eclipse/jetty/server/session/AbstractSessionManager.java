@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
  * SessionManager interface provides the majority of the handling required to
  * implement a SessionManager. Concrete implementations of SessionManager based
  * on AbstractSessionManager need only implement the newSession method to return
- * a specialized version of the Session inner class that provides an attribute
+ * a specialised version of the Session inner class that provides an attribute
  * Map.
  * <p>
  *
@@ -87,6 +87,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     protected int _maxCookieAge=-1;
     protected int _refreshCookieAge;
     protected boolean _nodeIdInSessionId;
+    protected boolean _checkingRemoteSessionIdEncoding;
 
     protected final CounterStatistic _sessionsStats = new CounterStatistic();
     protected final SampleStatistic _sessionTimeStats = new SampleStatistic();
@@ -192,6 +193,10 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             // set up the sessionPath if it isn't already
             if (_sessionPath==null)
                 _sessionPath=_context.getInitParameter(SessionManager.__SessionPathProperty);
+            
+            tmp=_context.getInitParameter(SessionManager.__CheckRemoteSessionEncoding);
+            if (tmp!=null)
+                _checkingRemoteSessionIdEncoding=Boolean.parseBoolean(tmp);
         }
 
         super.doStart();
@@ -739,6 +744,24 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     public double getSessionTimeStdDev()
     {
         return _sessionTimeStats.getStdDev();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.SessionManager#isCheckingRemoteSessionIdEncoding()
+     */
+    public boolean isCheckingRemoteSessionIdEncoding()
+    {
+        return _checkingRemoteSessionIdEncoding;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.SessionManager#setCheckingRemoteSessionIdEncoding(boolean)
+     */
+    public void setCheckingRemoteSessionIdEncoding(boolean remote)
+    {
+        _checkingRemoteSessionIdEncoding=remote;
     }
 
     /* ------------------------------------------------------------ */

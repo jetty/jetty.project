@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * Session Manager.
  * The API required to manage sessions for a servlet context.
  *
- * 
  */
 public interface SessionManager extends LifeCycle
 {
@@ -51,6 +50,7 @@ public interface SessionManager extends LifeCycle
      */
     public final static String __SessionIdPathParameterNameProperty = "org.eclipse.jetty.servlet.SessionIdPathParameterName";
     public final static String __DefaultSessionIdPathParameterName = "jsessionid";
+    public final static String __CheckRemoteSessionEncoding = "org.eclipse.jetty.servlet.CheckingRemoteSessionIdEncoding";
 
 
     /* ------------------------------------------------------------ */
@@ -326,4 +326,14 @@ public interface SessionManager extends LifeCycle
      * @return whether the session management is handled via cookies.
      */
     public boolean isUsingCookies();
+    
+    /**
+     * @return True if absolute URLs are check for remoteness before being session encoded.
+     */
+    public boolean isCheckingRemoteSessionIdEncoding();
+    
+    /**
+     * @param remote True if absolute URLs are check for remoteness before being session encoded.
+     */
+    public void setCheckingRemoteSessionIdEncoding(boolean remote);
 }

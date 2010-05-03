@@ -574,6 +574,17 @@ public class SessionHandlerTest extends TestCase
         {
         }
 
+        boolean _checkRemote=false;
+        public boolean isCheckingRemoteSessionIdEncoding()
+        {
+            return _checkRemote;
+        }
+
+        public void setCheckingRemoteSessionIdEncoding(boolean remote)
+        {
+            _checkRemote=remote;
+        }
+
     }
 
 }

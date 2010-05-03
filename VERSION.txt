@@ -1,6 +1,6 @@
 
 jetty-7.1.0.RC1-SNAPSHOT
- + 291448 encodeRedirectURL only encodes absolute URLs to same host/port/context
+ + 291448 SessionManager has isCheckingRemoteSessionIdEncoding
  + 297104 HTTP CONNECT does not work correct with SSL destinations
  + 308848 Update test suite to JUnit4 - Module jetty-ajp
  + 308861 Update test suite to JUnit4 - Module jetty-security
