@@ -40,12 +40,21 @@
             </goals>
             <configuration>
               <tasks>
-                <property name="orbit.base.url" value="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles" />
+                <!--property name="orbit.base.url" value="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles" /-->
+                <property name="orbit.base.url" value="http://download.eclipse.org/tools/orbit/downloads/drops/S20100423142122/bundles" />
+
                 <mkdir dir="${assembly.directory}/lib" />
-                <get src="${orbit.base.url}/javax.servlet_2.5.0.v200806031605.jar" dest="${assembly.directory}/lib/servlet-api-2.5.jar" usetimestamp="true" verbose="true" />
+                <get src="${orbit.base.url}/javax.servlet_2.5.0.v200910301333.jar" dest="${assembly.directory}/lib/servlet-api-2.5.jar" usetimestamp="true" verbose="true" />
+               
                 <mkdir dir="${assembly.directory}/lib/jndi" />
-                <get src="${orbit.base.url}/javax.activation_1.1.0.v200905021805.jar" dest="${assembly.directory}/lib/jndi/activation-1.1.jar" usetimestamp="true" verbose="true" />
+                <get src="${orbit.base.url}/javax.activation_1.1.0.v200906290531.jar" dest="${assembly.directory}/lib/jndi/activation-1.1.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit.base.url}/javax.mail_1.4.0.v200905040518.jar" dest="${assembly.directory}/lib/jndi/mail-1.4.jar" usetimestamp="true" verbose="true" />
+               
+                <mkdir dir="${assembly.directory}/lib/jsp" />
+	            <get src="http://download.eclipse.org/eclipse/downloads/drops/S-3.6M7-201004291549/download.php?dropFile=ecj-3.6M7.jar" dest="${assembly.directory}/lib/jsp/core-3.6M7.jar" usetimestamp="true" verbose="true"/>
+                <get src="${orbit.base.url}/javax.servlet.jsp_2.1.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/jsp-api-2.1-glassfish-2.1.v20091210.jar" usetimestamp="true" verbose="true" />
+                <get src="${orbit.base.url}/org.apache.jasper.glassfish_2.1.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/jsp-2.1-glassfish-2.1.v20091210.jar" usetimestamp="true" verbose="true" />
+                               
                 <copy file="../VERSION.txt" todir="${assembly.directory}" />
                 <chmod dir="${assembly.directory}/bin" perm="755" includes="**/*.sh" />
               </tasks>
@@ -396,26 +405,6 @@
                   <includes>**</includes>
                   <outputDirectory>${assembly.directory}/lib</outputDirectory>
                 </artifactItem>
-                <!--
-                <artifactItem>
-                  <groupId>org.mortbay.jetty</groupId>
-                  <artifactId>jsp-api-2.1-glassfish</artifactId>
-                  <version>${jsp-2-1-version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib/jsp</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.mortbay.jetty</groupId>
-                  <artifactId>jsp-2.1-glassfish</artifactId>
-                  <version>${jsp-2-1-version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib/jsp</outputDirectory>
-                </artifactItem>               
-                -->
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-jsp-2.1</artifactId>
@@ -423,34 +412,6 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib/jsp</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-          <execution>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jdt</groupId>
-                  <artifactId>core</artifactId>
-                  <version>${eclipse-compiler-version}</version>
-                  <outputDirectory>${assembly.directory}/lib/jsp</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.mortbay.jetty</groupId>
-                  <artifactId>jsp-api-2.1-glassfish</artifactId>
-                  <version>${jsp-2-1-version}</version>
-                  <outputDirectory>${assembly.directory}/lib/jsp</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.mortbay.jetty</groupId>
-                  <artifactId>jsp-2.1-glassfish</artifactId>
-                  <version>${jsp-2-1-version}</version>
                   <outputDirectory>${assembly.directory}/lib/jsp</outputDirectory>
                 </artifactItem>
               </artifactItems>
@@ -545,7 +506,7 @@
       <artifactId>jetty-websocket</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
+    <!--dependency>
       <groupId>org.mortbay.jetty</groupId>
       <artifactId>jsp-api-2.1-glassfish</artifactId>
       <version>${jsp-2-1-version}</version>
@@ -554,7 +515,7 @@
       <groupId>org.mortbay.jetty</groupId>
       <artifactId>jsp-2.1-glassfish</artifactId>
       <version>${jsp-2-1-version}</version>
-    </dependency>
+    </dependency-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jsp-2.1</artifactId>
