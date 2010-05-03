@@ -35,6 +35,11 @@
             <goals>
               <goal>manifest</goal>
             </goals>
+            <configuration>
+              <instructions>
+                <Import-Package>!javax.net.*,*</Import-Package>
+              </instructions>
+            </configuration>
            </execution>
         </executions>
       </plugin>
