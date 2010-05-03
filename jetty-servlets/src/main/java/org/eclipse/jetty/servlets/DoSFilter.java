@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.servlets;
@@ -21,7 +21,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -43,7 +42,7 @@ import org.eclipse.jetty.util.thread.Timeout;
 
 /**
  * Denial of Service filter
- * 
+ *
  * <p>
  * This filter is based on the {@link QoSFilter}. it is useful for limiting
  * exposure to abuse from request flooding, whether malicious, or as a result of
@@ -62,33 +61,33 @@ import org.eclipse.jetty.util.thread.Timeout;
  * implemented, in order to uniquely identify authenticated users.
  * <p>
  * The following init parameters control the behavior of the filter:
- * 
+ *
  * maxRequestsPerSec    the maximum number of requests from a connection per
- *                      second. Requests in excess of this are first delayed, 
+ *                      second. Requests in excess of this are first delayed,
  *                      then throttled.
- * 
- * delayMs              is the delay given to all requests over the rate limit, 
- *                      before they are considered at all. -1 means just reject request, 
+ *
+ * delayMs              is the delay given to all requests over the rate limit,
+ *                      before they are considered at all. -1 means just reject request,
  *                      0 means no delay, otherwise it is the delay.
- * 
+ *
  * maxWaitMs            how long to blocking wait for the throttle semaphore.
- * 
+ *
  * throttledRequests    is the number of requests over the rate limit able to be
  *                      considered at once.
- * 
+ *
  * throttleMs           how long to async wait for semaphore.
- * 
+ *
  * maxRequestMs         how long to allow this request to run.
- * 
- * maxIdleTrackerMs     how long to keep track of request rates for a connection, 
+ *
+ * maxIdleTrackerMs     how long to keep track of request rates for a connection,
  *                      before deciding that the user has gone away, and discarding it
- * 
+ *
  * insertHeaders        if true , insert the DoSFilter headers into the response. Defaults to true.
- * 
+ *
  * trackSessions        if true, usage rate is tracked by session if a session exists. Defaults to true.
- * 
+ *
  * remotePort           if true and session tracking is not used, then rate is tracked by IP+port (effectively connection). Defaults to false.
- * 
+ *
  * ipWhitelist          a comma-separated list of IP addresses that will not be rate limited
  */
 
@@ -138,8 +137,8 @@ public class DoSFilter implements Filter
 
     protected int _maxRequestsPerSec;
     protected final ConcurrentHashMap<String, RateTracker> _rateTrackers=new ConcurrentHashMap<String, RateTracker>();
-    private HashSet<String> _whitelist; 
-    
+    private final HashSet<String> _whitelist = new HashSet<String>();
+
     private final Timeout _requestTimeoutQ = new Timeout();
     private final Timeout _trackerTimeoutQ = new Timeout();
 
@@ -155,12 +154,13 @@ public class DoSFilter implements Filter
         for (int p = 0; p < _queue.length; p++)
         {
             _queue[p] = new ConcurrentLinkedQueue<Continuation>();
-            
+
             final int priority=p;
             _listener[p] = new ContinuationListener()
             {
                 public void onComplete(Continuation continuation)
-                {}
+                {
+                }
 
                 public void onTimeout(Continuation continuation)
                 {
@@ -168,6 +168,9 @@ public class DoSFilter implements Filter
                 }
             };
         }
+
+        _rateTrackers.clear();
+        _whitelist.clear();
 
         int baseRateLimit = __DEFAULT_MAX_REQUESTS_PER_SEC;
         if (filterConfig.getInitParameter(MAX_REQUESTS_PER_S_INIT_PARAM) != null)
@@ -203,39 +206,35 @@ public class DoSFilter implements Filter
         if (filterConfig.getInitParameter(MAX_IDLE_TRACKER_MS_INIT_PARAM) != null )
             maxIdleTrackerMs = Long.parseLong(filterConfig.getInitParameter(MAX_IDLE_TRACKER_MS_INIT_PARAM));
         _maxIdleTrackerMs = maxIdleTrackerMs;
-        
+
         String whitelistString = "";
         if (filterConfig.getInitParameter(IP_WHITELIST_INIT_PARAM) !=null )
             whitelistString = filterConfig.getInitParameter(IP_WHITELIST_INIT_PARAM);
-        
-        // empty 
-        if (whitelistString.length() == 0 )
-            _whitelist = new HashSet<String>();
-        else
+
+        if (whitelistString.length() > 0)
         {
             StringTokenizer tokenizer = new StringTokenizer(whitelistString, ",");
-            _whitelist = new HashSet<String>(tokenizer.countTokens());
             while (tokenizer.hasMoreTokens())
                 _whitelist.add(tokenizer.nextToken().trim());
-            
+
             Log.info("Whitelisted IP addresses: {}", _whitelist.toString());
         }
 
         String tmp = filterConfig.getInitParameter(INSERT_HEADERS_INIT_PARAM);
-        _insertHeaders = tmp==null || Boolean.parseBoolean(tmp); 
-        
+        _insertHeaders = tmp==null || Boolean.parseBoolean(tmp);
+
         tmp = filterConfig.getInitParameter(TRACK_SESSIONS_INIT_PARAM);
         _trackSessions = tmp==null || Boolean.parseBoolean(tmp);
-        
+
         tmp = filterConfig.getInitParameter(REMOTE_PORT_INIT_PARAM);
         _remotePort = tmp!=null&& Boolean.parseBoolean(tmp);
 
         _requestTimeoutQ.setNow();
         _requestTimeoutQ.setDuration(_maxRequestMs);
-        
+
         _trackerTimeoutQ.setNow();
         _trackerTimeoutQ.setDuration(_maxIdleTrackerMs);
-        
+
         _running=true;
         _timerThread = (new Thread()
         {
@@ -245,12 +244,15 @@ public class DoSFilter implements Filter
                 {
                     while (_running)
                     {
+                        long now;
                         synchronized (_requestTimeoutQ)
                         {
-                            _requestTimeoutQ.setNow();
+                            now = _requestTimeoutQ.setNow();
                             _requestTimeoutQ.tick();
-
-                            _trackerTimeoutQ.setNow(_requestTimeoutQ.getNow());
+                        }
+                        synchronized (_trackerTimeoutQ)
+                        {
+                            _trackerTimeoutQ.setNow(now);
                             _trackerTimeoutQ.tick();
                         }
                         try
@@ -271,25 +273,25 @@ public class DoSFilter implements Filter
         });
         _timerThread.start();
     }
-    
+
 
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterchain) throws IOException, ServletException
     {
         final HttpServletRequest srequest = (HttpServletRequest)request;
         final HttpServletResponse sresponse = (HttpServletResponse)response;
-        
+
         final long now=_requestTimeoutQ.getNow();
-        
+
         // Look for the rate tracker for this request
         RateTracker tracker = (RateTracker)request.getAttribute(__TRACKER);
-            
+
         if (tracker==null)
         {
             // This is the first time we have seen this request.
-            
+
             // get a rate tracker associated with this request, and record one hit
             tracker = getRateTracker(request);
-            
+
             // Calculate the rate and check it is over the allowed limit
             final boolean overRateLimit = tracker.isRateExceeded(now);
 
@@ -298,15 +300,15 @@ public class DoSFilter implements Filter
             {
                 doFilterChain(filterchain,srequest,sresponse);
                 return;
-            }   
-            
+            }
+
             // We are over the limit.
             Log.warn("DOS ALERT: ip="+srequest.getRemoteAddr()+",session="+srequest.getRequestedSessionId()+",user="+srequest.getUserPrincipal());
-            
+
             // So either reject it, delay it or throttle it
             switch((int)_delayMs)
             {
-                case -1: 
+                case -1:
                 {
                     // Reject this request
                     if (_insertHeaders)
@@ -346,7 +348,7 @@ public class DoSFilter implements Filter
             {
                 // we were not accepted, so either we suspend to wait,or if we were woken up we insist or we fail
                 final Continuation continuation = ContinuationSupport.getContinuation(request);
-                
+
                 Boolean throttled = (Boolean)request.getAttribute(__THROTTLED);
                 if (throttled!=Boolean.TRUE && _throttleMs>0)
                 {
@@ -370,12 +372,12 @@ public class DoSFilter implements Filter
                     accepted = true;
                 }
             }
-            
+
             // if we were accepted (either immediately or after throttle)
-            if (accepted)       
+            if (accepted)
                 // call the chain
                 doFilterChain(filterchain,srequest,sresponse);
-            else                
+            else
             {
                 // fail the request
                 if (_insertHeaders)
@@ -414,11 +416,11 @@ public class DoSFilter implements Filter
      * @throws IOException
      * @throws ServletException
      */
-    protected void doFilterChain(FilterChain chain, final HttpServletRequest request, final HttpServletResponse response) 
+    protected void doFilterChain(FilterChain chain, final HttpServletRequest request, final HttpServletResponse response)
         throws IOException, ServletException
     {
         final Thread thread=Thread.currentThread();
-        
+
         final Timeout.Task requestTimeout = new Timeout.Task()
         {
             public void expired()
@@ -458,7 +460,7 @@ public class DoSFilter implements Filter
         {
             response.setHeader("Connection", "close");
         }
-        try 
+        try
         {
             try
             {
@@ -473,14 +475,14 @@ public class DoSFilter implements Filter
         {
             Log.warn(e);
         }
-        
+
         // interrupt the handling thread
         thread.interrupt();
     }
-        
+
     /**
      * Get priority for this request, based on user type
-     * 
+     *
      * @param request
      * @param tracker
      * @return priority
@@ -507,39 +509,44 @@ public class DoSFilter implements Filter
      * track of this connection's request rate. If this is not the first request
      * from this connection, return the existing object with the stored stats.
      * If it is the first request, then create a new request tracker.
-     * 
+     *
      * Assumes that each connection has an identifying characteristic, and goes
      * through them in order, taking the first that matches: user id (logged
      * in), session id, client IP address. Unidentifiable connections are lumped
      * into one.
-     * 
+     *
      * When a session expires, its rate tracker is automatically deleted.
-     * 
+     *
      * @param request
      * @return the request rate tracker for the current connection
      */
     public RateTracker getRateTracker(ServletRequest request)
     {
         HttpServletRequest srequest = (HttpServletRequest)request;
-
-        String loadId;
-        final int type;
-        
-        loadId = extractUserId(request);
         HttpSession session=srequest.getSession(false);
-        if (_trackSessions && session!=null && !session.isNew())
+
+        String loadId = extractUserId(request);
+        final int type;
+        if (loadId != null)
         {
-            loadId=session.getId();
-            type = USER_SESSION;
+            type = USER_AUTH;
         }
         else
         {
-            loadId = _remotePort?(request.getRemoteAddr()+request.getRemotePort()):request.getRemoteAddr();
-            type = USER_IP;
+            if (_trackSessions && session!=null && !session.isNew())
+            {
+                loadId=session.getId();
+                type = USER_SESSION;
+            }
+            else
+            {
+                loadId = _remotePort?(request.getRemoteAddr()+request.getRemotePort()):request.getRemoteAddr();
+                type = USER_IP;
+            }
         }
 
         RateTracker tracker=_rateTrackers.get(loadId);
-        
+
         if (tracker==null)
         {
             RateTracker t;
@@ -551,11 +558,11 @@ public class DoSFilter implements Filter
             {
                 t = new RateTracker(loadId,type,_maxRequestsPerSec);
             }
-            
+
             tracker=_rateTrackers.putIfAbsent(loadId,t);
             if (tracker==null)
                 tracker=t;
-            
+
             if (type == USER_IP)
             {
                 // USER_IP expiration from _rateTrackers is handled by the _trackerTimeoutQ
@@ -579,14 +586,19 @@ public class DoSFilter implements Filter
         synchronized (_requestTimeoutQ)
         {
             _requestTimeoutQ.cancelAll();
+        }
+        synchronized (_trackerTimeoutQ)
+        {
             _trackerTimeoutQ.cancelAll();
         }
+        _rateTrackers.clear();
+        _whitelist.clear();
     }
 
     /**
      * Returns the user id, used to track this connection.
      * This SHOULD be overridden by subclasses.
-     * 
+     *
      * @param request
      * @return a unique user id, if logged in; otherwise null.
      */
@@ -605,7 +617,7 @@ public class DoSFilter implements Filter
         protected final int _type;
         protected final long[] _timestamps;
         protected int _next;
-        
+
         public RateTracker(String id, int type,int maxRequestsPerSecond)
         {
             _id = id;
@@ -642,7 +654,7 @@ public class DoSFilter implements Filter
             return _type;
         }
 
-        
+
         public void valueBound(HttpSessionBindingEvent event)
         {
         }
@@ -651,14 +663,14 @@ public class DoSFilter implements Filter
         {
             _rateTrackers.remove(_id);
         }
-        
+
         public void expired()
         {
             long now = _trackerTimeoutQ.getNow();
-            int latestIndex = _next == 0 ? 3 : (_next - 1 ) % _timestamps.length; 
+            int latestIndex = _next == 0 ? 3 : (_next - 1 ) % _timestamps.length;
             long last=_timestamps[latestIndex];
             boolean hasRecentRequest = last != 0 && (now-last)<1000L;
-            
+
             if (hasRecentRequest)
                 reschedule();
             else
@@ -671,7 +683,7 @@ public class DoSFilter implements Filter
             return "RateTracker/"+_id+"/"+_type;
         }
     }
-    
+
     class FixedRateTracker extends RateTracker
     {
         public FixedRateTracker(String id, int type, int numRecentRequestsTracked)
@@ -693,7 +705,7 @@ public class DoSFilter implements Filter
 
             return false;
         }
-        
+
         @Override
         public String toString()
         {

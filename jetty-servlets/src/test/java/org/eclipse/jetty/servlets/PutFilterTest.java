@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.servlets;
@@ -18,30 +18,33 @@ import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
-
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.testing.HttpTester;
 import org.eclipse.jetty.testing.ServletTester;
 import org.eclipse.jetty.util.IO;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-public class PutFilterTest extends TestCase
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+public class PutFilterTest
 {
-    File _dir;
-    ServletTester tester;
-    
-    protected void setUp() throws Exception
+    private File _dir;
+    private ServletTester tester;
+
+    @Before
+    public void setUp() throws Exception
     {
         _dir = File.createTempFile("testPutFilter",null);
-        _dir.delete();
-        _dir.mkdir();
+        assertTrue(_dir.delete());
+        assertTrue(_dir.mkdir());
         _dir.deleteOnExit();
         assertTrue(_dir.isDirectory());
-        
-        super.setUp();
+
         tester=new ServletTester();
         tester.setContextPath("/context");
         tester.setResourceBase(_dir.getCanonicalPath());
@@ -49,21 +52,21 @@ public class PutFilterTest extends TestCase
         FilterHolder holder = tester.addFilter(PutFilter.class,"/*",0);
         holder.setInitParameter("delAllowed","true");
         tester.start();
-        
-        
     }
 
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
-        super.tearDown();
+        tester.stop();
     }
 
+    @Test
     public void testHandlePut() throws Exception
     {
         // generated and parsed test
         HttpTester request = new HttpTester();
         HttpTester response = new HttpTester();
-        
+
         // test GET
         request.setMethod("GET");
         request.setVersion("HTTP/1.0");
@@ -82,7 +85,7 @@ public class PutFilterTest extends TestCase
         response.parse(tester.getResponses(request.generate()));
         assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_CREATED,response.getStatus());
-        
+
         File file=new File(_dir,"file.txt");
         assertTrue(file.exists());
         assertEquals(data0,IO.toString(new FileInputStream(file)));
@@ -106,12 +109,10 @@ public class PutFilterTest extends TestCase
         response.parse(tester.getResponses(request.generate()));
         assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-        
+
         file=new File(_dir,"file.txt");
         assertTrue(file.exists());
         assertEquals(data1,IO.toString(new FileInputStream(file)));
-        
-        
 
         // test PUT2
         request.setMethod("PUT");
@@ -142,7 +143,7 @@ public class PutFilterTest extends TestCase
         out.write(to_send.substring(l-5).getBytes());
         out.flush();
         String in=IO.toString(socket.getInputStream());
-        
+
         request.setMethod("GET");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
@@ -151,10 +152,9 @@ public class PutFilterTest extends TestCase
         assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertEquals(data2,response.getContent());
-        
-        
     }
 
+    @Test
     public void testHandleDelete() throws Exception
     {
         // generated and parsed test
@@ -172,20 +172,18 @@ public class PutFilterTest extends TestCase
         response.parse(tester.getResponses(request.generate()));
         assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_CREATED,response.getStatus());
-        
+
         File file=new File(_dir,"file.txt");
         assertTrue(file.exists());
         FileInputStream fis = new FileInputStream(file);
         assertEquals(data1,IO.toString(fis));
         fis.close();
-        
 
         request.setMethod("DELETE");
         request.setURI("/context/file.txt");
         response.parse(tester.getResponses(request.generate()));
         assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_NO_CONTENT,response.getStatus());
-        
 
         assertTrue(!file.exists());
 
@@ -194,10 +192,9 @@ public class PutFilterTest extends TestCase
         response.parse(tester.getResponses(request.generate()));
         assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_FORBIDDEN,response.getStatus());
-           
-        
     }
 
+    @Test
     public void testHandleMove() throws Exception
     {
         // generated and parsed test
@@ -215,13 +212,12 @@ public class PutFilterTest extends TestCase
         response.parse(tester.getResponses(request.generate()));
         assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_CREATED,response.getStatus());
-        
+
         File file=new File(_dir,"file.txt");
         assertTrue(file.exists());
         FileInputStream fis = new FileInputStream(file);
         assertEquals(data1,IO.toString(fis));
         fis.close();
-        
 
         request.setMethod("MOVE");
         request.setURI("/context/file.txt");
@@ -229,22 +225,22 @@ public class PutFilterTest extends TestCase
         response.parse(tester.getResponses(request.generate()));
         assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_NO_CONTENT,response.getStatus());
-        
+
         assertTrue(!file.exists());
 
         File n_file=new File(_dir,"blah.txt");
         assertTrue(n_file.exists());
-
     }
 
+    @Test
     public void testHandleOptions()
     {
         // TODO implement
     }
 
+    @Test
     public void testPassConditionalHeaders()
     {
         // TODO implement
     }
-
 }
