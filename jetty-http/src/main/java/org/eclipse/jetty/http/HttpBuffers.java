@@ -115,7 +115,7 @@ public abstract class HttpBuffers extends AbstractLifeCycle
 
     public Buffers getResponseBuffers()
     {
-        return _requestBuffers;
+        return _responseBuffers;
     }
     
     /**
