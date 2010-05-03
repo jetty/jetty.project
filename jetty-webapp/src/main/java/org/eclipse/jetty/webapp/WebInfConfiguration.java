@@ -403,9 +403,12 @@ public class WebInfConfiguration implements Configuration
                 {
                     // look for a sibling like "foo/" to a "foo.war"
                     File warfile=Resource.newResource(war).getFile();
-                    File sibling = new File(warfile.getParent(),warfile.getName().substring(0,warfile.getName().length()-4));
-                    if (sibling.exists() && sibling.isDirectory() && sibling.canWrite())
-                        extractedWebAppDir=sibling;
+                    if (warfile!=null)
+                    {
+                        File sibling = new File(warfile.getParent(),warfile.getName().substring(0,warfile.getName().length()-4));
+                        if (sibling.exists() && sibling.isDirectory() && sibling.canWrite())
+                            extractedWebAppDir=sibling;
+                    }
                 }
                 
                 if (extractedWebAppDir==null)

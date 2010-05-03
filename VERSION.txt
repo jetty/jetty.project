@@ -7,6 +7,7 @@ jetty-7.1.0.RC1-SNAPSHOT
  + 308868 Update test suite to JUnit4 - Module jetty-websocket
  + 308869 Update test suite to JUnit4 - Module jetty-xml
  + 310094 Improved start.jar options handling and configs
+ + 310382 NPE protection when WAR is not a file
  + 310562 SslSocketConnector fails to start if excludeCipherSuites is set
  + 310634 Get the localport when opening a server socket.
  + 310703 Update test suite to JUnit4 - Module tests/test-integration
