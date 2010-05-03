@@ -66,7 +66,34 @@
             </execution>
           </executions>
         </plugin>
-
+      <!-- source maven plugin creates the source bundle and adds manifest -->
+      <plugin>
+        <inherited>true</inherited>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.1.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <archive>
+                <manifestEntries>
+                  <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
+                  <Bundle-Name>${name}</Bundle-Name>
+                  <Bundle-SymbolicName>${bundle-symbolic-name}.source;singleton:=true</Bundle-SymbolicName>
+                  <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
+                  <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
+                  <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
+                </manifestEntries>
+              </archive>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <!-- Build helper maven plugin sets the parsedVersion.osgiVersion property -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -260,41 +287,6 @@
               </configuration>
             </plugin>
           </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>osgi</id>
-      <build>
-        <plugins>
-          <!-- source maven plugin creates the source bundle and adds manifest -->
-          <plugin>
-            <inherited>true</inherited>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
-            <version>2.1.1</version>
-            <executions>
-              <execution>
-                <id>attach-sources</id>
-                <phase>process-classes</phase>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
-                <configuration>
-                  <archive>
-                    <manifestEntries>
-                      <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
-                      <Bundle-Name>${name}</Bundle-Name>
-                      <Bundle-SymbolicName>${bundle-symbolic-name}.source;singleton:=true</Bundle-SymbolicName>
-                      <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
-                      <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
-                      <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
-                    </manifestEntries>
-                  </archive>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
       </build>
     </profile>
   </profiles>
