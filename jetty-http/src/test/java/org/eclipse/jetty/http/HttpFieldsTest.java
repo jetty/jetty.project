@@ -378,7 +378,20 @@ public class HttpFieldsTest extends TestCase
         fields.clear();
         fields.addSetCookie("json","{\"services\":[\"cwa\", \"aa\"]}",null,null,-1,null,false,false,-1);
         assertEquals("json=\"{\\\"services\\\":[\\\"cwa\\\", \\\"aa\\\"]}\"",fields.getStringField("Set-Cookie"));
-    
+
+        fields.clear();
+        fields.addSetCookie("name","value","domain",null,-1,null,false,false,-1);
+        fields.addSetCookie("name","other","domain",null,-1,null,false,false,-1);
+        assertEquals("name=other;Domain=domain",fields.getStringField("Set-Cookie"));
+        fields.addSetCookie("name","more","domain",null,-1,null,false,false,-1);
+        assertEquals("name=more;Domain=domain",fields.getStringField("Set-Cookie"));
+        fields.addSetCookie("foo","bar","domain",null,-1,null,false,false,-1);
+        fields.addSetCookie("foo","bob","domain",null,-1,null,false,false,-1);
+        assertEquals("name=more;Domain=domain",fields.getStringField("Set-Cookie"));
+        
+        Enumeration e=fields.getValues("Set-Cookie");
+        assertEquals("name=more;Domain=domain",e.nextElement());
+        assertEquals("foo=bob;Domain=domain",e.nextElement());
     }
     
     private Set enum2set(Enumeration e)

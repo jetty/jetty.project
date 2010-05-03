@@ -983,6 +983,7 @@ public class HttpFields
         String name_value_params;
         QuotedStringTokenizer.quoteIfNeeded(buf, name);
         buf.append('=');
+        String start=buf.toString();
         if (value != null && value.length() > 0)
             QuotedStringTokenizer.quoteIfNeeded(buf, value);
 
@@ -1039,6 +1040,24 @@ public class HttpFields
         // TODO - straight to Buffer?
         name_value_params = buf.toString();
         put(HttpHeaders.EXPIRES_BUFFER, __01Jan1970_BUFFER);
+        
+        // look for existing cookie
+        Field field = getField(HttpHeaders.SET_COOKIE_BUFFER);
+        if (field != null)
+        {
+            final int revision=_revision;
+            
+            while (field!=null)
+            {
+                if (field._revision!=revision || field._value!=null && field._value.toString().startsWith(start))
+                {
+                    field.reset(new ByteArrayBuffer(name_value_params),-1,revision);
+                    return;
+                }
+                field=field._next;
+            }
+        }
+        
         add(HttpHeaders.SET_COOKIE_BUFFER, new ByteArrayBuffer(name_value_params));
     }
 
