@@ -23,6 +23,11 @@
             <goals>
               <goal>manifest</goal>
             </goals>
+            <configuration>
+              <instructions>
+                <Import-Package>!javax.management.*,*</Import-Package>
+              </instructions>
+            </configuration>
            </execution>
         </executions>
       </plugin>
