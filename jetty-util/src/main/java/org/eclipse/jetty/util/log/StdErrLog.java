@@ -20,12 +20,17 @@ import org.eclipse.jetty.util.DateCache;
 /**
  * StdErr Logging. This implementation of the Logging facade sends all logs to
  * StdErr with minimal formatting.
- *
- * If the system property "org.eclipse.jetty.util.log.DEBUG" is set, then debug
- * logs are printed if stderr is being used.
  * <p>
- * For named debuggers, the system property name+".DEBUG" is checked. If it is
- * not not set, then "org.eclipse.jetty.util.log.DEBUG" is used as the default.
+ * If the system property "org.eclipse.jetty.util.log.DEBUG" is set, then debug
+ * logs are printed if stderr is being used. For named debuggers, the system 
+ * property name+".DEBUG" is checked. If it is not not set, then 
+ * "org.eclipse.jetty.util.log.DEBUG" is used as the default.
+ * <p>
+ * If the system property "org.eclipse.jetty.util.log.SOURCE" is set, then the
+ * source method/file of a log is logged. For named debuggers, the system 
+ * property name+".SOURCE" is checked. If it is not not set, then 
+ * "org.eclipse.jetty.util.log.SOURCE" is used as the default.
+ * 
  */
 public class StdErrLog implements Logger
 {
@@ -34,6 +39,9 @@ public class StdErrLog implements Logger
     private final static boolean __debug = Boolean.parseBoolean(
             System.getProperty("org.eclipse.jetty.util.log.DEBUG",
                     System.getProperty("org.eclipse.jetty.util.log.stderr.DEBUG", "false")));
+    private final static boolean __source = Boolean.parseBoolean(
+            System.getProperty("org.eclipse.jetty.util.log.SOURCE",
+                    System.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE", "false")));
 
     static
     {
@@ -48,6 +56,7 @@ public class StdErrLog implements Logger
     }
 
     private boolean _debug = __debug;
+    private boolean _source = __source;
     private final String _name;
     private boolean _hideStacks = false;
 
@@ -62,11 +71,20 @@ public class StdErrLog implements Logger
 
         try
         {
-            _debug = Boolean.parseBoolean(System.getProperty(_name + ".DEBUG", Boolean.toString(__debug)));
+            _debug = Boolean.parseBoolean(System.getProperty(_name + ".DEBUG", Boolean.toString(_debug)));
         }
         catch (AccessControlException ace)
         {
             _debug = __debug;
+        }
+        
+        try
+        {
+            _source = Boolean.parseBoolean(System.getProperty(_name + ".SOURCE", Boolean.toString(_source)));
+        }
+        catch (AccessControlException ace)
+        {
+            _source = __source;
         }
     }
 
@@ -83,6 +101,24 @@ public class StdErrLog implements Logger
     public void setHideStacks(boolean hideStacks)
     {
         _hideStacks = hideStacks;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Is the source of a log, logged
+     * @return true if the class, method, file and line number of a log is logged.
+     */
+    public boolean isSource()
+    {
+        return _source;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set if a log source is logged.
+     * @param source true if the class, method, file and line number of a log is logged.
+     */
+    public void setSource(boolean source)
+    {
+        _source = source;
     }
 
     public void warn(String msg, Object... args)
@@ -184,6 +220,27 @@ public class StdErrLog implements Logger
         else
             buffer.append(".00");
         buffer.append(ms).append(tag).append(_name).append(':');
+        if (_source)
+        {
+            Throwable source = new Throwable();
+            StackTraceElement[] frames =  source.getStackTrace();
+            for (int i=0;i<frames.length;i++)
+            {
+                final StackTraceElement frame = frames[i];
+                String clazz = frame.getClassName();
+                if (clazz.equals(StdErrLog.class.getName())|| clazz.equals(Log.class.getName()))
+                    continue;
+                if (clazz.startsWith("org.eclipse.jetty."))
+                    buffer.append("o.e.j.").append(clazz,18,clazz.length());
+                else
+                    buffer.append(clazz);
+                buffer.append('#').append(frame.getMethodName());
+                if (frame.getFileName()!=null)
+                    buffer.append('(').append(frame.getFileName()).append(':').append(frame.getLineNumber()).append(')');
+                buffer.append(':');
+                break;
+            }
+        }
     }
 
     private void format(StringBuilder builder, String msg, Object... args)
