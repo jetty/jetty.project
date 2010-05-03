@@ -49,23 +49,23 @@
           <tagBase>svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags</tagBase>
         </configuration>
       </plugin>
-       <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-remote-resources-plugin</artifactId>
-          <executions>
-            <execution>
-              <phase>generate-resources</phase>
-              <goals>
-                <goal>process</goal>
-              </goals>
-              <configuration>
-                <resourceBundles>
-                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0</resourceBundle>
-                </resourceBundles>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-remote-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>process</goal>
+            </goals>
+            <configuration>
+              <resourceBundles>
+                <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0</resourceBundle>
+              </resourceBundles>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <!-- source maven plugin creates the source bundle and adds manifest -->
       <plugin>
         <inherited>true</inherited>
@@ -112,45 +112,45 @@
     </plugins>
     <pluginManagement>
       <plugins>
-       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <Implementation-Version>${project.version}</Implementation-Version>
-              <Implementation-Vendor>Eclipse.org - Jetty</Implementation-Vendor>
-              <url>${jetty.url}</url>
-            </manifestEntries>
-          </archive>
-        </configuration>
-       </plugin>
-       <plugin>
-         <groupId>org.apache.maven.plugins</groupId>
-         <artifactId>maven-surefire-plugin</artifactId>
-         <version>2.4.2</version>
-         <configuration>
-           <failIfNoTests>false</failIfNoTests>
-         </configuration>
-       </plugin>
-       <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <version>2.0.0</version>
-        <extensions>true</extensions>
-        <configuration>
-          <instructions>
-            <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
-            <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
-            <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
-            <Bundle-Localization>plugin</Bundle-Localization>
-            <Bundle-Classpath>.</Bundle-Classpath>
-            <Bundle-Copyright>Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
-            <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
-          </instructions>
-        </configuration>
-       </plugin>
-       <plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <configuration>
+            <archive>
+              <manifestEntries>
+                <Implementation-Version>${project.version}</Implementation-Version>
+                <Implementation-Vendor>Eclipse.org - Jetty</Implementation-Vendor>
+                <url>${jetty.url}</url>
+              </manifestEntries>
+            </archive>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.4.2</version>
+          <configuration>
+            <failIfNoTests>false</failIfNoTests>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <version>2.0.0</version>
+          <extensions>true</extensions>
+          <configuration>
+            <instructions>
+              <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
+              <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
+              <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
+              <Bundle-Localization>plugin</Bundle-Localization>
+              <Bundle-Classpath>.</Bundle-Classpath>
+              <Bundle-Copyright>Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+              <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
+            </instructions>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
           <version>2.2-beta-3</version>
@@ -161,8 +161,7 @@
               <version>1.0</version>
             </dependency>
           </dependencies>
-       </plugin>
-
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -268,25 +267,25 @@
       <build>
         <plugins>
           <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-jxr-plugin</artifactId>
-              <configuration>
-                <aggregate>true</aggregate>
-              </configuration>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-javadoc-plugin</artifactId>
-              <configuration>
-                <excludePackageNames>com.acme</excludePackageNames>
-                <links>
-                  <link>http://java.sun.com/j2se/1.5.0/docs/api</link>
-                  <link>http://java.sun.com/javaee/5/docs/api</link>
-                  <link>http://junit.sourceforge.net/javadoc/</link>
-                </links>
-              </configuration>
-            </plugin>
-          </plugins>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jxr-plugin</artifactId>
+            <configuration>
+              <aggregate>true</aggregate>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <excludePackageNames>com.acme</excludePackageNames>
+              <links>
+                <link>http://java.sun.com/j2se/1.5.0/docs/api</link>
+                <link>http://java.sun.com/javaee/5/docs/api</link>
+                <link>http://junit.sourceforge.net/javadoc/</link>
+              </links>
+            </configuration>
+          </plugin>
+        </plugins>
       </build>
     </profile>
   </profiles>
