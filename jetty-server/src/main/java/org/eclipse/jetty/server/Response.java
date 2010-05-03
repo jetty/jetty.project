@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeaderValues;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
@@ -221,30 +222,44 @@ public class Response implements HttpServletResponse
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see javax.servlet.http.HttpServletResponse#encodeRedirectURL(java.lang.String)
+    /**
+     * Encode Redirect URL.
+     * <p>This method differs from {@link #encodeURL(String)}, in that it only encodes 
+     * relative URLs or absolute URLs to the same host/port/contextPath as the request.
      */
     public String encodeRedirectURL(String url)
     {
+        if (URIUtil.hasScheme(url))
+        {
+            HttpURI uri = new HttpURI(url);
+            Request request=_connection.getRequest();
+            int port=uri.getPort();
+            if (port<0) 
+                port = HttpSchemes.HTTPS.equalsIgnoreCase(uri.getScheme())?443:80;
+            if (request.getServerName().equalsIgnoreCase(uri.getHost()) &&
+                request.getServerPort()==port && 
+                uri.getPath().startsWith(request.getContextPath()))
+
+                return encodeURL(url);
+            return url;
+        }
+
+        
         return encodeURL(url);
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see javax.servlet.http.HttpServletResponse#encodeUrl(java.lang.String)
-     */
+    @Deprecated
     public String encodeUrl(String url)
     {
         return encodeURL(url);
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see javax.servlet.http.HttpServletResponse#encodeRedirectUrl(java.lang.String)
-     */
+    @Deprecated
     public String encodeRedirectUrl(String url)
     {
-        return encodeURL(url);
+        return encodeRedirectURL(url);
     }
 
     /* ------------------------------------------------------------ */

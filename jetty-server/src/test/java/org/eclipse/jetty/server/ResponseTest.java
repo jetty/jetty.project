@@ -325,8 +325,11 @@ public class ResponseTest extends TestCase
         HttpConnection connection=new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Response response = new Response(connection);
         Request request = connection.getRequest();
+        request.setServerName("myhost");
+        request.setServerPort(8888);
+        request.setContextPath("/path");
 
-        assertEquals("http://host:port/path/info;param?query=0&more=1#target",response.encodeRedirectUrl("http://host:port/path/info;param?query=0&more=1#target"));
+        assertEquals("http://myhost:8888/path/info;param?query=0&more=1#target",response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
 
         request.setRequestedSessionId("12345");
         request.setRequestedSessionIdFromCookie(false);
@@ -335,8 +338,19 @@ public class ResponseTest extends TestCase
         request.setSessionManager(manager);
         request.setSession(new TestSession(manager,"12345"));
 
-        assertEquals("http://host:port/path/info;param;jsessionid=12345?query=0&more=1#target",response.encodeRedirectUrl("http://host:port/path/info;param?query=0&more=1#target"));
+        assertEquals("http://myhost:8888/path/info;param;jsessionid=12345?query=0&more=1#target",response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
+ 
+        assertEquals("http://other:8888/path/info;param;jsessionid=12345?query=0&more=1#target",response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
+        assertEquals("http://other:8888/path/info;param?query=0&more=1#target",response.encodeRedirectURL("http://other:8888/path/info;param?query=0&more=1#target"));
+        
+        assertEquals("http://myhost/path/info;param;jsessionid=12345?query=0&more=1#target",response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
+        assertEquals("http://myhost/path/info;param?query=0&more=1#target",response.encodeRedirectURL("http://myhost/path/info;param?query=0&more=1#target"));
 
+        assertEquals("http://myhost:8888/other/info;param;jsessionid=12345?query=0&more=1#target",response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
+        assertEquals("http://myhost:8888/other/info;param?query=0&more=1#target",response.encodeRedirectURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
+        
+    
+    
     }
 
     public void testSetBufferSize ()

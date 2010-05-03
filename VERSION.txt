@@ -1,5 +1,7 @@
 
 jetty-7.1.0.RC1-SNAPSHOT
+ + 291448 encodeRedirectURL only encodes absolute URLs to same host/port/context
+ + 297104 HTTP CONNECT does not work correct with SSL destinations
  + 308848 Update test suite to JUnit4 - Module jetty-ajp
  + 308861 Update test suite to JUnit4 - Module jetty-security
  + 308868 Update test suite to JUnit4 - Module jetty-websocket
@@ -10,7 +12,6 @@ jetty-7.1.0.RC1-SNAPSHOT
  + 310703 Update test suite to JUnit4 - Module tests/test-integration
  + 310918 Synchronize content exchange
  + 311154 Use Appendable in preference to StringBuilder/StringBuffer in APIs
- + 297104 HTTP CONNECT does not work correct with SSL destinations
  + 308865 Update test suite to JUnit4 - Module jetty-start
 
 jetty-7.1.0.RC0 27 April 2010
