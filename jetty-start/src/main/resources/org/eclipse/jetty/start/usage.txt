@@ -12,6 +12,8 @@ Command Line Options:
                    dependent jars, then exit.
                    
   --list-options   List the details of each classpath OPTION
+  
+  --list-config    List the start.config file.
                                     
   --dry-run        Print the command line that the start.jar generates,
                    then exit. This may be used to generate command lines
@@ -21,7 +23,6 @@ Command Line Options:
                    a sub processes.  This can be used when start.ini
                    contains -X or -D arguments, but creates an extra
                    JVM instance.
-                   
   
   --secure         Enable Security:
                      * JVM Security Manager
@@ -30,7 +31,17 @@ Command Line Options:
                      * Audit Logging
                      
   --stop           Stop the running Jetty instance.
-                     
+  
+  --config=<file>  Specify an alternate start.config file.  
+                   The default is the start.config file inside
+                   the start.jar. The default can also be specified
+                   with the START system property.
+  
+  --ini=<file>     Load command line arguments from a file. If 
+                   no --ini options are specified, then the 
+                   start.ini file will be read if it exists.
+                   A --ini option with no file indicates that
+                   start.ini should not be read.
 
 System Properties:
   These are set with a command line like "java -Dname=value ..." and are
@@ -101,9 +112,8 @@ Available Configurations:
 Defaults:
   A start.ini file may be used to specify default arguments to start.jar,
   which are used if no command line arguments are provided and override 
-  the defaults in the start.config file. If arguments are provided on the
-  command line, the special "%start.ini" argument may be used to include
-  the start.ini arguments and merge any OPTIONS.  The current start.ini 
+  the defaults in the start.config file. If --ini options are provided on 
+  the command line, then start.ini will no be read. The current start.ini 
   arguments are:
 
     @STARTINI@

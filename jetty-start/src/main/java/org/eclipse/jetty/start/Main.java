@@ -49,13 +49,14 @@ import org.eclipse.jetty.start.log.RedirectedStreamLogger;
  * 
  * <p>
  * The behaviour of Main is controlled by the parsing of the {@link Config} "org/eclipse/start/start.config" file
- * obtained as a resource or file. This can be overridden with the START system property.
+ * obtained as a resource or file.
  * </p>
  */
 public class Main
 {
     private boolean _showUsage = false;
     private boolean _dumpVersions = false;
+    private boolean _listConfig = false;
     private boolean _listOptions = false;
     private boolean _dryRun = false;
     private boolean _exec = false;
@@ -64,6 +65,7 @@ public class Main
     private final Config _config = new Config();
     private Set<String> _sysProps = new HashSet<String>();
     private List<String> _jvmArgs = new ArrayList<String>();
+    private String _startConfig = null;
 
     private String _jettyHome;
 
@@ -86,26 +88,30 @@ public class Main
         {
             List<String> arguments = new ArrayList<String>();
 
-            // do we have any non option args
-            boolean has_args=false;
-            for (String arg : args)
-                has_args|=!arg.startsWith("-");
-                    
-            // if no non-option args, add the start.ini
-            if (!has_args)
-                arguments.addAll(loadStartIni()); // Add Arguments from start.ini (if it exists)
-
-            // add the command line args
+            // add the command line args and look for start.ini args
+            boolean ini=false;
             for (String arg : args)
             {
-                if ("%start.ini".equals(arg))
+                if (arg.startsWith("--ini="))
                 {
-                    arguments.addAll(loadStartIni());
-                    continue;
+                    ini=true;
+                    if (arg.length()>6)
+                    {
+                        arguments.addAll(loadStartIni(arg.substring(6)));
+                        continue;
+                    }
                 }
-
-                arguments.add(arg);
+                else if (arg.startsWith("--config="))
+                {
+                    _startConfig=arg.substring(9);
+                }
+                else
+                    arguments.add(arg);
             }
+            
+            // if no non-option inis, add the start.ini
+            if (!ini)
+                arguments.addAll(0,loadStartIni(null));
             
             // The XML Configuration Files to initialize with
             List<String> xmls = new ArrayList<String>();
@@ -137,6 +143,12 @@ public class Main
                 if ("--list-modes".equals(arg) || "--list-options".equals(arg))
                 {
                     _listOptions = true;
+                    continue;
+                }
+
+                if ("--list-config".equals(arg))
+                {
+                    _listConfig=true;
                     continue;
                 }
 
@@ -235,12 +247,14 @@ public class Main
     /**
      * If a start.ini is present in the CWD, then load it into the argument list.
      */
-    private List<String> loadStartIni()
+    private List<String> loadStartIni(String ini)
     {
         String jettyHome=System.getProperty("jetty.home");
-        File startIniFile = (jettyHome!=null)?  new File(jettyHome,"start.ini"):new File("start.ini");
+        File startIniFile = ini==null?((jettyHome!=null)?  new File(jettyHome,"start.ini"):new File("start.ini")):new File(ini);
         if (!startIniFile.exists() || !startIniFile.canRead())
         {
+            if (ini!=null)
+                System.err.println("Warning - can't find ini file: "+ini);
             // No start.ini found, skip load.
             return Collections.emptyList();
         }
@@ -352,7 +366,7 @@ public class Main
                     }
                     else if (info.equals("@STARTINI"))
                     {
-                        List<String> ini = loadStartIni();
+                        List<String> ini = loadStartIni(null);
                         if (ini!=null && ini.size()>0)
                         {
                             for (String a : ini)
@@ -533,6 +547,12 @@ public class Main
         if (_listOptions)
         {
             showAllOptionsWithVersions(classpath);
+            return;
+        }
+        
+        if (_listConfig)
+        {
+            listConfig();
             return;
         }
 
@@ -920,6 +940,34 @@ public class Main
         return ret;
     }
 
+    private void listConfig()
+    {
+        InputStream cfgstream = null;
+        try
+        {
+            cfgstream=getConfigStream();
+            byte[] buf=new byte[4096];
+            
+            int len=0;
+            
+            while (len>=0)
+            {
+                len=cfgstream.read(buf);
+                if (len>0)
+                    System.out.write(buf,0,len);
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        finally
+        {
+            close(cfgstream);
+        }
+    }
+    
     /**
      * Load Configuration.
      * 
@@ -937,18 +985,9 @@ public class Main
         {
             // Pass in xmls.size into Config so that conditions based on "nargs" work.
             _config.setArgCount(xmls.size());
-
-            // What start.config should we use?
-            String cfgName = System.getProperty("START","org/eclipse/jetty/start/start.config");
-            Config.debug("config=" + cfgName);
-
-            // Look up config as resource first.
-            cfgstream = getClass().getClassLoader().getResourceAsStream(cfgName);
-
-            // resource not found, try filesystem next
-            if (cfgstream == null)
-                cfgstream = new FileInputStream(cfgName);
-
+            
+            cfgstream=getConfigStream();
+                
             // parse the config
             _config.parse(cfgstream);
             
@@ -983,6 +1022,24 @@ public class Main
         {
             close(cfgstream);
         }
+    }
+
+    private InputStream getConfigStream() throws FileNotFoundException
+    {
+        String config=_startConfig;
+        if (config==null || config.length()==0)
+            config=System.getProperty("START","org/eclipse/jetty/start/start.config");
+        
+        Config.debug("config=" + config);
+
+        // Look up config as resource first.
+        InputStream cfgstream = getClass().getClassLoader().getResourceAsStream(config);
+
+        // resource not found, try filesystem next
+        if (cfgstream == null)
+            cfgstream = new FileInputStream(config);
+        
+        return cfgstream;
     }
 
     private void startMonitor()
