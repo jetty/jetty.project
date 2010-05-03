@@ -52,6 +52,7 @@
                
                 <mkdir dir="${assembly.directory}/lib/jsp" />
 	            <get src="http://download.eclipse.org/eclipse/downloads/drops/S-3.6M7-201004291549/download.php?dropFile=ecj-3.6M7.jar" dest="${assembly.directory}/lib/jsp/core-3.6M7.jar" usetimestamp="true" verbose="true"/>
+                <get src="${orbit.base.url}/javax.el_2.1.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/el-2.1.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit.base.url}/javax.servlet.jsp_2.1.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/jsp-api-2.1-glassfish-2.1.v20091210.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit.base.url}/org.apache.jasper.glassfish_2.1.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/jsp-2.1-glassfish-2.1.v20091210.jar" usetimestamp="true" verbose="true" />
                                
