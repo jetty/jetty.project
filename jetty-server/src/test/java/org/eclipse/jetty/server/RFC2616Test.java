@@ -391,6 +391,20 @@ public class RFC2616Test extends TestCase
             offset=checkContains(response,offset,"654321","8.2.3 expect 100")+1;
             */
 
+            // Expect 100 not sent
+            ((StdErrLog)Log.getLog()).setHideStacks(true);
+            offset=0;
+            
+            response=connector.getResponses("GET /R1?error=401 HTTP/1.1\n"+
+                                            "Host: localhost\n"+
+                                            "Expect: 100-continue\n"+
+                                            "Content-Type: text/plain\n"+
+                                            "Content-Length: 8\n"+
+                                            "\n",true);
+            checkNotContained(response,offset,"HTTP/1.1 100","8.2.3 expect 100");
+            offset=checkContains(response,offset,"HTTP/1.1 401 ","8.2.3 expect 100")+1;
+            offset=checkContains(response,offset,"Connection: close","8.2.3 expect 100")+1;
+            
             ((StdErrLog)Log.getLog()).setHideStacks(false);
         }
         catch (Exception e)

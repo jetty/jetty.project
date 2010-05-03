@@ -2,6 +2,7 @@ jetty-7.1.0.RC1-SNAPSHOT
  + 296650 JETTY-1198 reset idle timeout on request body chunks
  + 291448 SessionManager has isCheckingRemoteSessionIdEncoding
  + 297104 HTTP CONNECT does not work correct with SSL destinations
+ + 306782 Close connection when expected 100 continues is not sent
  + 308848 Update test suite to JUnit4 - Module jetty-ajp
  + 308861 Update test suite to JUnit4 - Module jetty-security
  + 308868 Update test suite to JUnit4 - Module jetty-websocket

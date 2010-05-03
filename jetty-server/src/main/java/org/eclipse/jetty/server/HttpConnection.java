@@ -685,6 +685,10 @@ public class HttpConnection implements Connection
             _generator.setResponse(_response.getStatus(), _response.getReason());
             try
             {
+                // If the client was expecting 100 continues, but we sent something
+                // else, then we need to close the connection
+                if (_expect100Continue && _response.getStatus()!=100)
+                    _generator.setPersistent(false);
                 _generator.completeHeader(_responseFields, last);
             }
             catch(IOException io)
