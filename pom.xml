@@ -102,7 +102,7 @@
         <executions>
           <execution>
             <id>set-osgi-version</id>
-            <phase>compile</phase>
+            <phase>validate</phase>
             <goals>
               <goal>parse-version</goal>
             </goals>
