@@ -47,6 +47,7 @@ import org.eclipse.jetty.server.ResourceCache;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.nio.NIOConnector;
+import org.eclipse.jetty.server.ssl.SslConnector;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.TypeUtil;
@@ -380,7 +381,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         HttpContent content=null;
         
         Connector connector = HttpConnection.getCurrentConnection().getConnector();
-        ResourceCache cache=(connector instanceof NIOConnector) ?_nioCache:_bioCache;
+        ResourceCache cache=(connector instanceof NIOConnector && !(connector instanceof SslConnector)) ?_nioCache:_bioCache;
         try
         {   
             // Try gzipped content first
