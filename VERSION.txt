@@ -1,4 +1,4 @@
-jetty-7.1.0.RC1-SNAPSHOT
+jetty-7.1.0.RC1 4 May 2010
  + 286889 Allow System and Server classes to be set on Server instance and when applied to all webapps
  + 296650 JETTY-1198 reset idle timeout on request body chunks
  + 291448 SessionManager has isCheckingRemoteSessionIdEncoding
