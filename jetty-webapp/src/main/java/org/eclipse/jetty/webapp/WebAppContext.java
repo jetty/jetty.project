@@ -112,7 +112,7 @@ public class WebAppContext extends ServletContextHandler
             "org.eclipse.jetty."                // hide other jetty classes
     } ; 
 
-    private String[] _configurationClasses=null;
+    private String[] _configurationClasses = __dftConfigurationClasses;
     private ClasspathPattern _systemClasses = null;
     private ClasspathPattern _serverClasses = null;
 
