@@ -21,6 +21,8 @@ jetty-7.1.0.RC1-SNAPSHOT
  + 308864 Update test suite to JUnit4 - Module jetty-servlets
  + JETTY-1030 - Improve jetty.sh script
  + JETTY-1142 Replace Set-Cookies with same name
+ + 309369 Using websockets in multithreaded environment causes threads to block each other
+          due to the synchronization done while scheduling a new Timeout task
 
 jetty-7.1.0.RC0 27 April 2010
  + 294563 Websocket client connection
