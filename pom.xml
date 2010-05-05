@@ -13,19 +13,16 @@
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
   <properties>
-    <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <felix.bundle.version>2.0.0</felix.bundle.version>
-    <activation-version>1.1</activation-version>
-    <ant-version>1.6.5</ant-version>
-    <jta-spec-version>1.1.1</jta-spec-version>
+    <javax-activation-version>1.1</javax-activation-version>
+    <javax-mail-version>1.4.1</javax-mail-version>
+    <javax-servlet-jsp-version>2.1.v20091210</javax-servlet-jsp-version>
+    <javax-transaction-version>1.1.1</javax-transaction-version>
+    <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <junit-version>3.8.2</junit-version>
     <junit4-version>4.8.1</junit4-version>
-    <mail-version>1.4</mail-version>
-    <slf4j-version>1.5.10</slf4j-version>
-    <eclipse-compiler-version>3.1.1</eclipse-compiler-version>
-    <cometd-version>1.0.beta4</cometd-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jsp-2-1-version>2.1.v20091210</jsp-2-1-version>
+    <slf4j-version>1.5.10</slf4j-version>
   </properties>
   <scm>
     <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk</connection>
@@ -232,24 +229,19 @@
         <version>${slf4j-version}</version>
       </dependency>
       <dependency>
-        <groupId>ant</groupId>
-        <artifactId>ant</artifactId>
-        <version>${ant-version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.apache.geronimo.specs</groupId>
         <artifactId>geronimo-jta_1.1_spec</artifactId>
-        <version>${jta-spec-version}</version>
+        <version>${javax-transaction-version}</version>
       </dependency>
       <dependency>
         <groupId>javax.mail</groupId>
         <artifactId>mail</artifactId>
-        <version>${mail-version}</version>
+        <version>${javax-mail-version}</version>
       </dependency>
       <dependency>
         <groupId>javax.activation</groupId>
         <artifactId>activation</artifactId>
-        <version>${activation-version}</version>
+        <version>${javax-activation-version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

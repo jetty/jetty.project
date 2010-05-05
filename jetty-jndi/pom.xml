@@ -60,7 +60,7 @@
     <dependency>
       <groupId>javax.mail</groupId>
       <artifactId>mail</artifactId>
-      <version>${mail-version}</version>
+      <version>${javax-mail-version}</version>
 	  <exclusions>
 	    <exclusion>
 		  <groupId>javax.activation</groupId>
@@ -79,7 +79,7 @@
 		<dependency>
 		  <groupId>javax.activation</groupId>
 		  <artifactId>activation</artifactId>
-		  <version>${activation-version}</version>
+		  <version>${javax-activation-version}</version>
 		</dependency>	  
       </dependencies>
     </profile>

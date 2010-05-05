@@ -57,7 +57,7 @@ public class Server extends HandlerWrapper implements Attributes
         if (Server.class.getPackage()!=null && Server.class.getPackage().getImplementationVersion()!=null)
             _version=Server.class.getPackage().getImplementationVersion();
         else
-            _version=System.getProperty("jetty.version","7.0.2-SNAPSHOT");
+            _version=System.getProperty("jetty.version","7.x.y-SNAPSHOT");
     }
     private final Container _container=new Container();
     private final AttributesMap _attributes = new AttributesMap();
