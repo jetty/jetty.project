@@ -1,4 +1,5 @@
 
+ + 306353 fixed cross context dispatch to root context.
  + 311154 Added deprecated StringBuffer API for backwards compatibility
  + 311554 Protect shutdown thread from Server#doStop
 

@@ -1457,8 +1457,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
          */
         public ServletContext getContext(String uripath)
         {
-            // TODO this is a very poor implementation!
-            // TODO move this to Server
             ContextHandler context=null;
             Handler[] handlers = getServer().getChildHandlersByClass(ContextHandler.class);
             for (int i=0;i<handlers.length;i++)
@@ -1467,7 +1465,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                     continue;
                 ContextHandler ch = (ContextHandler)handlers[i];
                 String context_path=ch.getContextPath();
-                if (uripath.equals(context_path) || (uripath.startsWith(context_path)&&uripath.charAt(context_path.length())=='/'))
+                
+                if (uripath.equals(context_path) || (uripath.startsWith(context_path)&&uripath.charAt(context_path.length())=='/') || "/".equals(context_path))
                 {
                     if (context==null || context_path.length()>context.getContextPath().length())
                         context=ch;
