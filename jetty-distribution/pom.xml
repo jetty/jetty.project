@@ -12,14 +12,16 @@
     <eclipse-mirror>http://mirror.cc.vt.edu/pub/eclipse/eclipse/downloads/drops</eclipse-mirror>
     <orbit-url>http://download.eclipse.org/tools/orbit/downloads/drops/S20100423142122/bundles</orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <orbit-ecj-drop>S-3.6M7-201004291549</orbit-ecj-drop>
+    <eclipse-drop>S-3.6M7-201004291549</eclipse-drop>
     <orbit-ecj-version>3.6M7</orbit-ecj-version>
     <orbit-javax-activation-version>1.1.0.v200906290531</orbit-javax-activation-version>
     <orbit-javax-el-version>2.1.0.v201004190952</orbit-javax-el-version>
-    <orbit-javax-mail-version>1.4.0.v200905040518</orbit-javax-mail-version>
+    <orbit-javax-mail-glassfish-version>1.4.1.v200808130215</orbit-javax-mail-glassfish-version>
     <orbit-javax-servlet-version>2.5.0.v200910301333</orbit-javax-servlet-version>
     <orbit-javax-servlet-jsp-version>2.1.0.v201004190952</orbit-javax-servlet-jsp-version>
-    <orbit-org-apache-jasper-version>2.1.0.v201004190952</orbit-org-apache-jasper-version>    
+    <orbit-com-sun-el-version>1.0.0.v201004190952</orbit-com-sun-el-version>
+    <orbit-org-apache-jasper-version>2.1.0.v201004190952</orbit-org-apache-jasper-version>
+    <orbit-org-apache-taglibs-standard-version>1.2.0.v201004190952</orbit-org-apache-taglibs-standard-version>
   </properties>
   <build>
     <sourceDirectory>${project.build.directory}/sources</sourceDirectory>
@@ -55,14 +57,16 @@
                
                 <mkdir dir="${assembly-directory}/lib/jndi"/>
                 <get src="${orbit-url}/javax.activation_${orbit-javax-activation-version}.jar" dest="${assembly-directory}/lib/jndi/javax.activation_${orbit-javax-activation-version}.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit-url}/javax.mail_${orbit-javax-mail-version}.jar" dest="${assembly-directory}/lib/jndi/javax.mail_${orbit-javax-mail-version}.jar" usetimestamp="true" verbose="true" />
+                <get src="${orbit-url}/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" dest="${assembly-directory}/lib/jndi/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" usetimestamp="true" verbose="true" />
                
                 <mkdir dir="${assembly-directory}/lib/jsp" />           
-	        <get src="${eclipse-mirror}/${orbit-ecj-drop}/ecj-${orbit-ecj-version}.jar" dest="${assembly-directory}/lib/jsp/ecj-${orbit-ecj-version}.jar" usetimestamp="true" verbose="true" />
+                <get src="${eclipse-mirror}/${eclipse-drop}/ecj-${orbit-ecj-version}.jar" dest="${assembly-directory}/lib/jsp/ecj-${orbit-ecj-version}.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit-url}/javax.el_${orbit-javax-el-version}.jar" dest="${assembly-directory}/lib/jsp/javax.el_${orbit-javax-el-version}.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit-url}/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" dest="${assembly-directory}/lib/jsp/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" usetimestamp="true" verbose="true" />
+                <get src="${orbit-url}/com.sun.el_${orbit-com-sun-el-version}.jar" dest="${assembly-directory}/lib/jsp/com.sun.el_${orbit-com-sun-el-version}.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit-url}/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" dest="${assembly-directory}/lib/jsp/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" usetimestamp="true" verbose="true" />
-                               
+                <get src="${orbit-url}/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" dest="${assembly-directory}/lib/jsp/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" usetimestamp="true" verbose="true" />
+                              
                 <copy file="../VERSION.txt" todir="${assembly-directory}" />
                 <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
               </tasks>
