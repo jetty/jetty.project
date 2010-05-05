@@ -16,7 +16,7 @@
     <felix.bundle.version>2.0.0</felix.bundle.version>
     <javax-activation-version>1.1</javax-activation-version>
     <javax-mail-version>1.4.1</javax-mail-version>
-    <javax-servlet-jsp-version>2.1.v20091210</javax-servlet-jsp-version>
+    <javax-servlet-jsp-version>2.1.v20100127</javax-servlet-jsp-version>
     <javax-transaction-version>1.1.1</javax-transaction-version>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <junit-version>3.8.2</junit-version>
