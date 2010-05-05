@@ -70,8 +70,8 @@ public class WebSocketLoadTest
     @Test
     public void testLoad() throws Exception
     {
-        int count = 500;
-        int iterations = 100;
+        int count = 50;
+        int iterations = 10;
 
         ExecutorService threadPool = Executors.newCachedThreadPool();
         try
