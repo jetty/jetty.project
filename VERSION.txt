@@ -1,5 +1,6 @@
 
  + 311154 Added deprecated StringBuffer API for backwards compatibility
+ + 311554 Protect shutdown thread from Server#doStop
 
 jetty-7.1.0.RC1-SNAPSHOT
  + 286889 Allow System and Server classes to be set on Server instance and when applied to all webapps

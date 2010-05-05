@@ -308,7 +308,9 @@ public class Server extends HandlerWrapper implements Attributes
         }
        
         mex.ifExceptionThrow();
-        ShutdownThread.deregister(this);
+
+        if (getStopAtShutdown())
+            ShutdownThread.deregister(this);
     }
 
     /* ------------------------------------------------------------ */
