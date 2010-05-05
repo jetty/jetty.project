@@ -56,6 +56,7 @@
                 <get src="${orbit.base.url}/javax.servlet.jsp_2.1.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/jsp-api-2.1-glassfish-2.1.v20091210.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit.base.url}/javax.servlet.jsp.jstl_1.2.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/javax.servlet.jsp.jstl_1.2.0.v201004190952.jar" usetimestamp="true" verbose="true" />
                
+                <get src="${orbit.base.url}/com.sun.el_1.0.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/com.sun.el_1.0.0.v201004190952.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit.base.url}/org.apache.jasper.glassfish_2.1.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/jsp-2.1-glassfish-2.1.v20091210.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit.base.url}/org.apache.taglibs.standard.glassfish_1.2.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/org.apache.taglibs.standard.glassfish_1.2.0.v201004190952.jar" usetimestamp="true" verbose="true" />
 
