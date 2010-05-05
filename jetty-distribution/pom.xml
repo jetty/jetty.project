@@ -9,7 +9,17 @@
   <name>Jetty :: Distribution Assemblies</name>
   <packaging>pom</packaging>
   <properties>
-    <assembly.directory>target/distribution</assembly.directory>
+    <eclipse-mirror>http://mirror.cc.vt.edu/pub/eclipse/eclipse/downloads/drops</eclipse-mirror>
+    <orbit-url>http://download.eclipse.org/tools/orbit/downloads/drops/S20100423142122/bundles</orbit-url>
+    <assembly-directory>target/distribution</assembly-directory>
+    <ecj-drop>S-3.6M7-201004291549</ecj-drop>
+    <ecj-version>3.6M7</ecj-version>
+    <javax-activation-version>1.1.0.v200906290531</javax-activation-version>
+    <javax-el-version>2.1.0.v201004190952</javax-el-version>
+    <javax-mail-version>1.4.0.v200905040518</javax-mail-version>
+    <javax-servlet-version>2.5.0.v200910301333</javax-servlet-version>
+    <javax-servlet-jsp-version>2.1.0.v201004190952</javax-servlet-jsp-version>
+    <org-apache-jasper-version>2.1.0.v201004190952</org-apache-jasper-version>    
   </properties>
   <build>
     <sourceDirectory>${project.build.directory}/sources</sourceDirectory>
@@ -18,7 +28,7 @@
         <artifactId>maven-resources-plugin</artifactId>
         <configuration>
           <includeEmptyDirs>true</includeEmptyDirs>
-          <outputDirectory>${assembly.directory}</outputDirectory>
+          <outputDirectory>${assembly-directory}</outputDirectory>
         </configuration>
         <executions>
           <execution>
@@ -40,28 +50,21 @@
             </goals>
             <configuration>
               <tasks>
-                <!--property name="orbit.base.url" value="http://download.eclipse.org/tools/orbit/downloads/drops/R20090529135407/bundles" /-->
-                <property name="orbit.base.url" value="http://download.eclipse.org/tools/orbit/downloads/drops/S20100423142122/bundles" />
-
-                <mkdir dir="${assembly.directory}/lib" />
-                <get src="${orbit.base.url}/javax.servlet_2.5.0.v200910301333.jar" dest="${assembly.directory}/lib/servlet-api-2.5.jar" usetimestamp="true" verbose="true" />
+                <mkdir dir="${assembly-directory}/lib" />
+                <get src="${orbit-url}/javax.servlet_${javax-servlet-version}.jar" dest="${assembly-directory}/lib/servlet-api-2.5.jar" usetimestamp="true" verbose="true" />
                
-                <mkdir dir="${assembly.directory}/lib/jndi" />
-                <get src="${orbit.base.url}/javax.activation_1.1.0.v200906290531.jar" dest="${assembly.directory}/lib/jndi/activation-1.1.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit.base.url}/javax.mail.glassfish_1.4.1.v200808130215.jar" dest="${assembly.directory}/lib/jndi/mail-1.4.jar" usetimestamp="true" verbose="true" />
-
-                <mkdir dir="${assembly.directory}/lib/jsp" />
-	            <get src="http://download.eclipse.org/eclipse/downloads/drops/S-3.6M7-201004291549/download.php?dropFile=ecj-3.6M7.jar" dest="${assembly.directory}/lib/jsp/core-3.6M7.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit.base.url}/javax.el_2.1.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/el-2.1.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit.base.url}/javax.servlet.jsp_2.1.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/jsp-api-2.1-glassfish-2.1.v20091210.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit.base.url}/javax.servlet.jsp.jstl_1.2.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/javax.servlet.jsp.jstl_1.2.0.v201004190952.jar" usetimestamp="true" verbose="true" />
+                <mkdir dir="${assembly-directory}/lib/jndi"/>
+                <get src="${orbit-url}/javax.activation_${javax-activation-version}.jar" dest="${assembly-directory}/lib/jndi/javax.activation_${javax-activation-version}.jar" usetimestamp="true" verbose="true" />
+                <get src="${orbit-url}/javax.mail_${javax-mail-version}.jar" dest="${assembly-directory}/lib/jndi/javax.mail_${javax-mail-version}.jar" usetimestamp="true" verbose="true" />
                
-                <get src="${orbit.base.url}/com.sun.el_1.0.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/com.sun.el_1.0.0.v201004190952.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit.base.url}/org.apache.jasper.glassfish_2.1.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/jsp-2.1-glassfish-2.1.v20091210.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit.base.url}/org.apache.taglibs.standard.glassfish_1.2.0.v201004190952.jar" dest="${assembly.directory}/lib/jsp/org.apache.taglibs.standard.glassfish_1.2.0.v201004190952.jar" usetimestamp="true" verbose="true" />
-
-                <copy file="../VERSION.txt" todir="${assembly.directory}" />
-                <chmod dir="${assembly.directory}/bin" perm="755" includes="**/*.sh" />
+                <mkdir dir="${assembly-directory}/lib/jsp" />           
+	        <get src="${eclipse-mirror}/${ecj-drop}/ecj-${ecj-version}.jar" dest="${assembly-directory}/lib/jsp/ecj-${ecj-version}.jar" usetimestamp="true" verbose="true" />
+                <get src="${orbit-url}/javax.el_${javax-el-version}.jar" dest="${assembly-directory}/lib/jsp/javax.el_${javax-el-version}.jar" usetimestamp="true" verbose="true" />
+                <get src="${orbit-url}/javax.servlet.jsp_${javax-servlet-jsp-version}.jar" dest="${assembly-directory}/lib/jsp/javax.servlet.jsp_${javax-servlet-jsp-version}.jar" usetimestamp="true" verbose="true" />
+                <get src="${orbit-url}/org.apache.jasper.glassfish_${org-apache-jasper-version}.jar" dest="${assembly-directory}/lib/jsp/org.apache.jasper.glassfish_${org-apache-jasper-version}.jar" usetimestamp="true" verbose="true" />
+                               
+                <copy file="../VERSION.txt" todir="${assembly-directory}" />
+                <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
               </tasks>
             </configuration>
           </execution>
@@ -81,7 +84,7 @@
                 <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0</resourceBundle>
                 <resourceBundle>org.eclipse.jetty.toolchain:jetty-distribution-remote-resources:1.1</resourceBundle>
               </resourceBundles>
-              <outputDirectory>${assembly.directory}</outputDirectory>
+              <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>
         </executions>
@@ -106,7 +109,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}</outputDirectory>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -116,7 +119,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}</outputDirectory>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -126,7 +129,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}</outputDirectory>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -136,7 +139,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}</outputDirectory>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -146,7 +149,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}</outputDirectory>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -156,7 +159,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}</outputDirectory>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -166,7 +169,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}</outputDirectory>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -176,7 +179,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}</outputDirectory>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -186,7 +189,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}</outputDirectory>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -196,7 +199,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}</outputDirectory>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -216,7 +219,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -225,7 +228,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -234,7 +237,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -243,7 +246,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -252,7 +255,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -261,7 +264,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -270,7 +273,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -279,7 +282,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -288,7 +291,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <!-- Jetty Deploy -->
                 <artifactItem>
@@ -298,7 +301,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -307,7 +310,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -316,7 +319,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -325,7 +328,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -334,7 +337,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -343,7 +346,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -352,7 +355,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -361,7 +364,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -370,7 +373,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -379,7 +382,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -388,7 +391,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/webapps</outputDirectory>
+                  <outputDirectory>${assembly-directory}/webapps</outputDirectory>
                   <destFileName>test.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -398,7 +401,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}</outputDirectory>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
                   <destFileName>start.jar</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -408,7 +411,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -417,7 +420,7 @@
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly.directory}/lib/jsp</outputDirectory>
+                  <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -511,16 +514,6 @@
       <artifactId>jetty-websocket</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!--dependency>
-      <groupId>org.mortbay.jetty</groupId>
-      <artifactId>jsp-api-2.1-glassfish</artifactId>
-      <version>${jsp-2-1-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.mortbay.jetty</groupId>
-      <artifactId>jsp-2.1-glassfish</artifactId>
-      <version>${jsp-2-1-version}</version>
-    </dependency-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jsp-2.1</artifactId>
