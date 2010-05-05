@@ -270,6 +270,12 @@ public class JSON
         return parse(source);
     }
 
+    @Deprecated
+    public void append(StringBuffer buffer, Object object)
+    {
+        append((Appendable)buffer,object);
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * Append object as JSON to string buffer.
@@ -319,6 +325,13 @@ public class JSON
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
+    public void appendNull(StringBuffer buffer)
+    {
+        appendNull((Appendable)buffer);
+    }
+
+    /* ------------------------------------------------------------ */
     public void appendNull(Appendable buffer)
     {
         try
@@ -329,6 +342,13 @@ public class JSON
         {
             throw new RuntimeException(e);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void appendJSON(final StringBuffer buffer, final Convertor convertor, final Object object)
+    {
+        appendJSON((Appendable)buffer,convertor,object);
     }
 
     /* ------------------------------------------------------------ */
@@ -348,6 +368,13 @@ public class JSON
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
+    public void appendJSON(final StringBuffer buffer, Convertible converter)
+    {
+        appendJSON((StringBuffer)buffer,converter);
+    }
+
+    /* ------------------------------------------------------------ */
     public void appendJSON(final Appendable buffer, Convertible converter)
     {
         ConvertableOutput out=new ConvertableOutput(buffer);
@@ -356,9 +383,23 @@ public class JSON
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
+    public void appendJSON(StringBuffer buffer, Generator generator)
+    {
+        generator.addJSON(buffer);
+    }
+
+    /* ------------------------------------------------------------ */
     public void appendJSON(Appendable buffer, Generator generator)
     {
         generator.addJSON(buffer);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void appendMap(StringBuffer buffer, Map<?,?> map)
+    {
+        appendMap((Appendable)buffer,map);
     }
 
     /* ------------------------------------------------------------ */
@@ -393,6 +434,13 @@ public class JSON
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
+    public void appendArray(StringBuffer buffer, Collection collection)
+    {
+    	appendArray((Appendable)buffer,collection);
+    }
+
+    /* ------------------------------------------------------------ */
     public void appendArray(Appendable buffer, Collection collection)
     {
         try
@@ -421,6 +469,13 @@ public class JSON
         {
             throw new RuntimeException(e);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void appendArray(StringBuffer buffer, Object array)
+    {
+	appendArray((Appendable)buffer,array);
     }
 
     /* ------------------------------------------------------------ */
@@ -453,6 +508,13 @@ public class JSON
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
+    public void appendBoolean(StringBuffer buffer, Boolean b)
+    {
+        appendBoolean((Appendable)buffer,b);
+    }
+
+    /* ------------------------------------------------------------ */
     public void appendBoolean(Appendable buffer, Boolean b)
     {
         try
@@ -471,6 +533,13 @@ public class JSON
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
+    public void appendNumber(StringBuffer buffer, Number number)
+    {
+	appendNumber((Appendable)buffer,number);
+    }
+
+    /* ------------------------------------------------------------ */
     public void appendNumber(Appendable buffer, Number number)
     {
         try
@@ -486,6 +555,13 @@ public class JSON
         {
             throw new RuntimeException(e);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void appendString(StringBuffer buffer, String string)
+    {
+    	appendString((Appendable)buffer,string);
     }
 
     /* ------------------------------------------------------------ */
