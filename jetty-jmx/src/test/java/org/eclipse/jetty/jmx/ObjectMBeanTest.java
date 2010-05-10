@@ -4,51 +4,32 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.jmx;
 
-
-import junit.framework.TestCase;
-
-import org.eclipse.jetty.server.Server;
-
 import com.acme.Derived;
+import org.eclipse.jetty.server.Server;
+import org.junit.Test;
 
-public class ObjectMBeanTest extends TestCase
+import static org.junit.Assert.assertTrue;
+
+public class ObjectMBeanTest
 {
-    public ObjectMBeanTest(String arg0)
-    {
-        super(arg0);
-    }
-
-    public static void main(String[] args)
-    {
-        junit.textui.TestRunner.run(ObjectMBeanTest.class);
-    }
-
-    protected void setUp() throws Exception
-    {
-        super.setUp();
-    }
-
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-    
+    @Test
     public void testMbeanInfo()
     {
         Derived derived = new Derived();
         ObjectMBean mbean = new ObjectMBean(derived);
         assertTrue(mbean.getMBeanInfo()!=null); // TODO do more than just run it
     }
-    
+
+    @Test
     public void testMbeanFor()
     {
         Derived derived = new Derived();
