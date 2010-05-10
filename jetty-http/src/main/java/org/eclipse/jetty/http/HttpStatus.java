@@ -4,23 +4,21 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.http;
-
-import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * <p>
  * HttpStatusCode enum class, for status codes based on various HTTP RFCs. (see
  * table below)
  * </p>
- * 
+ *
  * <table border="1" cellpadding="5">
  * <tr>
  * <th>Enum</th>
@@ -33,12 +31,12 @@ import org.eclipse.jetty.util.TypeUtil;
  * <th>
  * <a href="http://tools.ietf.org/html/rfc2518">RFC 2518 - WEBDAV</a></th>
  * </tr>
- * 
+ *
  * <tr>
  * <td><strong><code>Informational - 1xx</code></strong></td>
  * <td colspan="5">{@link #isInformational(int)}</td>
  * </tr>
- * 
+ *
  * <tr>
  * <td>{@link #CONTINUE_100}</td>
  * <td>100</td>
@@ -66,12 +64,12 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc2518#section-10.1">Sec. 10.1</a></td>
  * </tr>
- * 
+ *
  * <tr>
  * <td><strong><code>Success - 2xx</code></strong></td>
  * <td colspan="5">{@link #isSuccess(int)}</td>
  * </tr>
- * 
+ *
  * <tr>
  * <td>{@link #OK_200}</td>
  * <td>200</td>
@@ -159,12 +157,12 @@ import org.eclipse.jetty.util.TypeUtil;
  * >draft/01</a></td>
  * <td>&nbsp;</td>
  * </tr>
- * 
+ *
  * <tr>
  * <td><strong><code>Redirection - 3xx</code></strong></td>
  * <td colspan="5">{@link #isRedirection(int)}</td>
  * </tr>
- * 
+ *
  * <tr>
  * <td>{@link #MULTIPLE_CHOICES_300}</td>
  * <td>300</td>
@@ -249,12 +247,12 @@ import org.eclipse.jetty.util.TypeUtil;
  * <a href="http://tools.ietf.org/html/rfc2616#section-10.3.8">Sec. 10.3.8</a></td>
  * <td>&nbsp;</td>
  * </tr>
- * 
+ *
  * <tr>
  * <td><strong><code>Client Error - 4xx</code></strong></td>
  * <td colspan="5">{@link #isClientError(int)}</td>
  * </tr>
- * 
+ *
  * <tr>
  * <td>{@link #BAD_REQUEST_400}</td>
  * <td>400</td>
@@ -521,12 +519,12 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc2518#section-10.5">Sec. 10.5</a></td>
  * </tr>
- * 
+ *
  * <tr>
  * <td><strong><code>Server Error - 5xx</code></strong></td>
  * <td colspan="5">{@link #isServerError(int)}</td>
  * </tr>
- * 
+ *
  * <tr>
  * <td>{@link #INTERNAL_SERVER_ERROR_500}</td>
  * <td>500</td>
@@ -602,9 +600,9 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc2518#section-10.6">Sec. 10.6</a></td>
  * </tr>
- * 
+ *
  * </table>
- * 
+ *
  * @version $Id$
  */
 public class HttpStatus
@@ -612,7 +610,7 @@ public class HttpStatus
     public final static int CONTINUE_100 = 100;
     public final static int SWITCHING_PROTOCOLS_101 = 101;
     public final static int PROCESSING_102 = 102;
-    
+
     public final static int OK_200 = 200;
     public final static int CREATED_201 = 201;
     public final static int ACCEPTED_202 = 202;
@@ -621,7 +619,7 @@ public class HttpStatus
     public final static int RESET_CONTENT_205 = 205;
     public final static int PARTIAL_CONTENT_206 = 206;
     public final static int MULTI_STATUS_207 = 207;
-    
+
     public final static int MULTIPLE_CHOICES_300 = 300;
     public final static int MOVED_PERMANENTLY_301 = 301;
     public final static int MOVED_TEMPORARILY_302 = 302;
@@ -630,7 +628,7 @@ public class HttpStatus
     public final static int NOT_MODIFIED_304 = 304;
     public final static int USE_PROXY_305 = 305;
     public final static int TEMPORARY_REDIRECT_307 = 307;
-    
+
     public final static int BAD_REQUEST_400 = 400;
     public final static int UNAUTHORIZED_401 = 401;
     public final static int PAYMENT_REQUIRED_402 = 402;
@@ -652,7 +650,7 @@ public class HttpStatus
     public final static int UNPROCESSABLE_ENTITY_422 = 422;
     public final static int LOCKED_423 = 423;
     public final static int FAILED_DEPENDENCY_424 = 424;
-    
+
     public final static int INTERNAL_SERVER_ERROR_500 = 500;
     public final static int NOT_IMPLEMENTED_501 = 501;
     public final static int BAD_GATEWAY_502 = 502;
@@ -660,9 +658,9 @@ public class HttpStatus
     public final static int GATEWAY_TIMEOUT_504 = 504;
     public final static int HTTP_VERSION_NOT_SUPPORTED_505 = 505;
     public final static int INSUFFICIENT_STORAGE_507 = 507;
-    
+
     public static final int MAX_CODE = 507;
-    
+
 
     private static final Code[] codeMap = new Code[MAX_CODE+1];
 
@@ -673,7 +671,7 @@ public class HttpStatus
             codeMap[code._code] = code;
         }
     }
-    
+
 
     public enum Code
     {
@@ -843,7 +841,7 @@ public class HttpStatus
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
          * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
          * HTTP/1.1</a>.
-         * 
+         *
          * @return true if within range of codes that belongs to
          *         <code>Informational</code> messages.
          */
@@ -858,7 +856,7 @@ public class HttpStatus
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
          * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
          * HTTP/1.1</a>.
-         * 
+         *
          * @return true if within range of codes that belongs to
          *         <code>Success</code> messages.
          */
@@ -873,7 +871,7 @@ public class HttpStatus
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
          * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
          * HTTP/1.1</a>.
-         * 
+         *
          * @return true if within range of codes that belongs to
          *         <code>Redirection</code> messages.
          */
@@ -888,7 +886,7 @@ public class HttpStatus
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
          * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
          * HTTP/1.1</a>.
-         * 
+         *
          * @return true if within range of codes that belongs to
          *         <code>Client Error</code> messages.
          */
@@ -903,7 +901,7 @@ public class HttpStatus
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
          * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
          * HTTP/1.1</a>.
-         * 
+         *
          * @return true if within range of codes that belongs to
          *         <code>Server Error</code> messages.
          */
@@ -916,7 +914,7 @@ public class HttpStatus
 
     /**
      * Get the HttpStatusCode for a specific code
-     * 
+     *
      * @param code
      *            the code to lookup.
      * @return the {@link HttpStatus} if found, or null if not found.
@@ -929,10 +927,10 @@ public class HttpStatus
         }
         return null;
     }
-    
+
     /**
      * Get the status message for a specific code.
-     * 
+     *
      * @param code
      *            the code to look up
      * @return the specific message, or the code number itself if code
@@ -947,7 +945,7 @@ public class HttpStatus
         }
         else
         {
-            return TypeUtil.toString(code);
+            return Integer.toString(code);
         }
     }
 
@@ -956,7 +954,7 @@ public class HttpStatus
      * <code>Informational</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
-     * 
+     *
      * @param code
      *            the code to test.
      * @return true if within range of codes that belongs to
@@ -972,7 +970,7 @@ public class HttpStatus
      * <code>Success</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
-     * 
+     *
      * @param code
      *            the code to test.
      * @return true if within range of codes that belongs to
@@ -988,7 +986,7 @@ public class HttpStatus
      * <code>Redirection</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
-     * 
+     *
      * @param code
      *            the code to test.
      * @return true if within range of codes that belongs to
@@ -1004,7 +1002,7 @@ public class HttpStatus
      * <code>Client Error</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
-     * 
+     *
      * @param code
      *            the code to test.
      * @return true if within range of codes that belongs to
@@ -1020,7 +1018,7 @@ public class HttpStatus
      * <code>Server Error</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
-     * 
+     *
      * @param code
      *            the code to test.
      * @return true if within range of codes that belongs to

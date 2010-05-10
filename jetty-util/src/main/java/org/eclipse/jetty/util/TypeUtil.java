@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.util;
@@ -25,20 +25,20 @@ import org.eclipse.jetty.util.log.Log;
 
 
 /* ------------------------------------------------------------ */
-/** TYPE Utilities.
+/**
+ * TYPE Utilities.
  * Provides various static utiltiy methods for manipulating types and their
  * string representations.
  *
  * @since Jetty 4.1
- * 
  */
 public class TypeUtil
 {
     public static int CR = '\015';
     public static int LF = '\012';
-    
+
     /* ------------------------------------------------------------ */
-    private static final HashMap name2Class=new HashMap();
+    private static final HashMap<String, Class> name2Class=new HashMap<String, Class>();
     static
     {
         name2Class.put("boolean",java.lang.Boolean.TYPE);
@@ -50,7 +50,7 @@ public class TypeUtil
         name2Class.put("long",java.lang.Long.TYPE);
         name2Class.put("short",java.lang.Short.TYPE);
         name2Class.put("void",java.lang.Void.TYPE);
-        
+
         name2Class.put("java.lang.Boolean.TYPE",java.lang.Boolean.TYPE);
         name2Class.put("java.lang.Byte.TYPE",java.lang.Byte.TYPE);
         name2Class.put("java.lang.Character.TYPE",java.lang.Character.TYPE);
@@ -84,9 +84,9 @@ public class TypeUtil
         name2Class.put("String",java.lang.String.class);
         name2Class.put("java.lang.String",java.lang.String.class);
     }
-    
+
     /* ------------------------------------------------------------ */
-    private static final HashMap class2Name=new HashMap();
+    private static final HashMap<Class, String> class2Name=new HashMap<Class, String>();
     static
     {
         class2Name.put(java.lang.Boolean.TYPE,"boolean");
@@ -107,19 +107,19 @@ public class TypeUtil
         class2Name.put(java.lang.Integer.class,"java.lang.Integer");
         class2Name.put(java.lang.Long.class,"java.lang.Long");
         class2Name.put(java.lang.Short.class,"java.lang.Short");
-        
+
         class2Name.put(null,"void");
         class2Name.put(java.lang.String.class,"java.lang.String");
     }
-    
+
     /* ------------------------------------------------------------ */
-    private static final HashMap class2Value=new HashMap();
+    private static final HashMap<Class, Method> class2Value=new HashMap<Class, Method>();
     static
     {
         try
         {
             Class[] s ={java.lang.String.class};
-            
+
             class2Value.put(java.lang.Boolean.TYPE,
                            java.lang.Boolean.class.getMethod("valueOf",s));
             class2Value.put(java.lang.Byte.TYPE,
@@ -157,53 +157,15 @@ public class TypeUtil
     }
 
     /* ------------------------------------------------------------ */
-    private static Class[] stringArg = { java.lang.String.class };
-    
-    /* ------------------------------------------------------------ */
-    private static int intCacheSize = 600;
-    private static Integer[] integerCache = new Integer[intCacheSize];
-    private static String[] integerStrCache = new String[intCacheSize];
-    private static Integer minusOne = new Integer(-1);
-    private static int longCacheSize = 64;
-    private static Long[] longCache = new Long[longCacheSize];
-    private static Long minusOneL = new Long(-1);
-    
-    public static void setIntCacheSize(int size)
-    {
-        if (size > intCacheSize) {
-            Integer[] intCache = new Integer[size];
-            System.arraycopy(integerCache,0,intCache,0,intCacheSize);
-            
-            String [] strCache = new String[size];
-            System.arraycopy(integerStrCache,0,strCache,0,intCacheSize);
-            
-            intCacheSize = size;
-            integerCache = intCache;
-            integerStrCache = strCache;
-        }
-    }
-    
-    public static void setLongCacheSize(int size)
-    {
-        if (size > longCacheSize) {
-            Long[] lnCache = new Long[size];
-            System.arraycopy(longCache,0,lnCache,0,longCacheSize);
-            
-            longCacheSize = size;
-            longCache = lnCache;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
     /** Class from a canonical name for a type.
      * @param name A class or type name.
      * @return A class , which may be a primitive TYPE field..
      */
     public static Class fromName(String name)
     {
-        return (Class)name2Class.get(name);
+        return name2Class.get(name);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Canonical name for a type.
      * @param type A class , which may be a primitive TYPE field.
@@ -211,9 +173,9 @@ public class TypeUtil
      */
     public static String toName(Class type)
     {
-        return (String)class2Name.get(type);
+        return class2Name.get(type);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convert String value to instance.
      * @param type The class of the instance, which may be a primitive TYPE field.
@@ -226,17 +188,17 @@ public class TypeUtil
         {
             if (type.equals(java.lang.String.class))
                 return value;
-            
-            Method m = (Method)class2Value.get(type);
+
+            Method m = class2Value.get(type);
             if (m!=null)
-                return m.invoke(null,new Object[] {value});
+                return m.invoke(null, value);
 
             if (type.equals(java.lang.Character.TYPE) ||
                 type.equals(java.lang.Character.class))
                 return new Character(value.charAt(0));
 
-            Constructor c = type.getConstructor(stringArg);
-            return c.newInstance(new Object[] {value});   
+            Constructor c = type.getConstructor(java.lang.String.class);
+            return c.newInstance(value);
         }
         catch(NoSuchMethodException e)
         {
@@ -258,7 +220,7 @@ public class TypeUtil
         }
         return null;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convert String value to instance.
      * @param type classname or type (eg int)
@@ -269,72 +231,6 @@ public class TypeUtil
     {
         return valueOf(fromName(type),value);
     }
-    
-    /* ------------------------------------------------------------ */
-    /** Convert int to Integer using cache. 
-     */
-    public static Integer newInteger(int i)
-    {
-        if (i>=0 && i<intCacheSize)
-        {
-            if (integerCache[i]==null)
-                integerCache[i]=new Integer(i);
-            return integerCache[i];
-        }
-        else if (i==-1)
-            return minusOne;
-        return new Integer(i);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Convert int to Integer using cache. 
-     */
-    public static Long newLong(long i)
-    {
-        if (i>=0 && i<longCacheSize)
-        {
-            if (longCache[(int)i]==null)
-                longCache[(int)i]=new Long(i);
-            return longCache[(int)i];
-        }
-        else if (i==-1)
-            return minusOneL;
-        return new Long(i);
-    }
-
-    
-    /* ------------------------------------------------------------ */
-    /** Convert int to String using cache. 
-     */
-    public static String toString(int i)
-    {
-        if (i>=0 && i<intCacheSize)
-        {
-            if (integerStrCache[i]==null)
-                integerStrCache[i]=Integer.toString(i);
-            return integerStrCache[i];
-        }
-        else if (i==-1)
-            return "-1";
-        return Integer.toString(i);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Convert long to String using cache. 
-     */
-    public static String toString(long i)
-    {
-        if (i>=0 && i<intCacheSize)
-        {
-            if (integerStrCache[(int)i]==null)
-                integerStrCache[(int)i]=Long.toString(i);
-            return integerStrCache[(int)i];
-        }
-        else if (i==-1)
-            return "-1";
-        return Long.toString(i);
-    }
-
 
     /* ------------------------------------------------------------ */
     /** Parse an int from a substring.
@@ -343,7 +239,8 @@ public class TypeUtil
      * @param offset Offset within string
      * @param length Length of integer or -1 for remainder of string
      * @param base base of the integer
-     * @exception NumberFormatException 
+     * @return the parsed integer
+     * @throws NumberFormatException if the string cannot be parsed
      */
     public static int parseInt(String s, int offset, int length, int base)
         throws NumberFormatException
@@ -356,7 +253,7 @@ public class TypeUtil
         for (int i=0;i<length;i++)
         {
             char c=s.charAt(offset+i);
-            
+
             int digit=c-'0';
             if (digit<0 || digit>=base || digit>=10)
             {
@@ -378,7 +275,8 @@ public class TypeUtil
      * @param offset Offset within string
      * @param length Length of integer or -1 for remainder of string
      * @param base base of the integer
-     * @exception NumberFormatException 
+     * @return the parsed integer
+     * @throws NumberFormatException if the array cannot be parsed into an integer
      */
     public static int parseInt(byte[] b, int offset, int length, int base)
         throws NumberFormatException
@@ -391,7 +289,7 @@ public class TypeUtil
         for (int i=0;i<length;i++)
         {
             char c=(char)(0xff&b[offset+i]);
-            
+
             int digit=c-'0';
             if (digit<0 || digit>=base || digit>=10)
             {
@@ -419,9 +317,9 @@ public class TypeUtil
     public static String toString(byte[] bytes, int base)
     {
         StringBuilder buf = new StringBuilder();
-        for (int i=0;i<bytes.length;i++)
+        for (byte b : bytes)
         {
-            int bi=0xff&bytes[i];
+            int bi=0xff&b;
             int c='0'+(bi/base)%base;
             if (c>'9')
                 c= 'a'+(c-'0'-10);
@@ -435,7 +333,7 @@ public class TypeUtil
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * @param b An ASCII encoded character 0-9 a-f A-F
      * @return The byte value of the character 0-16.
      */
@@ -449,7 +347,7 @@ public class TypeUtil
 
     /* ------------------------------------------------------------ */
     public static void toHex(byte b,Appendable buf)
-    {   
+    {
         try
         {
             int bi=0xff&b;
@@ -467,29 +365,16 @@ public class TypeUtil
             throw new RuntimeException(e);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public static String toHexString(byte[] b)
-    {   
-        StringBuilder buf = new StringBuilder();
-        for (int i=0;i<b.length;i++)
-        {
-            int bi=0xff&b[i];
-            int c='0'+(bi/16)%16;
-            if (c>'9')
-                c= 'A'+(c-'0'-10);
-            buf.append((char)c);
-            c='0'+bi%16;
-            if (c>'9')
-                c= 'a'+(c-'0'-10);
-            buf.append((char)c);
-        }
-        return buf.toString();
+    {
+        return toHexString(b, 0, b.length);
     }
-    
+
     /* ------------------------------------------------------------ */
     public static String toHexString(byte[] b,int offset,int length)
-    {   
+    {
         StringBuilder buf = new StringBuilder();
         for (int i=offset;i<offset+length;i++)
         {
@@ -505,10 +390,10 @@ public class TypeUtil
         }
         return buf.toString();
     }
-    
+
     /* ------------------------------------------------------------ */
     public static byte[] fromHexString(String s)
-    {   
+    {
         if (s.length()%2!=0)
             throw new IllegalArgumentException(s);
         byte[] array = new byte[s.length()/2];
@@ -516,10 +401,10 @@ public class TypeUtil
         {
             int b = Integer.parseInt(s.substring(i*2,i*2+2),16);
             array[i]=(byte)(0xff&b);
-        }    
+        }
         return array;
     }
-    
+
 
     public static void dump(Class c)
     {
@@ -536,31 +421,31 @@ public class TypeUtil
             cl = cl.getParent();
         }
     }
-    
+
 
     /* ------------------------------------------------------------ */
     public static byte[] readLine(InputStream in) throws IOException
     {
         byte[] buf = new byte[256];
-        
+
         int i=0;
         int loops=0;
         int ch=0;
-        
+
         while (true)
         {
             ch=in.read();
             if (ch<0)
                 break;
             loops++;
-            
+
             // skip a leading LF's
             if (loops==1 && ch==LF)
                 continue;
-            
+
             if (ch==CR || ch==LF)
                 break;
-            
+
             if (i>=buf.length)
             {
                 byte[] old_buf=buf;
@@ -569,10 +454,10 @@ public class TypeUtil
             }
             buf[i++]=(byte)ch;
         }
-        
+
         if (ch==-1 && i==0)
             return null;
-        
+
         // skip a trailing LF if it exists
         if (ch==CR && in.available()>=1 && in.markSupported())
         {
@@ -585,10 +470,10 @@ public class TypeUtil
         byte[] old_buf=buf;
         buf=new byte[i];
         System.arraycopy(old_buf, 0, buf, 0, i);
-        
+
         return buf;
     }
-    
+
     public static URL jarFor(String className)
     {
         try

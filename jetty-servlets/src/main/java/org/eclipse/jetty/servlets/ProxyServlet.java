@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.servlets;
@@ -24,7 +24,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Enumeration;
 import java.util.HashSet;
-
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -46,7 +45,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -54,7 +52,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
  * Asynchronous Proxy Servlet.
- * 
+ *
  * Forward requests to another server either as a standard web proxy (as defined by
  * RFC2616) or as a transparent proxy.
  * <p>
@@ -71,11 +69,11 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * <li>maxThreads - maximum threads
  * <li>maxConnections - maximum connections per destination
  * <li>HostHeader - Force the host header to a particular value
- * </ul> 
+ * </ul>
  */
 public class ProxyServlet implements Servlet
 {
-    protected Logger _log; 
+    protected Logger _log;
     HttpClient _client;
     String _hostHeader;
 
@@ -107,10 +105,10 @@ public class ProxyServlet implements Servlet
 
         _client=new HttpClient();
         _client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-        
+
         _hostHeader=config.getInitParameter("HostHeader");
-        
-        
+
+
         try
         {
             String t = config.getInitParameter("attrPrefix");
@@ -124,13 +122,13 @@ public class ProxyServlet implements Servlet
             else
                 _client.setThreadPool(new QueuedThreadPool());
             ((QueuedThreadPool)_client.getThreadPool()).setName(_name.substring(_name.lastIndexOf('.')+1));
-            
+
             t = config.getInitParameter("maxConnections");
             if (t!=null)
                 _client.setMaxConnectionsPerAddress(Integer.parseInt(t));
-            
+
             _client.start();
-            
+
             if (_context!=null)
             {
                 _context.setAttribute("org.eclipse.jetty.servlets."+_name+".Logger",_log);
@@ -153,7 +151,7 @@ public class ProxyServlet implements Servlet
         return _config;
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /** Get the hostHeader.
      * @return the hostHeader
@@ -180,7 +178,7 @@ public class ProxyServlet implements Servlet
             IOException
     {
         final int debug=_log.isDebugEnabled()?req.hashCode():0;
-        
+
         final HttpServletRequest request = (HttpServletRequest)req;
         final HttpServletResponse response = (HttpServletResponse)res;
         if ("CONNECT".equalsIgnoreCase(request.getMethod()))
@@ -193,7 +191,7 @@ public class ProxyServlet implements Servlet
             final OutputStream out=response.getOutputStream();
 
             final Continuation continuation = ContinuationSupport.getContinuation(request);
-            
+
             if (!continuation.isInitial())
                 response.sendError(HttpServletResponse.SC_GATEWAY_TIMEOUT); // Need better test that isInitial
             else
@@ -206,10 +204,10 @@ public class ProxyServlet implements Servlet
                                          request.getServerName(),
                                          request.getServerPort(),
                                          uri);
-                
+
                 if (debug!=0)
                     _log.debug(debug+" proxy "+uri+"-->"+url);
-                    
+
                 if (url==null)
                 {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
@@ -248,7 +246,7 @@ public class ProxyServlet implements Servlet
                     {
                         if (debug!=0)
                             _log.debug(debug+" "+version+" "+status+" "+reason);
-                        
+
                         if (reason!=null && reason.length()>0)
                             response.setStatus(status,reason.toString());
                         else
@@ -264,7 +262,7 @@ public class ProxyServlet implements Servlet
                         {
                             if (debug!=0)
                                 _log.debug(debug+" "+name+": "+value);
-                            
+
                             response.addHeader(name.toString(),value.toString());
                         }
                         else if (debug!=0)
@@ -303,7 +301,7 @@ public class ProxyServlet implements Servlet
                 exchange.setMethod(request.getMethod());
                 exchange.setURL(url.toString());
                 exchange.setVersion(request.getProtocol());
-                
+
                 if (debug!=0)
                     _log.debug(debug+" "+request.getMethod()+" "+url+" "+request.getProtocol());
 
@@ -320,7 +318,7 @@ public class ProxyServlet implements Servlet
                 // force host
                 if (_hostHeader!=null)
                     exchange.setRequestHeader("Host",_hostHeader);
-                
+
                 // copy headers
                 boolean xForwardedFor=false;
                 boolean hasContent=false;
@@ -344,7 +342,7 @@ public class ProxyServlet implements Servlet
                     else if ("content-length".equals(lhdr))
                     {
                         contentLength=request.getContentLength();
-                        exchange.setRequestHeader(HttpHeaders.CONTENT_LENGTH,TypeUtil.toString(contentLength));
+                        exchange.setRequestHeader(HttpHeaders.CONTENT_LENGTH,Long.toString(contentLength));
                         if (contentLength>0)
                             hasContent=true;
                     }
@@ -373,8 +371,8 @@ public class ProxyServlet implements Servlet
 
                 if (hasContent)
                     exchange.setRequestContentSource(in);
-                
-                continuation.suspend(response); 
+
+                continuation.suspend(response);
                 _client.send(exchange);
 
             }
@@ -450,19 +448,19 @@ public class ProxyServlet implements Servlet
     {
 
     }
-    
+
     /**
      * Transparent Proxy.
-     * 
-     * This convenience extension to ProxyServlet configures the servlet as a transparent proxy. 
+     *
+     * This convenience extension to ProxyServlet configures the servlet as a transparent proxy.
      * The servlet is configured with init parameters:
      * <ul>
      * <li>ProxyTo - a URI like http://host:80/context to which the request is proxied.
      * <li>Prefix - a URI prefix that is striped from the start of the forwarded URI.
      * </ul>
-     * For example, if a request was received at /foo/bar and the ProxyTo was http://host:80/context 
+     * For example, if a request was received at /foo/bar and the ProxyTo was http://host:80/context
      * and the Prefix was /foo, then the request would be proxied to http://host:80/context/bar
-     * 
+     *
      */
     public static class Transparent extends ProxyServlet
     {

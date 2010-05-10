@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.util.ajax;
@@ -33,11 +33,11 @@ import org.eclipse.jetty.util.log.Log;
 
 /**
  * JSON Parser and Generator.
- * 
+ *
  * <p>
  * This class provides some static methods to convert POJOs to and from JSON
  * notation. The mapping from JSON to java is:
- * 
+ *
  * <pre>
  *   object ==> Map
  *   array  ==> Object[]
@@ -46,11 +46,11 @@ import org.eclipse.jetty.util.log.Log;
  *   null   ==> null
  *   bool   ==> Boolean
  * </pre>
- * 
+ *
  * </p>
  * <p>
  * The java to JSON mapping is:
- * 
+ *
  * <pre>
  *   String --> string
  *   Number --> number
@@ -61,7 +61,7 @@ import org.eclipse.jetty.util.log.Log;
  *   Boolean--> boolean
  *   Object --> string (dubious!)
  * </pre>
- * 
+ *
  * </p>
  * <p>
  * The interface {@link JSON.Convertible} may be implemented by classes that
@@ -80,8 +80,8 @@ import org.eclipse.jetty.util.log.Log;
  * . These convertors are looked up by class, interface and super class by
  * {@link #getConvertor(Class)}.
  * </p>
- * 
- * 
+ *
+ *
  */
 public class JSON
 {
@@ -118,7 +118,7 @@ public class JSON
     /* ------------------------------------------------------------ */
     /**
      * Register a {@link Convertor} for a class or interface.
-     * 
+     *
      * @param forClass
      *            The class or interface that the convertor applies to
      * @param convertor
@@ -244,7 +244,7 @@ public class JSON
     /* ------------------------------------------------------------ */
     /**
      * Convert Object to JSON
-     * 
+     *
      * @param object
      *            The object to convert
      * @return The JSON String
@@ -259,7 +259,7 @@ public class JSON
     /* ------------------------------------------------------------ */
     /**
      * Convert JSON to Object
-     * 
+     *
      * @param json
      *            The json to convert
      * @return The object
@@ -279,7 +279,7 @@ public class JSON
     /* ------------------------------------------------------------ */
     /**
      * Append object as JSON to string buffer.
-     * 
+     *
      * @param buffer
      *            the buffer to append to
      * @param object
@@ -636,7 +636,7 @@ public class JSON
     /* ------------------------------------------------------------ */
     /**
      * Register a {@link Convertor} for a class or interface.
-     * 
+     *
      * @param forClass
      *            The class or interface that the convertor applies to
      * @param convertor
@@ -654,7 +654,7 @@ public class JSON
      * If no match is found for the class, then the interfaces for the class are
      * tried. If still no match is found, then the super class and it's
      * interfaces are tried recursively.
-     * 
+     *
      * @param forClass
      *            The class
      * @return a {@link JSON.Convertor} or null if none were found.
@@ -684,7 +684,7 @@ public class JSON
     /* ------------------------------------------------------------ */
     /**
      * Register a {@link JSON.Convertor} for a named class or interface.
-     * 
+     *
      * @param name
      *            name of a class or an interface that the convertor applies to
      * @param convertor
@@ -698,7 +698,7 @@ public class JSON
     /* ------------------------------------------------------------ */
     /**
      * Lookup a convertor for a named class.
-     * 
+     *
      * @param name
      *            name of the class
      * @return a {@link JSON.Convertor} or null if none were found.
@@ -1215,7 +1215,7 @@ public class JSON
         }
 
         if (buffer == null)
-            return TypeUtil.newLong(minus?-1 * number:number);
+            return minus ? -1 * number : number;
 
         doubleLoop: while (source.hasNext())
         {
@@ -1395,7 +1395,7 @@ public class JSON
                 _buffer.append(c);
                 QuotedStringTokenizer.quote(_buffer,name);
                 _buffer.append(':');
-                appendNumber(_buffer,TypeUtil.newLong(value));
+                appendNumber(_buffer, value);
                 c = ',';
             }
             catch (IOException e)
@@ -1577,7 +1577,7 @@ public class JSON
      * <p>
      * If the JSON is to be convertible back to an Object, then the method
      * {@link Output#addClass(Class)} must be called from within toJSON()
-     * 
+     *
      */
     public interface Convertible
     {
@@ -1630,7 +1630,7 @@ public class JSON
          * Construct a literal JSON instance for use by
          * {@link JSON#toString(Object)}. If {@link Log#isDebugEnabled()} is
          * true, the JSON will be parsed to check validity
-         * 
+         *
          * @param json
          *            A literal JSON string.
          */

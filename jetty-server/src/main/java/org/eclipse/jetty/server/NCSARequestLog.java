@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server;
@@ -20,7 +20,6 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.TimeZone;
-
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpHeaders;
@@ -28,7 +27,6 @@ import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -40,7 +38,7 @@ import org.eclipse.jetty.util.log.Log;
  * Format (single log format). This log format can be output by most web
  * servers, and almost all web log analysis software can understand these
  * formats.
- * 
+ *
  * @org.apache.xbean.XBean element="ncsaLog"
  */
 public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
@@ -133,12 +131,12 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     {
         return _logDateFormat;
     }
-    
+
     public void setLogLocale(Locale logLocale)
     {
         _logLocale = logLocale;
     }
-    
+
     public Locale getLogLocale()
     {
         return _logLocale;
@@ -251,7 +249,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
                 u8buf = size==0?new Utf8StringBuilder(160):(Utf8StringBuilder)_buffers.remove(size-1);
                 buf = u8buf.getStringBuilder();
             }
-            
+
             if (_logServer)
             {
                 buf.append(request.getServerName());
@@ -274,7 +272,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
                 buf.append(((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName());
             else
                 buf.append(" - ");
-            
+
             buf.append(" [");
             if (_logDateCache != null)
                 buf.append(_logDateCache.format(request.getTimeStamp()));
@@ -332,12 +330,12 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
                     buf.append(StringUtil.__LINE_SEPARATOR);
                     int l=buf.length();
                     if (l>_copy.length)
-                        l=_copy.length;  
-                    buf.getChars(0,l,_copy,0); 
+                        l=_copy.length;
+                    buf.getChars(0,l,_copy,0);
                     _writer.write(_copy,0,l);
                     _writer.flush();
                     u8buf.reset();
-                    _buffers.add(u8buf); 
+                    _buffers.add(u8buf);
                 }
             }
             else
@@ -346,11 +344,11 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
                 {
                     int l=buf.length();
                     if (l>_copy.length)
-                        l=_copy.length;  
-                    buf.getChars(0,l,_copy,0); 
+                        l=_copy.length;
+                    buf.getChars(0,l,_copy,0);
                     _writer.write(_copy,0,l);
                     u8buf.reset();
-                    _buffers.add(u8buf); 
+                    _buffers.add(u8buf);
 
                     // TODO do outside synchronized scope
                     if (_extended)
@@ -359,13 +357,13 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
                     // TODO do outside synchronized scope
                     if (_logCookies)
                     {
-                        Cookie[] cookies = request.getCookies(); 
+                        Cookie[] cookies = request.getCookies();
                         if (cookies == null || cookies.length == 0)
                             _writer.write(" -");
                         else
                         {
                             _writer.write(" \"");
-                            for (int i = 0; i < cookies.length; i++) 
+                            for (int i = 0; i < cookies.length; i++)
                             {
                                 if (i != 0)
                                     _writer.write(';');
@@ -380,7 +378,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
                     if (_logLatency)
                     {
                         _writer.write(' ');
-                        _writer.write(TypeUtil.toString(System.currentTimeMillis() - request.getTimeStamp()));
+                        _writer.write(Long.toString(System.currentTimeMillis() - request.getTimeStamp()));
                     }
 
                     _writer.write(StringUtil.__LINE_SEPARATOR);
@@ -396,9 +394,9 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     }
 
     /* ------------------------------------------------------------ */
-    protected void logExtended(Request request, 
-                               Response response, 
-                               Writer writer) throws IOException 
+    protected void logExtended(Request request,
+                               Response response,
+                               Writer writer) throws IOException
     {
         String referer = request.getHeader(HttpHeaders.REFERER);
         if (referer == null)
@@ -502,7 +500,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     /* ------------------------------------------------------------ */
     /**
      * Set the log file date format.
-     * 
+     *
      * @see RolloverFileOutputStream#RolloverFileOutputStream(String, boolean, int, TimeZone, String, String)
      * @param logFileDateFormat
      *                the logFileDateFormat to pass to

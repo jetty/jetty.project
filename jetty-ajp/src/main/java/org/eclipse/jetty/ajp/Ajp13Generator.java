@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.ajp;
@@ -28,13 +28,12 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 
 /**
- * 
- * 
- */                                                                                                       
+ *
+ *
+ */
 public class Ajp13Generator extends AbstractGenerator
 {
     private static HashMap __headerHash = new HashMap();
@@ -121,7 +120,7 @@ public class Ajp13Generator extends AbstractGenerator
     {
         return false;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public boolean isResponse()
@@ -157,7 +156,7 @@ public class Ajp13Generator extends AbstractGenerator
         _noContent = false;
         _persistent = true;
 
-       
+
 
        _header = null; // Buffer for HTTP header (and maybe small _content)
        _buffer = null; // Buffer for copy of passed _content
@@ -169,7 +168,7 @@ public class Ajp13Generator extends AbstractGenerator
     /* ------------------------------------------------------------ */
     /**
      * Add content.
-     * 
+     *
      * @param content
      * @param last
      * @throws IllegalArgumentException
@@ -251,7 +250,7 @@ public class Ajp13Generator extends AbstractGenerator
     /* ------------------------------------------------------------ */
     /**
      * Add content.
-     * 
+     *
      * @param b
      *            byte
      * @return true if the buffers are full
@@ -301,7 +300,7 @@ public class Ajp13Generator extends AbstractGenerator
     /**
      * Prepare buffer for unchecked writes. Prepare the generator buffer to
      * receive unchecked writes
-     * 
+     *
      * @return the available space in the buffer.
      * @throws IOException
      */
@@ -375,7 +374,7 @@ public class Ajp13Generator extends AbstractGenerator
             if (_reason == null)
                 _reason=HttpGenerator.getReasonBuffer(_status);
             if (_reason == null)
-                _reason = new ByteArrayBuffer(TypeUtil.toString(_status));
+                _reason = new ByteArrayBuffer(Integer.toString(_status));
             addBuffer(_reason);
 
             if (_status == 100 || _status == 204 || _status == 304)
@@ -392,7 +391,7 @@ public class Ajp13Generator extends AbstractGenerator
             int num_fields = 0;
 
             if (fields != null)
-            { 
+            {
                 // Add headers
                 int s=fields.size();
                 for (int f=0;f<s;f++)
@@ -401,7 +400,7 @@ public class Ajp13Generator extends AbstractGenerator
                     if (field==null)
                         continue;
                     num_fields++;
-                    
+
                     byte[] codes = (byte[]) __headerHash.get(field.getName());
                     if (codes != null)
                     {
@@ -452,7 +451,7 @@ public class Ajp13Generator extends AbstractGenerator
     /* ------------------------------------------------------------ */
     /**
      * Complete the message.
-     * 
+     *
      * @throws IOException
      */
     @Override
@@ -506,7 +505,7 @@ public class Ajp13Generator extends AbstractGenerator
             {
                 int len = -1;
                 int to_flush = ((_header != null && _header.length() > 0) ? 4 : 0) | ((_buffer != null && _buffer.length() > 0) ? 2 : 0);
-                
+
 
                 switch (to_flush)
                 {
