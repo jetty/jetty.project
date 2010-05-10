@@ -4,33 +4,36 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.junit.Before;
+import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class RewriteHandlerTest extends AbstractRuleTestCase
-{   
-    RewriteHandler _handler;
-    RewritePatternRule _rule1;
-    RewritePatternRule _rule2;
-    RewritePatternRule _rule3;
-    
-    
-    public void setUp() throws Exception
+{
+    private RewriteHandler _handler;
+    private RewritePatternRule _rule1;
+    private RewritePatternRule _rule2;
+    private RewritePatternRule _rule3;
+
+    @Before
+    public void init() throws Exception
     {
         _handler=new RewriteHandler();
         _server.setHandler(_handler);
@@ -43,9 +46,9 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
                 request.setAttribute("URI",request.getRequestURI());
                 request.setAttribute("info",request.getPathInfo());
             }
-            
+
         });
-        
+
         _rule1 = new RewritePatternRule();
         _rule1.setPattern("/aaa/*");
         _rule1.setReplacement("/bbb");
@@ -55,13 +58,13 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _rule3 = new RewritePatternRule();
         _rule3.setPattern("/ccc/*");
         _rule3.setReplacement("/ddd");
-        
+
         _handler.setRules(new Rule[]{_rule1,_rule2,_rule3});
-        
-        super.setUp();
-    }    
-    
-    
+
+        start(false);
+    }
+
+    @Test
     public void test() throws Exception
     {
         _response.setStatus(200);
@@ -77,7 +80,6 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         assertEquals("/foo/bar",_request.getAttribute("URI"));
         assertEquals("/foo/bar",_request.getAttribute("info"));
         assertEquals(null,_request.getAttribute("before"));
-        
 
         _response.setStatus(200);
         _request.setHandled(false);
@@ -90,7 +92,6 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         assertEquals("/aaa/bar",_request.getAttribute("URI"));
         assertEquals("/aaa/bar",_request.getAttribute("info"));
         assertEquals(null,_request.getAttribute("before"));
-        
 
         _response.setStatus(200);
         _request.setHandled(false);
@@ -105,7 +106,6 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         assertEquals("/ddd/bar",_request.getAttribute("URI"));
         assertEquals("/ddd/bar",_request.getAttribute("info"));
         assertEquals("/aaa/bar",_request.getAttribute("before"));
-        
 
         _response.setStatus(200);
         _request.setHandled(false);
@@ -135,8 +135,5 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         assertEquals(null,_request.getAttribute("info"));
         assertEquals("/aaa/bar",_request.getAttribute("before"));
         assertTrue(_request.isHandled());
-        
-        
-        
     }
 }
