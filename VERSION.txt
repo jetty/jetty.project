@@ -1,5 +1,6 @@
 jetty-7.1.1-SNAPSHOT
  + 304803 Remove TypeUtil Integer and Long caches
+ + 308857 Update test suite to JUnit4 - Module jetty-jndi
 
 jetty-7.1.0 5 May 2010
  + 306353 fixed cross context dispatch to root context.
