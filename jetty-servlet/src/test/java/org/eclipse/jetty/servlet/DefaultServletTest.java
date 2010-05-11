@@ -5,25 +5,27 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 import junit.framework.AssertionFailedError;
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-public class DefaultServletTest extends TestCase
+import static org.junit.Assert.assertTrue;
+
+public class DefaultServletTest
 {
     private boolean _runningOnWindows;
     private Server server;
     private LocalConnector connector;
     private ServletContextHandler context;
 
-    protected void setUp() throws Exception
+    @Before
+    public void init() throws Exception
     {
         _runningOnWindows = System.getProperty( "os.name" ).startsWith( "Windows" );
-
-        super.setUp();
 
         server = new Server();
         server.setSendServerVersion(false);
@@ -32,7 +34,7 @@ public class DefaultServletTest extends TestCase
 
         context = new ServletContextHandler();
         context.setContextPath("/context");
-        context.setWelcomeFiles(new String[] {"index.html","index.jsp","index.htm"}); 
+        context.setWelcomeFiles(new String[] {"index.html","index.jsp","index.htm"});
 
         server.setHandler(context);
         server.addConnector(connector);
@@ -40,16 +42,14 @@ public class DefaultServletTest extends TestCase
         server.start();
     }
 
-    protected void tearDown() throws Exception
+    @After
+    public void destroy() throws Exception
     {
-        super.tearDown();
-
-        if (server != null)
-        {
-            server.stop();
-        }
+        server.stop();
+        server.join();
     }
 
+    @Test
     public void testListingWithSession() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class,"/*");
@@ -57,15 +57,15 @@ public class DefaultServletTest extends TestCase
         defholder.setInitParameter("redirectWelcome","false");
         defholder.setInitParameter("gzip","false");
 
-        File testDir = new File("target/tests/" + getName());
+        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
         prepareEmptyTestDir(testDir);
 
         /* create some content in the docroot */
         File resBase = new File(testDir, "docroot");
-        resBase.mkdirs();
-        new File(resBase, "one").mkdir();
-        new File(resBase, "two").mkdir();
-        new File(resBase, "three").mkdir();
+        assertTrue(resBase.mkdirs());
+        assertTrue(new File(resBase, "one").mkdir());
+        assertTrue(new File(resBase, "two").mkdir());
+        assertTrue(new File(resBase, "three").mkdir());
 
         String resBasePath = resBase.getAbsolutePath();
         defholder.setInitParameter("resourceBase",resBasePath);
@@ -84,6 +84,7 @@ public class DefaultServletTest extends TestCase
         assertResponseNotContains("<script>",response);
     }
 
+    @Test
     public void testListingXSS() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class,"/*");
@@ -91,15 +92,15 @@ public class DefaultServletTest extends TestCase
         defholder.setInitParameter("redirectWelcome","false");
         defholder.setInitParameter("gzip","false");
 
-        File testDir = new File("target/tests/" + getName());
+        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
         prepareEmptyTestDir(testDir);
 
         /* create some content in the docroot */
         File resBase = new File(testDir, "docroot");
-        resBase.mkdirs();
-        new File(resBase, "one").mkdir();
-        new File(resBase, "two").mkdir();
-        new File(resBase, "three").mkdir();
+        assertTrue(resBase.mkdirs());
+        assertTrue(new File(resBase, "one").mkdir());
+        assertTrue(new File(resBase, "two").mkdir());
+        assertTrue(new File(resBase, "three").mkdir());
         if ( !_runningOnWindows )
             assertTrue("Creating dir 'f??r' (Might not work in Windows)", new File(resBase, "f??r").mkdir());
 
@@ -126,6 +127,7 @@ public class DefaultServletTest extends TestCase
         assertResponseNotContains( "<script>", response );
     }
 
+    @Test
     public void testListingProperUrlEncoding() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class,"/*");
@@ -133,18 +135,18 @@ public class DefaultServletTest extends TestCase
         defholder.setInitParameter("redirectWelcome","false");
         defholder.setInitParameter("gzip","false");
 
-        File testDir = new File("target/tests/" + getName());
+        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
         prepareEmptyTestDir(testDir);
 
         /* create some content in the docroot */
         File resBase = new File(testDir, "docroot");
-        resBase.mkdirs();
+        assertTrue(resBase.mkdirs());
         File wackyDir = new File(resBase, "dir;"); // this should not be double-encoded.
         assertTrue(wackyDir.mkdirs());
 
-        new File(wackyDir, "four").mkdir();
-        new File(wackyDir, "five").mkdir();
-        new File(wackyDir, "six").mkdir();
+        assertTrue(new File(wackyDir, "four").mkdir());
+        assertTrue(new File(wackyDir, "five").mkdir());
+        assertTrue(new File(wackyDir, "six").mkdir());
 
         /* At this point we have the following
          * testListingProperUrlEncoding/
@@ -163,7 +165,6 @@ public class DefaultServletTest extends TestCase
 
         assertResponseContains("HTTP/1.1 404 Not Found", response);
 
-
         // Now send request in proper, encoded format.
         response = connector.getResponses("GET /context/dir%3B/ HTTP/1.0\r\n\r\n");
 
@@ -178,6 +179,7 @@ public class DefaultServletTest extends TestCase
         assertResponseContains("/dir%3B/six/",response);
     }
 
+    @Test
     public void testListingContextBreakout() throws Exception
     {
         ServletHolder defholder = context.addServlet(DefaultServlet.class,"/");
@@ -186,12 +188,12 @@ public class DefaultServletTest extends TestCase
         defholder.setInitParameter("gzip","false");
         defholder.setInitParameter("aliases","true");
 
-        File testDir = new File("target/tests/" + getName());
+        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
         prepareEmptyTestDir(testDir);
 
         /* create some content in the docroot */
         File resBase = new File(testDir, "docroot");
-        resBase.mkdirs();
+        assertTrue(resBase.mkdirs());
 
         File index = new File(resBase, "index.html");
         createFile(index, "<h1>Hello Index</h1>");
@@ -207,7 +209,7 @@ public class DefaultServletTest extends TestCase
 
         /* create some content outside of the docroot */
         File sekret = new File(testDir, "sekret");
-        sekret.mkdirs();
+        assertTrue(sekret.mkdirs());
         File pass = new File(sekret, "pass");
         createFile(pass, "Sssh, you shouldn't be seeing this");
 
@@ -286,17 +288,15 @@ public class DefaultServletTest extends TestCase
         assertResponseNotContains("Sssh",response);
     }
 
-
-
+    @Test
     public void testWelcome() throws Exception
     {
-        File testDir = new File("target/tests/" + getName());
+        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
         prepareEmptyTestDir(testDir);
         File resBase = new File(testDir, "docroot");
-        resBase.mkdirs();
+        assertTrue(resBase.mkdirs());
         File inde = new File(resBase, "index.htm");
         File index = new File(resBase, "index.html");
-        
 
         String resBasePath = resBase.getAbsolutePath();
 
@@ -306,41 +306,39 @@ public class DefaultServletTest extends TestCase
         defholder.setInitParameter("welcomeServlets","false");
         defholder.setInitParameter("gzip","false");
         defholder.setInitParameter("resourceBase",resBasePath);
-        
+
         ServletHolder jspholder = context.addServlet(NoJspServlet.class,"*.jsp");
 
-        String response;
-
-        response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+        String response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("403",response);
 
         createFile(index, "<h1>Hello Index</h1>");
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>",response);
-        
+
         createFile(inde, "<h1>Hello Inde</h1>");
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>",response);
 
-        index.delete();
+        assertTrue(index.delete());
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Inde</h1>",response);
-        
-        inde.delete();
+
+        assertTrue(inde.delete());
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("403",response);
-
     }
 
+    @Test
     public void testWelcomeServlet() throws Exception
     {
-        File testDir = new File("target/tests/" + getName());
+        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
         prepareEmptyTestDir(testDir);
         File resBase = new File(testDir, "docroot");
-        resBase.mkdirs();
+        assertTrue(resBase.mkdirs());
         File inde = new File(resBase, "index.htm");
         File index = new File(resBase, "index.html");
-        
+
 
         String resBasePath = resBase.getAbsolutePath();
 
@@ -350,7 +348,7 @@ public class DefaultServletTest extends TestCase
         defholder.setInitParameter("welcomeServlets","true");
         defholder.setInitParameter("gzip","false");
         defholder.setInitParameter("resourceBase",resBasePath);
-        
+
         ServletHolder jspholder = context.addServlet(NoJspServlet.class,"*.jsp");
 
         String response;
@@ -361,30 +359,29 @@ public class DefaultServletTest extends TestCase
         createFile(index, "<h1>Hello Index</h1>");
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>",response);
-        
+
         createFile(inde, "<h1>Hello Inde</h1>");
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>",response);
 
-        index.delete();
+        assertTrue(index.delete());
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Inde</h1>",response);
-        
-        inde.delete();
+
+        assertTrue(inde.delete());
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("JSP support not configured",response);
-
     }
 
+    @Test
     public void testWelcomeExactServlet() throws Exception
     {
-        File testDir = new File("target/tests/" + getName());
+        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
         prepareEmptyTestDir(testDir);
         File resBase = new File(testDir, "docroot");
-        resBase.mkdirs();
+        assertTrue(resBase.mkdirs());
         File inde = new File(resBase, "index.htm");
         File index = new File(resBase, "index.html");
-        
 
         String resBasePath = resBase.getAbsolutePath();
 
@@ -394,7 +391,7 @@ public class DefaultServletTest extends TestCase
         defholder.setInitParameter("welcomeServlets","exact");
         defholder.setInitParameter("gzip","false");
         defholder.setInitParameter("resourceBase",resBasePath);
-        
+
         ServletHolder jspholder = context.addServlet(NoJspServlet.class,"*.jsp");
         context.addServlet(jspholder,"/index.jsp");
 
@@ -406,46 +403,42 @@ public class DefaultServletTest extends TestCase
         createFile(index, "<h1>Hello Index</h1>");
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>",response);
-        
+
         createFile(inde, "<h1>Hello Inde</h1>");
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>",response);
 
-        index.delete();
+        assertTrue(index.delete());
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Inde</h1>",response);
-        
-        inde.delete();
+
+        assertTrue(inde.delete());
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("JSP support not configured",response);
-
     }
 
+    @Test
     public void testRangeRequests() throws Exception
     {
-        File testDir = new File("target/tests/" + getName());
+        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
         prepareEmptyTestDir(testDir);
         File resBase = new File(testDir, "docroot");
-        resBase.mkdirs();
+        assertTrue(resBase.mkdirs());
         File data = new File(resBase, "data.txt");
         createFile(data,"01234567890123456789012345678901234567890123456789012345678901234567890123456789");
         String resBasePath = resBase.getAbsolutePath();
-        
-     
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class,"/");
         defholder.setInitParameter("acceptRanges","true");
         defholder.setInitParameter("resourceBase",resBasePath);
-        
-        String response;
 
-        response= connector.getResponses(
-                "GET /context/data.txt HTTP/1.1\r\n"+
-                "Host: localhost\r\n"+
-                "\r\n");
+        String response = connector.getResponses(
+                "GET /context/data.txt HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "\r\n");
         assertResponseContains("200 OK",response);
         assertResponseContains("Accept-Ranges: bytes",response);
-        
+
         response= connector.getResponses(
                 "GET /context/data.txt HTTP/1.1\r\n"+
                 "Host: localhost\r\n"+
@@ -486,7 +479,7 @@ public class DefaultServletTest extends TestCase
         assertResponseContains("Content-Range: bytes 70-79/80",response);
         assertResponseContains("Content-Length: "+body.length(),response);
         assertTrue(body.endsWith(boundary+"--\r\n"));
-        
+
         response= connector.getResponses(
                 "GET /context/data.txt HTTP/1.1\r\n"+
                 "Host: localhost\r\n"+
@@ -503,10 +496,8 @@ public class DefaultServletTest extends TestCase
         assertResponseContains("Content-Range: bytes 70-79/80",response);
         assertResponseContains("Content-Length: "+body.length(),response);
         assertTrue(body.endsWith(boundary+"--\r\n"));
-
     }
 
-    
     private void createFile(File file, String str) throws IOException
     {
         FileOutputStream out = null;
@@ -527,7 +518,7 @@ public class DefaultServletTest extends TestCase
         }
         else
         {
-            testdir.mkdirs();
+            assertTrue(testdir.mkdirs());
         }
 
         assertTrue("test dir should exists",testdir.exists());
@@ -538,9 +529,7 @@ public class DefaultServletTest extends TestCase
     private boolean isEmpty(File dir)
     {
         if (!dir.isDirectory())
-        {
             return true;
-        }
 
         return dir.list().length == 0;
     }
@@ -548,10 +537,8 @@ public class DefaultServletTest extends TestCase
     private void emptyDir(File dir)
     {
         File entries[] = dir.listFiles();
-        for (int i = 0; i < entries.length; i++)
-        {
-            deletePath(entries[i]);
-        }
+        for (File entry : entries)
+            deletePath(entry);
     }
 
     private void deletePath(File path)
@@ -559,10 +546,8 @@ public class DefaultServletTest extends TestCase
         if (path.isDirectory())
         {
             File entries[] = path.listFiles();
-            for (int i = 0; i < entries.length; i++)
-            {
-                deletePath(entries[i]);
-            }
+            for (File entry : entries)
+                deletePath(entry);
         }
 
         assertTrue("Deleting: " + path.getAbsolutePath(),path.delete());
