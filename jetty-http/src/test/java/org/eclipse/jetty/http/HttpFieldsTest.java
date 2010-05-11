@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.http;
@@ -17,31 +17,34 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.View;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
+import org.junit.Test;
 
-/* ------------------------------------------------------------------------------- */
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 /**
- * 
+ *
  */
-public class HttpFieldsTest extends TestCase
+public class HttpFieldsTest
 {
-    public void testPut()
-        throws Exception
+    @Test
+    public void testPut() throws Exception
     {
         HttpFields header = new HttpFields();
-        
+
         header.put("name0", "value0");
         header.put("name1", "value1");
-        
+
         assertEquals("value0",header.getStringField("name0"));
         assertEquals("value1",header.getStringField("name1"));
         assertNull(header.getStringField("name2"));
-        
+
         int matches=0;
         Enumeration e = header.getFieldNames();
         while (e.hasMoreElements())
@@ -53,35 +56,34 @@ public class HttpFieldsTest extends TestCase
                 matches++;
         }
         assertEquals(2, matches);
-        
-        matches=0;
+
         e = header.getValues("name0");
         assertEquals(true, e.hasMoreElements());
         assertEquals(e.nextElement(), "value0");
         assertEquals(false, e.hasMoreElements());
     }
-    
-    public void testCRLF()
-    throws Exception
+
+    @Test
+    public void testCRLF() throws Exception
     {
         HttpFields header = new HttpFields();
 
         header.put("name0", "value\r\n0");
         header.put("name\r\n1", "value1");
         header.put("name:2", "value:\r\n2");
-        
+
         ByteArrayBuffer buffer = new ByteArrayBuffer(1024);
         header.put(buffer);
         assertTrue(buffer.toString().contains("name0: value0"));
         assertTrue(buffer.toString().contains("name1: value1"));
-        assertTrue(buffer.toString().contains("name2: value:2"));       
+        assertTrue(buffer.toString().contains("name2: value:2"));
     }
-    
-    public void testCachedPut()
-        throws Exception
+
+    @Test
+    public void testCachedPut() throws Exception
     {
         HttpFields header = new HttpFields();
-        
+
         header.put("Connection", "keep-alive");
         assertEquals(HttpHeaderValues.KEEP_ALIVE, header.getStringField(HttpHeaders.CONNECTION));
 
@@ -96,15 +98,13 @@ public class HttpFieldsTest extends TestCase
                 matches++;
         }
         assertEquals(1, matches);
-        
-        
     }
-    
-    public void testRePut()
-        throws Exception
+
+    @Test
+    public void testRePut() throws Exception
     {
         HttpFields header = new HttpFields();
-        
+
         header.put("name0", "value0");
         header.put("name1", "xxxxxx");
         header.put("name2", "value2");
@@ -112,14 +112,14 @@ public class HttpFieldsTest extends TestCase
         assertEquals("value0",header.getStringField("name0"));
         assertEquals("xxxxxx",header.getStringField("name1"));
         assertEquals("value2",header.getStringField("name2"));
-        
+
         header.put("name1", "value1");
-        
+
         assertEquals("value0",header.getStringField("name0"));
         assertEquals("value1",header.getStringField("name1"));
         assertEquals("value2",header.getStringField("name2"));
         assertNull(header.getStringField("name3"));
-        
+
         int matches=0;
         Enumeration e = header.getFieldNames();
         while (e.hasMoreElements())
@@ -133,19 +133,18 @@ public class HttpFieldsTest extends TestCase
                 matches++;
         }
         assertEquals(3, matches);
-        
-        matches=0;
+
         e = header.getValues("name1");
         assertEquals(true, e.hasMoreElements());
         assertEquals(e.nextElement(), "value1");
         assertEquals(false, e.hasMoreElements());
     }
-    
-    public void testRemovePut()
-        throws Exception
+
+    @Test
+    public void testRemovePut() throws Exception
     {
         HttpFields header = new HttpFields();
-        
+
         header.put("name0", "value0");
         header.put("name1", "value1");
         header.put("name2", "value2");
@@ -153,14 +152,14 @@ public class HttpFieldsTest extends TestCase
         assertEquals("value0",header.getStringField("name0"));
         assertEquals("value1",header.getStringField("name1"));
         assertEquals("value2",header.getStringField("name2"));
-        
+
         header.remove("name1");
-        
+
         assertEquals("value0",header.getStringField("name0"));
         assertNull(header.getStringField("name1"));
         assertEquals("value2",header.getStringField("name2"));
         assertNull(header.getStringField("name3"));
-        
+
         int matches=0;
         Enumeration e = header.getFieldNames();
         while (e.hasMoreElements())
@@ -174,18 +173,16 @@ public class HttpFieldsTest extends TestCase
                 matches++;
         }
         assertEquals(2, matches);
-        
-        matches=0;
+
         e = header.getValues("name1");
         assertEquals(false, e.hasMoreElements());
     }
 
-    
-    public void testAdd()
-        throws Exception
+    @Test
+    public void testAdd() throws Exception
     {
         HttpFields fields = new HttpFields();
-        
+
         fields.add("name0", "value0");
         fields.add("name1", "valueA");
         fields.add("name2", "value2");
@@ -193,14 +190,14 @@ public class HttpFieldsTest extends TestCase
         assertEquals("value0",fields.getStringField("name0"));
         assertEquals("valueA",fields.getStringField("name1"));
         assertEquals("value2",fields.getStringField("name2"));
-        
+
         fields.add("name1", "valueB");
-        
+
         assertEquals("value0",fields.getStringField("name0"));
         assertEquals("valueA",fields.getStringField("name1"));
         assertEquals("value2",fields.getStringField("name2"));
         assertNull(fields.getStringField("name3"));
-        
+
         int matches=0;
         Enumeration e = fields.getFieldNames();
         while (e.hasMoreElements())
@@ -214,8 +211,7 @@ public class HttpFieldsTest extends TestCase
                 matches++;
         }
         assertEquals(3, matches);
-        
-        matches=0;
+
         e = fields.getValues("name1");
         assertEquals(true, e.hasMoreElements());
         assertEquals(e.nextElement(), "valueA");
@@ -223,9 +219,9 @@ public class HttpFieldsTest extends TestCase
         assertEquals(e.nextElement(), "valueB");
         assertEquals(false, e.hasMoreElements());
     }
-    
-    public void testReuse()
-        throws Exception
+
+    @Test
+    public void testReuse() throws Exception
     {
         HttpFields header = new HttpFields();
         Buffer n1=new ByteArrayBuffer("name1");
@@ -237,21 +233,21 @@ public class HttpFieldsTest extends TestCase
         vb.put((byte)'u');
         vb.put((byte)'e');
         vb.put((byte)'1');
-        
+
         header.put("name0", "value0");
         header.put(n1,va);
         header.put("name2", "value2");
-        
+
         assertEquals("value0",header.getStringField("name0"));
         assertEquals("value1",header.getStringField("name1"));
         assertEquals("value2",header.getStringField("name2"));
         assertNull(header.getStringField("name3"));
-        
+
         header.remove(n1);
         assertNull(header.getStringField("name1"));
         header.put(n1,vb);
         assertEquals("value1",header.getStringField("name1"));
-        
+
         int matches=0;
         Enumeration e = header.getFieldNames();
         while (e.hasMoreElements())
@@ -265,40 +261,38 @@ public class HttpFieldsTest extends TestCase
                 matches++;
         }
         assertEquals(3, matches);
-        
-        matches=0;
+
         e = header.getValues("name1");
         assertEquals(true, e.hasMoreElements());
         assertEquals(e.nextElement(), "value1");
         assertEquals(false, e.hasMoreElements());
     }
-    
-    public void testDestroy()
-        throws Exception
+
+    @Test
+    public void testDestroy() throws Exception
     {
         HttpFields header = new HttpFields();
-        
+
         header.put(new ByteArrayBuffer("name0"), new View(new ByteArrayBuffer("value0")));
         assertTrue(header.getFieldNames().hasMoreElements());
         assertNotNull(header.getStringField("name0"));
         assertNull(header.getStringField("name1"));
-        
+
         header.destroy();
-    
+
         assertNull(header.getStringField("name0"));
     }
 
-    public void testCase()
-    throws Exception
+    @Test
+    public void testCase() throws Exception
     {
         HttpFields fields= new HttpFields();
-        Enumeration e;
         Set s;
         //         0123456789012345678901234567890
         byte[] b ="Message-IDmessage-idvalueVALUE".getBytes();
         ByteArrayBuffer buf= new ByteArrayBuffer(512);
         buf.put(b);
-        
+
         View headUC= new View.CaseInsensitive(buf);
         View headLC= new View.CaseInsensitive(buf);
         View valUC = new View(buf);
@@ -327,7 +321,7 @@ public class HttpFieldsTest extends TestCase
         assertTrue(s.contains("message-id"));
         assertEquals("value",fields.getStringField("Message-ID").toLowerCase());
         assertEquals("value",fields.getStringField("message-id").toLowerCase());
-        
+
         fields.clear();
 
         fields.add("header","value");
@@ -349,19 +343,19 @@ public class HttpFieldsTest extends TestCase
         assertTrue(s.contains("message-id"));
         assertEquals("value",fields.getStringField("Message-ID").toLowerCase());
         assertEquals("value",fields.getStringField("message-id").toLowerCase());
-        
+
     }
-    
-    public void testHttpHeaderValues()
-    throws Exception
+
+    @Test
+    public void testHttpHeaderValues() throws Exception
     {
         assertTrue(((CachedBuffer)HttpHeaderValues.CACHE.lookup("unknown value")).getOrdinal()<0);
         assertTrue(((CachedBuffer)HttpHeaderValues.CACHE.lookup("close")).getOrdinal()>=0);
         assertTrue(((CachedBuffer)HttpHeaderValues.CACHE.lookup("Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)")).getOrdinal()>=0);
     }
 
-    public void testSetCookie()
-    throws Exception
+    @Test
+    public void testSetCookie() throws Exception
     {
         HttpFields fields = new HttpFields();
         fields.addSetCookie("minimal","value",null,null,-1,null,false,false,-1);
@@ -370,7 +364,7 @@ public class HttpFieldsTest extends TestCase
         fields.clear();
         fields.addSetCookie("everything","value","domain","path",0,"comment",true,true,0);
         assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Secure;HttpOnly",fields.getStringField("Set-Cookie"));
- 
+
         fields.clear();
         fields.addSetCookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,2);
         assertEquals("\"ev erything\"=\"va lue\";Version=2;Comment=\"co mment\";Path=\"pa th\";Domain=\"do main\";Max-Age=1;Secure;HttpOnly",fields.getStringField("Set-Cookie"));
@@ -388,22 +382,22 @@ public class HttpFieldsTest extends TestCase
         fields.addSetCookie("foo","bar","domain",null,-1,null,false,false,-1);
         fields.addSetCookie("foo","bob","domain",null,-1,null,false,false,-1);
         assertEquals("name=more;Domain=domain",fields.getStringField("Set-Cookie"));
-        
+
         Enumeration e=fields.getValues("Set-Cookie");
         assertEquals("name=more;Domain=domain",e.nextElement());
         assertEquals("foo=bob;Domain=domain",e.nextElement());
     }
-    
-    private Set enum2set(Enumeration e)
+
+    private Set<String> enum2set(Enumeration<String> e)
     {
-        HashSet s=new HashSet();
+        Set<String> s=new HashSet<String>();
         while(e.hasMoreElements())
-            s.add(e.nextElement().toString().toLowerCase());
+            s.add(e.nextElement().toLowerCase());
         return s;
     }
-    
-    public void testDateFields()
-        throws Exception
+
+    @Test
+    public void testDateFields() throws Exception
     {
         HttpFields fields = new HttpFields();
 
@@ -427,7 +421,7 @@ public class HttpFieldsTest extends TestCase
         assertEquals(d2,d3);
         assertEquals(d3+2000,d4);
         assertEquals(951825600000L,d5);
-        
+
         d1 = fields.getDateField("D1");
         d2 = fields.getDateField("D2");
         d3 = fields.getDateField("D3");
@@ -439,28 +433,28 @@ public class HttpFieldsTest extends TestCase
         assertEquals(d2,d3);
         assertEquals(d3+2000,d4);
         assertEquals(951825600000L,d5);
-        
+
         fields.putDateField("D2",d1);
         assertEquals("Fri, 31 Dec 1999 23:59:59 GMT",fields.getStringField("D2"));
     }
-    
-    public void testLongFields()
-        throws Exception
+
+    @Test
+    public void testLongFields() throws Exception
     {
         HttpFields header = new HttpFields();
-        
+
         header.put("I1", "42");
         header.put("I2", " 43 99");
         header.put("I3", "-44;");
         header.put("I4", " - 45abc");
         header.put("N1", " - ");
         header.put("N2", "xx");
-        
+
         long i1=header.getLongField("I1");
         long i2=header.getLongField("I2");
         long i3=header.getLongField("I3");
         long i4=header.getLongField("I4");
-        
+
         try{
             header.getLongField("N1");
             assertTrue(false);
@@ -469,7 +463,7 @@ public class HttpFieldsTest extends TestCase
         {
             assertTrue(true);
         }
-        
+
         try{
             header.getLongField("N2");
             assertTrue(false);
@@ -478,24 +472,24 @@ public class HttpFieldsTest extends TestCase
         {
             assertTrue(true);
         }
-        
+
         assertEquals(42,i1);
         assertEquals(43,i2);
         assertEquals(-44,i3);
         assertEquals(-45,i4);
-        
+
         header.putLongField("I5", 46);
         header.putLongField("I6",-47);
         assertEquals("46",header.getStringField("I5"));
         assertEquals("-47",header.getStringField("I6"));
-       
+
     }
 
-    public void testToString()
-        throws Exception
+    @Test
+    public void testToString() throws Exception
     {
         HttpFields header = new HttpFields();
-        
+
         header.put(new ByteArrayBuffer("name0"), new View(new ByteArrayBuffer("value0")));
         header.put(new ByteArrayBuffer("name1"), new View(new ByteArrayBuffer("value1".getBytes())));
         String s1=header.toString();

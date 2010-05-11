@@ -20,6 +20,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <version>${junit4-version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -61,7 +62,7 @@
           </execution>
         </executions>
         <configuration>
-          <archive>               
+          <archive>
             <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>

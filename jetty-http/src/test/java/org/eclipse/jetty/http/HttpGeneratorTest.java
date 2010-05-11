@@ -4,66 +4,62 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.http;
 
-
 import java.io.IOException;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.io.View;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
- * 
+ *
  *
  * To change the template for this generated type comment go to
  * Window - Preferences - Java - Code Generation - Code and Comments
  */
-public class HttpGeneratorTest extends TestCase
+public class HttpGeneratorTest
 {
     public final static String CONTENT="The quick brown fox jumped over the lazy dog.\nNow is the time for all good men to come to the aid of the party\nThe moon is blue to a fish in love.\n";
     public final static String[] connect={null,"keep-alive","close","TE, close"};
 
-    public HttpGeneratorTest(String arg0)
-    {
-        super(arg0);
-    }
-
-    public void testRequest()
-        throws Exception
+    @Test
+    public void testRequest() throws Exception
     {
         Buffer bb=new ByteArrayBuffer(8096);
         Buffer sb=new ByteArrayBuffer(1500);
         HttpFields fields = new HttpFields();
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
         HttpGenerator hg = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
-        
+
         fields.add("Host","something");
         fields.add("User-Agent","test");
-        
+
         hg.setRequest("GET","/index.html");
         hg.setVersion(11);
         hg.completeHeader(fields,true);
         hg.complete();
-        
+
         assertTrue(endp.getOut().toString().indexOf("GET /index.html HTTP/1.1")==0);
         assertTrue(endp.getOut().toString().indexOf("Content-Length")==-1);
-        
     }
-    
-    public void testHTTP()
-    	throws Exception
+
+    @Test
+    public void testHTTP() throws Exception
     {
         Buffer bb=new ByteArrayBuffer(8096);
         Buffer sb=new ByteArrayBuffer(1500);
@@ -72,7 +68,7 @@ public class HttpGeneratorTest extends TestCase
         HttpGenerator hb = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
         Handler handler = new Handler();
         HttpParser parser=null;
-        
+
         // For HTTP version
         for (int v=9;v<=11;v++)
         {
@@ -85,18 +81,18 @@ public class HttpGeneratorTest extends TestCase
                     // For none, keep-alive, close
                     for (int c=0;c<(v==11?connect.length:(connect.length-1));c++)
                     {
-                        
+
                         String t="v="+v+",r="+r+",chunks="+chunks+",connect="+connect[c]+",tr="+tr[r];
                         // System.err.println(t);
-                        
+
                         hb.reset(true);
                         endp.reset();
                         fields.clear();
-                        
+
                         tr[r].build(v,hb,"OK\r\nTest",connect[c],null,chunks, fields);
                         String response=endp.getOut().toString();
                         // System.out.println("RESPONSE: "+t+"\n"+response+(hb.isPersistent()?"...\n":"---\n"));
-                        
+
                         if (v==9)
                         {
                             assertFalse(t,hb.isPersistent());
@@ -104,7 +100,7 @@ public class HttpGeneratorTest extends TestCase
                                 assertEquals(t,tr[r].body, response);
                             continue;
                         }
-                        
+
                         parser=new HttpParser(new ByteArrayBuffer(response.getBytes()), handler);
                         try
                         {
@@ -116,17 +112,17 @@ public class HttpGeneratorTest extends TestCase
                                 throw e;
                             continue;
                         }
-                        
+
                         if (tr[r].body!=null)
                             assertEquals(t,tr[r].body, this.content);
                         if (v==10)
                             assertTrue(t,hb.isPersistent() || tr[r].values[1]==null || c==2 || c==0);
                         else
                             assertTrue(t,hb.isPersistent() ||  c==2 || c==3);
-                        
+
                         if (v>9)
                             assertEquals("OK  Test",f2);
-                        
+
                         assertTrue(t,tr[r].values[1]==null || content.length()==Integer.parseInt(tr[r].values[1]));
                     }
                 }
@@ -134,16 +130,14 @@ public class HttpGeneratorTest extends TestCase
         }
     }
 
-    
-
-    static final String[] headers= { "Content-Type","Content-Length","Connection","Transfer-Encoding","Other"};
-    class TR
+    private static final String[] headers= { "Content-Type","Content-Length","Connection","Transfer-Encoding","Other"};
+    private class TR
     {
-        int code;
-        String[] values=new String[headers.length];
-        String body;
-        
-        TR(int code,String ct, String cl ,String content)
+        private int code;
+        private String[] values=new String[headers.length];
+        private String body;
+
+        private TR(int code,String ct, String cl ,String content)
         {
             this.code=code;
             values[0]=ct;
@@ -151,22 +145,21 @@ public class HttpGeneratorTest extends TestCase
             values[4]="value";
             this.body=content;
         }
-        
-        void build(int version,HttpGenerator hb,String reason, String connection, String te, int chunks, HttpFields fields)
-        	throws Exception
+
+        private void build(int version,HttpGenerator hb,String reason, String connection, String te, int chunks, HttpFields fields) throws Exception
         {
             values[2]=connection;
             values[3]=te;
             hb.setVersion(version);
             hb.setResponse(code,reason);
-            
+
             for (int i=0;i<headers.length;i++)
             {
-                if (values[i]==null)	
+                if (values[i]==null)
                     continue;
                 fields.put(new ByteArrayBuffer(headers[i]),new ByteArrayBuffer(values[i]));
             }
-                        
+
             if (body!=null)
             {
                 int inc=1+body.length()/chunks;
@@ -198,15 +191,15 @@ public class HttpGeneratorTest extends TestCase
             }
             hb.complete();
         }
-        
+
         @Override
         public String toString()
         {
             return "["+code+","+values[0]+","+values[1]+","+(body==null?"none":"_content")+"]";
         }
     }
-    
-    private TR[] tr =
+
+    private final TR[] tr =
     {
       /* 0 */  new TR(200,null,null,null),
       /* 1 */  new TR(200,null,null,CONTENT),
@@ -217,19 +210,19 @@ public class HttpGeneratorTest extends TestCase
       /* 6 */  new TR(200,"text/html",""+CONTENT.length(),null),
       /* 7 */  new TR(200,"text/html",""+CONTENT.length(),CONTENT),
     };
-    
-    String content;
-    String f0;
-    String f1;
-    String f2;
-    String[] hdr;
-    String[] val;
-    int h;
-    
-    class Handler extends HttpParser.EventHandler
-    {   
-        int index=0;
-        
+
+    private String content;
+    private String f0;
+    private String f1;
+    private String f2;
+    private String[] hdr;
+    private String[] val;
+    private int h;
+
+    private class Handler extends HttpParser.EventHandler
+    {
+        private int index=0;
+
         @Override
         public void content(Buffer ref)
         {
@@ -238,7 +231,6 @@ public class HttpGeneratorTest extends TestCase
             content= content.substring(0, index) + ref;
             index+=ref.length();
         }
-
 
         @Override
         public void startRequest(Buffer tok0, Buffer tok1, Buffer tok2)
@@ -255,7 +247,6 @@ public class HttpGeneratorTest extends TestCase
             index=0;
             // System.out.println(f0+" "+f1+" "+f2);
         }
-
 
         /* (non-Javadoc)
          * @see org.eclipse.jetty.EventHandler#startResponse(org.eclipse.io.Buffer, int, org.eclipse.io.Buffer)
@@ -292,8 +283,5 @@ public class HttpGeneratorTest extends TestCase
         public void messageComplete(long contentLength)
         {
         }
-
-
     }
-
 }
