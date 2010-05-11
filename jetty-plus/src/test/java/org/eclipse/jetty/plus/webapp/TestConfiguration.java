@@ -4,18 +4,16 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 package org.eclipse.jetty.plus.webapp;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntry;
@@ -23,10 +21,13 @@ import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.junit.Test;
 
-public class TestConfiguration extends TestCase
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+public class TestConfiguration
 {
-    
     public class MyWebAppContext extends WebAppContext
     {
         public String toString()
@@ -34,9 +35,9 @@ public class TestConfiguration extends TestCase
             return this.getClass().getName()+"@"+super.hashCode();
         }
     }
-    
-    public void testIt ()
-    throws Exception
+
+    @Test
+    public void testIt () throws Exception
     {
         ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
 
@@ -50,14 +51,14 @@ public class TestConfiguration extends TestCase
             wac.setServer(server);
             wac.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), wac));
 
-            //bind some EnvEntrys at the server level 
+            //bind some EnvEntrys at the server level
             EnvEntry ee1 = new EnvEntry(server, "xxx/a", "100", true);
             EnvEntry ee2 = new EnvEntry(server, "yyy/b", "200", false);
             EnvEntry ee3 = new EnvEntry(server, "zzz/c", "300", false);
             EnvEntry ee4 = new EnvEntry(server, "zzz/d", "400", false);
             EnvEntry ee5 = new EnvEntry(server, "zzz/f", "500", true);
 
-            //bind some EnvEntrys at the webapp level 
+            //bind some EnvEntrys at the webapp level
             EnvEntry ee6 = new EnvEntry(wac, "xxx/a", "900", true);
             EnvEntry ee7 = new EnvEntry(wac, "yyy/b", "910", true);
             EnvEntry ee8 = new EnvEntry(wac, "zzz/c", "920", false);
@@ -69,7 +70,7 @@ public class TestConfiguration extends TestCase
             assertNotNull(NamingEntryUtil.lookupNamingEntry(server, "zzz/d"));
             assertNotNull(NamingEntryUtil.lookupNamingEntry(wac, "xxx/a"));
             assertNotNull(NamingEntryUtil.lookupNamingEntry(wac, "yyy/b"));
-            assertNotNull(NamingEntryUtil.lookupNamingEntry(wac, "zzz/c")); 
+            assertNotNull(NamingEntryUtil.lookupNamingEntry(wac, "zzz/c"));
             assertNotNull(NamingEntryUtil.lookupNamingEntry(wac, "zzz/e"));
 
             Configuration config = new Configuration();

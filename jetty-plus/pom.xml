@@ -13,7 +13,7 @@
   </properties>
   <build>
     <plugins>
-<!-- 
+<!--
   COMMENTED OUT UNTIL CORRECT CONFIG IS FOUND FOR Export uses clauses
 -->
       <plugin>
@@ -39,7 +39,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
-          <archive>               
+          <archive>
             <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
@@ -79,6 +79,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <version>${junit4-version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
