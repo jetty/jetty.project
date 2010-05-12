@@ -50,6 +50,7 @@ public class DefaultHandler extends AbstractHandler
     final long _faviconModified=(System.currentTimeMillis()/1000)*1000;
     byte[] _favicon;
     boolean _serveIcon=true;
+    boolean _showContexts=true;
     
     public DefaultHandler()
     {
@@ -114,44 +115,47 @@ public class DefaultHandler extends AbstractHandler
         writer.write("<HTML>\n<HEAD>\n<TITLE>Error 404 - Not Found");
         writer.write("</TITLE>\n<BODY>\n<H2>Error 404 - Not Found.</H2>\n");
         writer.write("No context on this server matched or handled this request.<BR>");
-        writer.write("Contexts known to this server are: <ul>");
-
-
-        Server server = getServer();
-        Handler[] handlers = server==null?null:server.getChildHandlersByClass(ContextHandler.class);
- 
-        for (int i=0;handlers!=null && i<handlers.length;i++)
+        
+        if (_showContexts)
         {
-            ContextHandler context = (ContextHandler)handlers[i];
-            if (context.isRunning())
+            writer.write("Contexts known to this server are: <ul>");
+            
+            Server server = getServer();
+            Handler[] handlers = server==null?null:server.getChildHandlersByClass(ContextHandler.class);
+     
+            for (int i=0;handlers!=null && i<handlers.length;i++)
             {
-                writer.write("<li><a href=\"");
-                if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-                    writer.write("http://"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
-                writer.write(context.getContextPath());
-                if (context.getContextPath().length()>1 && context.getContextPath().endsWith("/"))
-                    writer.write("/");
-                writer.write("\">");
-                writer.write(context.getContextPath());
-                if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-                    writer.write("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
-                writer.write("&nbsp;--->&nbsp;");
-                writer.write(context.toString());
-                writer.write("</a></li>\n");
-            }
-            else
-            {
-                writer.write("<li>");
-                writer.write(context.getContextPath());
-                if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-                    writer.write("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
-                writer.write("&nbsp;--->&nbsp;");
-                writer.write(context.toString());
-                if (context.isFailed())
-                    writer.write(" [failed]");
-                if (context.isStopped())
-                    writer.write(" [stopped]");
-                writer.write("</li>\n");
+                ContextHandler context = (ContextHandler)handlers[i];
+                if (context.isRunning())
+                {
+                    writer.write("<li><a href=\"");
+                    if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
+                        writer.write("http://"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
+                    writer.write(context.getContextPath());
+                    if (context.getContextPath().length()>1 && context.getContextPath().endsWith("/"))
+                        writer.write("/");
+                    writer.write("\">");
+                    writer.write(context.getContextPath());
+                    if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
+                        writer.write("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
+                    writer.write("&nbsp;--->&nbsp;");
+                    writer.write(context.toString());
+                    writer.write("</a></li>\n");
+                }
+                else
+                {
+                    writer.write("<li>");
+                    writer.write(context.getContextPath());
+                    if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
+                        writer.write("&nbsp;@&nbsp;"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
+                    writer.write("&nbsp;--->&nbsp;");
+                    writer.write(context.toString());
+                    if (context.isFailed())
+                        writer.write(" [failed]");
+                    if (context.isStopped())
+                        writer.write(" [stopped]");
+                    writer.write("</li>\n");
+                }
             }
         }
         
@@ -183,6 +187,15 @@ public class DefaultHandler extends AbstractHandler
     {
         _serveIcon = serveIcon;
     }
+    
+    public boolean getShowContexts()
+    {
+        return _showContexts;
+    }
 
+    public void setShowContexts(boolean show)
+    {
+        _showContexts = show;
+    }
 
 }

@@ -1,4 +1,5 @@
 jetty-7.1.1-SNAPSHOT
+ + 302344 Make the list of available contexts if root context is not configured optional
  + 304803 Remove TypeUtil Integer and Long caches
  + 308857 Update test suite to JUnit4 - Module jetty-jndi
  + 308856 Update test suite to JUnit4 - Module jetty-jmx
