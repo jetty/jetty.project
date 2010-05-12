@@ -4,29 +4,25 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server;
 import org.eclipse.jetty.server.bio.SocketConnector;
+import org.junit.BeforeClass;
 
 /**
  * HttpServer Tester.
  */
 public class SocketServerTest extends HttpServerTestBase
 {
-    public SocketServerTest()
+    @BeforeClass
+    public static void init() throws Exception
     {
-        super(new SocketConnector());
-    }   
-    
-    @Override
-    public void testFlush() throws Exception
-    {
-        super.testFlush();
+        startServer(new SocketConnector());
     }
 }

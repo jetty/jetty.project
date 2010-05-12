@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server;
@@ -23,22 +23,18 @@ import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.BeforeClass;
 
 /**
  * HttpServer Tester.
  */
 public class BusySelectChannelServerTest extends HttpServerTestBase
 {
-   
-    public BusySelectChannelServerTest()
+    @BeforeClass
+    public static void init() throws Exception
     {
-        super(new SelectChannelConnector()
+        startServer(new SelectChannelConnector()
         {
-            /* ------------------------------------------------------------ */
-            /* (non-Javadoc)
-             * @see org.eclipse.jetty.server.server.nio.SelectChannelConnector#newEndPoint(java.nio.channels.SocketChannel, org.eclipse.io.nio.SelectorManager.SelectSet, java.nio.channels.SelectionKey)
-             */
             @Override
             protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
             {
@@ -46,7 +42,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                 {
                     int write;
                     int read;
-                    
+
                     /* ------------------------------------------------------------ */
                     /* (non-Javadoc)
                      * @see org.eclipse.io.nio.SelectChannelEndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
@@ -103,7 +99,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                                 buffer.put(one.peek(0));
                             return l;
                         }
-                        
+
                         if (x<24 && buffer.space()>=2)
                         {
                             NIOBuffer two = new IndirectNIOBuffer(2);
@@ -114,7 +110,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                                 buffer.put(two.peek(1));
                             return l;
                         }
-                        
+
                         if (x<64 && buffer.space()>=3)
                         {
                             NIOBuffer three = new IndirectNIOBuffer(3);
@@ -127,18 +123,11 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                                 buffer.put(three.peek(2));
                             return l;
                         }
-                        
+
                         return super.fill(buffer);
                     }
                 };
-            }  
-        }); 
-    }  
-    
-
-    @Override
-    protected void configServer(Server server)
-    {
-        server.setThreadPool(new QueuedThreadPool());
+            }
+        });
     }
 }

@@ -4,30 +4,24 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Queue;
 import java.util.Random;
-import java.util.Timer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -35,20 +29,22 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class StressTest extends TestCase
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+public class StressTest
 {
-    protected Server _server = new Server();
-    protected TestHandler _handler = new TestHandler();
-    protected Connector _connector;
-    protected InetAddress _addr;
-    protected int _port;
-    protected volatile AtomicInteger[] _loops;
-    protected QueuedThreadPool _threads=new QueuedThreadPool(new BlockingArrayQueue<Runnable>(4,4));
-    // protected ExecutorThreadPool _threads=new ExecutorThreadPool(100,500,10000,TimeUnit.MILLISECONDS);
-    protected boolean _stress;
-    private AtomicInteger _handled=new AtomicInteger(0);
-    private ConcurrentLinkedQueue[] _latencies= {
+    private static boolean _stress;
+    private static QueuedThreadPool _threads;
+    private static Server _server;
+    private static SelectChannelConnector _connector;
+    private static final AtomicInteger _handled=new AtomicInteger(0);
+    private static final ConcurrentLinkedQueue[] _latencies= {
             new ConcurrentLinkedQueue<Long>(),
             new ConcurrentLinkedQueue<Long>(),
             new ConcurrentLinkedQueue<Long>(),
@@ -56,44 +52,10 @@ public class StressTest extends TestCase
             new ConcurrentLinkedQueue<Long>(),
             new ConcurrentLinkedQueue<Long>()
             };
-    private Random _random=new Random();
 
-    @Override
-    protected void setUp() throws Exception
-    {
-        _stress= Boolean.getBoolean("STRESS");
-
-        _threads.setMaxThreads(500);
-        _server.setThreadPool(_threads);
-        SelectChannelConnector c_connector=new SelectChannelConnector();
-        c_connector.setAcceptors(1);
-        c_connector.setAcceptQueueSize(1000);
-        
-        // c_connector.setPort(8080);
-        
-        _connector=c_connector;
-        _connector.setMaxIdleTime(30000);
-        
-        _server.setConnectors(new Connector[]{ _connector });
-        _server.setHandler(_handler);
-        _server.start();
-        _port=_connector.getLocalPort();
-        _addr=InetAddress.getLocalHost();
-        // _addr=Inet4Address.getByName("10.10.1.16");
-        // System.err.println("ADDR "+_addr+":"+_port);
-        
-        for (Queue q:_latencies)
-            q.clear();
-        _handled.set(0);
-    }
-
-    @Override
-    protected void tearDown() throws Exception
-    {
-        _server.stop();
-    }
-
-    final static String[] __tests = 
+    private volatile AtomicInteger[] _loops;
+    private final Random _random=new Random();
+    private static final String[] __tests =
     {
         "/path/0",
         "/path/1",
@@ -112,166 +74,103 @@ public class StressTest extends TestCase
         "/path/e",
         "/path/f",
     };
-    
-    
-    public void doPaths(int thread,String name,boolean persistent) throws Exception
+
+    @BeforeClass
+    public static void init() throws Exception
     {
-        if (persistent)
+        _stress= Boolean.getBoolean("STRESS");
+
+        _threads = new QueuedThreadPool(new BlockingArrayQueue<Runnable>(4,4));
+        _threads.setMaxThreads(500);
+
+        _server = new Server();
+        _server.setThreadPool(_threads);
+
+        _connector = new SelectChannelConnector();
+        _connector.setAcceptors(1);
+        _connector.setAcceptQueueSize(1000);
+        _connector.setMaxIdleTime(30000);
+        _server.addConnector(_connector);
+
+        TestHandler _handler = new TestHandler();
+        _server.setHandler(_handler);
+
+        _server.start();
+    }
+
+    @AfterClass
+    public static void destroy() throws Exception
+    {
+        _server.stop();
+        _server.join();
+    }
+
+    @Before
+    public void reset()
+    {
+        _handled.set(0);
+        for (Queue q : _latencies)
+            q.clear();
+    }
+
+    @Test
+    public void testNonPersistent() throws Throwable
+    {
+        if (_stress)
         {
-            long start=System.currentTimeMillis();
-            Socket socket= new Socket(_addr,_port);
-            socket.setSoTimeout(30000);
-            socket.setSoLinger(false,0);
-            
-            long connected=System.currentTimeMillis();
-            
-            for (int i=0;i<__tests.length;i++)
-            {
-                String uri=__tests[i]+"/"+name+"/"+i;
-
-                String close=((i+1)<__tests.length)?"":"Connection: close\r\n";
-                String request = 
-                    "GET "+uri+" HTTP/1.1\r\n"+
-                    "Host: localhost\r\n"+
-                    "start: "+start+"\r\n"+
-                    close+"\r\n";
-
-                socket.getOutputStream().write(request.getBytes());
-                socket.getOutputStream().flush();
-                Thread.yield();
-            }
-
-            long written=System.currentTimeMillis();
-
-            String response = IO.toString(socket.getInputStream());
-            socket.close();
-
-            long end=System.currentTimeMillis();
-            
-            int bodies = count(response,"HTTP/1.1 200 OK");
-            if (__tests.length!=bodies)
-                System.err.println("responses=\n"+response+"\n---");
-            assertEquals(name,__tests.length,bodies);bodies = count(response,"HTTP/1.1 200 OK");
-            
-            long bind=connected-start; 
-            long flush=(written-connected)/__tests.length;   
-            long read=(end-written)/__tests.length;
-            
-            int offset=0;
-            for (int i=0;i<__tests.length;i++)
-            {
-                offset=response.indexOf("DATA "+__tests[i],offset);
-                assertTrue(offset>=0);
-                offset+=__tests[i].length()+5;
-                
-                if (bind<0 || flush<0 || read <0)
-                {
-                    System.err.println(bind+","+flush+","+read);
-                }
-                
-                _latencies[0].add((i==0)?new Long(bind):0);
-                _latencies[1].add((i==0)?new Long(bind+flush):flush);
-                _latencies[5].add((i==0)?new Long(bind+flush+read):(flush+read));
-            }
+            System.err.println("STRESS!");
+            doThreads(200,100,false);
         }
         else
-        {
-            for (int i=0;i<__tests.length;i++)
-            {
-                String uri=__tests[i]+"/"+name+"/"+i;
-
-                long start=System.currentTimeMillis();
-                String close="Connection: close\r\n";
-                String request = 
-                    "GET "+uri+" HTTP/1.1\r\n"+
-                    "Host: localhost\r\n"+
-                    "start: "+start+"\r\n"+
-                    close+"\r\n";
-
-                Socket socket = new Socket(_addr,_port);
-                socket.setSoTimeout(10000);
-                socket.setSoLinger(false,0);
-                
-                _latencies[0].add(new Long(System.currentTimeMillis()-start));
-
-                socket.getOutputStream().write(request.getBytes());
-                socket.getOutputStream().flush();
-
-
-                _latencies[1].add(new Long(System.currentTimeMillis()-start));
-
-                String response = IO.toString(socket.getInputStream());
-                socket.close();
-                long end=System.currentTimeMillis();
-
-                response=response.substring(response.indexOf("\r\n\r\n")+4);
-
-                assertTrue(uri,response.startsWith("DATA "+__tests[i]));
-                long latency=end-start;
-
-                _latencies[5].add(new Long(latency));
-            }
-        }
-    }
-    
-    public void doLoops(int thread, String name, int loops,boolean persistent) throws Exception
-    {
-        try
-        {
-            for (int i=0;i<loops;i++)
-            {
-                _loops[thread].set(i);
-                doPaths(thread,name+"-"+i,persistent);
-                Thread.sleep(1+_random.nextInt(10)*_random.nextInt(10));
-                Thread.sleep(10);
-            }
-            _loops[thread].set(loops);
-        }
-        catch(Exception e)
-        {
-            System.err.println(e);
-            _loops[thread].set(-_loops[thread].get());
-            throw e;
-        }
+            doThreads(10,20,false);
     }
 
-    public void doThreads(int threads,final int loops,final boolean persistent) throws Throwable
+    @Test
+    public void testPersistent() throws Throwable
     {
-        final Throwable[] throwable=new Throwable[threads];
-        final Thread[] thread=new Thread[threads];
+        if (_stress)
+        {
+            System.err.println("STRESS!");
+            doThreads(200,100,true);
+        }
+        else
+            doThreads(20,40,true);
+    }
+
+    private void doThreads(int threadCount, final int loops, final boolean persistent) throws Throwable
+    {
+        final Throwable[] throwables = new Throwable[threadCount];
+        final Thread[] threads = new Thread[threadCount];
 
         try
         {
-            for (int i=0;i<threads;i++)
+            for (int i=0;i< threadCount;i++)
             {
                 final int id=i;
                 final String name = "T"+i;
-                thread[i]=new Thread()
+                threads[i]=new Thread()
                 {
                     @Override
-                    public void run() 
-                    { 
+                    public void run()
+                    {
                         try
                         {
-                            doLoops(id,name,loops,persistent); 
+                            doLoops(id,name,loops,persistent);
                         }
                         catch(Throwable th)
                         {
                             th.printStackTrace();
-                            throwable[id]=th;
-                        }
-                        finally
-                        {
+                            throwables[id]=th;
                         }
                     }
                 };
             }
 
-            _loops=new AtomicInteger[threads];
-            for (int i=0;i<threads;i++)
+            _loops=new AtomicInteger[threadCount];
+            for (int i=0;i< threadCount;i++)
             {
                 _loops[i]=new AtomicInteger(0);
-                thread[i].start();
+                threads[i].start();
             }
 
             String last=null;
@@ -285,7 +184,7 @@ public class StressTest extends TestCase
                 int min=loops;
                 int max=0;
                 int total=0;
-                for (int i=0;i<threads;i++)
+                for (int i=0;i< threadCount;i++)
                 {
                     int l=_loops[i].get();
                     if (l<0)
@@ -301,10 +200,10 @@ public class StressTest extends TestCase
                             max=l;
                         total+=l;
                         if (l==loops)
-                            finished++;  
-                    }     
+                            finished++;
+                    }
                 }
-                String status = "min/ave/max/target="+min+"/"+(total/threads)+"/"+max+"/"+loops+" errors/finished/loops="+errors+"/"+finished+"/"+threads+" idle/threads="+(_threads.getIdleThreads())+"/"+_threads.getThreads();
+                String status = "min/ave/max/target="+min+"/"+(total/ threadCount)+"/"+max+"/"+loops+" errors/finished/loops="+errors+"/"+finished+"/"+ threadCount +" idle/threads="+(_threads.getIdleThreads())+"/"+_threads.getThreads();
                 if (status.equals(last))
                 {
                     if (same++>5)
@@ -320,19 +219,19 @@ public class StressTest extends TestCase
                     same=0;
                 last=status;
                 Log.info(_server.getThreadPool().toString()+" "+status);
-                if ((finished+errors)==threads)
+                if ((finished+errors)== threadCount)
                     break;
             }
 
-            for (int i=0;i<threads;i++)
-                thread[i].join();
+            for (Thread thread : threads)
+                thread.join();
 
-            for (int i=0;i<threads;i++)
-                if (throwable[i]!=null)
-                    throw throwable[i];
-            
-            for (int i=0;i<_latencies.length;i++)
-                assertEquals(_handled.get(),_latencies[i].size());
+            for (Throwable throwable : throwables)
+                if (throwable!=null)
+                    throw throwable;
+
+            for (ConcurrentLinkedQueue _latency : _latencies)
+                assertEquals(_handled.get(), _latency.size());
         }
         finally
         {
@@ -348,18 +247,18 @@ public class StressTest extends TestCase
                 length[i] = latencies.size();
 
                 loop:
-                    for (long latency:(Queue<Long>)(_latencies[i]))
+                for (long latency : latencies)
+                {
+                    for (int q=0;q<quantums;q++)
                     {
-                        for (int q=0;q<quantums;q++)
+                        if (latency>=(q*100) && latency<((q+1)*100))
                         {
-                            if (latency>=(q*100) && latency<((q+1)*100))
-                            {
-                                count[i][q]++;
-                                continue loop;
-                            }
+                            count[i][q]++;
+                            continue loop;
                         }
-                        other[i]++;
                     }
+                    other[i]++;
+                }
             }
 
             System.out.println("           stage:\tbind\twrite\trecv\tdispatch\twrote\ttotal");
@@ -387,76 +286,164 @@ public class StressTest extends TestCase
         }
     }
 
-    public void testNonPersistent() throws Throwable
+    private void doLoops(int thread, String name, int loops,boolean persistent) throws Exception
     {
-        if (_stress)
+        try
         {
-            System.err.println("STRESS!");
-            doThreads(200,100,false);
+            for (int i=0;i<loops;i++)
+            {
+                _loops[thread].set(i);
+                doPaths(thread,name+"-"+i,persistent);
+                Thread.sleep(1+_random.nextInt(10)*_random.nextInt(10));
+                Thread.sleep(10);
+            }
+            _loops[thread].set(loops);
         }
-        else
-            doThreads(10,20,false);
+        catch(Exception e)
+        {
+            System.err.println(e);
+            _loops[thread].set(-_loops[thread].get());
+            throw e;
+        }
     }
 
-    public void testPersistent() throws Throwable
+    private void doPaths(int thread,String name,boolean persistent) throws Exception
     {
-        if (_stress)
+        if (persistent)
         {
-            System.err.println("STRESS!");
-            doThreads(200,100,true);
+            long start=System.currentTimeMillis();
+            Socket socket= new Socket("localhost", _connector.getLocalPort());
+            socket.setSoTimeout(30000);
+            socket.setSoLinger(false,0);
+
+            long connected=System.currentTimeMillis();
+
+            for (int i=0;i<__tests.length;i++)
+            {
+                String uri=__tests[i]+"/"+name+"/"+i;
+
+                String close=((i+1)<__tests.length)?"":"Connection: close\r\n";
+                String request =
+                        "GET "+uri+" HTTP/1.1\r\n"+
+                                "Host: localhost\r\n"+
+                                "start: "+start+"\r\n"+
+                                close+"\r\n";
+
+                socket.getOutputStream().write(request.getBytes());
+                socket.getOutputStream().flush();
+                Thread.yield();
+            }
+
+            long written=System.currentTimeMillis();
+
+            String response = IO.toString(socket.getInputStream());
+            socket.close();
+
+            long end=System.currentTimeMillis();
+
+            int bodies = count(response,"HTTP/1.1 200 OK");
+            if (__tests.length!=bodies)
+                System.err.println("responses=\n"+response+"\n---");
+            assertEquals(name,__tests.length,bodies);
+            bodies = count(response,"HTTP/1.1 200 OK");
+
+            long bind=connected-start;
+            long flush=(written-connected)/__tests.length;
+            long read=(end-written)/__tests.length;
+
+            int offset=0;
+            for (int i=0;i<__tests.length;i++)
+            {
+                offset=response.indexOf("DATA "+__tests[i],offset);
+                assertTrue(offset>=0);
+                offset+=__tests[i].length()+5;
+
+                if (bind<0 || flush<0 || read <0)
+                {
+                    System.err.println(bind+","+flush+","+read);
+                }
+
+                _latencies[0].add((i==0)?new Long(bind):0);
+                _latencies[1].add((i==0)?new Long(bind+flush):flush);
+                _latencies[5].add((i==0)?new Long(bind+flush+read):(flush+read));
+            }
         }
         else
-            doThreads(20,40,true);
+        {
+            for (int i=0;i<__tests.length;i++)
+            {
+                String uri=__tests[i]+"/"+name+"/"+i;
+
+                long start=System.currentTimeMillis();
+                String close="Connection: close\r\n";
+                String request =
+                        "GET "+uri+" HTTP/1.1\r\n"+
+                                "Host: localhost\r\n"+
+                                "start: "+start+"\r\n"+
+                                close+"\r\n";
+
+                Socket socket = new Socket("localhost", _connector.getLocalPort());
+                socket.setSoTimeout(10000);
+                socket.setSoLinger(false,0);
+
+                _latencies[0].add(new Long(System.currentTimeMillis()-start));
+
+                socket.getOutputStream().write(request.getBytes());
+                socket.getOutputStream().flush();
+
+                _latencies[1].add(new Long(System.currentTimeMillis()-start));
+
+                String response = IO.toString(socket.getInputStream());
+                socket.close();
+                long end=System.currentTimeMillis();
+
+                response=response.substring(response.indexOf("\r\n\r\n")+4);
+
+                assertTrue(uri,response.startsWith("DATA "+__tests[i]));
+                long latency=end-start;
+
+                _latencies[5].add(new Long(latency));
+            }
+        }
     }
 
-    
-    
     private int count(String s,String sub)
     {
         int count=0;
         int index=s.indexOf(sub);
-        
+
         while(index>=0)
         {
             count++;
             index=s.indexOf(sub,index+sub.length());
-        }   
+        }
         return count;
     }
-    
-    private class TestHandler extends HandlerWrapper
+
+    private static class TestHandler extends HandlerWrapper
     {
-        private Timer _timer;
-        
-        public TestHandler()
-        {
-            _timer=new Timer();
-        }
-        
         @Override
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
             long now=System.currentTimeMillis();
             long start=Long.parseLong(baseRequest.getHeader("start"));
             long received=baseRequest.getTimeStamp();
-            
+
             _handled.incrementAndGet();
             long delay=received-start;
             if (delay<0)
                 delay=0;
             _latencies[2].add(new Long(delay));
             _latencies[3].add(new Long(now-start));
-            
+
             response.setStatus(200);
             response.getOutputStream().print("DATA "+request.getPathInfo()+"\n\n");
             baseRequest.setHandled(true);
             long end=System.currentTimeMillis();
-            
+
             _latencies[4].add(new Long(System.currentTimeMillis()-start));
-            
+
             return;
         }
     }
-    
-    
 }

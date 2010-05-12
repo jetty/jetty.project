@@ -12,6 +12,7 @@ jetty-7.1.1-SNAPSHOT
  + 308863 Update test suite to JUnit4 - Module jetty-servlet
  + 308855 Update test suite to JUnit4 - Module jetty-io
  + 310918 Fixed write blocking for client HttpConnection
+ + 308862 Update test suite to JUnit4 - Module jetty-server
 
 jetty-7.1.0 5 May 2010
  + 306353 fixed cross context dispatch to root context.
