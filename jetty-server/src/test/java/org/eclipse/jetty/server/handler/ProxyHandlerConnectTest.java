@@ -17,19 +17,25 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @version $Revision$ $Date$
  */
 public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
 {
-    @Override
-    protected void configureServer(Server server)
+    @BeforeClass
+    public static void init() throws Exception
     {
-        server.setHandler(new ServerHandler());
+        startServer(new SelectChannelConnector(), new ServerHandler());
+        startProxy();
     }
 
+    @Test
     public void testCONNECT() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
@@ -56,6 +62,7 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
         }
     }
 
+    @Test
     public void testCONNECTAndGET() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
@@ -93,6 +100,7 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
         }
     }
 
+    @Test
     public void testCONNECT10AndGET() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
@@ -130,6 +138,7 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
         }
     }
 
+    @Test
     public void testCONNECTAndGETPipelined() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
@@ -164,6 +173,7 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
         }
     }
 
+    @Test
     public void testCONNECTAndMultipleGETs() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
@@ -204,6 +214,7 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
         }
     }
 
+    @Test
     public void testCONNECTAndGETServerStop() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
@@ -236,8 +247,7 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
             assertEquals("GET /echo", response.getBody());
 
             // Idle server is shut down
-            server.stop();
-            server.join();
+            stopServer();
 
             int read = input.read();
             assertEquals(-1, read);
@@ -245,9 +255,12 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
         finally
         {
             socket.close();
+            // Restart the server for the next test
+            server.start();
         }
     }
 
+    @Test
     public void testCONNECTAndGETAndServerSideClose() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
@@ -284,6 +297,7 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
         }
     }
 
+    @Test
     public void testCONNECTAndPOSTAndGET() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
@@ -334,6 +348,7 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
         }
     }
 
+    @Test
     public void testCONNECTAndPOSTWithBigBody() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
@@ -378,13 +393,14 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
         }
     }
 
+    @Test
     public void testCONNECTAndPOSTWithContext() throws Exception
     {
         final String contextKey = "contextKey";
         final String contextValue = "contextValue";
 
         // Replace the default ProxyHandler with a subclass to test context information passing
-        proxy.stop();
+        stopProxy();
         proxy.setHandler(new ProxyHandler()
         {
             @Override
@@ -463,7 +479,7 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
         }
     }
 
-    private class ServerHandler extends AbstractHandler
+    private static class ServerHandler extends AbstractHandler
     {
         public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
         {

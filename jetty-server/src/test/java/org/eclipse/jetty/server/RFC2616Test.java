@@ -23,33 +23,32 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
- *
  */
-public class RFC2616Test extends TestCase
+public class RFC2616Test
 {
-    Server server=new Server();
-    LocalConnector connector=new LocalConnector();
+    private Server server;
+    private LocalConnector connector;
 
-    /**
-     * Constructor for RFC2616Test.
-     *
-     * @param arg0
-     */
-    public RFC2616Test(String arg0)
+    @Before
+    public void init() throws Exception
     {
-        super(arg0);
-        server.setConnectors(new Connector[]
-        { connector });
+        server = new Server();
+        connector = new LocalConnector();
+        server.addConnector(connector);
 
         ContextHandler vcontext=new ContextHandler();
         vcontext.setContextPath("/");
@@ -66,28 +65,18 @@ public class RFC2616Test extends TestCase
         { vcontext, context });
 
         server.setHandler(collection);
-    }
-
-    /*
-     * @see TestCase#setUp()
-     */
-    protected void setUp() throws Exception
-    {
-        super.setUp();
 
         server.start();
     }
 
-    /*
-     * @see TestCase#tearDown()
-     */
-    protected void tearDown() throws Exception
+    @After
+    public void destroy() throws Exception
     {
-        super.tearDown();
         server.stop();
+        server.join();
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test3_3()
     {
         try
@@ -114,10 +103,9 @@ public class RFC2616Test extends TestCase
         }
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test3_6()
     {
-
         String response=null;
         try
         {
@@ -178,7 +166,7 @@ public class RFC2616Test extends TestCase
         }
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test3_9()
     {
         try
@@ -202,12 +190,11 @@ public class RFC2616Test extends TestCase
         }
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test4_4()
     {
         try
         {
-
             String response;
             int offset=0;
 
@@ -265,7 +252,7 @@ public class RFC2616Test extends TestCase
         }
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test5_2() throws Exception
     {
         String response;
@@ -297,10 +284,9 @@ public class RFC2616Test extends TestCase
         offset=0;
         response=connector.getResponses("GET /path/R1 HTTP/1.1\n"+"\n");
         offset=checkContains(response,offset,"HTTP/1.1 400","3. no host")+1;
-
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test8_1()
     {
         try
@@ -335,7 +321,7 @@ public class RFC2616Test extends TestCase
         }
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test8_2()
     {
         try
@@ -394,7 +380,7 @@ public class RFC2616Test extends TestCase
             // Expect 100 not sent
             ((StdErrLog)Log.getLog()).setHideStacks(true);
             offset=0;
-            
+
             response=connector.getResponses("GET /R1?error=401 HTTP/1.1\n"+
                                             "Host: localhost\n"+
                                             "Expect: 100-continue\n"+
@@ -404,7 +390,7 @@ public class RFC2616Test extends TestCase
             checkNotContained(response,offset,"HTTP/1.1 100","8.2.3 expect 100");
             offset=checkContains(response,offset,"HTTP/1.1 401 ","8.2.3 expect 100")+1;
             offset=checkContains(response,offset,"Connection: close","8.2.3 expect 100")+1;
-            
+
             ((StdErrLog)Log.getLog()).setHideStacks(false);
         }
         catch (Exception e)
@@ -412,12 +398,9 @@ public class RFC2616Test extends TestCase
             e.printStackTrace();
             assertTrue(false);
         }
-        finally
-        {
-        }
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test9_2()
     {
         // TODO
@@ -434,7 +417,7 @@ public class RFC2616Test extends TestCase
          */
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test9_4()
     {
         try
@@ -457,7 +440,7 @@ public class RFC2616Test extends TestCase
         }
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test9_8()
     {
         // TODO
@@ -475,7 +458,7 @@ public class RFC2616Test extends TestCase
          */
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test10_2_7()
     {
         // TODO
@@ -528,7 +511,7 @@ public class RFC2616Test extends TestCase
          */
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test10_3()
     {
         // TODO
@@ -578,61 +561,7 @@ public class RFC2616Test extends TestCase
          */
     }
 
-    /* --------------------------------------------------------------- */
-    public void checkContentRange(LocalConnector listener, String tname, String path, String reqRanges, int expectedStatus, String expectedRange,
-            String expectedData)
-    {
-        try
-        {
-            String response;
-            int offset=0;
-
-            String byteRangeHeader="";
-            if (reqRanges!=null)
-            {
-                byteRangeHeader="Range: "+reqRanges+"\n";
-            }
-
-            response=connector.getResponses("GET /"+path+" HTTP/1.1\n"+"Host: localhost\n"+byteRangeHeader+"Connection: close\n"+"\n");
-
-            switch (expectedStatus)
-            {
-                case 200:
-                {
-                    offset=checkContains(response,offset,"HTTP/1.1 200 OK\r\n",tname+".1. proper 200 OK status code");
-                    break;
-                }
-                case 206:
-                {
-                    offset=checkContains(response,offset,"HTTP/1.1 206 Partial Content\r\n",tname+".1. proper 206 Partial Content status code");
-                    break;
-                }
-                case 416:
-                {
-                    offset=checkContains(response,offset,"HTTP/1.1 416 Requested Range Not Satisfiable\r\n",tname
-                            +".1. proper 416 Requested Range not Satisfiable status code");
-                    break;
-                }
-            }
-
-            if (expectedRange!=null)
-            {
-                String expectedContentRange="Content-Range: bytes "+expectedRange+"\r\n";
-                offset=checkContains(response,offset,expectedContentRange,tname+".2. _content range "+expectedRange);
-            }
-
-            if (expectedStatus==200||expectedStatus==206)
-            {
-                offset=checkContains(response,offset,expectedData,tname+".3. subrange data: \""+expectedData+"\"");
-            }
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            assertTrue(false);
-        }
-    }
-
+    @Test
     public void test14_16()
     {
         // TODO
@@ -685,12 +614,11 @@ public class RFC2616Test extends TestCase
          */
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test14_23()
     {
         try
         {
-
             String response;
             int offset=0;
 
@@ -719,7 +647,7 @@ public class RFC2616Test extends TestCase
         }
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test14_35()
     {
         // TODO
@@ -756,7 +684,7 @@ public class RFC2616Test extends TestCase
          * catch(Exception e) { e.printStackTrace(); assertTrue(false); }
          */}
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test14_39()
     {
         // TODO
@@ -778,12 +706,11 @@ public class RFC2616Test extends TestCase
          */
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void test19_6()
     {
         try
         {
-
             String response;
             int offset=0;
 
@@ -835,7 +762,59 @@ public class RFC2616Test extends TestCase
             offset=checkContains(response,offset,"/R2","19.6.2 Keep-alive close")+3;
 
             assertEquals("19.6.2 closed",-1,response.indexOf("/R3"));
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            assertTrue(false);
+        }
+    }
 
+    private void checkContentRange(LocalConnector listener, String tname, String path, String reqRanges, int expectedStatus, String expectedRange, String expectedData)
+    {
+        try
+        {
+            String response;
+            int offset=0;
+
+            String byteRangeHeader="";
+            if (reqRanges!=null)
+            {
+                byteRangeHeader="Range: "+reqRanges+"\n";
+            }
+
+            response=connector.getResponses("GET /"+path+" HTTP/1.1\n"+"Host: localhost\n"+byteRangeHeader+"Connection: close\n"+"\n");
+
+            switch (expectedStatus)
+            {
+                case 200:
+                {
+                    offset=checkContains(response,offset,"HTTP/1.1 200 OK\r\n",tname+".1. proper 200 OK status code");
+                    break;
+                }
+                case 206:
+                {
+                    offset=checkContains(response,offset,"HTTP/1.1 206 Partial Content\r\n",tname+".1. proper 206 Partial Content status code");
+                    break;
+                }
+                case 416:
+                {
+                    offset=checkContains(response,offset,"HTTP/1.1 416 Requested Range Not Satisfiable\r\n",tname
+                            +".1. proper 416 Requested Range not Satisfiable status code");
+                    break;
+                }
+            }
+
+            if (expectedRange!=null)
+            {
+                String expectedContentRange="Content-Range: bytes "+expectedRange+"\r\n";
+                offset=checkContains(response,offset,expectedContentRange,tname+".2. _content range "+expectedRange);
+            }
+
+            if (expectedStatus==200||expectedStatus==206)
+            {
+                offset=checkContains(response,offset,expectedData,tname+".3. subrange data: \""+expectedData+"\"");
+            }
         }
         catch (Exception e)
         {

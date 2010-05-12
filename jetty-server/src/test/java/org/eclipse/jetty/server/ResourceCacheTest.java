@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server;
@@ -16,27 +16,27 @@ package org.eclipse.jetty.server;
 import java.io.File;
 import java.io.FileOutputStream;
 
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ResourceCache.Content;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-public class ResourceCacheTest extends TestCase
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+public class ResourceCacheTest
 {
-    Resource directory;
-    File[] files=new File[10];
-    String[] names=new String[files.length];
-    ResourceCache cache = new ResourceCache(new MimeTypes());
-    ResourceFactory factory;
-    
-    /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see junit.framework.TestCase#setUp()
-     */
-    @Override
-    protected void setUp() throws Exception
+    private Resource directory;
+    private File[] files=new File[10];
+    private String[] names=new String[files.length];
+    private ResourceCache cache = new ResourceCache(new MimeTypes());
+    private ResourceFactory factory;
+
+    @Before
+    public void init() throws Exception
     {
         for (int i=0;i<files.length;i++)
         {
@@ -49,9 +49,9 @@ public class ResourceCacheTest extends TestCase
             out.write('\n');
             out.close();
         }
-        
+
         directory=Resource.newResource(files[0].getParentFile().getAbsolutePath());
-        
+
         factory = new ResourceFactory()
         {
             public Resource getResource(String path)
@@ -65,7 +65,7 @@ public class ResourceCacheTest extends TestCase
                     return null;
                 }
             }
-            
+
         };
         cache.setMaxCacheSize(95);
         cache.setMaxCachedFileSize(85);
@@ -73,54 +73,50 @@ public class ResourceCacheTest extends TestCase
         cache.start();
     }
 
-    /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see junit.framework.TestCase#tearDown()
-     */
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void destroy() throws Exception
     {
         cache.stop();
     }
 
-    /* ------------------------------------------------------------ */
+    @Test
     public void testResourceCache() throws Exception
     {
         assertTrue(cache.lookup("does not exist",factory)==null);
         assertTrue(cache.lookup(names[9],factory)==null);
-        
+
         Content content;
         content=cache.lookup(names[8],factory);
         assertTrue(content!=null);
         assertEquals(80,content.getContentLength());
-     
+
         assertEquals(80,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());
 
         content=cache.lookup(names[1],factory);
         assertEquals(90,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
-        
+
         content=cache.lookup(names[2],factory);
         assertEquals(30,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
-        
+
         content=cache.lookup(names[3],factory);
         assertEquals(60,cache.getCachedSize());
         assertEquals(3,cache.getCachedFiles());
-        
+
         content=cache.lookup(names[4],factory);
         assertEquals(90,cache.getCachedSize());
         assertEquals(3,cache.getCachedFiles());
-        
+
         content=cache.lookup(names[5],factory);
         assertEquals(90,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
-        
+
         content=cache.lookup(names[6],factory);
         assertEquals(60,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());
-        
+
         FileOutputStream out = new FileOutputStream(files[6]);
         out.write(' ');
         out.close();
@@ -131,27 +127,25 @@ public class ResourceCacheTest extends TestCase
         content=cache.lookup(names[6],factory);
         assertEquals(71,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
-        
+
         content=cache.lookup(names[0],factory);
         assertEquals(72,cache.getCachedSize());
         assertEquals(3,cache.getCachedFiles());
-        
+
         content=cache.lookup(names[1],factory);
         assertEquals(82,cache.getCachedSize());
         assertEquals(4,cache.getCachedFiles());
-        
+
         content=cache.lookup(names[2],factory);
         assertEquals(32,cache.getCachedSize());
         assertEquals(4,cache.getCachedFiles());
-        
+
         content=cache.lookup(names[3],factory);
         assertEquals(61,cache.getCachedSize());
         assertEquals(4,cache.getCachedFiles());
-        
+
         cache.flushCache();
         assertEquals(0,cache.getCachedSize());
         assertEquals(0,cache.getCachedFiles());
-        
-        
     }
 }

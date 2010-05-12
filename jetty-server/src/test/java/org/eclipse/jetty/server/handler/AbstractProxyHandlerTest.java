@@ -9,59 +9,60 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import junit.framework.TestCase;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.junit.AfterClass;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$ $Date$
  */
-public abstract class AbstractProxyHandlerTest extends TestCase
+public abstract class AbstractProxyHandlerTest
 {
-    protected Server server;
-    protected Connector serverConnector;
-    protected Server proxy;
-    protected Connector proxyConnector;
+    protected static Server server;
+    protected static Connector serverConnector;
+    protected static Server proxy;
+    protected static Connector proxyConnector;
 
-    @Override
-    protected void setUp() throws Exception
+    protected static void startServer(Connector connector, Handler handler) throws Exception
     {
         server = new Server();
-        serverConnector = newServerConnector();
+        serverConnector = connector;
         server.addConnector(serverConnector);
-        configureServer(server);
+        server.setHandler(handler);
         server.start();
+    }
 
+    protected static void startProxy() throws Exception
+    {
         proxy = new Server();
         proxyConnector = new SelectChannelConnector();
         proxy.addConnector(proxyConnector);
-        configureProxy(proxy);
+        proxy.setHandler(new ProxyHandler());
         proxy.start();
     }
 
-    protected SelectChannelConnector newServerConnector()
+    @AfterClass
+    public static void stop() throws Exception
     {
-        return new SelectChannelConnector();
+        stopProxy();
+        stopServer();
     }
 
-    protected void configureServer(Server server)
+    protected static void stopServer() throws Exception
     {
+        server.stop();
+        server.join();
     }
 
-    protected void configureProxy(Server proxy)
-    {
-        proxy.setHandler(new ProxyHandler());
-    }
-
-    @Override
-    protected void tearDown() throws Exception
+    protected static void stopProxy() throws Exception
     {
         proxy.stop();
         proxy.join();
-
-        server.stop();
-        server.join();
     }
 
     protected Response readResponse(BufferedReader reader) throws IOException

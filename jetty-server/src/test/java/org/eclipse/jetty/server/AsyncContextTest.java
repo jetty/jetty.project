@@ -15,47 +15,50 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.InputStream;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-public class AsyncContextTest extends TestCase
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+public class AsyncContextTest
 {
     protected Server _server = new Server();
     protected SuspendHandler _handler = new SuspendHandler();
     protected LocalConnector _connector;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void init() throws Exception
     {
         _connector = new LocalConnector();
         _server.setConnectors(new Connector[]{ _connector });
-        
+
         SessionHandler session = new SessionHandler();
         session.setHandler(_handler);
-        
+
         _server.setHandler(session);
         _server.start();
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void destroy() throws Exception
     {
         _server.stop();
+        _server.join();
     }
 
+    @Test
     public void testSuspendResume() throws Exception
     {
-        String response;
-
         _handler.setRead(0);
         _handler.setSuspendFor(1000);
         _handler.setResumeAfter(-1);
@@ -98,7 +101,6 @@ public class AsyncContextTest extends TestCase
         _handler.setCompleteAfter(100);
         check("COMPLETED",process("wibble"));
 
-
         _handler.setRead(6);
 
         _handler.setResumeAfter(0);
@@ -124,7 +126,7 @@ public class AsyncContextTest extends TestCase
         assertTrue(response.contains(content));
     }
 
-    public synchronized String process(String content) throws Exception
+    private synchronized String process(String content) throws Exception
     {
         String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n";
 
@@ -144,8 +146,8 @@ public class AsyncContextTest extends TestCase
         private long _completeAfter=-1;
 
         public SuspendHandler()
-        {}
-
+        {
+        }
 
         public int getRead()
         {
@@ -186,8 +188,6 @@ public class AsyncContextTest extends TestCase
         {
             _completeAfter = completeAfter;
         }
-
-
 
         @Override
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
@@ -280,9 +280,7 @@ public class AsyncContextTest extends TestCase
         }
     }
 
-
-    private static ContinuationListener __asyncListener =
-        new ContinuationListener()
+    private static ContinuationListener __asyncListener = new ContinuationListener()
     {
         public void onComplete(Continuation continuation)
         {
@@ -293,6 +291,5 @@ public class AsyncContextTest extends TestCase
             continuation.setAttribute("TIMEOUT",Boolean.TRUE);
             continuation.resume();
         }
-
     };
 }

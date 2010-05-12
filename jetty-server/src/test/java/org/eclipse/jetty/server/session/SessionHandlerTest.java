@@ -8,28 +8,28 @@ import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.Locale;
 import java.util.Map;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
-import junit.framework.Assert;
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
+import org.junit.Test;
 
-public class SessionHandlerTest extends TestCase
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+public class SessionHandlerTest
 {
-
+    @Test
     public void testRequestedIdFromCookies()
     {
-
         final String cookieName = "SessionId";
         final String sessionId = "1234.host";
         HttpServletRequest httpRequest = new MockHttpServletRequest()
@@ -43,7 +43,7 @@ public class SessionHandlerTest extends TestCase
 
         Request baseRequest = new Request();
         baseRequest.setDispatcherType(DispatcherType.REQUEST);
-        Assert.assertEquals(DispatcherType.REQUEST,baseRequest.getDispatcherType());
+        assertEquals(DispatcherType.REQUEST,baseRequest.getDispatcherType());
 
         SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setSessionManager(new MockSessionManager()
@@ -60,14 +60,13 @@ public class SessionHandlerTest extends TestCase
         });
         sessionHandler.setRequestedId(baseRequest,httpRequest);
 
-        Assert.assertEquals(sessionId,baseRequest.getRequestedSessionId());
-        Assert.assertTrue(baseRequest.isRequestedSessionIdFromCookie());
-
+        assertEquals(sessionId,baseRequest.getRequestedSessionId());
+        assertTrue(baseRequest.isRequestedSessionIdFromCookie());
     }
 
+    @Test
     public void testRequestedIdFromURI()
     {
-
         final String parameterName = "sessionid";
         final String sessionId = "1234.host";
         HttpServletRequest httpRequest = new MockHttpServletRequest()
@@ -81,7 +80,7 @@ public class SessionHandlerTest extends TestCase
 
         Request baseRequest = new Request();
         baseRequest.setDispatcherType(DispatcherType.REQUEST);
-        Assert.assertEquals(DispatcherType.REQUEST,baseRequest.getDispatcherType());
+        assertEquals(DispatcherType.REQUEST,baseRequest.getDispatcherType());
 
         SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setSessionManager(new MockSessionManager()
@@ -101,17 +100,16 @@ public class SessionHandlerTest extends TestCase
 
         sessionHandler.setRequestedId(baseRequest,httpRequest);
 
-        Assert.assertEquals(sessionId,baseRequest.getRequestedSessionId());
-        Assert.assertFalse(baseRequest.isRequestedSessionIdFromCookie());
+        assertEquals(sessionId,baseRequest.getRequestedSessionId());
+        assertFalse(baseRequest.isRequestedSessionIdFromCookie());
     }
 
     /**
      * Mock class for HttpServletRequest interface.
      */
     @SuppressWarnings("unchecked")
-    class MockHttpServletRequest implements HttpServletRequest
+    private class MockHttpServletRequest implements HttpServletRequest
     {
-
         public String getRequestURI()
         {
             return null;
@@ -383,7 +381,7 @@ public class SessionHandlerTest extends TestCase
     /**
      * Mock class for SessionManager interface.
      */
-    class MockSessionManager implements SessionManager
+    private class MockSessionManager implements SessionManager
     {
         public HttpCookie access(HttpSession session, boolean secure)
         {
@@ -574,7 +572,8 @@ public class SessionHandlerTest extends TestCase
         {
         }
 
-        boolean _checkRemote=false;
+        private boolean _checkRemote=false;
+
         public boolean isCheckingRemoteSessionIdEncoding()
         {
             return _checkRemote;
@@ -584,7 +583,5 @@ public class SessionHandlerTest extends TestCase
         {
             _checkRemote=remote;
         }
-
     }
-
 }

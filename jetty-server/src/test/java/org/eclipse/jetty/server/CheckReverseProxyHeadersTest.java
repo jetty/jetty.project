@@ -4,42 +4,31 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
- * Test AbstractConnector#checkForwardedHeaders(EndPoint, Request)
+ *
  */
-public class CheckReverseProxyHeadersTest extends TestCase
+public class CheckReverseProxyHeadersTest
 {
-    Server server=new Server();
-    LocalConnector connector=new LocalConnector();
-
-    /**
-     * Constructor for CheckReverseProxyHeadersTest.
-     * @param name test case name.
-     */
-    public CheckReverseProxyHeadersTest(String name)
-    {
-        super(name);
-    }
-    
+    @Test
     public void testCheckReverseProxyHeaders() throws Exception
     {
         // Classic ProxyPass from example.com:80 to localhost:8080
@@ -56,7 +45,7 @@ public class CheckReverseProxyHeadersTest extends TestCase
                 assertEquals("example.com", request.getHeader("Host"));
             }
         });
-        
+
         // ProxyPass from example.com:81 to localhost:8080
         testRequest("Host: localhost:8080\n" +
                     "X-Forwarded-For: 10.20.30.40\n" +
@@ -72,7 +61,7 @@ public class CheckReverseProxyHeadersTest extends TestCase
                 assertEquals("example.com:81", request.getHeader("Host"));
             }
         });
-        
+
         // Multiple ProxyPass from example.com:80 to rp.example.com:82 to localhost:8080
         testRequest("Host: localhost:8080\n" +
                     "X-Forwarded-For: 10.20.30.40, 10.0.0.1\n" +
@@ -94,21 +83,21 @@ public class CheckReverseProxyHeadersTest extends TestCase
     {
         Server server = new Server();
         LocalConnector connector = new LocalConnector();
-        
+
         // Activate reverse proxy headers checking
         connector.setForwarded(true);
-        
+
         server.setConnectors(new Connector[] {connector});
         ValidationHandler validationHandler = new ValidationHandler(requestValidator);
         server.setHandler(validationHandler);
-        
+
         try
         {
             server.start();
             connector.getResponses("GET / HTTP/1.1\n" + headers + "\n\n");
-            
+
             Error error = validationHandler.getError();
-            
+
             if (error != null)
             {
                 throw error;
@@ -137,18 +126,14 @@ public class CheckReverseProxyHeadersTest extends TestCase
      */
     private static class ValidationHandler extends AbstractHandler
     {
-        private RequestValidator _requestValidator;
+        private final RequestValidator _requestValidator;
         private Error _error;
-        
-        /**
-         * Create the validation handler with a request validator.
-         * @param requestValidator the request validator.
-         */
-        public ValidationHandler(RequestValidator requestValidator)
+
+        private ValidationHandler(RequestValidator requestValidator)
         {
             _requestValidator = requestValidator;
         }
-        
+
         /**
          * Retrieve the validation error.
          * @return the validation error or <code>null</code> if there was no error.
@@ -157,7 +142,7 @@ public class CheckReverseProxyHeadersTest extends TestCase
         {
             return _error;
         }
-        
+
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             try

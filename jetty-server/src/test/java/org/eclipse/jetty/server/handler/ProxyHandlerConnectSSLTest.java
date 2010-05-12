@@ -22,17 +22,20 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * @version $Revision$ $Date$
  */
 public class ProxyHandlerConnectSSLTest extends AbstractProxyHandlerTest
 {
-    @Override
-    protected SelectChannelConnector newServerConnector()
+    @BeforeClass
+    public static void init() throws Exception
     {
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
 
@@ -42,15 +45,11 @@ public class ProxyHandlerConnectSSLTest extends AbstractProxyHandlerTest
         connector.setPassword("storepwd");
         connector.setKeyPassword("keypwd");
 
-        return connector;
+        startServer(connector, new ServerHandler());
+        startProxy();
     }
 
-    @Override
-    protected void configureServer(Server server)
-    {
-        server.setHandler(new ServerHandler());
-    }
-
+    @Test
     public void testGETRequest() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
@@ -103,6 +102,7 @@ public class ProxyHandlerConnectSSLTest extends AbstractProxyHandlerTest
         }
     }
 
+    @Test
     public void testPOSTRequests() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
@@ -187,7 +187,7 @@ public class ProxyHandlerConnectSSLTest extends AbstractProxyHandlerTest
         }
     }
 
-    private class ServerHandler extends AbstractHandler
+    private static class ServerHandler extends AbstractHandler
     {
         public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
         {

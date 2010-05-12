@@ -18,73 +18,58 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
- *
- * To change the template for this generated type comment go to
- * Window - Preferences - Java - Code Generation - Code and Comments
  */
-public class RequestTest extends TestCase
+public class RequestTest
 {
-    Server _server = new Server();
-    LocalConnector _connector = new LocalConnector();
-    RequestHandler _handler = new RequestHandler();
+    private Server _server;
+    private LocalConnector _connector;
+    private RequestHandler _handler;
 
+    @Before
+    public void init() throws Exception
     {
+        _server = new Server();
+        _connector = new LocalConnector();
         _connector.setHeaderBufferSize(512);
         _connector.setRequestBufferSize(1024);
         _connector.setResponseBufferSize(2048);
-    }
-
-    public RequestTest(String arg0)
-    {
-        super(arg0);
-        _server.setConnectors(new Connector[]{_connector});
-
-    }
-
-    public static void main(String[] args)
-    {
-        junit.textui.TestRunner.run(RequestTest.class);
-    }
-
-    /*
-     * @see TestCase#setUp()
-     */
-    protected void setUp() throws Exception
-    {
-        super.setUp();
-
+        _server.addConnector(_connector);
+        _handler = new RequestHandler();
         _server.setHandler(_handler);
         _server.start();
     }
 
-    /*
-     * @see TestCase#tearDown()
-     */
-    protected void tearDown() throws Exception
+    @After
+    public void destroy() throws Exception
     {
-        super.tearDown();
         _server.stop();
+        _server.join();
     }
 
-
-    public void testContentTypeEncoding()
-    	throws Exception
+    @Test
+    public void testContentTypeEncoding() throws Exception
     {
-        final ArrayList results = new ArrayList();
+        final ArrayList<String> results = new ArrayList<String>();
         _handler._checker = new RequestTester()
         {
             public boolean check(HttpServletRequest request,HttpServletResponse response)
@@ -127,18 +112,13 @@ public class RequestTest extends TestCase
         assertEquals("text/html; charset=\"utf8\"",results.get(i++));
         assertEquals("utf8",results.get(i++));
 
-        assertTrue(((String)results.get(i++)).startsWith("text/html"));
+        assertTrue(results.get(i++).startsWith("text/html"));
         assertEquals(" x=z; ",results.get(i++));
-
-
     }
 
-
-
-    public void testContent()
-        throws Exception
+    @Test
+    public void testContent() throws Exception
     {
-
         final int[] length=new int[1];
 
         _handler._checker = new RequestTester()
@@ -170,8 +150,8 @@ public class RequestTest extends TestCase
         }
     }
 
-    public void testPartialRead()
-        throws Exception
+    @Test
+    public void testPartialRead() throws Exception
     {
         Handler handler = new AbstractHandler()
         {
@@ -185,7 +165,7 @@ public class RequestTest extends TestCase
                 response.getOutputStream().write(b);
                 response.flushBuffer();
             }
-            
+
         };
         _server.stop();
         _server.setHandler(handler);
@@ -207,17 +187,16 @@ public class RequestTest extends TestCase
 
         String responses = _connector.getResponses(request);
         System.err.println("response="+responses);
-        
+
         int index=responses.indexOf("read="+(int)'0');
         assertTrue(index>0);
-        
+
         index=responses.indexOf("read="+(int)'A',index+7);
         assertTrue(index>0);
-        
     }
 
-    public void testPartialInput()
-    throws Exception
+    @Test
+    public void testPartialInput() throws Exception
     {
         Handler handler = new AbstractHandler()
         {
@@ -259,11 +238,10 @@ public class RequestTest extends TestCase
 
         index=responses.indexOf("read="+(int)'A',index+7);
         assertTrue(index>0);
-
     }
 
-    public void testConnectionClose()
-        throws Exception
+    @Test
+    public void testConnectionClose() throws Exception
     {
         String response;
 
@@ -306,8 +284,6 @@ public class RequestTest extends TestCase
         assertTrue(response.indexOf("Connection: close")>0);
         assertTrue(response.indexOf("Hello World")>0);
 
-
-
         response=_connector.getResponses(
                     "GET / HTTP/1.0\n"+
                     "Host: whatever\n"+
@@ -336,9 +312,6 @@ public class RequestTest extends TestCase
         assertTrue(response.indexOf("200")>0);
         assertTrue(response.indexOf("Connection: keep-alive")>0);
         assertTrue(response.indexOf("Hello World")>0);
-
-
-
 
         _handler._checker = new RequestTester()
         {
@@ -371,10 +344,10 @@ public class RequestTest extends TestCase
         assertTrue(response.indexOf("Hello World")>0);
     }
 
-
+    @Test
     public void testCookies() throws Exception
     {
-        final ArrayList cookies = new ArrayList();
+        final ArrayList<Cookie> cookies = new ArrayList<Cookie>();
 
         _handler._checker = new RequestTester()
         {
@@ -409,8 +382,8 @@ public class RequestTest extends TestCase
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertEquals(1,cookies.size());
-        assertEquals("name",((Cookie)cookies.get(0)).getName());
-        assertEquals("quoted=\\\"value\\\"",((Cookie)cookies.get(0)).getValue());
+        assertEquals("name", cookies.get(0).getName());
+        assertEquals("quoted=\\\"value\\\"", cookies.get(0).getValue());
 
         cookies.clear();
         response=_connector.getResponses(
@@ -421,10 +394,10 @@ public class RequestTest extends TestCase
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertEquals(2,cookies.size());
-        assertEquals("name",((Cookie)cookies.get(0)).getName());
-        assertEquals("value",((Cookie)cookies.get(0)).getValue());
-        assertEquals("other",((Cookie)cookies.get(1)).getName());
-        assertEquals("quoted=;value",((Cookie)cookies.get(1)).getValue());
+        assertEquals("name", cookies.get(0).getName());
+        assertEquals("value", cookies.get(0).getValue());
+        assertEquals("other", cookies.get(1).getName());
+        assertEquals("quoted=;value", cookies.get(1).getValue());
 
 
         cookies.clear();
@@ -442,14 +415,13 @@ public class RequestTest extends TestCase
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertEquals(4,cookies.size());
-        assertEquals("name",((Cookie)cookies.get(0)).getName());
-        assertEquals("value",((Cookie)cookies.get(0)).getValue());
-        assertEquals("other",((Cookie)cookies.get(1)).getName());
-        assertEquals("quoted=;value",((Cookie)cookies.get(1)).getValue());
+        assertEquals("name", cookies.get(0).getName());
+        assertEquals("value", cookies.get(0).getValue());
+        assertEquals("other", cookies.get(1).getName());
+        assertEquals("quoted=;value", cookies.get(1).getValue());
 
-        assertTrue((Cookie)cookies.get(0)==(Cookie)cookies.get(2));
-        assertTrue((Cookie)cookies.get(1)==(Cookie)cookies.get(3));
-
+        assertSame(cookies.get(0), cookies.get(2));
+        assertSame(cookies.get(1), cookies.get(3));
 
         cookies.clear();
         response=_connector.getResponses(
@@ -466,13 +438,13 @@ public class RequestTest extends TestCase
         );
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertEquals(4,cookies.size());
-        assertEquals("name",((Cookie)cookies.get(0)).getName());
-        assertEquals("value",((Cookie)cookies.get(0)).getValue());
-        assertEquals("other",((Cookie)cookies.get(1)).getName());
-        assertEquals("quoted=;value",((Cookie)cookies.get(1)).getValue());
+        assertEquals("name", cookies.get(0).getName());
+        assertEquals("value", cookies.get(0).getValue());
+        assertEquals("other", cookies.get(1).getName());
+        assertEquals("quoted=;value", cookies.get(1).getValue());
 
-        assertTrue((Cookie)cookies.get(0)!=(Cookie)cookies.get(2));
-        assertTrue((Cookie)cookies.get(1)!=(Cookie)cookies.get(3));
+        assertNotSame(cookies.get(0), cookies.get(2));
+        assertNotSame(cookies.get(1), cookies.get(3));
 
         cookies.clear();
         response=_connector.getResponses(
@@ -484,33 +456,31 @@ public class RequestTest extends TestCase
                 "Connection: close\r\n"+
         "\r\n");
 
-        assertEquals("name0",((Cookie)cookies.get(0)).getName());
-        assertEquals("value0",((Cookie)cookies.get(0)).getValue());
-        assertEquals("name1",((Cookie)cookies.get(1)).getName());
-        assertEquals("value1",((Cookie)cookies.get(1)).getValue());
-        assertEquals("\"name2\"",((Cookie)cookies.get(2)).getName());
-        assertEquals("\"value2\"",((Cookie)cookies.get(2)).getValue());
-        assertEquals("name3",((Cookie)cookies.get(3)).getName());
-        assertEquals("value3=value3",((Cookie)cookies.get(3)).getValue());
-        assertEquals(2,((Cookie)cookies.get(3)).getVersion());
-        assertEquals("/path",((Cookie)cookies.get(3)).getPath());
-        assertEquals("acme.com",((Cookie)cookies.get(3)).getDomain());
-        assertEquals("$port=8080",((Cookie)cookies.get(3)).getComment());
-        assertEquals("name4",((Cookie)cookies.get(4)).getName());
-        assertEquals("",((Cookie)cookies.get(4)).getValue());
-        assertEquals("name5",((Cookie)cookies.get(5)).getName());
-        assertEquals("",((Cookie)cookies.get(5)).getValue());
-        assertEquals("name6",((Cookie)cookies.get(6)).getName());
-        assertEquals("",((Cookie)cookies.get(6)).getValue());
-        assertEquals("name7",((Cookie)cookies.get(7)).getName());
-        assertEquals("value7",((Cookie)cookies.get(7)).getValue());
-
+        assertEquals("name0", cookies.get(0).getName());
+        assertEquals("value0", cookies.get(0).getValue());
+        assertEquals("name1", cookies.get(1).getName());
+        assertEquals("value1", cookies.get(1).getValue());
+        assertEquals("\"name2\"", cookies.get(2).getName());
+        assertEquals("\"value2\"", cookies.get(2).getValue());
+        assertEquals("name3", cookies.get(3).getName());
+        assertEquals("value3=value3", cookies.get(3).getValue());
+        assertEquals(2, cookies.get(3).getVersion());
+        assertEquals("/path", cookies.get(3).getPath());
+        assertEquals("acme.com", cookies.get(3).getDomain());
+        assertEquals("$port=8080", cookies.get(3).getComment());
+        assertEquals("name4", cookies.get(4).getName());
+        assertEquals("", cookies.get(4).getValue());
+        assertEquals("name5", cookies.get(5).getName());
+        assertEquals("", cookies.get(5).getValue());
+        assertEquals("name6", cookies.get(6).getName());
+        assertEquals("", cookies.get(6).getValue());
+        assertEquals("name7", cookies.get(7).getName());
+        assertEquals("value7", cookies.get(7).getValue());
     }
 
-    public void testCookieLeak()
-        throws Exception
+    @Test
+    public void testCookieLeak() throws Exception
     {
-
         final String[] cookie=new String[10];
 
         _handler._checker = new RequestTester()
@@ -528,7 +498,6 @@ public class RequestTest extends TestCase
                 return true;
             }
         };
-
 
         String request="POST / HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
@@ -561,7 +530,6 @@ public class RequestTest extends TestCase
         assertEquals(null,cookie[0]);
         assertEquals(null,cookie[1]);
 
-
         request="POST / HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Cookie: name=value\r\n"+
@@ -579,22 +547,17 @@ public class RequestTest extends TestCase
 
         assertEquals("value",cookie[0]);
         assertEquals(null,cookie[1]);
-
-
     }
-
-
-
 
     interface RequestTester
     {
         boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException;
     }
 
-    class RequestHandler extends AbstractHandler
+    private class RequestHandler extends AbstractHandler
     {
-        RequestTester _checker;
-        String _content;
+        private RequestTester _checker;
+        private String _content;
 
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
@@ -607,9 +570,6 @@ public class RequestTest extends TestCase
                 response.setStatus(200);
             else
                 response.sendError(500);
-
-
         }
     }
-
 }
