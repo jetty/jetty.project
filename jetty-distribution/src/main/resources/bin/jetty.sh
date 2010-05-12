@@ -474,7 +474,7 @@ JAVA_OPTIONS+=("-Djetty.home=$JETTY_HOME" "-Djava.io.tmpdir=$TMPDIR")
 JETTY_START=$JETTY_HOME/start.jar
 [ ! -f "$JETTY_START" ] && JETTY_START=$JETTY_HOME/lib/start.jar
 
-RUN_ARGS=("${JAVA_OPTIONS[@]}" -jar "$JETTY_START" $JETTY_ARGS "${CONFIGS[@]}")
+RUN_ARGS=("${JAVA_OPTIONS[@]}" -jar "$JETTY_START" --fromDaemon $JETTY_ARGS "${CONFIGS[@]}")
 RUN_CMD=("$JAVA" "${RUN_ARGS[@]}")
 
 #####################################################
@@ -491,6 +491,7 @@ then
   echo "CONFIGS        =  ${CONFIGS[*]}"
   echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
   echo "JAVA           =  $JAVA"
+  echo "RUN_CMD        =  ${RUN_CMD}"
 fi
 
 ##################################################
