@@ -393,6 +393,11 @@ public class HttpConnection implements Connection
             {
                 _exchange.disassociate();
             }
+            
+            if (!_generator.isComplete() && _generator.getBytesBuffered()>0 && _endp instanceof AsyncEndPoint)
+            {                        
+                ((AsyncEndPoint)_endp).setWritable(false);
+            }
         }
         
         return this;

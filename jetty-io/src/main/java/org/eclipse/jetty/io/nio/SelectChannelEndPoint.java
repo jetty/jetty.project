@@ -564,7 +564,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         synchronized(this)
         {
             return "SCEP@" + hashCode() + "\t[d=" + _dispatched + ",io=" + _interestOps+
-            ",w=" + _writable + ",b=" + _readBlocked + "|" + _writeBlocked + "]";
+            ",w=" + _writable + ",rb=" + _readBlocked + ",wb=" + _writeBlocked + "]";
         }
     }
 
