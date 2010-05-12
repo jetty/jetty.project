@@ -800,12 +800,36 @@ public class HttpClient extends HttpBuffers implements Attributes
     /* ------------------------------------------------------------ */
     public void setKeyManagerPassword(String keyManagerPassword)
     {
-        this._keyManagerPassword = new Password(keyManagerPassword).toString();;
+        this._keyManagerPassword = new Password(keyManagerPassword).toString();
     }
 
     /* ------------------------------------------------------------ */
     public void setTrustStorePassword(String trustStorePassword)
     {
-        this._trustStorePassword = new Password(trustStorePassword).toString();;
+        this._trustStorePassword = new Password(trustStorePassword).toString();
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String getKeyStoreType()
+    {
+        return this._keyStoreType;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setKeyStoreType(String keyStoreType)
+    {
+        this._keyStoreType = keyStoreType;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String getTrustStoreType()
+    {
+        return this._trustStoreType;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setTrustStoreType(String trustStoreType)
+    {
+        this._trustStoreType = trustStoreType;
     }
 }
