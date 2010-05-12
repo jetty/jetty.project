@@ -14,10 +14,13 @@
 package org.eclipse.jetty.ajp;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,7 +29,9 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -48,7 +53,6 @@ public class Ajp13ConnectionTest
         _connector=new Ajp13SocketConnector();
 
         _connector.setPort(0);
-        _connector.setMaxIdleTime(100);
         _server.setConnectors(new Connector[] { _connector });
         _server.setHandler(new Handler());
         _server.start();
@@ -65,6 +69,7 @@ public class Ajp13ConnectionTest
     public void openSocket() throws Exception
     {
         _client=new Socket("localhost",_connector.getLocalPort());
+        _client.setSoTimeout(500);
     }
 
     @After
@@ -292,29 +297,17 @@ public class Ajp13ConnectionTest
     // TODO: char array instead of string?
     private String readResponse(Socket _client) throws IOException
     {
-        BufferedReader br=null;
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
 
         try
         {
-            br=new BufferedReader(new InputStreamReader(_client.getInputStream()));
-
-            StringBuffer sb=new StringBuffer();
-            String line;
-            while ((line=br.readLine()) != null)
-            {
-                sb.append(line);
-                sb.append('\n');
-            }
-
-            return sb.toString();
+            IO.copy(_client.getInputStream(),bout);
         }
-        finally
+        catch(SocketTimeoutException e)
         {
-            if (br != null)
-            {
-                br.close();
-            }
+            Log.ignore(e);
         }
+        return bout.toString("utf-8");
     }
 
     public static class Handler extends AbstractHandler

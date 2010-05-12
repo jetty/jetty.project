@@ -33,12 +33,13 @@ public class Ajp13SocketConnector extends SocketConnector
     static boolean __allowShutdown = false;
     public Ajp13SocketConnector()
     {
-        super.setHeaderBufferSize(Ajp13Packet.MAX_DATA_SIZE);
+        super.setRequestHeaderSize(Ajp13Packet.MAX_DATA_SIZE);
+        super.setResponseHeaderSize(Ajp13Packet.MAX_DATA_SIZE);
         super.setRequestBufferSize(Ajp13Packet.MAX_DATA_SIZE);
         super.setResponseBufferSize(Ajp13Packet.MAX_DATA_SIZE);
         // IN AJP protocol the socket stay open, so
-        // by default the time out is set to 900 seconds
-        super.setMaxIdleTime(900000);
+        // by default the time out is set to 0 seconds
+        super.setMaxIdleTime(0);
     }
 
     @Override
@@ -60,6 +61,9 @@ public class Ajp13SocketConnector extends SocketConnector
         super.customize(endpoint,request);
         if (request.isSecure())
             request.setScheme(HttpSchemes.HTTPS);
+        
+        System.err.println("Customize "+endpoint+" "+request);
+        
     }
 
     /* ------------------------------------------------------------ */

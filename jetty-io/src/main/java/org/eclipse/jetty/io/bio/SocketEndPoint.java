@@ -41,6 +41,18 @@ public class SocketEndPoint extends StreamEndPoint
     {
         super(socket.getInputStream(),socket.getOutputStream());
         _socket=socket;
+        super.setMaxIdleTime(_socket.getSoTimeout());
+    }
+    
+    /**
+     * 
+     */
+    protected SocketEndPoint(Socket socket, int maxIdleTime)
+        throws IOException      
+    {
+        super(socket.getInputStream(),socket.getOutputStream());
+        _socket=socket;
+        super.setMaxIdleTime(maxIdleTime);
     }
 
     /* (non-Javadoc)
@@ -177,4 +189,18 @@ public class SocketEndPoint extends StreamEndPoint
     {
         return _socket;
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.bio.StreamEndPoint#setMaxIdleTime(int)
+     */
+    @Override
+    public void setMaxIdleTime(int timeMs) throws IOException
+    {
+        if (timeMs!=getMaxIdleTime())
+            _socket.setSoTimeout(timeMs>0?timeMs:0);
+        super.setMaxIdleTime(timeMs);
+    }
+    
+    
 }

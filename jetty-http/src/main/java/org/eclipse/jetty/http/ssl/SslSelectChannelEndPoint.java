@@ -119,35 +119,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         Log.info(""+_result);
     }
-    
-    /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see org.eclipse.io.nio.SelectChannelEndPoint#idleExpired()
-     */
-    @Override
-    protected void idleExpired()
-    {
-        try
-        {
-            getSelectManager().dispatch(new Runnable()
-            {
-                public void run() 
-                { 
-                    doIdleExpired();
-                }
-            });
-        }
-        catch(Exception e)
-        {
-            Log.ignore(e);
-        }
-    }
-    
-    /* ------------------------------------------------------------ */
-    protected void doIdleExpired()
-    {
-        super.idleExpired();
-    }
 
     /* ------------------------------------------------------------ */
     @Override

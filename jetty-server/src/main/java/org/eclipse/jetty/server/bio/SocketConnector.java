@@ -127,11 +127,7 @@ public class SocketConnector extends AbstractConnector
     {
         ConnectorEndPoint connection = (ConnectorEndPoint)endpoint;
         int lrmit = isLowResources()?_lowResourceMaxIdleTime:_maxIdleTime;
-        if (connection._sotimeout!=lrmit)
-        {
-            connection._sotimeout=lrmit;
-            ((Socket)endpoint.getTransport()).setSoTimeout(lrmit);
-        }
+        connection.setMaxIdleTime(lrmit);
 
         super.customize(endpoint, request);
     }
@@ -177,14 +173,12 @@ public class SocketConnector extends AbstractConnector
     {
         boolean _dispatched=false;
         volatile Connection _connection;
-        int _sotimeout;
         protected final Socket _socket;
 
         public ConnectorEndPoint(Socket socket) throws IOException
         {
-            super(socket);
+            super(socket,_maxIdleTime);
             _connection = newConnection(this);
-            _sotimeout=socket.getSoTimeout();
             _socket=socket;
         }
 
@@ -241,14 +235,7 @@ public class SocketConnector extends AbstractConnector
                     if (_connection.isIdle())
                     {
                         if (isLowResources())
-                        {
-                            int lrmit = getLowResourcesMaxIdleTime();
-                            if (lrmit>=0 && _sotimeout!= lrmit)
-                            {
-                                _sotimeout=lrmit;
-                                _socket.setSoTimeout(_sotimeout);
-                            }
-                        }
+                            setMaxIdleTime(getLowResourcesMaxIdleTime());
                     }
 
                     _connection=_connection.handle();

@@ -403,7 +403,7 @@ public class StressTest extends TestCase
         if (_stress)
         {
             System.err.println("STRESS!");
-            doThreads(200,400,true);
+            doThreads(200,100,true);
         }
         else
             doThreads(20,40,true);

@@ -490,8 +490,6 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         try
         {
             socket.setTcpNoDelay(true);
-            if (_maxIdleTime >= 0)
-                socket.setSoTimeout(_maxIdleTime);
             if (_soLingerTime >= 0)
                 socket.setSoLinger(true,_soLingerTime / 1000);
             else

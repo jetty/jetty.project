@@ -8,6 +8,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.thread.Timeout;
 
 public class WebSocketConnection implements Connection, WebSocket.Outbound
 {
@@ -17,24 +18,26 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     final WebSocketGenerator _generator;
     final long _timestamp;
     final WebSocket _websocket;
-    final int _maxIdleTimeMs;
 
     public WebSocketConnection(WebSocket websocket, EndPoint endpoint)
+        throws IOException
     {
         this(websocket,endpoint,new WebSocketBuffers(8192),System.currentTimeMillis(),300000);
     }
     
-    public WebSocketConnection(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, long maxIdleTime)
+    public WebSocketConnection(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime)
+        throws IOException
     {
         // TODO - can we use the endpoint idle mechanism?
         if (endpoint instanceof AsyncEndPoint)
             ((AsyncEndPoint)endpoint).cancelIdle();
         
         _endp = endpoint;
+        _endp.setMaxIdleTime(maxIdleTime);
+        
         _timestamp = timestamp;
         _websocket = websocket;
         _generator = new WebSocketGenerator(buffers, _endp);
-        _maxIdleTimeMs=(int)maxIdleTime;
         _parser = new WebSocketParser(buffers, endpoint, new WebSocketParser.EventHandler()
         {
             public void onFrame(byte frame, String data)
@@ -81,10 +84,10 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
             {
                 public void access(EndPoint endp)
                 {
-                    scep.getSelectSet().scheduleTimeout(scep.getTimeoutTask(),_maxIdleTimeMs);
+                    scep.scheduleIdle();
                 }
             };
-            scep.getSelectSet().scheduleTimeout(scep.getTimeoutTask(),_maxIdleTimeMs);
+            scep.scheduleIdle();
         }
         else
         {
@@ -162,7 +165,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
 
     public void sendMessage(byte frame, String content) throws IOException
     {
-        _generator.addFrame(frame,content,_maxIdleTimeMs);
+        _generator.addFrame(frame,content,_endp.getMaxIdleTime());
         _generator.flush();
         checkWriteable();
         _idle.access(_endp);
@@ -175,7 +178,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
 
     public void sendMessage(byte frame, byte[] content, int offset, int length) throws IOException
     {
-        _generator.addFrame(frame,content,offset,length,_maxIdleTimeMs);
+        _generator.addFrame(frame,content,offset,length,_endp.getMaxIdleTime());
         _generator.flush();
         checkWriteable();
         _idle.access(_endp);
@@ -185,7 +188,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         try
         {
-            _generator.flush(_maxIdleTimeMs);
+            _generator.flush(_endp.getMaxIdleTime());
             _endp.close();
         }
         catch(IOException e)

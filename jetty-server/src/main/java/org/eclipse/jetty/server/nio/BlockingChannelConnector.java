@@ -100,14 +100,8 @@ public class BlockingChannelConnector extends AbstractNIOConnector
     public void customize(EndPoint endpoint, Request request)
         throws IOException
     {
-        ConnectorEndPoint connection = (ConnectorEndPoint)endpoint;
-        if (connection._sotimeout!=_maxIdleTime)
-        {
-            connection._sotimeout=_maxIdleTime;
-            ((SocketChannel)endpoint.getTransport()).socket().setSoTimeout(_maxIdleTime);
-        }
-              
         super.customize(endpoint, request);
+        endpoint.setMaxIdleTime(_maxIdleTime);
         configure(((SocketChannel)endpoint.getTransport()).socket());
     }
 
@@ -130,11 +124,11 @@ public class BlockingChannelConnector extends AbstractNIOConnector
         int _sotimeout;
         
         ConnectorEndPoint(ByteChannel channel) 
+            throws IOException
         {
-            super(channel);
+            super(channel,BlockingChannelConnector.this._maxIdleTime);
             _connection = new HttpConnection(BlockingChannelConnector.this,this,getServer());
         }
-        
         
         /* ------------------------------------------------------------ */
         /** Get the connection.

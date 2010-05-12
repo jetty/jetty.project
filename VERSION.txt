@@ -16,6 +16,7 @@ jetty-7.1.0 5 May 2010
  + 306353 fixed cross context dispatch to root context.
  + 311154 Added deprecated StringBuffer API for backwards compatibility
  + 311554 Protect shutdown thread from Server#doStop
+ + 312243 Optimized timeout handling
 
 jetty-7.1.0.RC1 5 May 2010
  + 286889 Allow System and Server classes to be set on Server instance and when applied to all webapps

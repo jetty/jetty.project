@@ -602,8 +602,6 @@ public class Ajp13Generator extends AbstractGenerator
                 total += len;
             }
 
-
-
             return total;
         }
         catch (IOException e)
