@@ -422,7 +422,7 @@ public class Config
      * Get the classpath for the named section
      * 
      * @param sectionId
-     * @return
+     * @return the classpath for the specified section id
      */
     public Classpath getSectionClasspath(String sectionId)
     {
@@ -432,7 +432,7 @@ public class Config
     /**
      * Get the list of section Ids.
      * 
-     * @return
+     * @return the set of unique section ids
      */
     public Set<String> getSectionIds()
     {
@@ -517,7 +517,7 @@ public class Config
     /**
      * Parse the configuration
      * 
-     * @param buf
+     * @param stream the stream to read from
      * @throws IOException
      */
     public void parse(InputStream stream) throws IOException
