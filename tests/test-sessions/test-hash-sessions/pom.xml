@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>7.1.1-SNAPSHOT</version>
+    <version>7.1.1.v20100517</version>
   </parent>
   <artifactId>test-hash-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Hash</name>
