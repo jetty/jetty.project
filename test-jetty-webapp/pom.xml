@@ -47,7 +47,7 @@
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
-        <version>7.0.0.RC2-SNAPSHOT</version>
+        <version>7.1.1-SNAPSHOT</version>
         <configuration>
           <stopPort>8087</stopPort>
           <stopKey>foo</stopKey>
@@ -70,13 +70,12 @@
           <loginServices>
             <loginService implementation="org.eclipse.jetty.security.HashLoginService">
               <name>Test Realm</name>
-              <config>../jetty-server/src/main/config/etc/realm.properties</config>
+              <config>src/main/config/etc/realm.properties</config>
             </loginService>
           </loginServices>
         </configuration>
       </plugin>
 -->
-
       <!-- uncomment to precompile jsps -->
       <!--
       <plugin>
