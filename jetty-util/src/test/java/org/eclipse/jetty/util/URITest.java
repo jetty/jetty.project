@@ -13,34 +13,19 @@
 
 package org.eclipse.jetty.util;
 
-import junit.framework.TestSuite;
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
 
 
 /* ------------------------------------------------------------ */
 /** Util meta Tests.
  * 
  */
-public class URITest extends junit.framework.TestCase
+public class URITest
 {
-    public URITest(String name)
-    {
-      super(name);
-    }
-    
-    public static junit.framework.Test suite() {
-        TestSuite suite = new TestSuite(URITest.class);
-        return suite;                  
-    }
-
     /* ------------------------------------------------------------ */
-    /** main.
-     */
-    public static void main(String[] args)
-    {
-      junit.textui.TestRunner.run(suite());
-    }    
-    
-    /* ------------------------------------------------------------ */
+    @Test
     public void testEncodePath()
     {
         // test basic encode/decode
@@ -63,6 +48,7 @@ public class URITest extends junit.framework.TestCase
     }    
     
     /* ------------------------------------------------------------ */
+    @Test
     public void testDecodePath()
     {
         assertEquals("foo%23;,:=b a r",URIUtil.decodePath("foo%2523%3b%2c:%3db%20a%20r")); 
@@ -72,6 +58,7 @@ public class URITest extends junit.framework.TestCase
     }
     
     /* ------------------------------------------------------------ */
+    @Test
     public void testAddPaths()
     {
         assertEquals("null+null", URIUtil.addPaths(null,null),null);
@@ -161,6 +148,7 @@ public class URITest extends junit.framework.TestCase
     }
 
     /* ------------------------------------------------------------ */
+    @Test
     public void testCompactPath()
     {
         assertEquals("/foo/bar", URIUtil.compactPath("/foo/bar"));
@@ -174,6 +162,7 @@ public class URITest extends junit.framework.TestCase
     }
     
     /* ------------------------------------------------------------ */
+    @Test
     public void testParentPath()
     {
         assertEquals("parent /aaa/bbb/","/aaa/", URIUtil.parentPath("/aaa/bbb/"));
@@ -186,6 +175,7 @@ public class URITest extends junit.framework.TestCase
     }
     
     /* ------------------------------------------------------------ */
+    @Test
     public void testCanonicalPath()
     {
         String[][] canonical = 

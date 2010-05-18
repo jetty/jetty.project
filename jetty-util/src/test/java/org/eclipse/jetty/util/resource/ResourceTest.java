@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.util.resource;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FilePermission;
@@ -24,8 +28,11 @@ import java.util.jar.JarInputStream;
 import junit.framework.TestSuite;
 
 import org.eclipse.jetty.util.IO;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class ResourceTest extends junit.framework.TestCase
+
+public class ResourceTest
 {
 
     public static String __userDir = System.getProperty("basedir", ".");
@@ -36,7 +43,7 @@ public class ResourceTest extends junit.framework.TestCase
     private static final boolean DIR=true;
     private static final boolean EXISTS=true;
     
-    class Data
+    static class Data
     {
         Resource resource;
         String test;
@@ -93,27 +100,10 @@ public class ResourceTest extends junit.framework.TestCase
     }
 
     public static Data[] data;
-    
-    public ResourceTest(String name)
-    {
-        super(name);
-    }
 
     /* ------------------------------------------------------------ */
-    public static void main(String[] args)
-    {
-        junit.textui.TestRunner.run(suite());
-    }
-    
-    /* ------------------------------------------------------------ */
-    public static junit.framework.Test suite()
-    {
-        return new TestSuite(ResourceTest.class);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void setUp()
+    @BeforeClass
+    public static void setUp()
         throws Exception
     {
         if (data!=null)
@@ -189,16 +179,8 @@ public class ResourceTest extends junit.framework.TestCase
         
     }
 
-    
     /* ------------------------------------------------------------ */
-    @Override
-    protected void tearDown()
-        throws Exception
-    {
-    }
-    
-
-    /* ------------------------------------------------------------ */
+    @Test
     public void testResourceExists()
     {
         for (int i=0;i<data.length;i++)
@@ -211,6 +193,7 @@ public class ResourceTest extends junit.framework.TestCase
     }
     
     /* ------------------------------------------------------------ */
+    @Test
     public void testResourceDir()
     {
         for (int i=0;i<data.length;i++)
@@ -223,6 +206,7 @@ public class ResourceTest extends junit.framework.TestCase
     }
     
     /* ------------------------------------------------------------ */
+    @Test
     public void testResourceContent()
         throws Exception
     {
@@ -238,6 +222,7 @@ public class ResourceTest extends junit.framework.TestCase
     }
 
     /* ------------------------------------------------------------ */
+    @Test
     public void testEncoding() throws Exception
     {
         Resource r =Resource.newResource("/tmp/a file with,spe#ials/");
@@ -246,6 +231,7 @@ public class ResourceTest extends junit.framework.TestCase
     }
 
     /* ------------------------------------------------------------ */
+    @Test
     public void testJarFile()
     throws Exception
     {
@@ -256,9 +242,9 @@ public class ResourceTest extends junit.framework.TestCase
         JarInputStream jin = new JarInputStream(is);
         assertNotNull(is);
         assertNotNull(jin);
-        
     }
     
+    @Test
     public void testJarFileIsContainedIn ()
     throws Exception
     {
@@ -276,6 +262,7 @@ public class ResourceTest extends junit.framework.TestCase
     }
 
     /* ------------------------------------------------------------ */
+    @Test
     public void testJarFileCopyToDirectoryTraversal () throws Exception
     {
         String s = "jar:"+__userURL+"TestData/extract.zip!/";
@@ -333,6 +320,7 @@ public class ResourceTest extends junit.framework.TestCase
     /**
      * Test a class path resource for existence.
      */
+    @Test
     public void testClassPathResourceClassRelative()
     {
         final String classPathName="Resource.class";
@@ -351,6 +339,7 @@ public class ResourceTest extends junit.framework.TestCase
     /**
      * Test a class path resource for existence.
      */
+    @Test
     public void testClassPathResourceClassAbsolute()
     {
         final String classPathName="/org/eclipse/jetty/util/resource/Resource.class";
@@ -369,6 +358,7 @@ public class ResourceTest extends junit.framework.TestCase
     /**
      * Test a class path resource for directories.
      */
+    @Test
     public void testClassPathResourceDirectory() throws Exception
     {
         final String classPathName="/";
@@ -390,6 +380,7 @@ public class ResourceTest extends junit.framework.TestCase
     /**
      * Test a class path resource for a file.
      */
+    @Test
     public void testClassPathResourceFile() throws Exception
     {
         final String fileName="resource.txt";

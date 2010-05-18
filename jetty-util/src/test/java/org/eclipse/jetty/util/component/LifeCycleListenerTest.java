@@ -13,34 +13,20 @@
 
 package org.eclipse.jetty.util.component;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-import junit.textui.TestRunner;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
+import org.junit.Test;
 
-public class LifeCycleListenerTest extends TestCase
+
+public class LifeCycleListenerTest
 {
     static Exception cause = new Exception("expected test exception");
 
-    public LifeCycleListenerTest(String name)
-    {
-        super(name);
-    }
-
-    public static void main(String[] args)
-    {
-        TestRunner.run(suite());
-    }
-
-    public static Test suite()
-    {
-        TestSuite suite = new TestSuite(LifeCycleListenerTest.class);
-        return suite;
-    }
-
+    @Test
     public void testStart() throws Exception
     {
         TestLifeCycle lifecycle = new TestLifeCycle();
@@ -78,6 +64,7 @@ public class LifeCycleListenerTest extends TestCase
         assertTrue("The lifecycle state is not started",lifecycle.isStarted());
     }
 
+    @Test
     public void testStop() throws Exception
     {
         TestLifeCycle lifecycle = new TestLifeCycle();
@@ -126,6 +113,7 @@ public class LifeCycleListenerTest extends TestCase
     }
 
     
+    @Test
     public void testRemoveLifecycleListener ()
     throws Exception
     {

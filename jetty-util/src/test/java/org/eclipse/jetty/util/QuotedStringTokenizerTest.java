@@ -13,27 +13,23 @@
 
 package org.eclipse.jetty.util;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
+
 
 /**
  * 
  *
  */
-public class QuotedStringTokenizerTest extends TestCase
+public class QuotedStringTokenizerTest
 {
-
-    /**
-     * Constructor for QuotedStringTokenizerTest.
-     * @param arg0
-     */
-    public QuotedStringTokenizerTest(String arg0)
-    {
-        super(arg0);
-    }
-
     /*
      * Test for String nextToken()
      */
+    @Test
     public void testTokenizer0()
     {
         QuotedStringTokenizer tok = 
@@ -44,6 +40,7 @@ public class QuotedStringTokenizerTest extends TestCase
     /*
      * Test for String nextToken()
      */
+    @Test
     public void testTokenizer1()
     {
         QuotedStringTokenizer tok = 
@@ -55,6 +52,7 @@ public class QuotedStringTokenizerTest extends TestCase
     /*
      * Test for String nextToken()
      */
+    @Test
     public void testTokenizer2()
     {
         QuotedStringTokenizer tok = 
@@ -70,6 +68,7 @@ public class QuotedStringTokenizerTest extends TestCase
     /*
      * Test for String nextToken()
      */
+    @Test
     public void testTokenizer3()
     {
         QuotedStringTokenizer tok;
@@ -91,6 +90,7 @@ public class QuotedStringTokenizerTest extends TestCase
         checkTok(tok,true,true);
     }
     
+    @Test
     public void testQuote()
     {
         StringBuffer buf = new StringBuffer();
@@ -120,6 +120,7 @@ public class QuotedStringTokenizerTest extends TestCase
     /*
      * Test for String nextToken()
      */
+    @Test
     public void testTokenizer4()
     {
         QuotedStringTokenizer tok = new QuotedStringTokenizer("abc'def,ghi'jkl",",");
@@ -150,6 +151,7 @@ public class QuotedStringTokenizerTest extends TestCase
     /*
      * Test for String quote(String, String)
      */
+    @Test
     public void testQuoteString()
     {
         assertEquals("abc",QuotedStringTokenizer.quote("abc", " ,"));
@@ -158,7 +160,7 @@ public class QuotedStringTokenizerTest extends TestCase
         assertEquals("\"a\\n\\r\\t\"",QuotedStringTokenizer.quote("a\n\r\t")); 
     }
 
-
+    @Test
     public void testUnquote()
     {
         assertEquals("abc",QuotedStringTokenizer.unquote("abc"));

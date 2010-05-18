@@ -13,11 +13,15 @@
 
 package org.eclipse.jetty.util.thread;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
-import junit.framework.TestCase;
+import org.junit.Before;
+import org.junit.Test;
 
-public class TimeoutTest extends TestCase
+
+public class TimeoutTest
 {
     Object lock = new Object();
     Timeout timeout = new Timeout(null);
@@ -27,11 +31,9 @@ public class TimeoutTest extends TestCase
     /* 
      * @see junit.framework.TestCase#setUp()
      */
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
-        
         timeout=new Timeout(lock);
         tasks= new Timeout.Task[10]; 
         
@@ -45,17 +47,7 @@ public class TimeoutTest extends TestCase
     }
 
     /* ------------------------------------------------------------ */
-    /* 
-     * @see junit.framework.TestCase#tearDown()
-     */
-    @Override
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-    
-
-    /* ------------------------------------------------------------ */
+    @Test
     public void testExpiry()
     {
         timeout.setDuration(200);
@@ -69,6 +61,7 @@ public class TimeoutTest extends TestCase
     }
 
     /* ------------------------------------------------------------ */
+    @Test
     public void testCancel()
     {
         timeout.setDuration(200);
@@ -87,6 +80,7 @@ public class TimeoutTest extends TestCase
     }
 
     /* ------------------------------------------------------------ */
+    @Test
     public void testTouch()
     {
         timeout.setDuration(200);
@@ -110,6 +104,7 @@ public class TimeoutTest extends TestCase
 
 
     /* ------------------------------------------------------------ */
+    @Test
     public void testDelay()
     {
         Timeout.Task task = new Timeout.Task();
@@ -132,6 +127,7 @@ public class TimeoutTest extends TestCase
     }
 
     /* ------------------------------------------------------------ */
+    @Test
     public void testStress() throws Exception
     {
         final int LOOP=250;

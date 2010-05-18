@@ -3,9 +3,16 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 
 import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-public class MultiExceptionTest extends TestCase
+import org.junit.Test;
+
+
+public class MultiExceptionTest
 {
+    @Test
     public void testEmpty() throws Exception
     {
         MultiException me = new MultiException();
@@ -16,6 +23,7 @@ public class MultiExceptionTest extends TestCase
         me.ifExceptionThrowRuntime();
     }
     
+    @Test
     public void testOne() throws Exception
     {
         MultiException me = new MultiException();
@@ -69,6 +77,7 @@ public class MultiExceptionTest extends TestCase
         }
     }
     
+    @Test
     public void testTwo() throws Exception
     {
         MultiException me = new MultiException();

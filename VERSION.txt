@@ -1,4 +1,5 @@
 jetty-SNAPSHOT
+ + 308866 Update test suite to JUnit4 - Module jetty-util
  + 313196 randomly allocate ports for session test.
 
 jetty-7.1.1.v20100517

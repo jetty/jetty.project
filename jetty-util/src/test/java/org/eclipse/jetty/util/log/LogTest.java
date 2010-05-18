@@ -13,26 +13,31 @@
 
 package org.eclipse.jetty.util.log;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-import junit.framework.TestCase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class LogTest extends TestCase
+
+public class LogTest
 {
-    PrintStream _orig= System.err;
-    ByteArrayOutputStream _out = new ByteArrayOutputStream();
-    PrintStream _pout = new PrintStream(_out);
+    static PrintStream _orig= System.err;
+    static ByteArrayOutputStream _out = new ByteArrayOutputStream();
+    static PrintStream _pout = new PrintStream(_out);
     
 
-    @Override
-    public void setUp()
+    @BeforeClass
+    public static  void setUp()
     {
         System.setErr(_pout);
     }
     
-    @Override
-    public void tearDown()
+    @AfterClass
+    public static void tearDown()
     {
         System.setErr(_orig);
     }
@@ -64,6 +69,7 @@ public class LogTest extends TestCase
         assertTrue(false);
     }
     
+    @Test
     public void testStdErrLogFormat()
     {
         StdErrLog log = new StdErrLog("test");
@@ -90,6 +96,7 @@ public class LogTest extends TestCase
         logContains("INFO:test:testing");
     }
 
+    @Test
     public void testStdErrLogDebug()
     {
         StdErrLog log = new StdErrLog("xxx");
@@ -109,6 +116,7 @@ public class LogTest extends TestCase
         logNotContains("YOU SHOULD NOT SEE THIS!");
     }
     
+    @Test
     public void testStdErrLogName()
     {
         StdErrLog log = new StdErrLog("test");
@@ -119,6 +127,7 @@ public class LogTest extends TestCase
         
     }
     
+    @Test
     public void testStdErrThrowable()
     {
         Throwable th = new Throwable("Message");

@@ -13,32 +13,28 @@
 
 package org.eclipse.jetty.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
-import junit.framework.TestCase;
+import org.junit.Test;
+
 
 /**
  * 
  *
  */
-public class LazyListTest extends TestCase
+public class LazyListTest
 {
-
-    /**
-     * Constructor for LazyListTest.
-     * @param arg0
-     */
-    public LazyListTest(String arg0)
-    {
-        super(arg0);
-    }
-
     /*
      * Test for Object add(Object, Object)
      */
+    @Test
     public void testAddObjectObject()
     {
         Object list=null;
@@ -79,6 +75,7 @@ public class LazyListTest extends TestCase
     /*
      * Test for Object add(Object, int, Object)
      */
+    @Test
     public void testAddObjectintObject()
     {
         Object list=null;
@@ -100,7 +97,7 @@ public class LazyListTest extends TestCase
         assertTrue(list instanceof List);
     }
 
-
+    @Test
     public void testAddCollection()
     {
         ArrayList l=new ArrayList();
@@ -118,6 +115,7 @@ public class LazyListTest extends TestCase
         assertEquals("b",LazyList.get(list,3));
     }
 
+    @Test
     public void testEnsureSize()
     {
         assertTrue(LazyList.ensureSize(null,10)!=null);
@@ -134,6 +132,7 @@ public class LazyListTest extends TestCase
     /*
      * Test for Object remove(Object, Object)
      */
+    @Test
     public void testRemoveObjectObject()
     {
         Object list=null;
@@ -166,6 +165,7 @@ public class LazyListTest extends TestCase
     /*
      * Test for Object remove(Object, int)
      */
+    @Test
     public void testRemoveObjectint()
     {
         Object list=null;
@@ -197,6 +197,7 @@ public class LazyListTest extends TestCase
     /*
      * Test for List getList(Object)
      */
+    @Test
     public void testGetListObject()
     {
         assertEquals(0,LazyList.getList(null).size());
@@ -211,12 +212,14 @@ public class LazyListTest extends TestCase
     /*
      * Test for List getList(Object, boolean)
      */
+    @Test
     public void testGetListObjectboolean()
     {
         assertEquals(0,LazyList.getList(null,false).size());
         assertEquals(null,LazyList.getList(null,true));
     }
 
+    @Test
     public void testToStringArray()
     {
         assertEquals(0,LazyList.toStringArray(null).length);
@@ -237,6 +240,7 @@ public class LazyListTest extends TestCase
         
     }
 
+    @Test
     public void testSize()
     {
         ArrayList l=new ArrayList();
@@ -249,6 +253,7 @@ public class LazyListTest extends TestCase
         assertEquals(2,LazyList.size(l));
     }
 
+    @Test
     public void testGet()
     {
         testAddObjectObject();
@@ -274,6 +279,7 @@ public class LazyListTest extends TestCase
         }
     }
 
+    @Test
     public void testContains()
     {
         ArrayList l=new ArrayList();
@@ -289,8 +295,7 @@ public class LazyListTest extends TestCase
         
     }
 
-
-
+    @Test
     public void testIterator()
     {
         ArrayList l=new ArrayList();
@@ -312,6 +317,7 @@ public class LazyListTest extends TestCase
         assertFalse(i.hasNext());
     }
 
+    @Test
     public void testListIterator()
     {
         ArrayList l=new ArrayList();
@@ -341,6 +347,7 @@ public class LazyListTest extends TestCase
         assertEquals("a",i.previous());
     }
     
+    @Test
     public void testCloneToString()
     {
         ArrayList l=new ArrayList();

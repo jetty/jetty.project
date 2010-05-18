@@ -18,10 +18,20 @@ import java.io.File;
 import java.io.InputStreamReader;
 
 import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-public class ResourceCollectionTest extends TestCase
+import org.junit.Test;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+
+public class ResourceCollectionTest
 {
     
+    @Test
     public void testMutlipleSources1() throws Exception
     {
         ResourceCollection rc1 = new ResourceCollection(new String[]{
@@ -47,6 +57,7 @@ public class ResourceCollectionTest extends TestCase
             System.err.println(s);        
     }
     
+    @Test
     public void testMergedDir() throws Exception
     {
         ResourceCollection rc = new ResourceCollection(new String[]{
@@ -63,6 +74,7 @@ public class ResourceCollectionTest extends TestCase
         assertEquals("3 - three", getContent(rc, "3.txt"));  
     }
     
+    @Test
     public void testCopyTo() throws Exception
     {
         ResourceCollection rc = new ResourceCollection(new String[]{
