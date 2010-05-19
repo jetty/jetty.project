@@ -27,10 +27,10 @@ import javax.servlet.ServletResponseWrapper;
  * A continuation is a mechanism by which a HTTP Request can be suspended and
  * restarted after a timeout or an asynchronous event has occurred.
  * <p>
- * The continuation mechanism is a portable mechansim that will work 
- * asychronously without additional configuration of all jetty-7, 
+ * The continuation mechanism is a portable mechanism that will work 
+ * asynchronously without additional configuration of all jetty-7, 
  * jetty-8 and Servlet 3.0 containers.   With the addition of 
- * the {@link ContinuationFilter}, the mechansism will also work
+ * the {@link ContinuationFilter}, the mechanism will also work
  * asynchronously on jetty-6 and non-asynchronously on any 
  * servlet 2.5 container.
  * <p>
@@ -172,8 +172,8 @@ public interface Continuation
      * the container with a suspended request, the thread is freed for other
      * tasks and the request is held until either:
      * <ul>
-     * <li>a call to {@link ServletRequest#resume()}.</li>
-     * <li>a call to {@link ServletRequest#complete()}.</li>
+     * <li>a call to {@link #resume()}.</li>
+     * <li>a call to {@link #complete()}.</li>
      * <li>the timeout expires.</li>
      * </ul>
      * <p>
@@ -207,8 +207,8 @@ public interface Continuation
      * the container with a suspended request, the thread is freed for other
      * tasks and the request is held until either:
      * <ul>
-     * <li>a call to {@link ServletRequest#resume()}.</li>
-     * <li>a call to {@link ServletRequest#complete()}.</li>
+     * <li>a call to {@link #resume()}.</li>
+     * <li>a call to {@link #complete()}.</li>
      * <li>the timeout expires.</li>
      * </ul>
      * <p>
@@ -241,11 +241,11 @@ public interface Continuation
      * </p>
      * <p>
      * If resume is called before a suspended request is returned to the
-     * container (ie the thread that called {@link #suspend(long)} is still
+     * container (ie the thread that called {@link #suspend()} is still
      * within the filter chain and/or servlet service method), then the resume
      * does not take effect until the call to the filter chain and/or servlet
      * returns to the container. In this case both {@link #isSuspended()} and
-     * {@link isResumed()} return true. Multiple calls to resume are ignored.
+     * {@link #isResumed()} return true. Multiple calls to resume are ignored.
      * </p>
      * <p>
      * Typically resume() is used after a call to {@link #suspend()} with
@@ -254,7 +254,7 @@ public interface Continuation
      * had been passed a wrapped response.
      * </p>
      * 
-     * @see {@link #suspend()}
+     * @see #suspend()
      * @exception IllegalStateException if the request is not suspended.
      * 
      */
@@ -267,16 +267,16 @@ public interface Continuation
      * <p>
      * This method can be called by any thread that has been passed a reference
      * to a suspended request. When a request is completed, the associated
-     * response object commited and flushed. The request is not redispatched.
+     * response object committed and flushed. The request is not redispatched.
      * </p>
      * 
      * <p>
      * If complete is called before a suspended request is returned to the
-     * container (ie the thread that called {@link #suspend(long)} is still
+     * container (ie the thread that called {@link #suspend()} is still
      * within the filter chain and/or servlet service method), then the complete
      * does not take effect until the call to the filter chain and/or servlet
      * returns to the container. In this case both {@link #isSuspended()} and
-     * {@link isResumed()} return true.
+     * {@link #isResumed()} return true.
      * </p>
      * 
      * <p>
@@ -295,7 +295,7 @@ public interface Continuation
      * not valid hold a request or continuation reference after the end of the 
      * life cycle.
      * 
-     * @see {@link #suspend()}
+     * @see #suspend()
      * @exception IllegalStateException
      *                if the request is not suspended.
      * 
@@ -304,7 +304,7 @@ public interface Continuation
 
     /* ------------------------------------------------------------ */
     /**
-     * @return true after {@link #suspend(long)} has been called and before the
+     * @return true after {@link #suspend()} has been called and before the
      *         request has been redispatched due to being resumed, completed or
      *         timed out.
      */

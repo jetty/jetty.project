@@ -30,14 +30,15 @@ import org.eclipse.jetty.util.component.LifeCycle;
 /**
  * Session Manager.
  * The API required to manage sessions for a servlet context.
+ *
  */
 public interface SessionManager extends LifeCycle
 {
     /* ------------------------------------------------------------ */
     /**
      * Session cookie name.
-     * Defaults to JSESSIONID, but can be set with the
-     * org.eclipse.jetty.servlet.SessionCookie context init parameter.
+     * Defaults to <code>JSESSIONID</code>, but can be set with the
+     * <code>org.eclipse.jetty.servlet.SessionCookie</code> context init parameter.
      */
     public final static String __SessionCookieProperty = "org.eclipse.jetty.servlet.SessionCookie";
     public final static String __DefaultSessionCookie = "JSESSIONID";
@@ -46,12 +47,13 @@ public interface SessionManager extends LifeCycle
     /* ------------------------------------------------------------ */
     /**
      * Session id path parameter name.
-     * Defaults to jsessionid, but can be set with the
-     * org.eclipse.jetty.servlet.SessionIdPathParameterName context init parameter.
+     * Defaults to <code>jsessionid</code>, but can be set with the
+     * <code>org.eclipse.jetty.servlet.SessionIdPathParameterName</code> context init parameter.
      * If set to null or "none" no URL rewriting will be done.
      */
     public final static String __SessionIdPathParameterNameProperty = "org.eclipse.jetty.servlet.SessionIdPathParameterName";
     public final static String __DefaultSessionIdPathParameterName = "jsessionid";
+    public final static String __CheckRemoteSessionEncoding = "org.eclipse.jetty.servlet.CheckingRemoteSessionIdEncoding";
 
 
     /* ------------------------------------------------------------ */
@@ -100,6 +102,14 @@ public interface SessionManager extends LifeCycle
      * @return the new <code>HttpSession</code>
      */
     public HttpSession newHttpSession(HttpServletRequest request);
+
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return true if session cookies should be HTTP-only (Microsoft extension)
+     * @see org.eclipse.jetty.http.HttpCookie#isHttpOnly()
+     */
+    public boolean getHttpOnly();
 
     /* ------------------------------------------------------------ */
     /**
@@ -267,4 +277,15 @@ public interface SessionManager extends LifeCycle
     public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes);
 
     public SessionCookieConfig getSessionCookieConfig();
+    
+    /**
+     * @return True if absolute URLs are check for remoteness before being session encoded.
+     */
+    public boolean isCheckingRemoteSessionIdEncoding();
+    
+    /**
+     * @param remote True if absolute URLs are check for remoteness before being session encoded.
+     */
+    public void setCheckingRemoteSessionIdEncoding(boolean remote);
+    
 }

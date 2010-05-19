@@ -61,6 +61,7 @@ public class HttpsSocketImpl implements HttpSocket
             }
         } };
 
+        @SuppressWarnings("unused")
         HostnameVerifier hostnameVerifier = new HostnameVerifier()
         {
             public boolean verify(String urlHostName, SSLSession session)

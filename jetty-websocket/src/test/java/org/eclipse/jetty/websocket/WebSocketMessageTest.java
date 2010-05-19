@@ -10,24 +10,30 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
-import junit.framework.TestCase;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.StringUtil;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$ $Date$
  */
-public class WebSocketMessageTest extends TestCase
+public class WebSocketMessageTest
 {
-    private Server _server;
-    private Connector _connector;
-    private TestWebSocket _serverWebSocket;
+    private static Server _server;
+    private static Connector _connector;
+    private static TestWebSocket _serverWebSocket;
 
-    @Override
-    protected void setUp() throws Exception
+    @BeforeClass
+    public static void startServer() throws Exception
     {
         _server = new Server();
         _connector = new SelectChannelConnector();
@@ -45,13 +51,14 @@ public class WebSocketMessageTest extends TestCase
         _server.start();
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @AfterClass
+    public static void stopServer() throws Exception
     {
         _server.stop();
         _server.join();
     }
 
+    @Test
     public void testServerSendBigStringMessage() throws Exception
     {
         Socket socket = new Socket("localhost", _connector.getLocalPort());
@@ -104,6 +111,7 @@ public class WebSocketMessageTest extends TestCase
         assertEquals(message.length() + "0x00".length() + "0xFF".length(), result.length());
     }
 
+    @Test
     public void testServerSendBigBinaryMessage() throws Exception
     {
         Socket socket = new Socket("localhost", _connector.getLocalPort());
@@ -158,7 +166,7 @@ public class WebSocketMessageTest extends TestCase
         }
     }
 
-    private class TestWebSocket implements WebSocket
+    private static class TestWebSocket implements WebSocket
     {
         private final CountDownLatch latch = new CountDownLatch(1);
         private volatile Outbound outbound;

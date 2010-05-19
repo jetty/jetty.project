@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.annotations;
@@ -28,21 +28,23 @@ import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.junit.Test;
 
-
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 /**
  * TestServletAnnotations
  *
  *
  */
-public class TestServletAnnotations extends TestCase
+public class TestServletAnnotations
 {
-
-
-    public void testServletAnnotation()
-    throws Exception
+    @Test
+    public void testServletAnnotation() throws Exception
     {
         List<String> classes = new ArrayList<String>();
         classes.add("org.eclipse.jetty.annotations.ServletC");
@@ -55,7 +57,7 @@ public class TestServletAnnotations extends TestCase
         wac.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);
         parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new WebServletAnnotationHandler(wac));
        
-        parser.parse(classes, new ClassNameResolver () 
+        parser.parse(classes, new ClassNameResolver ()
         {
             public boolean isExcluded(String name)
             {
@@ -66,7 +68,6 @@ public class TestServletAnnotations extends TestCase
             {
                 return false;
             }
-
         });
        
         ServletHolder[] holders = wac.getServletHandler().getServlets();

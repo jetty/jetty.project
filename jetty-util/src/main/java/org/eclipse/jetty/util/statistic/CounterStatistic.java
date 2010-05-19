@@ -46,7 +46,7 @@ public class CounterStatistic
     
     /* ------------------------------------------------------------ */
     /**
-     * @param delta
+     * @param delta the amount to add to the count
      */
     public void add(final long delta)
     {
@@ -64,7 +64,7 @@ public class CounterStatistic
     
     /* ------------------------------------------------------------ */
     /**
-     * @param delta
+     * @param delta the amount to subtract the count by.
      */
     public void subtract(final long delta)
     {
@@ -89,7 +89,7 @@ public class CounterStatistic
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return max value
      */
     public long getMax()
     {
@@ -98,7 +98,7 @@ public class CounterStatistic
     
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return current value
      */
     public long getCurrent()
     {
@@ -107,7 +107,7 @@ public class CounterStatistic
     
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return total value
      */
     public long getTotal()
     {

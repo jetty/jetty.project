@@ -981,7 +981,6 @@ public class HttpFields
      * Format a set cookie value
      * 
      * @param cookie The cookie.
-     * @param cookie2 If true, use the alternate cookie 2 header
      */
     public void addSetCookie(HttpCookie cookie)
     {
@@ -996,12 +995,19 @@ public class HttpFields
                 cookie.isHttpOnly(),
                 cookie.getVersion());
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Format a set cookie value
-     * @param cookie The cookie.
-     * @param cookie2 If true, use the alternate cookie 2 header
+     * 
+     * @param name the name
+     * @param value the value
+     * @param domain the domain
+     * @param path the path
+     * @param maxAge the maximum age
+     * @param comment the comment (only present on versions > 0)
+     * @param isSecure true if secure cookie
+     * @param isHttpOnly true if for http only
+     * @param version version of cookie logic to use (0 == default behavior)
      */
     public void addSetCookie(
             final String name, 
@@ -1022,6 +1028,7 @@ public class HttpFields
         String name_value_params;
         QuotedStringTokenizer.quoteIfNeeded(buf, name);
         buf.append('=');
+        String start=buf.toString();
         if (value != null && value.length() > 0)
             QuotedStringTokenizer.quoteIfNeeded(buf, value);
 
@@ -1078,6 +1085,24 @@ public class HttpFields
         // TODO - straight to Buffer?
         name_value_params = buf.toString();
         put(HttpHeaders.EXPIRES_BUFFER, __01Jan1970_BUFFER);
+        
+        // look for existing cookie
+        Field field = getField(HttpHeaders.SET_COOKIE_BUFFER);
+        if (field != null)
+        {
+            final int revision=_revision;
+            
+            while (field!=null)
+            {
+                if (field._revision!=revision || field._value!=null && field._value.toString().startsWith(start))
+                {
+                    field.reset(new ByteArrayBuffer(name_value_params),-1,revision);
+                    return;
+                }
+                field=field._next;
+            }
+        }
+        
         add(HttpHeaders.SET_COOKIE_BUFFER, new ByteArrayBuffer(name_value_params));
     }
 
@@ -1281,7 +1306,7 @@ public class HttpFields
     /**
      * List values in quality order.
      * 
-     * @param enum Enumeration of values with quality parameters
+     * @param e Enumeration of values with quality parameters
      * @return values in quality order.
      */
     public static List qualityList(Enumeration e)

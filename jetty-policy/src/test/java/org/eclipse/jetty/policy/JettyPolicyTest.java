@@ -1,4 +1,3 @@
-package org.eclipse.jetty.policy;
 //========================================================================
 //Copyright (c) Webtide LLC
 //------------------------------------------------------------------------
@@ -15,6 +14,8 @@ package org.eclipse.jetty.policy;
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
+package org.eclipse.jetty.policy;
+
 import java.io.FilePermission;
 import java.net.URL;
 import java.security.CodeSource;
@@ -28,98 +29,92 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import junit.framework.TestCase;
+import org.junit.Before;
+import org.junit.Test;
 
-public class JettyPolicyTest extends TestCase
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+public class JettyPolicyTest
 {
-    HashMap<String, String> evaluator = new HashMap<String, String>();
-   
+    private HashMap<String, String> evaluator = new HashMap<String, String>();
 
-    @Override
-    protected void setUp()
-        throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
-
         evaluator.put("jetty.home",MavenTestingUtils.getBaseURI().toASCIIString());
         evaluator.put("basedir",MavenTestingUtils.getBaseURI().toASCIIString());
     }
 
-    public void testGlobalAllPermissionLoader()
-        throws Exception
+    @Test
+    public void testGlobalAllPermissionLoader() throws Exception
     {
-        
-        JettyPolicy ap =
-            new JettyPolicy(  Collections.singleton( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/global-all-permission.policy" ), evaluator );
 
+        JettyPolicy ap = new JettyPolicy(  Collections.singleton( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/global-all-permission.policy" ), evaluator );
         ap.refresh();
 
-        
         PermissionCollection pc = ap.getPermissions( new ProtectionDomain( null, null ) );
-        
+
         assertNotNull( pc );
-        
+
         Permission testPerm = new FilePermission( "/tmp", "read" );
-        
+
         assertTrue( pc.implies( testPerm ) );
-        
-        for ( Enumeration<Permission> e = pc.elements(); e.hasMoreElements(); ) 
+
+        for ( Enumeration<Permission> e = pc.elements(); e.hasMoreElements(); )
         {
             System.out.println( "Permission: " + e.nextElement().getClass().getName() );
         }
-        
     }
 
-    public void testSingleCodebaseFilePermissionLoader()
-        throws Exception
+    @Test
+    public void testSingleCodebaseFilePermissionLoader() throws Exception
     {
         JettyPolicy ap =
             new JettyPolicy( Collections.singleton( MavenTestingUtils.getBasedir().getAbsolutePath()
                 + "/src/test/resources/single-codebase-file-permission.policy" ), evaluator );
-
         ap.refresh();
-        
-        URL url = new URL( "file:///foo.jar" ); 
+
+        URL url = new URL( "file:///foo.jar" );
         CodeSource cs = new CodeSource( url, new Certificate[0]);
-        
+
         PermissionCollection pc = ap.getPermissions( cs );
-        
+
         assertNotNull( pc );
-        
+
         Permission testPerm = new FilePermission( "/tmp/*", "read" );
-        
+
         assertTrue( pc.implies( testPerm ) );
-              
     }
 
-    public void testMultipleCodebaseFilePermissionLoader()
-        throws Exception
+    @Test
+    public void testMultipleCodebaseFilePermissionLoader() throws Exception
     {
         JettyPolicy ap =
             new JettyPolicy( Collections.singleton( MavenTestingUtils.getBasedir().getAbsolutePath()
                 + "/src/test/resources/multiple-codebase-file-permission.policy" ), evaluator );
 
         ap.refresh();
-        
+
         // ap.dump(System.out);
 
-        URL url = new URL( "file:///bar.jar" ); 
+        URL url = new URL( "file:///bar.jar" );
         CodeSource cs = new CodeSource( url, new Certificate[0]);
-        
+
         PermissionCollection pc = ap.getPermissions( cs );
-        
+
         assertNotNull( pc );
-        
+
         Permission testPerm = new FilePermission( "/tmp/*", "read,write" );
         Permission testPerm2 = new FilePermission( "/usr/*", "write" ); // only read was granted
-        
+
         assertTrue( pc.implies( testPerm ) );
         assertFalse( pc.implies( testPerm2 ) );
-        
     }
 
-    public void testMultipleCodebaseMixedPermissionLoader()
-        throws Exception
+    @Test
+    public void testMultipleCodebaseMixedPermissionLoader() throws Exception
     {
         JettyPolicy ap =
             new JettyPolicy( Collections.singleton( MavenTestingUtils.getBasedir().getAbsolutePath()
@@ -129,7 +124,8 @@ public class JettyPolicyTest extends TestCase
 
         // ap.dump(System.out);
     }
-    
+
+    @Test
     public void testSCLoader() throws Exception
     {
         JettyPolicy ap = new JettyPolicy(Collections.singleton(MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/main/config/lib/policy/jetty.policy"),evaluator);
@@ -138,30 +134,29 @@ public class JettyPolicyTest extends TestCase
         ap.dump(System.out);
     }
 
-    public void testMultipleFilePermissionLoader()
-        throws Exception
+    @Test
+    public void testMultipleFilePermissionLoader() throws Exception
     {
         Set<String> files = new HashSet<String>();
-        
+
         files.add( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/single-codebase-file-permission.policy" );
         files.add( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/single-codebase-file-permission-2.policy" );
-        
+
         JettyPolicy ap = new JettyPolicy( files, evaluator );
 
         ap.refresh();
-        
-        URL url = new URL( "file:///bar.jar" ); 
+
+        URL url = new URL( "file:///bar.jar" );
         CodeSource cs = new CodeSource( url, new Certificate[0]);
-        
+
         PermissionCollection pc = ap.getPermissions( cs );
-        
+
         assertNotNull( pc );
-        
+
         Permission testPerm = new FilePermission( "/tmp/*", "read" );
-        Permission testPerm2 = new FilePermission( "/usr/*", "write" ); // 
-        
+        Permission testPerm2 = new FilePermission( "/usr/*", "write" ); //
+
         assertTrue( pc.implies( testPerm ) );
         assertFalse( pc.implies( testPerm2 ) );
     }
-
 }

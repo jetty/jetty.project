@@ -48,6 +48,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     /* ------------------------------------------------------------ */
     /** Get the session ID with any worker ID.
      * 
+     * @param clusterId
      * @param request
      * @return sessionId plus any worker ID.
      */
@@ -66,7 +67,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     /* ------------------------------------------------------------ */
     /** Get the session ID without any worker ID.
      * 
-     * @param request
+     * @param nodeId the node id
      * @return sessionId without any worker ID.
      */
     public String getClusterId(String nodeId) 
@@ -94,8 +95,8 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.SessionManager.MetaManager#idInUse(java.lang.String)
+    /**
+     * @see SessionIdManager#idInUse(String)
      */
     public boolean idInUse(String id)
     {
@@ -103,8 +104,8 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.SessionManager.MetaManager#addSession(javax.servlet.http.HttpSession)
+    /**
+     * @see SessionIdManager#addSession(HttpSession)
      */
     public void addSession(HttpSession session)
     {
@@ -112,8 +113,8 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.SessionManager.MetaManager#addSession(javax.servlet.http.HttpSession)
+    /**
+     * @see SessionIdManager#removeSession(HttpSession)
      */
     public void removeSession(HttpSession session)
     {
@@ -121,8 +122,8 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.SessionManager.MetaManager#invalidateAll(java.lang.String)
+    /**
+     * @see SessionIdManager#invalidateAll(String)
      */
     public void invalidateAll(String id)
     {

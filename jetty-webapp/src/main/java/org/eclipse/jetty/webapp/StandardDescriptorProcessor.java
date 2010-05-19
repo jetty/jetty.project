@@ -1126,8 +1126,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             XmlParser.Node indexNode = (XmlParser.Node) iter.next();
             String welcome = indexNode.toString(false, true);
             
-            System.err.println("ADDED WELCOME FILE "+welcome);
-            
             //Servlet Spec 3.0 p. 74 welcome files are additive
             _welcomeFiles = LazyList.add(_welcomeFiles, welcome);
         }

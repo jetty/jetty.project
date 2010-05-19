@@ -141,7 +141,6 @@ public class ServletContextHandler extends ContextHandler
         else if (parent instanceof HandlerCollection)
             ((HandlerCollection)parent).addHandler(this);
     }    
-
     
     
     /* ------------------------------------------------------------ */
@@ -398,7 +397,7 @@ public class ServletContextHandler extends ContextHandler
 
     /* ------------------------------------------------------------ */
     /**
-     * @param securityHandler The {@link org.eclipse.jetty.server.handler.SecurityHandler} to set on this context.
+     * @param securityHandler The {@link SecurityHandler} to set on this context.
      */
     public void setSecurityHandler(SecurityHandler securityHandler)
     {

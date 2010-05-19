@@ -83,7 +83,17 @@ public abstract class AbstractConfiguration implements Configuration
         
         List<Fragment> frags = webXmlProcessor.getFragments();
         
+        //email from Rajiv Mordani jsrs 315 7 April 2010
+        //    If there is a <others/> then the ordering should be 
+        //          WEB-INF/classes the order of the declared elements + others.
+        //    In case there is no others then it is 
+        //          WEB-INF/classes + order of the elements.
+        
         // + get all WEB-INF/lib jars
+        // + empty ORDERED_LIBS means <absolute-ordering/> ie no jars
+        //          WEB-INF/classes
+        // + non-empty ORDERED_LIBS 
+        //          
         // + those that are not in ORDERED_LIBS are ignored (they are excluded by ordering)
         // + those that have web-fragment.xml and metadata-complete are ignored
         

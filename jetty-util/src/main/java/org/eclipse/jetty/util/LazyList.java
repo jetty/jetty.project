@@ -51,7 +51,6 @@ import java.util.ListIterator;
  * An ArrayList of default size is used as the initial LazyList.
  *
  * @see java.util.List
- * 
  */
 public class LazyList
     implements Cloneable, Serializable
@@ -283,7 +282,7 @@ public class LazyList
     /** Convert a lazylist to an array
      * @param list The list to convert
      * @param clazz The class of the array, which may be a primitive type
-     * @return
+     * @return array of the lazylist entries passed in
      */
     @SuppressWarnings("unchecked")
     public static Object toArray(Object list,Class<?> clazz)

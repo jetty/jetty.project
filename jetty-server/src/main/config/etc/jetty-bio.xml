@@ -13,7 +13,7 @@
     <Call name="addConnector">
       <Arg>
           <New class="org.eclipse.jetty.server.bio.SocketConnector">
-            <Set name="port"><SystemProperty name="jetty.bio.port" default="8081"/></Set>
+            <Set name="port"><Property name="jetty.bio.port" default="8081"/></Set>
             <Set name="maxIdleTime">50000</Set>
             <Set name="lowResourceMaxIdleTime">1500</Set>
           </New>

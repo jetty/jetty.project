@@ -21,7 +21,7 @@ public interface ClassNameResolver
      * Based on the execution context, should the class represented
      * by "name" be excluded from consideration?
      * @param name
-     * @return
+     * @return true if classname is excluded
      */
     public boolean isExcluded (String name);
     
@@ -31,7 +31,7 @@ public interface ClassNameResolver
      * represented by "name" is detected, should the existing
      * one be overridden or not?
      * @param name
-     * @return
+     * @return true if name should be overridden
      */
     public boolean shouldOverride (String name);
 }

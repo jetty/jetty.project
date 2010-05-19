@@ -58,7 +58,7 @@ public class SecurityListener extends HttpEventListenerWrapper
      * scrapes an authentication type from the authString
      * 
      * @param authString
-     * @return
+     * @return the authentication type
      */
     protected String scrapeAuthenticationType( String authString )
     {
@@ -80,7 +80,7 @@ public class SecurityListener extends HttpEventListenerWrapper
      * scrapes a set of authentication details from the authString
      * 
      * @param authString
-     * @return
+     * @return the authentication details
      */
     protected Map<String, String> scrapeAuthenticationDetails( String authString )
     {

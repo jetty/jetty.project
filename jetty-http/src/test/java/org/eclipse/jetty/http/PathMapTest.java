@@ -4,53 +4,24 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.http;
 
 import junit.framework.TestCase;
+import org.junit.Test;
 
-
-/* ------------------------------------------------------------ */
 /**
- * Top level test harness.
- * 
- * 
+ *
  */
 public class PathMapTest extends TestCase
 {
-    /**
-     * Constructor for HttpParserTest.
-     * 
-     * @param arg0
-     */
-    public PathMapTest(String arg0)
-    {
-        super(arg0);
-    }
-
-    /**
-     * @see TestCase#setUp()
-     */
-    protected void setUp() throws Exception
-    {
-        super.setUp();
-    }
-
-    /**
-     * @see TestCase#tearDown()
-     */
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-
-    /* --------------------------------------------------------------- */
+    @Test
     public void testPathMap() throws Exception
     {
         PathMap p = new PathMap();
@@ -65,28 +36,28 @@ public class PathMapTest extends TestCase
         p.put("/", "8");
         p.put("/XXX:/YYY", "9");
 
-        String[][] tests = { 
-                        { "/abs/path", "1"}, 
-                        { "/abs/path/xxx", "8"}, 
-                        { "/abs/pith", "8"},
-                        { "/abs/path/longer", "2"}, 
-                        { "/abs/path/", "8"}, 
+        String[][] tests = {
+                        { "/abs/path", "1"},
                         { "/abs/path/xxx", "8"},
-                        { "/animal/bird/eagle/bald", "3"}, 
+                        { "/abs/pith", "8"},
+                        { "/abs/path/longer", "2"},
+                        { "/abs/path/", "8"},
+                        { "/abs/path/xxx", "8"},
+                        { "/animal/bird/eagle/bald", "3"},
                         { "/animal/fish/shark/grey", "4"},
-                        { "/animal/insect/bug", "5"}, 
-                        { "/animal", "5"}, 
+                        { "/animal/insect/bug", "5"},
+                        { "/animal", "5"},
                         { "/animal/", "5"},
                         { "/animal/x", "5"},
                         { "/animal/*", "5"},
-                        { "/suffix/path.tar.gz", "6"}, 
+                        { "/suffix/path.tar.gz", "6"},
                         { "/suffix/path.gz", "7"},
-                        { "/animal/path.gz", "5"}, 
+                        { "/animal/path.gz", "5"},
                         { "/Other/path", "8"},};
 
-        for (int i = 0; i < tests.length; i++)
+        for (String[] test : tests)
         {
-            assertEquals(tests[i][0], tests[i][1], p.getMatch(tests[i][0]).getValue());
+            assertEquals(test[0], test[1], p.getMatch(test[0]).getValue());
         }
 
         assertEquals("Get absolute path", "1", p.get("/abs/path"));
@@ -158,10 +129,11 @@ public class PathMapTest extends TestCase
     /**
      * See JIRA issue: JETTY-88.
      */
+    @Test
     public void testPathMappingsOnlyMatchOnDirectoryNames() throws Exception
     {
         String spec = "/xyz/*";
-        
+
         assertMatch(spec, "/xyz");
         assertMatch(spec, "/xyz/");
         assertMatch(spec, "/xyz/123");

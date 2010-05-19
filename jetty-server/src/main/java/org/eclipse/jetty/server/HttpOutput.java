@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
 /** Output.
  * 
  * <p>
- * Implements  {@link javax.servlet.ServletOutputStream} from the {@link javax.servlet} package.   
+ * Implements  {@link javax.servlet.ServletOutputStream} from the <code>javax.servlet</code> package.   
  * </p>
  * A {@link ServletOutputStream} implementation that writes content
  * to a {@link AbstractGenerator}.   The class is designed to be reused

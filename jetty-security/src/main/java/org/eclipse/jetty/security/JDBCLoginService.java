@@ -168,7 +168,6 @@ public class JDBCLoginService extends MappedLoginService
      * Load JDBC connection configuration from properties file.
      * 
      * @param config Filename or url of user properties file.
-     * @exception java.io.IOException
      */
     public void setConfig(String config)
     {        

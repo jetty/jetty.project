@@ -62,8 +62,7 @@ public abstract class AbstractGenerator implements Generator
     protected boolean _last = false;
     protected boolean _head = false;
     protected boolean _noContent = false;
-    protected boolean _close = false;
-
+    protected Boolean _persistent = null;
     
     protected Buffer _header; // Buffer for HTTP header (and maybe small _content)
     protected Buffer _buffer; // Buffer for copy of passed _content
@@ -79,8 +78,7 @@ public abstract class AbstractGenerator implements Generator
      * Constructor.
      * 
      * @param buffers buffer pool
-     * @param headerBufferSize Size of the buffer to allocate for HTTP header
-     * @param contentBufferSize Size of the buffer to allocate for HTTP content
+     * @param io the end point
      */
     public AbstractGenerator(Buffers buffers, EndPoint io)
     {
@@ -88,6 +86,12 @@ public abstract class AbstractGenerator implements Generator
         this._endp = io;
     }
 
+    /* ------------------------------------------------------------------------------- */
+    public abstract boolean isRequest();
+    
+    /* ------------------------------------------------------------------------------- */
+    public abstract boolean isResponse();
+    
     /* ------------------------------------------------------------------------------- */
     public boolean isOpen()
     {
@@ -104,7 +108,7 @@ public abstract class AbstractGenerator implements Generator
         _last = false;
         _head = false;
         _noContent=false;
-        _close = false;
+        _persistent = null;
         _contentWritten = 0;
         _contentLength = HttpTokens.UNKNOWN_CONTENT;
         _date = null;
@@ -134,7 +138,7 @@ public abstract class AbstractGenerator implements Generator
             throw new IllegalStateException("Flushed");
         
         _last = false;
-        _close = false;
+        _persistent=null;
         _contentWritten = 0;
         _contentLength = HttpTokens.UNKNOWN_CONTENT;
         _content=null;
@@ -252,13 +256,15 @@ public abstract class AbstractGenerator implements Generator
      */
     public boolean isPersistent()
     {
-        return !_close;
+        return _persistent!=null
+        ?_persistent.booleanValue()
+        :(isRequest()?true:_version>HttpVersions.HTTP_1_0_ORDINAL);
     }
 
     /* ------------------------------------------------------------ */
     public void setPersistent(boolean persistent)
     {
-        _close=!persistent;
+        _persistent=persistent;
     }
 
     /* ------------------------------------------------------------ */
@@ -402,7 +408,7 @@ public abstract class AbstractGenerator implements Generator
         {
             if (Log.isDebugEnabled())
                 Log.debug("ContentLength written=="+_contentWritten+" != contentLength=="+_contentLength);
-            _close = true;
+            _persistent = false;
         }
     }
 
@@ -441,7 +447,8 @@ public abstract class AbstractGenerator implements Generator
         if (!isCommitted())
         {
             setResponse(code, reason);
-            _close = close;
+            if (close)
+            	_persistent=false;
             completeHeader(null, false);
             if (content != null) 
                 addContent(new View(new ByteArrayBuffer(content)), Generator.LAST);

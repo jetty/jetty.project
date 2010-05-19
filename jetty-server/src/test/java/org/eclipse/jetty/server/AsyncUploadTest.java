@@ -20,89 +20,92 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLSession;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.IO;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision: 889 $ $Date: 2009-09-14 14:52:16 +1000 (Mon, 14 Sep 2009) $
  */
-public class AsyncUploadTest extends TestCase
+public class AsyncUploadTest
 {
-    int _total;
-    
-    public void test() throws Exception
+    private static Server server;
+    private static Connector connector;
+    private static int total;
+
+    @BeforeClass
+    public static void startServer() throws Exception
     {
-        Server server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector();
+        server = new Server();
+        connector = new SelectChannelConnector();
         server.addConnector(connector);
-
         server.setHandler(new EmptyHandler());
-
         server.start();
-        try
-        {
-            _total=0;
-            final Socket socket =  new Socket("localhost",connector.getLocalPort());
-
-            byte[] content = new byte[16*4096];
-            Arrays.fill(content, (byte)120);
-            
-            long start = System.nanoTime();
-            OutputStream out = socket.getOutputStream();
-            out.write("POST / HTTP/1.1\r\n".getBytes());
-            out.write("Host: localhost\r\n".getBytes());
-            out.write(("Content-Length: "+content.length+"\r\n").getBytes());
-            out.write("Content-Type: bytes\r\n".getBytes());
-            out.write("Connection: close\r\n".getBytes());
-            out.write("\r\n".getBytes());
-            out.flush();
-
-            out.write(content,0,4*4096);
-            Thread.sleep(100);
-            out.write(content,8192,4*4096);
-            Thread.sleep(100);
-            out.write(content,8*4096,content.length-8*4096);
-            
-            out.flush();
-            
-            InputStream in = socket.getInputStream();
-            String response = IO.toString(in);
-            // System.err.println(response);
-            assertTrue(response.indexOf("200 OK")>0);
-
-            long end = System.nanoTime();
-            System.err.println("upload time: " + TimeUnit.NANOSECONDS.toMillis(end - start));
-            assertEquals(content.length,_total);
-            
-        }
-        finally
-        {
-            server.stop();
-        }
     }
 
-    private class EmptyHandler extends AbstractHandler
+    @AfterClass
+    public static void stopServer() throws Exception
+    {
+        server.stop();
+        server.join();
+    }
+
+    @Test
+    public void test() throws Exception
+    {
+        final Socket socket =  new Socket("localhost",connector.getLocalPort());
+
+        byte[] content = new byte[16*4096];
+        Arrays.fill(content, (byte)120);
+
+        long start = System.nanoTime();
+        OutputStream out = socket.getOutputStream();
+        out.write("POST / HTTP/1.1\r\n".getBytes());
+        out.write("Host: localhost\r\n".getBytes());
+        out.write(("Content-Length: "+content.length+"\r\n").getBytes());
+        out.write("Content-Type: bytes\r\n".getBytes());
+        out.write("Connection: close\r\n".getBytes());
+        out.write("\r\n".getBytes());
+        out.flush();
+
+        out.write(content,0,4*4096);
+        Thread.sleep(100);
+        out.write(content,8192,4*4096);
+        Thread.sleep(100);
+        out.write(content,8*4096,content.length-8*4096);
+
+        out.flush();
+
+        InputStream in = socket.getInputStream();
+        String response = IO.toString(in);
+        // System.err.println(response);
+        assertTrue(response.indexOf("200 OK")>0);
+
+        long end = System.nanoTime();
+        System.err.println("upload time: " + TimeUnit.NANOSECONDS.toMillis(end - start));
+        assertEquals(content.length, total);
+    }
+
+    private static class EmptyHandler extends AbstractHandler
     {
         public void handle(String path, final Request request, HttpServletRequest httpRequest, final HttpServletResponse httpResponse) throws IOException, ServletException
         {
-            // System.out.println("path = " + path);
-            
             final Continuation continuation = ContinuationSupport.getContinuation(request);
             httpResponse.setStatus(500);
             request.setHandled(true);
-            
+
             new Thread()
             {
                 @Override
@@ -113,20 +116,15 @@ public class AsyncUploadTest extends TestCase
                         Thread.sleep(100);
                         InputStream in = request.getInputStream();
                         byte[] b = new byte[4*4096];
-                        int l;
-
-                        while((l=in.read(b))>=0)
-                        {
-                            // System.err.println("read "+l);
-                            _total+=l;
-                        }
-                        
-                        System.err.println("Read "+_total);
+                        int read;
+                        while((read =in.read(b))>=0)
+                            total += read;
+                        System.err.println("Read "+ total);
                     }
                     catch(Exception e)
                     {
                         e.printStackTrace();
-                        _total=-1;
+                        total =-1;
                     }
                     finally
                     {
@@ -135,16 +133,8 @@ public class AsyncUploadTest extends TestCase
                     }
                 }
             }.start();
-            
-            continuation.suspend();
-        }
-    }
 
-    private class EmptyHostnameVerifier implements HostnameVerifier
-    {
-        public boolean verify(String s, SSLSession sslSession)
-        {
-            return true;
+            continuation.suspend();
         }
     }
 }

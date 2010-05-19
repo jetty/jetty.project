@@ -82,26 +82,26 @@ import org.eclipse.jetty.util.log.Log;
 /* ------------------------------------------------------------ */
 /** Jetty Request.
  * <p>
- * Implements {@link javax.servlet.http.HttpServletRequest} from the {@link javax.servlet.http} package.
+ * Implements {@link javax.servlet.http.HttpServletRequest} from the <code>javax.servlet.http</code> package.
  * </p>
  * <p>
  * The standard interface of mostly getters,
  * is extended with setters so that the request is mutable by the handlers that it is
  * passed to.  This allows the request object to be as lightweight as possible and not
- * actually implement any significant behaviour. For example<ul>
+ * actually implement any significant behavior. For example<ul>
  * 
- * <li>The {@link Request#getContextPath} method will return null, until the requeset has been
- * passed to a {@link ContextHandler} which matches the {@link Request#getPathInfo} with a context
- * path and calls {@link Request#setContextPath} as a result.</li>
+ * <li>The {@link Request#getContextPath()} method will return null, until the request has been
+ * passed to a {@link ContextHandler} which matches the {@link Request#getPathInfo()} with a context
+ * path and calls {@link Request#setContextPath(String)} as a result.</li>
  * 
  * <li>the HTTP session methods
  * will all return null sessions until such time as a request has been passed to
- * a {@link org.eclipse.jetty.servlet.SessionHandler} which checks for session cookies
+ * a {@link org.eclipse.jetty.server.session.SessionHandler} which checks for session cookies
  * and enables the ability to create new sessions.</li>
  * 
- * <li>The {@link Request#getServletPath} method will return null until the request has been
- * passed to a {@link org.eclipse.jetty.servlet.ServletHandler} and the pathInfo matched
- * against the servlet URL patterns and {@link Request#setServletPath} called as a result.</li>
+ * <li>The {@link Request#getServletPath()} method will return null until the request has been
+ * passed to a <code>org.eclipse.jetty.servlet.ServletHandler</code> and the pathInfo matched
+ * against the servlet URL patterns and {@link Request#setServletPath(String)} called as a result.</li>
  * </ul>
  * 
  * A request instance is created for each {@link HttpConnection} accepted by the server 
@@ -1575,7 +1575,7 @@ public class Request implements HttpServletRequest
     
     /* ------------------------------------------------------------ */
     /**
-     * @return True if this is the first call of takeNewContext() since the last {@link #setContext(Context)} call.
+     * @return True if this is the first call of {@link #takeNewContext()} since the last {@link #setContext(Context)} call.
      */
     public boolean takeNewContext()
     {
@@ -1587,7 +1587,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     /**
      * Sets the "context path" for this request
-     * @see HttpServletRequest#getContextPath
+     * @see HttpServletRequest#getContextPath()
      */
     public void setContextPath(String contextPath)
     {

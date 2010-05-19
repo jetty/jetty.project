@@ -67,7 +67,7 @@ public class DeferredAuthentication implements Authentication.Deferred
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate()
+     * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate(ServletRequest)
      */
     public Authentication authenticate(ServletRequest request)
     {

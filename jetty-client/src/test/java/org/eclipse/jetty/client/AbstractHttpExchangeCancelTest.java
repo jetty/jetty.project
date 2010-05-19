@@ -15,6 +15,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -322,7 +323,8 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         httpClient.send(exchange);
 
         int status = exchange.waitForDone();
-        assertEquals(HttpExchange.STATUS_EXPIRED, status);
+        
+        assertTrue(HttpExchange.STATUS_EXPIRED==status||HttpExchange.STATUS_EXCEPTED==status);
         assertFalse(exchange.isResponseCompleted());
         assertFalse(exchange.isFailed());
         assertTrue(exchange.isExpired());
@@ -395,8 +397,11 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         @Override
         protected void onException(Throwable ex)
         {
-            // ex.printStackTrace();
-            this.failed = true;
+            if (ex instanceof SocketTimeoutException ||
+                ex.getCause() instanceof SocketTimeoutException)
+                expired=true;
+            else
+                failed = true;
         }
 
         public boolean isFailed()

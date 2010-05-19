@@ -45,14 +45,14 @@ public class ContentExchange extends CachedExchange
         super(cacheFields);
     }
 
-    public String getResponseContent() throws UnsupportedEncodingException
+    public synchronized String getResponseContent() throws UnsupportedEncodingException
     {
         if (_responseContent != null)
             return _responseContent.toString(_encoding);
         return null;
     }
 
-    public byte[] getResponseContentBytes()
+    public synchronized byte[] getResponseContentBytes()
     {
         if (_responseContent != null)
             return _responseContent.toByteArray();
@@ -60,7 +60,7 @@ public class ContentExchange extends CachedExchange
     }
 
     @Override
-    protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+    protected synchronized void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
     {
         if (_responseContent!=null)
             _responseContent.reset();
@@ -68,7 +68,7 @@ public class ContentExchange extends CachedExchange
     }
 
     @Override
-    protected void onResponseHeader(Buffer name, Buffer value) throws IOException
+    protected synchronized void onResponseHeader(Buffer name, Buffer value) throws IOException
     {
         super.onResponseHeader(name, value);
         int header = HttpHeaders.CACHE.getOrdinal(name);
@@ -92,7 +92,7 @@ public class ContentExchange extends CachedExchange
     }
 
     @Override
-    protected void onResponseContent(Buffer content) throws IOException
+    protected synchronized void onResponseContent(Buffer content) throws IOException
     {
         super.onResponseContent(content);
         if (_responseContent == null)
@@ -101,7 +101,7 @@ public class ContentExchange extends CachedExchange
     }
 
     @Override
-    protected void onRetry() throws IOException
+    protected synchronized void onRetry() throws IOException
     {
         if (_fileForUpload != null)
         {
@@ -112,17 +112,17 @@ public class ContentExchange extends CachedExchange
             super.onRetry();
     }
 
-    private InputStream getInputStream() throws IOException
+    private synchronized InputStream getInputStream() throws IOException
     {
         return new FileInputStream(_fileForUpload);
     }
 
-    public File getFileForUpload()
+    public synchronized File getFileForUpload()
     {
         return _fileForUpload;
     }
 
-    public void setFileForUpload(File fileForUpload) throws IOException
+    public synchronized void setFileForUpload(File fileForUpload) throws IOException
     {
         this._fileForUpload = fileForUpload;
         setRequestContentSource(getInputStream());

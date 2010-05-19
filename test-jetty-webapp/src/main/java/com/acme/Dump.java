@@ -24,6 +24,7 @@ import java.util.Enumeration;
 import java.util.Locale;
 
 import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestWrapper;
@@ -597,13 +598,28 @@ public class Dump extends HttpServlet
                 pout.write("<td>"+"<pre>" + toString(getServletContext().getAttribute(name)) + "</pre>"+"</td>");
             }
 
-
             String res= request.getParameter("resource");
             if (res != null && res.length() > 0)
             {
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Get Resource: \""+res+"\"</big></th>");
+
+                pout.write("</tr><tr>\n");
+                pout.write("<th align=\"right\">getServletContext().getContext(...):&nbsp;</th>");
                 
+                ServletContext context = getServletContext().getContext(res);
+                pout.write("<td>"+context+"</td>");
+                
+                if (context!=null)
+                {
+                    String cp=context.getContextPath();
+                    if (cp==null || "/".equals(cp))
+                        cp="";
+                    pout.write("</tr><tr>\n");
+                    pout.write("<th align=\"right\">getServletContext().getContext(...),getRequestDispatcher(...):&nbsp;</th>");
+                    pout.write("<td>"+getServletContext().getContext(res).getRequestDispatcher(res.substring(cp.length()))+"</td>");
+                }
+
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\">this.getClass().getResource(...):&nbsp;</th>");
                 pout.write("<td>"+this.getClass().getResource(res)+"</td>");

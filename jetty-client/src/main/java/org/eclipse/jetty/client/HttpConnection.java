@@ -214,23 +214,28 @@ public class HttpConnection implements Connection
 
                         if (!_generator.isComplete())
                         {
-                            InputStream in = _exchange.getRequestContentSource();
-                            if (in != null)
+                            if (_exchange!=null)
                             {
-                                if (_requestContentChunk == null || _requestContentChunk.length() == 0)
+                                InputStream in = _exchange.getRequestContentSource();
+                                if (in != null)
                                 {
-                                    _requestContentChunk = _exchange.getRequestContentChunk();
-                                    _destination.getHttpClient().schedule(_timeout);
+                                    if (_requestContentChunk == null || _requestContentChunk.length() == 0)
+                                    {
+                                        _requestContentChunk = _exchange.getRequestContentChunk();
+                                        _destination.getHttpClient().schedule(_timeout);
 
-                                    if (_requestContentChunk != null)
-                                        _generator.addContent(_requestContentChunk,false);
-                                    else
-                                        _generator.complete();
+                                        if (_requestContentChunk != null)
+                                            _generator.addContent(_requestContentChunk,false);
+                                        else
+                                            _generator.complete();
 
-                                    flushed = _generator.flushBuffer();
-                                    io += flushed;
+                                        flushed = _generator.flushBuffer();
+                                        io += flushed;
+                                    }
                                 }
-                            }
+                                else
+                                    _generator.complete();
+                            }                            
                             else
                                 _generator.complete();
                         }
@@ -333,16 +338,17 @@ public class HttpConnection implements Connection
                             no_progress = 0;
                             if (_exchange != null)
                             {
+                                HttpExchange exchange=_exchange;
                                 _exchange.disassociate();
                                 _exchange = null;
                                 
                                 if (_status==HttpStatus.SWITCHING_PROTOCOLS_101)
                                 {
-                                    HttpConnection switched=_exchange.onSwitchProtocol(_endp);
+                                    Connection switched=exchange.onSwitchProtocol(_endp);
                                     if (switched!=null)
                                     {    
                                         // switched protocol!
-                                        HttpExchange exchange = _pipeline;
+                                        exchange = _pipeline;
                                         _pipeline = null;
                                         if (exchange!=null)
                                             _destination.send(exchange);
@@ -350,7 +356,6 @@ public class HttpConnection implements Connection
                                         return switched;
                                     }
                                 }
-
 
                                 if (_pipeline == null)
                                 {
@@ -364,13 +369,13 @@ public class HttpConnection implements Connection
                                         if (!isReserved())
                                             _destination.returnConnection(this,close);
 
-                                        HttpExchange exchange = _pipeline;
+                                        exchange = _pipeline;
                                         _pipeline = null;
                                         _destination.send(exchange);
                                     }
                                     else
                                     {
-                                        HttpExchange exchange = _pipeline;
+                                        exchange = _pipeline;
                                         _pipeline = null;
                                         send(exchange);
                                     }
@@ -387,6 +392,11 @@ public class HttpConnection implements Connection
             if (_exchange != null && _exchange.isAssociated())
             {
                 _exchange.disassociate();
+            }
+            
+            if (!_generator.isComplete() && _generator.getBytesBuffered()>0 && _endp instanceof AsyncEndPoint)
+            {                        
+                ((AsyncEndPoint)_endp).setWritable(false);
             }
         }
         
@@ -544,6 +554,8 @@ public class HttpConnection implements Connection
         @Override
         public void headerComplete() throws IOException
         {
+            if (_endp instanceof AsyncEndPoint)
+                ((AsyncEndPoint)_endp).scheduleIdle();
             HttpExchange exchange = _exchange;
             if (exchange!=null)
                 exchange.setStatus(HttpExchange.STATUS_PARSING_CONTENT);
@@ -552,6 +564,8 @@ public class HttpConnection implements Connection
         @Override
         public void content(Buffer ref) throws IOException
         {
+            if (_endp instanceof AsyncEndPoint)
+                ((AsyncEndPoint)_endp).scheduleIdle();
             HttpExchange exchange = _exchange;
             if (exchange!=null)
                 exchange.getEventListener().onResponseContent(ref);

@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server.nio;
@@ -20,6 +20,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
+import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -44,27 +45,25 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  * This connector is best used when there are a many connections that have idle periods.
  * </p>
  * <p>
- * When used with {@link org.eclipse.jetty.util.ajax.Continuation}, threadless waits are supported. When
- * a filter or servlet calls getEvent on a Continuation, a {@link org.eclipse.jetty.server.RetryRequest}
- * runtime exception is thrown to allow the thread to exit the current request handling. Jetty will
- * catch this exception and will not send a response to the client. Instead the thread is released
- * and the Continuation is placed on the timer queue. If the Continuation timeout expires, or it's
+ * When used with {@link org.eclipse.jetty.continuation.Continuation}, threadless waits are supported.
+ * If a filter or servlet returns after calling {@link Continuation#suspend()} or when a
+ * runtime exception is thrown from a call to {@link Continuation#undispatch()}, Jetty will
+ * will not send a response to the client. Instead the thread is released and the Continuation is
+ * placed on the timer queue. If the Continuation timeout expires, or it's
  * resume method is called, then the request is again allocated a thread and the request is retried.
  * The limitation of this approach is that request content is not available on the retried request,
  * thus if possible it should be read after the continuation or saved as a request attribute or as the
  * associated object of the Continuation instance.
  * </p>
- * 
- * @org.apache.xbean.XBean element="nioConnector" description="Creates an NIO based socket connector"
- * 
- * 
  *
+ * @org.apache.xbean.XBean element="nioConnector" description="Creates an NIO based socket connector"
  */
-public class SelectChannelConnector extends AbstractNIOConnector 
+public class SelectChannelConnector extends AbstractNIOConnector
 {
     protected ServerSocketChannel _acceptChannel;
     private int _lowResourcesConnections;
     private int _lowResourcesMaxIdleTime;
+    private int _localPort=-1;
 
     private final SelectorManager _manager = new SelectorManager()
     {
@@ -99,7 +98,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
             // TODO handle max connections and low resources
             connectionOpened(endpoint.getConnection());
         }
-        
+
         @Override
         protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
         {
@@ -118,23 +117,23 @@ public class SelectChannelConnector extends AbstractNIOConnector
             return SelectChannelConnector.this.newEndPoint(channel,selectSet,sKey);
         }
     };
-    
+
     /* ------------------------------------------------------------------------------- */
     /**
      * Constructor.
-     * 
+     *
      */
     public SelectChannelConnector()
     {
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void accept(int acceptorID) throws IOException
     {
         _manager.doSelect(acceptorID);
     }
-    
+
     /* ------------------------------------------------------------ */
     public void close() throws IOException
     {
@@ -154,9 +153,10 @@ public class SelectChannelConnector extends AbstractNIOConnector
             if (_acceptChannel != null)
                 _acceptChannel.close();
             _acceptChannel = null;
+            _localPort=-2;
         }
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     @Override
     public void customize(EndPoint endpoint, Request request) throws IOException
@@ -166,7 +166,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
         request.setTimeStamp(cep.getSelectSet().getNow());
         super.customize(endpoint, request);
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     @Override
     public void persist(EndPoint endpoint) throws IOException
@@ -186,9 +186,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     {
         synchronized(this)
         {
-            if (_acceptChannel==null || !_acceptChannel.isOpen())
-                return -1;
-            return _acceptChannel.socket().getLocalPort();
+            return _localPort;
         }
     }
 
@@ -209,12 +207,13 @@ public class SelectChannelConnector extends AbstractNIOConnector
                 InetSocketAddress addr = getHost()==null?new InetSocketAddress(getPort()):new InetSocketAddress(getHost(),getPort());
                 _acceptChannel.socket().bind(addr,getAcceptQueueSize());
 
-                if (_acceptChannel.socket().getLocalPort()==-1)
+                _localPort=_acceptChannel.socket().getLocalPort();
+                if (_localPort<=0)
                     throw new IOException("Server channel not bound");
-                
+
                 // Set to non blocking mode
                 _acceptChannel.configureBlocking(false);
-                
+
             }
         }
     }
@@ -241,7 +240,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
      * Set the number of connections, which if exceeded places this manager in low resources state.
      * This is not an exact measure as the connection count is averaged over the select sets.
      * @param lowResourcesConnections the number of connections
-     * @see {@link #setLowResourcesMaxIdleTime(int)}
+     * @see #setLowResourcesMaxIdleTime(int)
      */
     public void setLowResourcesConnections(int lowResourcesConnections)
     {
@@ -264,16 +263,16 @@ public class SelectChannelConnector extends AbstractNIOConnector
      * than {@link #getLowResourcesConnections()} connections.  This allows the server to rapidly close idle connections
      * in order to gracefully handle high load situations.
      * @param lowResourcesMaxIdleTime the period in ms that a connection is allowed to be idle when resources are low.
-     * @see {@link #setMaxIdleTime(long)}
+     * @see #setMaxIdleTime(int)
      */
     @Override
     public void setLowResourcesMaxIdleTime(int lowResourcesMaxIdleTime)
     {
         _lowResourcesMaxIdleTime=lowResourcesMaxIdleTime;
-        super.setLowResourcesMaxIdleTime(lowResourcesMaxIdleTime); 
+        super.setLowResourcesMaxIdleTime(lowResourcesMaxIdleTime);
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.server.server.AbstractConnector#doStart()
@@ -297,7 +296,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
      */
     @Override
     protected void doStop() throws Exception
-    {        
+    {
         super.doStop();
     }
 

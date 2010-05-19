@@ -4,67 +4,34 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.http;
 
 import java.io.UnsupportedEncodingException;
 
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.io.bio.StringEndPoint;
 import org.eclipse.jetty.util.StringUtil;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
- * 
  *
- * To change this generated comment edit the template variable "typecomment":
- * Window>Preferences>Java>Templates.
- * To enable and disable the creation of type comments go to
- * Window>Preferences>Java>Code Generation.
  */
-public class HttpParserTest extends TestCase
+public class HttpParserTest
 {
-    /**
-     * Constructor for HttpParserTest.
-     * @param arg0
-     */
-    public HttpParserTest(String arg0)
-    {
-        super(arg0);
-    }
-
-    public static void main(String[] args)
-    {
-        junit.textui.TestRunner.run(HttpParserTest.class);
-    }
-
-    /**
-     * @see TestCase#setUp()
-     */
-    protected void setUp() throws Exception
-    {
-        super.setUp();
-    }
-
-    /**
-     * @see TestCase#tearDown()
-     */
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-
-    public void testLineParse0()
-	throws Exception
+    @Test
+    public void testLineParse0() throws Exception
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput("POST /foo HTTP/1.0\015\012" + "\015\012");
@@ -80,8 +47,8 @@ public class HttpParserTest extends TestCase
         assertEquals(-1, h);
     }
 
-    public void testLineParse1()
-	throws Exception
+    @Test
+    public void testLineParse1() throws Exception
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput("GET /999\015\012");
@@ -98,8 +65,8 @@ public class HttpParserTest extends TestCase
         assertEquals(-1, h);
     }
 
-    public void testLineParse2()
-	throws Exception
+    @Test
+    public void testLineParse2() throws Exception
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput("POST /222  \015\012");
@@ -116,8 +83,8 @@ public class HttpParserTest extends TestCase
         assertEquals(-1, h);
     }
 
-    public void testLineParse3()
-        throws Exception
+    @Test
+    public void testLineParse3() throws Exception
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput("POST /fo\u0690 HTTP/1.0\015\012" + "\015\012");
@@ -133,8 +100,8 @@ public class HttpParserTest extends TestCase
         assertEquals(-1, h);
     }
 
-    public void testLineParse4()
-        throws Exception
+    @Test
+    public void testLineParse4() throws Exception
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput("POST /foo?param=\u0690 HTTP/1.0\015\012" + "\015\012");
@@ -150,8 +117,8 @@ public class HttpParserTest extends TestCase
         assertEquals(-1, h);
     }
 
-    public void testConnect()
-        throws Exception
+    @Test
+    public void testConnect() throws Exception
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput("CONNECT 192.168.1.2:80 HTTP/1.1\015\012" + "\015\012");
@@ -168,8 +135,8 @@ public class HttpParserTest extends TestCase
         assertEquals(-1, h);
     }
 
-    public void testHeaderParse()
-	throws Exception
+    @Test
+    public void testHeaderParse() throws Exception
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput(
@@ -207,14 +174,14 @@ public class HttpParserTest extends TestCase
         assertEquals(5, h);
     }
 
-    public void testChunkParse()
-    	throws Exception
+    @Test
+    public void testChunkParse() throws Exception
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput(
             "GET /chunk HTTP/1.0\015\012"
                 + "Header1: value1\015\012"
-				+ "Transfer-Encoding: chunked\015\012"
+                + "Transfer-Encoding: chunked\015\012"
                 + "\015\012"
                 + "a;\015\012"
                 + "0123456789\015\012"
@@ -237,14 +204,14 @@ public class HttpParserTest extends TestCase
         assertEquals("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", _content);
     }
 
-    public void testMultiParse()
-		throws Exception
+    @Test
+    public void testMultiParse() throws Exception
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput(
             "GET /mp HTTP/1.0\015\012"
                 + "Header1: value1\015\012"
-		+ "Transfer-Encoding: chunked\015\012"
+                + "Transfer-Encoding: chunked\015\012"
                 + "\015\012"
                 + "a;\015\012"
                 + "0123456789\015\012"
@@ -253,11 +220,11 @@ public class HttpParserTest extends TestCase
                 + "0\015\012"
                 + "POST /foo HTTP/1.0\015\012"
                 + "Header2: value2\015\012"
-		+ "Content-Length: 0\015\012"
+                + "Content-Length: 0\015\012"
                 + "\015\012"
                 + "PUT /doodle HTTP/1.0\015\012"
                 + "Header3: value3\015\012"
-		+ "Content-Length: 10\015\012"
+                + "Content-Length: 10\015\012"
                 + "\015\012"
                 + "0123456789\015\012");
 
@@ -293,15 +260,15 @@ public class HttpParserTest extends TestCase
         assertEquals("Header3", hdr[0]);
         assertEquals("value3", val[0]);
         assertEquals("0123456789", _content);
-        
     }
 
+    @Test
     public void testStreamParse() throws Exception
     {
         StringEndPoint io=new StringEndPoint();
         String http="GET / HTTP/1.0\015\012"
                 + "Header1: value1\015\012"
-				+ "Transfer-Encoding: chunked\015\012"
+                + "Transfer-Encoding: chunked\015\012"
                 + "\015\012"
                 + "a;\015\012"
                 + "0123456789\015\012"
@@ -314,11 +281,10 @@ public class HttpParserTest extends TestCase
                 + "\015\012"
                 + "PUT /doodle HTTP/1.0\015\012"
                 + "Header3: value3\015\012"
-		+ "Content-Length: 10\015\012"
+                + "Content-Length: 10\015\012"
                 + "\015\012"
                 + "0123456789\015\012";
 
-        
         int[] tests=
             {
                 1024,
@@ -333,7 +299,7 @@ public class HttpParserTest extends TestCase
                 64,
                 32
             };
-        
+
         for (int t= 0; t < tests.length; t++)
         {
             String tst="t"+tests[t];
@@ -345,10 +311,9 @@ public class HttpParserTest extends TestCase
 
                 Handler handler = new Handler();
                 HttpParser parser= new HttpParser(buffers,io, handler);
-                
-                
+
                 io.setInput(http);
-                
+
                 parser.parse();
                 assertEquals(tst,"GET", f0);
                 assertEquals(tst,"/", f1);
@@ -357,7 +322,7 @@ public class HttpParserTest extends TestCase
                 assertEquals(tst,"Header1", hdr[0]);
                 assertEquals(tst,"value1", val[0]);
                 assertEquals(tst,"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", _content);
-                
+
                 parser.parse();
                 assertEquals(tst,"POST", f0);
                 assertEquals(tst,"/foo", f1);
@@ -366,7 +331,7 @@ public class HttpParserTest extends TestCase
                 assertEquals(tst,"Header2", hdr[0]);
                 assertEquals(tst,"value2", val[0]);
                 assertEquals(tst,null, _content);
-                
+
                 parser.parse();
                 assertEquals(tst,"PUT", f0);
                 assertEquals(tst,"/doodle", f1);
@@ -385,16 +350,16 @@ public class HttpParserTest extends TestCase
         }
     }
 
-    public void testResponseParse0()
-	throws Exception
+    @Test
+    public void testResponseParse0() throws Exception
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput(
-	    "HTTP/1.1 200 Correct\015\012" 
-	    + "Content-Length: 10\015\012"
-	    + "Content-Type: text/plain\015\012"
-	    + "\015\012"
-	    + "0123456789\015\012");
+        "HTTP/1.1 200 Correct\015\012"
+        + "Content-Length: 10\015\012"
+        + "Content-Type: text/plain\015\012"
+        + "\015\012"
+        + "0123456789\015\012");
         ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
@@ -404,19 +369,19 @@ public class HttpParserTest extends TestCase
         assertEquals("HTTP/1.1", f0);
         assertEquals("200", f1);
         assertEquals("Correct", f2);
-	assertEquals(_content.length(), 10);
-	assertTrue(headerCompleted);
-	assertTrue(messageCompleted);
+        assertEquals(_content.length(), 10);
+        assertTrue(headerCompleted);
+        assertTrue(messageCompleted);
     }
 
-    public void testResponseParse1()
-	throws Exception
+    @Test
+    public void testResponseParse1() throws Exception
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput(
-	    "HTTP/1.1 304 Not-Modified\015\012" 
-	    + "Connection: close\015\012"
-	    + "\015\012");
+        "HTTP/1.1 304 Not-Modified\015\012"
+        + "Connection: close\015\012"
+        + "\015\012");
         ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
@@ -426,23 +391,23 @@ public class HttpParserTest extends TestCase
         assertEquals("HTTP/1.1", f0);
         assertEquals("304", f1);
         assertEquals("Not-Modified", f2);
-	assertTrue(headerCompleted);
-	assertTrue(messageCompleted);
+        assertTrue(headerCompleted);
+        assertTrue(messageCompleted);
     }
 
-    public void testResponseParse2()
-	throws Exception
+    @Test
+    public void testResponseParse2() throws Exception
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput(
-	    "HTTP/1.1 204 No-Content\015\012" 
-	    + "Connection: close\015\012"
-	    + "\015\012"
-	    + "HTTP/1.1 200 Correct\015\012" 
-	    + "Content-Length: 10\015\012"
-	    + "Content-Type: text/plain\015\012"
-	    + "\015\012"
-	    + "0123456789\015\012");
+        "HTTP/1.1 204 No-Content\015\012"
+        + "Connection: close\015\012"
+        + "\015\012"
+        + "HTTP/1.1 200 Correct\015\012"
+        + "Content-Length: 10\015\012"
+        + "Content-Type: text/plain\015\012"
+        + "\015\012"
+        + "0123456789\015\012");
         ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
@@ -452,41 +417,40 @@ public class HttpParserTest extends TestCase
         assertEquals("HTTP/1.1", f0);
         assertEquals("204", f1);
         assertEquals("No-Content", f2);
-	assertTrue(headerCompleted);
-	assertTrue(messageCompleted);
+        assertTrue(headerCompleted);
+        assertTrue(messageCompleted);
 
         parser.parse();
         assertEquals("HTTP/1.1", f0);
         assertEquals("200", f1);
         assertEquals("Correct", f2);
-	assertEquals(_content.length(), 10);
-	assertTrue(headerCompleted);
-	assertTrue(messageCompleted);
+        assertEquals(_content.length(), 10);
+        assertTrue(headerCompleted);
+        assertTrue(messageCompleted);
     }
 
-    String _content;
-    String f0;
-    String f1;
-    String f2;
-    String[] hdr;
-    String[] val;
-    int h;
-    
-    boolean headerCompleted;
-    boolean messageCompleted;
+    private String _content;
+    private String f0;
+    private String f1;
+    private String f2;
+    private String[] hdr;
+    private String[] val;
+    private int h;
 
-    class Handler extends HttpParser.EventHandler
-    {   
-        HttpFields fields;
-        boolean request;
-        
+    private boolean headerCompleted;
+    private boolean messageCompleted;
+
+    private class Handler extends HttpParser.EventHandler
+    {
+        private HttpFields fields;
+        private boolean request;
+
         public void content(Buffer ref)
         {
             if (_content==null)
                 _content="";
             _content= _content + ref;
         }
-
 
         public void startRequest(Buffer tok0, Buffer tok1, Buffer tok2)
         {
@@ -507,12 +471,11 @@ public class HttpParserTest extends TestCase
             }
             catch (UnsupportedEncodingException e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
 
-	    messageCompleted = false;
-	    headerCompleted = false;
+            messageCompleted = false;
+            headerCompleted = false;
         }
 
         public void parsedHeader(Buffer name, Buffer value)
@@ -533,28 +496,27 @@ public class HttpParserTest extends TestCase
                 throw new IllegalStateException();
             }
 
-	    headerCompleted = true;
+            headerCompleted = true;
         }
 
         public void messageComplete(long contentLength)
         {
-	    messageCompleted = true;
+            messageCompleted = true;
         }
-
 
         public void startResponse(Buffer version, int status, Buffer reason)
         {
             request=false;
             f0 = version.toString();
-	    f1 = Integer.toString(status);
-	    f2 = reason.toString();
+            f1 = Integer.toString(status);
+            f2 = reason.toString();
 
             fields=new HttpFields();
             hdr= new String[9];
             val= new String[9];
 
-	    messageCompleted = false;
-	    headerCompleted = false;
+            messageCompleted = false;
+            headerCompleted = false;
         }
     }
 }

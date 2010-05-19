@@ -82,11 +82,6 @@
           </archive>
         </configuration>
       </plugin>
-      <!-- always include sources since jetty-xbean makes use of them -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-      </plugin>
     </plugins>
   </build>
   <dependencies>
@@ -98,6 +93,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <version>${junit4-version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

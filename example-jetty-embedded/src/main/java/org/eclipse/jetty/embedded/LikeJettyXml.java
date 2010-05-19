@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -65,7 +66,7 @@ public class LikeJettyXml
         server.setConnectors(new Connector[]
         { connector });
 
-        SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
+        SslSocketConnector ssl_connector = new SslSocketConnector();
         ssl_connector.setPort(8443);
         ssl_connector.setKeystore(jetty_home + "/etc/keystore");
         ssl_connector.setPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
@@ -73,6 +74,16 @@ public class LikeJettyXml
         ssl_connector.setTruststore(jetty_home + "/etc/keystore");
         ssl_connector.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         ssl_connector.setStatsOn(true);
+        ssl_connector.setExcludeCipherSuites(
+                new String[] {
+                    "SSL_RSA_WITH_DES_CBC_SHA",
+                    "SSL_DHE_RSA_WITH_DES_CBC_SHA",
+                    "SSL_DHE_DSS_WITH_DES_CBC_SHA",
+                    "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
+                    "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
+                    "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
+                    "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"
+                });
         server.addConnector(ssl_connector);
 
         HandlerCollection handlers = new HandlerCollection();

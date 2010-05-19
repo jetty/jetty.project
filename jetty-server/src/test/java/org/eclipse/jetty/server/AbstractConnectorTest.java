@@ -20,184 +20,189 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class AbstractConnectorTest extends TestCase
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+public class AbstractConnectorTest
 {
-    private Server _server;
-    private Handler _handler;
-    private AbstractConnector _connector;
-    
-    private String _request = "GET / HTTP/1.1\r\n" +
-                              "Host: localhost\r\n" +
-                              "\r\n";
+    private static Server _server;
+    private static AbstractConnector _connector;
+    private static CyclicBarrier _connect;
+    private static CountDownLatch _closed;
+
     private Socket[] _socket;
     private PrintWriter[] _out;
     private BufferedReader[] _in;
-    
-    private CyclicBarrier _connect;
-    private CountDownLatch _closed;
 
-    @Override
-    protected void setUp() throws Exception
+    @BeforeClass
+    public static void init() throws Exception
     {
         _connect = new CyclicBarrier(2);
 
         _server = new Server();
+        _connector = new SelectChannelConnector()
+        {
+            public void connectionClosed(Connection connection)
+            {
+                super.connectionClosed(connection);
+                _closed.countDown();
+            }
 
-        _connector = 
-            new SelectChannelConnector() {
-                public void connectionClosed(Connection connection)
-                {
-                    super.connectionClosed(connection);
-                    _closed.countDown();
-                }
-            
-            };
-        _server.addConnector(_connector);
+        };
         _connector.setStatsOn(true);
+        _server.addConnector(_connector);
 
-        HandlerWrapper wrapper = 
-            new HandlerWrapper() {
-                public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+        HandlerWrapper wrapper = new HandlerWrapper()
+        {
+            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+            {
+                try
                 {
-                    try
-                    {
-                        _connect.await();
-                     }
-                    catch (Exception ex)
-                    {
-                        Log.debug(ex);
-                    }
-                    finally
-                    {             
-                        super.handle(path, request, httpRequest, httpResponse);
-                    }
+                    _connect.await();
+                 }
+                catch (Exception ex)
+                {
+                    Log.debug(ex);
                 }
-            };
-        _server.setHandler(wrapper);   
+                finally
+                {
+                    super.handle(path, request, httpRequest, httpResponse);
+                }
+            }
+        };
+        _server.setHandler(wrapper);
 
-        _handler = 
-            new AbstractHandler() {
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                    throws IOException, ServletException
-                {
-                    baseRequest.setHandled(true);
-                    
-                    PrintWriter out = response.getWriter();
-                    out.write("Server response\n");
-                    out.close();
-                    
-                    response.setStatus(HttpServletResponse.SC_OK);
-                }
-            };
-        wrapper.setHandler(_handler);
-        
+        Handler handler = new AbstractHandler()
+        {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+
+                PrintWriter out = response.getWriter();
+                out.write("Server response\n");
+                out.close();
+
+                response.setStatus(HttpServletResponse.SC_OK);
+            }
+        };
+        wrapper.setHandler(handler);
+
         _server.start();
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @AfterClass
+    public static void destroy() throws Exception
     {
         _server.stop();
         _server.join();
     }
 
-    public void testSingleRequest()
-        throws Exception
+    @Before
+    public void reset()
     {
-        doInit(1);
+        _connector.statsReset();
+    }
+
+    @Test
+    public void testSingleRequest() throws Exception
+    {
+        int connections = 1;
+        doInit(connections);
 
         sendRequest(1, 1);
-       
-        doClose(1);
-        
-        assertEquals(1, _connector.getConnections());
+
+        doClose(connections);
+
+        assertEquals(connections, _connector.getConnections());
         assertEquals(0, _connector.getConnectionsOpen());
-        assertEquals(1, _connector.getConnectionsOpenMax());
+        assertEquals(connections, _connector.getConnectionsOpenMax());
         assertTrue(_connector.getConnectionsOpen() <= _connector.getConnectionsOpenMax());
-        
+
         assertTrue(_connector.getConnectionsDurationMean() > 0);
         assertTrue(_connector.getConnectionsDurationMax() > 0);
         assertTrue(_connector.getConnectionsDurationMean() <= _connector.getConnectionsDurationMax());
-        
+
         assertEquals(1, _connector.getRequests());
-        assertEquals(1.0, _connector.getConnectionsRequestsMean());
+        assertEquals(1.0, _connector.getConnectionsRequestsMean(), 0.01);
         assertEquals(1, _connector.getConnectionsRequestsMax());
         assertTrue(_connector.getConnectionsRequestsMean() <= _connector.getConnectionsRequestsMax());
     }
-    
-    public void testMultipleRequests()
-        throws Exception
+
+    @Test
+    public void testMultipleRequests() throws Exception
     {
         doInit(1);
-               
+
         sendRequest(1, 1);
 
         sendRequest(1, 1);
 
         doClose(1);
-        
+
         assertEquals(1, _connector.getConnections());
         assertEquals(0, _connector.getConnectionsOpen());
         assertEquals(1, _connector.getConnectionsOpenMax());
         assertTrue(_connector.getConnectionsOpen() <= _connector.getConnectionsOpenMax());
-        
+
         assertTrue(_connector.getConnectionsDurationMean() > 0);
         assertTrue(_connector.getConnectionsDurationMax() > 0);
         assertTrue(_connector.getConnectionsDurationMean() <= _connector.getConnectionsDurationMax());
-        
+
         assertEquals(2, _connector.getRequests());
-        assertEquals(2.0, _connector.getConnectionsRequestsMean());
+        assertEquals(2.0, _connector.getConnectionsRequestsMean(), 0.01);
         assertEquals(2, _connector.getConnectionsRequestsMax());
         assertTrue(_connector.getConnectionsRequestsMean() <= _connector.getConnectionsRequestsMax());
     }
-    
-    public void testMultipleConnections()
-        throws Exception
+
+    @Test
+    public void testMultipleConnections() throws Exception
     {
         doInit(3);
-               
+
         sendRequest(1, 1); // request 1 connection 1
-        
+
         sendRequest(2, 2); // request 1 connection 2
-        
+
         sendRequest(3, 3); // request 1 connection 3
-        
+
         sendRequest(2, 3); // request 2 connection 2
-        
+
         sendRequest(3, 3); // request 2 connection 3
-        
+
         sendRequest(3, 3); // request 3 connection 3
-        
+
         doClose(3);
 
         assertEquals(3, _connector.getConnections());
         assertEquals(0, _connector.getConnectionsOpen());
         assertEquals(3, _connector.getConnectionsOpenMax());
         assertTrue(_connector.getConnectionsOpen() <= _connector.getConnectionsOpenMax());
-        
+
         assertTrue(_connector.getConnectionsDurationMean() > 0);
         assertTrue(_connector.getConnectionsDurationMax() > 0);
         assertTrue(_connector.getConnectionsDurationMean() <= _connector.getConnectionsDurationMax());
-        
+
         assertEquals(6, _connector.getRequests());
-        assertEquals(2.0, _connector.getConnectionsRequestsMean());
+        assertEquals(2.0, _connector.getConnectionsRequestsMean(), 0.01);
         assertEquals(3, _connector.getConnectionsRequestsMax());
         assertTrue(_connector.getConnectionsRequestsMean() <= _connector.getConnectionsRequestsMax());
     }
- 
+
     protected void doInit(int count)
     {
         _socket = new Socket[count];
@@ -206,9 +211,8 @@ public class AbstractConnectorTest extends TestCase
 
         _closed = new CountDownLatch(count);
     }
-    
-    protected void doClose(int count)
-        throws Exception
+
+    private void doClose(int count) throws Exception
     {
         for (int idx=0; idx < count; idx++)
         {
@@ -217,35 +221,34 @@ public class AbstractConnectorTest extends TestCase
 
             if (_in[idx] != null)
                 _in[idx].close();
-            
+
             if (_socket[idx] != null)
                 _socket[idx].close();
         }
-        
+
         _closed.await();
     }
-      
-    protected void sendRequest(int id, int count)
-        throws Exception
+
+    private void sendRequest(int id, int count) throws Exception
     {
         int idx = id - 1;
-        
+
         if (idx < 0)
             throw new IllegalArgumentException("Connection ID <= 0");
-        
+
         _socket[idx]  = _socket[idx] == null ? new Socket("localhost", _connector.getLocalPort()) : _socket[idx];
         _out[idx] = _out[idx] == null ? new PrintWriter(_socket[idx].getOutputStream(), true) : _out[idx];
         _in[idx] = _in[idx] == null ? new BufferedReader(new InputStreamReader(_socket[idx].getInputStream())) : _in[idx];
-   
+
         _connect.reset();
-        
-        _out[idx].write(_request);
+
+        _out[idx].write("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
         _out[idx].flush();
-        
+
         _connect.await();
-        
+
         assertEquals(count, _connector.getConnectionsOpen());
-        
+
         while(_in[idx].ready())
         {
             _in[idx].readLine();

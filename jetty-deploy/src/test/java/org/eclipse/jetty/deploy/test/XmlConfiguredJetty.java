@@ -261,9 +261,7 @@ public class XmlConfiguredJetty
 
     public DeploymentManager getActiveDeploymentManager()
     {
-        List<DeploymentManager> depmans = server.getBeans(DeploymentManager.class);
-        Assert.assertEquals("DeploymentManager bean count",1,depmans.size());
-        return depmans.get(0);
+        return server.getBean(DeploymentManager.class);
     }
 
     public File getJettyDir(String name)

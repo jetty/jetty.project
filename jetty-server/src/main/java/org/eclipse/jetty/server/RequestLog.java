@@ -16,9 +16,8 @@ package org.eclipse.jetty.server;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /** 
- * A <code>RequestLog</code> can be attached to a {@link org.eclipse.jetty.server.server.handler.RequestLogHandler} to enable logging of requests/responses.
- * 
- * @see Server#setRequestLog
+ * A <code>RequestLog</code> can be attached to a {@link org.eclipse.jetty.server.handler.RequestLogHandler} to enable 
+ * logging of requests/responses.
  */
 public interface RequestLog extends LifeCycle
 {

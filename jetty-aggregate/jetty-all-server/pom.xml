@@ -10,6 +10,7 @@
   <name>Jetty :: Aggregate :: All Server</name>
   
   <build>
+    <sourceDirectory>${project.build.directory}/sources</sourceDirectory>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -25,6 +26,22 @@
               <excludes>**/MANIFEST.MF,javax/**</excludes>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>true</overWriteSnapshots>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <classifier>sources</classifier>
+              <includes>**/*</includes>
+              <excludes>META-INF/**</excludes>
+              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <outputDirectory>${project.build.directory}/sources</outputDirectory>
+              <overWriteReleases>true</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
             </configuration>
           </execution>

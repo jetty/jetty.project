@@ -31,41 +31,42 @@ import org.eclipse.jetty.test.support.rawhttp.HttpResponseTester;
 import org.eclipse.jetty.test.support.rawhttp.HttpSocketImpl;
 import org.eclipse.jetty.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.util.IO;
-import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  * Tests against the facilities within the TestSuite to ensure that the various
  * org.eclipse.jetty.test.support.* classes do what they are supposed to.
  */
-public class DefaultHandlerTest extends AbstractJettyTestCase
+public class DefaultHandlerTest
 {
-    private boolean debug = true;
-    private TestableJettyServer server;
+    private boolean debug = false;
+    private static TestableJettyServer server;
     private int serverPort;
 
-    @Override
-    @Before
-    public void setUp() throws Exception
+    @BeforeClass
+    public static void setUpServer() throws Exception
     {
-        super.setUp();
-        
         server = new TestableJettyServer();
         server.setScheme(HttpSchemes.HTTP);
         server.addConfiguration("DefaultHandler.xml");
 
         server.load();
         server.start();
+    }
+    
+    @Before
+    public void testInit() {
         serverPort = server.getServerPort();
     }
 
-    @Override
-    @After
-    public void tearDown() throws Exception
+    @AfterClass
+    public static void tearDownServer() throws Exception
     {
         server.stop();
-        super.tearDown();
     }
 
     @Test
@@ -80,7 +81,7 @@ public class DefaultHandlerTest extends AbstractJettyTestCase
         String response = IO.toString(in);
         String expected = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
         
-        assertEquals("Response",expected,response);
+        Assert.assertEquals("Response",expected,response);
     }
 
     @Test

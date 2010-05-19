@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.io;
@@ -16,38 +16,17 @@ package org.eclipse.jetty.io;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-import junit.framework.TestSuite;
-
 import org.eclipse.jetty.util.IO;
+import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 
-/* ------------------------------------------------------------ */
-/** Util meta Tests.
- * 
+/**
+ *
  */
-public class IOTest extends junit.framework.TestCase
+public class IOTest
 {
-    public IOTest(String name)
-    {
-      super(name);
-    }
-    
-    public static junit.framework.Test suite() {
-        TestSuite suite = new TestSuite(IOTest.class);
-        return suite;                  
-    }
-
-    /* ------------------------------------------------------------ */
-    /** main.
-     */
-    public static void main(String[] args)
-    {
-      junit.textui.TestRunner.run(suite());
-    }    
-    
-    
-
-    /* ------------------------------------------------------------ */
+    @Test
     public void testIO() throws InterruptedException
     {
         // Only a little test
@@ -64,15 +43,13 @@ public class IOTest extends junit.framework.TestCase
                       "The quick brown fox jumped over the lazy dog");
     }
 
-    
-
-    /* ------------------------------------------------------------ */
+    @Test
     public void testStringSpeed()
     {
         String s="012345678901234567890000000000000000000000000";
         char[] ca = new char[s.length()];
         int loops=1000000;
-        
+
         long start=System.currentTimeMillis();
         long result=0;
         for (int loop=0;loop<loops;loop++)
@@ -82,7 +59,7 @@ public class IOTest extends junit.framework.TestCase
         }
         long end=System.currentTimeMillis();
         System.err.println("charAt   "+(end-start)+" "+result);
-        
+
         start=System.currentTimeMillis();
         result=0;
         for (int loop=0;loop<loops;loop++)
@@ -93,6 +70,5 @@ public class IOTest extends junit.framework.TestCase
         }
         end=System.currentTimeMillis();
         System.err.println("getChars "+(end-start)+" "+result);
-        
     }
 }

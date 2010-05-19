@@ -22,14 +22,11 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionContext;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -40,54 +37,43 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  *
- *
- * To change the template for this generated type comment go to
- * Window - Preferences - Java - Code Generation - Code and Comments
  */
-public class ResponseTest extends TestCase
+public class ResponseTest
 {
-    Server server = new Server();
-    LocalConnector connector = new LocalConnector();
+    private Server server;
+    private LocalConnector connector;
 
-    public ResponseTest(String arg0)
+    @Before
+    public void init() throws Exception
     {
-        super(arg0);
-        server.setConnectors(new Connector[]{connector});
+        server = new Server();
+        connector = new LocalConnector();
+        server.addConnector(connector);
         server.setHandler(new DumpHandler());
-    }
-
-    public static void main(String[] args)
-    {
-        junit.textui.TestRunner.run(ResponseTest.class);
-    }
-
-    /*
-     * @see TestCase#setUp()
-     */
-    protected void setUp() throws Exception
-    {
-        super.setUp();
-
         server.start();
     }
 
-    /*
-     * @see TestCase#tearDown()
-     */
-    protected void tearDown() throws Exception
+    @After
+    public void destroy() throws Exception
     {
-        super.tearDown();
         server.stop();
+        server.join();
     }
 
-
-    public void testContentType()
-    	throws Exception
+    @Test
+    public void testContentType() throws Exception
     {
-
         HttpConnection connection = new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Response response = connection.getResponse();
 
@@ -122,9 +108,8 @@ public class ResponseTest extends TestCase
         response.recycle();
     }
 
-
-    public void testLocale()
-        throws Exception
+    @Test
+    public void testLocale() throws Exception
     {
 
         HttpConnection connection = new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
@@ -148,8 +133,8 @@ public class ResponseTest extends TestCase
         assertTrue(response.toString().indexOf("charset=UTF-8")>0);
     }
 
-    public void testContentTypeCharacterEncoding()
-        throws Exception
+    @Test
+    public void testContentTypeCharacterEncoding() throws Exception
     {
         HttpConnection connection = new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
 
@@ -181,8 +166,8 @@ public class ResponseTest extends TestCase
 
     }
 
-    public void testCharacterEncodingContentType()
-    throws Exception
+    @Test
+    public void testCharacterEncodingContentType() throws Exception
     {
         Response response = new Response(new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
 
@@ -210,8 +195,8 @@ public class ResponseTest extends TestCase
 
     }
 
-    public void testContentTypeWithCharacterEncoding()
-        throws Exception
+    @Test
+    public void testContentTypeWithCharacterEncoding() throws Exception
     {
         Response response = new Response(new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
 
@@ -239,8 +224,8 @@ public class ResponseTest extends TestCase
 
     }
 
-    public void testContentTypeWithOther()
-    throws Exception
+    @Test
+    public void testContentTypeWithOther() throws Exception
     {
         Response response = new Response(new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
 
@@ -262,9 +247,8 @@ public class ResponseTest extends TestCase
         assertEquals("text/xml;charset=UTF-8",response.getContentType());
     }
 
-
-    public void testContentTypeWithCharacterEncodingAndOther()
-        throws Exception
+    @Test
+    public void testContentTypeWithCharacterEncodingAndOther() throws Exception
     {
         Response response = new Response(new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
 
@@ -292,6 +276,7 @@ public class ResponseTest extends TestCase
 
     }
 
+    @Test
     public void testStatusCodes() throws Exception
     {
         Response response=newResponse();
@@ -321,14 +306,18 @@ public class ResponseTest extends TestCase
         assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeaders.CACHE_CONTROL));
     }
 
+    @Test
     public void testEncodeRedirect()
         throws Exception
     {
         HttpConnection connection=new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Response response = new Response(connection);
         Request request = connection.getRequest();
+        request.setServerName("myhost");
+        request.setServerPort(8888);
+        request.setContextPath("/path");
 
-        assertEquals("http://host:port/path/info;param?query=0&more=1#target",response.encodeRedirectUrl("http://host:port/path/info;param?query=0&more=1#target"));
+        assertEquals("http://myhost:8888/path/info;param?query=0&more=1#target",response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
 
         request.setRequestedSessionId("12345");
         request.setRequestedSessionIdFromCookie(false);
@@ -337,12 +326,22 @@ public class ResponseTest extends TestCase
         request.setSessionManager(manager);
         request.setSession(new TestSession(manager,"12345"));
 
-        assertEquals("http://host:port/path/info;param;jsessionid=12345?query=0&more=1#target",response.encodeRedirectUrl("http://host:port/path/info;param?query=0&more=1#target"));
+        manager.setCheckingRemoteSessionIdEncoding(false);
 
+        assertEquals("http://myhost:8888/path/info;param;jsessionid=12345?query=0&more=1#target",response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
+        assertEquals("http://other:8888/path/info;param;jsessionid=12345?query=0&more=1#target",response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
+        assertEquals("http://myhost/path/info;param;jsessionid=12345?query=0&more=1#target",response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
+        assertEquals("http://myhost:8888/other/info;param;jsessionid=12345?query=0&more=1#target",response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
+
+        manager.setCheckingRemoteSessionIdEncoding(true);
+        assertEquals("http://myhost:8888/path/info;param;jsessionid=12345?query=0&more=1#target",response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
+        assertEquals("http://other:8888/path/info;param?query=0&more=1#target",response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
+        assertEquals("http://myhost/path/info;param?query=0&more=1#target",response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
+        assertEquals("http://myhost:8888/other/info;param?query=0&more=1#target",response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
     }
 
-    public void testSetBufferSize ()
-    throws Exception
+    @Test
+    public void testSetBufferSize () throws Exception
     {
         Response response = new Response(new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
         response.setBufferSize(20*1024);
@@ -358,6 +357,7 @@ public class ResponseTest extends TestCase
         }
     }
 
+    @Test
     public void testHead() throws Exception
     {
         Server server = new Server();
@@ -417,7 +417,7 @@ public class ResponseTest extends TestCase
         return response;
     }
 
-    class TestSession extends AbstractSessionManager.Session
+    private class TestSession extends AbstractSessionManager.Session
     {
         public TestSession(AbstractSessionManager abstractSessionManager, String id)
         {
@@ -507,7 +507,6 @@ public class ResponseTest extends TestCase
 
         protected Map newAttributeMap()
         {
-            // TODO Auto-generated method stub
             return null;
         }
     }

@@ -56,8 +56,8 @@ import org.eclipse.jetty.policy.entry.PrincipalEntry;
  * 
  * </pre>
  * 
- * For semantical details of this format, see the {@link org.apache.harmony.security.DefaultPolicy default policy
- * description}. <br>
+ * For semantical details of this format, see org.apache.harmony.security.DefaultPolicy javadoc. <br>
+ * 
  * Keywords are case-insensitive in contrast to quoted string literals. Comma-separation rule is quite forgiving, most
  * commas may be just omitted. Whitespaces, line- and block comments are ignored. Symbol-level tokenization is delegated
  * to java.io.StreamTokenizer. <br>
@@ -65,6 +65,7 @@ import org.eclipse.jetty.policy.entry.PrincipalEntry;
  * This implementation is effectively thread-safe, as it has no field references to data being processed (that is,
  * passes all the data as method parameters).
  * 
+ * This implementation is a bit more strict in enforcing format then the default policy scanner as implemented in the sun jdk.
  */
 public class PolicyFileScanner
 {

@@ -656,6 +656,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
         EndPoint endp=_connection.getEndPoint();
         if (!endp.isBlocking())
         {
+            System.err.println("Asking for dispatch of continuation for "+getAttribute("FOO"));
             ((AsyncEndPoint)endp).dispatch();
         }
     }

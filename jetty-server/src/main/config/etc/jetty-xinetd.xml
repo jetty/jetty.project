@@ -40,7 +40,7 @@ service jetty
 
 
             <!-- Optional. Fallback in case System.inheritedChannel() does not give a ServerSocketChannel 
-            <Set name="port"><SystemProperty name="jetty.service.port" default="8082"/></Set>
+            <Set name="port"><Property name="jetty.service.port" default="8082"/></Set>
             -->
 
             <!-- sane defaults -->

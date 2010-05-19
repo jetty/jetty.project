@@ -15,7 +15,7 @@
           <Array type="org.eclipse.jetty.deploy.AppProvider">
             <Item>
              <New class="org.eclipse.jetty.deploy.providers.ContextProvider">
-              <Set name="monitoredDir"><Property name="jetty.home" />/contexts</Set>
+              <Set name="monitoredDir"><SystemProperty name="jetty.home" />/contexts</Set>
               <Set name="scanInterval">1</Set>
               <Set name="configurationManager">
                 <New class="org.eclipse.jetty.deploy.FileConfigurationManager">
@@ -28,9 +28,9 @@
             </Item>
             <Item>
              <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
-              <Set name="monitoredDir"><Property name="jetty.home" />/webapps</Set>
+              <Set name="monitoredDir"><SystemProperty name="jetty.home" />/webapps</Set>
               <Set name="scanInterval">1</Set>
-              <Set name="contextXmlDir"><Property name="jetty.home" />/contexts</Set>
+              <Set name="contextXmlDir"><SystemProperty name="jetty.home" />/contexts</Set>
              </New>
             </Item>
           </Array>

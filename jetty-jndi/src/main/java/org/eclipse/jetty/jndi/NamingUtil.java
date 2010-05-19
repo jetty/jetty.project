@@ -41,11 +41,11 @@ public class NamingUtil
 
     /* ------------------------------------------------------------ */
     /**
-     * Bind an object to a context ensuring all subcontexts 
+     * Bind an object to a context ensuring all sub-contexts 
      * are created if necessary
      *
      * @param ctx the context into which to bind
-     * @param name the name relative to context to bind
+     * @param nameStr the name relative to context to bind
      * @param obj the object to be bound
      * @exception NamingException if an error occurs
      */

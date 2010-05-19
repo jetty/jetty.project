@@ -24,13 +24,15 @@ import java.io.IOException;
  */
 public class ByteArrayEndPoint implements ConnectedEndPoint
 {
-    byte[] _inBytes;
-    ByteArrayBuffer _in;
-    ByteArrayBuffer _out;
-    boolean _closed;
-    boolean _nonBlocking;
-    boolean _growOutput;
-    Connection _connection;
+    protected byte[] _inBytes;
+    protected ByteArrayBuffer _in;
+    protected ByteArrayBuffer _out;
+    protected boolean _closed;
+    protected boolean _nonBlocking;
+    protected boolean _growOutput;
+    protected Connection _connection;
+    protected int _maxIdleTime;
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -351,6 +353,24 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     public void setGrowOutput(boolean growOutput)
     {
         _growOutput=growOutput;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.EndPoint#getMaxIdleTime()
+     */
+    public int getMaxIdleTime()
+    {
+        return _maxIdleTime;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.EndPoint#setMaxIdleTime(int)
+     */
+    public void setMaxIdleTime(int timeMs) throws IOException
+    {
+        _maxIdleTime=timeMs;
     }
 
 

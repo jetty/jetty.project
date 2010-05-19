@@ -10,8 +10,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.security.Realm;
@@ -34,9 +32,12 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-
-public class DigestPostTest extends TestCase
+public class DigestPostTest
 {
     private static final String NC = "00000001";
     
@@ -52,10 +53,10 @@ public class DigestPostTest extends TestCase
         "The quick brown fox jumped over the lazy dog.\n";
     
     public volatile static String _received = null;
-    private Server _server;
+    private static Server _server;
 
-    @Override
-    public void setUp()
+    @BeforeClass
+    public static void setUpServer()
     {
         try
         {
@@ -96,16 +97,13 @@ public class DigestPostTest extends TestCase
         }
     }
 
-
-    /* (non-Javadoc)
-     * @see junit.framework.TestCase#tearDown()
-     */
-    @Override
-    protected void tearDown() throws Exception
+    @AfterClass
+    public static void tearDownServer() throws Exception
     {
         _server.stop();
     }
 
+    @Test
     public void testServerDirectlyHTTP10() throws Exception
     {
         Socket socket = new Socket("127.0.0.1",_server.getConnectors()[0].getLocalPort());
@@ -122,8 +120,8 @@ public class DigestPostTest extends TestCase
 
         String result = IO.toString(socket.getInputStream());
 
-        assertTrue(result.startsWith("HTTP/1.1 401 Unauthorized"));
-        assertEquals(null,_received);
+        Assert.assertTrue(result.startsWith("HTTP/1.1 401 Unauthorized"));
+        Assert.assertEquals(null,_received);
         
         int n=result.indexOf("nonce=");
         String nonce=result.substring(n+7,result.indexOf('"',n+7));
@@ -149,10 +147,11 @@ public class DigestPostTest extends TestCase
 
         result = IO.toString(socket.getInputStream());
 
-        assertTrue(result.startsWith("HTTP/1.1 200 OK"));
-        assertEquals(__message,_received);
+        Assert.assertTrue(result.startsWith("HTTP/1.1 200 OK"));
+        Assert.assertEquals(__message,_received);
     }
 
+    @Test
     public void testServerDirectlyHTTP11() throws Exception
     {
         Socket socket = new Socket("127.0.0.1",_server.getConnectors()[0].getLocalPort());
@@ -173,8 +172,8 @@ public class DigestPostTest extends TestCase
         int len=socket.getInputStream().read(buf);
         String result=new String(buf,0,len,"UTF-8");
 
-        assertTrue(result.startsWith("HTTP/1.1 401 Unauthorized"));
-        assertEquals(null,_received);
+        Assert.assertTrue(result.startsWith("HTTP/1.1 401 Unauthorized"));
+        Assert.assertEquals(null,_received);
         
         int n=result.indexOf("nonce=");
         String nonce=result.substring(n+7,result.indexOf('"',n+7));
@@ -197,10 +196,11 @@ public class DigestPostTest extends TestCase
 
         result = IO.toString(socket.getInputStream());
 
-        assertTrue(result.startsWith("HTTP/1.1 200 OK"));
-        assertEquals(__message,_received);
+        Assert.assertTrue(result.startsWith("HTTP/1.1 200 OK"));
+        Assert.assertEquals(__message,_received);
     }
 
+    @Test
     public void testServerWithHttpClientStringContent() throws Exception
     {
         HttpClient client = new HttpClient();
@@ -219,11 +219,11 @@ public class DigestPostTest extends TestCase
         client.send(ex);
         ex.waitForDone();
 
-        assertEquals(__message,_received);
-        assertEquals(200,ex.getResponseStatus());
+        Assert.assertEquals(__message,_received);
+        Assert.assertEquals(200,ex.getResponseStatus());
     }
     
-    
+    @Test
     public void testServerWithHttpClientStreamContent() throws Exception
     {
         HttpClient client = new HttpClient();
@@ -243,9 +243,8 @@ public class DigestPostTest extends TestCase
         ex.waitForDone();
 
         String sent = IO.toString(new FileInputStream("src/test/resources/message.txt"));
-        assertEquals(sent,_received);
-
-        assertEquals(200,ex.getResponseStatus());
+        Assert.assertEquals(sent,_received);
+        Assert.assertEquals(200,ex.getResponseStatus());
     }
 
     public static class TestRealm implements Realm
@@ -268,6 +267,7 @@ public class DigestPostTest extends TestCase
 
     public static class PostServlet extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
 
         public void doPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException

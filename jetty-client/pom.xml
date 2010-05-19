@@ -23,6 +23,11 @@
             <goals>
               <goal>manifest</goal>
             </goals>
+            <configuration>
+              <instructions>
+                <Import-Package>!javax.net.*,*</Import-Package>
+              </instructions>
+            </configuration>
            </execution>
         </executions>
       </plugin>
@@ -38,13 +43,6 @@
           </archive>
         </configuration>
       </plugin>
-      <!-- always include the sources to be able to prepare the eclipse-jetty-SDK feature
-      with a snapshot. -->
-      <plugin>
-         <groupId>org.apache.maven.plugins</groupId>
-         <artifactId>maven-source-plugin</artifactId>
-      </plugin>
-
     </plugins>
   </build>
   <dependencies>
@@ -85,5 +83,11 @@
     	<scope>test</scope>
     </dependency>
     -->
+    <dependency>
+    	<groupId>org.eclipse.jetty</groupId>
+    	<artifactId>jetty-websocket</artifactId>
+    	<version>${project.version}</version>
+    	<scope>test</scope>
+    </dependency>
   </dependencies>
 </project>

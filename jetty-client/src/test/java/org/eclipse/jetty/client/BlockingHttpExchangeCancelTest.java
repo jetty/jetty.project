@@ -14,6 +14,8 @@
 
 package org.eclipse.jetty.client;
 
+import org.eclipse.jetty.util.log.Log;
+
 /**
  * @version $Revision$ $Date$
  */
@@ -42,4 +44,5 @@ public class BlockingHttpExchangeCancelTest extends AbstractHttpExchangeCancelTe
     {
         return httpClient;
     }
+   
 }

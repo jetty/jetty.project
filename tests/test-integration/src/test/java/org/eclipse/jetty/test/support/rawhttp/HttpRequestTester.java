@@ -173,7 +173,7 @@ public class HttpRequestTester
 
     /**
      * @param cookie
-     * @see org.eclipse.jetty.http.HttpFields#addSetCookie(javax.servlet.http.Cookie)
+     * @see org.eclipse.jetty.http.HttpFields#addSetCookie(org.eclipse.jetty.http.HttpCookie)
      */
     public void addSetCookie(Cookie cookie)
     {

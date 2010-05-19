@@ -16,7 +16,7 @@ import org.eclipse.jetty.server.HttpConnection;
 public class WebSocketFactory
 {
     private WebSocketBuffers _buffers;
-    private long _maxIdleTime=300000;
+    private int _maxIdleTime=300000;
 
     /* ------------------------------------------------------------ */
     public WebSocketFactory()
@@ -43,7 +43,7 @@ public class WebSocketFactory
     /** Set the maxIdleTime.
      * @param maxIdleTime the maxIdleTime to set
      */
-    public void setMaxIdleTime(long maxIdleTime)
+    public void setMaxIdleTime(int maxIdleTime)
     {
         _maxIdleTime = maxIdleTime;
     }

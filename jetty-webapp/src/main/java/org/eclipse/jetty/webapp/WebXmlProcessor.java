@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -151,6 +153,7 @@ public class WebXmlProcessor
     {
         public List<Fragment> order();
         public boolean isAbsolute ();
+        public boolean hasOther();
     }
     
     /**
@@ -211,6 +214,11 @@ public class WebXmlProcessor
             _hasOther = true;
             _order.add(OTHER);
         }
+        
+        public boolean hasOther ()
+        {
+            return _hasOther;
+        }
     }
     
     
@@ -244,7 +252,7 @@ public class WebXmlProcessor
             }
             while (!done && (--maxIterations >0));
             
-            //5. merge before-others + no-others +after-others
+            //4. merge before-others + no-others +after-others
             if (!done)
                 throw new IllegalStateException("Circular references for fragments");
             
@@ -261,6 +269,11 @@ public class WebXmlProcessor
         public boolean isAbsolute ()
         {
             return false;
+        }
+        
+        public boolean hasOther ()
+        {
+            return !_beforeOthers.isEmpty() || !_afterOthers.isEmpty();
         }
         
         public void addBeforeOthers (Fragment d)
@@ -613,7 +626,11 @@ public class WebXmlProcessor
     {
         if (_ordering != null)
         {
+            //Get the jars with fragments according to the order specified
             _orderedFragments = _ordering.order();
+            
+            //Get the list of all of the jars in WEB-INF/lib
+            List<Resource> webInfJars = new ArrayList<Resource>((List<Resource>)_context.getAttribute(WebInfConfiguration.WEB_INF_JAR_RESOURCES));          
             
             List<String> orderedJars = new ArrayList<String>();
             for (Descriptor frag: _orderedFragments)
@@ -623,7 +640,28 @@ public class WebXmlProcessor
                 int i = fullname.indexOf(".jar");          
                 int j = fullname.lastIndexOf("/", i);
                 orderedJars.add(fullname.substring(j+1,i+4));
+                
+                webInfJars.remove(frag.getResource());
             }
+            
+            //if the ordering permitted others, then add in all jars in WEB-INF/lib that are not fragments
+            //as per email from Rajiv Mordani jsr-315 7 April 2010
+            //    If there is a <others/> then the ordering should be 
+            //          WEB-INF/classes the order of the declared elements + others.
+            //    In case there is no others then it is 
+            //          WEB-INF/classes + order of the elements.
+            if (_ordering.hasOther())
+            {
+                for (Resource webInfJar:webInfJars)
+                {
+                    //get just the name of the jar file
+                    String fullname = webInfJar.getName();
+                    int i = fullname.indexOf(".jar");          
+                    int j = fullname.lastIndexOf("/", i);
+                    orderedJars.add(fullname.substring(j+1,i+4));
+                }
+            }
+
             _context.setAttribute(ServletContext.ORDERED_LIBS, orderedJars);
         }
         else

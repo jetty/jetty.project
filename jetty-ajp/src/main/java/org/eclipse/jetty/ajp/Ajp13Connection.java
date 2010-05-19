@@ -34,8 +34,6 @@ import org.eclipse.jetty.server.Server;
  * Connection implementation of the Ajp13 protocol. <p/> XXX Refactor to remove
  * duplication of HttpConnection
  * 
- * 
- * 
  */
 public class Ajp13Connection extends HttpConnection
 {

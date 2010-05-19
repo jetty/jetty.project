@@ -41,15 +41,30 @@ public class ChannelEndPoint implements EndPoint
     protected final Socket _socket;
     protected InetSocketAddress _local;
     protected InetSocketAddress _remote;
+    protected int _maxIdleTime;
 
     /**
      *
      */
-    public ChannelEndPoint(ByteChannel channel)
+    public ChannelEndPoint(ByteChannel channel) throws IOException
     {
         super();
         this._channel = channel;
         _socket=(channel instanceof SocketChannel)?((SocketChannel)channel).socket():null;
+        if (_socket!=null)
+            _maxIdleTime=_socket.getSoTimeout();
+    }
+
+    /**
+     *
+     */
+    protected ChannelEndPoint(ByteChannel channel, int maxIdleTime) throws IOException
+    {
+        this._channel = channel;
+        _maxIdleTime=maxIdleTime;
+        _socket=(channel instanceof SocketChannel)?((SocketChannel)channel).socket():null;
+        if (_socket!=null)
+            _socket.setSoTimeout(_maxIdleTime);
     }
 
     public boolean isBlocking()
@@ -441,5 +456,22 @@ public class ChannelEndPoint implements EndPoint
     public boolean isBufferred()
     {
         return false;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public int getMaxIdleTime()
+    {
+        return _maxIdleTime;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.bio.StreamEndPoint#setMaxIdleTime(int)
+     */
+    public void setMaxIdleTime(int timeMs) throws IOException
+    {
+        if (_socket!=null && timeMs!=_maxIdleTime)
+            _socket.setSoTimeout(timeMs>0?timeMs:0);
+        _maxIdleTime=timeMs;
     }
 }

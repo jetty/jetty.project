@@ -24,7 +24,7 @@ import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.UserIdentity;
 
-class SessionAuthentication extends UserAuthentication implements HttpSessionAttributeListener, Serializable
+public class SessionAuthentication extends UserAuthentication implements HttpSessionAttributeListener, Serializable
 {
     private static final long serialVersionUID = -4643200685888258706L;
 

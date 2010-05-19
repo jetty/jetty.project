@@ -23,10 +23,10 @@ import static org.junit.Assert.assertThat;
 import java.io.IOException;
 import java.util.List;
 
-import org.eclipse.jetty.test.AbstractJettyTestCase;
+import org.junit.Assert;
 import org.junit.Test;
 
-public class HttpResponseTesterTest extends AbstractJettyTestCase
+public class HttpResponseTesterTest
 {
     @Test
     public void testHttp11Response() throws IOException
@@ -46,17 +46,17 @@ public class HttpResponseTesterTest extends AbstractJettyTestCase
         HttpResponseTester response = new HttpResponseTester();
         response.parse(rawResponse);
 
-        assertEquals("Response.version","HTTP/1.1",response.getVersion());
-        assertEquals("Response.status",200,response.getStatus());
-        assertEquals("Response.reason","OK",response.getReason());
+        Assert.assertEquals("Response.version","HTTP/1.1",response.getVersion());
+        Assert.assertEquals("Response.status",200,response.getStatus());
+        Assert.assertEquals("Response.reason","OK",response.getReason());
 
-        assertEquals("Response[Content-Type]","text/plain",response.getContentType());
-        assertEquals("Response[Content-Length]",28,response.getLongHeader("Content-Length"));
-        assertEquals("Response[Connection]","close",response.getHeader("Connection"));
+        Assert.assertEquals("Response[Content-Type]","text/plain",response.getContentType());
+        Assert.assertEquals("Response[Content-Length]",28,response.getLongHeader("Content-Length"));
+        Assert.assertEquals("Response[Connection]","close",response.getHeader("Connection"));
 
         String expected = "ABCDEFGHIJKLMNOPQRSTTUVWXYZ\n";
 
-        assertEquals("Response.content",expected,response.getContent().toString());
+        Assert.assertEquals("Response.content",expected,response.getContent().toString());
     }
 
     @Test
@@ -93,8 +93,8 @@ public class HttpResponseTesterTest extends AbstractJettyTestCase
         rawResponse.append("\n");
 
         List<HttpResponseTester> responses = HttpResponseTester.parseMulti(rawResponse);
-        assertNotNull("Responses should not be null",responses);
-        assertEquals("Responses.size",3,responses.size());
+        Assert.assertNotNull("Responses should not be null",responses);
+        Assert.assertEquals("Responses.size",3,responses.size());
 
         HttpResponseTester resp1 = responses.get(0);
         resp1.assertStatusOK();

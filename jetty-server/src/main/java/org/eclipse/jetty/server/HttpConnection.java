@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -42,13 +41,12 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Parser;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.UncheckedIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -69,7 +67,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  * with the connection via the parser and/or generator.
  * </p>
  * <p>
- * The connection state is held by 3 separate state machines: The request state, the 
+ * The connection state is held by 3 separate state machines: The request state, the
  * response state and the continuation state.  All three state machines must be driven
  * to completion for every request, and all three can complete in any order.
  * </p>
@@ -77,12 +75,12 @@ import org.eclipse.jetty.util.thread.Timeout;
  * The HttpConnection support protocol upgrade.  If on completion of a request, the
  * response code is 101 (switch protocols), then the org.eclipse.jetty.io.Connection
  * request attribute is checked to see if there is a new Connection instance. If so,
- * the new connection is returned from {@link #handle()} and is used for future 
+ * the new connection is returned from {@link #handle()} and is used for future
  * handling of the underlying connection.   Note that for switching protocols that
  * don't use 101 responses (eg CONNECT), the response should be sent and then the
- * status code changed to 101 before returning from the handler.  Implementors 
+ * status code changed to 101 before returning from the handler.  Implementors
  * of new Connection types should be careful to extract any buffered data from
- * (HttpParser)http.getParser()).getHeaderBuffer() and 
+ * (HttpParser)http.getParser()).getHeaderBuffer() and
  * (HttpParser)http.getParser()).getBodyBuffer() to initialise their new connection.
  * </p>
  *
@@ -378,6 +376,8 @@ public class HttpConnection implements Connection
     /* ------------------------------------------------------------ */
     public Connection handle() throws IOException
     {
+        Connection connection = this;
+
         // Loop while more in buffer
         boolean more_in_buffer =true; // assume true until proven otherwise
         boolean progress=true;
@@ -395,6 +395,9 @@ public class HttpConnection implements Connection
                 {
                     if (_request._async.isAsync())
                     {
+                        // TODO - handle the case of input being read for a
+                        // suspended request.
+
                         Log.debug("async request",_request);
                         if (!_request._async.isComplete())
                             handleRequest();
@@ -460,32 +463,38 @@ public class HttpConnection implements Connection
                 {
                     more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
 
+                    // Is this request/response round complete?
                     if (_parser.isComplete() && _generator.isComplete() && !_endp.isBufferingOutput())
                     {
-                        if (_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
-                        {
-                            Connection connection = (Connection)_request.getAttribute("org.eclipse.jetty.io.Connection");
-                            if (connection!=null)
-                            {
-                                _parser.reset(true);
-                                return connection;
-                            }
-                        }
-                        
-                        if (!_generator.isPersistent())
+                        // look for a switched connection instance?
+                        Connection switched=(_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
+                        ?(Connection)_request.getAttribute("org.eclipse.jetty.io.Connection"):null;
+
+                        // have we switched?
+                        if (switched!=null)
                         {
                             _parser.reset(true);
-                            more_in_buffer=false;
-                        }
-
-                        if (more_in_buffer)
-                        {
-                            reset(false);
-                            more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput(); 
+                            _generator.reset(true);
+                            connection=switched;
                         }
                         else
-                            reset(true);
-                        progress=true;
+                        {
+                            // No switch, so cleanup and reset
+                            if (!_generator.isPersistent())
+                            {
+                                _parser.reset(true);
+                                more_in_buffer=false;
+                            }
+
+                            if (more_in_buffer)
+                            {
+                                reset(false);
+                                more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
+                            }
+                            else
+                                reset(true);
+                            progress=true;
+                        }
                     }
 
                     if (_request.isAsyncStarted())
@@ -493,7 +502,7 @@ public class HttpConnection implements Connection
                         Log.debug("return with suspended request");
                         more_in_buffer=false;
                     }
-                    else if (_generator.isCommitted() && !_generator.isComplete() && _endp instanceof AsyncEndPoint) 
+                    else if (_generator.isCommitted() && !_generator.isComplete() && _endp instanceof AsyncEndPoint)
                         ((AsyncEndPoint)_endp).setWritable(false);
                 }
             }
@@ -503,7 +512,7 @@ public class HttpConnection implements Connection
             setCurrentConnection(null);
             _handling=false;
         }
-        return this;
+        return connection;
     }
 
     /* ------------------------------------------------------------ */
@@ -567,7 +576,7 @@ public class HttpConnection implements Connection
                 {
                     _uri.getPort();
                     info=URIUtil.canonicalPath(_uri.getDecodedPath());
-                    if (info==null)
+                    if (info==null && !_request.getMethod().equals(HttpMethods.CONNECT))
                         throw new HttpException(400);
                     _request.setPathInfo(info);
 
@@ -623,7 +632,7 @@ public class HttpConnection implements Connection
                     Log.debug(e);
                     _request.setHandled(true);
                     _generator.sendError(info==null?400:500, null, null, true);
-                    
+
                 }
                 finally
                 {
@@ -683,6 +692,10 @@ public class HttpConnection implements Connection
             _generator.setResponse(_response.getStatus(), _response.getReason());
             try
             {
+                // If the client was expecting 100 continues, but we sent something
+                // else, then we need to close the connection
+                if (_expect100Continue && _response.getStatus()!=100)
+                    _generator.setPersistent(false);
                 _generator.completeHeader(_responseFields, last);
             }
             catch(IOException io)
@@ -832,7 +845,20 @@ public class HttpConnection implements Connection
 
             try
             {
-                _uri.parse(uri.array(), uri.getIndex(), uri.length());
+                switch (HttpMethods.CACHE.getOrdinal(method))
+                {
+                  case HttpMethods.CONNECT_ORDINAL:
+                      _uri.parseConnect(uri.array(), uri.getIndex(), uri.length());
+                      break;
+
+                  case HttpMethods.HEAD_ORDINAL:
+                      _head=true;
+                      // fall through
+
+                  default:
+                      _uri.parse(uri.array(), uri.getIndex(), uri.length());
+                }
+
                 _request.setUri(_uri);
 
                 if (version==null)
@@ -847,8 +873,6 @@ public class HttpConnection implements Connection
                     if (_version <= 0) _version = HttpVersions.HTTP_1_0_ORDINAL;
                     _request.setProtocol(version.toString());
                 }
-
-                _head = method == HttpMethods.HEAD_BUFFER; // depends on method being decached.
             }
             catch (Exception e)
             {
@@ -968,6 +992,8 @@ public class HttpConnection implements Connection
         @Override
         public void headerComplete() throws IOException
         {
+            if (_endp instanceof AsyncEndPoint)
+                ((AsyncEndPoint)_endp).scheduleIdle();
             _requests++;
             _generator.setVersion(_version);
             switch (_version)
@@ -1019,6 +1045,8 @@ public class HttpConnection implements Connection
         @Override
         public void content(Buffer ref) throws IOException
         {
+            if (_endp instanceof AsyncEndPoint)
+                ((AsyncEndPoint)_endp).scheduleIdle();
             if (_delayedHandling)
             {
                 _delayedHandling=false;

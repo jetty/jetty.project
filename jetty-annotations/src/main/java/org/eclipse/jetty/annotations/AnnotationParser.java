@@ -499,7 +499,6 @@ public class AnnotationParser
      * Only class files in jar files will be scanned.
      * @param loader
      * @param visitParents
-     * @param jarNamePattern
      * @param nullInclusive
      * @param resolver
      * @throws Exception

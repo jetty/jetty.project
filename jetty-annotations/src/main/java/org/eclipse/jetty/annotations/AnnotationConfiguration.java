@@ -74,8 +74,13 @@ public class AnnotationConfiguration extends AbstractConfiguration
             {
                 if (Log.isDebugEnabled()) Log.debug("Scanning all classses for annotations: webxmlVersion="+context.getServletContext().getEffectiveMajorVersion()+" configurationDiscovered="+context.isConfigurationDiscovered());
                 parseContainerPath(context, parser);
-                parseWebInfLib (context, parser);
+                //email from Rajiv Mordani jsrs 315 7 April 2010
+                //    If there is a <others/> then the ordering should be 
+                //          WEB-INF/classes the order of the declared elements + others.
+                //    In case there is no others then it is 
+                //          WEB-INF/classes + order of the elements.
                 parseWebInfClasses(context, parser);
+                parseWebInfLib (context, parser);
             } 
             else
             {

@@ -6,7 +6,7 @@
   </formats>
   <fileSets>
     <fileSet>
-      <directory>${assembly.directory}</directory>
+      <directory>${assembly-directory}</directory>
       <outputDirectory></outputDirectory>
       <includes>
         <include>**</include>

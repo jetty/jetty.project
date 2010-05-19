@@ -4,22 +4,24 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class RewritePatternRuleTest extends AbstractRuleTestCase
 {
-    private RewritePatternRule _rule;
-    
-    String[][] _tests=
+    private String[][] _tests=
     {
             {"/foo/bar","/","/replace"},
             {"/foo/bar","/*","/replace/foo/bar"},
@@ -27,25 +29,24 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
             {"/foo/bar","/foo/bar","/replace"},
             {"/foo/bar.txt","*.txt","/replace"},
     };
-    
-    public void setUp() throws Exception
+    private RewritePatternRule _rule;
+
+    @Before
+    public void init() throws Exception
     {
-        super.setUp();
+        start(false);
         _rule = new RewritePatternRule();
         _rule.setReplacement("/replace");
-    }    
-    
-    
+    }
+
+    @Test
     public void testRequestUriEnabled() throws IOException
     {
-        for (int i=0;i<_tests.length;i++)
+        for (String[] test : _tests)
         {
-            _rule.setPattern(_tests[i][1]);
-            
-            String result = _rule.matchAndApply(_tests[i][0], _request, _response);
-        
-            assertEquals(_tests[i][1],_tests[i][2], result);
+            _rule.setPattern(test[1]);
+            String result = _rule.matchAndApply(test[0], _request, _response);
+            assertEquals(test[1], test[2], result);
         }
     }
-    
 }

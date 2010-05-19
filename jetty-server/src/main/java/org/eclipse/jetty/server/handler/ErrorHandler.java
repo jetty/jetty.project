@@ -27,13 +27,11 @@ import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 
-
 /* ------------------------------------------------------------ */
 /** Handler for Error pages
- * A handler that is registered at the org.eclipse.http.ErrorHandler
- * context attributed and called by the HttpResponse.sendError method to write a
- * error page.
- * 
+ * An ErrorHandler is registered with {@link ContextHandler#setErrorHandler(ErrorHandler)} or 
+ * {@link org.eclipse.jetty.server.Server#addBean(Object)}.   
+ * It is called by the HttpResponse.sendError method to write a error page.
  * 
  */
 public class ErrorHandler extends AbstractHandler

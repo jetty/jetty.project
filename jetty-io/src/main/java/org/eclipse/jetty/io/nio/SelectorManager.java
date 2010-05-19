@@ -21,7 +21,11 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
@@ -39,7 +43,6 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  * <p>
  * This class works around a number of know JVM bugs. For details
  * see http://wiki.eclipse.org/Jetty/Feature/JVM_NIO_Bug
- *
  */
 public abstract class SelectorManager extends AbstractLifeCycle
 {
@@ -50,9 +53,9 @@ public abstract class SelectorManager extends AbstractLifeCycle
     private static final int __BUSY_PAUSE=Integer.getInteger("org.mortbay.io.nio.BUSY_PAUSE",50).intValue();
     private static final int __BUSY_KEY=Integer.getInteger("org.mortbay.io.nio.BUSY_KEY",-1).intValue();
     
-    private long _maxIdleTime;
+    private int _maxIdleTime;
+    private int _lowResourcesMaxIdleTime;
     private long _lowResourcesConnections;
-    private long _lowResourcesMaxIdleTime;
     private transient SelectSet[] _selectSet;
     private int _selectSets=1;
     private volatile int _set;
@@ -60,11 +63,11 @@ public abstract class SelectorManager extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @param maxIdleTime The maximum period in milli seconds that a connection may be idle before it is closed.
-     * @see {@link #setLowResourcesMaxIdleTime(long)}
+     * @see #setLowResourcesMaxIdleTime(long)
      */
     public void setMaxIdleTime(long maxIdleTime)
     {
-        _maxIdleTime=maxIdleTime;
+        _maxIdleTime=(int)maxIdleTime;
     }
     
     /* ------------------------------------------------------------ */
@@ -80,7 +83,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
     
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the max idle time
      */
     public long getMaxIdleTime()
     {
@@ -89,7 +92,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
     
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the number of select sets in use
      */
     public int getSelectSets()
     {
@@ -100,10 +103,13 @@ public abstract class SelectorManager extends AbstractLifeCycle
     /** Register a channel
      * @param channel
      * @param att Attached Object
-     * @throws IOException
      */
     public void register(SocketChannel channel, Object att)
     {
+        // The ++ increment here is not atomic, but it does not matter.
+        // so long as the value changes sometimes, then connections will
+        // be distributed over the available sets.
+        
         int s=_set++; 
         s=s%_selectSets;
         SelectSet[] sets=_selectSet;
@@ -116,10 +122,8 @@ public abstract class SelectorManager extends AbstractLifeCycle
     }
     
     /* ------------------------------------------------------------ */
-    /** Register a serverchannel
+    /** Register a {@link ServerSocketChannel}
      * @param acceptChannel
-     * @return
-     * @throws IOException
      */
     public void register(ServerSocketChannel acceptChannel)
     {
@@ -144,7 +148,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
      * Set the number of connections, which if exceeded places this manager in low resources state.
      * This is not an exact measure as the connection count is averaged over the select sets.
      * @param lowResourcesConnections the number of connections
-     * @see {@link #setLowResourcesMaxIdleTime(long)}
+     * @see #setLowResourcesMaxIdleTime(long)
      */
     public void setLowResourcesConnections(long lowResourcesConnections)
     {
@@ -163,11 +167,11 @@ public abstract class SelectorManager extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @param lowResourcesMaxIdleTime the period in ms that a connection is allowed to be idle when this SelectSet has more connections than {@link #getLowResourcesConnections()}
-     * @see {@link #setMaxIdleTime(long)}
+     * @see #setMaxIdleTime(long)
      */
     public void setLowResourcesMaxIdleTime(long lowResourcesMaxIdleTime)
     {
-        _lowResourcesMaxIdleTime=lowResourcesMaxIdleTime;
+        _lowResourcesMaxIdleTime=(int)lowResourcesMaxIdleTime;
     }
     
     /* ------------------------------------------------------------ */
@@ -184,8 +188,8 @@ public abstract class SelectorManager extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @param key
-     * @return
+     * @param key the selection key
+     * @return the SocketChannel created on accept
      * @throws IOException 
      */
     protected abstract SocketChannel acceptChannel(SelectionKey key) throws IOException;
@@ -245,10 +249,11 @@ public abstract class SelectorManager extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
+     * Create a new end point
      * @param channel
      * @param selectSet
-     * @param sKey
-     * @return
+     * @param sKey the selection key
+     * @return the new endpoint {@link SelectChannelEndPoint}
      * @throws IOException
      */
     protected abstract SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey sKey) throws IOException;
@@ -295,13 +300,13 @@ public abstract class SelectorManager extends AbstractLifeCycle
     public class SelectSet 
     {
         private final int _setID;
-        private final Timeout _idleTimeout;
         private final Timeout _timeout;
-        private final List<Object>[] _changes;
-
-        private int _change;
-        private int _nextSet;
+        
+        private final ConcurrentLinkedQueue<Object> _changes = new ConcurrentLinkedQueue<Object>();
+        
         private Selector _selector;
+        
+        private int _nextSet;
         private volatile Thread _selecting;
         private int _jvmBug;
         private int _selects;
@@ -315,21 +320,20 @@ public abstract class SelectorManager extends AbstractLifeCycle
         private int _jvmFix0;
         private int _jvmFix1;
         private int _jvmFix2;
+        private volatile long _idleTick;
+        private ConcurrentMap<SelectChannelEndPoint,Object> _endPoints = new ConcurrentHashMap<SelectChannelEndPoint, Object>();
         
         /* ------------------------------------------------------------ */
         SelectSet(int acceptorID) throws Exception
         {
             _setID=acceptorID;
 
-            _idleTimeout = new Timeout(this);
-            _idleTimeout.setDuration(getMaxIdleTime());
+            _idleTick = System.currentTimeMillis();
             _timeout = new Timeout(this);
             _timeout.setDuration(0L);
-            _changes = new List[] {new ArrayList(),new ArrayList()};
 
             // create a selector;
             _selector = Selector.open();
-            _change=0;
             _monitorStart=System.currentTimeMillis();
             _monitorNext=_monitorStart+__MONITOR_PERIOD;
             _log=_monitorStart+60000;
@@ -338,10 +342,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
         /* ------------------------------------------------------------ */
         public void addChange(Object point)
         {
-            synchronized (_changes)
-            {
-                _changes[_change].add(point);
-            }
+            _changes.add(point);
         }
         
         /* ------------------------------------------------------------ */
@@ -356,12 +357,6 @@ public abstract class SelectorManager extends AbstractLifeCycle
         }
         
         /* ------------------------------------------------------------ */
-        public void cancelIdle(Timeout.Task task)
-        {
-            task.cancel();
-        }
-
-        /* ------------------------------------------------------------ */
         /**
          * Select and dispatch tasks found from changes and the selector.
          * 
@@ -372,44 +367,36 @@ public abstract class SelectorManager extends AbstractLifeCycle
             try
             {
                 _selecting=Thread.currentThread();
-                List<?> changes;
-                final Selector selector;
-                synchronized (_changes)
-                {
-                    changes=_changes[_change];
-                    _change=_change==0?1:0;
-                    selector=_selector;
-                }
+                final Selector selector=_selector;
 
                 // Make any key changes required
-                final int size=changes.size();
-                for (int i = 0; i < size; i++)
+                Object change;
+                int changes=_changes.size();
+                while (changes-->0 && (change=_changes.poll())!=null)
                 {
                     try
                     {
-                        Object o = changes.get(i);
-                        
-                        if (o instanceof EndPoint)
+                        if (change instanceof EndPoint)
                         {
                             // Update the operations for a key.
-                            SelectChannelEndPoint endpoint = (SelectChannelEndPoint)o;
+                            SelectChannelEndPoint endpoint = (SelectChannelEndPoint)change;
                             endpoint.doUpdateKey();
                         }
-                        else if (o instanceof Runnable)
+                        else if (change instanceof Runnable)
                         {
-                            dispatch((Runnable)o);
+                            dispatch((Runnable)change);
                         }
-                        else if (o instanceof ChangeSelectableChannel)
+                        else if (change instanceof ChangeSelectableChannel)
                         {
                             // finish accepting/connecting this connection
-                            final ChangeSelectableChannel asc = (ChangeSelectableChannel)o;
+                            final ChangeSelectableChannel asc = (ChangeSelectableChannel)change;
                             final SelectableChannel channel=asc._channel;
                             final Object att = asc._attachment;
 
                             if ((channel instanceof SocketChannel) && ((SocketChannel)channel).isConnected())
                             {
                                 SelectionKey key = channel.register(selector,SelectionKey.OP_READ,att);
-                                SelectChannelEndPoint endpoint = newEndPoint((SocketChannel)channel,this,key);
+                                SelectChannelEndPoint endpoint = createEndPoint((SocketChannel)channel,key);
                                 key.attach(endpoint);
                                 endpoint.schedule();
                             }
@@ -418,14 +405,14 @@ public abstract class SelectorManager extends AbstractLifeCycle
                                 channel.register(selector,SelectionKey.OP_CONNECT,att);
                             }
                         }
-                        else if (o instanceof SocketChannel)
+                        else if (change instanceof SocketChannel)
                         {
-                            final SocketChannel channel=(SocketChannel)o;
+                            final SocketChannel channel=(SocketChannel)change;
 
                             if (channel.isConnected())
                             {
                                 SelectionKey key = channel.register(selector,SelectionKey.OP_READ,null);
-                                SelectChannelEndPoint endpoint = newEndPoint(channel,this,key);
+                                SelectChannelEndPoint endpoint = createEndPoint(channel,key);
                                 key.attach(endpoint);
                                 endpoint.schedule();
                             }
@@ -434,17 +421,17 @@ public abstract class SelectorManager extends AbstractLifeCycle
                                 channel.register(selector,SelectionKey.OP_CONNECT,null);
                             }
                         }
-                        else if (o instanceof ServerSocketChannel)
+                        else if (change instanceof ServerSocketChannel)
                         {
-                            ServerSocketChannel channel = (ServerSocketChannel)o;
+                            ServerSocketChannel channel = (ServerSocketChannel)change;
                             channel.register(getSelector(),SelectionKey.OP_ACCEPT);
                         }
-                        else if (o instanceof ChangeTask)
+                        else if (change instanceof ChangeTask)
                         {
-                            ((ChangeTask)o).run();
+                            ((ChangeTask)change).run();
                         }
                         else
-                            throw new IllegalArgumentException(o.toString());
+                            throw new IllegalArgumentException(change.toString());
                     }
                     catch (Exception e)
                     {
@@ -454,28 +441,15 @@ public abstract class SelectorManager extends AbstractLifeCycle
                             Log.debug(e);
                     }
                 }
-                changes.clear();
 
-                long idle_next;
                 long retry_next;
                 long now=System.currentTimeMillis();
-                synchronized (this)
-                {
-                    _idleTimeout.setNow(now);
-                    _timeout.setNow(now);
-                    
-                    if (_lowResourcesConnections>0 && selector.keys().size()>_lowResourcesConnections)
-                        _idleTimeout.setDuration(_lowResourcesMaxIdleTime);
-                    else 
-                        _idleTimeout.setDuration(_maxIdleTime);
-                    idle_next=_idleTimeout.getTimeToNext();
-                    retry_next=_timeout.getTimeToNext();
-                }
+                _timeout.setNow(now);
+
+                retry_next=_timeout.getTimeToNext();
 
                 // workout how low to wait in select
-                long wait = 1000L;  // not getMaxIdleTime() as the now value of the idle timers needs to be updated.
-                if (idle_next >= 0 && wait > idle_next)
-                    wait = idle_next;
+                long wait = 1000L;  
                 if (wait > 0 && retry_next >= 0 && wait > retry_next)
                     wait = retry_next;
     
@@ -498,7 +472,6 @@ public abstract class SelectorManager extends AbstractLifeCycle
                     long before=now;
                     int selected=selector.select(wait);
                     now = System.currentTimeMillis();
-                    _idleTimeout.setNow(now);
                     _timeout.setNow(now);
                     _selects++;
   
@@ -679,7 +652,8 @@ public abstract class SelectorManager extends AbstractLifeCycle
                             {
                                 // bind connections to this select set.
                                 SelectionKey cKey = channel.register(_selectSet[_nextSet].getSelector(), SelectionKey.OP_READ);
-                                SelectChannelEndPoint endpoint=newEndPoint(channel,_selectSet[_nextSet],cKey);
+                                
+                                SelectChannelEndPoint endpoint=_selectSet[_nextSet].createEndPoint(channel,cKey);
                                 cKey.attach(endpoint);
                                 if (endpoint != null)
                                     endpoint.schedule();
@@ -709,7 +683,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
                                 if (connected)
                                 {
                                     key.interestOps(SelectionKey.OP_READ);
-                                    SelectChannelEndPoint endpoint = newEndPoint(channel,this,key);
+                                    SelectChannelEndPoint endpoint = createEndPoint(channel,key);
                                     key.attach(endpoint);
                                     endpoint.schedule();
                                 }
@@ -723,7 +697,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
                         {
                             // Wrap readable registered channel in an endpoint
                             SocketChannel channel = (SocketChannel)key.channel();
-                            SelectChannelEndPoint endpoint = newEndPoint(channel,this,key);
+                            SelectChannelEndPoint endpoint = createEndPoint(channel,key);
                             key.attach(endpoint);
                             if (key.isReadable())
                                 endpoint.schedule();                           
@@ -749,9 +723,6 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 // Everything always handled
                 selector.selectedKeys().clear();
                 
-                // tick over the timers
-                _idleTimeout.tick(now);
-                
                 _timeout.setNow(now);
                 Task task = _timeout.expired();
                 while (task!=null)
@@ -762,6 +733,27 @@ public abstract class SelectorManager extends AbstractLifeCycle
                         task.expired();
                         
                     task = _timeout.expired();
+                }
+
+                // Idle tick
+                if (now-_idleTick>1000)
+                {
+                    _idleTick=now;
+                    
+                    final long idle_now=((_lowResourcesConnections>0 && selector.keys().size()>_lowResourcesConnections))
+                        ?(now+_maxIdleTime-_lowResourcesMaxIdleTime)
+                        :now;
+                        
+                    dispatch(new Runnable()
+                    {
+                        public void run()
+                        {
+                            for (SelectChannelEndPoint endp:_endPoints.keySet())
+                            {
+                                endp.checkIdleTimestamp(idle_now);
+                            }
+                        }
+                    });
                 }
             }
             catch (CancelledKeyException e)
@@ -783,15 +775,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
         /* ------------------------------------------------------------ */
         public long getNow()
         {
-            return _idleTimeout.getNow();
-        }
-        
-        /* ------------------------------------------------------------ */
-        public void scheduleIdle(Timeout.Task task)
-        {
-            if (_idleTimeout.getDuration() <= 0)
-                return;
-            _idleTimeout.schedule(task);
+            return _timeout.getNow();
         }
 
         /* ------------------------------------------------------------ */
@@ -818,6 +802,22 @@ public abstract class SelectorManager extends AbstractLifeCycle
             Selector selector = _selector;
             if (selector!=null)
                 selector.wakeup();
+        }
+        
+        /* ------------------------------------------------------------ */
+        private SelectChannelEndPoint createEndPoint(SocketChannel channel, SelectionKey sKey) throws IOException
+        {
+            SelectChannelEndPoint endp = newEndPoint(channel,this,sKey);
+            endPointOpened(endp); 
+            _endPoints.put(endp,this);
+            return endp;
+        }
+        
+        /* ------------------------------------------------------------ */
+        public void destroyEndPoint(SelectChannelEndPoint endp)
+        {
+            _endPoints.remove(endp);
+            endPointClosed(endp);
         }
 
         /* ------------------------------------------------------------ */
@@ -864,7 +864,6 @@ public abstract class SelectorManager extends AbstractLifeCycle
                     selecting=_selecting!=null;
                 }
                 
-                _idleTimeout.cancelAll();
                 _timeout.cancelAll();
                 try
                 {

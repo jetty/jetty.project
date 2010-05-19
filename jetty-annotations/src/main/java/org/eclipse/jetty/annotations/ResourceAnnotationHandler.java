@@ -182,7 +182,6 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
      * 
      * This will generate a JNDI entry, and an Injection to be
      * processed when an instance of the class is created.
-     * @param injections
      */
     public void handleMethod(Class clazz, Method method)
     {

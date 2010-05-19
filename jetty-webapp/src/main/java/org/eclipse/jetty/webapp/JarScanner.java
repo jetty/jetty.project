@@ -65,7 +65,7 @@ public abstract class JarScanner extends org.eclipse.jetty.util.PatternMatcher
      * all those starting with "aaa-" first, then "bbb-".
      *
      * @param pattern
-     * @param loader
+     * @param uris
      * @param isNullInclusive if true, an empty pattern means all names match, if false, none match
      * @throws Exception
      */

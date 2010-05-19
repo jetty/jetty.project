@@ -490,8 +490,6 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         try
         {
             socket.setTcpNoDelay(true);
-            if (_maxIdleTime >= 0)
-                socket.setSoTimeout(_maxIdleTime);
             if (_soLingerTime >= 0)
                 socket.setSoLinger(true,_soLingerTime / 1000);
             else
@@ -777,7 +775,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @param forwardedHostHeader
+     * @param forwardedServerHeader
      *            The header name for forwarded server (default
      *            x-forwarded-server)
      */
@@ -794,12 +792,12 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @param forwardedHostHeader
+     * @param forwardedRemoteAddressHeader
      *            The header name for forwarded for (default x-forwarded-for)
      */
-    public void setForwardedForHeader(String forwardedRemoteAddressHeade)
+    public void setForwardedForHeader(String forwardedRemoteAddressHeader)
     {
-        _forwardedForHeader = forwardedRemoteAddressHeade;
+        _forwardedForHeader = forwardedRemoteAddressHeader;
     }
 
     /* ------------------------------------------------------------ */

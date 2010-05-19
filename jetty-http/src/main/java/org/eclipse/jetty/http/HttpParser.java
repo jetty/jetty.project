@@ -26,18 +26,6 @@ import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 
-/* ------------------------------------------------------------------------------- */
-/**
- * 
- */
-
-/* ------------------------------------------------------------ */
-/**
- */
-
-/* ------------------------------------------------------------ */
-/**
- */
 public class HttpParser implements Parser
 {
     // States
@@ -110,8 +98,9 @@ public class HttpParser implements Parser
     /* ------------------------------------------------------------------------------- */
     /**
      * Constructor.
-     * @param headerBufferSize size in bytes of header buffer  
-     * @param contentBufferSize size in bytes of content buffer
+     * @param buffers the buffers to use  
+     * @param endp the endpoint
+     * @param handler the even handler
      */
     public HttpParser(Buffers buffers, EndPoint endp, EventHandler handler)
     {

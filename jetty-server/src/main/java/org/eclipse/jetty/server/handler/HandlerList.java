@@ -24,15 +24,15 @@ import org.eclipse.jetty.server.Request;
 
 /* ------------------------------------------------------------ */
 /** HandlerList.
- * This extension of {@link org.eclipse.jetty.server.server.handler.HandlerCollection} will call
+ * This extension of {@link HandlerCollection} will call
  * each contained handler in turn until either an exception is thrown, the response 
  * is committed or a positive response status is set.
  */
 public class HandlerList extends HandlerCollection
 {
     /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.server.server.EventHandler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+    /**
+     * @see Handler#handle(String, Request, HttpServletRequest, HttpServletResponse)
      */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) 

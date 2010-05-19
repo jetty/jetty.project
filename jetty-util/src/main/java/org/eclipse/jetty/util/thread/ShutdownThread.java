@@ -45,14 +45,22 @@ public class ShutdownThread extends Thread
      */
     private ShutdownThread()
     {
-        Runtime.getRuntime().addShutdownHook(this);
+        try
+	{
+            Runtime.getRuntime().addShutdownHook(this);
+	}
+	catch(Exception e)
+	{
+	    Log.ignore(e);
+	    Log.info("shutdown already commenced");
+	}
     }
 
     /* ------------------------------------------------------------ */
     /**
      * Returns the instance of the singleton
      * 
-     * @return
+     * @return the singleton instance of the {@link ShutdownThread}
      */
     public static ShutdownThread getInstance()
     {
