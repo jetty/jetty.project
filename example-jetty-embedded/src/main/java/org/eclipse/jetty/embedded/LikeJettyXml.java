@@ -66,7 +66,7 @@ public class LikeJettyXml
         server.setConnectors(new Connector[]
         { connector });
 
-        SslSocketConnector ssl_connector = new SslSocketConnector();
+        SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
         ssl_connector.setPort(8443);
         ssl_connector.setKeystore(jetty_home + "/etc/keystore");
         ssl_connector.setPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");

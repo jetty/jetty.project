@@ -56,7 +56,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
     private int _maxIdleTime;
     private int _lowResourcesMaxIdleTime;
     private long _lowResourcesConnections;
-    private transient SelectSet[] _selectSet;
+    private SelectSet[] _selectSet;
     private int _selectSets=1;
     private volatile int _set;
     
@@ -98,7 +98,16 @@ public abstract class SelectorManager extends AbstractLifeCycle
     {
         return _selectSets;
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param i 
+     * @return The select set
+     */
+    public SelectSet getSelectSet(int i)
+    {
+        return _selectSet[i];
+    }
     /* ------------------------------------------------------------ */
     /** Register a channel
      * @param channel

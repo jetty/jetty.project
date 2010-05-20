@@ -25,7 +25,6 @@ import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpVersions;
-import org.eclipse.jetty.http.ssl.SslSelectChannelEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ConnectedEndPoint;
@@ -35,6 +34,7 @@ import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
+import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;

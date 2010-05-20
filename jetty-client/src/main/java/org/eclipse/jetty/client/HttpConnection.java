@@ -28,7 +28,6 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersions;
-import org.eclipse.jetty.http.ssl.SslSelectChannelEndPoint;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
+import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 
