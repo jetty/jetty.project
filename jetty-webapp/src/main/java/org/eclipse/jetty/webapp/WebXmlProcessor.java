@@ -657,18 +657,21 @@ public class WebXmlProcessor
             }
             
             // set the JSP log
-            try
+            if (_hasJSP)
             {
-                Class<?> logFactory = Loader.loadClass(this.getClass(),"org.eclipse.jetty.jsp.JettyLog");
-                Method init = logFactory.getMethod("init");
-                Log.debug("Init JSP loggging "+init);
-                init.invoke(null);
+                try
+                {
+                    Class<?> logFactory = Loader.loadClass(this.getClass(),"org.eclipse.jetty.jsp.JettyLog");
+                    Method init = logFactory.getMethod("init");
+                    Log.debug("Init JSP loggging "+init);
+                    init.invoke(null);
+                }
+                catch (Exception e)
+                {
+                    Log.warn(e.toString());
+                    Log.ignore(e);
+                }       
             }
-            catch (Exception e)
-            {
-                Log.warn(e.toString());
-                Log.ignore(e);
-            }            
             
             if (holder.getInitParameter("scratchdir") == null)
             {
