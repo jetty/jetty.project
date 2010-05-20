@@ -98,7 +98,7 @@ public class WebSocketFactory
         response.setHeader("Upgrade","WebSocket");
         response.addHeader("Connection","Upgrade");
         response.addHeader("WebSocket-Origin",origin);
-        response.addHeader("WebSocket-Location","ws://"+host+uri);
+        response.addHeader("WebSocket-Location",(request.isSecure()?"wss://":"ws://")+host+uri);
         if (protocol!=null)
             response.addHeader("WebSocket-Protocol",protocol);
         response.sendError(101,"Web Socket Protocol Handshake");
