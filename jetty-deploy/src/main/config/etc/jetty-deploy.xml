@@ -22,7 +22,7 @@
           </Set>
           <Call name="setContextAttribute">
             <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-            <Arg>.*/jsp-api-[^/]*\.jar$|.*/jsp-[^/]*\.jar$</Arg>
+            <Arg>.*/servlet-api-[^/]*\.jar$</Arg>
           </Call>
           <!-- Providers of Apps via Context XML files.
                Configured to behave similar to the legacy ContextDeployer -->
