@@ -14,10 +14,9 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -28,78 +27,150 @@ import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.IPAddressMap;
+import org.eclipse.jetty.util.log.Log;
 
 
 /**
  * IP Access Handler
  * <p>
- * Control access to the wrapped handler by the real remote IP.
- * The real IP of the connection is used (not the IP reported in the forwarded for headers),
- * as this cannot be as easily forged. 
- * <p>
- * Control is provided by white/black lists of both internet addresses and URIs.
- * Internet addresses may be absolute (eg 10.1.2.3) or a prefix pattern (eg 10.1.3. ).
- * URI patterns follow the servlet specification for simple prefix and suffix wild cards.
- * <p>
- * An empty white list is treated as match all. If there is at least one entry in the
- * white list, then a request must match a white list entry. Black list entries are always
- * appied, so that even if an entry matches the white list, a black list entry will override.
- * </p>
- * <p>
- * Examples of match specifications are:
- * <ul>
- * <li>10.1.2.3 - all requests from IP 10.1.2.3
- * <li>10.1.2.3/foo/bar - all requests from IP 10.1.2.3 to URI /foo/bar
- * <li>10.1.2.3/foo/* - all requests from IP 10.1.2.3 to URIs starting with /foo/
- * <li>10.1.2.3/*.html - all requests from IP 10.1.2.3 to URIs ending with .html
- * <li>10.1. - all requests from IPs starting with 10.1.
- * <li>10.1./foo/bar - all requests from IPs starting with 10.1. to URI /foo/bar
- * <li>10.1./foo/* - all requests from IPs starting with 10.1. to URIs starting with /foo/
- * </ul>
+ * Controls access to the wrapped handler by the real remote IP. Control is provided
+ * by white/black lists that include both internet addresses and URIs. This handler
+ * uses the real internet address of the connection, not one reported in the forwarded
+ * for headers, as this cannot be as easily forged. 
  * <p>
  * Typically, the black/white lists will be used in one of three modes:
- * <nl>
+ * <ul>
  * <li>Blocking a few specific IPs/URLs by specifying several black list entries.
  * <li>Allowing only some specific IPs/URLs by specifying several white lists entries.
- * <li>Allowing a general range of IPs/URLs by specifying serveral general white list
+ * <li>Allowing a general range of IPs/URLs by specifying several general white list
  * entries, that are then further refined by several specific black list exceptions
  * </ul>
- * 
+ * <p>
+ * An empty white list is treated as match all. If there is at least one entry in
+ * the white list, then a request must match a white list entry. Black list entries
+ * are always applied, so that even if an entry matches the white list, a black list 
+ * entry will override it.
+ * <p>
+ * Internet addresses may be specified as absolute address or as a combination of 
+ * four octet wildcard specifications (a.b.c.d) that are defined as follows.
+ * </p>
+ * <pre>
+ * nnn - an absolute value (0-255)
+ * mmm-nnn - an inclusive range of absolute values, 
+ *           with following shorthand notations:
+ *           nnn- => nnn-255
+ *           -nnn => 0-nnn
+ *           -    => 0-255
+ * a,b,... - a list of wildcard specifications
+ * </pre>
+ * <p>
+ * Internet address specification is separated from the URI pattern using the "|" (pipe)
+ * character. URI patterns follow the servlet specification for simple * prefix and 
+ * suffix wild cards (e.g. /, /foo, /foo/bar, /foo/bar/*, *.baz).
+ * <p>
+ * Earlier versions of the handler used internet address prefix wildcard specification
+ * to define a range of the internet addresses (e.g. 127., 10.10., 172.16.1.).
+ * They also used the first "/" character of the URI pattern to separate it from the 
+ * internet address. Both of these features have been deprecated in the current version. 
+ * <p>
+ * Examples of the entry specifications are:
+ * <ul>
+ * <li>10.10.1.2 - all requests from IP 10.10.1.2
+ * <li>10.10.1.2|/foo/bar - all requests from IP 10.10.1.2 to URI /foo/bar
+ * <li>10.10.1.2|/foo/* - all requests from IP 10.10.1.2 to URIs starting with /foo/
+ * <li>10.10.1.2|*.html - all requests from IP 10.10.1.2 to URIs ending with .html
+ * <li>10.10.0-255.0-255 - all requests from IPs within 10.10.0.0/16 subnet
+ * <li>10.10.0-.-255|/foo/bar - all requests from IPs within 10.10.0.0/16 subnet to URI /foo/bar
+ * <li>10.10.0-3,1,3,7,15|/foo/* - all requests from IPs addresses with last octet equal
+ *                                  to 1,3,7,15 in subnet 10.10.0.0/22 to URIs starting with /foo/
+ * </ul>
+ * <p>
+ * Earlier versions of the handler used internet address prefix wildcard specification
+ * to define a range of the internet addresses (e.g. 127., 10.10., 172.16.1.).
+ * They also used the first "/" character of the URI pattern to separate it from the 
+ * internet address. Both of these features have been deprecated in the current version. 
  */
 public class IPAccessHandler extends HandlerWrapper
 {
-    Map<String,PathMap> _whiteAddr = new HashMap<String, PathMap>();
-    List<String> _whitePattern = new CopyOnWriteArrayList<String>();
-    Map<String,PathMap> _blackAddr = new HashMap<String, PathMap>();
-    List<String> _blackPattern = new CopyOnWriteArrayList<String>();
-    
+    IPAddressMap<PathMap> _white = new IPAddressMap<PathMap>();
+    IPAddressMap<PathMap> _black = new IPAddressMap<PathMap>();
+
+    /* ------------------------------------------------------------ */
     /**
+     * Creates new handler object
      */
     public IPAccessHandler()
     {
+        super();
     }
     
-    public void addBlack(String addrPath)
-    {
-        add(addrPath, _blackAddr, _blackPattern);
-    }
-    
-    public void addWhite(String addrPath)
-    {
-        add(addrPath, _whiteAddr, _whitePattern);
-    }
-    
-    public void setBlack(String[] addrPaths)
-    {
-        set(addrPaths, _blackAddr, _blackPattern);
-    }
-    
-    public void setWhite(String[] addrPaths)
-    {
-        set(addrPaths, _whiteAddr, _whitePattern);
-    }
-    
+    /* ------------------------------------------------------------ */
     /**
+     * Creates new handler object and initializes white- and black-list
+     * 
+     * @param white array of whitelist entries
+     * @param black array of blacklist entries
+     */
+    public IPAccessHandler(String[] white, String []black)
+    {
+        super();
+        
+        if (white != null && white.length > 0)
+            setWhite(white);
+        if (black != null && black.length > 0)
+            setBlack(black);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Add a whitelist entry to an existing handler configuration
+     * 
+     * @param entry new whitelist entry
+     */
+    public void addWhite(String entry)
+    {
+        add(entry, _white);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Add a blacklist entry to an existing handler configuration
+     * 
+     * @param entry new blacklist entry
+     */
+    public void addBlack(String entry)
+    {
+        add(entry, _black);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Re-initialize the whitelist of existing handler object
+     * 
+     * @param entries array of whitelist entries
+     */
+    public void setWhite(String[] entries)
+    {
+        set(entries, _white);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Re-initialize the blacklist of existing handler object
+     * 
+     * @param entries array of blacklist entries
+     */
+    public void setBlack(String[] entries)
+    {
+        set(entries, _black);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Checks the incoming request against the whitelist and blacklist
+     * 
+     * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -123,78 +194,178 @@ public class IPAccessHandler extends HandlerWrapper
         
         getHandler().handle(target,baseRequest, request, response);
     }
+    
 
-    protected void add(String addrPath, Map<String,PathMap> addrMap, List<String> patternList)
+    /* ------------------------------------------------------------ */
+    /**
+     * Helper method to parse the new entry and add it to 
+     * the specified address pattern map.
+     * 
+     * @param entry new entry
+     * @param patternMap target address pattern map
+     */
+    protected void add(String entry, IPAddressMap<PathMap> patternMap)
     {
-        int idx = addrPath.indexOf('/');
-        String addr = idx > 0 ? addrPath.substring(0,idx) : addrPath;        
-        String path = idx > 0 ? addrPath.substring(idx) : null;
-        if (path!=null && path.length()>1 && path.charAt(1)=='*')
-            path=path.substring(1);
-
-        PathMap map = addrMap.get(addr);
-        if (map==null)
+        if (entry != null && entry.length() > 0)
         {
-            map = new PathMap(true);
-            addrMap.put(addr,map);
+            boolean deprecated = false;
+            int idx;
+            if (entry.indexOf('|') > 0 )
+            {
+                idx = entry.indexOf('|');
+            }
+            else
+            {
+                idx = entry.indexOf('/');
+                deprecated = (idx >= 0);
+            }
+            
+            String addr = idx > 0 ? entry.substring(0,idx) : entry;        
+            String path = idx > 0 ? entry.substring(idx) : "/*";
+            
             if (addr.endsWith("."))
-                patternList.add(addr);
+                deprecated = true;
+            if (path!=null && (path.startsWith("|") || path.startsWith("/*.")))
+                path=path.substring(1);
+           
+            PathMap pathMap = patternMap.get(addr);
+            if (pathMap == null)
+            {
+                pathMap = new PathMap(true);
+                patternMap.put(addr,pathMap);
+            }
+            if (path != null)
+                pathMap.put(path,path);
+            
+            if (deprecated)
+                Log.debug(toString() +" - deprecated specification syntax: "+entry);
         }
-
-        if (path != null)
-            map.put(path,path);
     }
 
-    protected void set(String[] addrPaths, Map<String,PathMap> addrMap, List<String> patternList)
+    /* ------------------------------------------------------------ */
+    /**
+     * Helper method to process a list of new entries and replace 
+     * the content of the specified address pattern map
+     * 
+     * @param entries new entries
+     * @param patternMap target address pattern map
+     */
+    protected void set(String[] entries,  IPAddressMap<PathMap> patternMap)
     {
-        addrMap.clear();
-        patternList.clear();
-        for (String addrPath:addrPaths)
-            add(addrPath, addrMap, patternList);
+        patternMap.clear();
+        
+        for (String addrPath:entries)
+        {
+            add(addrPath, patternMap);
+        }
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * Check if specified request is allowed by current IPAccess rules.
+     * 
+     * @param addr internet address
+     * @param path context path
+     * @return true if request is allowed
+     *
+     */
     protected boolean isAddrUriAllowed(String addr, String path)
     {
-        if (_whiteAddr.size()>0)
+        if (_white.size()>0)
         {
-            PathMap white=_whiteAddr.get(addr);
+            boolean match = false;
             
-            if (white==null || (white.size()>0 && white.match(path)==null))
+            Object whiteObj = _white.getLazyMatches(addr);
+            if (whiteObj != null) 
             {
-                boolean match=false;
-                for (String pattern:_whitePattern)
+                List whiteList = (whiteObj instanceof List) ? (List)whiteObj : Collections.singletonList(whiteObj);
+
+                for (Object entry: whiteList)
                 {
-                    if (addr.startsWith(pattern))
-                    {
-                        white=_whiteAddr.get(pattern);
-                        if (white!=null && white.size()>0 && white.match(path)!=null)
-                        {
-                            match=true;
-                            break;
-                        }
-                    }
+                    PathMap pathMap = ((Map.Entry<String,PathMap>)entry).getValue();
+                    if (match = (pathMap!=null && (pathMap.size()==0 || pathMap.match(path)!=null)));
+                        break;
                 }
-                if (!match)
-                    return false;
             }
+            
+            if (!match)
+                return false;
         }
 
-        PathMap black=_blackAddr.get(addr);
-        if (black!=null && (black.size()==0 || black.match(path)!=null))
-            return false;
-
-        for (String pattern:_blackPattern)
+        if (_black.size() > 0)
         {
-            if (addr.startsWith(pattern))
+            Object blackObj = _black.getLazyMatches(addr);
+            if (blackObj != null) 
             {
-                black=_blackAddr.get(pattern);
-                if (black!=null && black.match(path)!=null)
-                    return false;
-                break;
+                List blackList = (blackObj instanceof List) ? (List)blackObj : Collections.singletonList(blackObj);
+    
+                for (Object entry: blackList)
+                {
+                    PathMap pathMap = ((Map.Entry<String,PathMap>)entry).getValue();
+                    if (pathMap!=null && (pathMap.size()==0 || pathMap.match(path)!=null))
+                        return false;
+                }
             }
         }
         
         return true;
     }
 
-}
+    /* ------------------------------------------------------------ */
+    /**
+     * Dump the white- and black-list configurations when started
+     * 
+     * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStart()
+     */
+    @Override
+    protected void doStart()
+        throws Exception
+    {
+        super.doStart();
+        
+        if (Log.isDebugEnabled())
+        {
+            System.err.println(dump());
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Dump the handler configuration
+     */
+    public String dump()
+    {
+        StringBuilder buf = new StringBuilder();
+        
+        buf.append(toString());
+        buf.append(" WHITELIST:\n");
+        dump(buf, _white);
+        buf.append(toString());
+        buf.append(" BLACKLIST:\n");
+        dump(buf, _black);
+        
+        return buf.toString();
+    }    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Dump a pattern map into a StringBuilder buffer
+     * 
+     * @param buf buffer
+     * @param patternMap pattern map to dump
+     */
+    protected void dump(StringBuilder buf, IPAddressMap<PathMap> patternMap)
+    {
+        for (String addr: patternMap.keySet())
+        {
+            for (Object path: ((PathMap)patternMap.get(addr)).values())
+            {
+                buf.append("# ");
+                buf.append(addr);
+                buf.append("|");
+                buf.append(path);
+                buf.append("\n");
+            }       
+        }
+    }
+ }
