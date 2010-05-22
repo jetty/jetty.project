@@ -92,7 +92,7 @@ public class Main
             boolean ini=false;
             for (String arg : args)
             {
-                if (arg.startsWith("--ini="))
+                if (arg.startsWith("--ini=")||arg.equals("--ini"))
                 {
                     ini=true;
                     if (arg.length()>6)

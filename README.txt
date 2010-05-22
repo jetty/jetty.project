@@ -43,20 +43,21 @@ To run with the default options:
 
   java -jar start.jar
 
-To run with specific configuration file(s)
-
-  java -jar start.jar etc/jetty.xml
-
-To see the available options
+To see the available options and the default arguments
+provided by the start.ini file:
 
   java -jar start.jar --help
 
-To run with JSP support
+To run with add configuration file(s), eg SSL
+
+  java -jar start.jar etc/jetty-ssl.xml
+
+To run without the args from start.ini 
+
+  java -jar start.jar --ini OPTIONS=Server,websocket etc/jetty.xml etc/jetty-deploy.xml etc/jetty-ssl.xml
+
+To run with JNDI support
 
   java -jar start.jar OPTIONS=Server,jsp
-
-To run with JMX support
-
-  java -jar start.jar OPTIONS=Server,jmx etc/jetty-jmx.xml etc/jetty.xml
 
 

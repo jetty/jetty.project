@@ -95,6 +95,9 @@ public class MultiPartFilter implements Filter
             return;
         }
         
+        System.err.println("Content-Length:"+((HttpServletRequest)request).getHeader("Content-Length"));
+        System.err.println("getContentLength:"+((HttpServletRequest)request).getContentLength());
+        
         BufferedInputStream in = new BufferedInputStream(request.getInputStream());
         String content_type=srequest.getContentType();
         
