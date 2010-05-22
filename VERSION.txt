@@ -1,9 +1,10 @@
-jetty-SNAPSHOT
+jetty-7.1.2.v20100522
  + 308866 Update test suite to JUnit4 - Module jetty-util
  + 312948 Recycle SSL crypto buffers
  + 313196 randomly allocate ports for session test.
  + 313278 Implement octet ranges in IPAccessHandler
  + 313336 secure websockets
+ + 314009 updated README.txt
  + Update links to jetty website and wiki on test webapp
 
 jetty-7.1.1.v20100517
