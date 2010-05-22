@@ -283,7 +283,7 @@ public class IPAccessHandler extends HandlerWrapper
                 for (Object entry: whiteList)
                 {
                     PathMap pathMap = ((Map.Entry<String,PathMap>)entry).getValue();
-                    if (match = (pathMap!=null && (pathMap.size()==0 || pathMap.match(path)!=null)));
+                    if (match = (pathMap!=null && (pathMap.size()==0 || pathMap.match(path)!=null)))
                         break;
                 }
             }
