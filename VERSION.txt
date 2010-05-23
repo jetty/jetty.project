@@ -1,4 +1,4 @@
-jetty-7.1.2.v20100522
+jetty-7.1.2.v20100523
  + 308866 Update test suite to JUnit4 - Module jetty-util
  + 312948 Recycle SSL crypto buffers
  + 313196 randomly allocate ports for session test.
