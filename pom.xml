@@ -163,6 +163,7 @@
           <version>2.4.2</version>
           <configuration>
             <failIfNoTests>false</failIfNoTests>
+            <argLine>-Xmx512m -XX:MaxPermSize=256m</argLine>
           </configuration>
         </plugin>
         <plugin>
