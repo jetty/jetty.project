@@ -332,7 +332,6 @@ public class DoSFilter implements Filter
                     request.setAttribute(__TRACKER,tracker);
                     if (_delayMs > 0)
                         continuation.setTimeout(_delayMs);
-                    request.setAttribute("FOO", new Integer(FOO));
                     continuation.addContinuationListener(new ContinuationListener() 
                     {
 
