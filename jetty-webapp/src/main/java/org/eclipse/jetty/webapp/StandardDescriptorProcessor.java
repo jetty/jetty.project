@@ -49,7 +49,7 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.MetaDataProcessor.Origin;
+import org.eclipse.jetty.webapp.MetaData.Origin;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
@@ -78,11 +78,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     protected String _jspServletName;
     protected String _jspServletClass;
     protected boolean _defaultWelcomeFileList;
-    protected MetaDataProcessor _processor;
+    protected MetaData _processor;
     
     
     
-    public StandardDescriptorProcessor (MetaDataProcessor processor)
+    public StandardDescriptorProcessor (MetaData processor)
     {
         _processor = processor;
         _context = _processor.getContext();

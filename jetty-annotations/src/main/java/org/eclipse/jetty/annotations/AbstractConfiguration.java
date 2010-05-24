@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
-import org.eclipse.jetty.webapp.WebXmlProcessor;
+import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.Fragment;
 import org.eclipse.jetty.webapp.Descriptor.MetaDataComplete;
@@ -35,8 +35,8 @@ public abstract class AbstractConfiguration implements Configuration
 {
     public static final String CONTAINER_JAR_RESOURCES = WebInfConfiguration.CONTAINER_JAR_RESOURCES;
     public static final String WEB_INF_JAR_RESOURCES = WebInfConfiguration.WEB_INF_JAR_RESOURCES;
-    public static final String METADATA_COMPLETE = WebXmlProcessor.METADATA_COMPLETE;
-    public static final String WEBXML_CLASSNAMES = WebXmlProcessor.WEBXML_CLASSNAMES;
+    public static final String METADATA_COMPLETE = MetaData.METADATA_COMPLETE;
+    public static final String WEBXML_CLASSNAMES = MetaData.WEBXML_CLASSNAMES;
 
     public void parseContainerPath (final WebAppContext context, final AnnotationParser parser)
     throws Exception
@@ -77,11 +77,11 @@ public abstract class AbstractConfiguration implements Configuration
     public void parseWebInfLib (final WebAppContext context, final AnnotationParser parser)
     throws Exception
     {  
-        WebXmlProcessor webXmlProcessor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
-        if (webXmlProcessor == null)
+        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
+        if (metaData == null)
            throw new IllegalStateException ("No processor for web xml");
         
-        List<Fragment> frags = webXmlProcessor.getFragments();
+        List<Fragment> frags = metaData.getFragments();
         
         //email from Rajiv Mordani jsrs 315 7 April 2010
         //    If there is a <others/> then the ordering should be 
@@ -97,6 +97,7 @@ public abstract class AbstractConfiguration implements Configuration
         // + those that are not in ORDERED_LIBS are ignored (they are excluded by ordering)
         // + those that have web-fragment.xml and metadata-complete are ignored
         
+        //TODO!
         ArrayList<URI> webInfUris = new ArrayList<URI>();
         List<Resource> jarResources = (List<Resource>)context.getAttribute(WEB_INF_JAR_RESOURCES);
         List<String> orderedJars = (List<String>)context.getAttribute(ServletContext.ORDERED_LIBS);

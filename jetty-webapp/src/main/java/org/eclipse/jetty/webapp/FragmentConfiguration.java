@@ -34,11 +34,11 @@ public class FragmentConfiguration implements Configuration
         if (!context.isConfigurationDiscovered())
             return;
         
-        MetaDataProcessor processor = (MetaDataProcessor)context.getAttribute(MetaDataProcessor.WEB_PROCESSOR); 
+        MetaData processor = (MetaData)context.getAttribute(MetaData.METADATA); 
         if (processor == null)
         {
-            processor = new MetaDataProcessor (context);
-            context.setAttribute(MetaDataProcessor.WEB_PROCESSOR, processor);
+            processor = new MetaData (context);
+            context.setAttribute(MetaData.METADATA, processor);
         }
       
         //parse web-fragment.xmls
@@ -51,18 +51,18 @@ public class FragmentConfiguration implements Configuration
         if (!context.isConfigurationDiscovered())
             return;
         
-        MetaDataProcessor processor = (MetaDataProcessor)context.getAttribute(MetaDataProcessor.WEB_PROCESSOR); 
-        if (processor == null)
+        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
+        if (metaData == null)
         {
-            processor = new MetaDataProcessor (context);
-            context.setAttribute(MetaDataProcessor.WEB_PROCESSOR, processor);
+            metaData = new MetaData (context);
+            context.setAttribute(MetaData.METADATA, metaData);
         }
         
         //order the fragments first
-        processor.orderFragments(); 
+        metaData.orderFragments(); 
           
         //process the fragments
-        processor.processFragments(); 
+        metaData.processFragments(); 
     }
 
     public void deconfigure(WebAppContext context) throws Exception
@@ -81,7 +81,7 @@ public class FragmentConfiguration implements Configuration
      * 
      * @throws Exception
      */
-    public void parseWebFragments (final WebAppContext context, final MetaDataProcessor processor) throws Exception
+    public void parseWebFragments (final WebAppContext context, final MetaData processor) throws Exception
     {
         List<Resource> frags = (List<Resource>)context.getAttribute(FRAGMENT_RESOURCES);
         if (frags!=null)

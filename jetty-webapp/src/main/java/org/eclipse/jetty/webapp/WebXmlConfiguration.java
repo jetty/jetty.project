@@ -41,11 +41,11 @@ public class WebXmlConfiguration implements Configuration
     public void preConfigure (WebAppContext context) throws Exception
     {
         
-        MetaDataProcessor processor = (MetaDataProcessor)context.getAttribute(MetaDataProcessor.WEB_PROCESSOR); 
-        if (processor == null)
+        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
+        if (metaData == null)
         {
-            processor = new MetaDataProcessor (context);
-            context.setAttribute(MetaDataProcessor.WEB_PROCESSOR, processor);
+            metaData = new MetaData (context);
+            context.setAttribute(MetaData.METADATA, metaData);
         }
         
         //parse webdefault.xml
@@ -55,7 +55,7 @@ public class WebXmlConfiguration implements Configuration
             Resource dftResource = Resource.newSystemResource(defaultsDescriptor);
             if (dftResource == null) 
                 dftResource = context.newResource(defaultsDescriptor);
-            processor.parseDefaults (dftResource);
+            metaData.parseDefaults (dftResource);
            
         }
         
@@ -63,7 +63,7 @@ public class WebXmlConfiguration implements Configuration
         Resource webxml = findWebXml(context);
         if (webxml != null) 
         {      
-            processor.parseWebXml(webxml);
+            metaData.parseWebXml(webxml);
         }
         
         //parse but don't process override-web.xml
@@ -73,7 +73,7 @@ public class WebXmlConfiguration implements Configuration
             Resource orideResource = Resource.newSystemResource(overrideDescriptor);
             if (orideResource == null) 
                 orideResource = context.newResource(overrideDescriptor);
-            processor.parseOverride(orideResource);
+            metaData.parseOverride(orideResource);
         }
     }
 
@@ -91,30 +91,30 @@ public class WebXmlConfiguration implements Configuration
             return;
         }
         
-        MetaDataProcessor processor = (MetaDataProcessor)context.getAttribute(MetaDataProcessor.WEB_PROCESSOR); 
-        if (processor == null)
+        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
+        if (metaData == null)
         {
-            processor = new MetaDataProcessor (context);
-            context.setAttribute(MetaDataProcessor.WEB_PROCESSOR, processor);
+            metaData = new MetaData (context);
+            context.setAttribute(MetaData.METADATA, metaData);
         }
         
       
         //process web-default.xml
-        processor.process(processor.getWebDefault());
+        metaData.process(metaData.getWebDefault());
 
         //process web.xml 
-        processor.process(processor.getWebXml());
+        metaData.process(metaData.getWebXml());
         
         //process override-web.xml            
-        processor.process(processor.getOverrideWeb());
+        metaData.process(metaData.getOverrideWeb());
       
     }
 
     public void postConfigure(WebAppContext context) throws Exception
     {
-        context.setAttribute(MetaDataProcessor.WEB_PROCESSOR, null); 
-        context.setAttribute(MetaDataProcessor.METADATA_COMPLETE, null);
-        context.setAttribute(MetaDataProcessor.WEBXML_CLASSNAMES, null); 
+        context.setAttribute(MetaData.METADATA, null); 
+        context.setAttribute(MetaData.METADATA_COMPLETE, null);
+        context.setAttribute(MetaData.WEBXML_CLASSNAMES, null); 
     }
 
     /* ------------------------------------------------------------------------------- */

@@ -18,8 +18,8 @@ import java.util.List;
 import junit.framework.TestCase;
 
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebXmlProcessor.AbsoluteOrdering;
-import org.eclipse.jetty.webapp.WebXmlProcessor.RelativeOrdering;
+import org.eclipse.jetty.webapp.MetaData.AbsoluteOrdering;
+import org.eclipse.jetty.webapp.MetaData.RelativeOrdering;
 
 /**
  * OrderingTest
@@ -33,55 +33,55 @@ public class OrderingTest extends TestCase
     {
         //Example from ServletSpec p.70
         WebAppContext wac = new WebAppContext();
-        WebXmlProcessor processor = new WebXmlProcessor(wac);
-        processor._ordering = processor.new RelativeOrdering();
+        MetaData metaData = new MetaData(wac);
+        metaData._ordering = metaData.new RelativeOrdering();
         
         //A: after others, after C
-        Fragment f1 = new Fragment((Resource)null, processor);
+        Fragment f1 = new Fragment((Resource)null, metaData);
         f1._name = "A";
-        processor._webFragmentNameMap.put(f1._name, f1);
+        metaData._webFragmentNameMap.put(f1._name, f1);
         f1._hasOther=true;
-        ((RelativeOrdering)processor._ordering).addAfterOthers(f1);
+        ((RelativeOrdering)metaData._ordering).addAfterOthers(f1);
         f1._afters.add("C");
         
         //B: before others
-        Fragment f2 = new Fragment((Resource)null, processor);
+        Fragment f2 = new Fragment((Resource)null, metaData);
         f2._name="B";
-        processor._webFragmentNameMap.put(f2._name, f2);
+        metaData._webFragmentNameMap.put(f2._name, f2);
         f2._hasOther = true;
-        ((RelativeOrdering)processor._ordering).addBeforeOthers(f2);
+        ((RelativeOrdering)metaData._ordering).addBeforeOthers(f2);
         
         //C: after others
-        Fragment f3 = new Fragment((Resource)null, processor);
+        Fragment f3 = new Fragment((Resource)null, metaData);
         f3._name="C";
-        processor._webFragmentNameMap.put(f3._name, f3);
-        ((RelativeOrdering)processor._ordering).addAfterOthers(f3);
+        metaData._webFragmentNameMap.put(f3._name, f3);
+        ((RelativeOrdering)metaData._ordering).addAfterOthers(f3);
         
         //D: no ordering
-        Fragment f4 = new Fragment((Resource)null, processor);
+        Fragment f4 = new Fragment((Resource)null, metaData);
         f4._name="D"; 
-        processor._webFragmentNameMap.put(f4._name, f4);
-        ((RelativeOrdering)processor._ordering).addNoOthers(f4);
+        metaData._webFragmentNameMap.put(f4._name, f4);
+        ((RelativeOrdering)metaData._ordering).addNoOthers(f4);
         
         //E: no ordering
-        Fragment f5 = new Fragment((Resource)null, processor);
+        Fragment f5 = new Fragment((Resource)null, metaData);
         f5._name="E"; 
-        processor._webFragmentNameMap.put(f5._name, f5);
-        ((RelativeOrdering)processor._ordering).addNoOthers(f5);
+        metaData._webFragmentNameMap.put(f5._name, f5);
+        ((RelativeOrdering)metaData._ordering).addNoOthers(f5);
         
         //F: before others, before B
-        Fragment f6 = new Fragment((Resource)null, processor);
+        Fragment f6 = new Fragment((Resource)null, metaData);
         f6._name="F";
-        processor._webFragmentNameMap.put(f6._name, f6);
+        metaData._webFragmentNameMap.put(f6._name, f6);
         f6._hasOther=true;
-        ((RelativeOrdering)processor._ordering).addBeforeOthers(f6);
+        ((RelativeOrdering)metaData._ordering).addBeforeOthers(f6);
         f6._befores.add("B");
         
         /*
          * p.70 outcome: F, B, D, E, C, A
          */
         String[] outcomes = {"FBDECA"};
-        List<Fragment> orderedList = processor._ordering.order();
+        List<Fragment> orderedList = metaData._ordering.order();
         
         String result = "";
         for (Fragment f:orderedList)
@@ -97,52 +97,52 @@ public class OrderingTest extends TestCase
     throws Exception
     {
         WebAppContext wac = new WebAppContext();
-        WebXmlProcessor processor = new WebXmlProcessor(wac);
-        processor._ordering = processor.new RelativeOrdering();
+        MetaData metaData = new MetaData(wac);
+        metaData._ordering = metaData.new RelativeOrdering();
         
         //Example from ServletSpec p.70-71
         //No name: after others, before C
-        Fragment f1 = new Fragment((Resource)null, processor);
+        Fragment f1 = new Fragment((Resource)null, metaData);
         f1._name = Fragment.NAMELESS+"1";
-        processor._webFragmentNameMap.put(f1._name, f1);
+        metaData._webFragmentNameMap.put(f1._name, f1);
         f1._hasOther=true;
-        ((RelativeOrdering)processor._ordering).addAfterOthers(f1);
+        ((RelativeOrdering)metaData._ordering).addAfterOthers(f1);
         f1._befores.add("C");
         
         //B: before others
-        Fragment f2 = new Fragment((Resource)null, processor);
+        Fragment f2 = new Fragment((Resource)null, metaData);
         f2._name="B";
-        processor._webFragmentNameMap.put(f2._name, f2);
+        metaData._webFragmentNameMap.put(f2._name, f2);
         f2._hasOther = true;
-        ((RelativeOrdering)processor._ordering).addBeforeOthers(f2);
+        ((RelativeOrdering)metaData._ordering).addBeforeOthers(f2);
                
         //C: no ordering
-        Fragment f3 = new Fragment((Resource)null, processor);
+        Fragment f3 = new Fragment((Resource)null, metaData);
         f3._name="C";
-        processor._webFragmentNameMap.put(f3._name, f3);
-        ((RelativeOrdering)processor._ordering).addNoOthers(f3);
+        metaData._webFragmentNameMap.put(f3._name, f3);
+        ((RelativeOrdering)metaData._ordering).addNoOthers(f3);
         
         //D: after others
-        Fragment f4 = new Fragment((Resource)null, processor);
+        Fragment f4 = new Fragment((Resource)null, metaData);
         f4._name="D"; 
-        processor._webFragmentNameMap.put(f4._name, f4);
+        metaData._webFragmentNameMap.put(f4._name, f4);
         f4._hasOther = true;
-        ((RelativeOrdering)processor._ordering).addAfterOthers(f4);
+        ((RelativeOrdering)metaData._ordering).addAfterOthers(f4);
         
         //E: before others
-        Fragment f5 = new Fragment((Resource)null, processor);
+        Fragment f5 = new Fragment((Resource)null, metaData);
         f5._name="E";
-        processor._webFragmentNameMap.put(f5._name, f5);
+        metaData._webFragmentNameMap.put(f5._name, f5);
         f5._hasOther=true; 
-        ((RelativeOrdering)processor._ordering).addBeforeOthers(f5);
+        ((RelativeOrdering)metaData._ordering).addBeforeOthers(f5);
         
         //F: no ordering
-        Fragment f6 = new Fragment((Resource)null, processor);
+        Fragment f6 = new Fragment((Resource)null, metaData);
         f6._name="F";
-        processor._webFragmentNameMap.put(f6._name, f6);
-        ((RelativeOrdering)processor._ordering).addNoOthers(f6);
+        metaData._webFragmentNameMap.put(f6._name, f6);
+        ((RelativeOrdering)metaData._ordering).addNoOthers(f6);
         
-        List<Fragment> orderedList = processor._ordering.order();
+        List<Fragment> orderedList = metaData._ordering.order();
 
         /* p.70-71 Possible outcomes are:
          * B, E, F, noname, C, D
@@ -170,35 +170,35 @@ public class OrderingTest extends TestCase
     throws Exception
     {
         WebAppContext wac = new WebAppContext();
-        WebXmlProcessor processor = new WebXmlProcessor(wac);
-        processor._ordering = processor.new RelativeOrdering();
+        MetaData metaData = new MetaData(wac);
+        metaData._ordering = metaData.new RelativeOrdering();
         
         //Example from Spec p. 71-72
         
         //A: after B
-        Fragment f1 = new Fragment((Resource)null, processor);
+        Fragment f1 = new Fragment((Resource)null, metaData);
         f1._name = "A";
-        processor._webFragmentNameMap.put(f1._name, f1);
-        ((RelativeOrdering)processor._ordering).addNoOthers(f1);
+        metaData._webFragmentNameMap.put(f1._name, f1);
+        ((RelativeOrdering)metaData._ordering).addNoOthers(f1);
         f1._afters.add("B");
         
         //B: no order
-        Fragment f2 = new Fragment((Resource)null, processor);
+        Fragment f2 = new Fragment((Resource)null, metaData);
         f2._name="B";
-        processor._webFragmentNameMap.put(f2._name, f2);
-        ((RelativeOrdering)processor._ordering).addNoOthers(f2);
+        metaData._webFragmentNameMap.put(f2._name, f2);
+        ((RelativeOrdering)metaData._ordering).addNoOthers(f2);
         
         //C: before others
-        Fragment f3 = new Fragment((Resource)null, processor);
+        Fragment f3 = new Fragment((Resource)null, metaData);
         f3._name="C";
-        processor._webFragmentNameMap.put(f3._name, f3);
-        ((RelativeOrdering)processor._ordering).addBeforeOthers(f3);
+        metaData._webFragmentNameMap.put(f3._name, f3);
+        ((RelativeOrdering)metaData._ordering).addBeforeOthers(f3);
 
         //D: no order
-        Fragment f4 = new Fragment((Resource)null, processor);
+        Fragment f4 = new Fragment((Resource)null, metaData);
         f4._name="D"; 
-        processor._webFragmentNameMap.put(f4._name, f4);
-        ((RelativeOrdering)processor._ordering).addNoOthers(f4);
+        metaData._webFragmentNameMap.put(f4._name, f4);
+        ((RelativeOrdering)metaData._ordering).addNoOthers(f4);
         
         /*
          * p.71-72 possible outcomes are:
@@ -211,7 +211,7 @@ public class OrderingTest extends TestCase
                              "CBAD"};
        
  
-        List<Fragment> orderedList = processor._ordering.order();
+        List<Fragment> orderedList = metaData._ordering.order();
         String result = "";
         for (Fragment f:orderedList)
            result+=(f._name);
@@ -225,35 +225,35 @@ public class OrderingTest extends TestCase
     throws Exception
     { 
         WebAppContext wac = new WebAppContext();
-        WebXmlProcessor processor = new WebXmlProcessor(wac);
-        processor._ordering = processor.new RelativeOrdering();
+        MetaData metaData = new MetaData(wac);
+        metaData._ordering = metaData.new RelativeOrdering();
 
         //A: after others, before C
-        Fragment f1 = new Fragment((Resource)null, processor);
+        Fragment f1 = new Fragment((Resource)null, metaData);
         f1._name = "A";
-        processor._webFragmentNameMap.put(f1._name, f1);
+        metaData._webFragmentNameMap.put(f1._name, f1);
         f1._hasOther=true;
-        ((RelativeOrdering)processor._ordering).addAfterOthers(f1);
+        ((RelativeOrdering)metaData._ordering).addAfterOthers(f1);
         f1._befores.add("C");
 
         //B: before others, before C
-        Fragment f2 = new Fragment((Resource)null, processor);
+        Fragment f2 = new Fragment((Resource)null, metaData);
         f2._name="B";
-        processor._webFragmentNameMap.put(f2._name, f2);
+        metaData._webFragmentNameMap.put(f2._name, f2);
         f2._hasOther = true;
-        ((RelativeOrdering)processor._ordering).addBeforeOthers(f2);
+        ((RelativeOrdering)metaData._ordering).addBeforeOthers(f2);
         f2._befores.add("C");
 
         //C: no ordering   
-        Fragment f3 = new Fragment((Resource)null, processor);
+        Fragment f3 = new Fragment((Resource)null, metaData);
         f3._name="C";
-        processor._webFragmentNameMap.put(f3._name, f3);
-        ((RelativeOrdering)processor._ordering).addNoOthers(f3);
+        metaData._webFragmentNameMap.put(f3._name, f3);
+        ((RelativeOrdering)metaData._ordering).addNoOthers(f3);
         
         //result: BAC
         String[] outcomes = {"BAC"};
         
-        List<Fragment> orderedList = processor._ordering.order();
+        List<Fragment> orderedList = metaData._ordering.order();
         String result = "";
         for (Fragment f:orderedList)
            result+=(f._name);
@@ -271,26 +271,26 @@ public class OrderingTest extends TestCase
         //B: after A
         
         WebAppContext wac = new WebAppContext();
-        WebXmlProcessor processor = new WebXmlProcessor(wac);
-        processor._ordering = processor.new RelativeOrdering();
+        MetaData metaData = new MetaData(wac);
+        metaData._ordering = metaData.new RelativeOrdering();
         
         //A: after B
-        Fragment f1 = new Fragment((Resource)null, processor);
+        Fragment f1 = new Fragment((Resource)null, metaData);
         f1._name = "A";
-        processor._webFragmentNameMap.put(f1._name, f1);
-        ((RelativeOrdering)processor._ordering).addNoOthers(f1);
+        metaData._webFragmentNameMap.put(f1._name, f1);
+        ((RelativeOrdering)metaData._ordering).addNoOthers(f1);
         f1._afters.add("B");
         
         //B: after A
-        Fragment f2 = new Fragment((Resource)null, processor);
+        Fragment f2 = new Fragment((Resource)null, metaData);
         f2._name="B";
-        processor._webFragmentNameMap.put(f2._name, f2);
-        ((RelativeOrdering)processor._ordering).addNoOthers(f2);
+        metaData._webFragmentNameMap.put(f2._name, f2);
+        ((RelativeOrdering)metaData._ordering).addNoOthers(f2);
         f2._afters.add("A");
 
         try
         {
-            List<Fragment> orderedList = processor._ordering.order();
+            List<Fragment> orderedList = metaData._ordering.order();
             fail("No circularity detected");
         }
         catch (Exception e)
@@ -304,34 +304,34 @@ public class OrderingTest extends TestCase
     throws Exception
     {      
         WebAppContext wac = new WebAppContext();
-        WebXmlProcessor processor = new WebXmlProcessor(wac);
-        processor._ordering = processor.new RelativeOrdering();
+        MetaData metaData = new MetaData(wac);
+        metaData._ordering = metaData.new RelativeOrdering();
         
         //A: after others, before C
-        Fragment f1 = new Fragment((Resource)null, processor);
+        Fragment f1 = new Fragment((Resource)null, metaData);
         f1._name = "A";
-        processor._webFragmentNameMap.put(f1._name, f1);
+        metaData._webFragmentNameMap.put(f1._name, f1);
         f1._hasOther=true;
-        ((RelativeOrdering)processor._ordering).addAfterOthers(f1);
+        ((RelativeOrdering)metaData._ordering).addAfterOthers(f1);
         f1._befores.add("C");
         
         //B: before others, after C
-        Fragment f2 = new Fragment((Resource)null, processor);
+        Fragment f2 = new Fragment((Resource)null, metaData);
         f2._name="B";
-        processor._webFragmentNameMap.put(f2._name, f2);
+        metaData._webFragmentNameMap.put(f2._name, f2);
         f2._hasOther = true;
-        ((RelativeOrdering)processor._ordering).addBeforeOthers(f2);
+        ((RelativeOrdering)metaData._ordering).addBeforeOthers(f2);
         f2._afters.add("C");
         
         //C: no ordering
-        Fragment f3 = new Fragment((Resource)null, processor);
+        Fragment f3 = new Fragment((Resource)null, metaData);
         f3._name="C";
-        processor._webFragmentNameMap.put(f3._name, f3);
-        ((RelativeOrdering)processor._ordering).addNoOthers(f3);
+        metaData._webFragmentNameMap.put(f3._name, f3);
+        ((RelativeOrdering)metaData._ordering).addNoOthers(f3);
         
         try
         {
-            List<Fragment> orderedList = processor._ordering.order();
+            List<Fragment> orderedList = metaData._ordering.order();
             fail("A and B have an impossible relationship to C");
         }
         catch (Exception e)
@@ -348,38 +348,38 @@ public class OrderingTest extends TestCase
          * A,B,C,others
          */
         WebAppContext wac = new WebAppContext();
-        WebXmlProcessor processor = new WebXmlProcessor(wac);
-        processor._ordering = processor.new AbsoluteOrdering();
-        ((AbsoluteOrdering)processor._ordering).add("A");
-        ((AbsoluteOrdering)processor._ordering).add("B");
-        ((AbsoluteOrdering)processor._ordering).add("C");
-        ((AbsoluteOrdering)processor._ordering).addOthers();
+        MetaData metaData = new MetaData(wac);
+        metaData._ordering = metaData.new AbsoluteOrdering();
+        ((AbsoluteOrdering)metaData._ordering).add("A");
+        ((AbsoluteOrdering)metaData._ordering).add("B");
+        ((AbsoluteOrdering)metaData._ordering).add("C");
+        ((AbsoluteOrdering)metaData._ordering).addOthers();
         
-        Fragment f1 = new Fragment((Resource)null, processor);
+        Fragment f1 = new Fragment((Resource)null, metaData);
         f1._name = "A";
-        processor._webFragmentNameMap.put(f1._name, f1);
+        metaData._webFragmentNameMap.put(f1._name, f1);
         
-        Fragment f2 = new Fragment((Resource)null, processor);
+        Fragment f2 = new Fragment((Resource)null, metaData);
         f2._name="B";
-        processor._webFragmentNameMap.put(f2._name, f2);
+        metaData._webFragmentNameMap.put(f2._name, f2);
         
-        Fragment f3 = new Fragment((Resource)null, processor);
+        Fragment f3 = new Fragment((Resource)null, metaData);
         f3._name="C";
-        processor._webFragmentNameMap.put(f3._name, f3);
+        metaData._webFragmentNameMap.put(f3._name, f3);
         
-        Fragment f4 = new Fragment((Resource)null, processor);
+        Fragment f4 = new Fragment((Resource)null, metaData);
         f4._name="D"; 
-        processor._webFragmentNameMap.put(f4._name, f4);
+        metaData._webFragmentNameMap.put(f4._name, f4);
         
-        Fragment f5 = new Fragment((Resource)null, processor);
+        Fragment f5 = new Fragment((Resource)null, metaData);
         f5._name="E";
-        processor._webFragmentNameMap.put(f5._name, f5);
+        metaData._webFragmentNameMap.put(f5._name, f5);
         
-        Fragment f6 = new Fragment((Resource)null, processor);
+        Fragment f6 = new Fragment((Resource)null, metaData);
         f6._name=Fragment.NAMELESS+"1";
-        processor._webFragmentNameMap.put(f6._name, f6);
+        metaData._webFragmentNameMap.put(f6._name, f6);
         
-        List<Fragment> list = processor._ordering.order();
+        List<Fragment> list = metaData._ordering.order();
         
         String[] outcomes = {"ABCDE"+f6._name};
         String result = "";
@@ -396,37 +396,37 @@ public class OrderingTest extends TestCase
     {
         // A,B,C
         WebAppContext wac = new WebAppContext();
-        WebXmlProcessor processor = new WebXmlProcessor(wac);
-        processor._ordering = processor.new AbsoluteOrdering();
-        ((AbsoluteOrdering)processor._ordering).add("A");
-        ((AbsoluteOrdering)processor._ordering).add("B");
-        ((AbsoluteOrdering)processor._ordering).add("C");
+        MetaData metaData = new MetaData(wac);
+        metaData._ordering = metaData.new AbsoluteOrdering();
+        ((AbsoluteOrdering)metaData._ordering).add("A");
+        ((AbsoluteOrdering)metaData._ordering).add("B");
+        ((AbsoluteOrdering)metaData._ordering).add("C");
         
-        Fragment f1 = new Fragment((Resource)null, processor);
+        Fragment f1 = new Fragment((Resource)null, metaData);
         f1._name = "A";
-        processor._webFragmentNameMap.put(f1._name, f1);
+        metaData._webFragmentNameMap.put(f1._name, f1);
         
-        Fragment f2 = new Fragment((Resource)null, processor);
+        Fragment f2 = new Fragment((Resource)null, metaData);
         f2._name="B";
-        processor._webFragmentNameMap.put(f2._name, f2);
+        metaData._webFragmentNameMap.put(f2._name, f2);
         
-        Fragment f3 = new Fragment((Resource)null, processor);
+        Fragment f3 = new Fragment((Resource)null, metaData);
         f3._name="C";
-        processor._webFragmentNameMap.put(f3._name, f3);
+        metaData._webFragmentNameMap.put(f3._name, f3);
         
-        Fragment f4 = new Fragment((Resource)null, processor);
+        Fragment f4 = new Fragment((Resource)null, metaData);
         f4._name="D"; 
-        processor._webFragmentNameMap.put(f4._name, f4);
+        metaData._webFragmentNameMap.put(f4._name, f4);
         
-        Fragment f5 = new Fragment((Resource)null, processor);
+        Fragment f5 = new Fragment((Resource)null, metaData);
         f5._name="E";
-        processor._webFragmentNameMap.put(f5._name, f5);
+        metaData._webFragmentNameMap.put(f5._name, f5);
         
-        Fragment f6 = new Fragment((Resource)null, processor);
+        Fragment f6 = new Fragment((Resource)null, metaData);
         f6._name=Fragment.NAMELESS+"1";
-        processor._webFragmentNameMap.put(f6._name, f6);
+        metaData._webFragmentNameMap.put(f6._name, f6);
         
-        List<Fragment> list = processor._ordering.order();
+        List<Fragment> list = metaData._ordering.order();
         String[] outcomes = {"ABC"};
         String result = "";
         for (Fragment f:list)
@@ -442,10 +442,10 @@ public class OrderingTest extends TestCase
         //empty <absolute-ordering>
         
         WebAppContext wac = new WebAppContext();
-        WebXmlProcessor processor = new WebXmlProcessor(wac);
-        processor._ordering = processor.new AbsoluteOrdering();
+        MetaData metaData = new MetaData(wac);
+        metaData._ordering = metaData.new AbsoluteOrdering();
         
-        List<Fragment> list = processor._ordering.order();
+        List<Fragment> list = metaData._ordering.order();
         assertTrue(list.isEmpty());
     }
     

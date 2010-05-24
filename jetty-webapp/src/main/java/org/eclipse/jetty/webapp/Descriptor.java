@@ -39,14 +39,14 @@ public class Descriptor
     protected ArrayList<String> _classNames;
     protected boolean _distributable;
     protected boolean _validating;
-    protected MetaDataProcessor _processor;
+    protected MetaData _processor;
     protected boolean _isOrdered = false;
     protected List<String> _ordering = new ArrayList<String>();
     
 
     
     
-    public Descriptor (Resource xml, MetaDataProcessor processor)
+    public Descriptor (Resource xml, MetaData processor)
     {
         _xml = xml;
         _processor = processor;

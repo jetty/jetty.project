@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class DefaultsDescriptor extends Descriptor
 {
-    public DefaultsDescriptor(Resource xml, MetaDataProcessor processor)
+    public DefaultsDescriptor(Resource xml, MetaData processor)
     {
         super(xml, processor);
     }

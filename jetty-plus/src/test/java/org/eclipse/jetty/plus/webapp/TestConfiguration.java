@@ -21,7 +21,7 @@ import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebXmlProcessor;
+import org.eclipse.jetty.webapp.MetaData;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -52,9 +52,9 @@ public class TestConfiguration
             wac.setServer(server);
             wac.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), wac));
             
-            WebXmlProcessor processor = new WebXmlProcessor(wac);
+            MetaData metaData = new MetaData(wac);
             
-            PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor(processor);
+            PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor(metaData);
 
             //bind some EnvEntrys at the server level
             EnvEntry ee1 = new EnvEntry(server, "xxx/a", "100", true);

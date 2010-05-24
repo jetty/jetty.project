@@ -26,7 +26,7 @@ import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.Fragment;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebXmlProcessor;
+import org.eclipse.jetty.webapp.MetaData;
 
 
 /**
@@ -59,23 +59,23 @@ public class Configuration implements org.eclipse.jetty.webapp.Configuration
     {
         bindUserTransaction(context);
         
-        WebXmlProcessor webXmlProcessor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
-        if (webXmlProcessor == null)
+        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
+        if (metaData == null)
            throw new IllegalStateException ("No processor for web xml");
         
-        PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor(webXmlProcessor);
-        webXmlProcessor.process(webXmlProcessor.getWebDefault(), plusProcessor);
-        webXmlProcessor.process(webXmlProcessor.getWebXml(), plusProcessor);
+        PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor(metaData);
+        metaData.process(metaData.getWebDefault(), plusProcessor);
+        metaData.process(metaData.getWebXml(), plusProcessor);
      
 
         //Process plus-elements of each descriptor
-        for (Fragment frag: webXmlProcessor.getFragments())
+        for (Fragment frag: metaData.getFragments())
         {
-            webXmlProcessor.process(frag, plusProcessor);
+            metaData.process(frag, plusProcessor);
         }
 
         //process the override-web.xml descriptor
-        webXmlProcessor.process(webXmlProcessor.getOverrideWeb(), plusProcessor);
+        metaData.process(metaData.getOverrideWeb(), plusProcessor);
     }
     
     public void postConfigure(WebAppContext context) throws Exception

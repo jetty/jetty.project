@@ -35,13 +35,13 @@ import org.eclipse.jetty.xml.XmlParser;
 
 
 /**
- * MetaDataProcessor
+ * MetaData
  *
  *
  */
-public class MetaDataProcessor
+public class MetaData
 {        
-    public static final String WEB_PROCESSOR = "org.eclipse.jetty.webProcessor";
+    public static final String METADATA = "org.eclipse.jetty.metaData";
     public static final String METADATA_COMPLETE = "org.eclipse.jetty.metadataComplete";
     public static final String WEBXML_MAJOR_VERSION = "org.eclipse.jetty.webXmlMajorVersion";
     public static final String WEBXML_MINOR_VERSION = "org.eclipse.jetty.webXmlMinorVersion";
@@ -479,7 +479,7 @@ public class MetaDataProcessor
 
 
     
-    public MetaDataProcessor (WebAppContext context) throws ClassNotFoundException
+    public MetaData (WebAppContext context) throws ClassNotFoundException
     {
         _context = context;
         _parser = newParser();
