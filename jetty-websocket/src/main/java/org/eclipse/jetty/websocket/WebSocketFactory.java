@@ -93,8 +93,10 @@ public class WebSocketFactory
         WebSocketConnection connection = new WebSocketConnection(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime);
 
         String uri=request.getRequestURI();
+	String query=request.getQueryString();
+	if (query!=null && query.length()>0)
+	    uri+="?"+query;
         String host=request.getHeader("Host");
-
         response.setHeader("Upgrade","WebSocket");
         response.addHeader("Connection","Upgrade");
         response.addHeader("WebSocket-Origin",origin);

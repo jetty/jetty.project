@@ -77,7 +77,6 @@ public class IPAccessHandlerTest
                 }
             });
         _server.setHandler(_handler);
-        Log.getLog().setDebugEnabled(true);
         _server.start();
     }
     
