@@ -225,6 +225,16 @@
       </plugins>
     </pluginManagement>
   </build>
+  <repositories>
+    <repository>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>sonatype-snapshots</id>
+      <name>Sonatype Jetty Snapshots</name>
+      <url>http://oss.sonatype.org/content/groups/jetty</url>
+    </repository>
+  </repositories>
   <modules>
     <module>jetty-util</module>
     <module>jetty-io</module>
