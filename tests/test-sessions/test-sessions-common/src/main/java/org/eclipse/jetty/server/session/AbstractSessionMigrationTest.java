@@ -23,17 +23,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.testng.annotations.Test;
+import org.eclipse.jetty.http.HttpMethods;
+import org.junit.Test;
 
 /**
  * AbstractSessionMigrationTest
- *
- *
  */
-
 public abstract class AbstractSessionMigrationTest
 {
     public abstract AbstractTestServer createServer (int port);

@@ -12,13 +12,11 @@
 // ========================================================================
 package org.eclipse.jetty.server.session;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
+
 /**
  * LightLoadTest
- *
- *
  */
-
 public class LightLoadTest extends AbstractLightLoadTest
 {
 
@@ -27,7 +25,7 @@ public class LightLoadTest extends AbstractLightLoadTest
         return new HashTestServer(port);
     }
 
-    @Test(groups={"hash-all"})
+    @Test
     public void testLightLoad() throws Exception
     {
         super.testLightLoad();

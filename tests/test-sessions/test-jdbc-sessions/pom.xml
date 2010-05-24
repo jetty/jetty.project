@@ -77,10 +77,9 @@
             <scope>test</scope>
        </dependency>
        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>5.8</version>
-            <classifier>jdk15</classifier>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit4-version}</version>
             <scope>test</scope>
         </dependency>
   </dependencies>

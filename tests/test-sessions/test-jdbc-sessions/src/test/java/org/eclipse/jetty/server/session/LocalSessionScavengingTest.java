@@ -12,14 +12,11 @@
 // ========================================================================
 package org.eclipse.jetty.server.session;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 /**
  * LocalSessionScavengingTest
- *
- *
  */
-
 public class LocalSessionScavengingTest extends AbstractLocalSessionScavengingTest
 {
     public void pause (int scavenge)
@@ -44,7 +41,7 @@ public class LocalSessionScavengingTest extends AbstractLocalSessionScavengingTe
         return new JdbcTestServer(port,max,scavenge);
     }
 
-    @Test(groups={"jdbc-all"})
+    @Test
     public void testLocalSessionsScavenging() throws Exception
     {
         super.testLocalSessionsScavenging();

@@ -12,27 +12,21 @@
 // ========================================================================
 package org.eclipse.jetty.server.session;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 /**
  * LastAccessTimeTest
- *
- *
  */
-
 public class LastAccessTimeTest extends AbstractLastAccessTimeTest
 {
-
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {
         return new JdbcTestServer(port,max,scavenge);
     }
 
-    @Test(groups={"jdbc-all"})
+    @Test
     public void testLastAccessTime() throws Exception
     {
         super.testLastAccessTime();
     }
-    
-    
 }

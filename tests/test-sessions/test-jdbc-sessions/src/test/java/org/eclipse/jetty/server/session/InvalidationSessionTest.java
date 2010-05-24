@@ -12,14 +12,11 @@
 // ========================================================================
 package org.eclipse.jetty.server.session;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 /**
  * InvalidationSessionTest
- *
- *
  */
-
 public class InvalidationSessionTest extends AbstractInvalidationSessionTest
 {
     public AbstractTestServer createServer(int port)
@@ -43,10 +40,9 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
         }
     }
 
-    @Test(groups={"jdbc-all"})
+    @Test
     public void testInvalidation() throws Exception
     {
         super.testInvalidation();
     }  
-    
 }

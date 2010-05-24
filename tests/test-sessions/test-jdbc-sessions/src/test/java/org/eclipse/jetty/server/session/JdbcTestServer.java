@@ -14,11 +14,10 @@ package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
+import org.eclipse.jetty.server.session.test.MavenTestingUtils;
 
 /**
  * JdbcTestServer
- *
- *
  */
 public class JdbcTestServer extends AbstractTestServer
 {
@@ -29,7 +28,7 @@ public class JdbcTestServer extends AbstractTestServer
     
     static 
     {
-        System.setProperty("derby.system.home", System.getProperty("java.io.tmpdir"));
+        System.setProperty("derby.system.home", MavenTestingUtils.getTargetTestingDir().getAbsolutePath());
     }
     
     public JdbcTestServer(int port)

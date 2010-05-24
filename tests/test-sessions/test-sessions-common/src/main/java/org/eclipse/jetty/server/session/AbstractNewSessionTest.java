@@ -21,18 +21,15 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.testng.annotations.Test;
+import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.junit.Test;
 
 /**
  * AbstractNewSessionTest
- *
- *
  */
-
 public abstract class AbstractNewSessionTest
 {
     public abstract AbstractTestServer createServer(int port, int max, int scavenge);
@@ -48,6 +45,7 @@ public abstract class AbstractNewSessionTest
             e.printStackTrace();
         }
     }
+    
     @Test
     public void testNewSession() throws Exception
     {

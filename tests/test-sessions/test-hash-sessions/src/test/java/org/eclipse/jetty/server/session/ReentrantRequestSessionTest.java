@@ -12,12 +12,10 @@
 // ========================================================================
 package org.eclipse.jetty.server.session;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 /**
  * ReentrantRequestSessionTest
- *
- *
  */
 public class ReentrantRequestSessionTest extends AbstractReentrantRequestSessionTest
 {
@@ -26,7 +24,7 @@ public class ReentrantRequestSessionTest extends AbstractReentrantRequestSession
         return new HashTestServer(port);
     }
 
-    @Test(groups={"hash-all"})
+    @Test
     public void testReentrantRequestSession() throws Exception
     {
         super.testReentrantRequestSession();

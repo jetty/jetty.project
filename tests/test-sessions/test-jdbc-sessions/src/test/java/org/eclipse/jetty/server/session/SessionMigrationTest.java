@@ -1,6 +1,5 @@
 //========================================================================
-//$Id$
-//Copyright 2010 Mort Bay Consulting Pty. Ltd.
+// Copyright 2010 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -13,11 +12,10 @@
 // ========================================================================
 package org.eclipse.jetty.server.session;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
+
 /**
  * SessionMigrationTest
- *
- *
  */
 public class SessionMigrationTest extends AbstractSessionMigrationTest
 {
@@ -27,12 +25,9 @@ public class SessionMigrationTest extends AbstractSessionMigrationTest
        return new JdbcTestServer(port);
     }
 
-    @Test(groups={"jdbc-all"})
+    @Test
     public void testSessionMigration() throws Exception
     {
         super.testSessionMigration();
     }
-
-    
-    
 }

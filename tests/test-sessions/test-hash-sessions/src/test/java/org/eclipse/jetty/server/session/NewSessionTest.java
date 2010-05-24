@@ -12,14 +12,11 @@
 // ========================================================================
 package org.eclipse.jetty.server.session;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 /**
  * NewSessionTest
- *
- *
  */
-
 public class NewSessionTest extends AbstractNewSessionTest
 {
 
@@ -28,10 +25,9 @@ public class NewSessionTest extends AbstractNewSessionTest
         return new HashTestServer(port,max,scavenge);
     }
 
-    @Test(groups={"hash-all"})
+    @Test
     public void testNewSession() throws Exception
     {
         super.testNewSession();
     }
-
 }

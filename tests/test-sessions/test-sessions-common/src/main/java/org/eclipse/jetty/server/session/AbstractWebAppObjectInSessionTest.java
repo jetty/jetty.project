@@ -21,13 +21,12 @@ import java.util.Random;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.ContentExchange;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpClient;
-
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 /**
  * AbstractWebAppObjectInSessionTest
@@ -37,9 +36,7 @@ import org.testng.annotations.Test;
  * the same webapp on nodeB is able to load that object from the session.
  * 
  * This test is only appropriate for clustered session managers.
- * 
  */
-
 public abstract class AbstractWebAppObjectInSessionTest
 {
     public abstract AbstractTestServer createServer(int port);
