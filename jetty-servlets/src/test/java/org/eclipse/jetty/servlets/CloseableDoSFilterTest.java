@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.servlets;
 
-import java.util.EnumSet;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 

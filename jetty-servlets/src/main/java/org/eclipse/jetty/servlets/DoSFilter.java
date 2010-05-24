@@ -93,7 +93,6 @@ import org.eclipse.jetty.util.thread.Timeout;
 
 public class DoSFilter implements Filter
 {
-    public static int FOO = 0;
     final static String __TRACKER = "DoSFilter.Tracker";
     final static String __THROTTLED = "DoSFilter.Throttled";
 
@@ -286,13 +285,8 @@ public class DoSFilter implements Filter
         // Look for the rate tracker for this request
         RateTracker tracker = (RateTracker)request.getAttribute(__TRACKER);
 
-        System.err.println("In request "+((HttpServletRequest)request).getContextPath()+" "+((HttpServletRequest)request).getPathInfo()+" "+((HttpServletRequest)request).getQueryString()+" FOO="+request.getAttribute("FOO"));
-
         if (tracker==null)
         {
-            ++FOO;
-            System.err.println("New request: "+((HttpServletRequest)request).getContextPath()+" "+((HttpServletRequest)request).getPathInfo()+" "+((HttpServletRequest)request).getQueryString()+" FOO="+FOO);
-            
             // This is the first time we have seen this request.
 
             // get a rate tracker associated with this request, and record one hit
@@ -316,7 +310,6 @@ public class DoSFilter implements Filter
             {
                 case -1:
                 {
-                  System.err.println("DoSFilter: rejecting");
                     // Reject this request
                     if (_insertHeaders)
                         ((HttpServletResponse)response).addHeader("DoSFilter","unavailable");
@@ -327,18 +320,15 @@ public class DoSFilter implements Filter
                 case 0:
                 {
                     // fall through to throttle code 
-                    System.err.println("DoSFilter: will throttle");
                     request.setAttribute(__TRACKER,tracker);
                     break;
                 }
                 default:
                 { 
-                    System.err.println("DoSFilter: will delay "+_delayMs+" for "+FOO);
                     // insert a delay before throttling the request
                     if (_insertHeaders)
                         ((HttpServletResponse)response).addHeader("DoSFilter","delayed");
                     Continuation continuation = ContinuationSupport.getContinuation(request);
-                    System.err.println("continuation = "+continuation.getClass().getCanonicalName());
                     request.setAttribute(__TRACKER,tracker);
                     if (_delayMs > 0)
                         continuation.setTimeout(_delayMs);
@@ -348,12 +338,10 @@ public class DoSFilter implements Filter
 
                         public void onComplete(Continuation continuation)
                         {
-                            System.err.println("Delay continuation is complete for "+continuation.getAttribute("FOO"));
                         }
 
                         public void onTimeout(Continuation continuation)
                         {
-                            System.err.println("Delay continuation timed out for "+continuation.getAttribute("FOO"));
                         }
                     });
                     continuation.suspend();
@@ -361,7 +349,6 @@ public class DoSFilter implements Filter
                 }
             }
         }
-System.err.println("Checking acquire wait="+_waitMs);
         // Throttle the request
         boolean accepted = false;
         try
@@ -369,7 +356,6 @@ System.err.println("Checking acquire wait="+_waitMs);
             // check if we can afford to accept another request at this time
             accepted = _passes.tryAcquire(_waitMs,TimeUnit.MILLISECONDS);
 
-            System.err.println("Accepted: "+accepted);
             if (!accepted)
             {
                 // we were not accepted, so either we suspend to wait,or if we were woken up we insist or we fail
@@ -382,7 +368,6 @@ System.err.println("Checking acquire wait="+_waitMs);
                     request.setAttribute(__THROTTLED,Boolean.TRUE);
                     if (_insertHeaders)
                         ((HttpServletResponse)response).addHeader("DoSFilter","throttled");
-                    //System.err.println("DosFilter: throttled");
                     if (_throttleMs > 0)
                         continuation.setTimeout(_throttleMs);
                     continuation.suspend();
@@ -409,13 +394,11 @@ System.err.println("Checking acquire wait="+_waitMs);
                 // fail the request
                 if (_insertHeaders)
                     ((HttpServletResponse)response).addHeader("DoSFilter","unavailable");
-                //System.err.println("DosFilter: not accepted");
                 ((HttpServletResponse)response).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             }
         }
         catch (InterruptedException e)
         {
-            System.err.println("INterrupt");
             _context.log("DoS",e);
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
         }
@@ -427,7 +410,6 @@ System.err.println("Checking acquire wait="+_waitMs);
         {
             if (accepted)
             {
-                System.err.println("Waking up next waiting continuation, queue="+_queue.length);
                 // wake up the next highest priority request.
                 for (int p = _queue.length; p-- > 0;)
                 {
@@ -440,7 +422,6 @@ System.err.println("Checking acquire wait="+_waitMs);
                 }
                 _passes.release();
             }
-            System.err.println("Not accepted");
         }
     }
 
