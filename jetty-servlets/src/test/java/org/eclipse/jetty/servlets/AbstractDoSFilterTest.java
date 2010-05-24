@@ -190,10 +190,10 @@ public abstract class AbstractDoSFilterTest
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request+request+request+request,1,0,0,last);
         //System.out.println("responses are " + responses);
-        assertEquals(5,count(responses,"HTTP/1.1 200 OK"));
-        assertEquals(1,count(responses,"DoSFilter: delayed"));
-        assertEquals(1,count(responses,"DoSFilter: throttled"));
-        assertEquals(0,count(responses,"DoSFilter: unavailable"));
+        assertEquals("200 OK responses", 5,count(responses,"HTTP/1.1 200 OK"));
+        assertEquals("delayed responses", 1,count(responses,"DoSFilter: delayed"));
+        assertEquals("throttled responses", 1,count(responses,"DoSFilter: throttled"));
+        assertEquals("unavailable responses", 0,count(responses,"DoSFilter: unavailable"));
 
         other.join();
     }
