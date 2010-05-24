@@ -13,18 +13,12 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.servlet.Servlet;
-
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebXmlProcessor.AbsoluteOrdering;
-import org.eclipse.jetty.webapp.WebXmlProcessor.Ordering;
 import org.eclipse.jetty.xml.XmlParser;
 
 
@@ -45,14 +39,14 @@ public class Descriptor
     protected ArrayList<String> _classNames;
     protected boolean _distributable;
     protected boolean _validating;
-    protected WebXmlProcessor _processor;
+    protected MetaDataProcessor _processor;
     protected boolean _isOrdered = false;
     protected List<String> _ordering = new ArrayList<String>();
     
 
     
     
-    public Descriptor (Resource xml, WebXmlProcessor processor)
+    public Descriptor (Resource xml, MetaDataProcessor processor)
     {
         _xml = xml;
         _processor = processor;

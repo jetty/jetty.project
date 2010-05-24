@@ -41,11 +41,11 @@ public class WebXmlConfiguration implements Configuration
     public void preConfigure (WebAppContext context) throws Exception
     {
         
-        WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
+        MetaDataProcessor processor = (MetaDataProcessor)context.getAttribute(MetaDataProcessor.WEB_PROCESSOR); 
         if (processor == null)
         {
-            processor = new WebXmlProcessor (context);
-            context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
+            processor = new MetaDataProcessor (context);
+            context.setAttribute(MetaDataProcessor.WEB_PROCESSOR, processor);
         }
         
         //parse webdefault.xml
@@ -91,11 +91,11 @@ public class WebXmlConfiguration implements Configuration
             return;
         }
         
-        WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
+        MetaDataProcessor processor = (MetaDataProcessor)context.getAttribute(MetaDataProcessor.WEB_PROCESSOR); 
         if (processor == null)
         {
-            processor = new WebXmlProcessor (context);
-            context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
+            processor = new MetaDataProcessor (context);
+            context.setAttribute(MetaDataProcessor.WEB_PROCESSOR, processor);
         }
         
       
@@ -112,9 +112,9 @@ public class WebXmlConfiguration implements Configuration
 
     public void postConfigure(WebAppContext context) throws Exception
     {
-        context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, null); 
-        context.setAttribute(WebXmlProcessor.METADATA_COMPLETE, null);
-        context.setAttribute(WebXmlProcessor.WEBXML_CLASSNAMES, null); 
+        context.setAttribute(MetaDataProcessor.WEB_PROCESSOR, null); 
+        context.setAttribute(MetaDataProcessor.METADATA_COMPLETE, null);
+        context.setAttribute(MetaDataProcessor.WEBXML_CLASSNAMES, null); 
     }
 
     /* ------------------------------------------------------------------------------- */

@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class OverrideDescriptor extends Descriptor
 {
-    public OverrideDescriptor(Resource xml, WebXmlProcessor processor)
+    public OverrideDescriptor(Resource xml, MetaDataProcessor processor)
     {
         super(xml, processor);
     }

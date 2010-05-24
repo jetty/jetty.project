@@ -34,11 +34,11 @@ public class FragmentConfiguration implements Configuration
         if (!context.isConfigurationDiscovered())
             return;
         
-        WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
+        MetaDataProcessor processor = (MetaDataProcessor)context.getAttribute(MetaDataProcessor.WEB_PROCESSOR); 
         if (processor == null)
         {
-            processor = new WebXmlProcessor (context);
-            context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
+            processor = new MetaDataProcessor (context);
+            context.setAttribute(MetaDataProcessor.WEB_PROCESSOR, processor);
         }
       
         //parse web-fragment.xmls
@@ -51,11 +51,11 @@ public class FragmentConfiguration implements Configuration
         if (!context.isConfigurationDiscovered())
             return;
         
-        WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
+        MetaDataProcessor processor = (MetaDataProcessor)context.getAttribute(MetaDataProcessor.WEB_PROCESSOR); 
         if (processor == null)
         {
-            processor = new WebXmlProcessor (context);
-            context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
+            processor = new MetaDataProcessor (context);
+            context.setAttribute(MetaDataProcessor.WEB_PROCESSOR, processor);
         }
         
         //order the fragments first
@@ -81,7 +81,7 @@ public class FragmentConfiguration implements Configuration
      * 
      * @throws Exception
      */
-    public void parseWebFragments (final WebAppContext context, final WebXmlProcessor processor) throws Exception
+    public void parseWebFragments (final WebAppContext context, final MetaDataProcessor processor) throws Exception
     {
         List<Resource> frags = (List<Resource>)context.getAttribute(FRAGMENT_RESOURCES);
         if (frags!=null)

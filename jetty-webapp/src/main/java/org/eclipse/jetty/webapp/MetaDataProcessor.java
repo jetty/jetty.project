@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,11 +35,11 @@ import org.eclipse.jetty.xml.XmlParser;
 
 
 /**
- * WebXmlProcessor
+ * MetaDataProcessor
  *
  *
  */
-public class WebXmlProcessor
+public class MetaDataProcessor
 {        
     public static final String WEB_PROCESSOR = "org.eclipse.jetty.webProcessor";
     public static final String METADATA_COMPLETE = "org.eclipse.jetty.metadataComplete";
@@ -481,7 +479,7 @@ public class WebXmlProcessor
 
 
     
-    public WebXmlProcessor (WebAppContext context) throws ClassNotFoundException
+    public MetaDataProcessor (WebAppContext context) throws ClassNotFoundException
     {
         _context = context;
         _parser = newParser();

@@ -42,7 +42,7 @@ public class Fragment extends Descriptor
     protected String _name;
     
     
-    public Fragment (Resource xml, WebXmlProcessor processor)
+    public Fragment (Resource xml, MetaDataProcessor processor)
     throws Exception
     {
         super (xml, processor);
