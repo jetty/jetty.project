@@ -247,38 +247,6 @@ then
   exit 1
 fi
 
-
-###########################################################
-# Get the list of config.xml files from the command line.
-###########################################################
-for ARG
-do
-  if [ -f "$ARG" ]
-  then
-    CONF="$ARG" 
-  elif [ -f "$JETTY_HOME/etc/$ARG" ]
-  then
-    CONF="$JETTY_HOME/etc/$ARG" 
-  elif [ -f "$ARG.xml" ] 
-  then
-    CONF="$ARG.xml" 
-  elif [ -f "$JETTY_HOME/etc/$ARG.xml" ] 
-  then
-    CONF="$JETTY_HOME/etc/$ARG.xml" 
-  else
-    echo "** ERROR: Cannot find configuration '$ARG' specified in the command line." 
-    exit 1
-  fi
-  if [ ! -r "$CONF" ] 
-  then
-    echo "** ERROR: Cannot read configuration '$ARG' specified in the command line." 
-    exit 1
-  fi
-
-  CONFIGS+=("$CONF")
-done
-
-
 ##################################################
 # Try to find this script's configuration file,
 # but only if no configurations were given on the
@@ -328,15 +296,6 @@ then
     fi
   done < "$JETTY_CONF"
 fi
-
-#####################################################
-# Run the standard server if there's nothing else to run
-#####################################################
-if [ "${#CONFIGS[@]}" -eq 0 ] 
-then
-  CONFIGS=("$JETTY_HOME/etc/jetty-logging.xml" "$JETTY_HOME/etc/jetty.xml")
-fi
-
 
 #####################################################
 # Find a location for the pid file
