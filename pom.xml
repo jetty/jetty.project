@@ -163,7 +163,6 @@
           <version>2.4.2</version>
           <configuration>
             <failIfNoTests>false</failIfNoTests>
-            <argLine>-Xmx256m</argLine>
           </configuration>
         </plugin>
         <plugin>
