@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import org.eclipse.jetty.http.security.Credential;
 import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Loader;
@@ -248,7 +249,7 @@ public class JDBCLoginService extends MappedLoginService
                     roles.add(rs.getString(_roleTableRoleField));
 
                 stat.close();
-                return putUser(username, new Password(credentials),roles.toArray(new String[roles.size()]));
+                return putUser(username, Credential.getCredential(credentials),roles.toArray(new String[roles.size()]));
             }
         }
         catch (SQLException e)
