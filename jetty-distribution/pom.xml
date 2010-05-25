@@ -19,6 +19,7 @@
     <orbit-javax-mail-glassfish-version>${javax-mail-version}.v200808130215</orbit-javax-mail-glassfish-version>
     <orbit-javax-servlet-version>2.5.0.v200910301333</orbit-javax-servlet-version>
     <orbit-javax-servlet-jsp-version>2.1.0.v201004190952</orbit-javax-servlet-jsp-version>
+    <orbit-javax-servlet-jsp-jstl-version>1.2.0.v201004190952</orbit-javax-servlet-jsp-jstl-version>
     <orbit-com-sun-el-version>1.0.0.v201004190952</orbit-com-sun-el-version>
     <orbit-org-apache-jasper-version>2.1.0.v201004190952</orbit-org-apache-jasper-version>
     <orbit-org-apache-taglibs-standard-version>1.2.0.v201004190952</orbit-org-apache-taglibs-standard-version>
@@ -63,6 +64,7 @@
                 <get src="${eclipse-mirror}/${eclipse-drop}/ecj-${eclipse-ecj-version}.jar" dest="${assembly-directory}/lib/jsp/ecj-${eclipse-ecj-version}.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit-url}/javax.el_${orbit-javax-el-version}.jar" dest="${assembly-directory}/lib/jsp/javax.el_${orbit-javax-el-version}.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit-url}/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" dest="${assembly-directory}/lib/jsp/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" usetimestamp="true" verbose="true" />
+                <get src="${orbit-url}/javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" dest="${assembly-directory}/lib/jsp/javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit-url}/com.sun.el_${orbit-com-sun-el-version}.jar" dest="${assembly-directory}/lib/jsp/com.sun.el_${orbit-com-sun-el-version}.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit-url}/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" dest="${assembly-directory}/lib/jsp/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" usetimestamp="true" verbose="true" />
                 <get src="${orbit-url}/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" dest="${assembly-directory}/lib/jsp/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" usetimestamp="true" verbose="true" />

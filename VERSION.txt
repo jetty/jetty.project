@@ -2,6 +2,7 @@ jetty-7.1.3-SNAPSHOT
  + 297598 JDBCLoginService uses hardcoded credential class
  + 305898 Websocket handles query string in URI
  + 313205 Unable to run test-jdbc-sessions tests
+ + 314177 JSTL support is broken
 
 jetty-7.1.2.v20100523
  + 308866 Update test suite to JUnit4 - Module jetty-util
