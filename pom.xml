@@ -220,6 +220,7 @@
           <configuration>
             <findbugsXmlOutput>true</findbugsXmlOutput>
             <xmlOutput>true</xmlOutput>
+            <effort>Max</effort>
             <onlyAnalyze>org.eclipse.jetty.*</onlyAnalyze>
           </configuration>
         </plugin>
