@@ -200,8 +200,14 @@
   <!-- Excluding due to Geronimo Dependency Requirements -->
   <project groupId="org.eclipse.jetty">
     <exclude>jetty-annotations</exclude>
+    <exclude>jetty-ajp</exclude>
     <exclude>jetty-jaspi</exclude>
     <exclude>jetty-plus</exclude>
+    <exclude>example-jetty-embedded</exclude>
+    <exclude>test-continuation</exclude>
+    <exclude>test-continuation-jetty6</exclude>
+    <exclude>test-jetty-webapp</exclude>
+    <exclude>test-jetty-servlet</exclude>
   </project>
   <!-- Dependencies for OSGI are too complicated to deal with right now -->
   <project groupId="org.eclipse.jetty.osgi">
@@ -221,6 +227,13 @@
     <exclude>jetty-plus</exclude>
     <exclude>jetty-all-server</exclude>
     <exclude>jetty-all</exclude>
+  </project>
+  <project groupId="org.eclipse.jetty.tests">
+    <exclude>test-sessions-common</exclude>
+    <exclude>test-jdbc-sessions</exclude>
+    <exclude>test-hash-sessions</exclude>
+    <exclude>test-integration</exclude>
+    <exclude>test-webapp-rfc2616</exclude>
   </project>
   <daemon>
     <script>jetty-distribution/src/main/resources/bin/jetty.sh</script>
