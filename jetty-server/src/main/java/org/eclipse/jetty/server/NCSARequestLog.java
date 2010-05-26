@@ -41,6 +41,10 @@ import org.eclipse.jetty.util.log.Log;
  *
  * @org.apache.xbean.XBean element="ncsaLog"
  */
+
+/* ------------------------------------------------------------ */
+/**
+ */
 public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
 {
     private String _filename;
@@ -66,6 +70,10 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     private transient ArrayList _buffers;
     private transient char[] _copy;
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Create request log object with default settings.
+     */
     public NCSARequestLog()
     {
         _extended = true;
@@ -75,9 +83,11 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
 
     /* ------------------------------------------------------------ */
     /**
-     * @param filename
-     *                The filename for the request log. This may be in the
-     *                format expected by {@link RolloverFileOutputStream}
+     * Create request log object with specified output file name.
+     * 
+     * @param filename the file name for the request log.
+     *                 This may be in the format expected
+     *                 by {@link RolloverFileOutputStream}
      */
     public NCSARequestLog(String filename)
     {
@@ -89,9 +99,12 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
 
     /* ------------------------------------------------------------ */
     /**
-     * @param filename
-     *                The filename for the request log. This may be in the
-     *                format expected by {@link RolloverFileOutputStream}
+     * Set the output file name of the request log.
+     * The file name may be in the format expected by
+     * {@link RolloverFileOutputStream}.
+     * 
+     * @param filename file name of the request log
+     *                
      */
     public void setFilename(String filename)
     {
@@ -104,11 +117,25 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
         _filename = filename;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve the output file name of the request log.
+     * 
+     * @return file name of the request log
+     */
     public String getFilename()
     {
         return _filename;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve the file name of the request log with the expanded
+     * date wildcard if the output is written to the disk using
+     * {@link RolloverFileOutputStream}.
+     * 
+     * @return file name of the request log, or null if not applicable
+     */
     public String getDatedFilename()
     {
         if (_fileOut instanceof RolloverFileOutputStream)
@@ -118,116 +145,283 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
 
     /* ------------------------------------------------------------ */
     /**
-     * @param format
-     *                Format for the timestamps in the log file. If not set, the
-     *                pre-formated request timestamp is used.
+     * Set the timestamp format for request log entries in the file.
+     * If this is not set, the pre-formated request timestamp is used.
+     * 
+     * @param format timestamp format string 
      */
     public void setLogDateFormat(String format)
     {
         _logDateFormat = format;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve the timestamp format string for request log entries.
+     * 
+     * @return timestamp format string.
+     */
     public String getLogDateFormat()
     {
         return _logDateFormat;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the locale of the request log.
+     * 
+     * @param logLocale locale object
+     */
     public void setLogLocale(Locale logLocale)
     {
         _logLocale = logLocale;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve the locale of the request log.
+     * 
+     * @return locale object
+     */
     public Locale getLogLocale()
     {
         return _logLocale;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the timezone of the request log.
+     * 
+     * @param tz timezone string
+     */
     public void setLogTimeZone(String tz)
     {
         _logTimeZone = tz;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve the timezone of the request log.
+     * 
+     * @return timezone string
+     */
     public String getLogTimeZone()
     {
         return _logTimeZone;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the number of days before rotated log files are deleted.
+     * 
+     * @param retainDays number of days to keep a log file
+     */
     public void setRetainDays(int retainDays)
     {
         _retainDays = retainDays;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve the number of days before rotated log files are deleted.
+     * 
+     * @return number of days to keep a log file
+     */
     public int getRetainDays()
     {
         return _retainDays;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the extended request log format flag.
+     * 
+     * @param extended true - log the extended request information,
+     *                 false - do not log the extended request information
+     */
     public void setExtended(boolean extended)
     {
         _extended = extended;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve the extended request log format flag.
+     * 
+     * @return value of the flag
+     */
     public boolean isExtended()
     {
         return _extended;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Set append to log flag.
+     * 
+     * @param append true - request log file will be appended after restart,
+     *               false - request log file will be overwritten after restart
+     */
     public void setAppend(boolean append)
     {
         _append = append;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve append to log flag.
+     * 
+     * @return value of the flag
+     */
     public boolean isAppend()
     {
         return _append;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Set request paths that will not be logged.
+     * 
+     * @param ignorePaths array of request paths
+     */
     public void setIgnorePaths(String[] ignorePaths)
     {
         _ignorePaths = ignorePaths;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve the request paths that will not be logged.
+     * 
+     * @return array of request paths
+     */
     public String[] getIgnorePaths()
     {
         return _ignorePaths;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Controls logging of the request cookies.
+     * 
+     * @param logCookies true - values of request cookies will be logged,
+     *                   false - values of request cookies will not be logged
+     */
     public void setLogCookies(boolean logCookies)
     {
         _logCookies = logCookies;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve log cookies flag
+     * 
+     * @return value of the flag
+     */
     public boolean getLogCookies()
     {
         return _logCookies;
     }
 
-    public boolean getLogServer()
-    {
-        return _logServer;
-    }
-
+    /* ------------------------------------------------------------ */
+    /**
+     * Controls logging of the request hostname.
+     * 
+     * @param logServer true - request hostname will be logged,
+     *                  false - request hostname will not be logged
+     */
     public void setLogServer(boolean logServer)
     {
         _logServer = logServer;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve log hostname flag.
+     * 
+     * @return value of the flag
+     */
+    public boolean getLogServer()
+    {
+        return _logServer;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Controls logging of request processing time.
+     * 
+     * @param logLatency true - request processing time will be logged
+     *                   false - request processing time will not be logged
+     */
     public void setLogLatency(boolean logLatency)
     {
         _logLatency = logLatency;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve log request processing time flag.
+     * 
+     * @return value of the flag
+     */
     public boolean getLogLatency()
     {
         return _logLatency;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Controls whether the actual IP address of the connection or
+     * the IP address from the X-Forwarded-For header will be logged.
+     * 
+     * @param preferProxiedForAddress true - IP address from header will be logged,
+     *                                false - IP address from the connection will be logged
+     */
     public void setPreferProxiedForAddress(boolean preferProxiedForAddress)
     {
         _preferProxiedForAddress = preferProxiedForAddress;
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieved log X-Forwarded-For IP address flag.
+     * 
+     * @return value of the flag
+     */
+    public boolean getPreferProxiedForAddress()
+    {
+        return _preferProxiedForAddress;
+    }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Set the log file name date format.
+     * @see RolloverFileOutputStream#RolloverFileOutputStream(String, boolean, int, TimeZone, String, String)
+     * 
+     * @param logFileDateFormat format string that is passed to {@link RolloverFileOutputStream}
+     */
+    public void setFilenameDateFormat(String logFileDateFormat)
+    {
+        _filenameDateFormat = logFileDateFormat;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve the file name date format string.
+     * 
+     * @return the log File Date Format
+     */
+    public String getFilenameDateFormat()
+    {
+        return _filenameDateFormat;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Writes the request and response information to the output stream.
+     * 
+     * @see org.eclipse.jetty.server.RequestLog#log(org.eclipse.jetty.server.Request, org.eclipse.jetty.server.Response)
+     */
     public void log(Request request, Response response)
     {
         if (!isStarted())
@@ -394,6 +588,14 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Writes extended request and response information to the output stream.
+     * 
+     * @param request request object
+     * @param response response object
+     * @param writer log file writer
+     * @throws IOException
+     */
     protected void logExtended(Request request,
                                Response response,
                                Writer writer) throws IOException
@@ -420,6 +622,11 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Set up request logging and open log file.
+     * 
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
+     */
     @Override
     protected void doStart() throws Exception
     {
@@ -456,6 +663,11 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Close the log file and perform cleanup.
+     * 
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
+     */
     @Override
     protected void doStop() throws Exception
     {
@@ -487,28 +699,4 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
         _buffers = null;
         _copy = null;
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return the log File Date Format
-     */
-    public String getFilenameDateFormat()
-    {
-        return _filenameDateFormat;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the log file date format.
-     *
-     * @see RolloverFileOutputStream#RolloverFileOutputStream(String, boolean, int, TimeZone, String, String)
-     * @param logFileDateFormat
-     *                the logFileDateFormat to pass to
-     *                {@link RolloverFileOutputStream}
-     */
-    public void setFilenameDateFormat(String logFileDateFormat)
-    {
-        _filenameDateFormat = logFileDateFormat;
-    }
-
 }
