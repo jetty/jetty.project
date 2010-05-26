@@ -23,12 +23,6 @@ Command Line Options:
                    a sub processes.  This can be used when start.ini
                    contains -X or -D arguments, but creates an extra
                    JVM instance.
-  
-  --secure         Enable Security:
-                     * JVM Security Manager
-                     * Security Policies
-                     * Secure Logging
-                     * Audit Logging
                      
   --stop           Stop the running Jetty instance.
   
