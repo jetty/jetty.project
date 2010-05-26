@@ -426,7 +426,8 @@ public class HttpDestination
         }
     }
 
-    private void recycleConnection(HttpConnection connection) {
+    private void recycleConnection(HttpConnection connection) 
+    {
     	connection.cancelIdleTimeout();
     	try
         {

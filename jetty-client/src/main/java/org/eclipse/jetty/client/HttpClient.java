@@ -296,7 +296,7 @@ public class HttpClient extends HttpBuffers implements Attributes
 
     /**
      * Registers a listener that can listen to the stream of execution between the client and the
-     * server and influence events.  Sequential calls to the method wrapper sequentially wrap the preceeding
+     * server and influence events.  Sequential calls to the method wrapper sequentially wrap the preceding
      * listener in a delegation model.
      * <p/>
      * NOTE: the SecurityListener is a special listener which doesn't need to be added via this
@@ -313,7 +313,8 @@ public class HttpClient extends HttpBuffers implements Attributes
         }
         _registeredListeners.add(listenerClass);
     }
-
+    
+    /* ------------------------------------------------------------ */
     public LinkedList<String> getRegisteredListeners()
     {
         return _registeredListeners;

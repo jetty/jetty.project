@@ -1,4 +1,5 @@
 jetty-7.1.3-SNAPSHOT
+ + 296567 HttpClient RedirectListener handles new HttpDestination
  + 297598 JDBCLoginService uses hardcoded credential class
  + 305898 Websocket handles query string in URI
  + 307457 Exchanges are left unhandled when connection is lost
