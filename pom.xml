@@ -23,6 +23,7 @@
     <junit4-version>4.8.1</junit4-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>1.5.10</slf4j-version>
+    <build-support-version>1.0-SNAPSHOT</build-support-version>
   </properties>
   <scm>
     <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk</connection>
@@ -136,8 +137,8 @@
         <dependencies>
            <dependency>
              <groupId>org.eclipse.jetty.toolchain</groupId>
-             <artifactId>jetty-enforcer-rules</artifactId>
-             <version>1.1</version>
+             <artifactId>jetty-build-support</artifactId>
+             <version>${build-support-version}</version>
            </dependency>
         </dependencies>
       </plugin>
@@ -207,8 +208,8 @@
           <dependencies>
             <dependency>
               <groupId>org.eclipse.jetty.toolchain</groupId>
-              <artifactId>jetty-build-tool-configs</artifactId>
-              <version>1.0-SNAPSHOT</version>
+              <artifactId>jetty-build-support</artifactId>
+              <version>${build-support-version}</version>
             </dependency>
           </dependencies>
         </plugin>
