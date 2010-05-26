@@ -6,157 +6,108 @@ package org.eclipse.jetty.client;
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.TestCase;
-
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.util.log.Log;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-/* Test expiring connections
- * 
+import static org.junit.Assert.assertTrue;
+
+/**
  * Test contributed by: Michiel Thuys for JETTY-806
  */
-public class ExpireTest extends TestCase
+public class ExpireTest
 {
-    HttpClient client;
+    private Server server;
+    private HttpClient client;
+    private int port;
 
-    Server server;
-
-    AtomicInteger expireCount = new AtomicInteger();
-
-    final String host = "localhost";
-
-    int _port;
-
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void init() throws Exception
     {
-        client = new HttpClient();
-        client.setConnectorType( HttpClient.CONNECTOR_SELECT_CHANNEL );
-        client.setTimeout( 200 );
-        client.setMaxRetries( 0 );
-        client.setMaxConnectionsPerAddress(100);
-        try
-        {
-            client.start();
-        }
-        catch ( Exception e )
-        {
-            throw new Error( "Cannot start HTTP client: " + e );
-        }
-
-        // Create server
         server = new Server();
         SelectChannelConnector connector = new SelectChannelConnector();
-        connector.setHost( host );
-        connector.setPort( 0 );
-        server.setConnectors( new Connector[] { connector } );
-        server.setHandler( new AbstractHandler()
+        connector.setHost("localhost");
+        connector.setPort(0);
+        server.addConnector(connector);
+        server.setHandler(new AbstractHandler()
         {
-            public void handle( String target, Request baseRequest, HttpServletRequest servletRequest, HttpServletResponse response ) throws IOException,
-                ServletException
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
             {
-                Request request = (Request) servletRequest;
+                request.setHandled(true);
                 try
                 {
-                    Thread.sleep( 2000 );
+                    Thread.sleep(2000);
                 }
-                catch ( InterruptedException e )
+                catch (InterruptedException x)
                 {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+                    throw new ServletException(x);
                 }
-                request.setHandled( true );
             }
-        } );
-        try
-        {
-            server.start();
-            _port = connector.getLocalPort();
-        }
-        catch ( Exception e )
-        {
-            Log.warn( "Cannot create server: " + e );
-        }
+        });
+        server.start();
+        port = connector.getLocalPort();
+
+        client = new HttpClient();
+        client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        client.setTimeout(200);
+        client.setMaxRetries(0);
+        client.setMaxConnectionsPerAddress(100);
+        client.start();
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void destroy() throws Exception
     {
         client.stop();
         server.stop();
+        server.join();
     }
 
-    public void testExpire() throws IOException
+    @Test
+    public void testExpire() throws Exception
     {
-        String baseUrl = "http://" + host + ":" + _port + "/";
+        String baseUrl = "http://" + "localhost" + ":" + port + "/";
 
         int count = 200;
-        expireCount.set( 0 );
-        Log.info( "Starting test on " + baseUrl );
+        final CountDownLatch expires = new CountDownLatch(count);
 
         for (int i=0;i<count;i++)
         {
-            if (i%10==0)
-                System.err.print('.');
-            expireCount.incrementAndGet();
-            final ContentExchange ex = new ContentExchange()
+            final ContentExchange exchange = new ContentExchange()
             {
                 @Override
                 protected void onExpire()
                 {
-                    expireCount.decrementAndGet();
+                    expires.countDown();
                 }
             };
-            ex.setMethod( "GET" );
-            ex.setURL( baseUrl );
+            exchange.setMethod("GET");
+            exchange.setURL(baseUrl);
 
-            client.send( ex );
-            try
-            {
-                Thread.sleep( 50 );
-            }
-            catch ( InterruptedException e )
-            {
-                break;
-            }
+            client.send(exchange);
+            Thread.sleep(50);
         }
-        // Log.info("Test done");
+
         // Wait to be sure that all exchanges have expired
-        try
-        {
-            Thread.sleep( 2000 );
-            int loops = 0;
-            while ( expireCount.get()>0 && loops < 10 ) // max out at 30 seconds
-            {
-                Log.info( "waiting for test to complete: "+expireCount.get()+" of "+count );
-                ++loops;
-                Thread.sleep( 2000 );
-            }
-            Thread.sleep( 2000 );
-        }
-        catch ( InterruptedException e )
-        {
-        }
-        System.err.println('!');
-
-        assertEquals( 0, expireCount.get() );
+        assertTrue(expires.await(5, TimeUnit.SECONDS));
     }
 }
