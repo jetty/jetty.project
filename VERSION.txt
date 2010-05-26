@@ -1,6 +1,7 @@
 jetty-7.1.3-SNAPSHOT
  + 297598 JDBCLoginService uses hardcoded credential class
  + 305898 Websocket handles query string in URI
+ + 307457 Exchanges are left unhandled when connection is lost
  + 313205 Unable to run test-jdbc-sessions tests
  + 314177 JSTL support is broken
  + 314009 BindException: Address already in use' when explicitly specifying
