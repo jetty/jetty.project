@@ -14,6 +14,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
@@ -29,6 +30,62 @@ import static org.junit.Assert.assertTrue;
  */
 public class ConnectionTest
 {
+    @Test
+    public void testServerClosedConnection() throws Exception
+    {
+        ServerSocket serverSocket = new ServerSocket();
+        serverSocket.bind(null);
+        int port=serverSocket.getLocalPort();
+
+        HttpClient httpClient = new HttpClient();
+        httpClient.setMaxConnectionsPerAddress(1);
+        httpClient.start();
+        try
+        {
+            CountDownLatch latch = new CountDownLatch(1);
+            HttpExchange exchange = new ConnectionExchange(latch);
+            exchange.setAddress(new Address("localhost", port));
+            exchange.setURI("/");
+            httpClient.send(exchange);
+
+            Socket remote = serverSocket.accept();
+            OutputStream output = remote.getOutputStream();
+            output.write("HTTP/1.1 200 OK\r\n".getBytes("UTF-8"));
+            output.write("Content-Length: 0\r\n".getBytes("UTF-8"));
+            output.write("\r\n".getBytes("UTF-8"));
+            output.flush();
+
+            assertEquals(HttpExchange.STATUS_COMPLETED, exchange.waitForDone());
+
+            remote.close();
+
+            // Need to wait a bit to allow the client to detect
+            // that the server has closed the connection
+            Thread.sleep(500);
+
+            // The server has closed the connection and another attempt to send
+            // with the same connection would fail because the connection has been
+            // closed by the client as well.
+            // The client must open a new connection in this case, and we check
+            // that the new request completes correctly
+            exchange.reset();
+            httpClient.send(exchange);
+
+            remote = serverSocket.accept();
+            output = remote.getOutputStream();
+            output.write("HTTP/1.1 200 OK\r\n".getBytes("UTF-8"));
+            output.write("Content-Length: 0\r\n".getBytes("UTF-8"));
+            output.write("\r\n".getBytes("UTF-8"));
+            output.flush();
+
+            assertEquals(HttpExchange.STATUS_COMPLETED, exchange.waitForDone());
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
     @Test
     public void testConnectionFailed() throws Exception
     {
@@ -60,6 +117,50 @@ public class ConnectionTest
             }
 
             assertEquals(HttpExchange.STATUS_EXCEPTED, exchange.getStatus());
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
+    public void testMultipleConnectionsFailed() throws Exception
+    {
+        ServerSocket serverSocket = new ServerSocket();
+        serverSocket.bind(null);
+        int port=serverSocket.getLocalPort();
+        serverSocket.close();
+
+        HttpClient httpClient = new HttpClient();
+        httpClient.setMaxConnectionsPerAddress(1);
+        httpClient.start();
+        try
+        {
+            HttpExchange[] exchanges = new HttpExchange[20];
+            final CountDownLatch latch = new CountDownLatch(exchanges.length);
+            for (int i = 0; i < exchanges.length; ++i)
+            {
+                HttpExchange exchange = new HttpExchange()
+                {
+                    @Override
+                    protected void onConnectionFailed(Throwable x)
+                    {
+                        latch.countDown();
+                    }
+                };
+                exchange.setAddress(new Address("localhost", port));
+                exchange.setURI("/");
+                exchanges[i] = exchange;
+            }
+
+            for (HttpExchange exchange : exchanges)
+                httpClient.send(exchange);
+
+            for (HttpExchange exchange : exchanges)
+                assertEquals(HttpExchange.STATUS_EXCEPTED, exchange.waitForDone());
+
+            assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
         }
         finally
         {

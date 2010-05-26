@@ -229,9 +229,10 @@ public class HttpDestination
             if (connection==null)
                 return null;
 
-            if (connection.cancelIdleTimeout() )
+            // Check if the connection was idle,
+            // but it expired just a moment ago
+            if (connection.cancelIdleTimeout())
                 return connection;
-
         }
     }
 
@@ -271,7 +272,7 @@ public class HttpDestination
                 HttpExchange ex = _queue.removeFirst();
                 ex.setStatus(HttpExchange.STATUS_EXCEPTED);
                 ex.getEventListener().onConnectionFailed(throwable);
-                
+
                 // Since an existing connection had failed, we need to create a
                 // connection if the  queue is not empty and client is running.
                 if (!_queue.isEmpty() && _client.isStarted())
@@ -328,13 +329,7 @@ public class HttpDestination
             else
             {
                 HttpExchange ex = _queue.removeFirst();
-
-                // If server closes the connection, put the exchange back
-                // to the idle queue and recycle the connection
-                if(!connection.send(ex)) {
-                    _queue.addFirst(ex);
-                    recycleConnection(connection);
-                }
+                send(connection, ex);
             }
         }
 
@@ -383,13 +378,7 @@ public class HttpDestination
                 else
                 {
                     HttpExchange ex = _queue.removeFirst();
-                  
-                    // If server closes the connection, put the exchange back
-                    // to the idle queue and recycle the connection
-                    if(!connection.send(ex)) {
-                    	_queue.addFirst(ex);
-                    	recycleConnection(connection);
-                    }
+                    send(connection, ex);
                 }
                 this.notifyAll();
             }
@@ -405,7 +394,7 @@ public class HttpDestination
         }
     }
 
-    public void returnIdleConnection(HttpConnection connection) throws IOException
+    public void returnIdleConnection(HttpConnection connection)
     {
         try
         {
@@ -426,29 +415,6 @@ public class HttpDestination
         }
     }
 
-    private void recycleConnection(HttpConnection connection) 
-    {
-    	connection.cancelIdleTimeout();
-    	try
-        {
-            connection.close();
-        }
-        catch (IOException e)
-        {
-            Log.ignore(e);
-        }
-        synchronized (this)
-        {
-            // If a connection had failed, need to remove it from _idle
-            // and _connections queues and start a new connection
-            _idle.remove(connection);
-            _connections.remove(connection);
-            
-            if (!_queue.isEmpty() && _client.isStarted())
-                startNewConnection();
-        }
-    }
-    
     public void send(HttpExchange ex) throws IOException
     {
         LinkedList<String> listeners = _client.getRegisteredListeners();
@@ -523,16 +489,7 @@ public class HttpDestination
         HttpConnection connection = getIdleConnection();
         if (connection != null)
         {
-            synchronized (this)
-            {
-                // Send could fail due to server closes the connection.
-                // put the exchange back to the idle queue and recycle the connection 
-                if(!connection.send(ex))
-                {
-                    _queue.add(ex);
-                    recycleConnection(connection);
-                }
-            }
+            send(connection, ex);
         }
         else
         {
@@ -543,6 +500,20 @@ public class HttpDestination
                 {
                     startNewConnection();
                 }
+            }
+        }
+    }
+
+    protected void send(HttpConnection connection, HttpExchange exchange) throws IOException
+    {
+        synchronized (this)
+        {
+            // If server closes the connection, put the exchange back
+            // to the exchange queue and recycle the connection
+            if(!connection.send(exchange))
+            {
+                _queue.addFirst(exchange);
+                returnIdleConnection(connection);
             }
         }
     }
