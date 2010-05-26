@@ -91,19 +91,38 @@ public class WebSocketFactory
         HttpConnection http = HttpConnection.getCurrentConnection();
         ConnectedEndPoint endp = (ConnectedEndPoint)http.getEndPoint();
         WebSocketConnection connection = new WebSocketConnection(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime);
-
+        
         String uri=request.getRequestURI();
 	String query=request.getQueryString();
 	if (query!=null && query.length()>0)
 	    uri+="?"+query;
         String host=request.getHeader("Host");
-        response.setHeader("Upgrade","WebSocket");
-        response.addHeader("Connection","Upgrade");
-        response.addHeader("WebSocket-Origin",origin);
-        response.addHeader("WebSocket-Location",(request.isSecure()?"wss://":"ws://")+host+uri);
-        if (protocol!=null)
-            response.addHeader("WebSocket-Protocol",protocol);
-        response.sendError(101,"Web Socket Protocol Handshake");
+        
+        String key1 = request.getHeader("Sec-WebSocket-Key1");
+        if (key1!=null)
+        {
+            String key2 = request.getHeader("Sec-WebSocket-Key2");
+            connection.setHixieKeys(key1,key2);
+
+            response.setHeader("Upgrade","WebSocket");
+            response.addHeader("Connection","Upgrade");
+            response.addHeader("Sec-WebSocket-Origin",origin);
+            response.addHeader("Sec-WebSocket-Location",(request.isSecure()?"wss://":"ws://")+host+uri);
+            if (protocol!=null)
+                response.addHeader("Sec-WebSocket-Protocol",protocol);
+            response.sendError(101,"WebSocket Protocol Handshake");
+        }
+        else
+        {
+            response.setHeader("Upgrade","WebSocket");
+            response.addHeader("Connection","Upgrade");
+            response.addHeader("WebSocket-Origin",origin);
+            response.addHeader("WebSocket-Location",(request.isSecure()?"wss://":"ws://")+host+uri);
+            if (protocol!=null)
+                response.addHeader("WebSocket-Protocol",protocol);
+            response.sendError(101,"Web Socket Protocol Handshake");
+        }
+        
         response.flushBuffer();
 
         connection.fill(((HttpParser)http.getParser()).getHeaderBuffer());
@@ -111,6 +130,5 @@ public class WebSocketFactory
 
         websocket.onConnect(connection);
         request.setAttribute("org.eclipse.jetty.io.Connection",connection);
-        response.flushBuffer();
      }
 }

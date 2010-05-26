@@ -1,4 +1,6 @@
-jetty-7.1.3
+ + 314581 Implement the Sec-Websocket handshake
+
+jetty-7.1.3.v20100526
  + 296567 HttpClient RedirectListener handles new HttpDestination
  + 297598 JDBCLoginService uses hardcoded credential class
  + 305898 Websocket handles query string in URI

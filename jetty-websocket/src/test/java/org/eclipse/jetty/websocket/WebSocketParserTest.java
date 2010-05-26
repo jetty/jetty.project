@@ -129,6 +129,14 @@ public class WebSocketParserTest
         assertTrue(_parser.getBuffer()==null);
     }
 
+
+    @Test
+    public void testHixieCrypt() throws Exception
+    {
+        assertEquals(155712099,WebSocketParser.hixieCrypt("18x 6]8vM;54 *(5:  {   U1]8  z [  8"));
+        assertEquals(173347027,WebSocketParser.hixieCrypt("1_ tx7X d  <  nw  334J702) 7]o}` 0"));
+    }
+    
     // TODO test:
     // blocking,
     // async

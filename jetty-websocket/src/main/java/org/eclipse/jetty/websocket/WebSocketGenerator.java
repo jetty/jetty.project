@@ -2,9 +2,13 @@ package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
 
 
 /* ------------------------------------------------------------ */
@@ -157,4 +161,32 @@ public class WebSocketGenerator
     {
         return _buffer==null || _buffer.length()==0;
     }
+
+    public static byte[] doTheHixieHixieShake(long key1,long key2,byte[] key3)
+    {            
+        try
+        {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte [] fodder = new byte[16];
+            
+            fodder[0]=(byte)(0xff&(key1>>24));
+            fodder[1]=(byte)(0xff&(key1>>16));
+            fodder[2]=(byte)(0xff&(key1>>8));
+            fodder[3]=(byte)(0xff&key1);
+            fodder[4]=(byte)(0xff&(key2>>24));
+            fodder[5]=(byte)(0xff&(key2>>16));
+            fodder[6]=(byte)(0xff&(key2>>8));
+            fodder[7]=(byte)(0xff&key2);
+            for (int i=0;i<8;i++)
+                fodder[8+i]=key3[i];
+            md.update(fodder);
+            byte[] result=md.digest();
+            return result;
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+    
 }
