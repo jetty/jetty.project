@@ -23,7 +23,7 @@
     <junit4-version>4.8.1</junit4-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>1.5.10</slf4j-version>
-    <build-support-version>1.0-SNAPSHOT</build-support-version>
+    <build-support-version>1.0</build-support-version>
   </properties>
   <scm>
     <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk</connection>
@@ -227,6 +227,7 @@
       </plugins>
     </pluginManagement>
   </build>
+  <!--
   <repositories>
     <repository>
       <snapshots>
@@ -237,6 +238,7 @@
       <url>http://oss.sonatype.org/content/groups/jetty</url>
     </repository>
   </repositories>
+   -->
   <modules>
     <module>jetty-util</module>
     <module>jetty-io</module>
