@@ -1,4 +1,5 @@
 jetty-7.1.4-SNAPSHOT
+ + 292326 Stop continuations if server is stopped.
  + 302350 org.eclipse.jetty.server.NCSARequestLog is missing JavaDoc
  + 314581 Implement the Sec-Websocket handshake
 

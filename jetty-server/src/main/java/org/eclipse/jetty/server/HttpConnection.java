@@ -189,7 +189,13 @@ public class HttpConnection implements Connection
     {
         return _requests;
     }
-
+    
+    /* ------------------------------------------------------------ */
+    public Server getServer()
+    {
+        return _server;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @return The time this connection was established.
