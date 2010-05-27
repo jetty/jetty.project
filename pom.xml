@@ -82,7 +82,7 @@
               <archive>
                 <manifestEntries>
                   <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
-                  <Bundle-Name>${name}</Bundle-Name>
+                  <Bundle-Name>${project.name}</Bundle-Name>
                   <Bundle-SymbolicName>${bundle-symbolic-name}.source;singleton:=true</Bundle-SymbolicName>
                   <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
                   <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
