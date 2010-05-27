@@ -200,7 +200,6 @@
   <!-- Excluding due to Geronimo Dependency Requirements -->
   <project groupId="org.eclipse.jetty">
     <exclude>jetty-annotations</exclude>
-    <exclude>jetty-ajp</exclude>
     <exclude>jetty-jaspi</exclude>
     <exclude>jetty-plus</exclude>
     <exclude>example-jetty-embedded</exclude>
