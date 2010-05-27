@@ -205,7 +205,6 @@
     <exclude>example-jetty-embedded</exclude>
     <exclude>test-continuation</exclude>
     <exclude>test-continuation-jetty6</exclude>
-    <exclude>test-jetty-webapp</exclude>
     <exclude>test-jetty-servlet</exclude>
   </project>
   <!-- Dependencies for OSGI are too complicated to deal with right now -->
