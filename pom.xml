@@ -353,6 +353,13 @@
                 <link>http://java.sun.com/javaee/5/docs/api</link>
                 <link>http://junit.sourceforge.net/javadoc/</link>
               </links>
+              <tags>
+                <tag>
+                  <name>org.apache.xbean.XBean</name>
+                  <placement>x</placement>
+                  <head></head>
+                </tag>
+              </tags>
             </configuration>
           </plugin>
         </plugins>

@@ -54,8 +54,6 @@ public class AppLifeCycle extends Graph
          *            the node being processed
          * @param app
          *            the app being processed
-         * @param deploymentManager
-         *            the {@link DeploymentManager} tracking the {@link AppLifeCycle} and {@link App}
          * @throws Exception
          *             if any problem severe enough to halt the AppLifeCycle processing
          */

@@ -667,7 +667,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     /**
      * Unsupported.
      * 
-     * @todo we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
+     * TODO: we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
      */
     public String getAlgorithm()
     {
@@ -678,7 +678,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     /**
      * Unsupported.
      * 
-     * @todo we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
+     * TODO: we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
      */
     public void setAlgorithm(String algorithm)
     {

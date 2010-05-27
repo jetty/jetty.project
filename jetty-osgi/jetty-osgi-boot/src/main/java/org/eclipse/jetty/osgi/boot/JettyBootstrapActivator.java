@@ -148,8 +148,8 @@ public class JettyBootstrapActivator implements BundleActivator
      * registers it as an OSGi service. The tracker
      * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
      * 
-     * @param context
-     *            The current bundle context
+     * @param contributor
+     *            The bundle
      * @param webappFolderPath
      *            The path to the root of the webapp. Must be a path relative to
      *            bundle; either an absolute path.
@@ -171,18 +171,15 @@ public class JettyBootstrapActivator implements BundleActivator
      * registers it as an OSGi service. The tracker
      * {@link JettyContextHandlerServiceTracker} will do the actual deployment.
      * 
-     * @param context
-     *            The current bundle context
+     * @param contributor
+     *            The bundle
      * @param webappFolderPath
      *            The path to the root of the webapp. Must be a path relative to
      *            bundle; either an absolute path.
      * @param contextPath
      *            The context path. Must start with "/"
-     * @param thisBundleInstallationOverride
-     *            The location to a folder where the context file is located
-     *            This overrides the default behavior that consists of using the
-     *            location where the bundle is installed. Useful when in fact
-     *            the webapp contributed is not inside a bundle.
+     * @param dic
+     *        TODO: parameter description
      * @throws Exception
      */
     public static void registerWebapplication(Bundle contributor, String webappFolderPath, String contextPath, Dictionary<String, String> dic) throws Exception
@@ -220,11 +217,8 @@ public class JettyBootstrapActivator implements BundleActivator
      * @param contextFilePath
      *            The path to the file inside the bundle that defines the
      *            context.
-     * @param thisBundleInstallationOverride
-     *            The location to a folder where the context file is located
-     *            This overrides the default behavior that consists of using the
-     *            location where the bundle is installed. Useful when in fact
-     *            the webapp contributed is not inside a bundle.
+     * @param dic
+     *          TODO: parameter description
      * @throws Exception
      */
     public static void registerContext(Bundle contributor, String contextFilePath, Dictionary<String, String> dic) throws Exception

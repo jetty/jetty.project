@@ -396,17 +396,19 @@ public class WebappRegistrationHelper
     /**
      * Deploy a new web application on the jetty server.
      * 
-     * @param context
-     *            The current bundle context
+     * @param bundle
+     *            The bundle
      * @param webappFolderPath
      *            The path to the root of the webapp. Must be a path relative to
      *            bundle; either an absolute path.
      * @param contextPath
      *            The context path. Must start with "/"
-     * @param classInBundle
-     *            A class that belongs to the current bundle to inherit from the
-     *            osgi classloader. Null to not have access to the OSGI
-     *            classloader.
+     * @param extraClasspath
+     * @param overrideBundleInstallLocation
+     * @param webXmlPath
+     * @param defaultWebXmlPath
+     *            TODO: parameter description
+     * @return The contexthandler created and started
      * @throws Exception
      */
     public ContextHandler registerWebapplication(Bundle bundle, String webappFolderPath, String contextPath, String extraClasspath,
@@ -439,12 +441,16 @@ public class WebappRegistrationHelper
     }
 
     /**
-     * @See {@link WebAppDeployer#scan()}
-     * TODO: refacotr this into the createContext method of OSGiAppProvider.
-     * 
+     * TODO: refactor this into the createContext method of OSGiAppProvider.
+     * @see WebAppDeployer#scan()
+
+     * @param contributor
      * @param webapp
      * @param contextPath
-     * @param classInBundle
+     * @param extraClasspath
+     * @param bundleInstall
+     * @param webXmlPath
+     * @param defaultWebXmlPath
      * @return The contexthandler created and started
      * @throws Exception
      */
@@ -537,7 +543,7 @@ public class WebappRegistrationHelper
     /**
      * Stop a ContextHandler and remove it from the collection.
      * 
-     * @See ContextDeployer#undeploy
+     * @see ContextDeployer#undeploy
      * @param contextHandler
      * @throws Exception
      */
@@ -579,9 +585,11 @@ public class WebappRegistrationHelper
      * Context encompasses jndi and all other things. This makes the definition
      * of the webapp a lot more self-contained.
      * 
-     * @param webapp
-     * @param contextPath
-     * @param classInBundle
+     * @param contributor
+     * @param contextFileRelativePath
+     * @param extraClasspath
+     * @param overrideBundleInstallLocation
+     * @return The contexthandler created and started
      * @throws Exception
      */
     public ContextHandler registerContext(Bundle contributor, String contextFileRelativePath, String extraClasspath, String overrideBundleInstallLocation)

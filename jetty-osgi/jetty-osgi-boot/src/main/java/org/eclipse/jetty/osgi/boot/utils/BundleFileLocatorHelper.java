@@ -53,7 +53,7 @@ public interface BundleFileLocatorHelper
      * 
      * @param bundle
      * @param path
-     * @return
+     * @return file object
      * @throws Exception
      */
     public File getFileInBundle(Bundle bundle, String path) throws Exception;

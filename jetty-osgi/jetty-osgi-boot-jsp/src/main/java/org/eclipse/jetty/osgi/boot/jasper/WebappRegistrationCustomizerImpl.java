@@ -117,7 +117,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
      * Support only 2 types of packaging for the bundle: - the bundle is a jar (recommended for runtime.) - the bundle is a folder and contain jars in the root
      * and/or in the lib folder (nice for PDE developement situations) Unsupported: the bundle is a jar that embeds more jars.
      * 
-     * @return
+     * @return array of URLs
      * @throws Exception
      */
     public URL[] getJarsWithTlds(OSGiAppProvider provider, BundleFileLocatorHelper locatorHelper) throws Exception

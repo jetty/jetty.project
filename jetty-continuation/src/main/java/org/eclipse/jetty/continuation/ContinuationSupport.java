@@ -97,7 +97,7 @@ public class ContinuationSupport
      * deployed. It may be an implementation native to the container (eg
      * org.eclipse.jetty.server.AsyncContinuation) or one of the utility
      * implementations provided such as an internal <code>FauxContinuation</code>
-     * or a real implementation like {@link Servlet3Continuation}.
+     * or a real implementation like {@link org.eclipse.jetty.continuation.Servlet3Continuation}.
      * @param request The request 
      * @return a Continuation instance
      */

@@ -1550,7 +1550,9 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * @param context
+     * Set request context
+     * 
+     * @param context context object
      */
     public void setContext(Context context)
     {
@@ -1560,7 +1562,8 @@ public class Request implements HttpServletRequest
     
     /* ------------------------------------------------------------ */
     /**
-     * @return True if this is the first call of {@link #takeNewContext()} since the last {@link #setContext(Context)} call.
+     * @return True if this is the first call of {@link #takeNewContext()} 
+     * since the last {@link #setContext(org.eclipse.jetty.server.handler.ContextHandler.Context)} call.
      */
     public boolean takeNewContext()
     {
