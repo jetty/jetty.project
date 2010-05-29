@@ -3,6 +3,7 @@ jetty-7.1.4-SNAPSHOT
  + 294212 Can not customize session cookie path 
  + 302350 org.eclipse.jetty.server.NCSARequestLog is missing JavaDoc
  + 304100 Better document JMX setup in jetty-jmx.xml
+ + 314299 Create test harness for JDBCLoginService
  + 314581 Implement the Sec-Websocket handshake
 
 jetty-7.1.3.v20100526
