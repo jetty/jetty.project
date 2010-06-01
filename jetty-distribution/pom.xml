@@ -45,6 +45,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.4</version>
         <executions>
           <execution>
             <phase>generate-resources</phase>
@@ -53,22 +54,61 @@
             </goals>
             <configuration>
               <tasks>
+                <!-- This is the Orbit Downloads Process -->
+
+                <!-- Step 1: download orbit artifact into orbit-cache (if not present) -->
+                <property name="orbit-cache" value="${user.home}/.m2/eclipse-orbit" />
+
+                <mkdir dir="${orbit-cache}" />
+                <get dest="${orbit-cache}" verbose="true" skipexisting="true">
+                  <url url="${orbit-url}/javax.servlet_${orbit-javax-servlet-version}.jar" />
+                  <url url="${orbit-url}/javax.activation_${orbit-javax-activation-version}.jar" />
+                  <url url="${orbit-url}/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
+                  <url url="${orbit-url}/javax.el_${orbit-javax-el-version}.jar" />
+                  <url url="${orbit-url}/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" />
+                  <url url="${orbit-url}/javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" />
+                  <url url="${orbit-url}/com.sun.el_${orbit-com-sun-el-version}.jar" />
+                  <url url="${orbit-url}/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />
+                  <url url="${orbit-url}/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
+                </get>
+
+                <mkdir dir="${orbit-cache}/${eclipse-drop}" />
+                <get dest="${orbit-cache}/${eclipse-drop}" verbose="true" skipexisting="true">
+                  <url url="${eclipse-mirror}/${eclipse-drop}/ecj-${eclipse-ecj-version}.jar" />
+                </get>
+
+                <!-- Step 2: copy the orbit artifact from orbit-cache to the appropriate lib directory -->
+
+                <!-- ${jetty.home}/lib/ -->
                 <mkdir dir="${assembly-directory}/lib" />
-                <get src="${orbit-url}/javax.servlet_${orbit-javax-servlet-version}.jar" dest="${assembly-directory}/lib/servlet-api-2.5.jar" usetimestamp="true" verbose="true" />
-               
+                <copy file="${orbit-cache}/javax.servlet_${orbit-javax-servlet-version}.jar"
+                      tofile="${assembly-directory}/lib/servlet-api-2.5.jar" />
+
+                <!-- ${jetty.home}/lib/jndi/ -->
                 <mkdir dir="${assembly-directory}/lib/jndi" />
-                <get src="${orbit-url}/javax.activation_${orbit-javax-activation-version}.jar" dest="${assembly-directory}/lib/jndi/javax.activation_${orbit-javax-activation-version}.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit-url}/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" dest="${assembly-directory}/lib/jndi/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" usetimestamp="true" verbose="true" />
-               
-                <mkdir dir="${assembly-directory}/lib/jsp" />           
-                <get src="${eclipse-mirror}/${eclipse-drop}/ecj-${eclipse-ecj-version}.jar" dest="${assembly-directory}/lib/jsp/ecj-${eclipse-ecj-version}.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit-url}/javax.el_${orbit-javax-el-version}.jar" dest="${assembly-directory}/lib/jsp/javax.el_${orbit-javax-el-version}.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit-url}/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" dest="${assembly-directory}/lib/jsp/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit-url}/javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" dest="${assembly-directory}/lib/jsp/javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit-url}/com.sun.el_${orbit-com-sun-el-version}.jar" dest="${assembly-directory}/lib/jsp/com.sun.el_${orbit-com-sun-el-version}.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit-url}/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" dest="${assembly-directory}/lib/jsp/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit-url}/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" dest="${assembly-directory}/lib/jsp/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" usetimestamp="true" verbose="true" />
-                              
+                <copy todir="${assembly-directory}/lib/jndi">
+                  <fileset dir="${orbit-cache}">
+                    <include name="javax.activation_${orbit-javax-activation-version}.jar" />
+                    <include name="javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
+                  </fileset>
+                </copy>
+
+                <!-- ${jetty.home}/lib/jsp/ -->
+                <mkdir dir="${assembly-directory}/lib/jsp" />
+                <copy todir="${assembly-directory}/lib/jsp">
+                  <fileset dir="${orbit-cache}">
+                    <include name="javax.el_${orbit-javax-el-version}.jar" />
+                    <include name="javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" />
+                    <include name="javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" />
+                    <include name="com.sun.el_${orbit-com-sun-el-version}.jar" />
+                    <include name="org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />
+                    <include name="org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
+                  </fileset>
+                  <fileset dir="${orbit-cache}/${eclipse-drop}">
+                    <include name="ecj-${eclipse-ecj-version}.jar" />
+                  </fileset>
+                </copy>
+
                 <copy file="../VERSION.txt" todir="${assembly-directory}" />
                 <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
               </tasks>
