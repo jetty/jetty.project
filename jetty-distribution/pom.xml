@@ -12,8 +12,8 @@
     <eclipse-mirror>http://mirror.cc.vt.edu/pub/eclipse/eclipse/downloads/drops</eclipse-mirror>
     <orbit-url>http://download.eclipse.org/tools/orbit/downloads/drops/S20100423142122/bundles</orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <eclipse-drop>S-3.6M7-201004291549</eclipse-drop>
-    <eclipse-ecj-version>3.6M7</eclipse-ecj-version>
+    <eclipse-drop>S-3.6RC3-201005271700</eclipse-drop>
+    <eclipse-ecj-version>3.6RC3</eclipse-ecj-version>
     <orbit-javax-activation-version>${javax-activation-version}.0.v200906290531</orbit-javax-activation-version>
     <orbit-javax-el-version>2.1.0.v201004190952</orbit-javax-el-version>
     <orbit-javax-mail-glassfish-version>${javax-mail-version}.v200808130215</orbit-javax-mail-glassfish-version>
