@@ -36,6 +36,7 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 
 /**
  * Quality of Service Filter.
+ * 
  * This filter limits the number of active requests to the number set by the "maxRequests" init parameter (default 10).
  * If more requests are received, they are suspended and placed on priority queues.  Priorities are determined by 
  * the {@link #getPriority(ServletRequest)} method and are a value between 0 and the value given by the "maxPriority" 
@@ -79,11 +80,16 @@ public class QoSFilter implements Filter
     ServletContext _context;
     long _waitMs;
     long _suspendMs;
+    int _maxRequests;
     Semaphore _passes;
     Queue<Continuation>[] _queue;
     ContinuationListener[] _listener;
     String _suspended="QoSFilter@"+this.hashCode();
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @see javax.servlet.Filter#init(javax.servlet.FilterConfig)
+     */
     public void init(FilterConfig filterConfig) 
     {
         _context=filterConfig.getServletContext();
@@ -110,10 +116,10 @@ public class QoSFilter implements Filter
             };
         }
         
-        int passes=__DEFAULT_PASSES;
+        int _maxRequests=__DEFAULT_PASSES;
         if (filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM)!=null)
-            passes=Integer.parseInt(filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM));
-        _passes=new Semaphore(passes,true);
+            _maxRequests=Integer.parseInt(filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM));
+        _passes=new Semaphore(_maxRequests,true);
         
         long wait = __DEFAULT_WAIT_MS;
         if (filterConfig.getInitParameter(MAX_WAIT_INIT_PARAM)!=null)
@@ -126,6 +132,10 @@ public class QoSFilter implements Filter
         _suspendMs=suspend;
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @see javax.servlet.Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)
+     */
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) 
     throws IOException, ServletException
     {
@@ -238,6 +248,83 @@ public class QoSFilter implements Filter
     }
 
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see javax.servlet.Filter#destroy()
+     */
     public void destroy(){}
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Get the (short) amount of time (in milliseconds) that the filter would wait
+     * for the semaphore to become available before suspending a request.
+     * 
+     * @return wait time (in milliseconds)
+     */
+    public long getWaitMs()
+    {
+        return _waitMs;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the (short) amount of time (in milliseconds) that the filter would wait
+     * for the semaphore to become available before suspending a request.
+     * 
+     * @param value wait time (in milliseconds)
+     */
+    public void setWaitMs(long value)
+    {
+        _waitMs = value;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Get the amount of time (in milliseconds) that the filter would suspend
+     * a request for while waiting for the semaphore to become available.
+     * 
+     * @return suspend time (in milliseconds)
+     */
+    public long getSuspendMs()
+    {
+        return _suspendMs;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the amount of time (in milliseconds) that the filter would suspend
+     * a request for while waiting for the semaphore to become available.
+     * 
+     * @param value suspend time (in milliseconds)
+     */
+    public void setSuspendMs(long value)
+    {
+        _suspendMs = value;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Get the maximum number of requests allowed to be processed
+     * at the same time.
+     * 
+     * @return maximum number of requests
+     */
+    public int getMaxRequests()
+    {
+        return _maxRequests;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the maximum number of requests allowed to be processed
+     * at the same time.
+     * 
+     * @param passes the _passes to set
+     */
+    public void setMaxRequests(int value)
+    {
+        _passes = new Semaphore((value-_maxRequests+_passes.availablePermits()), true);
+        _maxRequests = value;
+    }
 
 }
