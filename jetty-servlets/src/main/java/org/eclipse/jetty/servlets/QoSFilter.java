@@ -116,10 +116,11 @@ public class QoSFilter implements Filter
             };
         }
         
-        int _maxRequests=__DEFAULT_PASSES;
+        int maxRequests=__DEFAULT_PASSES;
         if (filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM)!=null)
-            _maxRequests=Integer.parseInt(filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM));
-        _passes=new Semaphore(_maxRequests,true);
+            maxRequests=Integer.parseInt(filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM));
+        _passes=new Semaphore(maxRequests,true);
+        _maxRequests = maxRequests;
         
         long wait = __DEFAULT_WAIT_MS;
         if (filterConfig.getInitParameter(MAX_WAIT_INIT_PARAM)!=null)

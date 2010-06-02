@@ -183,10 +183,11 @@ public class DoSFilter implements Filter
             delay = Integer.parseInt(filterConfig.getInitParameter(DELAY_MS_INIT_PARAM));
         _delayMs = delay;
 
-        _throttledRequests = __DEFAULT_THROTTLE;
+        int throttledRequests = __DEFAULT_THROTTLE;
         if (filterConfig.getInitParameter(THROTTLED_REQUESTS_INIT_PARAM) != null)
-            _throttledRequests = Integer.parseInt(filterConfig.getInitParameter(THROTTLED_REQUESTS_INIT_PARAM));
-        _passes = new Semaphore(_throttledRequests,true);
+            throttledRequests = Integer.parseInt(filterConfig.getInitParameter(THROTTLED_REQUESTS_INIT_PARAM));
+        _passes = new Semaphore(throttledRequests,true);
+        _throttledRequests = throttledRequests;
 
         long wait = __DEFAULT_WAIT_MS;
         if (filterConfig.getInitParameter(MAX_WAIT_INIT_PARAM) != null)

@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.log.Log;
 
 /* --------------------------------------------------------------------- */
@@ -661,11 +662,23 @@ public class ServletHandler extends ScopedHandler
     {
         MultiException mx = new MultiException();
 
+        Container beanContainer = getServer()==null? null: getServer().getContainer();
+        
         // Start filters
         if (_filters!=null)
         {
             for (int i=0;i<_filters.length; i++)
+            {
                 _filters[i].start();
+                if (beanContainer != null)
+                {
+                    Filter filter = _filters[i].getFilter();
+                    if (filter != null && filter.getClass().getName().startsWith("org.eclipse.jetty."))
+                    {
+                        beanContainer.addBean(filter);
+                    }
+                }
+            }
         }
         
         if (_servlets!=null)
@@ -689,6 +702,14 @@ public class ServletHandler extends ScopedHandler
                     }
                     
                     servlets[i].start();
+                    if (beanContainer != null)
+                    {
+                        Servlet servlet = servlets[i].getServletInstance();
+                        if (servlet != null && servlet.getClass().getName().startsWith("org.eclipse.jetty."))
+                        {
+                            beanContainer.addBean(servlet);
+                        }
+                    }
                 }
                 catch(Throwable e)
                 {
