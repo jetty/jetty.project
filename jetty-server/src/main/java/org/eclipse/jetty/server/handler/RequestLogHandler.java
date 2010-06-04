@@ -19,6 +19,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.AsyncContinuation;
 import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -47,9 +48,24 @@ public class RequestLogHandler extends HandlerWrapper
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {
-        super.handle(target, baseRequest, request, response);
-        if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()) && _requestLog!=null)
-            _requestLog.log((Request)request, (Response)response);
+        AsyncContinuation continuation = baseRequest.getAsyncContinuation();
+        if (!continuation.isInitial())
+        {
+            baseRequest.setDispatchTime(System.currentTimeMillis());
+        }
+        
+        try
+        {
+            super.handle(target, baseRequest, request, response);
+        }
+        finally
+        {
+            if (_requestLog != null && DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
+            {
+                _requestLog.log(baseRequest, (Response)response);
+            }
+            
+        }
     }
 
     /* ------------------------------------------------------------ */

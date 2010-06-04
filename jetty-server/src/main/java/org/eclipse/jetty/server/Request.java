@@ -155,7 +155,8 @@ public class Request implements HttpServletRequest
     private HttpSession _session;
     private SessionManager _sessionManager;
     private long _timeStamp;
-
+    private long _dispatchTime;
+    
     private Buffer _timeStampBuffer;
     private HttpURI _uri;
     
@@ -1211,6 +1212,16 @@ public class Request implements HttpServletRequest
     }
     
     /* ------------------------------------------------------------ */
+    /** Get timestamp of the request dispatch
+     * 
+     * @return timestamp
+     */
+    public long getDispatchTime()
+    {
+        return _dispatchTime;
+    }
+
+    /* ------------------------------------------------------------ */
     public boolean isAsyncStarted()
     {
         return _async.isAsyncStarted();
@@ -1786,6 +1797,16 @@ public class Request implements HttpServletRequest
     public void setUserIdentityScope(UserIdentity.Scope scope)
     {
         _scope=scope;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set timetstamp of request dispatch
+     * 
+     * @param value timestamp
+     */
+    public void setDispatchTime(long value)
+    {
+        _dispatchTime = value;
     }
 
     /* ------------------------------------------------------------ */

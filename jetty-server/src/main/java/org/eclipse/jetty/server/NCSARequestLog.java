@@ -61,6 +61,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     private boolean _logLatency = false;
     private boolean _logCookies = false;
     private boolean _logServer = false;
+    private boolean _logDispatch = false;
 
     private transient OutputStream _out;
     private transient OutputStream _fileOut;
@@ -417,6 +418,29 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     }
 
     /* ------------------------------------------------------------ */
+    /** 
+     * Controls logging of the request dispatch time
+     * 
+     * @param value true - request dispatch time will be logged
+     *              false - request dispatch time will not be logged
+     */
+    public void setLogDispatch(boolean value)
+    {
+        _logDispatch = value;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieve request dispatch time logging flag
+     * 
+     * @return value of the flag
+     */
+    public boolean isLogDispatch()
+    {
+        return _logDispatch;
+    }
+
+    /* ------------------------------------------------------------ */
     /**
      * Writes the request and response information to the output stream.
      * 
@@ -568,11 +592,20 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
                             _writer.write('\"');
                         }
                     }
+                    
+                    final long now = System.currentTimeMillis();
+                    final long start = request.getTimeStamp();
+                    final long dispatch = request.getDispatchTime();
+                    if (_logDispatch)
+                    {   
+                        _writer.write(' ');
+                        _writer.write(Long.toString(now - (dispatch==0 ? start:dispatch)));
+                    }
 
                     if (_logLatency)
                     {
                         _writer.write(' ');
-                        _writer.write(Long.toString(System.currentTimeMillis() - request.getTimeStamp()));
+                        _writer.write(Long.toString(now - start));
                     }
 
                     _writer.write(StringUtil.__LINE_SEPARATOR);
