@@ -96,6 +96,7 @@ public class DoSFilter implements Filter
     final static String __TRACKER = "DoSFilter.Tracker";
     final static String __THROTTLED = "DoSFilter.Throttled";
 
+    final static String __DEFAULT_ATTR_PREFIX = "DoSFilter";
     final static int __DEFAULT_MAX_REQUESTS_PER_SEC = 25;
     final static int __DEFAULT_DELAY_MS = 100;
     final static int __DEFAULT_THROTTLE = 5;
@@ -104,6 +105,7 @@ public class DoSFilter implements Filter
     final static long __DEFAULT_MAX_REQUEST_MS_INIT_PARAM=30000L;
     final static long __DEFAULT_MAX_IDLE_TRACKER_MS_INIT_PARAM=30000L;
 
+    final static String ATTR_PREFIX_INIT_PARAM = "attrPrefix";
     final static String MAX_REQUESTS_PER_S_INIT_PARAM = "maxRequestsPerSec";
     final static String DELAY_MS_INIT_PARAM = "delayMs";
     final static String THROTTLED_REQUESTS_INIT_PARAM = "throttledRequests";
@@ -123,6 +125,7 @@ public class DoSFilter implements Filter
 
     ServletContext _context;
 
+    protected String _name;
     protected long _delayMs;
     protected long _throttleMs;
     protected long _maxWaitMs;
@@ -150,6 +153,11 @@ public class DoSFilter implements Filter
     public void init(FilterConfig filterConfig)
     {
         _context = filterConfig.getServletContext();
+
+        String attrPrefix = __DEFAULT_ATTR_PREFIX;
+        if (filterConfig.getInitParameter(ATTR_PREFIX_INIT_PARAM)!=null)
+            attrPrefix=filterConfig.getInitParameter(ATTR_PREFIX_INIT_PARAM);
+        _name = attrPrefix;
 
         _queue = new Queue[getMaxPriority() + 1];
         _listener = new ContinuationListener[getMaxPriority() + 1];
@@ -266,6 +274,11 @@ public class DoSFilter implements Filter
             }
         });
         _timerThread.start();
+
+        if (_context!=null)
+        {
+            _context.setAttribute("org.eclipse.jetty.servlets."+_name,this);
+        }
     }
 
 

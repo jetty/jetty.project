@@ -33,6 +33,7 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.eclipse.jetty.util.log.Log;
 
 /**
  * Quality of Service Filter.
@@ -67,24 +68,29 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
  */
 public class QoSFilter implements Filter
 {
+    final static String __DEFAULT_ATTR_PREFIX="QoSFilter";
     final static int __DEFAULT_MAX_PRIORITY=10;
     final static int __DEFAULT_PASSES=10;
     final static int __DEFAULT_WAIT_MS=50;
     final static long __DEFAULT_TIMEOUT_MS = -1;
     
+    final static String ATTR_PREFIX_INIT_PARAM="attrPrefix";
     final static String MAX_REQUESTS_INIT_PARAM="maxRequests";
     final static String MAX_PRIORITY_INIT_PARAM="maxPriority";
     final static String MAX_WAIT_INIT_PARAM="waitMs";
     final static String SUSPEND_INIT_PARAM="suspendMs";
     
     ServletContext _context;
-    long _waitMs;
-    long _suspendMs;
-    int _maxRequests;
-    Semaphore _passes;
-    Queue<Continuation>[] _queue;
-    ContinuationListener[] _listener;
-    String _suspended="QoSFilter@"+this.hashCode();
+
+    protected String _name;
+    protected long _waitMs;
+    protected long _suspendMs;
+    protected int _maxRequests;
+    
+    private Semaphore _passes;
+    private Queue<Continuation>[] _queue;
+    private ContinuationListener[] _listener;
+    private String _suspended=__DEFAULT_ATTR_PREFIX+"@"+this.hashCode();
     
     /* ------------------------------------------------------------ */
     /**
@@ -94,6 +100,11 @@ public class QoSFilter implements Filter
     {
         _context=filterConfig.getServletContext();
         
+        String attrPrefix = __DEFAULT_ATTR_PREFIX;
+        if (filterConfig.getInitParameter(ATTR_PREFIX_INIT_PARAM)!=null)
+            attrPrefix = filterConfig.getInitParameter(ATTR_PREFIX_INIT_PARAM);
+        _name = attrPrefix;
+
         int max_priority=__DEFAULT_MAX_PRIORITY;
         if (filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM)!=null)
             max_priority=Integer.parseInt(filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM));
@@ -131,6 +142,11 @@ public class QoSFilter implements Filter
         if (filterConfig.getInitParameter(SUSPEND_INIT_PARAM)!=null)
             suspend=Integer.parseInt(filterConfig.getInitParameter(SUSPEND_INIT_PARAM));
         _suspendMs=suspend;
+        
+        if (_context!=null)
+        {
+            _context.setAttribute("org.eclipse.jetty.servlets."+_name,this);
+        }
     }
     
     /* ------------------------------------------------------------ */
