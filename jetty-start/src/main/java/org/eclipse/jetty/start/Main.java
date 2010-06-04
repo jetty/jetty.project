@@ -13,19 +13,18 @@
 package org.eclipse.jetty.start;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
@@ -35,10 +34,10 @@ import java.security.Policy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TimeZone;
 
 
 /*-------------------------------------------*/
@@ -55,6 +54,12 @@ import java.util.TimeZone;
  */
 public class Main
 {
+    private static final int EXIT_USAGE = 1;
+    private static final int ERR_LOGGING = -1;
+    private static final int ERR_INVOKE_MAIN = -2;
+    private static final int ERR_SECURITY = -3;
+    private static final int ERR_NOT_STOPPED = -4;
+    private static final int ERR_UNKNOWN = -5;
     private boolean _showUsage = false;
     private boolean _dumpVersions = false;
     private boolean _listConfig = false;
@@ -79,6 +84,7 @@ public class Main
         catch (Throwable t)
         {
             t.printStackTrace(System.err);
+            System.exit(ERR_UNKNOWN);
         }
     }
 
@@ -106,12 +112,16 @@ public class Main
                     _startConfig=arg.substring(9);
                 }
                 else
+                {
                     arguments.add(arg);
+                }
             }
             
             // if no non-option inis, add the start.ini
             if (!ini)
+            {
                 arguments.addAll(0,loadStartIni(null));
+            }
             
             // The XML Configuration Files to initialize with
             List<String> xmls = new ArrayList<String>();
@@ -167,9 +177,26 @@ public class Main
                 // Special internal indicator that jetty was started by the jetty.sh Daemon
                 if ("--daemon".equals(arg))
                 {
-                    PrintStream logger = new PrintStream(new FileOutputStream(new File(System.getProperty("jetty.log","."),"start.log")));
+                    File startLog = new File(System.getProperty("jetty.logs","."),"start.log");
+                    if (!startLog.exists() && !startLog.createNewFile())
+                    {
+                        // Output about error is lost in majority of cases.
+                        System.err.println("Unable to create: " + startLog.getAbsolutePath());
+                        // Toss a unique exit code indicating this failure.
+                        System.exit(ERR_LOGGING);
+                    }
+
+                    if (!startLog.canWrite())
+                    {
+                        // Output about error is lost in majority of cases.
+                        System.err.println("Unable to write to: " + startLog.getAbsolutePath());
+                        // Toss a unique exit code indicating this failure.
+                        System.exit(ERR_LOGGING);
+                    }
+                    PrintStream logger = new PrintStream(new FileOutputStream(startLog,true));
                     System.setOut(logger);
                     System.setErr(logger);
+                    System.out.println("Establishing start.log on " + new Date());
                     continue;
                 }
 
@@ -218,7 +245,9 @@ public class Main
                                     _config.addActiveOption(opt);
                             }
                             else
+                            {
                                 this._config.setProperty(assign[0],assign[1]);
+                            }
                             break;
                         case 1:
                             this._config.setProperty(assign[0],null);
@@ -240,6 +269,7 @@ public class Main
         {
             t.printStackTrace(System.err);
             System.out.println("Use java -jar start.jar --help for usage information.");
+            System.exit(ERR_UNKNOWN);
         }
     }
 
@@ -252,8 +282,10 @@ public class Main
         File startIniFile = ini==null?((jettyHome!=null)?  new File(jettyHome,"start.ini"):new File("start.ini")):new File(ini);
         if (!startIniFile.exists() || !startIniFile.canRead())
         {
-            if (ini!=null)
-                System.err.println("Warning - can't find ini file: "+ini);
+            if (ini != null)
+            {
+                System.err.println("Warning - can't find ini file: " + ini);
+            }
             // No start.ini found, skip load.
             return Collections.emptyList();
         }
@@ -270,15 +302,18 @@ public class Main
             String arg;
             while ((arg = buf.readLine()) != null)
             {
-                arg=arg.trim();
-                if (arg.length()==0 || arg.startsWith("#"))
+                arg = arg.trim();
+                if (arg.length() == 0 || arg.startsWith("#"))
+                {
                     continue;
+                }
                 args.add(arg);
             }
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
+            System.exit(ERR_UNKNOWN);
         }
         finally
         {
@@ -298,7 +333,7 @@ public class Main
         {
             System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
             System.err.println("ERROR: detailed usage resource unavailable");
-            System.exit(1);
+            System.exit(EXIT_USAGE);
         }
 
         BufferedReader buf = null;
@@ -393,19 +428,9 @@ public class Main
         }
         finally
         {
-            if (buf != null)
-            {
-                try
-                {
-                    buf.close();
-                }
-                catch (IOException ignore)
-                {
-                    /* ignore */
-                }
-            }
+            close(buf);
         }
-        System.exit(1);
+        System.exit(EXIT_USAGE);
     }
 
     public void invokeMain(ClassLoader classloader, String classname, List<String> args) throws IllegalAccessException, InvocationTargetException,
@@ -425,14 +450,19 @@ public class Main
         if (Config.isDebug() || invoked_class == null)
         {
             if (invoked_class == null)
+            {
                 System.err.println("ClassNotFound: " + classname);
+            }
             else
+            {
                 System.err.println(classname + " " + invoked_class.getPackage().getImplementationVersion());
+            }
 
             if (invoked_class == null)
             {
                 System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
                 System.err.println("       java -jar start.jar --help  # for more information");
+                System.exit(ERR_INVOKE_MAIN);
                 return;
             }
         }
@@ -447,36 +477,19 @@ public class Main
     }
 
     /* ------------------------------------------------------------ */
-    public static void close(Reader reader)
+    public static void close(Closeable c)
     {
-        if (reader == null)
+        if (c == null)
         {
             return;
         }
         try
         {
-            reader.close();
+            c.close();
         }
         catch (IOException e)
         {
-            e.printStackTrace();
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public static void close(InputStream stream)
-    {
-        if (stream == null)
-        {
-            return;
-        }
-        try
-        {
-            stream.close();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
     }
 
@@ -568,8 +581,10 @@ public class Main
             return;
         }
         
-        if (_jvmArgs.size()>0 || _sysProps.size()>0)
+        if (_jvmArgs.size() > 0 || _sysProps.size() > 0)
+        {
             System.err.println("WARNING: System properties and/or JVM args set.  Consider using --dry-run or --exec");
+        }
 
         // Set current context class loader to what is selected.
         Thread.currentThread().setContextClassLoader(cl);
@@ -586,12 +601,16 @@ public class Main
             // Check for override of start class (via "jetty.server" property)
             String mainClass = System.getProperty("jetty.server");
             if (mainClass != null)
+            {
                 classname = mainClass;
+            }
 
             // Check for override of start class (via "main.class" property)
             mainClass = System.getProperty("main.class");
             if (mainClass != null)
+            {
                 classname = mainClass;
+            }
 
             Config.debug("main.class=" + classname);
 
@@ -599,7 +618,8 @@ public class Main
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
+            System.exit(ERR_INVOKE_MAIN);
         }
     }
 
@@ -837,28 +857,23 @@ public class Main
             }
             catch (SecurityException e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
             catch (NoSuchMethodException e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
             catch (IllegalArgumentException e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
             catch (IllegalAccessException e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
             catch (InvocationTargetException e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
         }
     }
@@ -913,12 +928,15 @@ public class Main
             {
                 Policy policy = Policy.getPolicy();
                 if (policy != null)
+                {
                     policy.refresh();
+                }
             }
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
+            System.exit(ERR_SECURITY);
         }
     }
 
@@ -952,8 +970,8 @@ public class Main
         }
         catch (Exception e)
         {
-            e.printStackTrace();
-            System.exit(1);
+            e.printStackTrace(System.err);
+            System.exit(ERR_UNKNOWN);
         }
         finally
         {
@@ -1008,8 +1026,8 @@ public class Main
         catch (Exception e)
         {
             e.printStackTrace();
-            System.exit(1);
-            return null; // never executed (just to satisfy javac compiler)
+            System.exit(ERR_UNKNOWN);
+            return null; // never executed (just here to satisfy javac compiler)
         }
         finally
         {
@@ -1020,8 +1038,10 @@ public class Main
     private InputStream getConfigStream() throws FileNotFoundException
     {
         String config=_startConfig;
-        if (config==null || config.length()==0)
-            config=System.getProperty("START","org/eclipse/jetty/start/start.config");
+        if (config == null || config.length() == 0)
+        {
+            config = System.getProperty("START","org/eclipse/jetty/start/start.config");
+        }
         
         Config.debug("config=" + config);
 
@@ -1030,7 +1050,9 @@ public class Main
 
         // resource not found, try filesystem next
         if (cfgstream == null)
+        {
             cfgstream = new FileInputStream(config);
+        }
         
         return cfgstream;
     }
@@ -1054,7 +1076,9 @@ public class Main
         try
         {
             if (_port <= 0)
+            {
                 System.err.println("STOP.PORT system property must be specified");
+            }
             if (_key == null)
             {
                 _key = "";
@@ -1063,18 +1087,26 @@ public class Main
             }
 
             Socket s = new Socket(InetAddress.getByName("127.0.0.1"),_port);
-            OutputStream out = s.getOutputStream();
-            out.write((_key + "\r\nstop\r\n").getBytes());
-            out.flush();
-            s.close();
+            try
+            {
+                OutputStream out = s.getOutputStream();
+                out.write((_key + "\r\nstop\r\n").getBytes());
+                out.flush();
+            }
+            finally
+            {
+                s.close();
+            }
         }
         catch (ConnectException e)
         {
             System.err.println("ERROR: Not running!");
+            System.exit(ERR_NOT_STOPPED);
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
+            System.exit(ERR_UNKNOWN);
         }
     }
 }
