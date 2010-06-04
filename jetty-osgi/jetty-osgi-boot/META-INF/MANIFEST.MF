@@ -24,7 +24,8 @@ Import-Package: javax.mail;version="1.4.0";resolution:=optional,
  org.slf4j.spi;resolution:=optional, 
  org.slf4j.helpers;resolution:=optional
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
-Require-Bundle: org.eclipse.jetty.ajp;bundle-version="[7.0,8)";resolution:=optional,
+Require-Bundle: system.bundle,
+ org.eclipse.jetty.ajp;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.annotations;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.client;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.continuation;bundle-version="[7.0,8)";resolution:=optional,
