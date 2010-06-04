@@ -22,10 +22,11 @@ Import-Package: javax.mail;version="1.4.0";resolution:=optional,
  org.osgi.util.tracker;version="1.3.0",
  org.slf4j;resolution:=optional,
  org.slf4j.spi;resolution:=optional, 
- org.slf4j.helpers;resolution:=optional
+ org.slf4j.helpers;resolution:=optional,
+ org.xml.sax,
+ org.xml.sax.helpers
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
-Require-Bundle: system.bundle,
- org.eclipse.jetty.ajp;bundle-version="[7.0,8)";resolution:=optional,
+Require-Bundle: org.eclipse.jetty.ajp;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.annotations;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.client;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.continuation;bundle-version="[7.0,8)";resolution:=optional,
