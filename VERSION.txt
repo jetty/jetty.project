@@ -9,6 +9,7 @@ jetty-7.1.4-SNAPSHOT
  + 314581 Implement the Sec-Websocket handshake
  + 315190 CrossOriginFilter adds headers not understood by Chrome 5 WebSocket implementation
  + 315715 Improved Cookie version handling. Server.setMaxCookieVersion
+ + 315744 Fixed STOP.PORT and STOP.KEY in start.jar 
 
 jetty-7.1.3.v20100526
  + 296567 HttpClient RedirectListener handles new HttpDestination
