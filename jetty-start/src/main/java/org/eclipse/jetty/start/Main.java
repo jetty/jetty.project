@@ -17,7 +17,9 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -163,9 +165,11 @@ public class Main
                 }
 
                 // Special internal indicator that jetty was started by the jetty.sh Daemon
-                if ("--fromDaemon".equals(arg))
+                if ("--daemon".equals(arg))
                 {
-                    System.err.println("WARN: Ignored deprecated --fromDaemon");
+                    PrintStream logger = new PrintStream(new FileOutputStream(new File(System.getProperty("jetty.log","."),"start.log")));
+                    System.setOut(logger);
+                    System.setErr(logger);
                     continue;
                 }
 

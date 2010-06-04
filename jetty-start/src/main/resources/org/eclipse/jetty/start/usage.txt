@@ -26,6 +26,9 @@ Command Line Options:
                      
   --stop           Stop the running Jetty instance.
   
+  --daemon         Start in daemon mode with stderr and stdout 
+                   redirected to ${jetty.log}/start.log
+  
   --config=<file>  Specify an alternate start.config file.  
                    The default is the start.config file inside
                    the start.jar. The default can also be specified
