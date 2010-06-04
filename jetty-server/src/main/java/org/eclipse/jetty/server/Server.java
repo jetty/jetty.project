@@ -69,7 +69,9 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _sendDateHeader = false; //send Date: header
     private int _graceful=0;
     private boolean _stopAtShutdown;
+    private int _maxCookieVersion=1;
     
+
     /* ------------------------------------------------------------ */
     public Server()
     {
@@ -433,7 +435,24 @@ public class Server extends HandlerWrapper implements Attributes
     {
         return _sendDateHeader;
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /** Get the maximum cookie version.
+     * @return the maximum set-cookie version sent by this server
+     */
+    public int getMaxCookieVersion()
+    {
+        return _maxCookieVersion;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the maximum cookie version.
+     * @param maxCookieVersion the maximum set-cookie version sent by this server
+     */
+    public void setMaxCookieVersion(int maxCookieVersion)
+    {
+        _maxCookieVersion = maxCookieVersion;
+    }
 
     /* ------------------------------------------------------------ */
     /**

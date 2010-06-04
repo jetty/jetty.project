@@ -108,11 +108,11 @@ public class QuotedStringTokenizerTest
         assertEquals("\"abcefg\\\"\"",buf.toString());
         
         buf.setLength(0);
-        QuotedStringTokenizer.quoteIfNeeded(buf,"abc \n efg");
+        QuotedStringTokenizer.quoteIfNeeded(buf,"abc \n efg","\"\\\n\r\t\f\b%+ ;=");
         assertEquals("\"abc \\n efg\"",buf.toString());
         
         buf.setLength(0);
-        QuotedStringTokenizer.quoteIfNeeded(buf,"abcefg");
+        QuotedStringTokenizer.quoteIfNeeded(buf,"abcefg","\"\\\n\r\t\f\b%+ ;=");
         assertEquals("abcefg",buf.toString());
         
     }
@@ -154,9 +154,9 @@ public class QuotedStringTokenizerTest
     @Test
     public void testQuoteString()
     {
-        assertEquals("abc",QuotedStringTokenizer.quote("abc", " ,"));
-        assertEquals("\"a c\"",QuotedStringTokenizer.quote("a c", " ,"));
-        assertEquals("\"a'c\"",QuotedStringTokenizer.quote("a'c", " ,"));  
+        assertEquals("abc",QuotedStringTokenizer.quoteIfNeeded("abc", " ,"));
+        assertEquals("\"a c\"",QuotedStringTokenizer.quoteIfNeeded("a c", " ,"));
+        assertEquals("\"a'c\"",QuotedStringTokenizer.quoteIfNeeded("a'c", " ,"));  
         assertEquals("\"a\\n\\r\\t\"",QuotedStringTokenizer.quote("a\n\r\t")); 
     }
 

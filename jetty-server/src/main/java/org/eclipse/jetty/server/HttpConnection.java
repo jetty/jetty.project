@@ -147,7 +147,7 @@ public class HttpConnection implements Connection
         HttpBuffers ab = (HttpBuffers)_connector;
         _parser = new HttpParser(ab.getRequestBuffers(), endpoint, new RequestHandler());
         _requestFields = new HttpFields();
-        _responseFields = new HttpFields();
+        _responseFields = new HttpFields(server.getMaxCookieVersion());
         _request = new Request(this);
         _response = new Response(this);
         _generator = new HttpGenerator(ab.getResponseBuffers(), _endp);
@@ -164,7 +164,7 @@ public class HttpConnection implements Connection
         _endp = endpoint;
         _parser = parser;
         _requestFields = new HttpFields();
-        _responseFields = new HttpFields();
+        _responseFields = new HttpFields(server.getMaxCookieVersion());
         _request = request;
         _response = new Response(this);
         _generator = generator;
@@ -1175,13 +1175,13 @@ public class HttpConnection implements Connection
                             else
                             {
                                 _responseFields.put(HttpHeaders.CONTENT_TYPE_BUFFER,
-                                        contentType+";charset="+QuotedStringTokenizer.quote(enc,";= "));
+                                        contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(enc,";= "));
                             }
                         }
                         else
                         {
                             _responseFields.put(HttpHeaders.CONTENT_TYPE_BUFFER,
-                                    contentType+";charset="+QuotedStringTokenizer.quote(enc,";= "));
+                                    contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(enc,";= "));
                         }
                     }
                 }

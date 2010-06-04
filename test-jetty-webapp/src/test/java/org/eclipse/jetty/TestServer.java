@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty;
 
+import java.io.File;
 import java.lang.management.ManagementFactory;
 
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -35,8 +36,7 @@ public class TestServer
 {
     public static void main(String[] args) throws Exception
     {
-        String jetty_home = System.getProperty("jetty.home","../jetty-distribution/target/distribution");
-        System.setProperty("jetty.home",jetty_home);
+        String jetty_root = "..";
 
         Server server = new Server();
         server.setSendDateHeader(true);
@@ -63,10 +63,10 @@ public class TestServer
 
         SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
         ssl_connector.setPort(8443);
-        ssl_connector.setKeystore(jetty_home + "/etc/keystore");
+        ssl_connector.setKeystore(jetty_root + "/jetty-server/src/main/config/etc/keystore");
         ssl_connector.setPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         ssl_connector.setKeyPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        ssl_connector.setTruststore(jetty_home + "/etc/keystore");
+        ssl_connector.setTruststore(jetty_root + "/jetty-server/src/main/config/etc/keystore");
         ssl_connector.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         server.addConnector(ssl_connector);
 
@@ -82,10 +82,11 @@ public class TestServer
 
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
-        login.setConfig(jetty_home + "/etc/realm.properties");
+        login.setConfig(jetty_root + "/test-jetty-webapp/src/main/config/etc/realm.properties");
         server.addBean(login);
 
-        NCSARequestLog requestLog = new NCSARequestLog(jetty_home + "/logs/jetty-yyyy_mm_dd.log");
+        File log=File.createTempFile("jetty-yyyy_mm_dd", "log");
+        NCSARequestLog requestLog = new NCSARequestLog(log.toString());
         requestLog.setExtended(false);
         requestLogHandler.setRequestLog(requestLog);
 
