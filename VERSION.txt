@@ -1,6 +1,5 @@
 jetty-7.1.4-SNAPSHOT
  + 292326 Stop continuations if server is stopped.
- + 292814 Make QoSFilter and DoSFilter JMX manageable 
  + 293222 Improve request log to handle/show asynchronous latency
  + 294212 Can not customize session cookie path
  + 302350 org.eclipse.jetty.server.NCSARequestLog is missing JavaDoc
