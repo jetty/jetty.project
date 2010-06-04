@@ -121,9 +121,6 @@ readConfig()
 
 
 
-
-
-
 ##################################################
 # Get the action & configs
 ##################################################
@@ -270,6 +267,10 @@ if [ -z "$CONFIGS" ] && [ -f "$JETTY_CONF" ] && [ -r "$JETTY_CONF" ]
 then
   while read -r CONF
   do
+    if expr "$CONF" : '^#' >/dev/null ; then
+      continue
+    fi
+
     if [ ! -r "$CONF" ] 
     then
       echo "** WARNING: Cannot read '$CONF' specified in '$JETTY_CONF'" 
@@ -371,7 +372,7 @@ fi
 
 
 ##################################################
-# Determine which JVM of version >1.2
+# Determine which JVM of version >1.5
 # Try to use JAVA_HOME
 ##################################################
 if [ -z "$JAVA" ] && [ "$JAVA_HOME" ]
@@ -387,7 +388,7 @@ fi
 
 if [ -z "$JAVA" ]
 then
-  echo "Cannot find a JRE or JDK. Please set JAVA_HOME to a >=1.2 JRE" 2>&2
+  echo "Cannot find a JRE or JDK. Please set JAVA_HOME to a >=1.5 JRE" 2>&2
   exit 1
 fi
 
@@ -433,7 +434,10 @@ JAVA_OPTIONS+=("-Djetty.home=$JETTY_HOME" "-Djava.io.tmpdir=$TMPDIR")
 JETTY_START=$JETTY_HOME/start.jar
 [ ! -f "$JETTY_START" ] && JETTY_START=$JETTY_HOME/lib/start.jar
 
-RUN_ARGS=("${JAVA_OPTIONS[@]}" -jar "$JETTY_START" --fromDaemon $JETTY_ARGS "${CONFIGS[@]}")
+START_INI=$(dirname $JETTY_START)/start.ini
+[ -r "$START_INI" ] || START_INI=""
+
+RUN_ARGS=("${JAVA_OPTIONS[@]}" -jar "$JETTY_START" $JETTY_ARGS "${CONFIGS[@]}")
 RUN_CMD=("$JAVA" "${RUN_ARGS[@]}")
 
 #####################################################
@@ -600,6 +604,7 @@ case "$ACTION" in
     echo "JETTY_PID      =  $JETTY_PID"
     echo "JETTY_PORT     =  $JETTY_PORT"
     echo "JETTY_LOGS     =  $JETTY_LOGS"
+    echo "START_INI      =  $START_INI"
     echo "CONFIGS        =  ${CONFIGS[*]}"
     echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
     echo "JAVA           =  $JAVA"

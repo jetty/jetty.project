@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
 
-import org.eclipse.jetty.start.log.RedirectedStreamLogger;
 
 /*-------------------------------------------*/
 /**
@@ -61,7 +60,6 @@ public class Main
     private boolean _dryRun = false;
     private boolean _exec = false;
     private boolean _secure = false;
-    private boolean _fromDaemon = false;
     private final Config _config = new Config();
     private Set<String> _sysProps = new HashSet<String>();
     private List<String> _jvmArgs = new ArrayList<String>();
@@ -167,10 +165,7 @@ public class Main
                 // Special internal indicator that jetty was started by the jetty.sh Daemon
                 if ("--fromDaemon".equals(arg))
                 {
-                    _fromDaemon = true;
-                    PrintStream logger = new PrintStream(new RedirectedStreamLogger("daemon_yyyy_mm_dd.log",false,90,TimeZone.getTimeZone("GMT")));
-                    System.setOut(logger);
-                    System.setErr(logger);
+                    System.err.println("WARN: Ignored deprecated --fromDaemon");
                     continue;
                 }
 
@@ -494,12 +489,6 @@ public class Main
         if (configuredXmls.isEmpty())
         {
             throw new FileNotFoundException("No XML configuration files specified in start.config or command line.");
-        }
-
-        // Add required logging if executed via the daemon.
-        if (_fromDaemon)
-        {
-            configuredXmls.add("etc/jetty-logging.xml");
         }
 
         // Add mandatory options for secure mode
