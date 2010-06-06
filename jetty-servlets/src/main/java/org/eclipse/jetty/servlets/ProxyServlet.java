@@ -60,9 +60,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * the web application.
  * <p>
  * To facilitate JMX monitoring, the "HttpClient", it's "ThreadPool" and the "Logger"
- * are set as context attributes prefixed with "org.eclipse.jetty.servlets."+name
- * (unless otherwise set with attrPrefix). This attribute prefix is also used for the
- * logger name.
+ * are set as context attributes prefixed with the servlet name.
  * <p>
  * The following init parameters may be used to configure the servlet: <ul>
  * <li>name - Name of Proxy servlet (default: "ProxyServlet"
@@ -92,7 +90,6 @@ public class ProxyServlet implements Servlet
 
     protected ServletConfig _config;
     protected ServletContext _context;
-    protected String _name="ProxyServlet";
 
     /* ------------------------------------------------------------ */
     /* (non-Javadoc)
@@ -111,17 +108,14 @@ public class ProxyServlet implements Servlet
 
         try
         {
-            String t = config.getInitParameter("attrPrefix");
-            if (t!=null)
-                _name=t;
-            _log= Log.getLogger("org.eclipse.jetty.servlets."+_name);
+            _log= Log.getLogger("org.eclipse.jetty.servlets."+config.getServletName());
 
-            t = config.getInitParameter("maxThreads");
+            String t = config.getInitParameter("maxThreads");
             if (t!=null)
                 _client.setThreadPool(new QueuedThreadPool(Integer.parseInt(t)));
             else
                 _client.setThreadPool(new QueuedThreadPool());
-            ((QueuedThreadPool)_client.getThreadPool()).setName(_name.substring(_name.lastIndexOf('.')+1));
+            ((QueuedThreadPool)_client.getThreadPool()).setName(config.getServletName());
 
             t = config.getInitParameter("maxConnections");
             if (t!=null)
@@ -131,9 +125,9 @@ public class ProxyServlet implements Servlet
 
             if (_context!=null)
             {
-                _context.setAttribute("org.eclipse.jetty.servlets."+_name+".Logger",_log);
-                _context.setAttribute("org.eclipse.jetty.servlets."+_name+".ThreadPool",_client.getThreadPool());
-                _context.setAttribute("org.eclipse.jetty.servlets."+_name+".HttpClient",_client);
+                _context.setAttribute(config.getServletName()+".Logger",_log);
+                _context.setAttribute(config.getServletName()+".ThreadPool",_client.getThreadPool());
+                _context.setAttribute(config.getServletName()+".HttpClient",_client);
             }
         }
         catch (Exception e)
@@ -513,7 +507,7 @@ public class ProxyServlet implements Servlet
             if (!_prefix.startsWith("/"))
                 throw new UnavailableException("Prefix parameter must start with a '/'.");
 
-            _log.info(_name + " @ " + _prefix + " to " + _proxyTo);
+            _log.info(config.getServletName()+" @ " + _prefix + " to " + _proxyTo);
         }
 
         @Override

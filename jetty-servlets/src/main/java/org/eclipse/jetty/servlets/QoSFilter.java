@@ -33,7 +33,7 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
  * Quality of Service Filter.
@@ -42,14 +42,14 @@ import org.eclipse.jetty.util.log.Log;
  * If more requests are received, they are suspended and placed on priority queues.  Priorities are determined by 
  * the {@link #getPriority(ServletRequest)} method and are a value between 0 and the value given by the "maxPriority" 
  * init parameter (default 10), with higher values having higher priority.
- * <p>
+ * </p><p>
  * This filter is ideal to prevent wasting threads waiting for slow/limited 
  * resources such as a JDBC connection pool.  It avoids the situation where all of a 
  * containers thread pool may be consumed blocking on such a slow resource.
  * By limiting the number of active threads, a smaller thread pool may be used as 
  * the threads are not wasted waiting.  Thus more memory may be available for use by 
  * the active threads.
- * <p>
+ * </p><p>
  * Furthermore, this filter uses a priority when resuming waiting requests. So that if
  * a container is under load, and there are many requests waiting for resources,
  * the {@link #getPriority(ServletRequest)} method is used, so that more important 
@@ -57,24 +57,27 @@ import org.eclipse.jetty.util.log.Log;
  * maxRequest limit slightly smaller than the containers thread pool and a high priority 
  * allocated to admin users.  Thus regardless of load, admin users would always be
  * able to access the web application.
- * <p>
+ * </p><p>
  * The maxRequest limit is policed by a {@link Semaphore} and the filter will wait a short while attempting to acquire
  * the semaphore. This wait is controlled by the "waitMs" init parameter and allows the expense of a suspend to be
  * avoided if the semaphore is shortly available.  If the semaphore cannot be obtained, the request will be suspended
  * for the default suspend period of the container or the valued set as the "suspendMs" init parameter.
- * 
+ * </p><p>
+ * If the "managedAttr" init parameter is set to true, then this servlet is set as a {@link ServletContext} attribute with the 
+ * filter name as the attribute name.  This allows context external mechanism (eg JMX via {@link ContextHandler#MANAGED_ATTRIBUTES}) to
+ * manage the configuration of the filter.
+ * </p>
  * 
  *
  */
 public class QoSFilter implements Filter
 {
-    final static String __DEFAULT_ATTR_PREFIX="QoSFilter";
     final static int __DEFAULT_MAX_PRIORITY=10;
     final static int __DEFAULT_PASSES=10;
     final static int __DEFAULT_WAIT_MS=50;
     final static long __DEFAULT_TIMEOUT_MS = -1;
     
-    final static String ATTR_PREFIX_INIT_PARAM="attrPrefix";
+    final static String MANAGED_ATTR_INIT_PARAM="managedAttr";
     final static String MAX_REQUESTS_INIT_PARAM="maxRequests";
     final static String MAX_PRIORITY_INIT_PARAM="maxPriority";
     final static String MAX_WAIT_INIT_PARAM="waitMs";
@@ -82,7 +85,6 @@ public class QoSFilter implements Filter
     
     ServletContext _context;
 
-    protected String _name;
     protected long _waitMs;
     protected long _suspendMs;
     protected int _maxRequests;
@@ -90,7 +92,7 @@ public class QoSFilter implements Filter
     private Semaphore _passes;
     private Queue<Continuation>[] _queue;
     private ContinuationListener[] _listener;
-    private String _suspended=__DEFAULT_ATTR_PREFIX+"@"+this.hashCode();
+    private String _suspended="QoSFilter@"+this.hashCode();
     
     /* ------------------------------------------------------------ */
     /**
@@ -99,11 +101,6 @@ public class QoSFilter implements Filter
     public void init(FilterConfig filterConfig) 
     {
         _context=filterConfig.getServletContext();
-        
-        String attrPrefix = __DEFAULT_ATTR_PREFIX;
-        if (filterConfig.getInitParameter(ATTR_PREFIX_INIT_PARAM)!=null)
-            attrPrefix = filterConfig.getInitParameter(ATTR_PREFIX_INIT_PARAM);
-        _name = attrPrefix;
 
         int max_priority=__DEFAULT_MAX_PRIORITY;
         if (filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM)!=null)
@@ -142,11 +139,9 @@ public class QoSFilter implements Filter
         if (filterConfig.getInitParameter(SUSPEND_INIT_PARAM)!=null)
             suspend=Integer.parseInt(filterConfig.getInitParameter(SUSPEND_INIT_PARAM));
         _suspendMs=suspend;
-        
-        if (_context!=null)
-        {
-            _context.setAttribute("org.eclipse.jetty.servlets."+_name,this);
-        }
+
+        if (_context!=null && Boolean.parseBoolean(filterConfig.getInitParameter(MANAGED_ATTR_INIT_PARAM)))
+            _context.setAttribute(filterConfig.getFilterName(),this);
     }
     
     /* ------------------------------------------------------------ */

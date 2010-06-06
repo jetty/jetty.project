@@ -37,6 +37,7 @@ import javax.servlet.http.HttpSessionBindingListener;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 
@@ -60,35 +61,53 @@ import org.eclipse.jetty.util.thread.Timeout;
  * The {@link #extractUserId(ServletRequest request)} function should be
  * implemented, in order to uniquely identify authenticated users.
  * <p>
- * The following init parameters control the behavior of the filter:
+ * The following init parameters control the behavior of the filter:<dl>
  *
- * maxRequestsPerSec    the maximum number of requests from a connection per
+ * <dt>maxRequestsPerSec</dt>
+ *                      <dd>the maximum number of requests from a connection per
  *                      second. Requests in excess of this are first delayed,
- *                      then throttled.
+ *                      then throttled.</dd>
  *
- * delayMs              is the delay given to all requests over the rate limit,
+ * <dt>delayMs</dt>
+ *                      <dd>is the delay given to all requests over the rate limit,
  *                      before they are considered at all. -1 means just reject request,
- *                      0 means no delay, otherwise it is the delay.
+ *                      0 means no delay, otherwise it is the delay.</dd>
  *
- * maxWaitMs            how long to blocking wait for the throttle semaphore.
+ * <dt>maxWaitMs</dt>
+ *                      <dd>how long to blocking wait for the throttle semaphore.</dd>
  *
- * throttledRequests    is the number of requests over the rate limit able to be
- *                      considered at once.
+ * <dt>throttledRequests</dt>
+ *                      <dd>is the number of requests over the rate limit able to be
+ *                      considered at once.</dd>
  *
- * throttleMs           how long to async wait for semaphore.
+ * <dt>throttleMs</dt>
+ *                      <dd>how long to async wait for semaphore.</dd>
  *
- * maxRequestMs         how long to allow this request to run.
+ * <dt>maxRequestMs</dt>
+ *                      <dd>how long to allow this request to run.</dd>
  *
- * maxIdleTrackerMs     how long to keep track of request rates for a connection,
- *                      before deciding that the user has gone away, and discarding it
+ * <dt>maxIdleTrackerMs</dt>
+ *                      <dd>how long to keep track of request rates for a connection,
+ *                      before deciding that the user has gone away, and discarding it</dd>
  *
- * insertHeaders        if true , insert the DoSFilter headers into the response. Defaults to true.
+ * <dt>insertHeaders</dt>
+ *                      <dd>if true , insert the DoSFilter headers into the response. Defaults to true.</dd>
  *
- * trackSessions        if true, usage rate is tracked by session if a session exists. Defaults to true.
+ * <dt>trackSessions</dt>
+ *                      <dd>if true, usage rate is tracked by session if a session exists. Defaults to true.</dd>
  *
- * remotePort           if true and session tracking is not used, then rate is tracked by IP+port (effectively connection). Defaults to false.
+ * <dt>remotePort</dt>
+ *                      <dd>if true and session tracking is not used, then rate is tracked by IP+port (effectively connection). Defaults to false.</dd>
  *
- * ipWhitelist          a comma-separated list of IP addresses that will not be rate limited
+ * <dt>ipWhitelist</dt>
+ *                      <dd>a comma-separated list of IP addresses that will not be rate limited</dd>
+ * 
+ * <dt>managedAttr</dt>
+ *                      <dd>if set to true, then this servlet is set as a {@link ServletContext} attribute with the 
+ * filter name as the attribute name.  This allows context external mechanism (eg JMX via {@link ContextHandler#MANAGED_ATTRIBUTES}) to
+ * manage the configuration of the filter.</dd>
+ * </dl>
+ * </p>
  */
 
 public class DoSFilter implements Filter
@@ -96,7 +115,6 @@ public class DoSFilter implements Filter
     final static String __TRACKER = "DoSFilter.Tracker";
     final static String __THROTTLED = "DoSFilter.Throttled";
 
-    final static String __DEFAULT_ATTR_PREFIX = "DoSFilter";
     final static int __DEFAULT_MAX_REQUESTS_PER_SEC = 25;
     final static int __DEFAULT_DELAY_MS = 100;
     final static int __DEFAULT_THROTTLE = 5;
@@ -105,7 +123,7 @@ public class DoSFilter implements Filter
     final static long __DEFAULT_MAX_REQUEST_MS_INIT_PARAM=30000L;
     final static long __DEFAULT_MAX_IDLE_TRACKER_MS_INIT_PARAM=30000L;
 
-    final static String ATTR_PREFIX_INIT_PARAM = "attrPrefix";
+    final static String MANAGED_ATTR_INIT_PARAM="managedAttr";
     final static String MAX_REQUESTS_PER_S_INIT_PARAM = "maxRequestsPerSec";
     final static String DELAY_MS_INIT_PARAM = "delayMs";
     final static String THROTTLED_REQUESTS_INIT_PARAM = "throttledRequests";
@@ -153,11 +171,6 @@ public class DoSFilter implements Filter
     public void init(FilterConfig filterConfig)
     {
         _context = filterConfig.getServletContext();
-
-        String attrPrefix = __DEFAULT_ATTR_PREFIX;
-        if (filterConfig.getInitParameter(ATTR_PREFIX_INIT_PARAM)!=null)
-            attrPrefix=filterConfig.getInitParameter(ATTR_PREFIX_INIT_PARAM);
-        _name = attrPrefix;
 
         _queue = new Queue[getMaxPriority() + 1];
         _listener = new ContinuationListener[getMaxPriority() + 1];
@@ -275,10 +288,8 @@ public class DoSFilter implements Filter
         });
         _timerThread.start();
 
-        if (_context!=null)
-        {
-            _context.setAttribute("org.eclipse.jetty.servlets."+_name,this);
-        }
+        if (_context!=null && Boolean.parseBoolean(filterConfig.getInitParameter(MANAGED_ATTR_INIT_PARAM)))
+            _context.setAttribute(filterConfig.getFilterName(),this);
     }
 
 

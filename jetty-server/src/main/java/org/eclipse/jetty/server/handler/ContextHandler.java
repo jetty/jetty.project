@@ -79,6 +79,13 @@ import org.eclipse.jetty.util.resource.Resource;
 public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful
 {
     private static final ThreadLocal<Context> __context=new ThreadLocal<Context>();
+    
+    /**
+     * If a context attribute with this name is set, it is interpreted as a 
+     * comma separated list of attribute name. Any other context attributes that
+     * are set with a name from this list will result in a call to {@link #setManagedAttribute(String, Object)},
+     * which typically initiates the creation of a JMX MBean for the attribute value.
+     */
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
 
     /* ------------------------------------------------------------ */
@@ -618,7 +625,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             {
                 String name = (String)e.nextElement();
                 Object value = _scontext.getAttribute(name);
-                setManagedAttribute(name,value);
+                checkManagedAttribute(name,value);
             }
         }
 
@@ -682,7 +689,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             while(e.hasMoreElements())
             {
                 String name = (String)e.nextElement();
-                setManagedAttribute(name,null);
+                checkManagedAttribute(name,null);
             }
         }
         finally
@@ -999,7 +1006,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public void removeAttribute(String name)
     {
-        setManagedAttribute(name,null);
+        checkManagedAttribute(name,null);
         _attributes.removeAttribute(name);
     }
 
@@ -1012,7 +1019,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public void setAttribute(String name, Object value)
     {
-        setManagedAttribute(name,value);
+        checkManagedAttribute(name,value);
         _attributes.setAttribute(name,value);
     }
 
@@ -1029,7 +1036,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             while (e.hasMoreElements())
             {
                 String name = (String)e.nextElement();
-                setManagedAttribute(name,attributes.getAttribute(name));
+                checkManagedAttribute(name,attributes.getAttribute(name));
             }
         }
         else
@@ -1040,7 +1047,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             {
                 String name = (String)e.nextElement();
                 Object value=attributes.getAttribute(name);
-                setManagedAttribute(name,value);
+                checkManagedAttribute(name,value);
                 _attributes.setAttribute(name,value);
             }
         }
@@ -1053,25 +1060,25 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         while (e.hasMoreElements())
         {
             String name = (String)e.nextElement();
-            setManagedAttribute(name,null);
+            checkManagedAttribute(name,null);
         }
         _attributes.clearAttributes();
     }
 
     /* ------------------------------------------------------------ */
-    private void setManagedAttribute(String name, Object value)
+    public void checkManagedAttribute(String name, Object value)
     {
         if (_managedAttributes!=null && _managedAttributes.containsKey(name))
         {
-            Object old =_managedAttributes.put(name,value);
-            if (old!=null)
-                getServer().getContainer().removeBean(old);
-            if (value!=null)
-            {
-                if (_logger.isDebugEnabled()) _logger.debug("Managing "+name);
-                getServer().getContainer().addBean(value);
-            }
+            setManagedAttribute(name,value);
         }
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setManagedAttribute(String name, Object value)
+    {
+        Object old =_managedAttributes.put(name,value);
+        getServer().getContainer().update(this,old,value,name);
     }
 
     /* ------------------------------------------------------------ */
@@ -1753,7 +1760,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 return;
             }
 
-            setManagedAttribute(name,value);
+            checkManagedAttribute(name,value);
             Object old_value=_contextAttributes.getAttribute(name);
 
             if (value==null)
@@ -1786,7 +1793,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
          */
         public synchronized void removeAttribute(String name)
         {
-            setManagedAttribute(name,null);
+            checkManagedAttribute(name,null);
 
             if (_contextAttributes==null)
             {
