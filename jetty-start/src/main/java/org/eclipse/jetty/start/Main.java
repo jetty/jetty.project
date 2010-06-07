@@ -127,9 +127,9 @@ public class Main
             List<String> xmls = new ArrayList<String>();
 
             // Process the arguments
+            int startup=0;
             for (String arg : arguments)
             {
-                
                 if ("--help".equals(arg) || "-?".equals(arg))
                 {
                     _showUsage = true;
@@ -205,6 +205,12 @@ public class Main
                     _secure = true;
                     continue;
                 }
+
+                if (arg.startsWith("--pre="))
+                {
+                    xmls.add(startup++,arg.substring(6));
+                    continue;
+                }
                 
                 if (arg.startsWith("-D"))
                 {
@@ -258,7 +264,7 @@ public class Main
                     
                     continue;
                 }
-
+                
                 // Anything else is considered an XML file.
                 xmls.add(arg);
             }

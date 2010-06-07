@@ -39,6 +39,9 @@ Command Line Options:
                    start.ini file will be read if it exists.
                    A --ini option with no file indicates that
                    start.ini should not be read.
+                   
+  --pre=<file>     Specify a configuration file that is to be processed
+                   before any configuration files listed in start.ini
 
 System Properties:
   These are set with a command line like "java -Dname=value ..." and are

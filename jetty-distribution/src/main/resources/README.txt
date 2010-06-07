@@ -48,16 +48,19 @@ provided by the start.ini file:
 
   java -jar start.jar --help
 
-To run with add configuration file(s), eg SSL
+To run with extra configuration file(s) appended, eg SSL
 
   java -jar start.jar etc/jetty-ssl.xml
+
+To run with extra configuration file(s) prepended, eg logging & jmx
+
+  java -jar start.jar --pre=etc/jetty-logging.xml --pre=etc/jetty-jmx.xml 
 
 To run without the args from start.ini 
 
   java -jar start.jar --ini OPTIONS=Server,websocket etc/jetty.xml etc/jetty-deploy.xml etc/jetty-ssl.xml
 
-To run with JNDI support
+to list the know OPTIONS:
 
-  java -jar start.jar OPTIONS=Server,jsp
-
+  java -jar start.jar --list-options
 
