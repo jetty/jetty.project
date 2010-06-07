@@ -90,7 +90,7 @@ public class WebAppContext extends ServletContextHandler
         "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
         "org.xml.",                         // needed by javax.xml
         "org.w3c.",                         // needed by javax.xml
-        "apache.commons.logging.",          // special case 
+        "org.apache.commons.logging.",      // TODO: review if special case still needed 
         "org.eclipse.jetty.continuation.",  // webapp cannot change continuation classes
         "org.eclipse.jetty.jndi.",          // webapp cannot change naming classes
         "org.eclipse.jetty.plus.jaas.",     // webapp cannot change jaas classes
