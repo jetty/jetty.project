@@ -136,7 +136,7 @@ public class WebInfConfiguration implements Configuration
             // Look for classes directory
             Resource classes= web_inf.addPath("classes/");
             if (classes.exists())
-                ((WebAppClassLoader)context.getClassLoader()).addClassPath(classes.toString());
+                ((WebAppClassLoader)context.getClassLoader()).addClassPath(classes);
 
             // Look for jars
             Resource lib= web_inf.addPath("lib/");

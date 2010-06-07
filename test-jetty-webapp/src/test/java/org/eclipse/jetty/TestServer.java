@@ -92,14 +92,13 @@ public class TestServer
 
         server.setStopAtShutdown(true);
         server.setSendServerVersion(true);
-
         
         WebAppContext webapp = new WebAppContext();
         webapp.setParentLoaderPriority(true);
         webapp.setResourceBase("./src/main/webapp");
+        webapp.setAttribute("testAttribute","testValue");
         
         contexts.addHandler(webapp);
-        
         
         server.start();
         server.join();

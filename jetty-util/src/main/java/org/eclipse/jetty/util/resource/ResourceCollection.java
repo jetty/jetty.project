@@ -462,12 +462,9 @@ public class ResourceCollection extends Resource
     public String toString()
     {
         if(_resources==null)
-            return "";
+            return "[]";
         
-        StringBuilder buffer = new StringBuilder();
-        for(Resource r : _resources)
-            buffer.append(r.toString()).append(';');
-        return buffer.toString();
+        return String.valueOf(Arrays.asList(_resources));
     }
 
     /* ------------------------------------------------------------ */

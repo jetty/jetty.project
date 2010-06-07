@@ -29,7 +29,7 @@ public class WebAppClassLoaderTest
 
         _loader = new WebAppClassLoader(_context);
         _loader.addJars(webapp.addPath("WEB-INF/lib"));
-        _loader.addClassPath(webapp.addPath("WEB-INF/classes").toString());
+        _loader.addClassPath(webapp.addPath("WEB-INF/classes"));
         _loader.setName("test");
     }
 

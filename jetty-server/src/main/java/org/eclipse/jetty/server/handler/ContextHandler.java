@@ -102,11 +102,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
     protected Context _scontext;
 
-    private AttributesMap _attributes;
-    private AttributesMap _contextAttributes;
+    private final AttributesMap _attributes;
+    private final AttributesMap _contextAttributes;
+    private final Map<String,String> _initParams;
     private ClassLoader _classLoader;
     private String _contextPath="/";
-    private Map<String,String> _initParams;
     private String _displayName;
     private Resource _baseResource;
     private MimeTypes _mimeTypes;
@@ -144,6 +144,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         super();
         _scontext=new Context();
         _attributes=new AttributesMap();
+        _contextAttributes=new AttributesMap();
         _initParams=new HashMap<String,String>();
     }
 
@@ -156,6 +157,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         super();
         _scontext=context;
         _attributes=new AttributesMap();
+        _contextAttributes=new AttributesMap();
         _initParams=new HashMap<String,String>();
     }
 
@@ -563,7 +565,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         Thread current_thread=null;
         Context old_context=null;
 
-        _contextAttributes=new AttributesMap();
+        _contextAttributes.clearAttributes();
         try
         {
 
@@ -700,9 +702,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 current_thread.setContextClassLoader(old_classloader);
         }
 
-        if (_contextAttributes!=null)
-            _contextAttributes.clearAttributes();
-        _contextAttributes=null;
+        _contextAttributes.clearAttributes();
     }
 
     /* ------------------------------------------------------------ */
@@ -1029,27 +1029,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public void setAttributes(Attributes attributes)
     {
-        if (attributes instanceof AttributesMap)
+        _attributes.clearAttributes();
+        _attributes.addAll(attributes);
+        Enumeration e = _attributes.getAttributeNames();
+        while (e.hasMoreElements())
         {
-            _attributes = (AttributesMap)attributes;
-            Enumeration e = _attributes.getAttributeNames();
-            while (e.hasMoreElements())
-            {
-                String name = (String)e.nextElement();
-                checkManagedAttribute(name,attributes.getAttribute(name));
-            }
-        }
-        else
-        {
-            _attributes=new AttributesMap();
-            Enumeration e = attributes.getAttributeNames();
-            while (e.hasMoreElements())
-            {
-                String name = (String)e.nextElement();
-                Object value=attributes.getAttribute(name);
-                checkManagedAttribute(name,value);
-                _attributes.setAttribute(name,value);
-            }
+            String name = (String)e.nextElement();
+            checkManagedAttribute(name,attributes.getAttribute(name));
         }
     }
 
@@ -1106,17 +1092,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             for (int h=0;contextCollections!=null&& h<contextCollections.length;h++)
                 ((ContextHandlerCollection)contextCollections[h]).mapContexts();
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param initParams The initParams to set.
-     */
-    public void setInitParams(Map<String,String> initParams)
-    {
-        if (initParams == null)
-            return;
-        _initParams = new HashMap<String,String>(initParams);
     }
 
     /* ------------------------------------------------------------ */

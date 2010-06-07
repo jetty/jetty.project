@@ -448,7 +448,14 @@ public class ContextDeployer extends AbstractLifeCycle
            
         xmlConfiguration.setProperties(properties);
         ContextHandler context=(ContextHandler)xmlConfiguration.configure();
-        context.setAttributes(new AttributesMap(_contextAttributes));
+        
+        // merge attributes
+        if (_contextAttributes!=null && _contextAttributes.size()>0)
+        {
+            AttributesMap attributes = new AttributesMap(_contextAttributes);
+            attributes.addAll(context.getAttributes());
+            context.setAttributes(attributes);
+        }
         return context;
     }
 

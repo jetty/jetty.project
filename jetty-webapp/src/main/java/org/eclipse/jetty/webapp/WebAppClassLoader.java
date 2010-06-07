@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 
 
 /* ------------------------------------------------------------ */
@@ -123,6 +124,24 @@ public class WebAppClassLoader extends URLClassLoader
     {
         return _context;
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param classPath Comma or semicolon separated path of filenames or URLs
+     * pointing to directories or jar files. Directories should end
+     * with '/'.
+     */
+    public void addClassPath(Resource resource)
+        throws IOException
+    {
+        if (resource instanceof ResourceCollection)
+        {
+            for (Resource r : ((ResourceCollection)resource).getResources())
+                addClassPath(r);
+        }
+        else
+            addURL(resource.getURL());
+    }
     
     /* ------------------------------------------------------------ */
     /**
@@ -188,10 +207,11 @@ public class WebAppClassLoader extends URLClassLoader
             String[] files=lib.list();
             for (int f=0;files!=null && f<files.length;f++)
             {
-                try {
+                try 
+                {
                     Resource fn=lib.addPath(files[f]);
                     String fnlc=fn.getName().toLowerCase();
-                    if (isFileSupported(fnlc))
+                    if (!fn.isDirectory() && isFileSupported(fnlc))
                     {
                         String jar=fn.toString();
                         jar=StringUtil.replace(jar, ",", "%2C");
