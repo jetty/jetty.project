@@ -215,9 +215,8 @@ if [ -z "$JETTY_HOME" ] ; then
       then
         JETTY_HOME=
       fi
+      [ "$JETTY_HOME" ] && break
     done
-
-    [ "$JETTY_HOME" ] && break
   done
 fi
 

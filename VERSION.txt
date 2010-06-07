@@ -11,9 +11,10 @@ jetty-7.1.4-SNAPSHOT
  + 314581 Implement the Sec-Websocket handshake
  + 315190 CrossOriginFilter adds headers not understood by Chrome 5 WebSocket
           implementation
+ + 315687 included init script fails to test for JETTY_HOME as empty
  + 315715 Improved Cookie version handling. Server.setMaxCookieVersion
  + 315744 Fixed STOP.PORT and STOP.KEY in start.jar
- + 315748 Removed --fromDaemon from start.jar
+ + 315748 Removed --fromDaemon from start.jar (replaced with --daemon)
  + 315925 Improved context xml configuration handling
  + 315995 Incorrect package name in system classes list
  + JETTY-1231 Support context request log handler
