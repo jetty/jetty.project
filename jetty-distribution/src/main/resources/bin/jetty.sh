@@ -437,7 +437,7 @@ JETTY_START=$JETTY_HOME/start.jar
 START_INI=$(dirname $JETTY_START)/start.ini
 [ -r "$START_INI" ] || START_INI=""
 
-RUN_ARGS=("${JAVA_OPTIONS[@]}" -jar "$JETTY_START" $JETTY_ARGS "${CONFIGS[@]}")
+RUN_ARGS=("${JAVA_OPTIONS[@]}" -jar "$JETTY_START" --daemon $JETTY_ARGS "${CONFIGS[@]}")
 RUN_CMD=("$JAVA" "${RUN_ARGS[@]}")
 
 #####################################################
