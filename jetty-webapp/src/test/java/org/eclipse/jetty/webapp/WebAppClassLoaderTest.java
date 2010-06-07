@@ -41,7 +41,7 @@ public class WebAppClassLoaderTest
         assertTrue(canLoadClass("org.acme.webapp.ClassInJarB"));
         assertTrue(canLoadClass("org.acme.other.ClassInClassesC"));
 
-        assertFalse(canLoadClass("org.eclipse.jetty.webapp.Configuration"));
+        assertTrue(cantLoadClass("org.eclipse.jetty.webapp.Configuration"));
 
         Class clazzA = _loader.loadClass("org.acme.webapp.ClassInJarA");
         assertTrue(clazzA.getField("FROM_PARENT")!=null);
@@ -55,7 +55,7 @@ public class WebAppClassLoaderTest
         assertTrue(canLoadClass("org.acme.webapp.ClassInJarB"));
         assertTrue(canLoadClass("org.acme.other.ClassInClassesC"));
 
-        assertFalse(canLoadClass("org.eclipse.jetty.webapp.Configuration"));
+        assertTrue(cantLoadClass("org.eclipse.jetty.webapp.Configuration"));
 
         Class<?> clazzA = _loader.loadClass("org.acme.webapp.ClassInJarA");
         try
@@ -83,7 +83,7 @@ public class WebAppClassLoaderTest
         assertTrue(canLoadClass("org.acme.other.ClassInClassesC"));
 
         assertTrue(canLoadClass("org.eclipse.jetty.webapp.Configuration"));
-        assertFalse(canLoadClass("org.eclipse.jetty.webapp.JarScanner"));
+        assertTrue(cantLoadClass("org.eclipse.jetty.webapp.JarScanner"));
     }
 
     @Test
@@ -105,8 +105,8 @@ public class WebAppClassLoaderTest
         assertTrue(canLoadClass("org.acme.webapp.ClassInJarB"));
         assertTrue(canLoadClass("org.acme.other.ClassInClassesC"));
 
-        assertFalse(canLoadClass("org.eclipse.jetty.webapp.Configuration"));
-        assertFalse(canLoadClass("org.eclipse.jetty.webapp.JarScanner"));
+        assertTrue(cantLoadClass("org.eclipse.jetty.webapp.Configuration"));
+        assertTrue(cantLoadClass("org.eclipse.jetty.webapp.JarScanner"));
     }
 
     @Test
@@ -161,15 +161,20 @@ public class WebAppClassLoaderTest
         return list;
     }
 
-    private boolean canLoadClass(String clazz)
+    private boolean canLoadClass(String clazz) throws ClassNotFoundException
+    {
+        return _loader.loadClass(clazz)!=null;
+    }
+    
+    private boolean cantLoadClass(String clazz)
     {
         try
         {
-            return _loader.loadClass(clazz)!=null;
+            return _loader.loadClass(clazz)==null;
         }
         catch(ClassNotFoundException e)
         {
-            return false;
+            return true;
         }
     }
 }

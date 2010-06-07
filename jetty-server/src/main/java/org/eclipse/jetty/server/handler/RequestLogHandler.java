@@ -147,6 +147,5 @@ public class RequestLogHandler extends HandlerWrapper
         if (_requestLog!=null)
             _requestLog.stop();
     }
-
     
 }

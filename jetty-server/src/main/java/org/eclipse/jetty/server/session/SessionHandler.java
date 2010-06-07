@@ -217,8 +217,7 @@ public class SessionHandler extends ScopedHandler
             throws IOException, ServletException
     {
         // start manual inline of nextHandle(target,baseRequest,request,response);
-        //noinspection ConstantIfStatement
-        if (false)
+        if (never())
             nextHandle(target,baseRequest,request,response);
         else if (_nextScope!=null && _nextScope==_handler)
             _nextScope.doHandle(target,baseRequest,request, response);

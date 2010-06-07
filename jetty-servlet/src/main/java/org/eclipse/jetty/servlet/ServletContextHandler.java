@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.ScopedHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 
 
@@ -183,13 +184,24 @@ public class ServletContextHandler extends ContextHandler
             handler=_sessionHandler;
         }
         
-        setHandler(handler);
+        // skip any wrapped handlers 
+        HandlerWrapper wrapper=this;
+        while (wrapper!=handler && wrapper.getHandler() instanceof HandlerWrapper)
+            wrapper=(HandlerWrapper)wrapper.getHandler();
+        
+        // if we are not already linked
+        if (wrapper!=handler)
+        {
+            if (wrapper.getHandler()!=null )
+                throw new IllegalStateException("!ScopedHandler");
+            wrapper.setHandler(handler);
+        }
         
     	super.startContext();
 
     	// OK to Initialize servlet handler now
     	if (_servletHandler != null && _servletHandler.isStarted())
-    		_servletHandler.initialize();
+    	    _servletHandler.initialize();
     }
 
     /* ------------------------------------------------------------ */

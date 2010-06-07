@@ -75,4 +75,19 @@ detected.
   </Get>
   -->
 
+  <!-- Add context specific logger
+  <Set name="handler">
+    <New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler">
+      <Set name="requestLog">
+	<New id="RequestLogImpl" class="org.eclipse.jetty.server.NCSARequestLog">
+	  <Set name="filename"><Property name="jetty.logs" default="./logs"/>/test-yyyy_mm_dd.request.log</Set>
+	  <Set name="filenameDateFormat">yyyy_MM_dd</Set>
+	  <Set name="append">true</Set>
+	  <Set name="LogTimeZone">GMT</Set>
+	</New>
+      </Set>
+    </New>
+  </Set>
+  -->
+
 </Configure>

@@ -12,6 +12,7 @@ jetty-7.1.4-SNAPSHOT
  + 315744 Fixed STOP.PORT and STOP.KEY in start.jar 
  + 315748 Removed --fromDaemon from start.jar
  + 315925 Improved context xml configuration handling
+ + JETTY-1231 Support context request log handler
 
 jetty-7.1.3.v20100526
  + 296567 HttpClient RedirectListener handles new HttpDestination

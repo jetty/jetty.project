@@ -140,7 +140,9 @@ public class WebAppClassLoader extends URLClassLoader
                 addClassPath(r);
         }
         else
-            addURL(resource.getURL());
+        {
+            addClassPath(resource.toString());
+        }
     }
     
     /* ------------------------------------------------------------ */

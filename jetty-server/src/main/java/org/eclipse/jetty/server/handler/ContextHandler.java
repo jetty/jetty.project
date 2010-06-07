@@ -860,8 +860,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
 
             // start manual inline of nextScope(target,baseRequest,request,response);
-            //noinspection ConstantIfStatement
-            if (false)
+            if (never())
                 nextScope(target,baseRequest,request,response);
             else if (_nextScope!=null)
                 _nextScope.doScope(target,baseRequest,request, response);
@@ -925,7 +924,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
             // start manual inline of nextHandle(target,baseRequest,request,response);
             //noinspection ConstantIfStatement
-            if (false)
+            if (never())
                 nextHandle(target,baseRequest,request,response);
             else if (_nextScope!=null && _nextScope==_handler)
                 _nextScope.doHandle(target,baseRequest,request, response);
@@ -1727,14 +1726,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
          */
         public synchronized void setAttribute(String name, Object value)
         {
-
-            if (_contextAttributes==null)
-            {
-            	// Set it on the handler
-            	ContextHandler.this.setAttribute(name, value);
-                return;
-            }
-
             checkManagedAttribute(name,value);
             Object old_value=_contextAttributes.getAttribute(name);
 
