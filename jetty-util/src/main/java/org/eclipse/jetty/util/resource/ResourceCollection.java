@@ -114,6 +114,10 @@ public class ResourceCollection extends Resource
                     throw new IllegalArgumentException(_resources[i] + " is not an existing directory.");
             }
         }
+        catch(IllegalArgumentException e)
+        {
+            throw e;
+        }
         catch(Exception e)
         {
             throw new RuntimeException(e);
