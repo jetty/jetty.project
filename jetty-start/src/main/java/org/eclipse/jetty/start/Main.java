@@ -177,7 +177,10 @@ public class Main
                 // Special internal indicator that jetty was started by the jetty.sh Daemon
                 if ("--daemon".equals(arg))
                 {
-                    File startLog = new File(System.getProperty("jetty.logs","."),"start.log");
+                    File startDir = new File(System.getProperty("jetty.logs","logs"));
+                    if (!startDir.exists() || !startDir.canWrite() )
+                        startDir = new File(".");
+                    File startLog = new File(startDir,"start.log");
                     if (!startLog.exists() && !startLog.createNewFile())
                     {
                         // Output about error is lost in majority of cases.
@@ -193,7 +196,7 @@ public class Main
                         // Toss a unique exit code indicating this failure.
                         System.exit(ERR_LOGGING);
                     }
-                    PrintStream logger = new PrintStream(new FileOutputStream(startLog,true));
+                    PrintStream logger = new PrintStream(new FileOutputStream(startLog,false));
                     System.setOut(logger);
                     System.setErr(logger);
                     System.out.println("Establishing start.log on " + new Date());
