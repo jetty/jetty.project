@@ -464,9 +464,12 @@ case "$ACTION" in
 
     if type start-stop-daemon > /dev/null 2>&1 
     then
-      [ -z "$JETTY_USER" ] && JETTY_USER=$USER
-      (( UID == 0 )) && CH_USER=-c$JETTY_USER
-      if start-stop-daemon -S -p"$JETTY_PID" "$CH_USER" -d"$JETTY_HOME" -b -m -a "$JAVA" -- "${RUN_ARGS[@]} --daemon"
+      unset CH_USER
+      if [ -n "$JETTY_USER" ]
+      then
+        CH_USER="-c$JETTY_USER"
+      fi
+      if start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_HOME" -b -m -a "$JAVA" -- "${RUN_ARGS[@]} --daemon"
       then
         sleep 1
         if running "$JETTY_PID"
