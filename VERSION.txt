@@ -22,6 +22,7 @@ jetty-7.1.4-SNAPSHOT
  + 315925 Improved context xml configuration handling
  + 315995 Incorrect package name in system classes list
  + 316119 Fixed maxIdleTime for SocketEndPoint
+ + 316254 Implement @DeclareRoles
  + JETTY-547 Delay close after shutdown until request read
  + JETTY-1231 Support context request log handler
 

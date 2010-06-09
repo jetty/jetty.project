@@ -56,6 +56,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             parser.registerAnnotationHandler("javax.annotation.PostConstruct", new PostConstructAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.annotation.PreDestroy", new PreDestroyAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.annotation.security.RunAs", new RunAsAnnotationHandler(context));
+            parser.registerAnnotationHandler("javax.annotation.security.DeclareRoles", new DeclareRolesAnnotationHandler(context));
 
             ClassInheritanceHandler classHandler = new ClassInheritanceHandler();
             parser.registerClassHandler(classHandler);
