@@ -14,9 +14,9 @@
     <assembly-directory>target/distribution</assembly-directory>
     <eclipse-drop>S-3.6RC4-201006031500</eclipse-drop>
     <eclipse-ecj-version>3.6RC4</eclipse-ecj-version>
-    <orbit-javax-activation-version>${javax-activation-version}.0.v200906290531</orbit-javax-activation-version>
+    <orbit-javax-activation-version>${javax-activation-version}.0.v201005080500</orbit-javax-activation-version>
     <orbit-javax-el-version>2.1.0.v201004190952</orbit-javax-el-version>
-    <orbit-javax-mail-glassfish-version>${javax-mail-version}.v200808130215</orbit-javax-mail-glassfish-version>
+    <orbit-javax-mail-glassfish-version>${javax-mail-version}.v201005082020</orbit-javax-mail-glassfish-version>
     <orbit-javax-servlet-version>2.5.0.v200910301333</orbit-javax-servlet-version>
     <orbit-javax-servlet-jsp-version>2.1.0.v201004190952</orbit-javax-servlet-jsp-version>
     <orbit-javax-servlet-jsp-jstl-version>1.2.0.v201004190952</orbit-javax-servlet-jsp-jstl-version>
