@@ -469,7 +469,7 @@ case "$ACTION" in
       then
         CH_USER="-c$JETTY_USER"
       fi
-      if start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_HOME" -b -m -a "$JAVA" -- "${RUN_ARGS[@]} --daemon"
+      if start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_HOME" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}" --daemon
       then
         sleep 1
         if running "$JETTY_PID"
