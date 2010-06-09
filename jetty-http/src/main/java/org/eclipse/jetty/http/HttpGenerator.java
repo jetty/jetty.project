@@ -885,8 +885,8 @@ public class HttpGenerator extends AbstractGenerator
                     {
                         if (_state == STATE_FLUSHING)
                             _state = STATE_END;
-                        if (_state==STATE_END && !_persistent && _status!=100) 
-                            _endp.close();
+                        if (_state==STATE_END && !_persistent && _status!=100 && _method==null)
+                            _endp.shutdownOutput();
                     }
                     else
                         // Try to prepare more to write.

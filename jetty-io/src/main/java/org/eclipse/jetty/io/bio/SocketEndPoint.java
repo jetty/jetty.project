@@ -65,27 +65,25 @@ public class SocketEndPoint extends StreamEndPoint
         return super.isOpen() && _socket!=null && !_socket.isClosed() && !_socket.isInputShutdown() && !_socket.isOutputShutdown();
     }
 
+
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.jetty.io.bio.StreamEndPoint#shutdownOutput()
+     */
+    @Override
+    public void shutdownOutput() throws IOException
+    {    
+        if (!_socket.isClosed() && !_socket.isOutputShutdown())
+            _socket.shutdownOutput();
+    }
+    
     /* (non-Javadoc)
      * @see org.eclipse.io.BufferIO#close()
      */
     @Override
     public void close() throws IOException
     {
-        if (!_socket.isClosed() && !_socket.isOutputShutdown())
-        {
-            try
-            {
-                _socket.shutdownOutput();
-            }
-            catch(IOException e)
-            {
-                Log.ignore(e);
-            }
-            catch(UnsupportedOperationException e)
-            {
-                Log.ignore(e);
-            }
-        }
         _socket.close();
         _in=null;
         _out=null;

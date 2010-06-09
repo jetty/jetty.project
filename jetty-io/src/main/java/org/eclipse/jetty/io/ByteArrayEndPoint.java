@@ -153,6 +153,14 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
 
     /* ------------------------------------------------------------ */
     /* 
+     * @see org.eclipse.io.EndPoint#shutdownOutput()
+     */
+    public void shutdownOutput() throws IOException
+    {
+    }
+    
+    /* ------------------------------------------------------------ */
+    /* 
      * @see org.eclipse.io.EndPoint#close()
      */
     public void close() throws IOException

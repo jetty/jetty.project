@@ -143,14 +143,11 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         Log.info(""+_result);
     }
-
     /* ------------------------------------------------------------ */
     @Override
-    public void close() throws IOException
+    public void shutdownOutput() throws IOException
     {
         // TODO - this really should not be done in a loop here - but with async callbacks.
-
-        _closing=true;
         long end=System.currentTimeMillis()+((SocketChannel)_channel).socket().getSoTimeout();
         try
         {   
@@ -241,11 +238,23 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 }
             }
         }
-        catch(IOException e)
+        catch (InterruptedException e)
         {
             Log.ignore(e);
         }
-        catch (InterruptedException e)
+    }
+
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void close() throws IOException
+    {
+        try
+        {
+            _closing=true;
+            shutdownOutput();
+        }
+        catch(IOException e)
         {
             Log.ignore(e);
         }

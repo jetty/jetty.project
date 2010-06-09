@@ -489,6 +489,7 @@ public class HttpConnection implements Connection
                             {
                                 _parser.reset(true);
                                 more_in_buffer=false;
+                                _endp.close();
                             }
 
                             if (more_in_buffer)
@@ -632,7 +633,6 @@ public class HttpConnection implements Connection
                     Log.debug(e);
                     _request.setHandled(true);
                     _generator.sendError(info==null?400:500, null, null, true);
-
                 }
                 finally
                 {
@@ -1019,7 +1019,10 @@ public class HttpConnection implements Connection
 
                     if (_expect)
                     {
-                        _generator.sendError(HttpStatus.EXPECTATION_FAILED_417, null, null, true);
+                        _generator.setResponse(HttpStatus.EXPECTATION_FAILED_417, null);
+                        _responseFields.put(HttpHeaders.CONNECTION_BUFFER, HttpHeaderValues.CLOSE_BUFFER);
+                        _generator.completeHeader(_responseFields, true);
+                        _generator.complete();
                         return;
                     }
 

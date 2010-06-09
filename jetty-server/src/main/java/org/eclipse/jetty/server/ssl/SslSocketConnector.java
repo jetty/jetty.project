@@ -137,7 +137,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         Socket socket = _serverSocket.accept();
         configure(socket);
         
-        ConnectorEndPoint connection=new SslConnection(socket);
+        ConnectorEndPoint connection=new SslConnectorEndPoint(socket);
         connection.dispatch();
     }
     
@@ -606,11 +606,16 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     }
 
     /* ------------------------------------------------------------ */
-    public class SslConnection extends ConnectorEndPoint
+    public class SslConnectorEndPoint extends ConnectorEndPoint
     {
-        public SslConnection(Socket socket) throws IOException
+        public SslConnectorEndPoint(Socket socket) throws IOException
         {
             super(socket);
+        }
+        
+        @Override
+        public void shutdownOutput() throws IOException
+        {
         }
         
         @Override
