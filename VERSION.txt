@@ -1,4 +1,4 @@
-jetty-7.1.4-SNAPSHOT
+jetty-7.1.4.v20100609
  + 298551 SslSocketConnector does not need keystore stream
  + 295715 AbstractSessionManager decoupled from Context
  + 292326 Stop continuations if server is stopped.
