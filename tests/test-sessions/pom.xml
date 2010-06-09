@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>7.1.4-SNAPSHOT</version>
+    <version>7.1.4.v20100609</version>
   </parent>
   <artifactId>test-sessions-parent</artifactId>
   <name>Jetty Tests :: Sessions :: Parent</name>
