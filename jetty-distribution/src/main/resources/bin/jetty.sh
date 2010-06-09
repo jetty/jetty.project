@@ -270,14 +270,7 @@ then
       continue
     fi
 
-    if [ ! -r "$CONF" ] 
-    then
-      echo "** WARNING: Cannot read '$CONF' specified in '$JETTY_CONF'" 
-    elif [ -f "$CONF" ] 
-    then
-      # assume it's a configure.xml file
-      CONFIGS+=("$CONF")
-    elif [ -d "$CONF" ] 
+    if [ -d "$CONF" ] 
     then
       # assume it's a directory with configure.xml files
       # for example: /etc/jetty.d/
@@ -292,7 +285,8 @@ then
         fi
       done
     else
-      echo "** WARNING: Don''t know what to do with '$CONF' specified in '$JETTY_CONF'" 
+      # assume it's a command line parameter (let start.jar deal with its validity)
+      CONFIGS+=("$CONF")
     fi
   done < "$JETTY_CONF"
 fi
