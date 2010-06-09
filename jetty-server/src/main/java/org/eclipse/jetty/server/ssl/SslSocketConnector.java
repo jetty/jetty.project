@@ -205,14 +205,10 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     	try
         {
             if (keystorePath!=null)
-            {
                 keystoreInputStream = Resource.newResource(keystorePath).getInputStream();
-                keystore=KeyStore.getInstance(keystoreType);
-                keystore.load(keystoreInputStream,keystorePassword==null?null:keystorePassword.toString().toCharArray());
-                return keystore;
-            }
-            
-            return null;
+            keystore=KeyStore.getInstance(keystoreType);
+            keystore.load(keystoreInputStream,keystorePassword==null?null:keystorePassword.toString().toCharArray());
+            return keystore;
         }
         finally
         {

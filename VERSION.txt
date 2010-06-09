@@ -1,4 +1,5 @@
 jetty-7.1.4-SNAPSHOT
+ + 298551 SslSocketConnector does not need keystore stream
  + 295715 AbstractSessionManager decoupled from Context
  + 292326 Stop continuations if server is stopped.
  + 292814 Make QoSFilter and DoSFilter JMX manageable
