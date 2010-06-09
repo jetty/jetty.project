@@ -430,7 +430,7 @@ JETTY_START=$JETTY_HOME/start.jar
 START_INI=$(dirname $JETTY_START)/start.ini
 [ -r "$START_INI" ] || START_INI=""
 
-RUN_ARGS=("${JAVA_OPTIONS[@]}" -jar "$JETTY_START" --daemon $JETTY_ARGS "${CONFIGS[@]}")
+RUN_ARGS=("${JAVA_OPTIONS[@]}" -jar "$JETTY_START" $JETTY_ARGS "${CONFIGS[@]}")
 RUN_CMD=("$JAVA" "${RUN_ARGS[@]}")
 
 #####################################################
@@ -466,7 +466,7 @@ case "$ACTION" in
     then
       [ -z "$JETTY_USER" ] && JETTY_USER=$USER
       (( UID == 0 )) && CH_USER=-c$JETTY_USER
-      if start-stop-daemon -S -p"$JETTY_PID" "$CH_USER" -d"$JETTY_HOME" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}"
+      if start-stop-daemon -S -p"$JETTY_PID" "$CH_USER" -d"$JETTY_HOME" -b -m -a "$JAVA" -- "${RUN_ARGS[@]} --daemon"
       then
         sleep 1
         if running "$JETTY_PID"
@@ -497,7 +497,7 @@ case "$ACTION" in
         chown "$JETTY_USER" "$JETTY_PID"
         # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
         su - "$JETTY_USER" -c "
-          ${RUN_CMD[*]} &
+          ${RUN_CMD[*]} --daemon &
           disown \$!
           echo \$! > '$JETTY_PID'"
       else
