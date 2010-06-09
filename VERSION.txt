@@ -17,6 +17,7 @@ jetty-7.1.4-SNAPSHOT
  + 315748 Removed --fromDaemon from start.jar (replaced with --daemon)
  + 315925 Improved context xml configuration handling
  + 315995 Incorrect package name in system classes list
+ + 316119 Fixed maxIdleTime for SocketEndPoint
  + JETTY-1231 Support context request log handler
 
 jetty-7.1.3.v20100526

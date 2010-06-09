@@ -52,6 +52,7 @@ public class SocketEndPoint extends StreamEndPoint
     {
         super(socket.getInputStream(),socket.getOutputStream());
         _socket=socket;
+        _socket.setSoTimeout(maxIdleTime>0?maxIdleTime:0);
         super.setMaxIdleTime(maxIdleTime);
     }
 
