@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.1.4-SNAPSHOT</version>
+    <version>7.1.4.v20100609</version>
   </parent>
   <artifactId>jetty-distribution</artifactId>
   <name>Jetty :: Distribution Assemblies</name>
@@ -81,8 +81,7 @@
 
                 <!-- ${jetty.home}/lib/ -->
                 <mkdir dir="${assembly-directory}/lib" />
-                <copy file="${orbit-cache}/javax.servlet_${orbit-javax-servlet-version}.jar"
-                      tofile="${assembly-directory}/lib/servlet-api-2.5.jar" />
+                <copy file="${orbit-cache}/javax.servlet_${orbit-javax-servlet-version}.jar" tofile="${assembly-directory}/lib/servlet-api-2.5.jar" />
 
                 <!-- ${jetty.home}/lib/jndi/ -->
                 <mkdir dir="${assembly-directory}/lib/jndi" />
