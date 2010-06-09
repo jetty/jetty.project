@@ -3,6 +3,7 @@ jetty-7.1.4-SNAPSHOT
  + 292814 Make QoSFilter and DoSFilter JMX manageable
  + 293222 Improve request log to handle/show asynchronous latency
  + 294212 Can not customize session cookie path
+ + 301608 Deregister shutdown hooks
  + 302350 org.eclipse.jetty.server.NCSARequestLog is missing JavaDoc
  + 303661 Startup with jetty.sh-Script failes if JETTY_HOME is not writeable
           for JETTY_USER
