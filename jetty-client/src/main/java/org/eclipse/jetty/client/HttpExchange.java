@@ -325,6 +325,15 @@ public class HttpExchange
         }
     }
 
+    /**
+     * @deprecated
+     */
+    @Deprecated
+    public boolean isDone (int status)
+    {
+        return isDone();
+    }
+
     public HttpEventListener getEventListener()
     {
         return _listener;
