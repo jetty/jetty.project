@@ -26,6 +26,7 @@ Import-Package: javax.mail;version="1.4.0";resolution:=optional,
  org.xml.sax,
  org.xml.sax.helpers
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
+Bundle-Classpath: .
 Require-Bundle: org.eclipse.jetty.ajp;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.annotations;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.client;bundle-version="[7.0,8)";resolution:=optional,
