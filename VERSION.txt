@@ -1,4 +1,4 @@
-jetty-7.1.4.v20100609
+jetty-7.1.4.v20100610
  + 298551 SslSocketConnector does not need keystore stream
  + 295715 AbstractSessionManager decoupled from Context
  + 292326 Stop continuations if server is stopped.
@@ -24,6 +24,7 @@ jetty-7.1.4.v20100609
  + 316334 Breaking change on org.eclipse.jetty.client.HttpExchange
  + 316399 Debug output in MultiPartFilter
  + 316413 Restarting webapp for packed war fails
++ 316557 OSGi HttpService is not available because context handlers files are not deployed
  + JETTY-547 Delay close after shutdown until request read
  + JETTY-1231 Support context request log handler
 
