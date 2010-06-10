@@ -6,8 +6,6 @@
 <!-- file must appear first in the list of the configuration files.               -->
 <!-- The simplest way to achieve this is to add etc/jetty-jmx.xml as the          -->
 <!-- first file in configuration file list at the end of start.ini file.          -->
-<!-- Alternately start the server with:                                           -->
-<!--   java -Dcom.sun.management.jmxremote -jar start.jar --pre=etc/jetty-jmx.xml -->
 <!-- ============================================================================ -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
