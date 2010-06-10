@@ -24,6 +24,7 @@ jetty-7.1.4.v20100609
  + 316119 Fixed maxIdleTime for SocketEndPoint
  + 316254 Implement @DeclareRoles
  + 316334 Breaking change on org.eclipse.jetty.client.HttpExchange
+ + 316399 Debug output in MultiPartFilter
  + JETTY-547 Delay close after shutdown until request read
  + JETTY-1231 Support context request log handler
 
