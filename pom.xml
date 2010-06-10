@@ -355,7 +355,7 @@
               <tags>
                 <tag>
                   <name>org.apache.xbean.XBean</name>
-                  <placement>x</placement>
+                  <placement>X</placement>
                   <head />
                 </tag>
               </tags>
