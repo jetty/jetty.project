@@ -270,14 +270,7 @@ then
       continue
     fi
 
-    if [ ! -r "$CONF" ] 
-    then
-      echo "** WARNING: Cannot read '$CONF' specified in '$JETTY_CONF'" 
-    elif [ -f "$CONF" ] 
-    then
-      # assume it's a configure.xml file
-      CONFIGS+=("$CONF")
-    elif [ -d "$CONF" ] 
+    if [ -d "$CONF" ] 
     then
       # assume it's a directory with configure.xml files
       # for example: /etc/jetty.d/
@@ -292,7 +285,8 @@ then
         fi
       done
     else
-      echo "** WARNING: Don''t know what to do with '$CONF' specified in '$JETTY_CONF'" 
+      # assume it's a command line parameter (let start.jar deal with its validity)
+      CONFIGS+=("$CONF")
     fi
   done < "$JETTY_CONF"
 fi
@@ -436,7 +430,7 @@ JETTY_START=$JETTY_HOME/start.jar
 START_INI=$(dirname $JETTY_START)/start.ini
 [ -r "$START_INI" ] || START_INI=""
 
-RUN_ARGS=("${JAVA_OPTIONS[@]}" -jar "$JETTY_START" --daemon $JETTY_ARGS "${CONFIGS[@]}")
+RUN_ARGS=("${JAVA_OPTIONS[@]}" -jar "$JETTY_START" $JETTY_ARGS "${CONFIGS[@]}")
 RUN_CMD=("$JAVA" "${RUN_ARGS[@]}")
 
 #####################################################
@@ -470,9 +464,12 @@ case "$ACTION" in
 
     if type start-stop-daemon > /dev/null 2>&1 
     then
-      [ -z "$JETTY_USER" ] && JETTY_USER=$USER
-      (( UID == 0 )) && CH_USER=-c$JETTY_USER
-      if start-stop-daemon -S -p"$JETTY_PID" "$CH_USER" -d"$JETTY_HOME" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}"
+      unset CH_USER
+      if [ -n "$JETTY_USER" ]
+      then
+        CH_USER="-c$JETTY_USER"
+      fi
+      if start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_HOME" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}" --daemon
       then
         sleep 1
         if running "$JETTY_PID"
@@ -503,7 +500,7 @@ case "$ACTION" in
         chown "$JETTY_USER" "$JETTY_PID"
         # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
         su - "$JETTY_USER" -c "
-          ${RUN_CMD[*]} &
+          ${RUN_CMD[*]} --daemon &
           disown \$!
           echo \$! > '$JETTY_PID'"
       else

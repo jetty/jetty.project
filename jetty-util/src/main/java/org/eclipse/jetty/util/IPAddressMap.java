@@ -346,7 +346,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
         /**
          * Match specified octet value against the wildcard
          * 
-         * @param value octet value
+         * @param number octet value
          * @return true if specified octet value matches the wildcard
          * @throws IllegalArgumentException if specified octet value is invalid
          */
