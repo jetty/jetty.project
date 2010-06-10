@@ -7,12 +7,12 @@ jetty-7.1.4.v20100609
  + 294212 Can not customize session cookie path
  + 301608 Deregister shutdown hooks
  + 302350 org.eclipse.jetty.server.NCSARequestLog is missing JavaDoc
- + 303661 Startup with jetty.sh-Script failes if JETTY_HOME is not writeable for JETTY_USER
+ + 303661 jetty.sh failes if JETTY_HOME is not writeable
  + 304100 Better document JMX setup in jetty-jmx.xml
  + 305300 AsyncContext.start dispatches runnable
  + 314299 Create test harness for JDBCLoginService
  + 314581 Implement the Sec-Websocket handshake
- + 315190 CrossOriginFilter adds headers not understood by Chrome 5 WebSocket implementation
+ + 315190 CrossOriginFilter avoid headers not understood by WebSocket
  + 315687 included init script fails to test for JETTY_HOME as empty
  + 315715 Improved Cookie version handling. Server.setMaxCookieVersion
  + 315744 Fixed STOP.PORT and STOP.KEY in start.jar
