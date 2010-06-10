@@ -266,7 +266,7 @@ if [ -z "$CONFIGS" ] && [ -f "$JETTY_CONF" ] && [ -r "$JETTY_CONF" ]
 then
   while read -r CONF
   do
-    if expr "$CONF" : '^#' >/dev/null ; then
+    if expr "$CONF" : '#' >/dev/null ; then
       continue
     fi
 
