@@ -360,6 +360,7 @@ public class WebInfConfiguration implements Configuration
     public void unpack (WebAppContext context) throws IOException
     {
         Resource web_app = context.getBaseResource();
+        _preUnpackBaseResource = context.getBaseResource();
         
         if (web_app == null)
         {
@@ -461,7 +462,7 @@ public class WebInfConfiguration implements Configuration
                 Log.debug("webapp=" + web_app);
         }
         
-        _preUnpackBaseResource = context.getBaseResource();
+        
         
         // Do we need to extract WEB-INF/lib?
         Resource web_inf= web_app.addPath("WEB-INF/");
