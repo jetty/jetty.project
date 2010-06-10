@@ -23,6 +23,7 @@ jetty-7.1.4.v20100609
  + 316254 Implement @DeclareRoles
  + 316334 Breaking change on org.eclipse.jetty.client.HttpExchange
  + 316399 Debug output in MultiPartFilter
+ + 316413 Restarting webapp for packed war fails
  + JETTY-547 Delay close after shutdown until request read
  + JETTY-1231 Support context request log handler
 
