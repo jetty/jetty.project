@@ -186,7 +186,6 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         }
         catch(IOException e)
         {
-            e.printStackTrace();
             throw e;
         }
         finally

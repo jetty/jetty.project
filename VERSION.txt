@@ -1,3 +1,6 @@
+jetty-7.1.5-SNAPSHOT
+ + 316449 Websocket disconnect fix
+
 jetty-7.1.4.v20100610
  + 298551 SslSocketConnector does not need keystore stream
  + 295715 AbstractSessionManager decoupled from Context

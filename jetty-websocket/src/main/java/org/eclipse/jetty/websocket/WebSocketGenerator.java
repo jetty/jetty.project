@@ -7,6 +7,7 @@ import java.security.NoSuchAlgorithmException;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 
@@ -98,6 +99,8 @@ public class WebSocketGenerator
 
     private synchronized void bufferPut(byte datum, long blockFor) throws IOException
     {
+        if (_buffer==null)
+            _buffer=_buffers.getDirectBuffer();
         _buffer.put(datum);
         if (_buffer.space() == 0)
             expelBuffer(blockFor);
@@ -128,7 +131,7 @@ public class WebSocketGenerator
     private synchronized int flushBuffer() throws IOException
     {
         if (!_endp.isOpen())
-            throw new IOException("Closed");
+            throw new EofException();
 
         if (_buffer!=null)
             return _endp.flush(_buffer);
@@ -138,6 +141,8 @@ public class WebSocketGenerator
 
     private synchronized int expelBuffer(long blockFor) throws IOException
     {
+        if (_buffer==null)
+            return 0;
         int result = flushBuffer();
         _buffer.compact();
         if (!_endp.isBlocking())
