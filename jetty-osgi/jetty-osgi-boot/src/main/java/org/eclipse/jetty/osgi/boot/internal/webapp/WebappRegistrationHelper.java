@@ -733,7 +733,7 @@ public class WebappRegistrationHelper
                 webAppContext.setServerClasses(null);
             }
 
-            context.start();
+             _provider.addContext(context);
             return context;
         }
         finally
