@@ -1,4 +1,5 @@
 jetty-7.1.5-SNAPSHOT
+ + 311550 The WebAppProvider should allow setTempDirectory
  + 316449 Websocket disconnect fix
 
 jetty-7.1.4.v20100610
@@ -27,7 +28,7 @@ jetty-7.1.4.v20100610
  + 316334 Breaking change on org.eclipse.jetty.client.HttpExchange
  + 316399 Debug output in MultiPartFilter
  + 316413 Restarting webapp for packed war fails
- + 316557 OSGi HttpService is not available because context handlers files are not deployed
+ + 316557 OSGi HttpService failure due to undeployed context handlers
  + JETTY-547 Delay close after shutdown until request read
  + JETTY-1231 Support context request log handler
 

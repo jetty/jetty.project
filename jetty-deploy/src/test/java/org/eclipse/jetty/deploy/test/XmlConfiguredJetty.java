@@ -59,7 +59,7 @@ public class XmlConfiguredJetty
     {
         this(MavenTestingUtils.getTestID());
     }
-    
+
     public XmlConfiguredJetty(String testname) throws IOException
     {
         xmlConfigurations = new ArrayList<URL>();
@@ -69,9 +69,10 @@ public class XmlConfiguredJetty
         // Ensure we have a new (pristene) directory to work with. 
         int idx = 0;
         jettyHome = new File(jettyHomeBase + "#" + idx);
-        while(jettyHome.exists()) {
-        	idx++;
-        	jettyHome = new File(jettyHomeBase + "#" + idx);
+        while (jettyHome.exists())
+        {
+            idx++;
+            jettyHome = new File(jettyHomeBase + "#" + idx);
         }
         deleteContents(jettyHome);
         // Prepare Jetty.Home (Test) dir
@@ -91,14 +92,27 @@ public class XmlConfiguredJetty
             deleteContents(contextsDir);
         }
         contextsDir.mkdirs();
+
         File webappsDir = new File(jettyHome,"webapps");
         if (webappsDir.exists())
         {
             deleteContents(webappsDir);
         }
         webappsDir.mkdirs();
+
         File tmpDir = new File(jettyHome,"tmp");
+        if (tmpDir.exists())
+        {
+            deleteContents(tmpDir);
+        }
         tmpDir.mkdirs();
+
+        File workishDir = new File(jettyHome,"workish");
+        if (workishDir.exists())
+        {
+            deleteContents(workishDir);
+        }
+        workishDir.mkdirs();
 
         // Setup properties
         System.setProperty("java.io.tmpdir",tmpDir.getAbsolutePath());
@@ -106,8 +120,9 @@ public class XmlConfiguredJetty
         System.setProperty("jetty.home",jettyHome.getAbsolutePath());
         properties.setProperty("test.basedir",MavenTestingUtils.getBasedir().getAbsolutePath());
         properties.setProperty("test.resourcesdir",MavenTestingUtils.getTestResourcesDir().getAbsolutePath());
-        properties.setProperty("test.webapps",webappsDir.getAbsolutePath());
+        properties.setProperty("test.webapps",workishDir.getAbsolutePath());
         properties.setProperty("test.targetdir",MavenTestingUtils.getTargetDir().getAbsolutePath());
+        properties.setProperty("test.workdir",workishDir.getAbsolutePath());
 
         // Write out configuration for use by ConfigurationManager.
         File testConfig = MavenTestingUtils.getTargetFile("xml-configured-jetty.properties");
@@ -238,11 +253,11 @@ public class XmlConfiguredJetty
     private void deleteContents(File dir)
     {
         System.out.printf("Delete  (dir) %s/%n",dir);
-        if(!dir.exists()) 
+        if (!dir.exists())
         {
-        	return;
+            return;
         }
-        
+
         for (File file : dir.listFiles())
         {
             // Safety measure. only recursively delete within target directory.

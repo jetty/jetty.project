@@ -221,61 +221,47 @@ public class WebInfConfiguration implements Configuration
     {
       //If a tmp directory is already set, we're done
         File tmpDir = context.getTempDirectory();
-        if (tmpDir!=null && tmpDir.isDirectory() && tmpDir.canWrite())
-            return; //Already have a suitable tmp dir configured
+        if (tmpDir != null && tmpDir.isDirectory() && tmpDir.canWrite())
+        {
+            return; // Already have a suitable tmp dir configured
+        }
         
 
-        //None configured, try and come up with one
-        //First ... see if one is configured in a context attribute
-        //either as a File or name of a file
-        Object t = context.getAttribute(WebAppContext.TEMPDIR);
-        if (t != null)
+        // No temp directory configured, try to establish one.
+        // First we check the context specific, javax.servlet specified, temp directory attribute
+        File servletTmpDir = asFile(context.getAttribute(WebAppContext.TEMPDIR));
+        if (servletTmpDir != null && servletTmpDir.isDirectory() && servletTmpDir.canWrite())
         {
-            //Is it a File?
-            if (t instanceof File)
-            {
-                tmpDir=(File)t;
-                if (tmpDir.isDirectory() && tmpDir.canWrite())
-                {
-                    context.setTempDirectory(tmpDir);
-                    return;
-                }
-            }
-            // The context attribute specified a name not a File
-            if (t instanceof String)
-            {
-                try
-                {
-                    tmpDir=new File((String)t);
-
-                    if (tmpDir.isDirectory() && tmpDir.canWrite())
-                    {
-                        context.setAttribute(context.TEMPDIR,tmpDir);
-                        context.setTempDirectory(tmpDir);
-                        return;
-                    }
-                }
-                catch(Exception e)
-                {
-                    Log.warn(Log.EXCEPTION,e);
-                }
-            }
+            // Use as tmpDir
+            tmpDir = servletTmpDir;
+            // Ensure Attribute has File object
+            context.setAttribute(WebAppContext.TEMPDIR,tmpDir);
+            // Set as TempDir in context.
+            context.setTempDirectory(tmpDir);
+            return;
         }
 
-        // Second ... make a tmp directory, in a work directory if one exists
-        String temp = getCanonicalNameForWebAppTmpDir(context);
-        
         try
         {
-            //Put the tmp dir in the work directory if we had one
+            // Put the tmp dir in the work directory if we had one
             File work =  new File(System.getProperty("jetty.home"),"work");
-            if (!work.exists() || !work.canWrite() || !work.isDirectory())
-                    work = null;
-            
-            if (work!=null)
+            if (work.exists() && work.canWrite() && work.isDirectory())
+            {
                 makeTempDirectory(work, context, false); //make a tmp dir inside work, don't delete if it exists
+            }
             else
-                makeTempDirectory(new File(System.getProperty("java.io.tmpdir")), context, true); //make a tmpdir, delete if it already exists
+            {
+                File baseTemp = asFile(context.getAttribute(WebAppContext.BASETEMPDIR));
+                if (baseTemp != null && baseTemp.isDirectory() && baseTemp.canWrite())
+                {
+                    // Use baseTemp directory (allow the funky Jetty_0_0_0_0.. subdirectory logic to kick in
+                    makeTempDirectory(baseTemp,context,false);
+                }
+                else
+                {
+                    makeTempDirectory(new File(System.getProperty("java.io.tmpdir")),context,true); //make a tmpdir, delete if it already exists
+                }
+            }
         }
         catch(Exception e)
         {
@@ -304,7 +290,31 @@ public class WebInfConfiguration implements Configuration
         }
     }
     
-    
+    /**
+     * Given an Object, return File reference for object.
+     * Typically used to convert anonymous Object from getAttribute() calls to a File object.
+     * @param fileattr the file attribute to analyze and return from (supports type File and type String, all others return null)
+     * @return the File object, null if null, or null if not a File or String
+     */
+    private File asFile(Object fileattr)
+    {
+        if (fileattr == null)
+        {
+            return null;
+        }
+        if (fileattr instanceof File)
+        {
+            return (File)fileattr;
+        }
+        if (fileattr instanceof String)
+        {
+            return new File((String)fileattr);
+        }
+        return null;
+    }
+
+
+
     public void makeTempDirectory (File parent, WebAppContext context, boolean deleteExisting)
     throws IOException
     {
