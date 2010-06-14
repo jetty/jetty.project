@@ -272,7 +272,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     
     /* ------------------------------------------------------------ */
     /** Fill the buffer with unencrypted bytes.
-     * Called by a {@link org.eclipse.jetty.http.Parser} instance when more data is 
+     * Called by a Http Parser when more data is 
      * needed to continue parsing a request or a response.
      */
     @Override
