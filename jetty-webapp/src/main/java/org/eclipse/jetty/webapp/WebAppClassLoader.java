@@ -127,7 +127,7 @@ public class WebAppClassLoader extends URLClassLoader
 
     /* ------------------------------------------------------------ */
     /**
-     * @param classPath Comma or semicolon separated path of filenames or URLs
+     * @param resource Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
      * with '/'.
      */
