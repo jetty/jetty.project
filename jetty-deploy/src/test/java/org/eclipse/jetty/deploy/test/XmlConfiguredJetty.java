@@ -120,7 +120,7 @@ public class XmlConfiguredJetty
         System.setProperty("jetty.home",jettyHome.getAbsolutePath());
         properties.setProperty("test.basedir",MavenTestingUtils.getBasedir().getAbsolutePath());
         properties.setProperty("test.resourcesdir",MavenTestingUtils.getTestResourcesDir().getAbsolutePath());
-        properties.setProperty("test.webapps",workishDir.getAbsolutePath());
+        properties.setProperty("test.webapps",webappsDir.getAbsolutePath());
         properties.setProperty("test.targetdir",MavenTestingUtils.getTargetDir().getAbsolutePath());
         properties.setProperty("test.workdir",workishDir.getAbsolutePath());
 
