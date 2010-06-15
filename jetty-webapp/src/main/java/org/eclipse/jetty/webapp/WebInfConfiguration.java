@@ -508,7 +508,7 @@ public class WebInfConfiguration implements Configuration
                 web_inf_classes.copyTo(webInfClassesDir);
             }
             
-            web_inf=Resource.newResource(extractedWebInfDir.toURL());
+            web_inf=Resource.newResource(extractedWebInfDir.getCanonicalPath());
             
             ResourceCollection rc = new ResourceCollection(new Resource[]{web_inf,web_app});
             
