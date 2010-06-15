@@ -3,6 +3,7 @@ jetty-7.1.5-SNAPSHOT
  + 316449 Websocket disconnect fix
  + 316584 Exception on startup if temp path has spaces and extractWAR=false
  + 316597 Removed null check and fixed name in Resource#hrefEncodeURI
+ + JETTY-1237 Save local/remote address to be available after close
 
 jetty-7.1.4.v20100610
  + 298551 SslSocketConnector does not need keystore stream

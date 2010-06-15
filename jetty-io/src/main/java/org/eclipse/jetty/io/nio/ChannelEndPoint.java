@@ -29,18 +29,17 @@ import org.eclipse.jetty.util.log.Log;
 
 
 /**
+ * Channel End Point.
+ * <p>Holds the channel and socket for an NIO endpoint.
  *
- *
- * To change the template for this generated type comment go to
- * Window - Preferences - Java - Code Generation - Code and Comments
  */
 public class ChannelEndPoint implements EndPoint
 {
     protected final ByteChannel _channel;
     protected final ByteBuffer[] _gather2=new ByteBuffer[2];
     protected final Socket _socket;
-    protected InetSocketAddress _local;
-    protected InetSocketAddress _remote;
+    protected final InetSocketAddress _local;
+    protected final InetSocketAddress _remote;
     protected int _maxIdleTime;
 
     /**
@@ -52,7 +51,15 @@ public class ChannelEndPoint implements EndPoint
         this._channel = channel;
         _socket=(channel instanceof SocketChannel)?((SocketChannel)channel).socket():null;
         if (_socket!=null)
+        {
+            _local=(InetSocketAddress)_socket.getLocalSocketAddress();
+            _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
             _maxIdleTime=_socket.getSoTimeout();
+        }
+        else
+        {
+            _local=_remote=null;
+        }
     }
 
     /**
@@ -64,7 +71,16 @@ public class ChannelEndPoint implements EndPoint
         _maxIdleTime=maxIdleTime;
         _socket=(channel instanceof SocketChannel)?((SocketChannel)channel).socket():null;
         if (_socket!=null)
+        {
+            _local=(InetSocketAddress)_socket.getLocalSocketAddress();
+            _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
             _socket.setSoTimeout(_maxIdleTime);
+        }
+        else
+        {
+            _local=_remote=null;
+        }
+        
     }
 
     public boolean isBlocking()
@@ -321,13 +337,8 @@ public class ChannelEndPoint implements EndPoint
     {
         if (_socket==null)
             return null;
-
-        if (_local==null)
-            _local=(InetSocketAddress)_socket.getLocalSocketAddress();
-
        if (_local==null || _local.getAddress()==null || _local.getAddress().isAnyLocalAddress())
            return StringUtil.ALL_INTERFACES;
-
         return _local.getAddress().getHostAddress();
     }
 
@@ -339,13 +350,8 @@ public class ChannelEndPoint implements EndPoint
     {
         if (_socket==null)
             return null;
-
-        if (_local==null)
-            _local=(InetSocketAddress)_socket.getLocalSocketAddress();
-
        if (_local==null || _local.getAddress()==null || _local.getAddress().isAnyLocalAddress())
            return StringUtil.ALL_INTERFACES;
-
         return _local.getAddress().getCanonicalHostName();
     }
 
@@ -357,9 +363,6 @@ public class ChannelEndPoint implements EndPoint
     {
         if (_socket==null)
             return 0;
-
-        if (_local==null)
-            _local=(InetSocketAddress)_socket.getLocalSocketAddress();
         if (_local==null)
             return -1;
         return _local.getPort();
@@ -373,10 +376,6 @@ public class ChannelEndPoint implements EndPoint
     {
         if (_socket==null)
             return null;
-
-        if (_remote==null)
-            _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
-
         if (_remote==null)
             return null;
         return _remote.getAddress().getHostAddress();
@@ -390,10 +389,6 @@ public class ChannelEndPoint implements EndPoint
     {
         if (_socket==null)
             return null;
-
-        if (_remote==null)
-            _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
-
         if (_remote==null)
             return null;
         return _remote.getAddress().getCanonicalHostName();
@@ -407,10 +402,6 @@ public class ChannelEndPoint implements EndPoint
     {
         if (_socket==null)
             return 0;
-
-        if (_remote==null)
-            _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
-
         return _remote==null?-1:_remote.getPort();
     }
 
