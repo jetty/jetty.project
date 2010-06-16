@@ -41,7 +41,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
     private final HashMap<String,IPAddrPattern> _patterns = new HashMap<String,IPAddrPattern>();
 
     /* --------------------------------------------------------------- */
-    /** Construct empty AddrPatternMap.
+    /** Construct empty IPAddressMap.
      */
     public IPAddressMap()
     {
@@ -49,7 +49,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
     }
    
     /* --------------------------------------------------------------- */
-    /** Construct empty AddrPatternMap.
+    /** Construct empty IPAddressMap.
      * 
      * @param capacity initial capacity
      */
@@ -82,10 +82,6 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
     /**
      * Retrieve the object mapped to the specified internet address literal
      * 
-     * @see java.util.HashMap#get(java.lang.Object)
-     */
-    /* ------------------------------------------------------------ */
-    /**
      * @see java.util.HashMap#get(java.lang.Object)
      */
     @Override
