@@ -24,6 +24,7 @@ import javax.servlet.annotation.HandlesTypes;
 
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -34,6 +35,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class AnnotationConfiguration extends AbstractConfiguration
 {
     public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";
+    
     
     public void preConfigure(final WebAppContext context) throws Exception
     {
@@ -110,6 +112,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     
 
     public void registerServletContainerInitializerAnnotationHandlers (WebAppContext context, AnnotationParser parser)
+    throws Exception
     {     
         //TODO verify my interpretation of the spec. That is, that metadata-complete has nothing
         //to do with finding the ServletContainerInitializers, classes designated to be of interest to them,
@@ -130,7 +133,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         {
             for (ServletContainerInitializer service : loadedInitializers)
             {
-                if (!isFromExcludedJar(context, orderedJars, service))
+                if (!isFromExcludedJar(context, service))
                 { 
                     HandlesTypes annotation = service.getClass().getAnnotation(HandlesTypes.class);
                     ContainerInitializer initializer = new ContainerInitializer();
@@ -168,26 +171,29 @@ public class AnnotationConfiguration extends AbstractConfiguration
      * @param service
      * @return
      */
-    public boolean isFromExcludedJar (WebAppContext context, List<String> orderedJars, ServletContainerInitializer service)
+    public boolean isFromExcludedJar (WebAppContext context, ServletContainerInitializer service)
+    throws Exception
     {
-        boolean isExcluded = false;
-        
-        try
-        {
-            String loadingJarName = Thread.currentThread().getContextClassLoader().getResource(service.getClass().getName().replace('.','/')+".class").toString();
-         
-            int i = loadingJarName.indexOf(".jar");          
-            int j = loadingJarName.lastIndexOf("/", i);
-            loadingJarName = loadingJarName.substring(j+1,i+4);
-          
-            if (orderedJars != null)
-                isExcluded = orderedJars.contains(loadingJarName);
-        }
-        catch (Exception e)
-        {
-            Log.warn("Problem determining jar containing ServletContaininerInitializer "+service, e);   
-        }
+        List<String> orderedLibs = (List<String>)context.getAttribute(ServletContext.ORDERED_LIBS);
 
-        return isExcluded;
+        //If no ordering, nothing is excluded
+        if (orderedLibs == null)
+            return false;
+
+        //ordering that does not include any jars, everything excluded
+        if (orderedLibs.isEmpty())
+            return true; 
+
+
+        String loadingJarName = Thread.currentThread().getContextClassLoader().getResource(service.getClass().getName().replace('.','/')+".class").toString();
+
+        int i = loadingJarName.indexOf(".jar");  
+        if (i < 0)
+            return false; //not from a jar therefore not from WEB-INF so not excludable
+
+        int j = loadingJarName.lastIndexOf("/", i);
+        loadingJarName = loadingJarName.substring(j+1,i+4);
+
+        return (!orderedLibs.contains(loadingJarName));
     }
 }

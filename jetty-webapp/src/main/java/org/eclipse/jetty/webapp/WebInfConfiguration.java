@@ -25,6 +25,7 @@ public class WebInfConfiguration implements Configuration
     public static final String TEMPDIR_CREATED = "org.eclipse.jetty.tmpdirCreated";
     public static final String CONTAINER_JAR_RESOURCES = "org.eclipse.jetty.containerJars";
     public static final String WEB_INF_JAR_RESOURCES = "org.eclipse.jetty.webInfJars";
+    public static final String WEB_INF_ORDERED_JAR_RESOURCES = "org.eclipse.jetty.webInfOrderedJars";
     public static final String CONTAINER_JAR_PATTERN = "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern";
     public static final String WEBINF_JAR_PATTERN = "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern";
     

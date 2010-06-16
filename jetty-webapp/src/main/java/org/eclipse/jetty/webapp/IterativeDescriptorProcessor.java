@@ -31,8 +31,8 @@ public abstract class IterativeDescriptorProcessor implements DescriptorProcesso
 {
     public static final Class[] __signature = new Class[]{Descriptor.class, XmlParser.Node.class};
     protected Map<String, Method> _visitors = new HashMap<String, Method>();
-    public abstract void start();
-    public abstract void end();
+    public abstract void start(Descriptor descriptor);
+    public abstract void end(Descriptor descriptor);
 
     /**
      * Register a method to be called back when visiting the node with the given name.
@@ -56,7 +56,7 @@ public abstract class IterativeDescriptorProcessor implements DescriptorProcesso
         if (descriptor == null)
             return;
 
-        start();
+        start(descriptor);
 
         XmlParser.Node root = descriptor.getRoot();
         Iterator iter = root.iterator();
@@ -69,7 +69,7 @@ public abstract class IterativeDescriptorProcessor implements DescriptorProcesso
             visit(descriptor, node);
         }
 
-        end();
+        end(descriptor);
     }
 
 

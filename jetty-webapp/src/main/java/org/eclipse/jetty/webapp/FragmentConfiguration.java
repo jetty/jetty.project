@@ -34,15 +34,15 @@ public class FragmentConfiguration implements Configuration
         if (!context.isConfigurationDiscovered())
             return;
         
-        MetaData processor = (MetaData)context.getAttribute(MetaData.METADATA); 
-        if (processor == null)
+        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
+        if (metaData == null)
         {
-            processor = new MetaData (context);
-            context.setAttribute(MetaData.METADATA, processor);
+            metaData = new MetaData (context);
+            context.setAttribute(MetaData.METADATA, metaData);
         }
       
         //parse web-fragment.xmls
-        parseWebFragments(context, processor);
+        parseWebFragments(context, metaData);
         
     }
     
@@ -58,11 +58,21 @@ public class FragmentConfiguration implements Configuration
             context.setAttribute(MetaData.METADATA, metaData);
         }
         
+        StandardDescriptorProcessor processor = (StandardDescriptorProcessor)context.getAttribute(StandardDescriptorProcessor.STANDARD_PROCESSOR);
+        if (processor == null)
+        {
+            processor = new StandardDescriptorProcessor(metaData);
+            context.setAttribute(StandardDescriptorProcessor.STANDARD_PROCESSOR, processor);
+        }
+        
         //order the fragments first
         metaData.orderFragments(); 
           
-        //process the fragments
-        metaData.processFragments(); 
+        //process the fragments - TODO change this
+       List<FragmentDescriptor>fragments = metaData.getOrderedFragments();
+       for (FragmentDescriptor frag:fragments)
+           processor.process(frag);
+           
     }
 
     public void deconfigure(WebAppContext context) throws Exception
@@ -77,7 +87,7 @@ public class FragmentConfiguration implements Configuration
 
     /* ------------------------------------------------------------------------------- */
     /**
-     * Look for any web.xml fragments in META-INF of jars in WEB-INF/lib
+     * Look for any web-fragment.xml fragments in META-INF of jars in WEB-INF/lib
      * 
      * @throws Exception
      */
@@ -88,7 +98,7 @@ public class FragmentConfiguration implements Configuration
         {
             for (Resource frag : frags)
             {
-                processor.parseFragment(Resource.newResource("jar:"+frag.getURL()+"!/META-INF/web-fragment.xml"));
+                processor.addFragment(Resource.newResource("jar:"+frag.getURL()+"!/META-INF/web-fragment.xml"));
             }
         }
     }

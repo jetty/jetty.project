@@ -34,7 +34,7 @@ public class WebXmlConfiguration implements Configuration
     
     /* ------------------------------------------------------------------------------- */
     /**
-     * Process webdefaults.xml
+     * 
      * 
      * 
      */
@@ -48,6 +48,7 @@ public class WebXmlConfiguration implements Configuration
             context.setAttribute(MetaData.METADATA, metaData);
         }
         
+        
         //parse webdefault.xml
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
@@ -55,7 +56,7 @@ public class WebXmlConfiguration implements Configuration
             Resource dftResource = Resource.newSystemResource(defaultsDescriptor);
             if (dftResource == null) 
                 dftResource = context.newResource(defaultsDescriptor);
-            metaData.parseDefaults (dftResource);
+            metaData.setDefaults (dftResource);
            
         }
         
@@ -63,7 +64,7 @@ public class WebXmlConfiguration implements Configuration
         Resource webxml = findWebXml(context);
         if (webxml != null) 
         {      
-            metaData.parseWebXml(webxml);
+            metaData.setWebXml(webxml);
         }
         
         //parse but don't process override-web.xml
@@ -73,7 +74,7 @@ public class WebXmlConfiguration implements Configuration
             Resource orideResource = Resource.newSystemResource(overrideDescriptor);
             if (orideResource == null) 
                 orideResource = context.newResource(overrideDescriptor);
-            metaData.parseOverride(orideResource);
+            metaData.setOverride(orideResource);
         }
     }
 
@@ -98,15 +99,21 @@ public class WebXmlConfiguration implements Configuration
             context.setAttribute(MetaData.METADATA, metaData);
         }
         
-      
+        StandardDescriptorProcessor descriptorProcessor = (StandardDescriptorProcessor)context.getAttribute(StandardDescriptorProcessor.STANDARD_PROCESSOR);
+        if (descriptorProcessor == null)
+        {
+            descriptorProcessor = new StandardDescriptorProcessor(metaData);
+            context.setAttribute(StandardDescriptorProcessor.STANDARD_PROCESSOR, descriptorProcessor);
+        }
+        
         //process web-default.xml
-        metaData.process(metaData.getWebDefault());
+        descriptorProcessor.process(metaData.getWebDefault());
 
         //process web.xml 
-        metaData.process(metaData.getWebXml());
+        descriptorProcessor.process(metaData.getWebXml());
         
         //process override-web.xml            
-        metaData.process(metaData.getOverrideWeb());
+        descriptorProcessor.process(metaData.getOverrideWeb());
       
     }
 

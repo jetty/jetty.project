@@ -24,7 +24,7 @@ import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.webapp.Fragment;
+import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.MetaData;
 
@@ -64,18 +64,18 @@ public class Configuration implements org.eclipse.jetty.webapp.Configuration
            throw new IllegalStateException ("No processor for web xml");
         
         PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor(metaData);
-        metaData.process(metaData.getWebDefault(), plusProcessor);
-        metaData.process(metaData.getWebXml(), plusProcessor);
+        plusProcessor.process(metaData.getWebDefault());
+        plusProcessor.process(metaData.getWebXml());
      
 
         //Process plus-elements of each descriptor
-        for (Fragment frag: metaData.getFragments())
+        for (FragmentDescriptor frag: metaData.getFragments())
         {
-            metaData.process(frag, plusProcessor);
+            plusProcessor.process(frag);
         }
 
         //process the override-web.xml descriptor
-        metaData.process(metaData.getOverrideWeb(), plusProcessor);
+        plusProcessor.process(metaData.getOverrideWeb());
     }
     
     public void postConfigure(WebAppContext context) throws Exception

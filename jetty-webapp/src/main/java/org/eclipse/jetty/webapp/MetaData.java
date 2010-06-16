@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,13 +21,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 
-import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.xml.XmlParser;
 
 
 
@@ -47,101 +42,22 @@ public class MetaData
     public static final String WEBXML_MINOR_VERSION = "org.eclipse.jetty.webXmlMinorVersion";
     public static final String WEBXML_CLASSNAMES = "org.eclipse.jetty.webXmlClassNames";
 
-    public enum Origin {NotSet, WebXml, WebDefaults, WebOverride, WebFragment};
+    public enum Origin {NotSet, WebXml, WebDefaults, WebOverride, WebFragment, Annotation};
     
     protected WebAppContext _context;
     protected Map<String, Descriptor> _origins = new HashMap<String,Descriptor>();
     protected Descriptor _webDefaultsRoot;
     protected Descriptor _webXmlRoot;
     protected Descriptor _webOverrideRoot;
-    protected List<Fragment> _webFragmentRoots = new ArrayList<Fragment>();
-    protected Map<String,Fragment> _webFragmentNameMap = new HashMap<String,Fragment>();
-    protected List<Fragment> _orderedFragments = new LinkedList<Fragment>();
-    protected XmlParser _parser;
+    protected List<FragmentDescriptor> _webFragmentRoots = new ArrayList<FragmentDescriptor>();
+    protected Map<String,FragmentDescriptor> _webFragmentNameMap = new HashMap<String,FragmentDescriptor>();
+    protected Map<Resource, FragmentDescriptor> _webFragmentResourceMap = new HashMap<Resource, FragmentDescriptor>();
+    protected List<Resource> _orderedResources;
     protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected StandardDescriptorProcessor _standardDescriptorProcessor;
+ 
     
    
-
-    
-    public static XmlParser newParser()
-    throws ClassNotFoundException
-    {
-        XmlParser xmlParser=new XmlParser();
-        //set up cache of DTDs and schemas locally        
-        URL dtd22=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_2_2.dtd",true);
-        URL dtd23=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_2_3.dtd",true);
-        URL j2ee14xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/j2ee_1_4.xsd",true);
-        URL webapp24xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_2_4.xsd",true);
-        URL webapp25xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_2_5.xsd",true);
-        URL webapp30xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-app_3_0.xsd",true);
-        URL webcommon30xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-common_3_0.xsd",true);
-        URL webfragment30xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/web-fragment_3_0.xsd",true);
-        URL schemadtd=Loader.getResource(Servlet.class,"javax/servlet/resources/XMLSchema.dtd",true);
-        URL xmlxsd=Loader.getResource(Servlet.class,"javax/servlet/resources/xml.xsd",true);
-        URL webservice11xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/j2ee_web_services_client_1_1.xsd",true);
-        URL webservice12xsd=Loader.getResource(Servlet.class,"javax/servlet/resources/javaee_web_services_client_1_2.xsd",true);
-        URL datatypesdtd=Loader.getResource(Servlet.class,"javax/servlet/resources/datatypes.dtd",true);
-
-        URL jsp20xsd = null;
-        URL jsp21xsd = null;
-
-        try
-        {
-            Class jsp_page = Loader.loadClass(WebXmlConfiguration.class, "javax.servlet.jsp.JspPage");
-            jsp20xsd = jsp_page.getResource("/javax/servlet/resources/jsp_2_0.xsd");
-            jsp21xsd = jsp_page.getResource("/javax/servlet/resources/jsp_2_1.xsd");
-        }
-        catch (Exception e)
-        {
-            Log.ignore(e);
-        }
-        finally
-        {
-            if (jsp20xsd == null) jsp20xsd = Loader.getResource(Servlet.class, "javax/servlet/resources/jsp_2_0.xsd", true);
-            if (jsp21xsd == null) jsp21xsd = Loader.getResource(Servlet.class, "javax/servlet/resources/jsp_2_1.xsd", true);
-        }
-        
-        redirect(xmlParser,"web-app_2_2.dtd",dtd22);
-        redirect(xmlParser,"-//Sun Microsystems, Inc.//DTD Web Application 2.2//EN",dtd22);
-        redirect(xmlParser,"web.dtd",dtd23);
-        redirect(xmlParser,"web-app_2_3.dtd",dtd23);
-        redirect(xmlParser,"-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN",dtd23);
-        redirect(xmlParser,"XMLSchema.dtd",schemadtd);
-        redirect(xmlParser,"http://www.w3.org/2001/XMLSchema.dtd",schemadtd);
-        redirect(xmlParser,"-//W3C//DTD XMLSCHEMA 200102//EN",schemadtd);
-        redirect(xmlParser,"jsp_2_0.xsd",jsp20xsd);
-        redirect(xmlParser,"http://java.sun.com/xml/ns/j2ee/jsp_2_0.xsd",jsp20xsd);
-        redirect(xmlParser,"http://java.sun.com/xml/ns/javaee/jsp_2_1.xsd",jsp21xsd);
-        redirect(xmlParser,"j2ee_1_4.xsd",j2ee14xsd);
-        redirect(xmlParser,"http://java.sun.com/xml/ns/j2ee/j2ee_1_4.xsd",j2ee14xsd);
-        redirect(xmlParser,"web-app_2_4.xsd",webapp24xsd);
-        redirect(xmlParser,"http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd",webapp24xsd);
-        redirect(xmlParser,"web-app_2_5.xsd",webapp25xsd);
-        redirect(xmlParser,"http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd",webapp25xsd);
-        redirect(xmlParser,"web-app_3_0.xsd",webapp30xsd);
-        redirect(xmlParser,"http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd",webapp30xsd);
-        redirect(xmlParser,"web-common_3_0.xsd",webcommon30xsd);
-        redirect(xmlParser,"http://java.sun.com/xml/ns/javaee/web-common_3_0.xsd",webcommon30xsd);
-        redirect(xmlParser,"web-fragment_3_0.xsd",webfragment30xsd);
-        redirect(xmlParser,"http://java.sun.com/xml/ns/javaee/web-fragment_3_0.xsd",webfragment30xsd);
-        redirect(xmlParser,"xml.xsd",xmlxsd);
-        redirect(xmlParser,"http://www.w3.org/2001/xml.xsd",xmlxsd);
-        redirect(xmlParser,"datatypes.dtd",datatypesdtd);
-        redirect(xmlParser,"http://www.w3.org/2001/datatypes.dtd",datatypesdtd);
-        redirect(xmlParser,"j2ee_web_services_client_1_1.xsd",webservice11xsd);
-        redirect(xmlParser,"http://www.ibm.com/webservices/xsd/j2ee_web_services_client_1_1.xsd",webservice11xsd);
-        redirect(xmlParser,"javaee_web_services_client_1_2.xsd",webservice12xsd);
-        redirect(xmlParser,"http://www.ibm.com/webservices/xsd/javaee_web_services_client_1_2.xsd",webservice12xsd);
-        return xmlParser;
-    }
-    
-    
-    protected static void redirect(XmlParser parser, String resource, URL source)
-    {
-        if (source != null) parser.redirectEntity(resource, source);
-    }
-    
     /**
      * Ordering
      *
@@ -149,7 +65,7 @@ public class MetaData
      */
     public interface Ordering
     {
-        public List<Fragment> order();
+        public List<Resource> order(List<Resource> fragments);
         public boolean isAbsolute ();
         public boolean hasOther();
     }
@@ -165,13 +81,18 @@ public class MetaData
         protected List<String> _order = new ArrayList<String>();
         protected boolean _hasOther = false;
  
-        public List<Fragment> order()
+        /** 
+         * Order the list of jars in WEB-INF/lib according to the ordering declarations in the descriptors
+         * @see org.eclipse.jetty.webapp.MetaData.Ordering#order(java.util.List)
+         */
+        public List<Resource> order(List<Resource> jars)
         {           
-            List<Fragment> orderedList = new ArrayList<Fragment>();
+            List<Resource> orderedList = new ArrayList<Resource>();
+            List<Resource> tmp = new ArrayList<Resource>(jars);
           
             //1. put everything into the list of named others, and take the named ones out of there,
             //assuming we will want to use the <other> clause
-            Map<String,Fragment> others = new HashMap(getNamedFragments());
+            Map<String,FragmentDescriptor> others = new HashMap(getNamedFragments());
             
             //2. for each name, take out of the list of others, add to tail of list
             int index = -1;
@@ -179,17 +100,23 @@ public class MetaData
             {
                 if (!item.equals(OTHER))
                 {
-                    Fragment f = others.remove(item);
+                    FragmentDescriptor f = others.remove(item);
                     if (f != null)
-                        orderedList.add(f); //take from others and put into final list in order, ignoring duplicate names
+                    {
+                        orderedList.add(f.getResource()); //take from others and put into final list in order, ignoring duplicate names
+                        //remove resource from list for resource matching name of descriptor
+                        tmp.remove(f.getResource());
+                    }
                 }
                 else
                     index = orderedList.size(); //remember the index at which we want to add in all the others
             }
             
-            //3. if <other> was specified, insert the leftovers
+            //3. if <other> was specified, insert rest of the fragments 
             if (_hasOther)
-                orderedList.addAll((index < 0? 0: index), others.values());
+            {
+                orderedList.addAll((index < 0? 0: index), tmp);
+            }
             
             return orderedList;
         }
@@ -227,26 +154,67 @@ public class MetaData
      */
     public class RelativeOrdering implements Ordering
     {
-        protected LinkedList<String> _beforeOthers = new LinkedList<String>();
-        protected LinkedList<String> _afterOthers = new LinkedList<String>();
-        protected LinkedList<String> _noOthers = new LinkedList<String>();
+        protected LinkedList<Resource> _beforeOthers = new LinkedList<Resource>();
+        protected LinkedList<Resource> _afterOthers = new LinkedList<Resource>();
+        protected LinkedList<Resource> _noOthers = new LinkedList<Resource>();
         
-        public List<Fragment> order()
+        /** 
+         * Order the list of jars according to the ordering declared
+         * in the various web-fragment.xml files.
+         * @see org.eclipse.jetty.webapp.MetaData.Ordering#order(java.util.List)
+         */
+        public List<Resource> order(List<Resource> jars)
         {           
-            List<Fragment> orderedList = new ArrayList<Fragment>();
- 
+            //for each jar, put it into the ordering according to the fragment ordering
+            for (Resource r:jars)
+            {
+                //check if the jar has a fragment descriptor
+                FragmentDescriptor descriptor = _webFragmentResourceMap.get(r);
+                if (descriptor != null)
+                {
+                    switch (descriptor.getOtherType())
+                    {
+                        case None:
+                        {
+                            ((RelativeOrdering)_ordering).addNoOthers(r);
+                            break;
+                        }
+                        case Before:
+                        { 
+                            ((RelativeOrdering)_ordering).addBeforeOthers(r);
+                            break;
+                        }
+                        case After:
+                        {
+                            ((RelativeOrdering)_ordering).addAfterOthers(r);
+                            break;
+                        }
+                    } 
+                }
+                else
+                {
+                    //jar fragment has no descriptor, but there is a relative ordering in place, so it must be part of the others
+                    ((RelativeOrdering)_ordering).addNoOthers(r);
+                }
+            }            
+                
+            //now apply the ordering
+            List<Resource> orderedList = new ArrayList<Resource>(); 
             int maxIterations = 2;
             boolean done = false;
             do
             {
                 //1. order the before-others according to any explicit before/after relationships 
-                done = orderList(_beforeOthers);
+                boolean changesBefore = orderList(_beforeOthers);
 
                 //2. order the after-others according to any explicit before/after relationships
-                done = orderList(_afterOthers);
+                boolean changesAfter = orderList(_afterOthers);
 
                 //3. order the no-others according to their explicit before/after relationships
-                done = orderList(_noOthers);
+                boolean changesNone = orderList(_noOthers);
+                
+                //we're finished on a clean pass through with no ordering changes
+                done = (!changesBefore && !changesAfter && !changesNone);
             }
             while (!done && (--maxIterations >0));
             
@@ -254,12 +222,12 @@ public class MetaData
             if (!done)
                 throw new IllegalStateException("Circular references for fragments");
             
-            for (String s: _beforeOthers)
-                orderedList.add(getFragment(s));
-            for (String s: _noOthers)
-                orderedList.add(getFragment(s));
-            for(String s: _afterOthers)
-                orderedList.add(getFragment(s));
+            for (Resource r: _beforeOthers)
+                orderedList.add(r);
+            for (Resource r: _noOthers)
+                orderedList.add(r);
+            for(Resource r: _afterOthers)
+                orderedList.add(r);
             
             return orderedList;
         }
@@ -274,67 +242,75 @@ public class MetaData
             return !_beforeOthers.isEmpty() || !_afterOthers.isEmpty();
         }
         
-        public void addBeforeOthers (Fragment d)
+        public void addBeforeOthers (Resource r)
         {
-            _beforeOthers.addLast(d.getName());
+            _beforeOthers.addLast(r);
         }
         
-        public void addAfterOthers (Fragment d)
+        public void addAfterOthers (Resource r)
         {
-            _afterOthers.addLast(d.getName());
+            _afterOthers.addLast(r);
         }
         
-        public void addNoOthers (Fragment d)
+        public void addNoOthers (Resource r)
         {
-            _noOthers.addLast(d.getName());
+            _noOthers.addLast(r);
         }
         
-       protected boolean orderList (LinkedList<String> list)
+       protected boolean orderList (LinkedList<Resource> list)
        {
            //Take a copy of the list so we can iterate over it and at the same time do random insertions
-           boolean noChanges = true;
-           List<String> iterable = new ArrayList(list);
-           Iterator<String> itor = iterable.iterator();
+           boolean changes = false;
+           List<Resource> iterable = new ArrayList(list);
+           Iterator<Resource> itor = iterable.iterator();
            
            while (itor.hasNext())
            {
-               String name = itor.next();
-               Fragment f = _webFragmentNameMap.get(name);
+               Resource r = itor.next();
+               FragmentDescriptor f = getFragment(r);
                if (f == null)
-                  throw new IllegalStateException ("No fragment matching name "+name);
-
+               {
+                   //no fragment for this resource so cannot have any ordering directives
+                   continue;
+               }
+                
                //Handle any explicit <before> relationships for the fragment we're considering
                List<String> befores = f.getBefores();
                if (befores != null && !befores.isEmpty())
                {
                    for (String b: befores)
                    {
-                       //Fragment we're considering must be before this name
+                       //Fragment we're considering must be before b
                        //Check that we are already before it, if not, move us so that we are.
                        //If the name does not exist in our list, then get it out of the no-other list
-                       
-                       if (!isBefore(list, name, b))
+                       if (!isBefore(list, f.getName(), b))
                        {
                            //b is not already before name, move it so that it is
-                           int idx1 = list.indexOf(name);
-                           int idx2 = list.indexOf(b);
+                           int idx1 = getIndexOf(list, f.getName());
+                           int idx2 = getIndexOf(list, b);
 
                            //if b is not in the same list
                            if (idx2 < 0)
                            {
+                               changes = true;
                                // must be in the noOthers list or it would have been an error
-                               _noOthers.remove(b);
-
-                               //If its in the no-others list, insert into this list so that we are before it
-                               insert(list, idx1+1, b);
-                               noChanges = false;
+                               Resource bResource = getResourceForFragment(b);
+                               if (bResource != null)
+                               {
+                                   //If its in the no-others list, insert into this list so that we are before it
+                                   if (_noOthers.remove(bResource))
+                                   {
+                                       insert(list, idx1+1, b);
+                                      
+                                   }
+                               }
                            }
                            else
                            {
                                //b is in the same list but b is before name, so swap it around
-                               list.remove(name);
-                               insert(list, idx2, name);
-                               noChanges = false;
+                               list.remove(idx1);
+                               insert(list, idx2, f.getName());
+                               changes = true;
                            }
                        }
                    }
@@ -346,27 +322,33 @@ public class MetaData
                {
                    for (String a: afters)
                    {
-                       //Check that name is after a, moving it if possible if its not
-                       if (!isAfter(list, name, a))
+                       //Check that fragment we're considering is after a, moving it if possible if its not
+                       if (!isAfter(list, f.getName(), a))
                        {
                            //name is not after a, move it
-                           int idx1 = list.indexOf(name);
-                           int idx2 = list.indexOf(a);
+                           int idx1 = getIndexOf(list, f.getName());
+                           int idx2 = getIndexOf(list, a);
                            
                            //if a is not in the same list as name
                            if (idx2 < 0)
                            {
+                               changes = true;
                                //take it out of the noOthers list and put it in the right place in this list
-                               _noOthers.remove(a);
-                               insert(list,idx1, a);
-                               noChanges = false;
+                               Resource aResource = getResourceForFragment(a);
+                               if (aResource != null)
+                               {
+                                   if (_noOthers.remove(aResource))
+                                   {
+                                       insert(list,idx1, aResource);       
+                                   }
+                               }
                            }
                            else
                            {
                                //a is in the same list as name, but in the wrong place, so move it
-                               list.remove(a);
+                               list.remove(idx2);
                                insert(list,idx1, a);
-                               noChanges = false;
+                               changes = true;
                            }
                        }
                        //Name we're considering must be after this name
@@ -376,22 +358,22 @@ public class MetaData
                }
            }
  
-           return noChanges;
+           return changes;
        }
        
        /**
-        * Is a before b?
+        * Is fragment with name a before fragment with name b?
         * @param list
-        * @param a
-        * @param b
+        * @param fragNameA
+        * @param fragNameB
         * @return
         */
-       protected boolean isBefore (List<String> list, String a, String b)
+       protected boolean isBefore (List<Resource> list, String fragNameA, String fragNameB)
        {
            //check if a and b are already in the same list, and b is already
            //before a 
-           int idxa = list.indexOf(a);
-           int idxb = list.indexOf(b);
+           int idxa = getIndexOf(list, fragNameA);
+           int idxb = getIndexOf(list, fragNameB);
            
            
            if (idxb >=0 && idxb < idxa)
@@ -414,8 +396,8 @@ public class MetaData
                {
                    //The list we're looking at is the afterOthers, then a will be the tail of
                    //the final list.  If b is in the beforeOthers list, then b will be before a and an error.
-                   if (_beforeOthers.contains(b))
-                       throw new IllegalStateException("Incorrect relationship: "+a+" before "+b);
+                   if (_beforeOthers.contains(fragNameB))
+                       throw new IllegalStateException("Incorrect relationship: "+fragNameA+" before "+fragNameB);
                    else
                        return false; //b could be moved to the list
                }
@@ -427,16 +409,16 @@ public class MetaData
        
        
        /**
-        * Is a after b?
+        * Is fragment name "a" after fragment name "b"?
         * @param list
-        * @param a
-        * @param b
+        * @param fragNameA
+        * @param fragNameB
         * @return
         */
-       protected boolean isAfter(List<String> list, String a, String b)
+       protected boolean isAfter(List<Resource> list, String fragNameA, String fragNameB)
        {
-           int idxa = list.indexOf(a);
-           int idxb = list.indexOf(b);
+           int idxa = getIndexOf(list, fragNameA);
+           int idxb = getIndexOf(list, fragNameB);
            
            if (idxb >=0 && idxa < idxb)
            {
@@ -458,8 +440,8 @@ public class MetaData
                {
                    //The list we're looking at is beforeOthers, and contains a and will be before
                    //everything else in the final ist. If b is in the afterOthers list, then a cannot be before b.
-                   if (_afterOthers.contains(b))
-                       throw new IllegalStateException("Incorrect relationship: "+b+" after "+a);
+                   if (_afterOthers.contains(fragNameB))
+                       throw new IllegalStateException("Incorrect relationship: "+fragNameB+" after "+fragNameA);
                    else
                        return false; //b could be moved from noOthers list
                }
@@ -467,13 +449,54 @@ public class MetaData
 
            return true; //a and b in the same list, a is after b
        }
-       
-       protected void insert(List<String> list, int index, String element)
+
+       /**
+        * Insert the resource matching the fragName into the list of resources
+        * at the location indicated by index.
+        * 
+        * @param list
+        * @param index
+        * @param fragName
+        */
+       protected void insert(List<Resource> list, int index, String fragName)
        {
+           FragmentDescriptor fd = getFragment(fragName);
+           if (fd == null)
+              throw new IllegalStateException("Fragment is null for insertion");
+           
+           insert(list, index, fd.getResource());
+       }
+       
+       protected void insert(List<Resource> list, int index, Resource resource)
+       {
+           if (list == null)
+               throw new IllegalStateException("List is null for insertion");
+           
+           //add it at the end
            if (index > list.size())
-               list.add(element);
+               list.add(resource);
            else
-               list.add(index, element);
+               list.add(index, resource);
+       }
+       
+       protected void remove (List<Resource> resources, Resource r)
+       {
+           if (resources == null)
+               return;
+           resources.remove(r);
+       }
+
+       protected int getIndexOf(List<Resource> resources, String fragmentName)
+       {
+          FragmentDescriptor fd = getFragment(fragmentName);
+          if (fd == null)
+              return -1;
+          
+          Resource r = fd.getResource();
+          if (r == null)
+              return -1;
+          
+          return resources.indexOf(r);
        }
     }
 
@@ -482,7 +505,7 @@ public class MetaData
     public MetaData (WebAppContext context) throws ClassNotFoundException
     {
         _context = context;
-        _parser = newParser();
+
     }
     
     public WebAppContext getContext()
@@ -490,12 +513,9 @@ public class MetaData
         return _context;
     }
     
-    public XmlParser getParser()
-    {
-        return _parser;
-    }
+  
     
-    public void parseDefaults (Resource webDefaults)
+    public void setDefaults (Resource webDefaults)
     throws Exception
     {
         _webDefaultsRoot =  new DefaultsDescriptor(webDefaults, this); 
@@ -516,12 +536,11 @@ public class MetaData
         }    
     }
     
-    public void parseWebXml (Resource webXml)
+    public void setWebXml (Resource webXml)
     throws Exception
     {
         _webXmlRoot = new Descriptor(webXml, this);
         _webXmlRoot.parse();
-        _webXmlRoot.processClassNames();
         if (_webXmlRoot.getMetaDataComplete() == Descriptor.MetaDataComplete.True)          
             _context.setAttribute(METADATA_COMPLETE, Boolean.TRUE);
         else
@@ -546,7 +565,7 @@ public class MetaData
         }    
     }
     
-    public void parseOverride (Resource override)
+    public void setOverride (Resource override)
     throws Exception
     {
         _webOverrideRoot = new OverrideDescriptor(override, this);
@@ -574,7 +593,7 @@ public class MetaData
     }
     
     
-    public void parseFragment (Resource fragment)
+    public void addFragment (Resource fragment)
     throws Exception
     { 
         Boolean metaComplete = (Boolean)_context.getAttribute(METADATA_COMPLETE);
@@ -582,40 +601,21 @@ public class MetaData
             return; //do not process anything else if web.xml/web-override.xml set metadata-complete
         
         //Metadata-complete is not set, or there is no web.xml
-        Fragment frag = new Fragment(fragment, this);
-        frag.parse();
-        _webFragmentRoots.add(frag);
-        if (frag.getName() != null)
-            _webFragmentNameMap.put(frag.getName(), frag);
+        FragmentDescriptor descriptor = new FragmentDescriptor(fragment, this);
+        _webFragmentResourceMap.put(fragment, descriptor);
+        _webFragmentRoots.add(descriptor);
+        
+        descriptor.parse();
+        
+        if (descriptor.getName() != null)
+            _webFragmentNameMap.put(descriptor.getName(), descriptor);
 
         //If web.xml has specified an absolute ordering, ignore any relative ordering in the fragment
         if (_ordering != null && _ordering.isAbsolute())
             return;
         
-        if (frag.isOrdered())
-        {
-            if (_ordering == null)
-                _ordering = new RelativeOrdering();
-
-            switch (frag.getOtherType())
-            {
-                case None:
-                {
-                    ((RelativeOrdering)_ordering).addNoOthers(frag);
-                    break;
-                }
-                case Before:
-                { 
-                    ((RelativeOrdering)_ordering).addBeforeOthers(frag);
-                    break;
-                }
-                case After:
-                {
-                    ((RelativeOrdering)_ordering).addAfterOthers(frag);
-                    break;
-                }
-            } 
-        }
+        if (_ordering == null && descriptor.isOrdered())
+            _ordering = new RelativeOrdering();
     }
 
 
@@ -624,33 +624,12 @@ public class MetaData
     {
         if (_ordering != null)
         {
-            //Get the jars with fragments according to the order specified
-            _orderedFragments = _ordering.order();
-            
-            //Get the list of all of the jars in WEB-INF/lib
-            List<Resource> webInfJars = new ArrayList<Resource>((List<Resource>)_context.getAttribute(WebInfConfiguration.WEB_INF_JAR_RESOURCES));          
-            
+            //Get the jars in WEB-INF/lib according to the order specified    
+            _orderedResources = _ordering.order((List<Resource>)_context.getAttribute(WebInfConfiguration.WEB_INF_JAR_RESOURCES));
+            _context.setAttribute(WebInfConfiguration.WEB_INF_ORDERED_JAR_RESOURCES, _orderedResources);
             List<String> orderedJars = new ArrayList<String>();
-            for (Descriptor frag: _orderedFragments)
-            {
-                //get just the name of the jar file
-                String fullname = frag.getResource().getName();
-                int i = fullname.indexOf(".jar");          
-                int j = fullname.lastIndexOf("/", i);
-                orderedJars.add(fullname.substring(j+1,i+4));
-                
-                webInfJars.remove(frag.getResource());
-            }
-            
-            //if the ordering permitted others, then add in all jars in WEB-INF/lib that are not fragments
-            //as per email from Rajiv Mordani jsr-315 7 April 2010
-            //    If there is a <others/> then the ordering should be 
-            //          WEB-INF/classes the order of the declared elements + others.
-            //    In case there is no others then it is 
-            //          WEB-INF/classes + order of the elements.
-            if (_ordering.hasOther())
-            {
-                for (Resource webInfJar:webInfJars)
+         
+                for (Resource webInfJar:_orderedResources)
                 {
                     //get just the name of the jar file
                     String fullname = webInfJar.getName();
@@ -658,31 +637,28 @@ public class MetaData
                     int j = fullname.lastIndexOf("/", i);
                     orderedJars.add(fullname.substring(j+1,i+4));
                 }
-            }
 
             _context.setAttribute(ServletContext.ORDERED_LIBS, orderedJars);
         }
         else
-            _orderedFragments = _webFragmentRoots;
+            _orderedResources = new ArrayList<Resource>((List<Resource>)_context.getAttribute(WebInfConfiguration.WEB_INF_JAR_RESOURCES));
     }
     
-    
-    public void processFragments ()
-    throws Exception
+    public boolean isDistributable ()
     {
-        //Servlet Spec 3.0 p.74 says all descriptors must say distributable
-        boolean distributable = ((_webDefaultsRoot != null && _webDefaultsRoot.isDistributable()) 
-                                 || (_webXmlRoot != null && _webXmlRoot.isDistributable())
-                                 || (_webOverrideRoot != null && _webOverrideRoot.isDistributable()));
-        for (Fragment frag : _orderedFragments)
-        {
-            process(frag);       
-            distributable = distributable && frag.isDistributable();
+        boolean distributable = (
+                (_webDefaultsRoot != null && _webDefaultsRoot.isDistributable()) 
+                || (_webXmlRoot != null && _webXmlRoot.isDistributable())
+                || (_webOverrideRoot != null && _webOverrideRoot.isDistributable()));
+
+        for (Resource r: _orderedResources)
+        {  
+            FragmentDescriptor d = _webFragmentResourceMap.get(r);
+            if (d!=null)
+                distributable = distributable && d.isDistributable();
         }
-        
-        _context.setDistributable(distributable);
+        return distributable;
     }
-    
    
     
     public Descriptor getWebXml ()
@@ -700,14 +676,29 @@ public class MetaData
         return _webDefaultsRoot;
     }
     
-    public List<Fragment> getFragments ()
+    public List<FragmentDescriptor> getFragments ()
     {
         return _webFragmentRoots;
     }
     
-    public List<Fragment> getOrderedFragments ()
+    public List<Resource> getOrderedResources ()
     {
-        return _orderedFragments;
+        return _orderedResources;
+    }
+    
+    public List<FragmentDescriptor> getOrderedFragments ()
+    {
+        List<FragmentDescriptor> list = new ArrayList<FragmentDescriptor>();
+        if (_orderedResources == null)
+            return list;
+
+        for (Resource r:_orderedResources)
+        {
+            FragmentDescriptor fd = _webFragmentResourceMap.get(r);
+            if (fd != null)
+                list.add(fd);
+        }
+        return list;
     }
     
     public Ordering getOrdering()
@@ -720,54 +711,36 @@ public class MetaData
         _ordering = o;
     }
     
-    public Fragment getFragment(String name)
+    public FragmentDescriptor getFragment (Resource r)
+    {
+        return _webFragmentResourceMap.get(r);
+    }
+    
+    public FragmentDescriptor getFragment(String name)
     {
         return _webFragmentNameMap.get(name);
     }
     
-    public Map<String,Fragment> getNamedFragments ()
+    public Resource getResourceForFragment (String name)
+    {
+        FragmentDescriptor f = getFragment(name);
+        if (f == null)
+            return null;
+        return f.getResource();
+    }
+    
+    public Map<String,FragmentDescriptor> getNamedFragments ()
     {
         return Collections.unmodifiableMap(_webFragmentNameMap);
     }
     
-    
-    /**
-     * Convenience method. Process the standard elements of the web descriptor.
-     * @param descriptor
-     * @throws Exception
-     */
-    public void process (Descriptor descriptor)
-    throws Exception
-    {      
-        if (descriptor != null)
-        {
-            initStandardDescriptorProcessor();
-            process(descriptor, _standardDescriptorProcessor);
-        }
-    }
-  
-    
-    
-    /**
-     * Process the elements of the Descriptor according to the
-     * given DescriptorProcessor.
-     * @param descriptor
-     * @param processor
-     * @throws Exception
-     */
-    public void process (Descriptor descriptor, DescriptorProcessor processor)
-    throws Exception
-    {
-        if (descriptor != null && processor != null)
-            processor.process(descriptor);
-    }
     
     public Origin getOrigin (String name)
     {
         Descriptor d = _origins.get(name);
         if (d == null)
             return Origin.NotSet;
-        if (d instanceof Fragment)
+        if (d instanceof FragmentDescriptor)
             return Origin.WebFragment;
         if (d instanceof OverrideDescriptor)
             return Origin.WebOverride;
@@ -784,11 +757,5 @@ public class MetaData
     public void setOrigin (String name, Descriptor d)
     {
         _origins.put(name, d);
-    }
-       
-    public void initStandardDescriptorProcessor ()
-    {
-        if (_standardDescriptorProcessor == null)
-            _standardDescriptorProcessor = new StandardDescriptorProcessor(this);
     }
 }

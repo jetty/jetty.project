@@ -27,13 +27,12 @@ import org.eclipse.jetty.xml.XmlParser;
  *
  * A web-fragment.xml descriptor.
  */
-public class Fragment extends Descriptor
+public class FragmentDescriptor extends Descriptor
 {
     public static final String NAMELESS = "@@-NAMELESS-@@"; //prefix for nameless Fragments
     public enum OtherType {None, Before, After};
     
     protected int _counter = 0;
-    protected boolean _hasOther = false;
     protected OtherType _otherType = OtherType.None;
    
     
@@ -42,7 +41,7 @@ public class Fragment extends Descriptor
     protected String _name;
     
     
-    public Fragment (Resource xml, MetaData processor)
+    public FragmentDescriptor (Resource xml, MetaData processor)
     throws Exception
     {
         super (xml, processor);

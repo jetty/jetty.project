@@ -33,7 +33,7 @@ import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.Descriptor;
-import org.eclipse.jetty.webapp.Fragment;
+import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.IterativeDescriptorProcessor;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.MetaData;
@@ -70,20 +70,21 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    /** 
-     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#start()
-     */
-    public void start()
-    {  
-    }
 
     /** 
-     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#end()
+     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#end(org.eclipse.jetty.webapp.Descriptor)
      */
-    public void end()
+    public void end(Descriptor descriptor)
     {
     }
+
     
+    /** 
+     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#start(org.eclipse.jetty.webapp.Descriptor)
+     */
+    public void start(Descriptor descriptor)
+    {        
+    }
     
     /**
      * JavaEE 5.4.1.3 
@@ -130,7 +131,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 //ServletSpec 3.0 p75. web.xml (or web-override/web-defaults) declared
                 //the env-entry. A fragment is not allowed to change that, except unless
                 //the web.xml did not declare any injections.
-                if (!(descriptor instanceof Fragment))
+                if (!(descriptor instanceof FragmentDescriptor))
                 {
                     //We're processing web-defaults, web.xml or web-override. Any of them can
                     //set or change the env-entry.
@@ -145,7 +146,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     //declared for it. If it was declared in web.xml then don't merge any injections.
                     //If it was declared in a web-fragment, then we can keep merging fragments.
                     Descriptor d = _metaData.getOriginDescriptor("env-entry."+name+".injection");
-                    if (d==null || d instanceof Fragment)
+                    if (d==null || d instanceof FragmentDescriptor)
                         addInjection(descriptor, node, name, TypeUtil.fromName(type));
                 }
                 break;
@@ -217,7 +218,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             case WebOverride:   
             {
                 //A web xml previously declared the resource-ref.    
-                if (!(descriptor instanceof Fragment))
+                if (!(descriptor instanceof FragmentDescriptor))
                 {
                     //We're processing web-defaults, web.xml or web-override. Any of them can
                     //set or change the resource-ref.
@@ -238,7 +239,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     //declared for it. If an injection was declared in web.xml then don't merge any injections.
                     //If it was declared in a web-fragment, then we can keep merging fragments.
                     Descriptor d = _metaData.getOriginDescriptor("resource-ref."+jndiName+".injection");
-                    if (d==null || d instanceof Fragment)
+                    if (d==null || d instanceof FragmentDescriptor)
                     { 
                         Class typeClass = TypeUtil.fromName(type);
                         if (typeClass==null)
@@ -295,7 +296,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 //A resource-env-ref of this name has been declared first in a web xml.
                 //Only allow other web-default, web.xml, web-override to change it.
-                if (!(descriptor instanceof Fragment))
+                if (!(descriptor instanceof FragmentDescriptor))
                 {
                     //We're processing web-defaults, web.xml or web-override. Any of them can
                     //set or change the resource-env-ref.
@@ -311,7 +312,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     //We're processing a web-fragment. It can only contribute injections if the
                     //there haven't been any injections declared yet, or they weren't declared in a WebXml file.
                     Descriptor d = _metaData.getOriginDescriptor("resource-env-ref."+jndiName+".injection");
-                    if (d == null || d instanceof Fragment)
+                    if (d == null || d instanceof FragmentDescriptor)
                     {
                         Class typeClass = TypeUtil.fromName(type);
                         if (typeClass==null)
@@ -365,7 +366,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             {               
                 //A message-destination-ref of this name has been declared first in a web xml.
                 //Only allow other web-default, web.xml, web-override to change it.
-                if (!(descriptor instanceof Fragment))
+                if (!(descriptor instanceof FragmentDescriptor))
                 {
                     Class typeClass = TypeUtil.fromName(type);
                     if (typeClass==null)
@@ -379,7 +380,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     //A web-fragment has declared a message-destination-ref with the same name as a web xml.
                     //It can only contribute injections, and only if the web xml didn't declare any.
                     Descriptor d = _metaData.getOriginDescriptor("message-destination-ref."+jndiName+".injection");
-                    if (d == null || d instanceof Fragment)
+                    if (d == null || d instanceof FragmentDescriptor)
                     { 
                         Class typeClass = TypeUtil.fromName(type);
                         if (typeClass==null)
@@ -454,7 +455,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 //A web xml first declared a post-construct. Only allow other web xml files (web-defaults, web-overrides etc)
                 //to add to it
-                if (!(descriptor instanceof Fragment))
+                if (!(descriptor instanceof FragmentDescriptor))
                 {
                     try
                     {
@@ -540,7 +541,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 //A web xml file previously declared a pre-destroy. Only allow other web xml files
                 //(not web-fragments) to add to them.
-                if (!(descriptor instanceof Fragment))
+                if (!(descriptor instanceof FragmentDescriptor))
                 {
                     try
                     {
@@ -763,4 +764,6 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         else
             throw new IllegalStateException("Nothing to bind for name "+nameInEnvironment);
     }
+
+ 
 }
