@@ -5,21 +5,16 @@ import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
@@ -31,8 +26,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.HostMap;
-import org.eclipse.jetty.util.IPAddressMap;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -55,8 +48,6 @@ public class ProxyHandler extends HandlerWrapper
     private volatile int _writeTimeout = 30000;
     private volatile ThreadPool _threadPool;
     private volatile boolean _privateThreadPool;
-    private HostMap<PathMap> _white = new HostMap<PathMap>();
-    private HostMap<PathMap> _black = new HostMap<PathMap>();
 
     public ProxyHandler()
     {
@@ -66,13 +57,6 @@ public class ProxyHandler extends HandlerWrapper
     public ProxyHandler(Handler handler)
     {
         setHandler(handler);
-    }
-
-    public ProxyHandler(Handler handler, String[] white, String[] black)
-    {
-        setHandler(handler);
-        set(white, _white);
-        set(black, _black);
     }
 
     /**
@@ -223,12 +207,6 @@ public class ProxyHandler extends HandlerWrapper
         {
             host = serverAddress.substring(0, colon);
             port = Integer.parseInt(serverAddress.substring(colon + 1));
-        }
-        
-        String uri = request.getRequestURI();
-        if (validateDestination(host, uri))
-        {
-            throw new ServletException("Forbidden: "+host+uri);
         }
 
         SocketChannel channel = connectToServer(request, host, port);
@@ -726,138 +704,5 @@ public class ProxyHandler extends HandlerWrapper
                 _logger.debug("ClientToProxy: Unexpected exception closing the server", x);
             }
         }
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Add a whitelist entry to an existing handler configuration
-     * 
-     * @param entry new whitelist entry
-     */
-    public void addWhite(String entry)
-    {
-        add(entry, _white);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Add a blacklist entry to an existing handler configuration
-     * 
-     * @param entry new blacklist entry
-     */
-    public void addBlack(String entry)
-    {
-        add(entry, _black);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Re-initialize the whitelist of existing handler object
-     * 
-     * @param entries array of whitelist entries
-     */
-    public void setWhite(String[] entries)
-    {
-        set(entries, _white);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Re-initialize the blacklist of existing handler object
-     * 
-     * @param entries array of blacklist entries
-     */
-    public void setBlack(String[] entries)
-    {
-        set(entries, _black);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Helper method to process a list of new entries and replace 
-     * the content of the specified host map
-     * 
-     * @param entries new entries
-     * @param patternMap target host map
-     */
-    protected void set(String[] entries,  HostMap<PathMap> hostMap)
-    {
-        hostMap.clear();
-        
-        for (String addrPath:entries)
-        {
-            add(addrPath, hostMap);
-        }
-    }
-  
-    /* ------------------------------------------------------------ */
-    /**
-     * Helper method to parse the new entry and add it to 
-     * the specified host map.
-     * 
-     * @param entry new entry
-     * @param patternMap target host map
-     */
-    private void add(String entry, HostMap<PathMap> hostMap)
-    {
-        if (entry != null && entry.length() > 0)
-        {
-            int idx = entry.indexOf('/');
-    
-            String host = idx > 0 ? entry.substring(0,idx) : entry;        
-            String path = idx > 0 ? entry.substring(idx) : "/*";
-            
-            host = host.trim();
-            PathMap pathMap = hostMap.get(host);
-            if (pathMap == null)
-            {
-                pathMap = new PathMap(true);
-                hostMap.put(host,pathMap);
-            }
-            if (path != null)
-                pathMap.put(path,path);
-        }
-    }
-    
-    public boolean validateDestination(String host, String path)
-    {
-        if (_white.size()>0)
-        {
-            boolean match = false;
-            
-            Object whiteObj = _white.getLazyMatches(host);
-            if (whiteObj != null) 
-            {
-                List whiteList = (whiteObj instanceof List) ? (List)whiteObj : Collections.singletonList(whiteObj);
-
-                for (Object entry: whiteList)
-                {
-                    PathMap pathMap = ((Map.Entry<String, PathMap>)entry).getValue();
-                    if (match = (pathMap!=null && (pathMap.size()==0 || pathMap.match(path)!=null)))
-                        break;
-                }
-            }
-
-            if (!match)
-                return false;
-        }
-
-        if (_black.size() > 0)
-        {
-            Object blackObj = _black.getLazyMatches(host);
-            if (blackObj != null) 
-            {
-                List blackList = (blackObj instanceof List) ? (List)blackObj : Collections.singletonList(blackObj);
-    
-                for (Object entry: blackList)
-                {
-                    PathMap pathMap = ((Map.Entry<String, PathMap>)entry).getValue();
-                    if (pathMap!=null && (pathMap.size()==0 || pathMap.match(path)!=null))
-                        return false;
-                }
-            }
-        }
-        
-        return true;
     }
 }

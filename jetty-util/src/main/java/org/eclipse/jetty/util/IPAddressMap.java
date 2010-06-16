@@ -49,7 +49,7 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
     }
    
     /* --------------------------------------------------------------- */
-    /** Construct empty IPAddressMap.
+    /** Construct empty AddrPatternMap.
      * 
      * @param capacity initial capacity
      */
@@ -82,6 +82,10 @@ public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
     /**
      * Retrieve the object mapped to the specified internet address literal
      * 
+     * @see java.util.HashMap#get(java.lang.Object)
+     */
+    /* ------------------------------------------------------------ */
+    /**
      * @see java.util.HashMap#get(java.lang.Object)
      */
     @Override
