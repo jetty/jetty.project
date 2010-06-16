@@ -33,7 +33,9 @@ public class ProxyServer
         server.setHandler(handler);
 
         handler.addServletWithMapping(ProxyServlet.class,"/");
-
+        handler.getServlets()[0].setInitParameter("whiteList","www.google.com, galaxisweb.com/support/*");
+        handler.getServlets()[0].setInitParameter("blackList","www.google.com/calendar/*");
+        
         server.start();
         server.join();
     }

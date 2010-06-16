@@ -1001,6 +1001,10 @@ public class HttpConnection implements Connection
                     break;
                 case HttpVersions.HTTP_1_0_ORDINAL:
                     _generator.setHead(_head);
+
+                    if (_server.getSendDateHeader())
+                        _generator.setDate(_request.getTimeStampBuffer());
+
                     break;
                 case HttpVersions.HTTP_1_1_ORDINAL:
                     _generator.setHead(_head);
