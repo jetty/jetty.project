@@ -13,27 +13,19 @@
   </properties>
   <build>
     <resources>
-      <resource><directory>src/main/resources</directory></resource>
-      <resource><directory>target/generated-resources</directory></resource>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <resource>
+        <directory>src/main/config/etc</directory>
+        <targetPath>org/eclipse/jetty/webapp</targetPath>
+        <filtering>false</filtering>
+        <includes>
+          <include>webdefault.xml</include>
+        </includes>
+      </resource>
     </resources>
     <plugins>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <tasks>
-                <copy failonerror="true" file="${basedir}/src/main/config/etc/webdefault.xml" toFile="${project.build.directory}/generated-resources/org/eclipse/jetty/webapp/webdefault.xml" />
-              </tasks>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins
         </groupId>
