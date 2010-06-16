@@ -1,4 +1,5 @@
 jetty-7.1.5-SNAPSHOT
+ + 288194 Add blacklist/whitelist to ProxyServlet and ProxyHandler
  + 311550 The WebAppProvider should allow setTempDirectory
  + 316449 Websocket disconnect fix
  + 316584 Exception on startup if temp path has spaces and extractWAR=false

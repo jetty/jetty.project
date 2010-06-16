@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,6 +27,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.HostMap;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -48,15 +50,29 @@ public class ProxyHandler extends HandlerWrapper
     private volatile int _writeTimeout = 30000;
     private volatile ThreadPool _threadPool;
     private volatile boolean _privateThreadPool;
+    private HostMap<String> _white = new HostMap<String>();
+    private HostMap<String> _black = new HostMap<String>();
 
     public ProxyHandler()
     {
         this(null);
     }
 
+    public ProxyHandler(String[] white, String[] black)
+    {
+        this(null, white,  black);
+    }
+
     public ProxyHandler(Handler handler)
     {
         setHandler(handler);
+    }
+
+    public ProxyHandler(Handler handler, String[] white, String[] black)
+    {
+        setHandler(handler);
+        set(white, _white);
+        set(black, _black);
     }
 
     /**
@@ -207,6 +223,14 @@ public class ProxyHandler extends HandlerWrapper
         {
             host = serverAddress.substring(0, colon);
             port = Integer.parseInt(serverAddress.substring(colon + 1));
+        }
+        
+        if (!validateDestination(host))
+        {
+            Log.info("ProxyHandler: Forbidden destination "+host);
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            baseRequest.setHandled(true);
+            return;
         }
 
         SocketChannel channel = connectToServer(request, host, port);
@@ -704,5 +728,120 @@ public class ProxyHandler extends HandlerWrapper
                 _logger.debug("ClientToProxy: Unexpected exception closing the server", x);
             }
         }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Add a whitelist entry to an existing handler configuration
+     * 
+     * @param entry new whitelist entry
+     */
+    public void addWhite(String entry)
+    {
+        add(entry, _white);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Add a blacklist entry to an existing handler configuration
+     * 
+     * @param entry new blacklist entry
+     */
+    public void addBlack(String entry)
+    {
+        add(entry, _black);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Re-initialize the whitelist of existing handler object
+     * 
+     * @param entries array of whitelist entries
+     */
+    public void setWhite(String[] entries)
+    {
+        set(entries, _white);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Re-initialize the blacklist of existing handler object
+     * 
+     * @param entries array of blacklist entries
+     */
+    public void setBlack(String[] entries)
+    {
+        set(entries, _black);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Helper method to process a list of new entries and replace 
+     * the content of the specified host map
+     * 
+     * @param entries new entries
+     * @param patternMap target host map
+     */
+    protected void set(String[] entries,  HostMap<String> hostMap)
+    {
+        hostMap.clear();
+        
+        if (entries != null && entries.length > 0)
+        {
+            for (String addrPath:entries)
+            {
+                add(addrPath, hostMap);
+            }
+        }
+    }
+  
+    /* ------------------------------------------------------------ */
+    /**
+     * Helper method to process the new entry and add it to 
+     * the specified host map.
+     * 
+     * @param entry new entry
+     * @param patternMap target host map
+     */
+    private void add(String entry, HostMap<String> hostMap)
+    {
+        if (entry != null && entry.length() > 0)
+        {
+            entry = entry.trim();
+            if (hostMap.get(entry) == null)
+            {
+                hostMap.put(entry,entry);
+            }
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Check the request hostname against white- and blacklist.
+     * 
+     * @param host hostname to check
+     * @return true if hostname is allowed to be proxied
+     */
+    public boolean validateDestination(String host)
+    {
+        if (_white.size()>0)
+        {
+            Object whiteObj = _white.getLazyMatches(host);
+            if (whiteObj == null) 
+            {
+                return false;
+            }
+        }
+
+        if (_black.size() > 0)
+        {
+            Object blackObj = _black.getLazyMatches(host);
+            if (blackObj != null) 
+            {
+                return false;
+            }
+        }
+        
+        return true;
     }
 }
