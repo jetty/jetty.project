@@ -206,13 +206,28 @@ if [ -z "$JETTY_HOME" ] ; then
   do
     for N in "${JETTY_DIR_NAMES[@]}"
     do
-      JETTY_HOME=("$L/"$N)
-      if [ ! -d "$JETTY_HOME" ] || [ ! -f "$JETTY_HOME/$JETTY_INSTALL_TRACE_FILE" ]
+      POSSIBLE_JETTY_HOME=("$L/"$N)
+      if [ ! -d "$POSSIBLE_JETTY_HOME" ]
       then
-        JETTY_HOME=
+        # Not a directory. skip.
+        unset POSSIBLE_JETTY_HOME
+      elif [ ! -f "$POSSIBLE_JETTY_HOME/$JETTY_INSTALL_TRACE_FILE" ]
+      then
+        # Trace file not found. skip.
+        unset POSSIBLE_JETTY_HOME
+      else
+        # Good hit, Use it
+        JETTY_HOME=$POSSIBLE_JETTY_HOME
+        # Break out of JETTY_DIR_NAMES loop
+        break
       fi
-      [ "$JETTY_HOME" ] && break
     done
+    if [ -n "$POSSIBLE_JETTY_HOME" ]
+    then
+      # We have found our JETTY_HOME
+      # Break out of STANDARD_LOCATIONS loop
+      break
+    fi
   done
 fi
 
