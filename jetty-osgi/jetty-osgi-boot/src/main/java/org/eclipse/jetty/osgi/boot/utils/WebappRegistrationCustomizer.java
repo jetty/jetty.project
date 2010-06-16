@@ -46,7 +46,7 @@ public interface WebappRegistrationCustomizer
      * the root and/or in the lib folder (nice for PDE developement situations)
      * Unsupported: the bundle is a jar that embeds more jars.
      * 
-     * @return
+     * @return array of URLs
      * @throws Exception
      */
     URL[] getJarsWithTlds(OSGiAppProvider provider, BundleFileLocatorHelper fileLocator) throws Exception;

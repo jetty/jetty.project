@@ -37,6 +37,7 @@ import javax.servlet.http.HttpSessionBindingListener;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 
@@ -60,35 +61,53 @@ import org.eclipse.jetty.util.thread.Timeout;
  * The {@link #extractUserId(ServletRequest request)} function should be
  * implemented, in order to uniquely identify authenticated users.
  * <p>
- * The following init parameters control the behavior of the filter:
+ * The following init parameters control the behavior of the filter:<dl>
  *
- * maxRequestsPerSec    the maximum number of requests from a connection per
+ * <dt>maxRequestsPerSec</dt>
+ *                      <dd>the maximum number of requests from a connection per
  *                      second. Requests in excess of this are first delayed,
- *                      then throttled.
+ *                      then throttled.</dd>
  *
- * delayMs              is the delay given to all requests over the rate limit,
+ * <dt>delayMs</dt>
+ *                      <dd>is the delay given to all requests over the rate limit,
  *                      before they are considered at all. -1 means just reject request,
- *                      0 means no delay, otherwise it is the delay.
+ *                      0 means no delay, otherwise it is the delay.</dd>
  *
- * maxWaitMs            how long to blocking wait for the throttle semaphore.
+ * <dt>maxWaitMs</dt>
+ *                      <dd>how long to blocking wait for the throttle semaphore.</dd>
  *
- * throttledRequests    is the number of requests over the rate limit able to be
- *                      considered at once.
+ * <dt>throttledRequests</dt>
+ *                      <dd>is the number of requests over the rate limit able to be
+ *                      considered at once.</dd>
  *
- * throttleMs           how long to async wait for semaphore.
+ * <dt>throttleMs</dt>
+ *                      <dd>how long to async wait for semaphore.</dd>
  *
- * maxRequestMs         how long to allow this request to run.
+ * <dt>maxRequestMs</dt>
+ *                      <dd>how long to allow this request to run.</dd>
  *
- * maxIdleTrackerMs     how long to keep track of request rates for a connection,
- *                      before deciding that the user has gone away, and discarding it
+ * <dt>maxIdleTrackerMs</dt>
+ *                      <dd>how long to keep track of request rates for a connection,
+ *                      before deciding that the user has gone away, and discarding it</dd>
  *
- * insertHeaders        if true , insert the DoSFilter headers into the response. Defaults to true.
+ * <dt>insertHeaders</dt>
+ *                      <dd>if true , insert the DoSFilter headers into the response. Defaults to true.</dd>
  *
- * trackSessions        if true, usage rate is tracked by session if a session exists. Defaults to true.
+ * <dt>trackSessions</dt>
+ *                      <dd>if true, usage rate is tracked by session if a session exists. Defaults to true.</dd>
  *
- * remotePort           if true and session tracking is not used, then rate is tracked by IP+port (effectively connection). Defaults to false.
+ * <dt>remotePort</dt>
+ *                      <dd>if true and session tracking is not used, then rate is tracked by IP+port (effectively connection). Defaults to false.</dd>
  *
- * ipWhitelist          a comma-separated list of IP addresses that will not be rate limited
+ * <dt>ipWhitelist</dt>
+ *                      <dd>a comma-separated list of IP addresses that will not be rate limited</dd>
+ * 
+ * <dt>managedAttr</dt>
+ *                      <dd>if set to true, then this servlet is set as a {@link ServletContext} attribute with the 
+ * filter name as the attribute name.  This allows context external mechanism (eg JMX via {@link ContextHandler#MANAGED_ATTRIBUTES}) to
+ * manage the configuration of the filter.</dd>
+ * </dl>
+ * </p>
  */
 
 public class DoSFilter implements Filter
@@ -104,6 +123,7 @@ public class DoSFilter implements Filter
     final static long __DEFAULT_MAX_REQUEST_MS_INIT_PARAM=30000L;
     final static long __DEFAULT_MAX_IDLE_TRACKER_MS_INIT_PARAM=30000L;
 
+    final static String MANAGED_ATTR_INIT_PARAM="managedAttr";
     final static String MAX_REQUESTS_PER_S_INIT_PARAM = "maxRequestsPerSec";
     final static String DELAY_MS_INIT_PARAM = "delayMs";
     final static String THROTTLED_REQUESTS_INIT_PARAM = "throttledRequests";
@@ -123,20 +143,23 @@ public class DoSFilter implements Filter
 
     ServletContext _context;
 
+    protected String _name;
     protected long _delayMs;
     protected long _throttleMs;
-    protected long _waitMs;
+    protected long _maxWaitMs;
     protected long _maxRequestMs;
     protected long _maxIdleTrackerMs;
     protected boolean _insertHeaders;
     protected boolean _trackSessions;
     protected boolean _remotePort;
+    protected int _throttledRequests;
     protected Semaphore _passes;
     protected Queue<Continuation>[] _queue;
     protected ContinuationListener[] _listener;
 
     protected int _maxRequestsPerSec;
     protected final ConcurrentHashMap<String, RateTracker> _rateTrackers=new ConcurrentHashMap<String, RateTracker>();
+    protected String _whitelistStr;
     private final HashSet<String> _whitelist = new HashSet<String>();
 
     private final Timeout _requestTimeoutQ = new Timeout();
@@ -170,7 +193,6 @@ public class DoSFilter implements Filter
         }
 
         _rateTrackers.clear();
-        _whitelist.clear();
 
         int baseRateLimit = __DEFAULT_MAX_REQUESTS_PER_SEC;
         if (filterConfig.getInitParameter(MAX_REQUESTS_PER_S_INIT_PARAM) != null)
@@ -182,15 +204,16 @@ public class DoSFilter implements Filter
             delay = Integer.parseInt(filterConfig.getInitParameter(DELAY_MS_INIT_PARAM));
         _delayMs = delay;
 
-        int passes = __DEFAULT_THROTTLE;
+        int throttledRequests = __DEFAULT_THROTTLE;
         if (filterConfig.getInitParameter(THROTTLED_REQUESTS_INIT_PARAM) != null)
-            passes = Integer.parseInt(filterConfig.getInitParameter(THROTTLED_REQUESTS_INIT_PARAM));
-        _passes = new Semaphore(passes,true);
+            throttledRequests = Integer.parseInt(filterConfig.getInitParameter(THROTTLED_REQUESTS_INIT_PARAM));
+        _passes = new Semaphore(throttledRequests,true);
+        _throttledRequests = throttledRequests;
 
         long wait = __DEFAULT_WAIT_MS;
         if (filterConfig.getInitParameter(MAX_WAIT_INIT_PARAM) != null)
             wait = Integer.parseInt(filterConfig.getInitParameter(MAX_WAIT_INIT_PARAM));
-        _waitMs = wait;
+        _maxWaitMs = wait;
 
         long suspend = __DEFAULT_THROTTLE_MS;
         if (filterConfig.getInitParameter(THROTTLE_MS_INIT_PARAM) != null)
@@ -207,18 +230,10 @@ public class DoSFilter implements Filter
             maxIdleTrackerMs = Long.parseLong(filterConfig.getInitParameter(MAX_IDLE_TRACKER_MS_INIT_PARAM));
         _maxIdleTrackerMs = maxIdleTrackerMs;
 
-        String whitelistString = "";
+        _whitelistStr = "";
         if (filterConfig.getInitParameter(IP_WHITELIST_INIT_PARAM) !=null )
-            whitelistString = filterConfig.getInitParameter(IP_WHITELIST_INIT_PARAM);
-
-        if (whitelistString.length() > 0)
-        {
-            StringTokenizer tokenizer = new StringTokenizer(whitelistString, ",");
-            while (tokenizer.hasMoreTokens())
-                _whitelist.add(tokenizer.nextToken().trim());
-
-            Log.info("Whitelisted IP addresses: {}", _whitelist.toString());
-        }
+            _whitelistStr = filterConfig.getInitParameter(IP_WHITELIST_INIT_PARAM);
+        initWhitelist();
 
         String tmp = filterConfig.getInitParameter(INSERT_HEADERS_INIT_PARAM);
         _insertHeaders = tmp==null || Boolean.parseBoolean(tmp);
@@ -272,6 +287,9 @@ public class DoSFilter implements Filter
             }
         });
         _timerThread.start();
+
+        if (_context!=null && Boolean.parseBoolean(filterConfig.getInitParameter(MANAGED_ATTR_INIT_PARAM)))
+            _context.setAttribute(filterConfig.getFilterName(),this);
     }
 
 
@@ -353,7 +371,7 @@ public class DoSFilter implements Filter
         try
         {
             // check if we can afford to accept another request at this time
-            accepted = _passes.tryAcquire(_waitMs,TimeUnit.MILLISECONDS);
+            accepted = _passes.tryAcquire(_maxWaitMs,TimeUnit.MILLISECONDS);
 
             if (!accepted)
             {
@@ -620,6 +638,281 @@ public class DoSFilter implements Filter
     protected String extractUserId(ServletRequest request)
     {
         return null;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Initialize the IP address whitelist
+     */
+    protected void initWhitelist()
+    {
+        _whitelist.clear();
+        StringTokenizer tokenizer = new StringTokenizer(_whitelistStr, ",");
+        while (tokenizer.hasMoreTokens())
+            _whitelist.add(tokenizer.nextToken().trim());
+
+        Log.info("Whitelisted IP addresses: {}", _whitelist.toString());
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** 
+     * Get maximum number of requests from a connection per
+     * second. Requests in excess of this are first delayed,
+     * then throttled.
+     * 
+     * @return maximum number of requests
+     */
+    public int getMaxRequestsPerSec()
+    {
+        return _maxRequestsPerSec;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Get maximum number of requests from a connection per
+     * second. Requests in excess of this are first delayed,
+     * then throttled.
+     * 
+     * @param value maximum number of requests
+     */
+    public void setMaxRequestsPerSec(int value)
+    {
+        _maxRequestsPerSec = value;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Get delay (in milliseconds) that is applied to all requests 
+     * over the rate limit, before they are considered at all. 
+     */
+    public long getDelayMs()
+    {
+        return _delayMs;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set delay (in milliseconds) that is applied to all requests 
+     * over the rate limit, before they are considered at all. 
+     * 
+     * @param value delay (in milliseconds), 0 - no delay, -1 - reject request
+     */
+    public void setDelayMs(long value)
+    {
+        _delayMs = value;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Get maximum amount of time (in milliseconds) the filter will
+     * blocking wait for the throttle semaphore.
+     * 
+     * @return maximum wait time
+     */
+    public long getMaxWaitMs()
+    {
+        return _maxWaitMs;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Set maximum amount of time (in milliseconds) the filter will
+     * blocking wait for the throttle semaphore.
+     * 
+     * @param value maximum wait time
+     */
+    public void setMaxWaitMs(long value)
+    {
+        _maxWaitMs = value;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Get number of requests over the rate limit able to be
+     * considered at once.
+     * 
+     * @return number of requests
+     */
+    public long getThrottledRequests()
+    {
+        return _throttledRequests;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set number of requests over the rate limit able to be
+     * considered at once.
+     * 
+     * @param value number of requests
+     */
+    public void setThrottledRequests(int value)
+    {
+        _passes = new Semaphore((value-_throttledRequests+_passes.availablePermits()), true);
+        _throttledRequests = value;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Get amount of time (in milliseconds) to async wait for semaphore.
+     * 
+     * @return wait time
+     */
+    public long getThrottleMs()
+    {
+        return _throttleMs;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set amount of time (in milliseconds) to async wait for semaphore.
+     * 
+     * @param value wait time
+     */
+    public void setThrottleMs(long value)
+    {
+        _throttleMs = value;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Get maximum amount of time (in milliseconds) to allow 
+     * the request to process.
+     * 
+     * @return maximum processing time
+     */
+    public long getMaxRequestMs()
+    {
+        return _maxRequestMs;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Set maximum amount of time (in milliseconds) to allow 
+     * the request to process.
+     * 
+     * @param value maximum processing time
+     */
+    public void setMaxRequestMs(long value)
+    {
+        _maxRequestMs = value;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Get maximum amount of time (in milliseconds) to keep track
+     * of request rates for a connection, before deciding that 
+     * the user has gone away, and discarding it.
+     * 
+     * @return maximum tracking time
+     */
+    public long getMaxIdleTrackerMs()
+    {
+        return _maxIdleTrackerMs;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Set maximum amount of time (in milliseconds) to keep track
+     * of request rates for a connection, before deciding that 
+     * the user has gone away, and discarding it.
+     * 
+     * @param value maximum tracking time
+     */
+    public void setMaxIdleTrackerMs(long value)
+    {
+        _maxIdleTrackerMs = value;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Check flag to insert the DoSFilter headers into the response.
+     * 
+     * @return value of the flag
+     */
+    public boolean isInsertHeaders()
+    {
+        return _insertHeaders;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Set flag to insert the DoSFilter headers into the response.
+     * 
+     * @param value value of the flag
+     */
+    public void setInsertHeaders(boolean value)
+    {
+        _insertHeaders = value;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Get flag to have usage rate tracked by session if a session exists.
+     * 
+     * @return value of the flag
+     */
+    public boolean isTrackSessions()
+    {
+        return _trackSessions;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Set flag to have usage rate tracked by session if a session exists.
+     * @param value value of the flag
+     */
+    public void setTrackSessions(boolean value)
+    {
+        _trackSessions = value;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Get flag to have usage rate tracked by IP+port (effectively connection)
+     * if session tracking is not used.
+     * 
+     * @return value of the flag
+     */
+    public boolean isRemotePort()
+    {
+        return _remotePort;
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Set flag to have usage rate tracked by IP+port (effectively connection)
+     * if session tracking is not used.
+     * 
+     * @param value value of the flag
+     */
+    public void setRemotePort(boolean value)
+    {
+        _remotePort = value;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Get a list of IP addresses that will not be rate limited.
+     * 
+     * @return comma-separated whitelist
+     */
+    public String getWhitelist()
+    {
+        return _whitelistStr;
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set a list of IP addresses that will not be rate limited.
+     * 
+     * @param value comma-separated whitelist
+     */
+    public void setWhitelist(String value)
+    {
+        _whitelistStr = value;
+        initWhitelist();
     }
 
     /**

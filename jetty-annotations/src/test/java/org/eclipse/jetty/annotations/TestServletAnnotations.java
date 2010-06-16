@@ -13,15 +13,16 @@
 
 package org.eclipse.jetty.annotations;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
-import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
-import org.eclipse.jetty.annotations.AnnotationParser.ListValue;
-import org.eclipse.jetty.annotations.AnnotationParser.SimpleValue;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -29,12 +30,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
 
 /**
  * TestServletAnnotations
@@ -55,6 +50,8 @@ public class TestServletAnnotations
         wac.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, collection);
         RunAsCollection runAsCollection = new RunAsCollection();
         wac.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);
+        List<ClassAnnotation> discoveredAnnotations = new ArrayList<ClassAnnotation>();
+        wac.setAttribute(AnnotationConfiguration.DISCOVERED_ANNOTATIONS, discoveredAnnotations);
         parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new WebServletAnnotationHandler(wac));
        
         parser.parse(classes, new ClassNameResolver ()
@@ -69,6 +66,11 @@ public class TestServletAnnotations
                 return false;
             }
         });
+        
+        assertEquals(1, discoveredAnnotations.size());
+        assertTrue(discoveredAnnotations.get(0) instanceof WebServletAnnotation);
+        
+        discoveredAnnotations.get(0).apply();
        
         ServletHolder[] holders = wac.getServletHandler().getServlets();
         assertNotNull(holders);

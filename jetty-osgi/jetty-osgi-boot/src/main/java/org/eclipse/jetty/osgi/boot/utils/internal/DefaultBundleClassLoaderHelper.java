@@ -61,7 +61,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
      * Assuming the bundle is started.
      * 
      * @param bundle
-     * @return
+     * @return classloader object
      */
     public ClassLoader getBundleClassLoader(Bundle bundle)
     {

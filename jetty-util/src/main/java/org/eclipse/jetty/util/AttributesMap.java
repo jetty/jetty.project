@@ -40,7 +40,8 @@ public class AttributesMap implements Attributes
     {
         _map=map;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public AttributesMap(AttributesMap map)
     {
         _map=new HashMap<String,Object>(map._map);
@@ -117,7 +118,13 @@ public class AttributesMap implements Attributes
     {
         _map.clear();
     }
-
+    
+    /* ------------------------------------------------------------ */
+    public int size()
+    {
+        return _map.size();
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
@@ -129,6 +136,17 @@ public class AttributesMap implements Attributes
     public Set<String> keySet()
     {
         return _map.keySet();
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void addAll(Attributes attributes)
+    {
+        Enumeration<String> e = attributes.getAttributeNames();
+        while (e.hasMoreElements())
+        {
+            String name=e.nextElement();
+            setAttribute(name,attributes.getAttribute(name));
+        }
     }
 
 }

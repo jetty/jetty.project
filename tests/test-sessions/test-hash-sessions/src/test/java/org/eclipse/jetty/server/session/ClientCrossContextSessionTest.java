@@ -13,10 +13,7 @@
 
 package org.eclipse.jetty.server.session;
 
-
-import org.testng.annotations.Test;
-
-
+import org.junit.Test;
 
 public class ClientCrossContextSessionTest extends AbstractClientCrossContextSessionTest
 {
@@ -25,7 +22,7 @@ public class ClientCrossContextSessionTest extends AbstractClientCrossContextSes
         return new HashTestServer(port);
     }
 
-    @Test(groups={"hash-all"})
+    @Test
     public void testCrossContextDispatch() throws Exception
     {
         super.testCrossContextDispatch();

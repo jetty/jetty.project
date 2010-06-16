@@ -12,6 +12,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebInfConfiguration;
 
 
 /* ------------------------------------------------------------ */
@@ -27,6 +28,7 @@ public class WebAppProvider extends ScanningAppProvider
     private boolean _parentLoaderPriority = false;
     private String _defaultsDescriptor;
     private Filter _filter;
+    private File _tempDirectory;
     private String[] _configurationClasses;
 
     private static class Filter implements FilenameFilter
@@ -36,13 +38,17 @@ public class WebAppProvider extends ScanningAppProvider
         public boolean accept(File dir, String name)
         {
             if (!dir.exists())
+            {
                 return false;
+            }
             String lowername = name.toLowerCase();
             
             File file = new File(dir,name);
             // is it not a directory and not a war ?
             if (!file.isDirectory() && !lowername.endsWith(".war"))
+            {
                 return false;
+            }
             
             // is it a directory for an existing war file?
             if (file.isDirectory() && 
@@ -57,7 +63,9 @@ public class WebAppProvider extends ScanningAppProvider
             {
                 String context=name;
                 if (!file.isDirectory())
+                {
                     context=context.substring(0,context.length()-4);
+                }
                 if (new File(_contexts,context+".xml").exists() ||
                     new File(_contexts,context+".XML").exists() )
                 {
@@ -112,7 +120,7 @@ public class WebAppProvider extends ScanningAppProvider
     {
         _parentLoaderPriority = parentLoaderPriority;
     }
-
+    
     /* ------------------------------------------------------------ */
     /** Get the defaultsDescriptor.
      * @return the defaultsDescriptor
@@ -156,7 +164,7 @@ public class WebAppProvider extends ScanningAppProvider
         }
         catch (MalformedURLException e)
         {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         catch (IOException e)
         {
@@ -183,6 +191,27 @@ public class WebAppProvider extends ScanningAppProvider
         return _configurationClasses;
     }
     
+    /**
+     * Set the Work directory where unpacked WAR files are managed from.
+     * <p>
+     * Default is the same as the <code>java.io.tmpdir</code> System Property.
+     * 
+     * @param directory the new work directory
+     */
+    public void setTempDir(File directory)
+    {
+        _tempDirectory = directory;
+    }
+    
+    /**
+     * Get the user supplied Work Directory.
+     * 
+     * @return the user supplied work directory (null if user has not set Temp Directory yet)
+     */
+    public File getTempDir()
+    {
+        return _tempDirectory;
+    }
     
     /* ------------------------------------------------------------ */
     public ContextHandler createContextHandler(final App app) throws Exception
@@ -203,31 +232,54 @@ public class WebAppProvider extends ScanningAppProvider
             // Context Path is the same as the archive.
             context = context.substring(0,context.length() - 4);
         }
-        else
+        else 
+        {
             throw new IllegalStateException("unable to create ContextHandler for "+app);
+        }
         
         // special case of archive (or dir) named "root" is / context
-        if (context.equalsIgnoreCase("root") || context.equalsIgnoreCase("root/"))
+        if (context.equalsIgnoreCase("root") || context.equalsIgnoreCase("root/")) 
+        {
             context = URIUtil.SLASH;
+        }
 
         // Ensure "/" is Prepended to all context paths.
-        if (context.charAt(0) != '/')
+        if (context.charAt(0) != '/') 
+        {
             context = "/" + context;
+        }
 
         // Ensure "/" is Not Trailing in context paths.
-        if (context.endsWith("/") && context.length() > 0)
+        if (context.endsWith("/") && context.length() > 0) 
+        {
             context = context.substring(0,context.length() - 1);
+        }
 
         WebAppContext wah = new WebAppContext();
         wah.setContextPath(context);
         wah.setWar(file.getAbsolutePath());
-        if (_defaultsDescriptor != null)
+        if (_defaultsDescriptor != null) 
+        {
             wah.setDefaultsDescriptor(_defaultsDescriptor);
+        }
         wah.setExtractWAR(_extractWars);
         wah.setParentLoaderPriority(_parentLoaderPriority);
-        if (_configurationClasses != null)
+        if (_configurationClasses != null) 
+        {
             wah.setConfigurationClasses(_configurationClasses);
+        }
 
+        if (_tempDirectory != null)
+        {
+            /* Since the Temp Dir is really a context base temp directory,
+             * Lets set the Temp Directory in a way similar to how WebInfConfiguration does it,
+             * instead of setting the
+             * WebAppContext.setTempDirectory(File).  
+             * If we used .setTempDirectory(File) all webapps will wind up in the
+             * same temp / work directory, overwriting each others work.
+             */
+            wah.setAttribute(WebAppContext.BASETEMPDIR,_tempDirectory);
+        }
         return wah; 
     }
     

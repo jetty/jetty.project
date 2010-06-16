@@ -31,7 +31,6 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
-import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -66,7 +65,7 @@ public class LikeJettyXml
         server.setConnectors(new Connector[]
         { connector });
 
-        SslSocketConnector ssl_connector = new SslSocketConnector();
+        SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
         ssl_connector.setPort(8443);
         ssl_connector.setKeystore(jetty_home + "/etc/keystore");
         ssl_connector.setPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");

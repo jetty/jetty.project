@@ -434,24 +434,30 @@ public abstract class AbstractGenerator implements Generator
     /* ------------------------------------------------------------ */
     /**
      * Utility method to send an error response. If the builder is not committed, this call is
-     * equivalent to a setResponse, addcontent and complete call.
+     * equivalent to a setResponse, addContent and complete call.
      * 
-     * @param code
-     * @param reason
-     * @param content
-     * @param close
-     * @throws IOException
+     * @param code The error code
+     * @param reason The error reason
+     * @param content Contents of the error page
+     * @param close True if the connection should be closed
+     * @throws IOException if there is a problem flushing the response
      */
     public void sendError(int code, String reason, String content, boolean close) throws IOException
     {
+        if (close)
+            _persistent=false;
         if (!isCommitted())
         {
             setResponse(code, reason);
-            if (close)
-            	_persistent=false;
-            completeHeader(null, false);
             if (content != null) 
+            {
+                completeHeader(null, false);
                 addContent(new View(new ByteArrayBuffer(content)), Generator.LAST);
+            }
+            else
+            {
+                completeHeader(null, true);
+            }
             complete();
         }
     }

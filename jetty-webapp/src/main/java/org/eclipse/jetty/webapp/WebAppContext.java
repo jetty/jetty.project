@@ -20,9 +20,7 @@ import java.net.URL;
 import java.security.PermissionCollection;
 import java.util.EventListener;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.jar.JarFile;
 
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
@@ -65,6 +63,7 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
 public class WebAppContext extends ServletContextHandler
 {
     public static final String TEMPDIR = "javax.servlet.context.tempdir";
+    public static final String BASETEMPDIR = "org.eclipse.jetty.webapp.basetempdir";
     public final static String WEB_DEFAULTS_XML="org/eclipse/jetty/webapp/webdefault.xml";
     public final static String ERROR_PAGE="org.eclipse.jetty.server.error_page";
     public final static String SERVER_CONFIG = "org.eclipse.jetty.webapp.configuration";
@@ -90,7 +89,7 @@ public class WebAppContext extends ServletContextHandler
         "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
         "org.xml.",                         // needed by javax.xml
         "org.w3c.",                         // needed by javax.xml
-        "apache.commons.logging.",          // special case 
+        "org.apache.commons.logging.",      // TODO: review if special case still needed 
         "org.eclipse.jetty.continuation.",  // webapp cannot change continuation classes
         "org.eclipse.jetty.jndi.",          // webapp cannot change naming classes
         "org.eclipse.jetty.plus.jaas.",     // webapp cannot change jaas classes

@@ -58,7 +58,7 @@ public class ClasspathPattern
      * Create a new instance from a String array of classpath patterns
      * 
      * @param patterns array of classpath patterns
-     * @return
+     * @return new instance
      */
     public static ClasspathPattern fromArray(String[] patterns)
     {
@@ -70,7 +70,7 @@ public class ClasspathPattern
      * Create a new instance from a classpath pattern sring
      * 
      * @param patterns classpath pattern string
-     * @return
+     * @return new instance
      */
     public static ClasspathPattern fromString(String patterns)
     {

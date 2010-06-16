@@ -96,7 +96,15 @@ public class App
         if (_context == null)
         {
             _context = getAppProvider().createContextHandler(this);
-            this._context.setAttributes(new AttributesMap(_manager.getContextAttributes()));
+            
+            AttributesMap attributes = _manager.getContextAttributes();
+            if (attributes!=null && attributes.size()>0)
+            {
+                // Merge the manager attributes under the existing attributes
+                attributes = new AttributesMap(attributes);
+                attributes.addAll(_context.getAttributes());
+                _context.setAttributes(attributes);
+            }
         }
         return _context;
     }

@@ -99,7 +99,7 @@ public class WarURLConnection extends URLConnection
     
     /**
      * @param url The file url (for example)
-     * @param The manifest to use as a replacement to the jar file inside
+     * @param mf The manifest to use as a replacement to the jar file inside
      * the file url.
      */
     public WarURLConnection(URL url, Manifest mf) throws IOException

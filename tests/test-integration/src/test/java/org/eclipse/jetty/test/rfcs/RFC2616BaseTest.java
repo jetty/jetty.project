@@ -661,7 +661,8 @@ public abstract class RFC2616BaseTest
         req2.append("Expect: unknown\n"); // Invalid Expect header.
         req2.append("Content-Type: text/plain\n");
         req2.append("Content-Length: 8\n");
-        req2.append("\n"); // No body
+        req2.append("\n"); 
+        req2.append("12345678\n"); 
 
         response = http.request(req2);
 
@@ -976,7 +977,6 @@ public abstract class RFC2616BaseTest
         req2.append("Range: bytes=1-3\n"); // request first 3 bytes
         req2.append("\n");
 
-        http.enableDebug();
         response = http.request(req2);
 
         response.assertStatus("10.2.7 Partial Content",HttpStatus.PARTIAL_CONTENT_206);
@@ -1260,7 +1260,6 @@ public abstract class RFC2616BaseTest
         req1.append("\n");
 
         http.setTimeoutMillis(60000);
-        http.enableDebug();
         response = http.request(req1);
 
         String msg = "Partial Range (Mixed): 'bytes=a-b,5-8'";
@@ -1449,7 +1448,6 @@ public abstract class RFC2616BaseTest
         req1.append("Connection: close\n");
         req1.append("\n");
 
-        http.enableDebug();
         response = http.request(req1);
 
         String msg = "Partial (Byte) Range: '" + rangedef + "'";
@@ -1567,7 +1565,6 @@ public abstract class RFC2616BaseTest
         req1.append("Connection: close\n");
         req1.append("\n");
 
-        http.enableDebug();
         response = http.request(req1);
 
         String msg = "Partial (Byte) Range: '" + rangedef + "'";
@@ -1689,7 +1686,6 @@ public abstract class RFC2616BaseTest
             req1.append("Connection: close\n");
             req1.append("\n");
 
-            http.enableDebug();
             response = http.request(req1);
             specId = "14.39 TE Header";
             response.assertStatusOK(specId);

@@ -10,9 +10,9 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.http.HttpSchemes;
-import org.eclipse.jetty.http.ssl.SslSelectChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
+import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;

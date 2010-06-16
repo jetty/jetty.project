@@ -125,7 +125,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             )
            )
         {
-            HttpCookie cookie=getSessionCookie(session,_context.getContextPath(),secure);
+            HttpCookie cookie=getSessionCookie(session,_context==null?"/":(_context.getContextPath()),secure);
             s.cookieSet();
             s.setIdChanged(false);
             return cookie;
@@ -328,12 +328,14 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     {
         if (isUsingCookies())
         {
+            String sessionPath = (_sessionPath==null) ? contextPath : _sessionPath;
+            sessionPath = (sessionPath==null||sessionPath.length()==0) ? "/" : sessionPath;
             String id = getNodeId(session);
             HttpCookie cookie=new HttpCookie(
                     _sessionCookie,
                     id,
                     _sessionDomain,
-                    (contextPath==null||contextPath.length()==0)?"/":contextPath,
+                    sessionPath,
                     _cookieConfig.getMaxAge(),
                     _cookieConfig.isHttpOnly(),
                     requestIsSecure&&_cookieConfig.isSecure());      

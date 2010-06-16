@@ -35,6 +35,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class AnnotationConfiguration extends AbstractConfiguration
 {
     public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";
+    public static final String DISCOVERED_ANNOTATIONS = "org.eclipse.jetty.discoveredAnnotations";
     
     
     public void preConfigure(final WebAppContext context) throws Exception
@@ -61,13 +62,17 @@ public class AnnotationConfiguration extends AbstractConfiguration
             //Only scan jars and classes if metadata is not complete and the web app is version 3.0, or
             //a 2.5 version webapp that has specifically asked to discover annotations
             if (Log.isDebugEnabled()) Log.debug("parsing annotations");
-                       
+            
+            List<ClassAnnotation> discoveredAnnotations = new ArrayList<ClassAnnotation>();
+            context.setAttribute(DISCOVERED_ANNOTATIONS, discoveredAnnotations);
+            
             AnnotationParser parser = new AnnotationParser();
             //Discoverable annotations - those that you have to look for without loading a class
             parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new WebServletAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.servlet.annotation.WebFilter", new WebFilterAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.servlet.annotation.WebListener", new WebListenerAnnotationHandler(context));
             
+
             ClassInheritanceHandler classHandler = new ClassInheritanceHandler();
             parser.registerClassHandler(classHandler);
             registerServletContainerInitializerAnnotationHandlers(context, parser);
@@ -92,6 +97,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
             
             //save the type inheritance map created by the parser for later reference
             context.setAttribute(CLASS_INHERITANCE_MAP, classHandler.getMap());
+            
+            //TODO change the time at which the discovered annotations are applied. According to the
+            //servlet spec  p.81, the annotations associated with a fragment have to be applied directly
+            //after those of the fragment's descriptor. For now, to make progress, we just process them
+            //as we have been doing, ie after all the descriptors have been processed.
+            for (ClassAnnotation annotation:discoveredAnnotations)
+            {
+                annotation.apply();
+            }
         }    
     }
 

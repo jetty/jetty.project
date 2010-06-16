@@ -134,7 +134,7 @@ public abstract class ScopedHandler extends HandlerWrapper
         throws IOException, ServletException
     {
         // this method has been manually inlined in several locations, but
-        // is called protected by an in(false), so your IDE can find those
+        // is called protected by an if(never()), so your IDE can find those
         // locations if this code is changed.
         if (_nextScope!=null)
             _nextScope.doScope(target,baseRequest,request, response);
@@ -158,12 +158,18 @@ public abstract class ScopedHandler extends HandlerWrapper
     public final void nextHandle(String target, final Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         // this method has been manually inlined in several locations, but
-        // is called protected by an in(false), so your IDE can find those
+        // is called protected by an if(never()), so your IDE can find those
         // locations if this code is changed.
         if (_nextScope!=null && _nextScope==_handler)
             _nextScope.doHandle(target,baseRequest,request, response);
         else if (_handler!=null)
             _handler.handle(target,baseRequest, request, response);
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected boolean never()
+    {
+        return false;
     }
     
 }

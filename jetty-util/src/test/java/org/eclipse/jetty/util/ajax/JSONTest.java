@@ -12,6 +12,10 @@
 // ========================================================================
 
 package org.eclipse.jetty.util.ajax;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.StringReader;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
@@ -21,12 +25,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.ajax.JSON.Output;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class JSONTest extends TestCase
+
+public class JSONTest
 {   
     String test="\n\n\n\t\t    "+
     "// ignore this ,a [ \" \n"+
@@ -45,6 +50,17 @@ public class JSONTest extends TestCase
     "\"undefined\": undefined," +
     "}";
     
+    /* ------------------------------------------------------------ */
+    /* (non-Javadoc)
+     * @see junit.framework.TestCase#setUp()
+     */
+    @BeforeClass
+    public static void setUp() throws Exception
+    {
+        JSON.registerConvertor(Gadget.class,new JSONObjectConvertor(false));
+    }
+
+    @Test
     public void testToString()
     {
         HashMap map = new HashMap();
@@ -94,26 +110,16 @@ public class JSONTest extends TestCase
         gadget.setWoggles(new Woggle[]{w0,w1});
         
         s = JSON.toString(new Gadget[]{gadget});
+        System.out.println(s);
         assertTrue(s.startsWith("["));
         assertTrue(s.indexOf("\"modulated\":false")>=0);
         assertTrue(s.indexOf("\"shields\":42")>=0);
         assertTrue(s.indexOf("\"name\":\"woggle0\"")>=0);
         assertTrue(s.indexOf("\"name\":\"woggle1\"")>=0);
-
-    }
-    
-    
-    
-    /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see junit.framework.TestCase#setUp()
-     */
-    protected void setUp() throws Exception
-    {
-        JSON.registerConvertor(Gadget.class,new JSONObjectConvertor(false));
     }
 
     /* ------------------------------------------------------------ */
+    @Test
     public void testParse()
     {
         Map map = (Map)JSON.parse(test);
@@ -134,6 +140,7 @@ public class JSONTest extends TestCase
     }
 
     /* ------------------------------------------------------------ */
+    @Test
     public void testParseReader() throws Exception
     {
         Map map = (Map)JSON.parse(new StringReader(test));
@@ -149,6 +156,7 @@ public class JSONTest extends TestCase
     }
     
     /* ------------------------------------------------------------ */
+    @Test
     public void testStripComment()
     {
         String test="\n\n\n\t\t    "+
@@ -171,6 +179,7 @@ public class JSONTest extends TestCase
     }
     
     /* ------------------------------------------------------------ */
+    @Test
     public void testQuote()
     {
         String test="\"abc123|\\\"|\\\\|\\/|\\b|\\f|\\n|\\r|\\t|\\uaaaa|\"";
@@ -180,6 +189,7 @@ public class JSONTest extends TestCase
     }
 
     /* ------------------------------------------------------------ */
+    @Test
     public void testBigDecimal()
     {
         Object obj = JSON.parse("1.0E7");
@@ -247,6 +257,7 @@ public class JSONTest extends TestCase
     }
 
     /* ------------------------------------------------------------ */
+    @Test
     public void testConvertor()
     {
         // test case#1 - force timezone to GMT
@@ -316,6 +327,7 @@ public class JSONTest extends TestCase
     
     enum Color { Red, Green, Blue };
 
+    @Test
     public void testEnumConvertor()
     {
         JSON json = new JSON();

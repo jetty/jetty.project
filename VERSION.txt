@@ -1,11 +1,66 @@
-jetty-8.0.0.M1 8 April 2010
+jetty-8.0.0.M1-SNAPSHOT
  + 306350 Ensure jars excluded by ordering are not scanned for annotations
  + Ensure <absolute-ordering> in web.xml overrides relative <ordering> in fragments
  + Ensure empty <absolute-ordering> implies exclusion of all fragments
  + Ensure servlet-api jar class inheritance hierarchy is scanned
- + 306349 ProxyServlet does not work unless deployed at /
 
-jetty-7.1.1-SNAPSHOT
+jetty-7.1.5-SNAPSHOT
+ + 311550 The WebAppProvider should allow setTempDirectory
+ + 316449 Websocket disconnect fix
+ + 316584 Exception on startup if temp path has spaces and extractWAR=false
+ + 316597 Removed null check and fixed name in Resource#hrefEncodeURI
+ + JETTY-1237 Save local/remote address to be available after close
+
+jetty-7.1.4.v20100610
+ + 298551 SslSocketConnector does not need keystore stream
+ + 295715 AbstractSessionManager decoupled from Context
+ + 292326 Stop continuations if server is stopped.
+ + 292814 Make QoSFilter and DoSFilter JMX manageable
+ + 293222 Improve request log to handle/show asynchronous latency
+ + 294212 Can not customize session cookie path
+ + 301608 Deregister shutdown hooks
+ + 302350 org.eclipse.jetty.server.NCSARequestLog is missing JavaDoc
+ + 303661 jetty.sh failes if JETTY_HOME is not writeable
+ + 304100 Better document JMX setup in jetty-jmx.xml
+ + 305300 AsyncContext.start dispatches runnable
+ + 314299 Create test harness for JDBCLoginService
+ + 314581 Implement the Sec-Websocket handshake
+ + 315190 CrossOriginFilter avoid headers not understood by WebSocket
+ + 315687 included init script fails to test for JETTY_HOME as empty
+ + 315715 Improved Cookie version handling. Server.setMaxCookieVersion
+ + 315744 Fixed STOP.PORT and STOP.KEY in start.jar
+ + 315748 Removed --fromDaemon from start.jar (replaced with --daemon)
+ + 315925 Improved context xml configuration handling
+ + 315995 Incorrect package name in system classes list
+ + 316119 Fixed maxIdleTime for SocketEndPoint
+ + 316254 Implement @DeclareRoles
+ + 316334 Breaking change on org.eclipse.jetty.client.HttpExchange
+ + 316399 Debug output in MultiPartFilter
+ + 316413 Restarting webapp for packed war fails
+ + 316557 OSGi HttpService failure due to undeployed context handlers
+ + JETTY-547 Delay close after shutdown until request read
+ + JETTY-1231 Support context request log handler
+
+jetty-7.1.3.v20100526
+ + 296567 HttpClient RedirectListener handles new HttpDestination
+ + 297598 JDBCLoginService uses hardcoded credential class
+ + 305898 Websocket handles query string in URI
+ + 307457 Exchanges are left unhandled when connection is lost
+ + 313205 Unable to run test-jdbc-sessions tests
+ + 314177 JSTL support is broken
+ + 314009 jetty.xml configuration file on command line
+ + 314459 support maven3 for builds
+
+jetty-7.1.2.v20100523
+ + 308866 Update test suite to JUnit4 - Module jetty-util
+ + 312948 Recycle SSL crypto buffers
+ + 313196 randomly allocate ports for session test.
+ + 313278 Implement octet ranges in IPAccessHandler
+ + 313336 secure websockets
+ + 314009 updated README.txt
+ + Update links to jetty website and wiki on test webapp
+
+jetty-7.1.1.v20100517
  + 302344 Make the list of available contexts if root context is not configured optional
  + 304803 Remove TypeUtil Integer and Long caches
  + 306226 HttpClient should allow changing the keystore and truststore type

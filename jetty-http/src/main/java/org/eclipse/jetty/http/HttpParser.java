@@ -226,7 +226,7 @@ public class HttpParser implements Parser
     /* ------------------------------------------------------------------------------- */
     /**
      * Parse until next Event.
-     * @returns number of bytes filled from endpoint or -1 if fill never called.
+     * @return number of bytes filled from endpoint or -1 if fill never called.
      */
     public long parseNext() throws IOException
     {

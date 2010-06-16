@@ -121,9 +121,6 @@ readConfig()
 
 
 
-
-
-
 ##################################################
 # Get the action & configs
 ##################################################
@@ -218,9 +215,8 @@ if [ -z "$JETTY_HOME" ] ; then
       then
         JETTY_HOME=
       fi
+      [ "$JETTY_HOME" ] && break
     done
-
-    [ "$JETTY_HOME" ] && break
   done
 fi
 
@@ -247,38 +243,6 @@ then
   exit 1
 fi
 
-
-###########################################################
-# Get the list of config.xml files from the command line.
-###########################################################
-for ARG
-do
-  if [ -f "$ARG" ]
-  then
-    CONF="$ARG" 
-  elif [ -f "$JETTY_HOME/etc/$ARG" ]
-  then
-    CONF="$JETTY_HOME/etc/$ARG" 
-  elif [ -f "$ARG.xml" ] 
-  then
-    CONF="$ARG.xml" 
-  elif [ -f "$JETTY_HOME/etc/$ARG.xml" ] 
-  then
-    CONF="$JETTY_HOME/etc/$ARG.xml" 
-  else
-    echo "** ERROR: Cannot find configuration '$ARG' specified in the command line." 
-    exit 1
-  fi
-  if [ ! -r "$CONF" ] 
-  then
-    echo "** ERROR: Cannot read configuration '$ARG' specified in the command line." 
-    exit 1
-  fi
-
-  CONFIGS+=("$CONF")
-done
-
-
 ##################################################
 # Try to find this script's configuration file,
 # but only if no configurations were given on the
@@ -302,14 +266,11 @@ if [ -z "$CONFIGS" ] && [ -f "$JETTY_CONF" ] && [ -r "$JETTY_CONF" ]
 then
   while read -r CONF
   do
-    if [ ! -r "$CONF" ] 
-    then
-      echo "** WARNING: Cannot read '$CONF' specified in '$JETTY_CONF'" 
-    elif [ -f "$CONF" ] 
-    then
-      # assume it's a configure.xml file
-      CONFIGS+=("$CONF")
-    elif [ -d "$CONF" ] 
+    if expr "$CONF" : '#' >/dev/null ; then
+      continue
+    fi
+
+    if [ -d "$CONF" ] 
     then
       # assume it's a directory with configure.xml files
       # for example: /etc/jetty.d/
@@ -324,19 +285,11 @@ then
         fi
       done
     else
-      echo "** WARNING: Don''t know what to do with '$CONF' specified in '$JETTY_CONF'" 
+      # assume it's a command line parameter (let start.jar deal with its validity)
+      CONFIGS+=("$CONF")
     fi
   done < "$JETTY_CONF"
 fi
-
-#####################################################
-# Run the standard server if there's nothing else to run
-#####################################################
-if [ "${#CONFIGS[@]}" -eq 0 ] 
-then
-  CONFIGS=("$JETTY_HOME/etc/jetty-logging.xml" "$JETTY_HOME/etc/jetty.xml")
-fi
-
 
 #####################################################
 # Find a location for the pid file
@@ -412,7 +365,7 @@ fi
 
 
 ##################################################
-# Determine which JVM of version >1.2
+# Determine which JVM of version >1.5
 # Try to use JAVA_HOME
 ##################################################
 if [ -z "$JAVA" ] && [ "$JAVA_HOME" ]
@@ -428,7 +381,7 @@ fi
 
 if [ -z "$JAVA" ]
 then
-  echo "Cannot find a JRE or JDK. Please set JAVA_HOME to a >=1.2 JRE" 2>&2
+  echo "Cannot find a JRE or JDK. Please set JAVA_HOME to a >=1.5 JRE" 2>&2
   exit 1
 fi
 
@@ -474,7 +427,10 @@ JAVA_OPTIONS+=("-Djetty.home=$JETTY_HOME" "-Djava.io.tmpdir=$TMPDIR")
 JETTY_START=$JETTY_HOME/start.jar
 [ ! -f "$JETTY_START" ] && JETTY_START=$JETTY_HOME/lib/start.jar
 
-RUN_ARGS=("${JAVA_OPTIONS[@]}" -jar "$JETTY_START" --fromDaemon $JETTY_ARGS "${CONFIGS[@]}")
+START_INI=$(dirname $JETTY_START)/start.ini
+[ -r "$START_INI" ] || START_INI=""
+
+RUN_ARGS=("${JAVA_OPTIONS[@]}" -jar "$JETTY_START" $JETTY_ARGS "${CONFIGS[@]}")
 RUN_CMD=("$JAVA" "${RUN_ARGS[@]}")
 
 #####################################################
@@ -508,9 +464,12 @@ case "$ACTION" in
 
     if type start-stop-daemon > /dev/null 2>&1 
     then
-      [ -z "$JETTY_USER" ] && JETTY_USER=$USER
-      (( UID == 0 )) && CH_USER=-c$JETTY_USER
-      if start-stop-daemon -S -p"$JETTY_PID" "$CH_USER" -d"$JETTY_HOME" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}"
+      unset CH_USER
+      if [ -n "$JETTY_USER" ]
+      then
+        CH_USER="-c$JETTY_USER"
+      fi
+      if start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_HOME" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}" --daemon
       then
         sleep 1
         if running "$JETTY_PID"
@@ -541,7 +500,7 @@ case "$ACTION" in
         chown "$JETTY_USER" "$JETTY_PID"
         # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
         su - "$JETTY_USER" -c "
-          ${RUN_CMD[*]} &
+          ${RUN_CMD[*]} --daemon &
           disown \$!
           echo \$! > '$JETTY_PID'"
       else
@@ -641,6 +600,7 @@ case "$ACTION" in
     echo "JETTY_PID      =  $JETTY_PID"
     echo "JETTY_PORT     =  $JETTY_PORT"
     echo "JETTY_LOGS     =  $JETTY_LOGS"
+    echo "START_INI      =  $START_INI"
     echo "CONFIGS        =  ${CONFIGS[*]}"
     echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
     echo "JAVA           =  $JAVA"

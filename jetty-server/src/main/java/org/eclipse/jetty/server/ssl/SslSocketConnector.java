@@ -137,7 +137,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         Socket socket = _serverSocket.accept();
         configure(socket);
         
-        ConnectorEndPoint connection=new SslConnection(socket);
+        ConnectorEndPoint connection=new SslConnectorEndPoint(socket);
         connection.dispatch();
     }
     
@@ -205,14 +205,10 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     	try
         {
             if (keystorePath!=null)
-            {
                 keystoreInputStream = Resource.newResource(keystorePath).getInputStream();
-                keystore=KeyStore.getInstance(keystoreType);
-                keystore.load(keystoreInputStream,keystorePassword==null?null:keystorePassword.toString().toCharArray());
-                return keystore;
-            }
-            
-            return null;
+            keystore=KeyStore.getInstance(keystoreType);
+            keystore.load(keystoreInputStream,keystorePassword==null?null:keystorePassword.toString().toCharArray());
+            return keystore;
         }
         finally
         {
@@ -606,11 +602,16 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     }
 
     /* ------------------------------------------------------------ */
-    public class SslConnection extends ConnectorEndPoint
+    public class SslConnectorEndPoint extends ConnectorEndPoint
     {
-        public SslConnection(Socket socket) throws IOException
+        public SslConnectorEndPoint(Socket socket) throws IOException
         {
             super(socket);
+        }
+        
+        @Override
+        public void shutdownOutput() throws IOException
+        {
         }
         
         @Override
@@ -667,7 +668,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     /**
      * Unsupported.
      * 
-     * @todo we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
+     * TODO: we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
      */
     public String getAlgorithm()
     {
@@ -678,7 +679,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     /**
      * Unsupported.
      * 
-     * @todo we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
+     * TODO: we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
      */
     public void setAlgorithm(String algorithm)
     {

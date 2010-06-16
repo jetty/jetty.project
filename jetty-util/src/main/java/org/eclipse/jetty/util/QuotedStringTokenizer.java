@@ -267,7 +267,7 @@ public class QuotedStringTokenizer
      * @param s The string to quote.
      * @return quoted string
      */
-    public static String quote(String s, String delim)
+    public static String quoteIfNeeded(String s, String delim)
     {
         if (s==null)
             return null;
@@ -413,88 +413,30 @@ public class QuotedStringTokenizer
 
 
     /* ------------------------------------------------------------ */
-    /** Quote a string into a StringBuffer.
-     * The characters ", \, \n, \r, \t, \f, \b are escaped.
-     * Quotes are forced if any escaped characters are present or there
-     * is a ", ', space, +, =, ; or % character.
+    /** Quote a string into a StringBuffer only if needed.
+     * Quotes are forced if any delim characters are present.
      * 
      * @param buf The StringBuffer
      * @param s The String to quote.
+     * @param delim String of characters that must be quoted.
+     * @return true if quoted;
      */
-    public static void quoteIfNeeded(Appendable buf, String s)
+    public static boolean quoteIfNeeded(Appendable buf, String s,String delim)
     {
+        for (int i=0;i<s.length();i++)
+        {
+            char c = s.charAt(i);
+            if (delim.indexOf(c)>=0)
+            {
+            	quote(buf,s);
+            	return true;
+            }
+        }
+    	
         try
         {
-            int e=-1;
-
-            search: for (int i=0;i<s.length();i++)
-            {
-                char c = s.charAt(i);
-                switch(c)
-                {
-                    case '"':
-                    case '\\':
-                    case '\n':
-                    case '\r':
-                    case '\t':
-                    case '\f':
-                    case '\b':
-                    case '%':
-                    case '+':
-                    case ' ':
-                    case ';':
-                    case '=':
-                        e=i;
-                        buf.append('"');
-                        // TODO when 1.4 support is dropped: buf.append(s,0,e);
-                        for (int j=0;j<e;j++)
-                            buf.append(s.charAt(j));
-                        break search;
-
-                    default:
-                        continue;
-                }
-            }
-
-            if (e<0)
-            {
-                buf.append(s);
-                return;
-            }
-
-            for (int i=e;i<s.length();i++)
-            {
-                char c = s.charAt(i);
-                switch(c)
-                {
-                    case '"':
-                        buf.append("\\\"");
-                        continue;
-                    case '\\':
-                        buf.append("\\\\");
-                        continue;
-                    case '\n':
-                        buf.append("\\n");
-                        continue;
-                    case '\r':
-                        buf.append("\\r");
-                        continue;
-                    case '\t':
-                        buf.append("\\t");
-                        continue;
-                    case '\f':
-                        buf.append("\\f");
-                        continue;
-                    case '\b':
-                        buf.append("\\b");
-                        continue;
-
-                    default:
-                        buf.append(c);
-                        continue;
-                }
-            }
-            buf.append('"');
+            buf.append(s);
+            return false;
         }
         catch(IOException e)
         {

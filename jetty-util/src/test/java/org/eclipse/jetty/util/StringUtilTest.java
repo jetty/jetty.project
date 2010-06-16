@@ -13,43 +13,20 @@
 
 package org.eclipse.jetty.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import junit.framework.TestCase;
+import org.junit.Test;
+
 
 /**
  * 
  *
  */
-public class StringUtilTest extends TestCase
+public class StringUtilTest
 {
-
-    /**
-     * Constructor for StringUtilTest.
-     * @param arg0
-     */
-    public StringUtilTest(String arg0)
-    {
-        super(arg0);
-    }
-
-    /*
-     * @see TestCase#setUp()
-     */
-    @Override
-    protected void setUp() throws Exception
-    {
-        super.setUp();
-    }
-
-    /*
-     * @see TestCase#tearDown()
-     */
-    @Override
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-
+    @Test
     public void testAsciiToLowerCase()
     {
         String lc="\u0690bc def 1\u06903";
@@ -57,6 +34,7 @@ public class StringUtilTest extends TestCase
         assertTrue(StringUtil.asciiToLowerCase(lc)==lc);
     }
 
+    @Test
     public void testStartsWithIgnoreCase()
     {
         
@@ -74,6 +52,7 @@ public class StringUtilTest extends TestCase
         assertFalse(StringUtil.startsWithIgnoreCase("\u0690", "xyz")); 
     }
 
+    @Test
     public void testEndsWithIgnoreCase()
     {
         assertTrue(StringUtil.endsWithIgnoreCase("\u0690bcd\u0690f\u0690", "\u0690f\u0690"));
@@ -90,6 +69,7 @@ public class StringUtilTest extends TestCase
         assertFalse(StringUtil.endsWithIgnoreCase("\u0690", "xyz"));  
     }
 
+    @Test
     public void testIndexFrom()
     {
         assertEquals(StringUtil.indexFrom("\u0690bcd", "xyz"),-1);
@@ -98,6 +78,7 @@ public class StringUtilTest extends TestCase
         assertEquals(StringUtil.indexFrom("\u0690bcd", "dxy"),3);
     }
 
+    @Test
     public void testReplace()
     {
         String s="\u0690bc \u0690bc \u0690bc";
@@ -109,6 +90,7 @@ public class StringUtilTest extends TestCase
         
     }
 
+    @Test
     public void testUnquote()
     {
         String uq =" not quoted ";
@@ -120,6 +102,7 @@ public class StringUtilTest extends TestCase
     }
 
 
+    @Test
     public void testNonNull()
     {
         String nn="";
@@ -130,12 +113,14 @@ public class StringUtilTest extends TestCase
     /*
      * Test for boolean equals(String, char[], int, int)
      */
+    @Test
     public void testEqualsStringcharArrayintint()
     {
         assertTrue(StringUtil.equals("\u0690bc", new char[] {'x','\u0690','b','c','z'},1,3));
         assertFalse(StringUtil.equals("axc", new char[] {'x','a','b','c','z'},1,3));
     }
 
+    @Test
     public void testAppend()
     {
         StringBuilder buf = new StringBuilder();

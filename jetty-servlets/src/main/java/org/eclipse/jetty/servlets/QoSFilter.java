@@ -33,21 +33,23 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
  * Quality of Service Filter.
+ * 
  * This filter limits the number of active requests to the number set by the "maxRequests" init parameter (default 10).
  * If more requests are received, they are suspended and placed on priority queues.  Priorities are determined by 
  * the {@link #getPriority(ServletRequest)} method and are a value between 0 and the value given by the "maxPriority" 
  * init parameter (default 10), with higher values having higher priority.
- * <p>
+ * </p><p>
  * This filter is ideal to prevent wasting threads waiting for slow/limited 
  * resources such as a JDBC connection pool.  It avoids the situation where all of a 
  * containers thread pool may be consumed blocking on such a slow resource.
  * By limiting the number of active threads, a smaller thread pool may be used as 
  * the threads are not wasted waiting.  Thus more memory may be available for use by 
  * the active threads.
- * <p>
+ * </p><p>
  * Furthermore, this filter uses a priority when resuming waiting requests. So that if
  * a container is under load, and there are many requests waiting for resources,
  * the {@link #getPriority(ServletRequest)} method is used, so that more important 
@@ -55,12 +57,16 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
  * maxRequest limit slightly smaller than the containers thread pool and a high priority 
  * allocated to admin users.  Thus regardless of load, admin users would always be
  * able to access the web application.
- * <p>
+ * </p><p>
  * The maxRequest limit is policed by a {@link Semaphore} and the filter will wait a short while attempting to acquire
  * the semaphore. This wait is controlled by the "waitMs" init parameter and allows the expense of a suspend to be
  * avoided if the semaphore is shortly available.  If the semaphore cannot be obtained, the request will be suspended
  * for the default suspend period of the container or the valued set as the "suspendMs" init parameter.
- * 
+ * </p><p>
+ * If the "managedAttr" init parameter is set to true, then this servlet is set as a {@link ServletContext} attribute with the 
+ * filter name as the attribute name.  This allows context external mechanism (eg JMX via {@link ContextHandler#MANAGED_ATTRIBUTES}) to
+ * manage the configuration of the filter.
+ * </p>
  * 
  *
  */
@@ -71,23 +77,31 @@ public class QoSFilter implements Filter
     final static int __DEFAULT_WAIT_MS=50;
     final static long __DEFAULT_TIMEOUT_MS = -1;
     
+    final static String MANAGED_ATTR_INIT_PARAM="managedAttr";
     final static String MAX_REQUESTS_INIT_PARAM="maxRequests";
     final static String MAX_PRIORITY_INIT_PARAM="maxPriority";
     final static String MAX_WAIT_INIT_PARAM="waitMs";
     final static String SUSPEND_INIT_PARAM="suspendMs";
     
     ServletContext _context;
-    long _waitMs;
-    long _suspendMs;
-    Semaphore _passes;
-    Queue<Continuation>[] _queue;
-    ContinuationListener[] _listener;
-    String _suspended="QoSFilter@"+this.hashCode();
+
+    protected long _waitMs;
+    protected long _suspendMs;
+    protected int _maxRequests;
     
+    private Semaphore _passes;
+    private Queue<Continuation>[] _queue;
+    private ContinuationListener[] _listener;
+    private String _suspended="QoSFilter@"+this.hashCode();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see javax.servlet.Filter#init(javax.servlet.FilterConfig)
+     */
     public void init(FilterConfig filterConfig) 
     {
         _context=filterConfig.getServletContext();
-        
+
         int max_priority=__DEFAULT_MAX_PRIORITY;
         if (filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM)!=null)
             max_priority=Integer.parseInt(filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM));
@@ -110,10 +124,11 @@ public class QoSFilter implements Filter
             };
         }
         
-        int passes=__DEFAULT_PASSES;
+        int maxRequests=__DEFAULT_PASSES;
         if (filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM)!=null)
-            passes=Integer.parseInt(filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM));
-        _passes=new Semaphore(passes,true);
+            maxRequests=Integer.parseInt(filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM));
+        _passes=new Semaphore(maxRequests,true);
+        _maxRequests = maxRequests;
         
         long wait = __DEFAULT_WAIT_MS;
         if (filterConfig.getInitParameter(MAX_WAIT_INIT_PARAM)!=null)
@@ -124,8 +139,15 @@ public class QoSFilter implements Filter
         if (filterConfig.getInitParameter(SUSPEND_INIT_PARAM)!=null)
             suspend=Integer.parseInt(filterConfig.getInitParameter(SUSPEND_INIT_PARAM));
         _suspendMs=suspend;
+
+        if (_context!=null && Boolean.parseBoolean(filterConfig.getInitParameter(MANAGED_ATTR_INIT_PARAM)))
+            _context.setAttribute(filterConfig.getFilterName(),this);
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @see javax.servlet.Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)
+     */
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) 
     throws IOException, ServletException
     {
@@ -238,6 +260,83 @@ public class QoSFilter implements Filter
     }
 
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see javax.servlet.Filter#destroy()
+     */
     public void destroy(){}
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Get the (short) amount of time (in milliseconds) that the filter would wait
+     * for the semaphore to become available before suspending a request.
+     * 
+     * @return wait time (in milliseconds)
+     */
+    public long getWaitMs()
+    {
+        return _waitMs;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the (short) amount of time (in milliseconds) that the filter would wait
+     * for the semaphore to become available before suspending a request.
+     * 
+     * @param value wait time (in milliseconds)
+     */
+    public void setWaitMs(long value)
+    {
+        _waitMs = value;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Get the amount of time (in milliseconds) that the filter would suspend
+     * a request for while waiting for the semaphore to become available.
+     * 
+     * @return suspend time (in milliseconds)
+     */
+    public long getSuspendMs()
+    {
+        return _suspendMs;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the amount of time (in milliseconds) that the filter would suspend
+     * a request for while waiting for the semaphore to become available.
+     * 
+     * @param value suspend time (in milliseconds)
+     */
+    public void setSuspendMs(long value)
+    {
+        _suspendMs = value;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Get the maximum number of requests allowed to be processed
+     * at the same time.
+     * 
+     * @return maximum number of requests
+     */
+    public int getMaxRequests()
+    {
+        return _maxRequests;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the maximum number of requests allowed to be processed
+     * at the same time.
+     * 
+     * @param passes the _passes to set
+     */
+    public void setMaxRequests(int value)
+    {
+        _passes = new Semaphore((value-_maxRequests+_passes.availablePermits()), true);
+        _maxRequests = value;
+    }
 
 }

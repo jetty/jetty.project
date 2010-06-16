@@ -38,7 +38,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
-          <archive>               
+          <archive>
             <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
@@ -56,16 +56,17 @@
       <artifactId>jetty-server</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-    </dependency>  
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-security</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-    </dependency>  
+    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <version>${junit4-version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

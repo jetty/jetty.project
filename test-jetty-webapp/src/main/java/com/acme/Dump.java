@@ -13,6 +13,7 @@
 
 package com.acme;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -20,6 +21,7 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Locale;
 
@@ -552,7 +554,6 @@ public class Dump extends HttpServlet
                 pout.write("</pre></td>");
             }
             
-            
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Request Attributes:</big></th>");
             Enumeration a= request.getAttributeNames();
@@ -561,8 +562,16 @@ public class Dump extends HttpServlet
                 name= (String)a.nextElement();
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\" valign=\"top\">"+name.replace("."," .")+":&nbsp;</th>");
-                pout.write("<td>"+"<pre>" + toString(request.getAttribute(name)) + "</pre>"+"</td>");
-            }            
+                Object value=request.getAttribute(name);
+                if (value instanceof File)
+                {
+                    File file = (File)value;
+                    pout.write("<td>"+"<pre>" + file.getName()+" ("+file.length()+" "+new Date(file.lastModified())+ ")</pre>"+"</td>");
+                }
+                else
+                    pout.write("<td>"+"<pre>" + toString(request.getAttribute(name)) + "</pre>"+"</td>");
+            }
+            request.setAttribute("org.eclipse.jetty.servlet.MultiPartFilter.files",null);
 
             
             pout.write("</tr><tr>\n");

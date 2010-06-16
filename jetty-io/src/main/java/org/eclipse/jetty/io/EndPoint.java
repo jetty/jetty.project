@@ -23,7 +23,12 @@ import java.io.IOException;
 public interface EndPoint
 {
     /**
-     * Close any backing stream associated with the buffer
+     * Shutdown any backing output stream associated with the endpoint
+     */
+    void shutdownOutput() throws IOException;
+    
+    /**
+     * Close any backing stream associated with the endpoint
      */
     void close() throws IOException;
 

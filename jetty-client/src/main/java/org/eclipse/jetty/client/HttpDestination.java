@@ -219,7 +219,7 @@ public class HttpDestination
                 if (connection!=null)
                 {
                     _connections.remove(connection);
-                    connection.getEndPoint().close();
+                    connection.close();
                     connection=null;
                 }
                 if (_idle.size() > 0)
@@ -229,9 +229,10 @@ public class HttpDestination
             if (connection==null)
                 return null;
 
-            if (connection.cancelIdleTimeout() )
+            // Check if the connection was idle,
+            // but it expired just a moment ago
+            if (connection.cancelIdleTimeout())
                 return connection;
-
         }
     }
 
@@ -271,6 +272,11 @@ public class HttpDestination
                 HttpExchange ex = _queue.removeFirst();
                 ex.setStatus(HttpExchange.STATUS_EXCEPTED);
                 ex.getEventListener().onConnectionFailed(throwable);
+
+                // Since an existing connection had failed, we need to create a
+                // connection if the  queue is not empty and client is running.
+                if (!_queue.isEmpty() && _client.isStarted())
+                    startNewConnection();
             }
         }
 
@@ -323,7 +329,7 @@ public class HttpDestination
             else
             {
                 HttpExchange ex = _queue.removeFirst();
-                connection.send(ex);
+                send(connection, ex);
             }
         }
 
@@ -372,7 +378,7 @@ public class HttpDestination
                 else
                 {
                     HttpExchange ex = _queue.removeFirst();
-                    connection.send(ex);
+                    send(connection, ex);
                 }
                 this.notifyAll();
             }
@@ -388,7 +394,7 @@ public class HttpDestination
         }
     }
 
-    public void returnIdleConnection(HttpConnection connection) throws IOException
+    public void returnIdleConnection(HttpConnection connection)
     {
         try
         {
@@ -403,10 +409,10 @@ public class HttpDestination
         {
             _idle.remove(connection);
             _connections.remove(connection);
+
             if (!_queue.isEmpty() && _client.isStarted())
                 startNewConnection();
         }
-
     }
 
     public void send(HttpExchange ex) throws IOException
@@ -483,11 +489,9 @@ public class HttpDestination
         HttpConnection connection = getIdleConnection();
         if (connection != null)
         {
-            boolean sent = connection.send(ex);
-            if (!sent) connection = null;
+            send(connection, ex);
         }
-
-        if (connection == null)
+        else
         {
             synchronized (this)
             {
@@ -496,6 +500,20 @@ public class HttpDestination
                 {
                     startNewConnection();
                 }
+            }
+        }
+    }
+
+    protected void send(HttpConnection connection, HttpExchange exchange) throws IOException
+    {
+        synchronized (this)
+        {
+            // If server closes the connection, put the exchange back
+            // to the exchange queue and recycle the connection
+            if(!connection.send(exchange))
+            {
+                _queue.addFirst(exchange);
+                returnIdleConnection(connection);
             }
         }
     }

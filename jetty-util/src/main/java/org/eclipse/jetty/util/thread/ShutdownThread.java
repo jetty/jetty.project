@@ -35,6 +35,7 @@ public class ShutdownThread extends Thread
 {
     private static final ShutdownThread _thread = new ShutdownThread();
 
+    private boolean _hooked;
     private final List<LifeCycle> _lifeCycles = new CopyOnWriteArrayList<LifeCycle>();
 
     /* ------------------------------------------------------------ */
@@ -45,17 +46,39 @@ public class ShutdownThread extends Thread
      */
     private ShutdownThread()
     {
-        try
-	{
-            Runtime.getRuntime().addShutdownHook(this);
-	}
-	catch(Exception e)
-	{
-	    Log.ignore(e);
-	    Log.info("shutdown already commenced");
-	}
     }
-
+    
+    /* ------------------------------------------------------------ */
+    private synchronized void hook()
+    {
+        try
+        {
+            if (!_hooked)
+                Runtime.getRuntime().addShutdownHook(this);
+            _hooked=true;
+        }
+        catch(Exception e)
+        {
+            Log.ignore(e);
+            Log.info("shutdown already commenced");
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    private synchronized void unhook()
+    {
+        try
+        {
+            _hooked=false;
+            Runtime.getRuntime().removeShutdownHook(this);
+        }
+        catch(Exception e)
+        {
+            Log.ignore(e);
+            Log.info("shutdown already commenced");
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Returns the instance of the singleton
@@ -71,18 +94,24 @@ public class ShutdownThread extends Thread
     public static synchronized void register(LifeCycle... lifeCycles)
     {
         _thread._lifeCycles.addAll(Arrays.asList(lifeCycles));
+        if (_thread._lifeCycles.size()>0)
+            _thread.hook();
     }
 
     /* ------------------------------------------------------------ */
     public static synchronized void register(int index, LifeCycle... lifeCycles)
     {
         _thread._lifeCycles.addAll(index,Arrays.asList(lifeCycles));
+        if (_thread._lifeCycles.size()>0)
+            _thread.hook();
     }
     
     /* ------------------------------------------------------------ */
     public static synchronized void deregister(LifeCycle lifeCycle)
     {
         _thread._lifeCycles.remove(lifeCycle);
+        if (_thread._lifeCycles.size()==0)
+            _thread.unhook();
     }
 
     /* ------------------------------------------------------------ */
@@ -100,12 +129,5 @@ public class ShutdownThread extends Thread
                 Log.debug(ex);
             }
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    protected Object readResolve()
-        throws ObjectStreamException
-    {
-        return _thread;
     }
 }

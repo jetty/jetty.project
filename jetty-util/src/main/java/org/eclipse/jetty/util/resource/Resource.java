@@ -489,7 +489,7 @@ public abstract class Resource implements Serializable
             buf.append("\">Parent Directory</A></TD><TD></TD><TD></TD></TR>\n");
         }
         
-        String defangedBase = defangURI(base);
+        String encodedBase = hrefEncodeURI(base);
         
         DateFormat dfmt=DateFormat.getDateTimeInstance(DateFormat.MEDIUM,
                                                        DateFormat.MEDIUM);
@@ -498,7 +498,7 @@ public abstract class Resource implements Serializable
             Resource item = addPath(ls[i]);
             
             buf.append("\n<TR><TD><A HREF=\"");
-            String path=URIUtil.addPaths(defangedBase,URIUtil.encodePath(ls[i]));
+            String path=URIUtil.addPaths(encodedBase,URIUtil.encodePath(ls[i]));
             
             buf.append(path);
             
@@ -522,38 +522,35 @@ public abstract class Resource implements Serializable
     }
     
     /**
-     * Defang any characters that could break the URI string in an HREF.
+     * Encode any characters that could break the URI string in an HREF.
      * Such as <a href="/path/to;<script>Window.alert("XSS"+'%20'+"here");</script>">Link</a>
      * 
      * The above example would parse incorrectly on various browsers as the "<" or '"' characters
      * would end the href attribute value string prematurely.
      * 
-     * @param raw the raw text to defang.
+     * @param raw the raw text to encode.
      * @return the defanged text.
      */
-    private static String defangURI(String raw) 
+    private static String hrefEncodeURI(String raw) 
     {
         StringBuffer buf = null;
-        
-        if (buf==null)
+
+        for (int i=0;i<raw.length();i++)
         {
-            for (int i=0;i<raw.length();i++)
+            char c=raw.charAt(i);
+            switch(c)
             {
-                char c=raw.charAt(i);
-                switch(c)
-                {
-                    case '\'':
-                    case '"':
-                    case '<':
-                    case '>':
-                        buf=new StringBuffer(raw.length()<<1);
-                        break;
-                }
+                case '\'':
+                case '"':
+                case '<':
+                case '>':
+                    buf=new StringBuffer(raw.length()<<1);
+                    break;
             }
-            if (buf==null)
-                return raw;
         }
-        
+        if (buf==null)
+            return raw;
+
         for (int i=0;i<raw.length();i++)
         {
             char c=raw.charAt(i);       

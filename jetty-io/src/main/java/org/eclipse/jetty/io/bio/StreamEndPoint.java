@@ -73,6 +73,10 @@ public class StreamEndPoint implements EndPoint
         return !isOpen();
     }
 
+    public void shutdownOutput() throws IOException
+    {    
+    }
+    
     /*
      * @see org.eclipse.io.BufferIO#close()
      */

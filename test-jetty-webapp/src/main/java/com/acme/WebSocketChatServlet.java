@@ -50,16 +50,21 @@ public class WebSocketChatServlet extends WebSocketServlet
 
         public void onMessage(byte frame, String data)
         {
-            // Log.info(this+" onMessage: "+data);
-            for (ChatWebSocket member : _members)
+            if (data.indexOf("disconnect")>=0)
+                _outbound.disconnect();
+            else
             {
-                try
+                // Log.info(this+" onMessage: "+data);
+                for (ChatWebSocket member : _members)
                 {
-                    member._outbound.sendMessage(frame,data);
-                }
-                catch(IOException e)
-                {
-                    Log.warn(e);
+                    try
+                    {
+                        member._outbound.sendMessage(frame,data);
+                    }
+                    catch(IOException e)
+                    {
+                        Log.warn(e);
+                    }
                 }
             }
         }

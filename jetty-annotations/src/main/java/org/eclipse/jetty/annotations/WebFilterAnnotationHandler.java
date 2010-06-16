@@ -38,7 +38,7 @@ public class WebFilterAnnotationHandler implements DiscoverableAnnotationHandler
                             List<Value> values)
     {
         WebFilterAnnotation wfAnnotation = new WebFilterAnnotation(_context, className);
-        //TODO add to list
+       ((List<ClassAnnotation>)_context.getAttribute(AnnotationConfiguration.DISCOVERED_ANNOTATIONS)).add(wfAnnotation);
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,

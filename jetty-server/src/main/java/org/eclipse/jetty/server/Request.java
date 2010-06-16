@@ -166,7 +166,8 @@ public class Request implements HttpServletRequest
     private HttpSession _session;
     private SessionManager _sessionManager;
     private long _timeStamp;
-
+    private long _dispatchTime;
+    
     private Buffer _timeStampBuffer;
     private HttpURI _uri;
     
@@ -1225,6 +1226,16 @@ public class Request implements HttpServletRequest
     }
     
     /* ------------------------------------------------------------ */
+    /** Get timestamp of the request dispatch
+     * 
+     * @return timestamp
+     */
+    public long getDispatchTime()
+    {
+        return _dispatchTime;
+    }
+
+    /* ------------------------------------------------------------ */
     public boolean isAsyncStarted()
     {
         return _async.isAsyncStarted();
@@ -1565,7 +1576,9 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * @param context
+     * Set request context
+     * 
+     * @param context context object
      */
     public void setContext(Context context)
     {
@@ -1575,7 +1588,8 @@ public class Request implements HttpServletRequest
     
     /* ------------------------------------------------------------ */
     /**
-     * @return True if this is the first call of {@link #takeNewContext()} since the last {@link #setContext(Context)} call.
+     * @return True if this is the first call of {@link #takeNewContext()} 
+     * since the last {@link #setContext(org.eclipse.jetty.server.handler.ContextHandler.Context)} call.
      */
     public boolean takeNewContext()
     {
@@ -1798,6 +1812,16 @@ public class Request implements HttpServletRequest
     public void setUserIdentityScope(UserIdentity.Scope scope)
     {
         _scope=scope;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set timetstamp of request dispatch
+     * 
+     * @param value timestamp
+     */
+    public void setDispatchTime(long value)
+    {
+        _dispatchTime = value;
     }
 
     /* ------------------------------------------------------------ */

@@ -13,35 +13,40 @@
 
 package org.eclipse.jetty.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import junit.framework.TestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 
 /**
  * TestInjection
  *
  *
  */
-public class TestIntrospectionUtil extends TestCase
+public class TestIntrospectionUtil
 {
-    public final Class[] __INTEGER_ARG = new Class[] {Integer.class};
-    Field privateAField;
-    Field protectedAField;
-    Field publicAField;
-    Field defaultAField;
-    Field privateBField;
-    Field protectedBField;
-    Field publicBField;
-    Field defaultBField;
-    Method privateCMethod;
-    Method protectedCMethod;
-    Method publicCMethod;
-    Method defaultCMethod;
-    Method privateDMethod;
-    Method protectedDMethod;
-    Method publicDMethod;
-    Method defaultDMethod;
+    public final static Class[] __INTEGER_ARG = new Class[] {Integer.class};
+    static Field privateAField;
+    static Field protectedAField;
+    static Field publicAField;
+    static Field defaultAField;
+    static Field privateBField;
+    static Field protectedBField;
+    static Field publicBField;
+    static Field defaultBField;
+    static Method privateCMethod;
+    static Method protectedCMethod;
+    static Method publicCMethod;
+    static Method defaultCMethod;
+    static Method privateDMethod;
+    static Method protectedDMethod;
+    static Method publicDMethod;
+    static Method defaultDMethod;
     
     public class ServletA 
     {
@@ -75,8 +80,8 @@ public class TestIntrospectionUtil extends TestCase
         void setDefaultD(Integer d) {}
     }
     
-    @Override
-    public void setUp()
+    @BeforeClass
+    public static void setUp()
     throws Exception
     {
         privateAField = ServletA.class.getDeclaredField("privateA");
@@ -97,7 +102,7 @@ public class TestIntrospectionUtil extends TestCase
         defaultDMethod = ServletD.class.getDeclaredMethod("setDefaultD", __INTEGER_ARG);
     }
    
-    
+    @Test
     public void testFieldPrivate ()
     throws Exception
     {
@@ -117,6 +122,7 @@ public class TestIntrospectionUtil extends TestCase
         }
     }
     
+    @Test
     public void testFieldProtected()    
     throws Exception
     {
@@ -129,6 +135,7 @@ public class TestIntrospectionUtil extends TestCase
         assertEquals(f, protectedAField);
     }
     
+    @Test
     public void testFieldPublic()
     throws Exception
     {
@@ -141,6 +148,7 @@ public class TestIntrospectionUtil extends TestCase
         assertEquals(f, publicAField);
     }
     
+    @Test
     public void testFieldDefault()
     throws Exception
     {
@@ -153,6 +161,7 @@ public class TestIntrospectionUtil extends TestCase
         assertEquals(f, defaultAField);
     }
     
+    @Test
     public void testMethodPrivate ()
     throws Exception
     {
@@ -172,6 +181,7 @@ public class TestIntrospectionUtil extends TestCase
         }
     }
     
+    @Test
     public void testMethodProtected ()
     throws Exception
     {
@@ -184,6 +194,7 @@ public class TestIntrospectionUtil extends TestCase
         assertEquals(m, protectedCMethod);
     }
     
+    @Test
     public void testMethodPublic ()
     throws Exception
     {
@@ -196,6 +207,7 @@ public class TestIntrospectionUtil extends TestCase
        assertEquals(m, publicCMethod);
     }
     
+    @Test
     public void testMethodDefault ()
     throws Exception
     {

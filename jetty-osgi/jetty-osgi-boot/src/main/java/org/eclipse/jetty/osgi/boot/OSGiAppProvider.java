@@ -91,8 +91,6 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     /**
      * Default OSGiAppProvider consutructed when none are defined in the
      * jetty.xml configuration.
-     * 
-     * @param contextsDir
      */
     public OSGiAppProvider()
     {

@@ -13,38 +13,23 @@
 
 package org.eclipse.jetty.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 
-import junit.framework.TestSuite;
+import org.junit.Test;
 
 
 /* ------------------------------------------------------------ */
 /** Util meta Tests.
  * 
  */
-public class URLEncodedTest extends junit.framework.TestCase
+public class URLEncodedTest
 {
-    public URLEncodedTest(String name)
-    {
-      super(name);
-    }
-    
-    public static junit.framework.Test suite() {
-        TestSuite suite = new TestSuite(URLEncodedTest.class);
-        return suite;                  
-    }
-
-    /* ------------------------------------------------------------ */
-    /** main.
-     */
-    public static void main(String[] args)
-    {
-      junit.textui.TestRunner.run(suite());
-    }    
-    
-
     /* -------------------------------------------------------------- */
+    @Test
     public void testUrlEncoded() throws UnsupportedEncodingException
     {
           
@@ -147,6 +132,7 @@ public class URLEncodedTest extends junit.framework.TestCase
     
 
     /* -------------------------------------------------------------- */
+    @Test
     public void testUrlEncodedStream()
     	throws Exception
     {
@@ -185,6 +171,7 @@ public class URLEncodedTest extends junit.framework.TestCase
     }
 
     /* -------------------------------------------------------------- */
+    @Test
     public void testUtf8()
         throws Exception
     {

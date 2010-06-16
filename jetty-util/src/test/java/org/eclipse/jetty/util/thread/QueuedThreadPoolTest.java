@@ -11,14 +11,17 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-
 package org.eclipse.jetty.util.thread;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class QueuedThreadPoolTest extends TestCase
+
+public class QueuedThreadPoolTest
 {
     final AtomicInteger _jobs=new AtomicInteger();
     volatile long _sleep=100;
@@ -44,6 +47,7 @@ public class QueuedThreadPoolTest extends TestCase
     
     
     
+    @Test
     public void testThreadPool() throws Exception
     {        
         _sleep=100;
@@ -129,6 +133,7 @@ public class QueuedThreadPoolTest extends TestCase
         tp.stop();
     }
 
+    @Test
     public void testShrink() throws Exception
     {
         Runnable job = new Runnable()
@@ -184,6 +189,7 @@ public class QueuedThreadPoolTest extends TestCase
         
     }
 
+    @Test
     public void testMaxStopTime() throws Exception
     {
         _sleep=100;

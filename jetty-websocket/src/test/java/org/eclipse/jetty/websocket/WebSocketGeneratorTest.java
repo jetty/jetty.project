@@ -1,8 +1,11 @@
 package org.eclipse.jetty.websocket;
 
+import java.security.MessageDigest;
+
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -89,5 +92,36 @@ public class WebSocketGeneratorTest
         assertEquals(0x7f&b.length,0xff&_out.get());
         for (int i=0;i<b.length;i++)
             assertEquals('0'+(i%10),0xff&_out.get());
+    }
+    
+    @Test
+    public void testHixie() throws Exception
+    {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        byte[] result;
+        byte[] expected;
+        
+        expected=md.digest(TypeUtil.fromHexString("00000000000000000000000000000000"));
+        result=WebSocketGenerator.doTheHixieHixieShake(
+                0 ,0, new byte[8]);
+        assertEquals(TypeUtil.toHexString(expected),TypeUtil.toHexString(result));
+
+        expected=md.digest(TypeUtil.fromHexString("01020304050607080000000000000000"));
+        result=WebSocketGenerator.doTheHixieHixieShake(
+                0x01020304,
+                0x05060708,
+                new byte[8]);
+        assertEquals(TypeUtil.toHexString(expected),TypeUtil.toHexString(result));
+        
+        byte[] random = new byte[8];
+        for (int i=0;i<8;i++)
+            random[i]=(byte)(0xff&"Tm[K T2u".charAt(i));
+        result=WebSocketGenerator.doTheHixieHixieShake(
+                155712099,173347027,random);
+        StringBuilder b = new StringBuilder();
+
+        for (int i=0;i<16;i++)
+            b.append((char)result[i]);
+        assertEquals("fQJ,fN/4F4!~K~MH",b.toString());
     }
 }

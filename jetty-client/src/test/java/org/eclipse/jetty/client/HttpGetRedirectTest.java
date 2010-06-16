@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.util.log.Log;
 
 
 /* ------------------------------------------------------------ */
@@ -63,6 +64,8 @@ public class HttpGetRedirectTest
     private Realm _realm;
     private String _protocol;
     private String _requestUrl;
+    private String _requestUrl2;
+    private RedirectHandler _handler;
 
     public void setUp()
         throws Exception
@@ -73,10 +76,14 @@ public class HttpGetRedirectTest
 
         _server = new Server();
         configureServer(_server);
+        org.eclipse.jetty.server.bio.SocketConnector connector = new org.eclipse.jetty.server.bio.SocketConnector();
+        _server.addConnector(connector);
         _server.start();
 
         int port = _server.getConnectors()[0].getLocalPort();
         _requestUrl = _protocol+"://localhost:"+port+ "/content.txt";
+        
+        _handler._toURL=_protocol+"://localhost:"+connector.getLocalPort()+ "/moved.txt";
     }
 
     public void tearDown()
@@ -92,7 +99,7 @@ public class HttpGetRedirectTest
     public void testGet() throws Exception
     {
         startClient(_realm);
-
+        
         ContentExchange getExchange = new ContentExchange();
         getExchange.setURL(_requestUrl);
         getExchange.setMethod(HttpMethods.GET);
@@ -107,10 +114,10 @@ public class HttpGetRedirectTest
             content = getExchange.getResponseContent();
         }
 
-        stopClient();
-
         assertEquals(HttpStatus.OK_200,responseStatus);
         assertEquals(_content,content);
+        
+        stopClient();
     }
 
     protected void configureServer(Server server)
@@ -121,8 +128,8 @@ public class HttpGetRedirectTest
         SelectChannelConnector connector = new SelectChannelConnector();
         server.addConnector(connector);
 
-        Handler handler = new RedirectHandler(HttpStatus.MOVED_PERMANENTLY_301, "/content.txt", "/moved.txt", 1);
-        server.setHandler( handler );
+        _handler = new RedirectHandler(HttpStatus.MOVED_PERMANENTLY_301, "/content.txt", "WAIT FOR IT", 2);
+        server.setHandler( _handler );
 
     }
 
@@ -162,46 +169,26 @@ public class HttpGetRedirectTest
         _realm = realm;
     }
 
-    public static void copyStream(InputStream in, OutputStream out)
-    {
-        try
-        {
-            byte[] buffer=new byte[1024];
-            int len;
-            while ((len=in.read(buffer))>=0)
-            {
-                out.write(buffer,0,len);
-            }
-        }
-        catch (EofException e)
-        {
-            System.err.println(e);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-    }
 
     private static class RedirectHandler
         extends AbstractHandler
     {
-        private final String origUrl;
+        private final String _fromURI;
+        private final int _code;
+        private final int _maxRedirects;
+        private int _redirectCount = 0;
+        private String _toURL;
 
-        private final int code;
-
-        private final int maxRedirects;
-
-        private int redirectCount = 0;
-
-        private final String currUrl;
-
-        public RedirectHandler( final int code, final String currUrl, final String origUrl, final int maxRedirects )
+        public RedirectHandler( final int code, final String fromURI, final String toURL, final int maxRedirects )
         {
-            this.code = code;
-            this.currUrl = currUrl;
-            this.origUrl = origUrl;
-            this.maxRedirects = maxRedirects;
+            this._code = code;
+            this._fromURI = fromURI;
+            this._toURL = toURL;
+            this._maxRedirects = maxRedirects;
+            
+            if (_fromURI==null || _toURL==null)
+                throw new IllegalArgumentException();
+            
         }
 
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
@@ -212,23 +199,18 @@ public class HttpGetRedirectTest
                 return;
             }
 
-            if (request.getRequestURI().equals(currUrl))
+            if (request.getRequestURI().equals(_fromURI))
             {
-                redirectCount++;
+                _redirectCount++;
 
-                if ( maxRedirects < 0 || redirectCount <= maxRedirects )
-                {
-                    response.setStatus( code );
-                    response.setHeader( "Location", currUrl );
-                }
-                else
-                {
-                    response.setStatus( code );
-                    response.setHeader( "Location", origUrl );
-                }
+                String location = ( _redirectCount <= _maxRedirects )?_fromURI:_toURL;
+
+                response.setStatus( _code );
+                response.setHeader( "Location", location );
+                
                 ( (Request) request ).setHandled( true );
             }
-            else if (request.getRequestURI().equals(origUrl))
+            else
             {
                 PrintWriter out = response.getWriter();
                 out.write(_content);

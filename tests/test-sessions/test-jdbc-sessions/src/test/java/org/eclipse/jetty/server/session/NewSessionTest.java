@@ -12,16 +12,13 @@
 // ========================================================================
 package org.eclipse.jetty.server.session;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 /**
  * NewSessionTest
- *
- *
  */
 public class NewSessionTest extends AbstractNewSessionTest
 {
-
     /** 
      * @see org.eclipse.jetty.server.session.AbstractNewSessionTest#createServer(int, int, int)
      */
@@ -30,7 +27,7 @@ public class NewSessionTest extends AbstractNewSessionTest
         return new JdbcTestServer(port,max,scavenge);
     }
 
-    @Test(groups={"jdbc-all"})
+    @Test
     public void testNewSession() throws Exception
     {
         super.testNewSession();

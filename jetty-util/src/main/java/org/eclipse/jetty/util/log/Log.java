@@ -77,7 +77,7 @@ public class Log
             if (__log == null || !__log.getClass().equals(log_class))
             {
                 __log = (Logger)log_class.newInstance();
-                __log.info("Logging to {} via {}", __log, log_class.getName());
+                __log.debug("Logging to {} via {}", __log, log_class.getName());
             }
         }
         catch(NoClassDefFoundError e)
@@ -101,7 +101,7 @@ public class Log
         {
             log_class = StdErrLog.class;
             __log = new StdErrLog();
-            __log.info("Logging to {} via {}", __log, log_class.getName());
+            __log.debug("Logging to {} via {}", __log, log_class.getName());
         }
     }
 

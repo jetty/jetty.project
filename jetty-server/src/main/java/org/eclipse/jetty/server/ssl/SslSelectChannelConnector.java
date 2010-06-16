@@ -13,14 +13,12 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.security.KeyStore;
 import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,7 +27,6 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
@@ -38,7 +35,6 @@ import javax.net.ssl.TrustManagerFactory;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.security.Password;
-import org.eclipse.jetty.http.ssl.SslSelectChannelEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
@@ -47,11 +43,11 @@ import org.eclipse.jetty.io.ThreadLocalBuffers;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
+import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 

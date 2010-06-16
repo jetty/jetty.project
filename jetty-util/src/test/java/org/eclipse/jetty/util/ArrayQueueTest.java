@@ -13,11 +13,16 @@
 
 package org.eclipse.jetty.util;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-public class ArrayQueueTest extends TestCase
+import org.junit.Test;
+
+
+public class ArrayQueueTest
 {
-    
+    @Test
     public void testWrap() throws Exception
     {
         ArrayQueue<String> queue = new ArrayQueue<String>(3,3);
@@ -63,6 +68,7 @@ public class ArrayQueueTest extends TestCase
 
     }
 
+    @Test
     public void testRemove() throws Exception
     {
         ArrayQueue<String> queue = new ArrayQueue<String>(3,3);
@@ -82,6 +88,7 @@ public class ArrayQueueTest extends TestCase
             assertEquals(i+"!",queue.get(i));
     }
 
+    @Test
     public void testGrow() throws Exception
     {
         ArrayQueue<String> queue = new ArrayQueue<String>(3,5);
@@ -123,10 +130,9 @@ public class ArrayQueueTest extends TestCase
         for (int i=0;i<12;i++)
             queue.add(""+('a'+i));
         assertEquals(13,queue.getCapacity());
-        
-            
     }
     
+    @Test
     public void testFullEmpty() throws Exception
     {
         ArrayQueue<String> queue = new ArrayQueue<String>(2);

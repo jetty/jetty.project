@@ -148,7 +148,7 @@ public class HttpConnection implements Connection
         HttpBuffers ab = (HttpBuffers)_connector;
         _parser = new HttpParser(ab.getRequestBuffers(), endpoint, new RequestHandler());
         _requestFields = new HttpFields();
-        _responseFields = new HttpFields();
+        _responseFields = new HttpFields(server.getMaxCookieVersion());
         _request = new Request(this);
         _response = new Response(this);
         _generator = new HttpGenerator(ab.getResponseBuffers(), _endp);
@@ -165,7 +165,7 @@ public class HttpConnection implements Connection
         _endp = endpoint;
         _parser = parser;
         _requestFields = new HttpFields();
-        _responseFields = new HttpFields();
+        _responseFields = new HttpFields(server.getMaxCookieVersion());
         _request = request;
         _response = new Response(this);
         _generator = generator;
@@ -190,7 +190,13 @@ public class HttpConnection implements Connection
     {
         return _requests;
     }
-
+    
+    /* ------------------------------------------------------------ */
+    public Server getServer()
+    {
+        return _server;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @return The time this connection was established.
@@ -484,6 +490,7 @@ public class HttpConnection implements Connection
                             {
                                 _parser.reset(true);
                                 more_in_buffer=false;
+                                _endp.close();
                             }
 
                             if (more_in_buffer)
@@ -632,7 +639,6 @@ public class HttpConnection implements Connection
                     Log.debug(e);
                     _request.setHandled(true);
                     _generator.sendError(info==null?400:500, null, null, true);
-
                 }
                 finally
                 {
@@ -1020,7 +1026,10 @@ public class HttpConnection implements Connection
 
                     if (_expect)
                     {
-                        _generator.sendError(HttpStatus.EXPECTATION_FAILED_417, null, null, true);
+                        _generator.setResponse(HttpStatus.EXPECTATION_FAILED_417, null);
+                        _responseFields.put(HttpHeaders.CONNECTION_BUFFER, HttpHeaderValues.CLOSE_BUFFER);
+                        _generator.completeHeader(_responseFields, true);
+                        _generator.complete();
                         return;
                     }
 
@@ -1176,13 +1185,13 @@ public class HttpConnection implements Connection
                             else
                             {
                                 _responseFields.put(HttpHeaders.CONTENT_TYPE_BUFFER,
-                                        contentType+";charset="+QuotedStringTokenizer.quote(enc,";= "));
+                                        contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(enc,";= "));
                             }
                         }
                         else
                         {
                             _responseFields.put(HttpHeaders.CONTENT_TYPE_BUFFER,
-                                    contentType+";charset="+QuotedStringTokenizer.quote(enc,";= "));
+                                    contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(enc,";= "));
                         }
                     }
                 }

@@ -13,37 +13,23 @@
 
 package org.eclipse.jetty.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Locale;
 import java.util.TimeZone;
 
-import junit.framework.TestSuite;
+import org.junit.Test;
 
 
 /* ------------------------------------------------------------ */
 /** Util meta Tests.
  * 
  */
-public class DateCacheTest extends junit.framework.TestCase
+public class DateCacheTest
 {
-    public DateCacheTest(String name)
-    {
-      super(name);
-    }
-    
-    public static junit.framework.Test suite() {
-        TestSuite suite = new TestSuite(DateCacheTest.class);
-        return suite;                  
-    }
-
     /* ------------------------------------------------------------ */
-    /** main.
-     */
-    public static void main(String[] args)
-    {
-      junit.textui.TestRunner.run(suite());
-    }    
-    
-    /* ------------------------------------------------------------ */
+    @Test
     public void testDateCache() throws Exception
     {
         //@WAS: Test t = new Test("org.eclipse.jetty.util.DateCache");

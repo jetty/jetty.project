@@ -303,6 +303,13 @@ public class StdErrLog implements Logger
                 buffer.append("\n\tat ");
                 format(buffer, elements[i].toString());
             }
+            
+            Throwable cause = thrown.getCause();
+            if (cause!=null && cause!=thrown)
+            {
+                buffer.append("\nCaused by: ");
+                format(buffer,cause);
+            }
         }
     }
 

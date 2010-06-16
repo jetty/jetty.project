@@ -156,7 +156,7 @@ public class ContextHandlerTest
         handler.setAttribute("aaa","111");
         handler.getServletContext().setAttribute("bbb","222");
         assertEquals("111",handler.getServletContext().getAttribute("aaa"));
-        assertEquals("222",handler.getAttribute("bbb"));
+        assertEquals(null,handler.getAttribute("bbb"));
 
         handler.start();
 
@@ -164,20 +164,20 @@ public class ContextHandlerTest
         handler.setAttribute("ccc","333");
         handler.getServletContext().setAttribute("ddd","444");
         assertEquals("111",handler.getServletContext().getAttribute("aaa"));
-        assertEquals("222",handler.getServletContext().getAttribute("bbb"));
+        assertEquals(null,handler.getServletContext().getAttribute("bbb"));
+        handler.getServletContext().setAttribute("bbb","222");
         assertEquals("333",handler.getServletContext().getAttribute("ccc"));
         assertEquals("444",handler.getServletContext().getAttribute("ddd"));
 
         assertEquals("111",handler.getAttribute("aaa"));
-        assertEquals("222",handler.getAttribute("bbb"));
+        assertEquals(null,handler.getAttribute("bbb"));
         assertEquals("333",handler.getAttribute("ccc"));
         assertEquals(null,handler.getAttribute("ddd"));
-
 
         handler.stop();
 
         assertEquals("111",handler.getServletContext().getAttribute("aaa"));
-        assertEquals("222",handler.getServletContext().getAttribute("bbb"));
+        assertEquals(null,handler.getServletContext().getAttribute("bbb"));
         assertEquals("333",handler.getServletContext().getAttribute("ccc"));
         assertEquals(null,handler.getServletContext().getAttribute("ddd"));
     }

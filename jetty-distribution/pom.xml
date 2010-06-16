@@ -10,12 +10,13 @@
   <packaging>pom</packaging>
   <properties>
     <eclipse-mirror>http://mirror.cc.vt.edu/pub/eclipse/eclipse/downloads/drops</eclipse-mirror>
-    <orbit-url>http://download.eclipse.org/tools/orbit/downloads/drops/S20100423142122/bundles</orbit-url>
+    <orbit-url>http://download.eclipse.org/tools/orbit/downloads/drops/R20100519200754/bundles</orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <eclipse-drop>S-3.6M7-201004291549</eclipse-drop>
-    <orbit-javax-activation-version>${javax-activation-version}.0.v200906290531</orbit-javax-activation-version>
+    <eclipse-drop>S-3.6RC4-201006031500</eclipse-drop>
+    <eclipse-ecj-version>3.6RC4</eclipse-ecj-version>
+    <orbit-javax-activation-version>${javax-activation-version}.0.v201005080500</orbit-javax-activation-version>
     <orbit-javax-el-version>2.1.0.v201004190952</orbit-javax-el-version>
-    <orbit-javax-mail-glassfish-version>${javax-mail-version}.v200808130215</orbit-javax-mail-glassfish-version>
+    <orbit-javax-mail-glassfish-version>${javax-mail-version}.v201005082020</orbit-javax-mail-glassfish-version>
   </properties>
   <build>
     <sourceDirectory>${project.build.directory}/sources</sourceDirectory>
@@ -38,6 +39,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.4</version>
         <executions>
           <execution>
             <phase>generate-resources</phase>
@@ -46,14 +48,36 @@
             </goals>
             <configuration>
               <tasks>
+                <!-- This is the Orbit Downloads Process -->
+
+                <!-- Step 1: download orbit artifact into orbit-cache (if not present) -->
+                <property name="orbit-cache" value="${user.home}/.m2/eclipse-orbit" />
+
+                <mkdir dir="${orbit-cache}" />
+                <get dest="${orbit-cache}" verbose="true" skipexisting="true">
+                  <url url="${orbit-url}/javax.activation_${orbit-javax-activation-version}.jar" />
+                  <url url="${orbit-url}/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
+                </get>
+
+                <mkdir dir="${orbit-cache}/${eclipse-drop}" />
+                <get dest="${orbit-cache}/${eclipse-drop}" verbose="true" skipexisting="true">
+                  <url url="${eclipse-mirror}/${eclipse-drop}/ecj-${eclipse-ecj-version}.jar" />
+                </get>
+
+                <!-- Step 2: copy the orbit artifact from orbit-cache to the appropriate lib directory -->
+
+                <!-- ${jetty.home}/lib/ -->
                 <mkdir dir="${assembly-directory}/lib" />
-<!--
-                <get src="${orbit-url}/javax.servlet_${orbit-javax-servlet-version}.jar" dest="${assembly-directory}/lib/servlet-api-2.5.jar" usetimestamp="true" verbose="true" />
--->
                
+                <!-- ${jetty.home}/lib/jndi/ -->
                 <mkdir dir="${assembly-directory}/lib/jndi" />
-                <get src="${orbit-url}/javax.activation_${orbit-javax-activation-version}.jar" dest="${assembly-directory}/lib/jndi/javax.activation_${orbit-javax-activation-version}.jar" usetimestamp="true" verbose="true" />
-                <get src="${orbit-url}/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" dest="${assembly-directory}/lib/jndi/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" usetimestamp="true" verbose="true" />
+                <copy todir="${assembly-directory}/lib/jndi">
+                  <fileset dir="${orbit-cache}">
+                    <include name="javax.activation_${orbit-javax-activation-version}.jar" />
+                    <include name="javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
+                  </fileset>
+                </copy>
+
                 <copy file="../VERSION.txt" todir="${assembly-directory}" />
                 <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
               </tasks>

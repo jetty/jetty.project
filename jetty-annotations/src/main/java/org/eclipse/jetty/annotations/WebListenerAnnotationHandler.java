@@ -33,7 +33,7 @@ public class WebListenerAnnotationHandler implements DiscoverableAnnotationHandl
                             List<Value> values)
     {
         WebListenerAnnotation wlAnnotation = new WebListenerAnnotation(_context, className);
-        //TODO put in list
+        ((List<ClassAnnotation>)_context.getAttribute(AnnotationConfiguration.DISCOVERED_ANNOTATIONS)).add(wlAnnotation);
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,

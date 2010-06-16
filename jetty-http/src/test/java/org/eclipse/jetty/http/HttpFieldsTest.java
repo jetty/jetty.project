@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.net.CookieHandler;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
@@ -367,8 +368,19 @@ public class HttpFieldsTest
 
         fields.clear();
         fields.addSetCookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,2);
-        assertEquals("\"ev erything\"=\"va lue\";Version=2;Comment=\"co mment\";Path=\"pa th\";Domain=\"do main\";Max-Age=1;Secure;HttpOnly",fields.getStringField("Set-Cookie"));
+        String setCookie=fields.getStringField("Set-Cookie");
+        assertTrue(setCookie.startsWith("\"ev erything\"=\"va lue\";Version=1;Comment=\"co mment\";Path=\"pa th\";Domain=\"do main\";Expires="));
+        assertTrue(setCookie.endsWith("GMT;Max-Age=1;Secure;HttpOnly"));
 
+        fields.clear();
+        fields.addSetCookie("name","value",null,null,-1,null,false,false,0);
+        setCookie=fields.getStringField("Set-Cookie");
+        assertEquals(-1,setCookie.indexOf("Version="));
+        fields.clear();
+        fields.addSetCookie("name","v a l u e",null,null,-1,null,false,false,0);
+        setCookie=fields.getStringField("Set-Cookie");
+        assertEquals(17,setCookie.indexOf("Version=1"));
+        
         fields.clear();
         fields.addSetCookie("json","{\"services\":[\"cwa\", \"aa\"]}",null,null,-1,null,false,false,-1);
         assertEquals("json=\"{\\\"services\\\":[\\\"cwa\\\", \\\"aa\\\"]}\"",fields.getStringField("Set-Cookie"));
@@ -386,6 +398,12 @@ public class HttpFieldsTest
         Enumeration e=fields.getValues("Set-Cookie");
         assertEquals("name=more;Domain=domain",e.nextElement());
         assertEquals("foo=bob;Domain=domain",e.nextElement());
+        
+        fields=new HttpFields(0);
+        fields.addSetCookie("name","value==",null,null,-1,null,false,false,0);
+        setCookie=fields.getStringField("Set-Cookie");
+        assertEquals("name=value==",setCookie);
+        
     }
 
     private Set<String> enum2set(Enumeration<String> e)
