@@ -27,10 +27,8 @@
     </resources>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins
-        </groupId>
-        <artifactId>maven-assembly-plugin
-        </artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
             <phase>package</phase>
@@ -63,8 +61,7 @@
         <!--
         Required for OSGI
         -->
-        <groupId>org.apache.maven.plugins
-        </groupId>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
           <archive>
@@ -96,9 +93,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-    	<groupId>org.eclipse.jetty</groupId>
-    	<artifactId>jetty-servlet</artifactId>
-    	<version>${project.version}</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 </project>
