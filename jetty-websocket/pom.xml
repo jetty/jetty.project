@@ -67,6 +67,13 @@
           </archive>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <configuration>
+          <onlyAnalyze>org.eclipse.jetty.websocket.*</onlyAnalyze>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>

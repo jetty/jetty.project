@@ -54,6 +54,13 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <configuration>
+          <onlyAnalyze>org.eclipse.jetty.ajp.*</onlyAnalyze>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <dependencies>

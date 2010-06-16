@@ -25,20 +25,27 @@
     <orbit-org-apache-taglibs-standard-version>1.2.0.v201004190952</orbit-org-apache-taglibs-standard-version>
   </properties>
   <build>
-    <sourceDirectory>${project.build.directory}/sources</sourceDirectory>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
-        <configuration>
-          <includeEmptyDirs>true</includeEmptyDirs>
-          <outputDirectory>${assembly-directory}</outputDirectory>
-        </configuration>
         <executions>
           <execution>
+            <id>copy-base-assembly-tree</id>
             <phase>generate-resources</phase>
             <goals>
-              <goal>resources</goal>
+              <goal>copy-resources</goal>
             </goals>
+            <configuration>
+              <useBuildFilters>false</useBuildFilters>
+              <includeEmptyDirs>true</includeEmptyDirs>
+              <outputDirectory>${assembly-directory}</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${basedir}/src/main/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -489,6 +496,22 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <!-- No point performing PMD in assembly project -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <!-- No point performing Findbugs in assembly project -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
       </plugin>
     </plugins>
   </build>
