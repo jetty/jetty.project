@@ -37,12 +37,8 @@
 #   
 # Configuration variables
 #
-# JAVA_HOME  
-#   Home of Java installation. 
-#
 # JAVA
-#   Command to invoke Java. If not set, $JAVA_HOME/bin/java will be
-#   used.
+#   Command to invoke Java. If not set, java (from the PATH) will be used.
 #
 # JAVA_OPTIONS
 #   Extra options to pass to the JVM
@@ -307,86 +303,19 @@ then
   JETTY_PID="$JETTY_RUN/jetty.pid"
 fi
 
-
 ##################################################
-# Check for JAVA_HOME
+# Setup JAVA if unset
 ##################################################
-if [ -z "$JAVA_HOME" ]
+if [ -z "$JAVA" ]
 then
-  # If a java runtime is not defined, search the following
-  # directories for a JVM and sort by version. Use the highest
-  # version number.
-
-  # Java search path
-  JAVA_LOCATIONS=(
-      "/usr/java"
-      "/usr/bin"
-      "/usr/local/bin"
-      "/usr/local/java"
-      "/usr/local/jdk"
-      "/usr/local/jre"
-      "/usr/lib/jvm"
-      "/opt/java"
-      "/opt/jdk"
-      "/opt/jre"
-      )
-  IFS=: read JVERSION JAVA < <(
-    for N in java jdk jre
-    do
-      for L in "${JAVA_LOCATIONS[@]}"
-      do
-        [ -d "$L" ] || continue 
-        find "$L" -name "$N" ! -type d ! -path '*threads*' | while read JAVA; do
-          [ -x "$JAVA" ] || continue
-
-          JAVA_VERSION=$("$JAVA" -version 2>&1) || continue
-          IFS='"_' read _ JAVA_VERSION _ <<< "$JAVA_VERSION"
-
-          [ "$JAVA_VERSION" ] || continue
-          expr "$JAVA_VERSION" '<' '1.2' >/dev/null && continue
-
-          echo "$JAVA_VERSION:$JAVA"
-        done
-      done
-    done | sort)
-
-  JAVA_HOME=${JAVA%/*}
-  while [ "$JAVA_HOME" ] && [ ! -f "$JAVA_HOME/lib/tools.jar" ] ; do
-    JAVA_HOME=${JAVA_HOME%/*}
-  done
-  if [ -z "$JAVA_HOME" ]
-  then
-    echo "** ERROR: Java installation at '$JAVA' doesn't appear to be valid or complete." 
-    exit 1
-  fi
-
-  (( DEBUG )) && echo "Found java '$JAVA' at '$JAVA_HOME'"
-fi
-
-
-##################################################
-# Determine which JVM of version >1.5
-# Try to use JAVA_HOME
-##################################################
-if [ -z "$JAVA" ] && [ "$JAVA_HOME" ]
-then
-  if [ "$JAVACMD" ] 
-  then
-    JAVA="$JAVACMD" 
-  else
-    [ -x "$JAVA_HOME/bin/jre" -a ! -d "$JAVA_HOME/bin/jre" ] && JAVA=$JAVA_HOME/bin/jre
-    [ -x "$JAVA_HOME/bin/java" -a ! -d "$JAVA_HOME/bin/java" ] && JAVA=$JAVA_HOME/bin/java
-  fi
+  JAVA=$(which java)
 fi
 
 if [ -z "$JAVA" ]
 then
-  echo "Cannot find a JRE or JDK. Please set JAVA_HOME to a >=1.5 JRE" 2>&2
+  echo "Cannot find a Java JDK. Please set either set JAVA or put java (>=1.5) in your PATH." 2>&2
   exit 1
 fi
-
-JAVA_VERSION=$("$JAVA" -version 2>&1) || continue
-IFS='"_' read _ JAVA_VERSION _ <<< "$JAVA_VERSION"
 
 #####################################################
 # See if JETTY_PORT is defined
