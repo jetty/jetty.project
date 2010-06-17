@@ -190,9 +190,18 @@ public interface Connector extends LifeCycle
     void persist(EndPoint endpoint) throws IOException;
     
     /* ------------------------------------------------------------ */
+    /**
+     * @return The hostname representing the interface to which 
+     * this connector will bind, or null for all interfaces.
+     */
     String getHost();
     
     /* ------------------------------------------------------------ */
+    /**
+     * Set the hostname of the interface to bind to.
+     * @param hostname The hostname representing the interface to which 
+     * this connector will bind, or null for all interfaces.
+     */
     void setHost(String hostname);
 
     /* ------------------------------------------------------------ */

@@ -14,6 +14,8 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -80,7 +82,7 @@ public class Server extends HandlerWrapper implements Attributes
     
     /* ------------------------------------------------------------ */
     /** Convenience constructor
-     * Creates server and a {@link SocketConnector} at the passed port.
+     * Creates server and a {@link SelectChannelConnector} at the passed port.
      */
     public Server(int port)
     {
@@ -88,6 +90,20 @@ public class Server extends HandlerWrapper implements Attributes
 
         Connector connector=new SelectChannelConnector();
         connector.setPort(port);
+        setConnectors(new Connector[]{connector});
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Convenience constructor
+     * Creates server and a {@link SelectChannelConnector} at the passed address.
+     */
+    public Server(InetSocketAddress addr)
+    {
+        setServer(this);
+
+        Connector connector=new SelectChannelConnector();
+        connector.setHost(addr.getHostName());
+        connector.setPort(addr.getPort());
         setConnectors(new Connector[]{connector});
     }
 
