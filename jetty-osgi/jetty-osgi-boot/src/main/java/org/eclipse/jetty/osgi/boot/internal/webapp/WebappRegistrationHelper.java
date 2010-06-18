@@ -201,7 +201,7 @@ public class WebappRegistrationHelper
     public void setup(BundleContext context, Map<String, String> configProperties) throws Exception
     {
     	Enumeration<?> enUrls = context.getBundle().findEntries("/etc", "jetty.xml", false);System.err.println();
-    	if (enUrls.hasMoreElements())
+    	if (enUrls != null && enUrls.hasMoreElements())
     	{
 	    	URL url = (URL) enUrls.nextElement();
 	    	if (url != null)
