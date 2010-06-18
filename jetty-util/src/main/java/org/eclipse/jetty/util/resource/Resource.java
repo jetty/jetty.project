@@ -535,6 +535,7 @@ public abstract class Resource implements Serializable
     {
         StringBuffer buf = null;
 
+        loop:
         for (int i=0;i<raw.length();i++)
         {
             char c=raw.charAt(i);
@@ -545,7 +546,7 @@ public abstract class Resource implements Serializable
                 case '<':
                 case '>':
                     buf=new StringBuffer(raw.length()<<1);
-                    break;
+                    break loop;
             }
         }
         if (buf==null)
