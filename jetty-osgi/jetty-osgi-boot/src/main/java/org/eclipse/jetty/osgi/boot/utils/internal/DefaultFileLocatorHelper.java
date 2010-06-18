@@ -225,7 +225,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 	 * @return a URL to the bundle entry that uses a common protocol
 	 */
 	public static URL getLocalURL(URL url) {
-		if ("bundleresource".equals(url.getProtocol())) {
+		if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol())) {
 			try {
 				URLConnection conn = url.openConnection();
 				if (BUNDLE_URL_CONNECTION_getLocalURL == null && 
@@ -255,7 +255,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 	 */
 	public static URL getFileURL(URL url)
 	{
-		if ("bundleresource".equals(url.getProtocol()))
+		if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol()))
 		{
 			try
 			{

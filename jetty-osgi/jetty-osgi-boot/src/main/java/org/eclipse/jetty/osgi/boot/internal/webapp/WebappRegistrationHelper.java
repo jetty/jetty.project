@@ -25,6 +25,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -199,7 +200,25 @@ public class WebappRegistrationHelper
      */
     public void setup(BundleContext context, Map<String, String> configProperties) throws Exception
     {
-        File _installLocation = BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(context.getBundle());
+    	Enumeration<?> enUrls = context.getBundle().findEntries("/etc", "jetty.xml", false);System.err.println();
+    	if (enUrls.hasMoreElements())
+    	{
+	    	URL url = (URL) enUrls.nextElement();
+	    	if (url != null)
+	    	{
+	    		//bug 317231: there is a fragment that defines the jetty configuration file.
+	    		//let's use that as the jetty home.
+	    		url = DefaultFileLocatorHelper.getLocalURL(url);
+	    		if (url.getProtocol().equals("file"))
+	    		{
+	    			//ok good.
+	    			File jettyxml = new File(url.toURI());
+	    			File jettyhome = jettyxml.getParentFile().getParentFile();
+	    			System.setProperty("jetty.home", jettyhome.getAbsolutePath());
+	    		}
+	    	}
+    	}
+    	File _installLocation = BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(context.getBundle());
         // debug:
         // new File("~/proj/eclipse-install/eclipse-3.5.1-SDK-jetty7/" +
         // "dropins/jetty7/plugins/org.eclipse.jetty.osgi.boot_0.0.1.001-SNAPSHOT.jar");
@@ -232,7 +251,6 @@ public class WebappRegistrationHelper
             String install = _installLocation != null?_installLocation.getCanonicalPath():" unresolved_install_location";
             throw new IllegalArgumentException("The system property -Djetty.home" + " must be set to a directory or the bundle "
                     + context.getBundle().getSymbolicName() + " installed here " + install + " must be unjarred.");
-
         }
         try
         {
