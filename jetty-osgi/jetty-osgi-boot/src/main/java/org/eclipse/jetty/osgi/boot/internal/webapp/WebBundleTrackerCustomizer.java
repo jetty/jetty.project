@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2009 Intalio, Inc.
+// Copyright (c) 2009-2010 Intalio, Inc.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,10 @@ import java.util.Dictionary;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
-import org.osgi.framework.BundleListener;
+import org.osgi.util.tracker.BundleTracker;
+import org.osgi.util.tracker.BundleTrackerCustomizer;
+
 
 /**
  * Support bundles that declare the webapp directly through headers in their
@@ -46,44 +47,82 @@ import org.osgi.framework.BundleListener;
  * 
  * @author hmalphettes
  */
-public class JettyContextHandlerExtender implements BundleListener
-{
+public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
+	
 
-    /**
-     * Receives notification that a bundle has had a lifecycle change.
-     * 
-     * @param event
-     *            The <code>BundleEvent</code>.
-     */
-    public void bundleChanged(BundleEvent event)
-    {
-        switch (event.getType())
-        {
-            case BundleEvent.STARTED:
-                register(event.getBundle());
-                break;
-            case BundleEvent.STOPPING:
-                unregister(event.getBundle());
-                break;
-        }
-    }
-
-    /**
+	/**
+	 * A bundle is being added to the <code>BundleTracker</code>.
 	 * 
+	 * <p>
+	 * This method is called before a bundle which matched the search parameters
+	 * of the <code>BundleTracker</code> is added to the
+	 * <code>BundleTracker</code>. This method should return the object to be
+	 * tracked for the specified <code>Bundle</code>. The returned object is
+	 * stored in the <code>BundleTracker</code> and is available from the
+	 * {@link BundleTracker#getObject(Bundle) getObject} method.
+	 * 
+	 * @param bundle The <code>Bundle</code> being added to the
+	 *        <code>BundleTracker</code>.
+	 * @param event The bundle event which caused this customizer method to be
+	 *        called or <code>null</code> if there is no bundle event associated
+	 *        with the call to this method.
+	 * @return The object to be tracked for the specified <code>Bundle</code>
+	 *         object or <code>null</code> if the specified <code>Bundle</code>
+	 *         object should not be tracked.
 	 */
-    public void init(BundleContext context)
-    {
-        Bundle bundles[] = context.getBundles();
-        for (int i = 0; i < bundles.length; i++)
-        {
-            if ((bundles[i].getState() & (Bundle.STARTING | Bundle.ACTIVE)) != 0)
-            {
-                register(bundles[i]);
-            }
-        }
-    }
+	public Object addingBundle(Bundle bundle, BundleEvent event)
+	{
+		
+		boolean isWebBundle = register(bundle);
+		return isWebBundle ? bundle : null;
+	}
 
-    private void register(Bundle bundle)
+	/**
+	 * A bundle tracked by the <code>BundleTracker</code> has been modified.
+	 * 
+	 * <p>
+	 * This method is called when a bundle being tracked by the
+	 * <code>BundleTracker</code> has had its state modified.
+	 * 
+	 * @param bundle The <code>Bundle</code> whose state has been modified.
+	 * @param event The bundle event which caused this customizer method to be
+	 *        called or <code>null</code> if there is no bundle event associated
+	 *        with the call to this method.
+	 * @param object The tracked object for the specified bundle.
+	 */
+	public void modifiedBundle(Bundle bundle, BundleEvent event,
+			Object object)
+	{
+		//nothing the web-bundle was already track. something changed.
+		//we only reload the webapps if the bundle is stopped and restarted.
+//		System.err.println(bundle.getSymbolicName());
+	}
+
+	/**
+	 * A bundle tracked by the <code>BundleTracker</code> has been removed.
+	 * 
+	 * <p>
+	 * This method is called after a bundle is no longer being tracked by the
+	 * <code>BundleTracker</code>.
+	 * 
+	 * @param bundle The <code>Bundle</code> that has been removed.
+	 * @param event The bundle event which caused this customizer method to be
+	 *        called or <code>null</code> if there is no bundle event associated
+	 *        with the call to this method.
+	 * @param object The tracked object for the specified bundle.
+	 */
+	public void removedBundle(Bundle bundle, BundleEvent event,
+			Object object)
+	{
+		unregister(bundle);
+	}
+	
+	
+	/**
+	 * @param bundle
+	 * @return true if this bundle in indeed a web-bundle.
+	 */
+    private boolean register(Bundle bundle)
     {
         Dictionary<?, ?> dic = bundle.getHeaders();
         String warFolderRelativePath = (String)dic.get(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH);
@@ -99,11 +138,13 @@ public class JettyContextHandlerExtender implements BundleListener
             try
             {
                 JettyBootstrapActivator.registerWebapplication(bundle,warFolderRelativePath,contextPath);
+                return true;
             }
             catch (Throwable e)
             {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+                return true;//maybe it did not work maybe it did. safer to track this bundle.
             }
         }
         else if (dic.get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH) != null)
@@ -112,7 +153,7 @@ public class JettyContextHandlerExtender implements BundleListener
             if (contextFileRelativePath == null)
             {
                 // nothing to register here.
-                return;
+                return false;
             }
             // support for multiple webapps in the same bundle:
             String[] pathes = contextFileRelativePath.split(",;");
@@ -128,6 +169,7 @@ public class JettyContextHandlerExtender implements BundleListener
                     e.printStackTrace();
                 }
             }
+            return true;
         }
         else
         {
@@ -137,7 +179,7 @@ public class JettyContextHandlerExtender implements BundleListener
             URL rfc66Webxml = bundle.getEntry("/WEB-INF/web.xml");
             if (rfc66Webxml == null)
             {
-                return;// no webapp in here
+                return false;// no webapp in here
             }
             // this is risky: should we make sure that there is no classes and
             // jars directly available
@@ -151,11 +193,13 @@ public class JettyContextHandlerExtender implements BundleListener
             try
             {
                 JettyBootstrapActivator.registerWebapplication(bundle,".",rfc66ContextPath);
+                return true;
             }
             catch (Throwable e)
             {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+                return true;//maybe it did not work maybe it did. safer to track this bundle.
             }
         }
     }
@@ -195,4 +239,7 @@ public class JettyContextHandlerExtender implements BundleListener
         // webapps registered in that bundle.
     }
 
+
+	
+	
 }
