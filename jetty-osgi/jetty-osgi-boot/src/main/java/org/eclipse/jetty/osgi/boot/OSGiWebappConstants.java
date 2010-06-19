@@ -75,4 +75,29 @@ public class OSGiWebappConstants
      * path is relative the file is resolved relatively to jettyhome.
      */
     public static final String SYS_PROP_JETTY_ETC_FILES = "jetty.etc.files";
+    
+    //for managed jetty instances, name of the configuration parameters
+    /**
+     * PID of the jetty servers's ManagedFactory
+     */
+    public static final String MANAGED_JETTY_SERVER_FACTORY_PID = "org.eclipse.jetty.osgi.boot.managedserverfactory";
+    
+    /**
+     * The associated value of that configuration parameter is the name under which this
+     * instance of the jetty server is tracked.
+     * When a ContextHandler is deployed and it specifies the managedServerName property, it is deployed
+     * on the corresponding jetty managed server or it throws an exception: jetty server not available.
+     */
+    public static final String MANAGED_JETTY_SERVER_NAME = "managedServerName";
+    
+    /**
+     * List of URLs to the jetty.xml files that configure the server.
+     */
+    public static final String MANAGED_JETTY_XML_CONFIG_URLS = SYS_PROP_JETTY_ETC_FILES;
+    
+    /**
+     * List of URLs to the folders where the legacy J2EE shared libraries are stored aka lib/ext, lib/jsp etc.
+     */
+    public static final String MANAGED_JETTY_SHARED_LIB_URLS = "managedJettySharedLibUrls";
+    
 }

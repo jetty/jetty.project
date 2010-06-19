@@ -14,12 +14,15 @@
 // ========================================================================
 package org.eclipse.jetty.osgi.boot;
 
+import java.net.URL;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.Properties;
+import java.util.StringTokenizer;
 
-import org.eclipse.jetty.osgi.boot.internal.webapp.JettyContextHandlerExtender;
+import org.eclipse.jetty.osgi.boot.internal.serverfactory.JettyServersManagedFactory;
 import org.eclipse.jetty.osgi.boot.internal.webapp.JettyContextHandlerServiceTracker;
+import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleTrackerCustomizer;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -27,8 +30,13 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.Constants;
+import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.cm.Configuration;
+import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.cm.ManagedServiceFactory;
+import org.osgi.util.tracker.BundleTracker;
 
 /**
  * Experiment: bootstrap jetty's complete distrib from an OSGi bundle. Progress:
@@ -65,6 +73,10 @@ public class JettyBootstrapActivator implements BundleActivator
     private Server _server;
     private JettyContextHandlerServiceTracker _jettyContextHandlerTracker;
     private PackageAdminServiceTracker _packageAdminServiceTracker;
+    private BundleTracker _webBundleTracker;
+    
+    private ServiceRegistration _jettyServerFactoryService;
+    
 
     /**
      * Setup a new jetty Server, registers it as a service. Setup the Service
@@ -82,6 +94,14 @@ public class JettyBootstrapActivator implements BundleActivator
         // should activate.
         _packageAdminServiceTracker = new PackageAdminServiceTracker(context);
 
+        //Register the Jetty Server Factory as a ManagedServiceFactory:
+        Properties jettyServerMgdFactoryServiceProps = new Properties(); 
+        jettyServerMgdFactoryServiceProps.put("pid", OSGiWebappConstants.MANAGED_JETTY_SERVER_FACTORY_PID);
+        _jettyServerFactoryService = context.registerService(
+        		ManagedServiceFactory.class.getName(),  new JettyServersManagedFactory(),
+        		jettyServerMgdFactoryServiceProps);
+        
+        
         // todo: replace all this by the ManagedFactory so that we can start
         // multiple jetty servers.
         _server = new Server();
@@ -95,12 +115,10 @@ public class JettyBootstrapActivator implements BundleActivator
         // kind of nice not to so we can debug what is missing easily.
         context.addServiceListener(_jettyContextHandlerTracker,"(objectclass=" + ContextHandler.class.getName() + ")");
 
-        // now ready to support the Extender pattern:
-        JettyContextHandlerExtender jettyContexHandlerExtender = new JettyContextHandlerExtender();
-        context.addBundleListener(jettyContexHandlerExtender);
-
-        jettyContexHandlerExtender.init(context);
-
+        // now ready to support the Extender pattern:        
+        _webBundleTracker = new BundleTracker(context,
+        		Bundle.ACTIVE | Bundle.STOPPING, new WebBundleTrackerCustomizer());
+        _webBundleTracker.open();
     }
 
     /*
@@ -113,28 +131,55 @@ public class JettyBootstrapActivator implements BundleActivator
     {
         try
         {
+        	
+        	if (_webBundleTracker != null)
+        	{
+        		_webBundleTracker.close();
+        		_webBundleTracker = null;
+        	}
             if (_jettyContextHandlerTracker != null)
             {
                 _jettyContextHandlerTracker.stop();
                 context.removeServiceListener(_jettyContextHandlerTracker);
+                _jettyContextHandlerTracker = null;
             }
             if (_packageAdminServiceTracker != null)
             {
                 _packageAdminServiceTracker.stop();
                 context.removeServiceListener(_packageAdminServiceTracker);
+                _packageAdminServiceTracker = null;
             }
             if (_registeredServer != null)
             {
                 try
                 {
                     _registeredServer.unregister();
-                    _registeredServer = null;
                 }
                 catch (IllegalArgumentException ill)
                 {
                     // already unregistered.
                 }
+                finally
+                {
+                	_registeredServer = null;
+                }
             }
+        	if (_jettyServerFactoryService != null)
+        	{
+                try
+                {
+                	_jettyServerFactoryService.unregister();
+                }
+                catch (IllegalArgumentException ill)
+                {
+                    // already unregistered.
+                }
+                finally
+                {
+                	_jettyServerFactoryService = null;
+                }
+        	}
+
         }
         finally
         {
@@ -232,5 +277,54 @@ public class JettyBootstrapActivator implements BundleActivator
     {
         // todo
     }
+    
+    public static void createNewServer(Bundle contributor, String serverName, String urlsToJettyXml) throws Exception
+    {
+        ServiceReference configurationAdminReference =
+        	contributor.getBundleContext().getServiceReference( ConfigurationAdmin.class.getName() );
+
+        ConfigurationAdmin confAdmin = (ConfigurationAdmin) contributor.getBundleContext()
+        				.getService( configurationAdminReference );   
+
+        Configuration configuration = confAdmin.createFactoryConfiguration(
+        		OSGiWebappConstants.MANAGED_JETTY_SERVER_FACTORY_PID, contributor.getLocation() );
+        Dictionary properties = new Hashtable();
+        properties.put(OSGiWebappConstants.MANAGED_JETTY_SERVER_NAME, serverName);
+        
+        StringBuilder actualBundleUrls = new StringBuilder();
+        StringTokenizer tokenizer = new StringTokenizer(urlsToJettyXml, ",", false);
+        while (tokenizer.hasMoreTokens())
+        {
+        	if (actualBundleUrls.length() != 0)
+        	{
+        		actualBundleUrls.append(",");
+        	}
+        	String token = tokenizer.nextToken();
+        	if (token.indexOf(':') != -1)
+        	{
+        		//a complete url. no change needed:
+        		actualBundleUrls.append(token);
+        	}
+        	else if (token.startsWith("/"))
+        	{
+        		//url relative to the contributor bundle:
+        		URL url = contributor.getEntry(token);
+        		if (url == null)
+        		{
+        			actualBundleUrls.append(token);
+        		}
+        		else
+        		{
+        			actualBundleUrls.append(url.toString());
+        		}
+        	}
+        		
+        }
+        
+        properties.put(OSGiWebappConstants.MANAGED_JETTY_JETTY_XML_URL, actualBundleUrls.toString());
+        configuration.update(properties);
+
+    }
+    
 
 }

@@ -341,7 +341,7 @@ public class WebappRegistrationHelper
             try
             {
                 URL[] jarsWithTlds = getJarsWithTlds();
-                _commonParentClassLoaderForWebapps = jarsWithTlds == null?libExtClassLoader:new TldLocatableURLClassloader(libExtClassLoader,getJarsWithTlds());
+                _commonParentClassLoaderForWebapps = jarsWithTlds == null?libExtClassLoader:new TldLocatableURLClassloader(libExtClassLoader,jarsWithTlds);
             }
             catch (MalformedURLException e)
             {

@@ -25,7 +25,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Import-Package>!javax.management.*,*</Import-Package>
+                <Import-Package>javax.management.*,*</Import-Package>
               </instructions>
             </configuration>
            </execution>

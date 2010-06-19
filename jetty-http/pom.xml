@@ -38,7 +38,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Import-Package>!javax.net.*,*</Import-Package>
+                <Import-Package>javax.net.*,*</Import-Package>
               </instructions>
             </configuration>
            </execution>
