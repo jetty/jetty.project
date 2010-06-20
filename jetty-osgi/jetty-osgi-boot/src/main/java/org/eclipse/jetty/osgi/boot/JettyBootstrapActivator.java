@@ -30,7 +30,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.cm.Configuration;
@@ -321,7 +320,7 @@ public class JettyBootstrapActivator implements BundleActivator
         		
         }
         
-        properties.put(OSGiWebappConstants.MANAGED_JETTY_JETTY_XML_URL, actualBundleUrls.toString());
+        properties.put(OSGiWebappConstants.MANAGED_JETTY_XML_CONFIG_URLS, actualBundleUrls.toString());
         configuration.update(properties);
 
     }

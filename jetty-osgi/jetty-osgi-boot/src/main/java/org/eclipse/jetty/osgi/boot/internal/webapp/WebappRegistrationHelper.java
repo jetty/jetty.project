@@ -347,8 +347,6 @@ public class WebappRegistrationHelper
             {
                 e.printStackTrace();
             }
-
-            
             _server.start();
         }
         catch (Throwable t)

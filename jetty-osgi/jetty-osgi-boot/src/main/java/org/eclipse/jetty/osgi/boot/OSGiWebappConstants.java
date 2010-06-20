@@ -98,6 +98,6 @@ public class OSGiWebappConstants
     /**
      * List of URLs to the folders where the legacy J2EE shared libraries are stored aka lib/ext, lib/jsp etc.
      */
-    public static final String MANAGED_JETTY_SHARED_LIB_URLS = "managedJettySharedLibUrls";
+    public static final String MANAGED_JETTY_SHARED_LIB_FOLDER_URLS = "managedJettySharedLibFolderUrls";
     
 }
