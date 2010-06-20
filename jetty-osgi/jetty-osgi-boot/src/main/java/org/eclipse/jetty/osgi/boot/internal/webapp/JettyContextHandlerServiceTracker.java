@@ -146,15 +146,15 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                     }
                 }
             }
-                if (ev.getType() == ServiceEvent.UNREGISTERING)
-                {
-                    break;
-                }
-                else
-                {
-                    // modified, meaning: we reload it. now that we stopped it;
-                    // we can register it.
-                }
+            if (ev.getType() == ServiceEvent.UNREGISTERING)
+            {
+                break;
+            }
+            else
+            {
+                // modified, meaning: we reload it. now that we stopped it;
+                // we can register it.
+            }
             case ServiceEvent.REGISTERED:
             {
                 Bundle contributor = sr.getBundle();

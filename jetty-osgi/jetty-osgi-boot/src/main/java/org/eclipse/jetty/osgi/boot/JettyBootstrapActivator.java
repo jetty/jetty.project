@@ -14,13 +14,10 @@
 // ========================================================================
 package org.eclipse.jetty.osgi.boot;
 
-import java.net.URL;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.Properties;
-import java.util.StringTokenizer;
 
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.JettyServersManagedFactory;
 import org.eclipse.jetty.osgi.boot.internal.webapp.JettyContextHandlerServiceTracker;
 import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleTrackerCustomizer;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
@@ -30,11 +27,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.cm.Configuration;
-import org.osgi.service.cm.ConfigurationAdmin;
-import org.osgi.service.cm.ManagedServiceFactory;
 import org.osgi.util.tracker.BundleTracker;
 
 /**
@@ -74,7 +67,7 @@ public class JettyBootstrapActivator implements BundleActivator
     private PackageAdminServiceTracker _packageAdminServiceTracker;
     private BundleTracker _webBundleTracker;
     
-    private ServiceRegistration _jettyServerFactoryService;
+//    private ServiceRegistration _jettyServerFactoryService;
     
 
     /**
@@ -94,11 +87,11 @@ public class JettyBootstrapActivator implements BundleActivator
         _packageAdminServiceTracker = new PackageAdminServiceTracker(context);
 
         //Register the Jetty Server Factory as a ManagedServiceFactory:
-        Properties jettyServerMgdFactoryServiceProps = new Properties(); 
-        jettyServerMgdFactoryServiceProps.put("pid", OSGiWebappConstants.MANAGED_JETTY_SERVER_FACTORY_PID);
-        _jettyServerFactoryService = context.registerService(
-        		ManagedServiceFactory.class.getName(),  new JettyServersManagedFactory(),
-        		jettyServerMgdFactoryServiceProps);
+//        Properties jettyServerMgdFactoryServiceProps = new Properties(); 
+//        jettyServerMgdFactoryServiceProps.put("pid", OSGiWebappConstants.MANAGED_JETTY_SERVER_FACTORY_PID);
+//        _jettyServerFactoryService = context.registerService(
+//        		ManagedServiceFactory.class.getName(),  new JettyServersManagedFactory(),
+//        		jettyServerMgdFactoryServiceProps);
         
         
         // todo: replace all this by the ManagedFactory so that we can start
@@ -275,54 +268,6 @@ public class JettyBootstrapActivator implements BundleActivator
     public static void unregister(String contextPath)
     {
         // todo
-    }
-    
-    public static void createNewServer(Bundle contributor, String serverName, String urlsToJettyXml) throws Exception
-    {
-        ServiceReference configurationAdminReference =
-        	contributor.getBundleContext().getServiceReference( ConfigurationAdmin.class.getName() );
-
-        ConfigurationAdmin confAdmin = (ConfigurationAdmin) contributor.getBundleContext()
-        				.getService( configurationAdminReference );   
-
-        Configuration configuration = confAdmin.createFactoryConfiguration(
-        		OSGiWebappConstants.MANAGED_JETTY_SERVER_FACTORY_PID, contributor.getLocation() );
-        Dictionary properties = new Hashtable();
-        properties.put(OSGiWebappConstants.MANAGED_JETTY_SERVER_NAME, serverName);
-        
-        StringBuilder actualBundleUrls = new StringBuilder();
-        StringTokenizer tokenizer = new StringTokenizer(urlsToJettyXml, ",", false);
-        while (tokenizer.hasMoreTokens())
-        {
-        	if (actualBundleUrls.length() != 0)
-        	{
-        		actualBundleUrls.append(",");
-        	}
-        	String token = tokenizer.nextToken();
-        	if (token.indexOf(':') != -1)
-        	{
-        		//a complete url. no change needed:
-        		actualBundleUrls.append(token);
-        	}
-        	else if (token.startsWith("/"))
-        	{
-        		//url relative to the contributor bundle:
-        		URL url = contributor.getEntry(token);
-        		if (url == null)
-        		{
-        			actualBundleUrls.append(token);
-        		}
-        		else
-        		{
-        			actualBundleUrls.append(url.toString());
-        		}
-        	}
-        		
-        }
-        
-        properties.put(OSGiWebappConstants.MANAGED_JETTY_XML_CONFIG_URLS, actualBundleUrls.toString());
-        configuration.update(properties);
-
     }
     
 

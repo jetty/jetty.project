@@ -84,6 +84,29 @@ public class ServerInstanceWrapper {
     {
     	_managedServerName = managedServerName;
     }
+    
+    public String getManagedServerName()
+    {
+    	return _managedServerName;
+    }
+    
+    /**
+     * The classloader that should be the parent classloader for 
+     * each webapp deployed on this server.
+     * @return
+     */
+    public ClassLoader getParentClassLoaderForWebapps()
+    {
+    	return _commonParentClassLoaderForWebapps;
+    }
+    
+    /**
+     * @return The deployment manager registered on this server.
+     */
+    public DeploymentManager getDeploymentManager()
+    {
+    	return _deploymentManager;
+    }
 
     
 	public void start(Server server, Dictionary props)
