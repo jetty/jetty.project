@@ -107,6 +107,14 @@ public class ServerInstanceWrapper {
     {
     	return _deploymentManager;
     }
+    
+    /**
+     * @return The collection of context handlers
+     */
+    public ContextHandlerCollection getContextHandlerCollection()
+    {
+    	return _ctxtHandler;
+    }
 
     
 	public void start(Server server, Dictionary props)

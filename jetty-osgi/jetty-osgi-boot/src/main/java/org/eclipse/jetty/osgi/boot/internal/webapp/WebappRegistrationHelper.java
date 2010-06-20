@@ -41,6 +41,7 @@ import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.boot.internal.jsp.TldLocatableURLClassloader;
+import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelper;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
@@ -126,7 +127,7 @@ public class WebappRegistrationHelper
      * webapp classloader. It is in fact the _libExtClassLoader with a trick to
      * let the TldScanner find the jars where the tld files are.
      */
-    private URLClassLoader _commonParentClassLoaderForWebapps;
+    private ClassLoader _commonParentClassLoaderForWebapps;
 
     private DeploymentManager _deploymentManager;
 
@@ -135,6 +136,14 @@ public class WebappRegistrationHelper
     public WebappRegistrationHelper(Server server)
     {
         _server = server;
+        staticInit();
+    }
+
+    public WebappRegistrationHelper(ServerInstanceWrapper wrapper, Server server)
+    {
+        _server = server;
+        _commonParentClassLoaderForWebapps = wrapper.getParentClassLoaderForWebapps();
+        _ctxtHandler = wrapper.getContextHandlerCollection();
         staticInit();
     }
 
@@ -370,6 +379,10 @@ public class WebappRegistrationHelper
      */
     private void init()
     {
+    	if (_ctxtHandler != null)
+    	{
+    		return;
+    	}
         // Get the context handler
         _ctxtHandler = (ContextHandlerCollection)_server.getChildHandlerByClass(ContextHandlerCollection.class);
         

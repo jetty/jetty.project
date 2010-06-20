@@ -156,21 +156,21 @@ public class JettyBootstrapActivator implements BundleActivator
                 	_registeredServer = null;
                 }
             }
-        	if (_jettyServerFactoryService != null)
-        	{
-                try
-                {
-                	_jettyServerFactoryService.unregister();
-                }
-                catch (IllegalArgumentException ill)
-                {
-                    // already unregistered.
-                }
-                finally
-                {
-                	_jettyServerFactoryService = null;
-                }
-        	}
+//        	if (_jettyServerFactoryService != null)
+//        	{
+//                try
+//                {
+//                	_jettyServerFactoryService.unregister();
+//                }
+//                catch (IllegalArgumentException ill)
+//                {
+//                    // already unregistered.
+//                }
+//                finally
+//                {
+//                	_jettyServerFactoryService = null;
+//                }
+//        	}
 
         }
         finally
