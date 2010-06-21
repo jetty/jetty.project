@@ -450,7 +450,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                 }
                 else
                 {
-                    if (_key.isValid())
+                    if (_key!=null && _key.isValid())
                         _key.interestOps(0);
                     else
                         _key=null;
