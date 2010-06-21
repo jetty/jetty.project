@@ -92,21 +92,13 @@ public class LibExtClassLoaderHelper
      *         is the JettyBootStrapper (an osgi classloader.
      * @throws MalformedURLException
      */
-    public static URLClassLoader createLibEtcClassLoaderHelper(File jettyHome, Server server, ClassLoader parentClassLoader) throws MalformedURLException
-    {
-    	return null;
-    }
-    /**
-     * @param server
-     * @return a url classloader with the jars of resources, lib/ext and the
-     *         jars passed in the other argument. The parent classloader usually
-     *         is the JettyBootStrapper (an osgi classloader.
-     * @throws MalformedURLException
-     */
-    public static URLClassLoader createLibEtcClassLoader(File jettyHome, Server server, 
+    public static ClassLoader createLibEtcClassLoader(File jettyHome, Server server, 
     		ClassLoader parentClassLoader) throws MalformedURLException
     {
-    	
+    	if (jettyHome == null)
+    	{
+    		return parentClassLoader;
+    	}
         ArrayList<URL> urls = new ArrayList<URL>();
         File jettyResources = new File(jettyHome,"resources");
         if (jettyResources.exists())

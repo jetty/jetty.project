@@ -209,7 +209,7 @@ public class WebappRegistrationHelper
      */
     public void setup(BundleContext context, Map<String, String> configProperties) throws Exception
     {
-    	Enumeration<?> enUrls = context.getBundle().findEntries("/etc", "jetty.xml", false);System.err.println();
+    	Enumeration<?> enUrls = context.getBundle().findEntries("/etc", "jetty.xml", false);
     	if (enUrls != null && enUrls.hasMoreElements())
     	{
 	    	URL url = (URL) enUrls.nextElement();
@@ -236,52 +236,62 @@ public class WebappRegistrationHelper
 
         if (jettyHome == null || jettyHome.length() == 0)
         {
-            if (_installLocation.getName().endsWith(".jar"))
-            {
-                jettyHome = JettyHomeHelper.setupJettyHomeInEclipsePDE(_installLocation);
-            }
-            if (jettyHome == null)
-            {
-                jettyHome = _installLocation.getAbsolutePath() + "/jettyhome";
-                bootBundleCanBeJarred = false;
-            }
+        	if (_installLocation != null)
+        	{
+	            if (_installLocation.getName().endsWith(".jar"))
+	            {
+	                jettyHome = JettyHomeHelper.setupJettyHomeInEclipsePDE(_installLocation);
+	            }
+	            if (jettyHome == null && _installLocation != null && _installLocation.isDirectory())
+	            {
+	                jettyHome = _installLocation.getAbsolutePath() + "/jettyhome";
+	                bootBundleCanBeJarred = false;
+	            }
+        	}
         }
+        if (jettyHome == null || (!bootBundleCanBeJarred && !_installLocation.isDirectory()))
+        {
+//            String install = _installLocation != null?_installLocation.getCanonicalPath():" unresolved_install_location";
+//            throw new IllegalArgumentException("The system property -Djetty.home" + " must be set to a directory or the bundle "
+//                    + context.getBundle().getSymbolicName() + " installed here " + install + " must be unjarred.");
+        }
+        else
+        {
         // in case we stripped the quotes.
-        System.setProperty("jetty.home",jettyHome);
-
+        	System.setProperty("jetty.home",jettyHome);
+        }
         String jettyLogs = stripQuotesIfPresent(System.getProperty("jetty.logs"));
         if (jettyLogs == null || jettyLogs.length() == 0)
         {
             System.setProperty("jetty.logs",jettyHome + "/logs");
         }
 
-        if (!bootBundleCanBeJarred && !_installLocation.isDirectory())
+        if (jettyHome != null)
         {
-            String install = _installLocation != null?_installLocation.getCanonicalPath():" unresolved_install_location";
-            throw new IllegalArgumentException("The system property -Djetty.home" + " must be set to a directory or the bundle "
-                    + context.getBundle().getSymbolicName() + " installed here " + install + " must be unjarred.");
+	        try
+	        {
+	            System.err.println("JETTY_HOME set to " + new File(jettyHome).getCanonicalPath());
+	        }
+	        catch (Throwable t)
+	        {
+	            System.err.println("JETTY_HOME _set to " + new File(jettyHome).getAbsolutePath());
+	        }
         }
-        try
+        else
         {
-            System.err.println("JETTY_HOME set to " + new File(jettyHome).getCanonicalPath());
+//        	System.err.println("JETTY_HOME is not set");
         }
-        catch (Throwable t)
-        {
-            System.err.println("JETTY_HOME _set to " + new File(jettyHome).getAbsolutePath());
-        }
-
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         try
         {
 
             // passing this bundle's classloader as the context classlaoder
             // makes sure there is access to all the jetty's bundles
-
-            File jettyHomeF = new File(jettyHome);
-            URLClassLoader libExtClassLoader = null;
+            File jettyHomeF = jettyHome != null ? new File(jettyHome) : null;
+            ClassLoader libExtClassLoader = null;
             try
             {
-            	libExtClassLoader = LibExtClassLoaderHelper.createLibEtcClassLoaderHelper(jettyHomeF,_server,
+            	libExtClassLoader = LibExtClassLoaderHelper.createLibEtcClassLoader(jettyHomeF,_server,
             			JettyBootstrapActivator.class.getClassLoader());
             }
             catch (MalformedURLException e)
@@ -297,7 +307,10 @@ public class WebappRegistrationHelper
             Map<Object,Object> id_map = new HashMap<Object,Object>();
             id_map.put("Server",_server);
             Map<Object,Object> properties = new HashMap<Object,Object>();
-            properties.put("jetty.home",jettyHome);
+            if (jettyHome != null)
+            {
+            	properties.put("jetty.home",jettyHome);
+            }
             properties.put("jetty.host",System.getProperty("jetty.host",""));
             properties.put("jetty.port",System.getProperty("jetty.port","8080"));
             properties.put("jetty.port.ssl",System.getProperty("jetty.port.ssl","8443"));
@@ -305,10 +318,44 @@ public class WebappRegistrationHelper
             while (tokenizer.hasMoreTokens())
             {
                 String etcFile = tokenizer.nextToken().trim();
-                File conffile = etcFile.startsWith("/")?new File(etcFile):new File(jettyHomeF,etcFile);
-                if (!conffile.exists())
+                File conffile = null;
+                enUrls = null;
+                if (etcFile.indexOf(":") != -1)
                 {
-                    __logger.warn("Unable to resolve the jetty/etc file " + etcFile);
+                	conffile = Resource.newResource(etcFile).getFile();
+                }
+                else if (etcFile.startsWith("/"))
+                {
+                	conffile = new File(etcFile);
+                }
+                else if (jettyHomeF != null)
+                {
+                	conffile = new File(jettyHomeF, etcFile);
+                }
+                else
+                {
+                	int last = etcFile.lastIndexOf('/');
+                	String path = last != -1 && last < etcFile.length() -2
+                		? etcFile.substring(0, last) : "/";
+                	if (!path.startsWith("/"))
+                	{
+                		path = "/" + path;
+                	}
+                	String pattern = last != -1 && last < etcFile.length() -2
+            			? etcFile.substring(last+1) : etcFile;
+                	enUrls = context.getBundle().findEntries(path, pattern, false);
+                	if (pattern.equals("jetty.xml") && (enUrls == null || !enUrls.hasMoreElements()))
+                	{
+                		path = "/jettyhome" + path;
+                		pattern = "jetty-osgi-default.xml";
+                		enUrls = context.getBundle().findEntries(path, pattern, false);
+                		System.err.println("Configuring jetty with the default embedded configuration:" +
+                				"bundle org.eclipse.jetty.boot.osgi /jettyhome/etc/jetty-osgi-default.xml");
+                	}
+                }
+                if (conffile != null && !conffile.exists())
+                {
+                    __logger.warn("Unable to resolve the xml configuration file for jetty " + etcFile);
 
                     if ("etc/jetty.xml".equals(etcFile))
                     {
@@ -322,15 +369,45 @@ public class WebappRegistrationHelper
                         ContextHandlerCollection contexts = new ContextHandlerCollection();
                         RequestLogHandler requestLogHandler = new RequestLogHandler();
                         handlers.setHandlers(new Handler[] { contexts, new DefaultHandler(), requestLogHandler });
+                        
                         _server.setHandler(handlers);
                     }
                 }
                 else
                 {
+                	InputStream is = null;
                     try
                     {
                         // Execute a Jetty configuration file
-                        XmlConfiguration config = new XmlConfiguration(new FileInputStream(conffile));
+                        XmlConfiguration config = null;
+                        if (conffile != null && conffile.exists())
+                        {
+                        	is = new FileInputStream(conffile);
+                        	config =new XmlConfiguration(is);
+                        }
+                        else if (enUrls != null && enUrls.hasMoreElements())
+                        {
+                	    	URL url = (URL) enUrls.nextElement();
+                	    	if (url != null)
+                	    	{
+                	    		//bug 317231: there is a fragment that defines the jetty configuration file.
+                	    		//let's use that as the jetty home.
+                	    		is = url.openStream();
+                	    		config = new XmlConfiguration(is);
+                	    	}
+                	    	else
+                	    	{
+                	    		System.err.println("Could not locate " + etcFile + 
+                	    				" inside " + context.getBundle().getSymbolicName());
+                	    		continue;
+                	    	}
+                        }
+                        else
+                        {
+                        	//it did not work.
+                        	continue;
+                        }
+                        
                         config.setIdMap(id_map);
                         config.setProperties(properties);
                         config.configure();
@@ -340,6 +417,10 @@ public class WebappRegistrationHelper
                     {
                         Log.getLogger(WebappRegistrationHelper.class.getName()).warn("Unable to configure the jetty/etc file " + etcFile,saxparse);
                         throw saxparse;
+                    }
+                    finally
+                    {
+                    	if (is != null) try { is.close(); } catch (IOException ioe) {}
                     }
                 }
             }
@@ -406,9 +487,13 @@ public class WebappRegistrationHelper
             	try
             	{
 					_provider = new OSGiAppProvider();
-					_provider.setMonitoredDir(
+					if (System.getProperty("jetty.home") != null)
+					{
+						_provider.setMonitoredDir(
 							Resource.newResource(getDefaultOSGiContextsHome(
 									new File(System.getProperty("jetty.home"))).toURI()));
+					}
+					
 				} catch (IOException e) {
 					e.printStackTrace();
 				}

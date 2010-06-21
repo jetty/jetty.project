@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.zip.ZipFile;
 
@@ -67,8 +68,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         // grab the MANIFEST.MF's url
         // and then do what it takes.
         URL url = bundle.getEntry("/META-INF/MANIFEST.MF");
-        // System.err.println(url.toString() + " " + url.toURI() + " " +
-        // url.getProtocol());
+//        System.err.println(url.toString() + " " + url.toURI() + " " + url.getProtocol());
         if (url.getProtocol().equals("file"))
         {
             // some osgi frameworks do use the file protocole directly in some
@@ -131,10 +131,29 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         {
             // observed this on felix-2.0.0
             String location = bundle.getLocation();
+//            System.err.println("location  " + location);
             if (location.startsWith("file:/"))
             {
                 URI uri = new URI(URIUtil.encodePath(location));
                 return new File(uri);
+            }
+            else if (location.startsWith("file:"))
+            {
+            	//location defined in the BundleArchive m_bundleArchive
+            	//it is relative to relative to the  BundleArchive's m_archiveRootDir
+            	Object bundleArchive = getFelixBundleArchive(bundle);
+            	File archiveRoot = getFelixBundleArchiveRootDir(bundleArchive);
+            	String currentLocation = getFelixBundleArchiveCurrentLocation(bundleArchive);
+//            	System.err.println("Got the archive root " + archiveRoot.getAbsolutePath()
+//            	+ " current location " + currentLocation);
+            	return new File(archiveRoot, currentLocation != null
+            			? currentLocation : location.substring("file:".length()));
+            }
+            else if (location.startsWith("reference:file:"))
+            {
+            	location = URLDecoder.decode(location.substring("reference:".length()), "UTF-8");
+            	File file = new File(location.substring("file:".length()));
+            	return file;
             }
         }
         return null;
@@ -206,8 +225,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         }
         else
         {
-            return new File[]
-            { jasperLocation };
+            return new File[] { jasperLocation };
         }
     }
     
@@ -278,6 +296,63 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 			}
 		}
 		return url;
+	}
+	
+	
+	//introspection on felix
+	private static Field m_bundleArchive_FIELD = null;
+	private static Field m_archiveRootDir_FIELD = null;
+	private static Field m_currentLocation_FIELD = null;
+	private static Object getFelixBundleArchive(Bundle bundle)
+	{
+		try
+		{
+			if (m_bundleArchive_FIELD == null)
+			{
+				m_bundleArchive_FIELD = bundle.getClass().getDeclaredField("m_archive");
+				m_bundleArchive_FIELD.setAccessible(true);
+			}
+			return m_bundleArchive_FIELD.get(bundle);
+		}
+		catch (Throwable t)
+		{
+			t.printStackTrace();
+		}
+		return null;
+	}
+	private static File getFelixBundleArchiveRootDir(Object bundleArchive)
+	{
+		try
+		{
+			if (m_archiveRootDir_FIELD == null)
+			{
+				m_archiveRootDir_FIELD = bundleArchive.getClass().getDeclaredField("m_archiveRootDir");
+				m_archiveRootDir_FIELD.setAccessible(true);
+			}
+			return (File)m_archiveRootDir_FIELD.get(bundleArchive);
+		}
+		catch (Throwable t)
+		{
+			t.printStackTrace();
+		}
+		return null;
+	}
+	private static String getFelixBundleArchiveCurrentLocation(Object bundleArchive)
+	{
+		try
+		{
+			if (m_currentLocation_FIELD == null)
+			{
+				m_currentLocation_FIELD = bundleArchive.getClass().getDeclaredField("m_currentLocation");
+				m_currentLocation_FIELD.setAccessible(true);
+			}
+			return (String)m_currentLocation_FIELD.get(bundleArchive);
+		}
+		catch (Throwable t)
+		{
+			t.printStackTrace();
+		}
+		return null;
 	}
 
 }
