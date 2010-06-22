@@ -69,6 +69,8 @@ public class XmlConfigurationTest
 
         assertEquals("Set String","SetValue",tc.testObject);
         assertEquals("Set Type",2,tc.testInt);
+        
+        assertEquals(18080, tc.propValue);
 
         assertEquals("Put","PutValue",tc.get("Test"));
         assertEquals("Put dft","2",tc.get("TestDft"));

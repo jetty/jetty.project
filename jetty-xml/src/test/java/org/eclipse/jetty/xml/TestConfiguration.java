@@ -32,6 +32,7 @@ public class TestConfiguration extends HashMap
     public int[] ia;
     public int testField1;
     public int testField2;
+    public int propValue;
 
     public void setTest(Object value)
     {
@@ -42,6 +43,12 @@ public class TestConfiguration extends HashMap
     {
         testInt=value;
     }
+    
+    public void setPropertyTest(int value)
+    {
+    	propValue=value;
+    }
+
 
     public void call()
     {

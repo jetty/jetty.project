@@ -5,6 +5,8 @@
 
   <Set name="Test">SetValue</Set>
   <Set name="Test" type="int">2</Set>
+  
+  <Set name="PropertyTest"><Property name="anIntegerNoActualPropDefined" default="18080"/></Set>
 
   <Put name="Test">PutValue</Put>
   <Put name="TestDft">2</Put>

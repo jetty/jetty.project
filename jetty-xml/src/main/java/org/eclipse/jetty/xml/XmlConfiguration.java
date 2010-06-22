@@ -792,7 +792,7 @@ public class XmlConfiguration
         if (_propertyMap!=null && _propertyMap.containsKey(name))
             prop=_propertyMap.get(name);
         else 
-            prop=System.getProperty(name,defval);
+        	prop=defval;
         if (id != null) 
             _idMap.put(id, prop);
         if (prop!=null)
