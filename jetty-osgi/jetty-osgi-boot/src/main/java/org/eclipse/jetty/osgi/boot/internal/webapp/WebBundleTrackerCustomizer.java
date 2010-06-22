@@ -72,9 +72,21 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
 	 */
 	public Object addingBundle(Bundle bundle, BundleEvent event)
 	{
-		
-		boolean isWebBundle = register(bundle);
-		return isWebBundle ? bundle : null;
+		if (bundle.getState() == Bundle.ACTIVE)
+		{
+			boolean isWebBundle = register(bundle);
+			return isWebBundle ? bundle : null;
+		}
+		else if (bundle.getState() == Bundle.STOPPING)
+		{
+			unregister(bundle);
+		}
+		else
+		{
+			//we should not be called in that state as
+			//we are registered only for ACTIVE and STOPPING
+		}
+		return null;
 	}
 
 	/**
@@ -96,6 +108,14 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
 		//nothing the web-bundle was already track. something changed.
 		//we only reload the webapps if the bundle is stopped and restarted.
 //		System.err.println(bundle.getSymbolicName());
+		if (bundle.getState() == Bundle.STOPPING || bundle.getState() == Bundle.ACTIVE)
+		{
+			unregister(bundle);
+		}
+		if (bundle.getState() == Bundle.ACTIVE)
+		{
+			register(bundle);
+		}
 	}
 
 	/**
