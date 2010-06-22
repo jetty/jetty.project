@@ -311,9 +311,9 @@ public class WebappRegistrationHelper
             {
             	properties.put("jetty.home",jettyHome);
             }
-            properties.put("jetty.host",System.getProperty("jetty.host",""));
-            properties.put("jetty.port",System.getProperty("jetty.port","8080"));
-            properties.put("jetty.port.ssl",System.getProperty("jetty.port.ssl","8443"));
+            properties.put("jetty.host",System.getProperty("jetty.host"));
+            properties.put("jetty.port",System.getProperty("jetty.port"));
+            properties.put("jetty.port.ssl",System.getProperty("jetty.port.ssl"));
 
             while (tokenizer.hasMoreTokens())
             {
