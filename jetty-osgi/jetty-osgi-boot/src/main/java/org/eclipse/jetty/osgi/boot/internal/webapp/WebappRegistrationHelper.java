@@ -551,7 +551,7 @@ public class WebappRegistrationHelper
             throw new IllegalArgumentException("Unable to locate " + webappFolderPath + " inside "
                     + (bundleInstall != null?bundleInstall.getAbsolutePath():"unlocated bundle '" + bundle.getSymbolicName() + "'"));
         }
-        return registerWebapplication(bundle,webapp,contextPath,extraClasspath,bundleInstall,webXmlPath,defaultWebXmlPath);
+        return registerWebapplication(bundle,webappFolderPath,webapp,contextPath,extraClasspath,bundleInstall,webXmlPath,defaultWebXmlPath);
     }
 
     /**
@@ -568,7 +568,7 @@ public class WebappRegistrationHelper
      * @return The contexthandler created and started
      * @throws Exception
      */
-    public ContextHandler registerWebapplication(Bundle contributor, File webapp, String contextPath, String extraClasspath, File bundleInstall,
+    public ContextHandler registerWebapplication(Bundle contributor, String pathInBundleToWebApp, File webapp, String contextPath, String extraClasspath, File bundleInstall,
             String webXmlPath, String defaultWebXmlPath) throws Exception
     {
 
@@ -639,8 +639,7 @@ public class WebappRegistrationHelper
             // through the webapp classloader.
             oldServerClasses = context.getServerClasses();
             context.setServerClasses(null);
-            _provider.addContext(context);
-
+            _provider.addContext(contributor,pathInBundleToWebApp,context);
             return context;
         }
         finally
@@ -715,14 +714,15 @@ public class WebappRegistrationHelper
             File prodContextFile = new File(contextsHome,contributor.getSymbolicName() + "/" + contextFileRelativePath);
             if (prodContextFile.exists())
             {
-                return registerContext(contributor,prodContextFile,extraClasspath,overrideBundleInstallLocation);
+                return registerContext(contributor,contextFileRelativePath,prodContextFile,extraClasspath,overrideBundleInstallLocation);
             }
         }
+        
         File contextFile = overrideBundleInstallLocation != null?new File(overrideBundleInstallLocation,contextFileRelativePath):new File(
                 BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(contributor),contextFileRelativePath);
         if (contextFile.exists())
         {
-            return registerContext(contributor,contextFile,extraClasspath,overrideBundleInstallLocation);
+            return registerContext(contributor,contextFileRelativePath,contextFile,extraClasspath,overrideBundleInstallLocation);
         }
         else
         {
@@ -734,12 +734,14 @@ public class WebappRegistrationHelper
             {
                 contextFileRelativePath = "/" + contextFileRelativePath;
             }
-            if (overrideBundleInstallLocation == null)
+            
+            File overrideBundleInstallLocationF = overrideBundleInstallLocation != null ? Resource.newResource(overrideBundleInstallLocation).getFile() : null;
+            if (overrideBundleInstallLocationF == null)
             {
                 URL contextURL = contributor.getEntry(contextFileRelativePath);
                 if (contextURL != null)
                 {
-                    return registerContext(contributor,contextURL.openStream(),extraClasspath,overrideBundleInstallLocation);
+                    return registerContext(contributor,contextFileRelativePath,contextURL.openStream(),extraClasspath,overrideBundleInstallLocation);
                 }
             }
             else
@@ -749,7 +751,7 @@ public class WebappRegistrationHelper
                 {
                     zipFile = new JarFile(overrideBundleInstallLocation);
                     ZipEntry entry = zipFile.getEntry(contextFileRelativePath.substring(1));
-                    return registerContext(contributor,zipFile.getInputStream(entry),extraClasspath,overrideBundleInstallLocation);
+                    return registerContext(contributor,contextFileRelativePath,zipFile.getInputStream(entry),extraClasspath,overrideBundleInstallLocation);
                 }
                 catch (Throwable t)
                 {
@@ -782,13 +784,13 @@ public class WebappRegistrationHelper
      * @param classInBundle
      * @throws Exception
      */
-    private ContextHandler registerContext(Bundle contributor, File contextFile, String extraClasspath, String overrideBundleInstallLocation) throws Exception
+    private ContextHandler registerContext(Bundle contributor, String pathInBundle, File contextFile, String extraClasspath, String overrideBundleInstallLocation) throws Exception
     {
         InputStream contextFileInputStream = null;
         try
         {
             contextFileInputStream = new BufferedInputStream(new FileInputStream(contextFile));
-            return registerContext(contributor,contextFileInputStream,extraClasspath,overrideBundleInstallLocation);
+            return registerContext(contributor, pathInBundle, contextFileInputStream,extraClasspath,overrideBundleInstallLocation);
         }
         finally
         {
@@ -810,7 +812,7 @@ public class WebappRegistrationHelper
      *         happen.
      * @throws Exception
      */
-    private ContextHandler registerContext(Bundle contributor, InputStream contextFileInputStream, String extraClasspath, String overrideBundleInstallLocation)
+    private ContextHandler registerContext(Bundle contributor, String pathInsideBundle, InputStream contextFileInputStream, String extraClasspath, String overrideBundleInstallLocation)
             throws Exception
     {
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
@@ -846,8 +848,7 @@ public class WebappRegistrationHelper
                 oldServerClasses = webAppContext.getServerClasses();
                 webAppContext.setServerClasses(null);
             }
-
-             _provider.addContext(context);
+             _provider.addContext(contributor, pathInsideBundle, context);
             return context;
         }
         finally
