@@ -13,14 +13,11 @@
 package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -32,19 +29,15 @@ import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiAppProvider;
-import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
+import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.internal.jsp.TldLocatableURLClassloader;
 import org.eclipse.jetty.osgi.boot.internal.webapp.LibExtClassLoaderHelper;
+import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleDeployerHelper;
 import org.eclipse.jetty.osgi.boot.internal.webapp.WebappRegistrationHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
 import org.eclipse.jetty.osgi.boot.utils.internal.DefaultFileLocatorHelper;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -56,11 +49,11 @@ import org.xml.sax.SAXParseException;
 /**
  * Exposes a Jetty Server to be managed by an OSGi ManagedServiceFactory
  * Configure and start it.
- * Can also be used outside of the ManagedServiceFactory
+ * Can also be used from the ManagedServiceFactory
  */
 public class ServerInstanceWrapper {
-
-    private static Logger __logger = Log.getLogger(ServerInstanceWrapper.class.getName());
+	
+	private static Logger __logger = Log.getLogger(ServerInstanceWrapper.class.getName());
     
     private final String _managedServerName;
     
@@ -78,6 +71,8 @@ public class ServerInstanceWrapper {
     private ClassLoader _commonParentClassLoaderForWebapps;
     private DeploymentManager _deploymentManager;
     private OSGiAppProvider _provider;
+    
+    private WebBundleDeployerHelper _webBundleDeployerHelper;
     
     
     public ServerInstanceWrapper(String managedServerName)
@@ -109,6 +104,26 @@ public class ServerInstanceWrapper {
     }
     
     /**
+     * @return The app provider registered on this server.
+     */
+    public OSGiAppProvider getOSGiAppProvider()
+    {
+    	return _provider;
+    }
+    
+    
+    public Server getServer()
+    {
+    	return _server;
+    }
+    
+    
+    public WebBundleDeployerHelper getWebBundleDeployerHelp()
+    {
+    	return _webBundleDeployerHelper;
+    }
+    
+    /**
      * @return The collection of context handlers
      */
     public ContextHandlerCollection getContextHandlerCollection()
@@ -125,8 +140,8 @@ public class ServerInstanceWrapper {
         {
             // passing this bundle's classloader as the context classlaoder
             // makes sure there is access to all the jetty's bundles
-            URLClassLoader libExtClassLoader = null;
-        	String sharedURLs = (String)props.get(OSGiWebappConstants.MANAGED_JETTY_SHARED_LIB_FOLDER_URLS);
+            ClassLoader libExtClassLoader = null;
+        	String sharedURLs = (String)props.get(OSGiServerConstants.MANAGED_JETTY_SHARED_LIB_FOLDER_URLS);
             try
             {
             	List<File> shared = sharedURLs != null ? extractFiles(sharedURLs) : null;
@@ -168,14 +183,17 @@ public class ServerInstanceWrapper {
         {
             Thread.currentThread().setContextClassLoader(contextCl);
         }
-
+        _webBundleDeployerHelper = new WebBundleDeployerHelper(this);
     }
 	
 	
 	public void stop()
 	{
 		try {
-			_server.stop();
+			if (_server.isRunning())
+			{
+				_server.stop();
+			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -206,9 +224,9 @@ public class ServerInstanceWrapper {
     private URL[] getJarsWithTlds() throws Exception
     {
         ArrayList<URL> res = new ArrayList<URL>();
-        for (WebappRegistrationCustomizer regCustomizer : WebappRegistrationHelper.JSP_REGISTRATION_HELPERS)
+        for (WebappRegistrationCustomizer regCustomizer : WebBundleDeployerHelper.JSP_REGISTRATION_HELPERS)
         {
-            URL[] urls = regCustomizer.getJarsWithTlds(_provider, WebappRegistrationHelper.BUNDLE_FILE_LOCATOR_HELPER);
+            URL[] urls = regCustomizer.getJarsWithTlds(_provider, WebBundleDeployerHelper.BUNDLE_FILE_LOCATOR_HELPER);
             for (URL url : urls)
             {
                 if (!res.contains(url))
@@ -223,7 +241,7 @@ public class ServerInstanceWrapper {
     
     private void configure(Server server, Dictionary props) throws Exception
     {
-        String jettyConfigurationUrls = (String) props.get(OSGiWebappConstants.MANAGED_JETTY_XML_CONFIG_URLS);
+        String jettyConfigurationUrls = (String) props.get(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS);
         List<URL> jettyConfigurations = jettyConfigurationUrls != null
         	? extractResources(jettyConfigurationUrls) : null;
     	if (jettyConfigurations == null || jettyConfigurations.isEmpty())
@@ -357,7 +375,7 @@ public class ServerInstanceWrapper {
     		String tok = tokenizer.nextToken();
     		try
     		{
-    			urls.add(((DefaultFileLocatorHelper) WebappRegistrationHelper
+    			urls.add(((DefaultFileLocatorHelper) WebBundleDeployerHelper
         				.BUNDLE_FILE_LOCATOR_HELPER).getLocalURL(new URL(tok)));
     		}
     		catch (Throwable mfe)
@@ -381,7 +399,7 @@ public class ServerInstanceWrapper {
     		try
     		{
     			URL url = new URL(tok);
-    			url = ((DefaultFileLocatorHelper) WebappRegistrationHelper
+    			url = ((DefaultFileLocatorHelper) WebBundleDeployerHelper
     				.BUNDLE_FILE_LOCATOR_HELPER).getFileURL(url);
     			if (url.getProtocol().equals("file"))
     			{

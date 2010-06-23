@@ -21,6 +21,7 @@ import java.util.Hashtable;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.server.Server;
 import org.osgi.framework.Bundle;
@@ -36,7 +37,7 @@ import org.osgi.service.cm.ManagedServiceFactory;
  * 
  * @author hmalphettes
  */
-public class JettyServersManagedFactory implements ManagedServiceFactory
+public class JettyServersManagedFactory implements ManagedServiceFactory, IManagedJettyServerRegistry
 {
 
     /**
@@ -95,10 +96,10 @@ public class JettyServersManagedFactory implements ManagedServiceFactory
         // to be able to re-deploy them later?
         // probably not. simply restart and see the various service trackers
         // do everything that is needed.
-        String name = (String)properties.get(OSGiWebappConstants.MANAGED_JETTY_SERVER_NAME);
+        String name = (String)properties.get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
         if (name == null)
         {
-        	throw new ConfigurationException(OSGiWebappConstants.MANAGED_JETTY_SERVER_NAME,
+        	throw new ConfigurationException(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME,
         			"The name of the server is mandatory");
         }
         serverInstanceWrapper = new ServerInstanceWrapper(name);
@@ -138,12 +139,16 @@ public class JettyServersManagedFactory implements ManagedServiceFactory
     	return _serversIndexedByPID.get(pid);
     }
     
-    public synchronized ServerInstanceWrapper getServerByName(String name)
+    /**
+     * @param managedServerName The server name
+     * @return the corresponding jetty server wrapped with its deployment properties.
+     */
+	public ServerInstanceWrapper getServerInstanceWrapper(String managedServerName)
     {
-    	String pid = _serversPIDIndexedByName.get(name);
+    	String pid = _serversPIDIndexedByName.get(managedServerName);
     	return pid != null ? _serversIndexedByPID.get(pid) : null;
     }
-    
+        
     /**
      * Helper method to create and configure a new Jetty Server via the ManagedServiceFactory
      * @param contributor
@@ -160,9 +165,9 @@ public class JettyServersManagedFactory implements ManagedServiceFactory
         				.getService( configurationAdminReference );   
 
         Configuration configuration = confAdmin.createFactoryConfiguration(
-        		OSGiWebappConstants.MANAGED_JETTY_SERVER_FACTORY_PID, contributor.getLocation() );
+        		OSGiServerConstants.MANAGED_JETTY_SERVER_FACTORY_PID, contributor.getLocation() );
         Dictionary properties = new Hashtable();
-        properties.put(OSGiWebappConstants.MANAGED_JETTY_SERVER_NAME, serverName);
+        properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, serverName);
         
         StringBuilder actualBundleUrls = new StringBuilder();
         StringTokenizer tokenizer = new StringTokenizer(urlsToJettyXml, ",", false);
@@ -194,7 +199,7 @@ public class JettyServersManagedFactory implements ManagedServiceFactory
         		
         }
         
-        properties.put(OSGiWebappConstants.MANAGED_JETTY_XML_CONFIG_URLS, actualBundleUrls.toString());
+        properties.put(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS, actualBundleUrls.toString());
         configuration.update(properties);
 
     }

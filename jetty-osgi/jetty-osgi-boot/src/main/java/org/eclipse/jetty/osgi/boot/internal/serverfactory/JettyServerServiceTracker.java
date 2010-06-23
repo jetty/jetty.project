@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
+import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.server.Server;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceEvent;
@@ -26,7 +26,7 @@ import org.osgi.framework.ServiceReference;
 /**
  * Deploy the jetty server instances when they are registered as an OSGi service.
  */
-public class JettyServerServiceTracker implements ServiceListener
+public class JettyServerServiceTracker implements ServiceListener, IManagedJettyServerRegistry
 {
 
     /**
@@ -35,6 +35,27 @@ public class JettyServerServiceTracker implements ServiceListener
     private Map<String, ServerInstanceWrapper> _serversIndexedByName = new HashMap<String, ServerInstanceWrapper>();
     /** The context-handler to deactivate indexed by ServerInstanceWrapper */
     private Map<ServiceReference, ServerInstanceWrapper> _indexByServiceReference = new HashMap<ServiceReference, ServerInstanceWrapper>();
+    
+
+    /**
+     * Stops each one of the registered servers.
+     */
+    public void stop()
+    {
+        //not sure that this is really useful but here we go.
+    	for (ServerInstanceWrapper wrapper : _serversIndexedByName.values())
+    	{
+    		try
+    		{
+    			wrapper.stop();
+    		}
+    		catch (Throwable t)
+    		{
+    			
+    		}
+    	}
+    }
+
     
     /**
      * Receives notification that a service has had a lifecycle change.
@@ -92,11 +113,11 @@ public class JettyServerServiceTracker implements ServiceListener
 
     private ServerInstanceWrapper registerInIndex(Server server, ServiceReference sr)
     {
-        String name = (String)sr.getProperty(OSGiWebappConstants.MANAGED_JETTY_SERVER_NAME);
+        String name = (String)sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
         if (name == null)
         {
         	throw new IllegalArgumentException("The property " +
-        			OSGiWebappConstants.MANAGED_JETTY_SERVER_NAME + " is mandatory");
+        			OSGiServerConstants.MANAGED_JETTY_SERVER_NAME + " is mandatory");
         }
         ServerInstanceWrapper wrapper = new ServerInstanceWrapper(name);
         _indexByServiceReference.put(sr,wrapper);
@@ -126,4 +147,15 @@ public class JettyServerServiceTracker implements ServiceListener
         return handler;
     }
 
+    /**
+     * @param managedServerName The server name
+     * @return the corresponding jetty server wrapped with its deployment properties.
+     */
+    public ServerInstanceWrapper getServerInstanceWrapper(String managedServerName)
+    {
+    	return _serversIndexedByName.get(managedServerName == null
+    			? OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME : managedServerName);
+    }
+    
+    
 }

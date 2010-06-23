@@ -13,11 +13,15 @@
 package org.eclipse.jetty.osgi.boot.internal.webapp;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
+import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
+import org.eclipse.jetty.osgi.boot.internal.serverfactory.IManagedJettyServerRegistry;
+import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Scanner;
@@ -49,6 +53,9 @@ import org.osgi.framework.ServiceReference;
 public class JettyContextHandlerServiceTracker implements ServiceListener
 {
 
+	/** New style: ability to manage multiple jetty instances */
+	private final IManagedJettyServerRegistry _registry;
+	/** Old style: ability to manage multiple jetty instances */
     private final WebappRegistrationHelper _helper;
 
     /** The context-handler to deactivate indexed by context handler */
@@ -60,8 +67,6 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
      */
     private Map<String, ServiceReference> _indexByContextFile = new HashMap<String, ServiceReference>();
 
-    /** or null when */
-    private String _osgiContextHomeFolderCanonicalPath;
     /** in charge of detecting changes in the osgi contexts home folder. */
     private Scanner _scanner;
 
@@ -71,40 +76,19 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
      */
     public JettyContextHandlerServiceTracker(BundleContext context, Server server) throws Exception
     {
+    	_registry = null;
         _helper = new WebappRegistrationHelper(server);
         _helper.setup(context,new HashMap<String, String>());
-        File contextHome = _helper.getOSGiContextsHome();
-        if (contextHome != null)
-        {
-            _osgiContextHomeFolderCanonicalPath = contextHome.getCanonicalPath();
-            _scanner = new Scanner();
-            _scanner.setRecursive(true);
-            _scanner.setReportExistingFilesOnStartup(false);
-            _scanner.addListener(new Scanner.DiscreteListener()
-            {
-                public void fileAdded(String filename) throws Exception
-                {
-                    // adding a file does not create a new app,
-                    // it just reloads it with the new custom file.
-                    // well, if the file does not define a context handler,
-                    // then in fact it does remove it.
-                    reloadJettyContextHandler(filename);
-                }
-
-                public void fileChanged(String filename) throws Exception
-                {
-                    reloadJettyContextHandler(filename);
-                }
-
-                public void fileRemoved(String filename) throws Exception
-                {
-                    // removing a file does not remove the app:
-                    // it just goes back to the default embedded in the bundle.
-                    // well, if there was no default then it does remove it.
-                    reloadJettyContextHandler(filename);
-                }
-            });
-        }
+        setupContextHomeScanner(_helper.getOSGiContextsHome());
+    }
+    /**
+     * @param context
+     * @param server
+     */
+    public JettyContextHandlerServiceTracker(IManagedJettyServerRegistry registry) throws Exception
+    {
+    	_registry = registry;
+    	_helper = null;
     }
 
     public void stop()
@@ -115,6 +99,49 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
         }
         // the class that created the server is also in charge of stopping it.
         // nothing to stop in the WebappRegistrationHelper
+
+    }
+    
+    /**
+     * @param contextHome Parent folder where the context files can override the context files
+     * defined in the web bundles: equivalent to the contexts folder in a traditional
+     * jetty installation.
+     * when null, just do nothing.
+     */
+    protected void setupContextHomeScanner(File contextHome) throws IOException
+    {
+        if (contextHome == null)
+        {
+        	return;
+        }
+        final String osgiContextHomeFolderCanonicalPath = contextHome.getCanonicalPath();
+        _scanner = new Scanner();
+        _scanner.setRecursive(true);
+        _scanner.setReportExistingFilesOnStartup(false);
+        _scanner.addListener(new Scanner.DiscreteListener()
+        {
+            public void fileAdded(String filename) throws Exception
+            {
+                // adding a file does not create a new app,
+                // it just reloads it with the new custom file.
+                // well, if the file does not define a context handler,
+                // then in fact it does remove it.
+                reloadJettyContextHandler(filename, osgiContextHomeFolderCanonicalPath);
+            }
+
+            public void fileChanged(String filename) throws Exception
+            {
+                reloadJettyContextHandler(filename, osgiContextHomeFolderCanonicalPath);
+            }
+
+            public void fileRemoved(String filename) throws Exception
+            {
+                // removing a file does not remove the app:
+                // it just goes back to the default embedded in the bundle.
+                // well, if there was no default then it does remove it.
+                reloadJettyContextHandler(filename, osgiContextHomeFolderCanonicalPath);
+            }
+        });
 
     }
 
@@ -137,7 +164,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                 {
                     try
                     {
-                        _helper.unregister(ctxtHandler);
+                    	getWebBundleDeployerHelp(sr).unregister(ctxtHandler);
                     }
                     catch (Exception e)
                     {
@@ -186,7 +213,8 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                     String war = (String)sr.getProperty("war");
                     try
                     {
-                        ContextHandler handler = _helper.registerWebapplication(contributor,war,contextPath,(String)sr
+                        ContextHandler handler = getWebBundleDeployerHelp(sr)
+                        		.registerWebapplication(contributor,war,contextPath,(String)sr
                                 .getProperty(OSGiWebappConstants.SERVICE_PROP_EXTRA_CLASSPATH),(String)sr
                                 .getProperty(OSGiWebappConstants.SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE),webXmlPath,defaultWebXmlPath);
                         if (handler != null)
@@ -209,7 +237,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                     }
                     try
                     {
-                        ContextHandler handler = _helper.registerContext(contributor,contextFilePath,(String)sr
+                        ContextHandler handler = getWebBundleDeployerHelp(sr).registerContext(contributor,contextFilePath,(String)sr
                                 .getProperty(OSGiWebappConstants.SERVICE_PROP_EXTRA_CLASSPATH),(String)sr
                                 .getProperty(OSGiWebappConstants.SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE));
                         if (handler != null)
@@ -279,9 +307,9 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
      * 
      * @param contextFileFully
      */
-    void reloadJettyContextHandler(String canonicalNameOfFileChanged)
+    public void reloadJettyContextHandler(String canonicalNameOfFileChanged, String osgiContextHomeFolderCanonicalPath)
     {
-        String key = getNormalizedRelativePath(canonicalNameOfFileChanged);
+        String key = getNormalizedRelativePath(canonicalNameOfFileChanged, osgiContextHomeFolderCanonicalPath);
         if (key == null)
         {
             return;
@@ -299,16 +327,45 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
      * @param canFilename
      * @return
      */
-    private String getNormalizedRelativePath(String canFilename)
+    private String getNormalizedRelativePath(String canFilename, String osgiContextHomeFolderCanonicalPath)
     {
-        if (!canFilename.startsWith(_osgiContextHomeFolderCanonicalPath))
+        if (!canFilename.startsWith(osgiContextHomeFolderCanonicalPath))
         {
             // why are we here: this does not look like a child of the osgi
             // contexts home.
             // warning?
             return null;
         }
-        return canFilename.substring(_osgiContextHomeFolderCanonicalPath.length()).replace('\\','/');
+        return canFilename.substring(osgiContextHomeFolderCanonicalPath.length()).replace('\\','/');
     }
+    
+    /**
+     * @return The server on which this webapp is meant to be deployed
+     */
+    private ServerInstanceWrapper getServerInstanceWrapper(String managedServerName)
+    {
+    	if (_registry == null)
+    	{
+    		return null;
+    	}
+    	if (managedServerName == null)
+    	{
+    		managedServerName = OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME;
+    	}
+    	ServerInstanceWrapper wrapper = _registry.getServerInstanceWrapper(managedServerName);
+    	return wrapper;
+    }
+    
+    private IWebBundleDeployerHelper getWebBundleDeployerHelp(ServiceReference sr)
+    {
+    	if (_registry == null)
+    	{
+    		return _helper;
+    	}
+    	String managedServerName = (String)sr.getProperty(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
+    	ServerInstanceWrapper wrapper = getServerInstanceWrapper(managedServerName);
+    	return wrapper != null ? wrapper.getWebBundleDeployerHelp() : _helper;
+    }
+    
 
 }

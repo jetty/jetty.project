@@ -147,34 +147,45 @@ public class LibExtClassLoaderHelper
      * @param server
      * @return a url classloader with the jars of resources, lib/ext and the
      *         jars passed in the other argument. The parent classloader usually
-     *         is the JettyBootStrapper (an osgi classloader.
+     *         is the JettyBootStrapper (an osgi classloader).
+     *         If there was no extra jars to insert, then just return the parentClassLoader.
      * @throws MalformedURLException
      */
-    public static URLClassLoader createLibExtClassLoader(List<File> jarsContainerOrJars,
+    public static ClassLoader createLibExtClassLoader(List<File> jarsContainerOrJars,
     		List<URL> otherJarsOrFolder, Server server, 
     		ClassLoader parentClassLoader) throws MalformedURLException
     {
-    	List<URL> urls = new ArrayList<URL>(otherJarsOrFolder);
-        for (File libExt : jarsContainerOrJars)
-        {
-        	if (libExt.isDirectory())
-        	{
-	            for (File f : libExt.listFiles())
-	            {
-	                if (f.getName().endsWith(".jar"))
-	                {
-	                    // cheap to tolerate folders so let's do it.
-	                    URL url = f.toURI().toURL();
-	                    if (f.isFile())
-	                    {// is this necessary anyways?
-	                        url = new URL("jar:" + url.toString() + "!/");
-	                    }
-	                    urls.add(url);
-	                }
-	            }
-        	}
-        }
-
+    	if (jarsContainerOrJars == null && otherJarsOrFolder == null)
+    	{
+    		return parentClassLoader;
+    	}
+    	List<URL> urls = new ArrayList<URL>();
+    	if (otherJarsOrFolder != null)
+    	{
+    		urls.addAll(otherJarsOrFolder);
+    	}
+    	if (jarsContainerOrJars != null)
+    	{
+	        for (File libExt : jarsContainerOrJars)
+	        {
+	        	if (libExt.isDirectory())
+	        	{
+		            for (File f : libExt.listFiles())
+		            {
+		                if (f.getName().endsWith(".jar"))
+		                {
+		                    // cheap to tolerate folders so let's do it.
+		                    URL url = f.toURI().toURL();
+		                    if (f.isFile())
+		                    {// is this necessary anyways?
+		                        url = new URL("jar:" + url.toString() + "!/");
+		                    }
+		                    urls.add(url);
+		                }
+		            }
+	        	}
+	        }
+    	}
         return new URLClassLoader(urls.toArray(new URL[urls.size()]),parentClassLoader);
     }
     
