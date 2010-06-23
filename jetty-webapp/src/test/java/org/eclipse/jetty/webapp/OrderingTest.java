@@ -94,8 +94,7 @@ public class OrderingTest extends TestCase
          */
         public String getName()
         {
-            // TODO Auto-generated method stub
-            return null;
+            return _name;
         }
 
         /** 
@@ -192,63 +191,69 @@ public class OrderingTest extends TestCase
         metaData._ordering = metaData.new RelativeOrdering();
         
         //A: after others, after C
-        TestResource r1 = new TestResource("A");
-        resources.add(r1);
+        TestResource jar1 = new TestResource("A");
+        resources.add(jar1);
+        TestResource r1 = new TestResource("A/web-fragment.xml");
         FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
-        metaData._webFragmentResourceMap.put(r1, f1);
+        metaData._webFragmentResourceMap.put(jar1, f1);
         f1._otherType = FragmentDescriptor.OtherType.After;
         //((RelativeOrdering)metaData._ordering).addAfterOthers(r1);
         f1._afters.add("C");
         
         //B: before others
-        TestResource r2 = new TestResource("B");
-        resources.add(r2);
+        TestResource jar2 = new TestResource("B");
+        resources.add(jar2);
+        TestResource r2 = new TestResource("B/web-fragment.xml");
         FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
-        metaData._webFragmentResourceMap.put(r2, f2);
+        metaData._webFragmentResourceMap.put(jar2, f2);
         f2._otherType = FragmentDescriptor.OtherType.Before;
         //((RelativeOrdering)metaData._ordering).addBeforeOthers(r2);
         
         //C: after others
-        TestResource r3 = new TestResource("C");
-        resources.add(r3);
+        TestResource jar3 = new TestResource("C");
+        resources.add(jar3);
+        TestResource r3 = new TestResource("C/web-fragment.xml");
         FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
-        metaData._webFragmentResourceMap.put(r3, f3);
+        metaData._webFragmentResourceMap.put(jar3, f3);
         f3._otherType = FragmentDescriptor.OtherType.After;
         //((RelativeOrdering)metaData._ordering).addAfterOthers(r3);
         
         //D: no ordering
-        TestResource r4 = new TestResource("D");
-        resources.add(r4);
+        TestResource jar4 = new TestResource("D");
+        resources.add(jar4);
+        TestResource r4 = new TestResource("D/web-fragment.xml");
         FragmentDescriptor f4 = new FragmentDescriptor(r4, metaData);
         f4._name="D"; 
         metaData._webFragmentNameMap.put(f4._name, f4);
-        metaData._webFragmentResourceMap.put(r4, f4);
+        metaData._webFragmentResourceMap.put(jar4, f4);
         f4._otherType = FragmentDescriptor.OtherType.None;
         //((RelativeOrdering)metaData._ordering).addNoOthers(r4);
         
         //E: no ordering   
-        TestResource r5 = new TestResource("E");     
-        resources.add(r5);
+        TestResource jar5 = new TestResource("E");     
+        resources.add(jar5);
+        TestResource r5 = new TestResource("E/web-fragment.xml");
         FragmentDescriptor f5 = new FragmentDescriptor(r5, metaData);
         f5._name="E"; 
         metaData._webFragmentNameMap.put(f5._name, f5);
-        metaData._webFragmentResourceMap.put(r5, f5);
+        metaData._webFragmentResourceMap.put(jar5, f5);
         f5._otherType = FragmentDescriptor.OtherType.None;
         //((RelativeOrdering)metaData._ordering).addNoOthers(r5);
         
         //F: before others, before B
-        TestResource r6 = new TestResource("F");
-        resources.add(r6);
+        TestResource jar6 = new TestResource("F");
+        resources.add(jar6);
+        TestResource r6 = new TestResource("F/web-fragment.xml");
         FragmentDescriptor f6 = new FragmentDescriptor(r6, metaData);
         f6._name="F";
         metaData._webFragmentNameMap.put(f6._name, f6);
-        metaData._webFragmentResourceMap.put(r6,f6);
+        metaData._webFragmentResourceMap.put(jar6,f6);
         f6._otherType = FragmentDescriptor.OtherType.Before;
         //((RelativeOrdering)metaData._ordering).addBeforeOthers(r6);
         f6._befores.add("B");
@@ -267,7 +272,7 @@ public class OrderingTest extends TestCase
             fail("No outcome matched "+result);
     }
  
-    
+  
 
     
     public void testRelativeOrdering1 ()
@@ -280,63 +285,69 @@ public class OrderingTest extends TestCase
         
         //Example from ServletSpec p.70-71
         //No name: after others, before C
-        TestResource r1 = new TestResource(FragmentDescriptor.NAMELESS+"1");
-        resources.add(r1);
+        TestResource jar1 = new TestResource("plain");
+        resources.add(jar1);
+        TestResource r1 = new TestResource("plain/web-fragment.xml");
         FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
         f1._name = FragmentDescriptor.NAMELESS+"1";
         metaData._webFragmentNameMap.put(f1._name, f1); 
-        metaData._webFragmentResourceMap.put(r1,f1);
+        metaData._webFragmentResourceMap.put(jar1,f1);
         f1._otherType = FragmentDescriptor.OtherType.After;
         //((RelativeOrdering)metaData._ordering).addAfterOthers(f1);
         f1._befores.add("C");
         
         //B: before others
-        TestResource r2 = new TestResource("B");
-        resources.add(r2);
+        TestResource jar2 = new TestResource("B");
+        resources.add(jar2);
+        TestResource r2 = new TestResource("B/web-fragment.xml");
         FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
-        metaData._webFragmentResourceMap.put(r2,f2);
+        metaData._webFragmentResourceMap.put(jar2,f2);
         f2._otherType = FragmentDescriptor.OtherType.Before;
         //((RelativeOrdering)metaData._ordering).addBeforeOthers(f2);
                
         //C: no ordering
-        TestResource r3 = new TestResource("C");
-        resources.add(r3);
+        TestResource jar3 = new TestResource("C");
+        resources.add(jar3);
+        TestResource r3 = new TestResource("C/web-fragment.xml");
         FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
-        metaData._webFragmentResourceMap.put(r3,f3);
+        metaData._webFragmentResourceMap.put(jar3,f3);
         //((RelativeOrdering)metaData._ordering).addNoOthers(f3);
         f3._otherType = FragmentDescriptor.OtherType.None;
         
         //D: after others
-        TestResource r4 = new TestResource("D");
-        resources.add(r4);
+        TestResource jar4 = new TestResource("D");
+        resources.add(jar4);
+        TestResource r4 = new TestResource("D/web-fragment.xml");
         FragmentDescriptor f4 = new FragmentDescriptor(r4, metaData);
         f4._name="D"; 
         metaData._webFragmentNameMap.put(f4._name, f4);
-        metaData._webFragmentResourceMap.put(r4,f4);
+        metaData._webFragmentResourceMap.put(jar4,f4);
         //((RelativeOrdering)metaData._ordering).addAfterOthers(f4);
         f4._otherType = FragmentDescriptor.OtherType.After;
         
         //E: before others
-        TestResource r5 = new TestResource("E");
-        resources.add(r5);
+        TestResource jar5 = new TestResource("E");
+        resources.add(jar5);
+        TestResource r5 = new TestResource("E/web-fragment.xml");
         FragmentDescriptor f5 = new FragmentDescriptor(r5, metaData);
         f5._name="E";
         metaData._webFragmentNameMap.put(f5._name, f5);
-        metaData._webFragmentResourceMap.put(r5,f5);
+        metaData._webFragmentResourceMap.put(jar5,f5);
         //((RelativeOrdering)metaData._ordering).addBeforeOthers(f5);
         f5._otherType = FragmentDescriptor.OtherType.Before;
         
         //F: no ordering
-        TestResource r6 = new TestResource("F");
-        resources.add(r6);
+        TestResource jar6 = new TestResource("F");
+        resources.add(jar6);
+        TestResource r6 = new TestResource("F/web-fragment.xml");
         FragmentDescriptor f6 = new FragmentDescriptor(r6, metaData);
         f6._name="F";
         metaData._webFragmentNameMap.put(f6._name, f6);
-        metaData._webFragmentResourceMap.put(r6,f6);
+        metaData._webFragmentResourceMap.put(jar6,f6);
         //((RelativeOrdering)metaData._ordering).addNoOthers(f6);
         f6._otherType = FragmentDescriptor.OtherType.None;
         
@@ -349,11 +360,11 @@ public class OrderingTest extends TestCase
         // E, B, F, noname, D, C
         // E, B, F, D, noname, C
         //
-        String[] outcomes = {"BEF"+f1._name+"CD", 
-                             "BEF"+ f1._name+ "DC",
-                             "EBF"+ f1._name+ "CD",
-                             "EBF"+ f1._name+ "DC",
-                             "EBFD"+ f1._name};
+        String[] outcomes = {"BEFplainCD", 
+                             "BEFplainDC",
+                             "EBFplainCD",
+                             "EBFplainDC",
+                             "EBFDplain"};
         
         String orderedNames = "";
         for (Resource r:orderedList)
@@ -375,43 +386,47 @@ public class OrderingTest extends TestCase
         //Example from Spec p. 71-72
         
         //A: after B
-        TestResource r1 = new TestResource("A");
-        resources.add(r1);
+        TestResource jar1 = new TestResource("A");
+        resources.add(jar1);
+        TestResource r1 = new TestResource("A/web-fragment.xml");
         FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
-        metaData._webFragmentResourceMap.put(r1, f1);
+        metaData._webFragmentResourceMap.put(jar1, f1);
         //((RelativeOrdering)metaData._ordering).addNoOthers(f1);
         f1._otherType = FragmentDescriptor.OtherType.None;
         f1._afters.add("B");
         
         //B: no order
-        TestResource r2 = new TestResource("B");
-        resources.add(r2);
+        TestResource jar2 = new TestResource("B");
+        resources.add(jar2);
+        TestResource r2 = new TestResource("B/web-fragment.xml");
         FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
-        metaData._webFragmentResourceMap.put(r2, f2);
+        metaData._webFragmentResourceMap.put(jar2, f2);
         //((RelativeOrdering)metaData._ordering).addNoOthers(f2);
         f2._otherType = FragmentDescriptor.OtherType.None;
         
         //C: before others
-        TestResource r3 = new TestResource("C");
-        resources.add(r3);
+        TestResource jar3 = new TestResource("C");
+        resources.add(jar3);
+        TestResource r3 = new TestResource("C/web-fragment.xml");
         FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
-        metaData._webFragmentResourceMap.put(r3,f3);
+        metaData._webFragmentResourceMap.put(jar3,f3);
         //((RelativeOrdering)metaData._ordering).addBeforeOthers(f3);
         f3._otherType = FragmentDescriptor.OtherType.Before;
 
         //D: no order
-        TestResource r4 = new TestResource("D");
-        resources.add(r4);
+        TestResource jar4 = new TestResource("D");
+        resources.add(jar4);
+        TestResource r4 = new TestResource("D/web-fragment.xml");
         FragmentDescriptor f4 = new FragmentDescriptor(r4, metaData);
         f4._name="D"; 
         metaData._webFragmentNameMap.put(f4._name, f4);
-        metaData._webFragmentResourceMap.put(r4, f4);
+        metaData._webFragmentResourceMap.put(jar4, f4);
         //((RelativeOrdering)metaData._ordering).addNoOthers(f4);
         f4._otherType = FragmentDescriptor.OtherType.None;
         //
@@ -444,34 +459,37 @@ public class OrderingTest extends TestCase
         metaData._ordering = metaData.new RelativeOrdering();
 
         //A: after others, before C
-        TestResource r1 = new TestResource("A");
-        resources.add(r1);
+        TestResource jar1 = new TestResource("A");
+        resources.add(jar1);
+        TestResource r1 = new TestResource("A/web-fragment.xml");
         FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
-        metaData._webFragmentResourceMap.put(r1, f1);
+        metaData._webFragmentResourceMap.put(jar1, f1);
         //((RelativeOrdering)metaData._ordering).addAfterOthers(f1);
         f1._otherType = FragmentDescriptor.OtherType.After;
         f1._befores.add("C");
 
         //B: before others, before C
-        TestResource r2 = new TestResource("B");
-        resources.add(r2);
+        TestResource jar2 = new TestResource("B");
+        resources.add(jar2);
+        TestResource r2 = new TestResource("B/web-fragment.xml");
         FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
-        metaData._webFragmentResourceMap.put(r2,f2);
+        metaData._webFragmentResourceMap.put(jar2,f2);
         //((RelativeOrdering)metaData._ordering).addBeforeOthers(f2);
         f2._otherType = FragmentDescriptor.OtherType.Before;
         f2._befores.add("C");
 
         //C: no ordering   
-        TestResource r3 = new TestResource("C");
-        resources.add(r3);
+        TestResource jar3 = new TestResource("C");
+        resources.add(jar3);
+        TestResource r3 = new TestResource("C/web-fragment.xml");
         FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
-        metaData._webFragmentResourceMap.put(r3,f3);
+        metaData._webFragmentResourceMap.put(jar3,f3);
         //((RelativeOrdering)metaData._ordering).addNoOthers(f3);
         f3._otherType = FragmentDescriptor.OtherType.None;
         
@@ -499,23 +517,25 @@ public class OrderingTest extends TestCase
         metaData._ordering = metaData.new RelativeOrdering();
         
         //A: after B
-        TestResource r1 = new TestResource("A");
-        resources.add(r1);
+        TestResource jar1 = new TestResource("A");
+        resources.add(jar1);
+        TestResource r1 = new TestResource("A/web-fragment.xml");
         FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
-        metaData._webFragmentResourceMap.put(r1, f1);
+        metaData._webFragmentResourceMap.put(jar1, f1);
         //((RelativeOrdering)metaData._ordering).addNoOthers(f1);
         f1._otherType = FragmentDescriptor.OtherType.None;
         f1._afters.add("B");
         
         //B: after A
-        TestResource r2 = new TestResource("B");
-        resources.add(r2);
+        TestResource jar2 = new TestResource("B");
+        resources.add(jar2);
+        TestResource r2 = new TestResource("B/web-fragment.xml");
         FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
-        metaData._webFragmentResourceMap.put(r2, f2);
+        metaData._webFragmentResourceMap.put(jar2, f2);
         //((RelativeOrdering)metaData._ordering).addNoOthers(f2);
         f2._otherType = FragmentDescriptor.OtherType.None;
         f2._afters.add("A");
@@ -543,34 +563,37 @@ public class OrderingTest extends TestCase
         metaData._ordering = metaData.new RelativeOrdering();
         
         //A: after others, before C
-        TestResource r1 = new TestResource("A");
-        resources.add(r1);
+        TestResource jar1 = new TestResource("A");
+        resources.add(jar1);
+        TestResource r1 = new TestResource("A/web-fragment.xml");
         FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
-        metaData._webFragmentResourceMap.put(r1,f1);
+        metaData._webFragmentResourceMap.put(jar1,f1);
         //((RelativeOrdering)metaData._ordering).addAfterOthers(r1);
         f1._otherType = FragmentDescriptor.OtherType.After;
         f1._befores.add("C");
         
         //B: before others, after C
-        TestResource r2 = new TestResource("B");
-        resources.add(r2);
+        TestResource jar2 = new TestResource("B");
+        resources.add(jar2);
+        TestResource r2 = new TestResource("B/web-fragment.xml");
         FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
-        metaData._webFragmentResourceMap.put(r2,f2);
+        metaData._webFragmentResourceMap.put(jar2,f2);
         //((RelativeOrdering)metaData._ordering).addBeforeOthers(r2);
         f2._otherType = FragmentDescriptor.OtherType.Before;
         f2._afters.add("C");
         
         //C: no ordering
-        TestResource r3 = new TestResource("C");
-        resources.add(r3);
+        TestResource jar3 = new TestResource("C");
+        resources.add(jar3);
+        TestResource r3 = new TestResource("C/web-fragment.xml");
         FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
-        metaData._webFragmentResourceMap.put(r3,f3);
+        metaData._webFragmentResourceMap.put(jar3,f3);
         //((RelativeOrdering)metaData._ordering).addNoOthers(r3);
         f3._otherType = FragmentDescriptor.OtherType.None;
         
@@ -605,51 +628,57 @@ public class OrderingTest extends TestCase
         ((AbsoluteOrdering)metaData._ordering).add("C");
         ((AbsoluteOrdering)metaData._ordering).addOthers();
         
-        TestResource r1 = new TestResource("A");
-        resources.add(r1);
+        TestResource jar1 = new TestResource("A");
+        resources.add(jar1);
+        TestResource r1 = new TestResource("A/web-fragment.xml");
         FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
-        metaData._webFragmentResourceMap.put(r1,f1);
+        metaData._webFragmentResourceMap.put(jar1,f1);
         
-        TestResource r2 = new TestResource("B");
-        resources.add(r2);
+        TestResource jar2 = new TestResource("B");
+        resources.add(jar2);
+        TestResource r2 = new TestResource("B/web-fragment.xml");
         FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
-        metaData._webFragmentResourceMap.put(r2, f2);
+        metaData._webFragmentResourceMap.put(jar2, f2);
         
-        TestResource r3 = new TestResource("C");
-        resources.add(r3);
+        TestResource jar3 = new TestResource("C");
+        resources.add(jar3);
+        TestResource r3 = new TestResource("C/web-fragment.xml");
         FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
-        metaData._webFragmentResourceMap.put(r3, f3);
+        metaData._webFragmentResourceMap.put(jar3, f3);
         
-        TestResource r4 = new TestResource("D");
-        resources.add(r4);
+        TestResource jar4 = new TestResource("D");
+        resources.add(jar4);
+        TestResource r4 = new TestResource("D/web-fragment.xml");
         FragmentDescriptor f4 = new FragmentDescriptor((Resource)null, metaData);
         f4._name="D"; 
         metaData._webFragmentNameMap.put(f4._name, f4);
-        metaData._webFragmentResourceMap.put(r4, f4);
+        metaData._webFragmentResourceMap.put(jar4, f4);
         
-        TestResource r5 = new TestResource("E");
-        resources.add(r5);
+        TestResource jar5 = new TestResource("E");
+        resources.add(jar5);
+        TestResource r5 = new TestResource("E/web-fragment.xml");
         FragmentDescriptor f5 = new FragmentDescriptor((Resource)null, metaData);
         f5._name="E";
         metaData._webFragmentNameMap.put(f5._name, f5);
-        metaData._webFragmentResourceMap.put(r5, f5);
+        metaData._webFragmentResourceMap.put(jar5, f5);
         
-        TestResource r6 = new TestResource(FragmentDescriptor.NAMELESS+"1");
-        resources.add(r6);
+        TestResource jar6 = new TestResource("plain");
+        resources.add(jar6);
+        TestResource r6 = new TestResource ("plain/web-fragment.xml");
         FragmentDescriptor f6 = new FragmentDescriptor((Resource)null, metaData);
         f6._name=FragmentDescriptor.NAMELESS+"1";
         metaData._webFragmentNameMap.put(f6._name, f6);
-        metaData._webFragmentResourceMap.put(r6, f6);
+        metaData._webFragmentResourceMap.put(jar6, f6);
         
         List<Resource> list = metaData._ordering.order(resources);
         
-        String[] outcomes = {"ABCDE"+f6._name};
+        String[] outcomes = {"ABCDEplain"};
         String result = "";
         for (Resource r:list)
             result += ((TestResource)r)._name;
@@ -672,47 +701,53 @@ public class OrderingTest extends TestCase
         ((AbsoluteOrdering)metaData._ordering).add("B");
         ((AbsoluteOrdering)metaData._ordering).add("A");
         
-        TestResource r1 = new TestResource("A");
-        resources.add(r1);
+        TestResource jar1 = new TestResource("A");
+        resources.add(jar1);
+        TestResource r1 = new TestResource("A/web-fragment.xml");
         FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
-        metaData._webFragmentResourceMap.put(r1,f1);
+        metaData._webFragmentResourceMap.put(jar1,f1);
         
-        TestResource r2 = new TestResource("B");  
-        resources.add(r2);
+        TestResource jar2 = new TestResource("B");  
+        resources.add(jar2);
+        TestResource r2 = new TestResource("B/web-fragment.xml");
         FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
-        metaData._webFragmentResourceMap.put(r2,f2);
+        metaData._webFragmentResourceMap.put(jar2,f2);
         
-        TestResource r3 = new TestResource("C");
-        resources.add(r3);
+        TestResource jar3 = new TestResource("C");
+        resources.add(jar3);
+        TestResource r3 = new TestResource("C/web-fragment.xml");
         FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
-        metaData._webFragmentResourceMap.put(r3,f3);
+        metaData._webFragmentResourceMap.put(jar3,f3);
         
-        TestResource r4 = new TestResource("D");
-        resources.add(r4);
+        TestResource jar4 = new TestResource("D");
+        resources.add(jar4);
+        TestResource r4 = new TestResource("D/web-fragment.xml");
         FragmentDescriptor f4 = new FragmentDescriptor(r4, metaData);
         f4._name="D"; 
         metaData._webFragmentNameMap.put(f4._name, f4);
-        metaData._webFragmentResourceMap.put(r4,f4);
+        metaData._webFragmentResourceMap.put(jar4,f4);
         
-        TestResource r5 = new TestResource("E");
-        resources.add(r5);
+        TestResource jar5 = new TestResource("E");
+        resources.add(jar5);
+        TestResource r5 = new TestResource("E/web-fragment.xml");
         FragmentDescriptor f5 = new FragmentDescriptor(r5, metaData);
         f5._name="E";
         metaData._webFragmentNameMap.put(f5._name, f5);
-        metaData._webFragmentResourceMap.put(r5,f5);
+        metaData._webFragmentResourceMap.put(jar5,f5);
         
-        TestResource r6 = new TestResource(FragmentDescriptor.NAMELESS+"1");
-        resources.add(r6);
+        TestResource jar6 = new TestResource("plain");
+        resources.add(jar6);
+        TestResource r6 = new TestResource("plain/web-fragment.xml");
         FragmentDescriptor f6 = new FragmentDescriptor(r6, metaData);
         f6._name=FragmentDescriptor.NAMELESS+"1";
         metaData._webFragmentNameMap.put(f6._name, f6);
-        metaData._webFragmentResourceMap.put(r6,f6);
+        metaData._webFragmentResourceMap.put(jar6,f6);
         
         List<Resource> list = metaData._ordering.order(resources);
         String[] outcomes = {"CBA"};
@@ -753,34 +788,37 @@ public class OrderingTest extends TestCase
         metaData._ordering = metaData.new RelativeOrdering();
 
         //A: after others, before C
-        TestResource r1 = new TestResource("A");
-        resources.add(r1);
+        TestResource jar1 = new TestResource("A");
+        resources.add(jar1);
+        TestResource r1 = new TestResource("A/web-fragment.xml");
         FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
-        metaData._webFragmentResourceMap.put(r1, f1);
+        metaData._webFragmentResourceMap.put(jar1, f1);
         //((RelativeOrdering)metaData._ordering).addAfterOthers(f1);
         f1._otherType = FragmentDescriptor.OtherType.After;
         f1._befores.add("C");
 
         //B: before others, before C
-        TestResource r2 = new TestResource("B");
-        resources.add(r2);
+        TestResource jar2 = new TestResource("B");
+        resources.add(jar2);
+        TestResource r2 = new TestResource("B/web-fragment.xml");
         FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
-        metaData._webFragmentResourceMap.put(r2,f2);
+        metaData._webFragmentResourceMap.put(jar2,f2);
         //((RelativeOrdering)metaData._ordering).addBeforeOthers(f2);
         f2._otherType = FragmentDescriptor.OtherType.Before;
         f2._befores.add("C");
 
         //C: after A   
-        TestResource r3 = new TestResource("C");
-        resources.add(r3);
+        TestResource jar3 = new TestResource("C");
+        resources.add(jar3);
+        TestResource r3 = new TestResource("C/web-fragment.xml");
         FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
-        metaData._webFragmentResourceMap.put(r3,f3);
+        metaData._webFragmentResourceMap.put(jar3,f3);
         //((RelativeOrdering)metaData._ordering).addNoOthers(f3);
         f3._otherType = FragmentDescriptor.OtherType.None;
         f3._afters.add("A");
@@ -820,47 +858,53 @@ public class OrderingTest extends TestCase
         ((AbsoluteOrdering)metaData._ordering).add("C");
         ((AbsoluteOrdering)metaData._ordering).addOthers();
         
-        TestResource r1 = new TestResource("A");
-        resources.add(r1);
+        TestResource jar1 = new TestResource("A");
+        resources.add(jar1);
+        TestResource r1 = new TestResource("A/web-fragment.xml");
         FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
-        metaData._webFragmentResourceMap.put(r1,f1);
+        metaData._webFragmentResourceMap.put(jar1,f1);
         
-        TestResource r2 = new TestResource("B");
-        resources.add(r2);
+        TestResource jar2 = new TestResource("B");
+        resources.add(jar2);
+        TestResource r2 = new TestResource("B/web-fragment.xml");
         FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
-        metaData._webFragmentResourceMap.put(r2, f2);
+        metaData._webFragmentResourceMap.put(jar2, f2);
         
-        TestResource r3 = new TestResource("C");
-        resources.add(r3);
+        TestResource jar3 = new TestResource("C");
+        resources.add(jar3);
+        TestResource r3 = new TestResource("C/web-fragment.xml");
         FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
-        metaData._webFragmentResourceMap.put(r3, f3);
+        metaData._webFragmentResourceMap.put(jar3, f3);
         
-        TestResource r4 = new TestResource("D");
-        resources.add(r4);
+        TestResource jar4 = new TestResource("D");
+        resources.add(jar4);
+        TestResource r4 = new TestResource("D/web-fragment.xml");
         FragmentDescriptor f4 = new FragmentDescriptor((Resource)null, metaData);
         f4._name="D"; 
         metaData._webFragmentNameMap.put(f4._name, f4);
-        metaData._webFragmentResourceMap.put(r4, f4);
+        metaData._webFragmentResourceMap.put(jar4, f4);
         
-        TestResource r5 = new TestResource("E");
-        resources.add(r5);
+        TestResource jar5 = new TestResource("E");
+        resources.add(jar5);
+        TestResource r5 = new TestResource("E/web-fragment.xml");
         FragmentDescriptor f5 = new FragmentDescriptor((Resource)null, metaData);
         f5._name="E";
         metaData._webFragmentNameMap.put(f5._name, f5);
-        metaData._webFragmentResourceMap.put(r5, f5);
+        metaData._webFragmentResourceMap.put(jar5, f5);
         
-        TestResource r6 = new TestResource(FragmentDescriptor.NAMELESS+"1");
-        resources.add(r6);
+        TestResource jar6 = new TestResource("plain");
+        resources.add(jar6);
+        TestResource r6 = new TestResource("plain/web-fragment.xml");
         FragmentDescriptor f6 = new FragmentDescriptor((Resource)null, metaData);
         f6._name=FragmentDescriptor.NAMELESS+"1";
         metaData._webFragmentNameMap.put(f6._name, f6);
-        metaData._webFragmentResourceMap.put(r6, f6);
+        metaData._webFragmentResourceMap.put(jar6, f6);
         
         //plain jar
         TestResource r7 = new TestResource("plain1");
@@ -871,7 +915,7 @@ public class OrderingTest extends TestCase
         
         List<Resource> list = metaData._ordering.order(resources);
         
-        String[] outcomes = {"ABCDE"+f6._name+"plain1plain2"};
+        String[] outcomes = {"ABCDEplainplain1plain2"};
         String result = "";
         for (Resource r:list)
             result += ((TestResource)r)._name;

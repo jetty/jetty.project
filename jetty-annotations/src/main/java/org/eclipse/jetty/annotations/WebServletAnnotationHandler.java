@@ -17,8 +17,8 @@ import java.util.List;
 
 import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
-import org.eclipse.jetty.annotations.ClassAnnotation;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -51,7 +51,7 @@ public class WebServletAnnotationHandler implements DiscoverableAnnotationHandle
             return;    
        
         WebServletAnnotation annotation = new WebServletAnnotation (_context, className);
-        ((List<ClassAnnotation>)_context.getAttribute(AnnotationConfiguration.DISCOVERED_ANNOTATIONS)).add(annotation);
+        ((List<DiscoveredAnnotation>)_context.getAttribute(AnnotationConfiguration.DISCOVERED_ANNOTATIONS)).add(annotation);
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,

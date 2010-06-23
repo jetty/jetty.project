@@ -51,10 +51,8 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
     protected WebAppContext _context;
     protected MetaData _metaData;
 
-    public PlusDescriptorProcessor (MetaData processor)
+    public PlusDescriptorProcessor ()
     {
-        _metaData = processor;
-        _context = _metaData.getContext();
         try
         {
             registerVisitor("env-entry", getClass().getDeclaredMethod("visitEnvEntry", __signature));
@@ -70,21 +68,27 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-
+    /** 
+     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#start(org.eclipse.jetty.webapp.Descriptor)
+     */
+    public void start(Descriptor descriptor)
+    {     
+        _metaData = descriptor.getMetaData();
+        _context = _metaData.getContext();
+    }
+    
+    
     /** 
      * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#end(org.eclipse.jetty.webapp.Descriptor)
      */
     public void end(Descriptor descriptor)
     {
+        _metaData = null;
+        _context = null;
     }
 
     
-    /** 
-     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#start(org.eclipse.jetty.webapp.Descriptor)
-     */
-    public void start(Descriptor descriptor)
-    {        
-    }
+   
     
     /**
      * JavaEE 5.4.1.3 

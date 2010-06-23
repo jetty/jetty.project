@@ -25,6 +25,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -32,7 +33,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *
  *
  */
-public class WebFilterAnnotation extends ClassAnnotation
+public class WebFilterAnnotation extends DiscoveredAnnotation
 {
 
     /**

@@ -11,32 +11,32 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.webapp;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
- * ClassAnnotation
+ * DiscoveredAnnotation
  *
- * Represents an annotation on a class
+ * Represents an annotation that has been discovered
+ * by scanning source code of WEB-INF/classes and WEB-INF/lib jars.
+ * 
  */
-public abstract class ClassAnnotation
+public abstract class DiscoveredAnnotation
 {
     protected WebAppContext _context;
     protected String _className;
     protected Class _clazz;
     
-   
+    public abstract void apply();
     
-    public ClassAnnotation (WebAppContext context, String className)
+    public DiscoveredAnnotation (WebAppContext context, String className)
     {
         _context = context;
         _className = className;
     }
     
-    public abstract void apply();
     
     public Class getTargetClass()
     {

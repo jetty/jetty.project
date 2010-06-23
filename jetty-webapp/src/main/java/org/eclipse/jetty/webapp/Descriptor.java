@@ -131,10 +131,10 @@ public class Descriptor
     
     
     
-    public Descriptor (Resource xml, MetaData processor)
+    public Descriptor (Resource xml, MetaData md)
     {
         _xml = xml;
-        _metaData = processor;
+        _metaData = md;
     }
     
     public void parse ()
@@ -178,6 +178,11 @@ public class Descriptor
     public Resource getResource ()
     {
         return _xml;
+    }
+    
+    public MetaData getMetaData()
+    {
+        return _metaData;
     }
     
     public void processVersion ()

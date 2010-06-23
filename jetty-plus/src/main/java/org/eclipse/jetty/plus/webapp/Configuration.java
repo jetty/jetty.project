@@ -61,21 +61,27 @@ public class Configuration implements org.eclipse.jetty.webapp.Configuration
         
         MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
         if (metaData == null)
-           throw new IllegalStateException ("No processor for web xml");
+           throw new IllegalStateException ("No metadata");
         
+        metaData.addDescriptorProcessor(new PlusDescriptorProcessor());
+        
+        /*
+         * THE PROCESSING IS NOW DONE IN metadata.resolve ()
+         
         PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor(metaData);
         plusProcessor.process(metaData.getWebDefault());
         plusProcessor.process(metaData.getWebXml());
      
 
         //Process plus-elements of each descriptor
-        for (FragmentDescriptor frag: metaData.getFragments())
+        for (FragmentDescriptor frag: metaData.getOrderedFragments())
         {
             plusProcessor.process(frag);
         }
 
         //process the override-web.xml descriptor
         plusProcessor.process(metaData.getOverrideWeb());
+        */
     }
     
     public void postConfigure(WebAppContext context) throws Exception

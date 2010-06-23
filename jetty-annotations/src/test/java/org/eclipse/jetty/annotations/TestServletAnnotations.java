@@ -28,6 +28,7 @@ import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
+import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Test;
 
@@ -50,7 +51,7 @@ public class TestServletAnnotations
         wac.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, collection);
         RunAsCollection runAsCollection = new RunAsCollection();
         wac.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);
-        List<ClassAnnotation> discoveredAnnotations = new ArrayList<ClassAnnotation>();
+        List<DiscoveredAnnotation> discoveredAnnotations = new ArrayList<DiscoveredAnnotation>();
         wac.setAttribute(AnnotationConfiguration.DISCOVERED_ANNOTATIONS, discoveredAnnotations);
         parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new WebServletAnnotationHandler(wac));
        

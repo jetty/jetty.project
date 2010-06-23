@@ -21,6 +21,7 @@ import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -28,7 +29,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *
  *
  */
-public class WebListenerAnnotation extends ClassAnnotation
+public class WebListenerAnnotation extends DiscoveredAnnotation
 {
 
     /**

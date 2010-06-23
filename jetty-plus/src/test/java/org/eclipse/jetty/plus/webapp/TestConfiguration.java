@@ -54,7 +54,7 @@ public class TestConfiguration
             
             MetaData metaData = new MetaData(wac);
             
-            PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor(metaData);
+            PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor();
 
             //bind some EnvEntrys at the server level
             EnvEntry ee1 = new EnvEntry(server, "xxx/a", "100", true);
@@ -78,8 +78,7 @@ public class TestConfiguration
             assertNotNull(NamingEntryUtil.lookupNamingEntry(wac, "zzz/c"));
             assertNotNull(NamingEntryUtil.lookupNamingEntry(wac, "zzz/e"));
 
-            Configuration config = new Configuration();
-
+            //make a new env configuration
             EnvConfiguration envConfig = new EnvConfiguration();
 
 

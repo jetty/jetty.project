@@ -24,6 +24,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -31,7 +32,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *
  *
  */
-public class WebServletAnnotation extends ClassAnnotation
+public class WebServletAnnotation extends DiscoveredAnnotation
 {
     
     public WebServletAnnotation (WebAppContext context, String className)
@@ -77,6 +78,7 @@ public class WebServletAnnotation extends ClassAnnotation
             Log.warn(clazz.getName()+ " defines neither @WebServlet.value nor @WebServlet.urlPatterns");
             return;
         }
+        
         //canonicalize the patterns
         ArrayList<String> urlPatternList = new ArrayList<String>();
         for (String p : urlPatterns)
@@ -84,7 +86,7 @@ public class WebServletAnnotation extends ClassAnnotation
         
         String servletName = (annotation.name().equals("")?clazz.getName():annotation.name());
 
-        //Find out if a <servlet> from web.xml of this type already exists with this name
+        //Find out if a <servlet>  of this type already exists with this name
         ServletHolder[] holders = _context.getServletHandler().getServlets();
         boolean isNew = true;
         ServletHolder holder = null;

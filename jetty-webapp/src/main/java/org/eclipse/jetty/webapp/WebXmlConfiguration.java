@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2003-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2003-2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -40,15 +40,12 @@ public class WebXmlConfiguration implements Configuration
      */
     public void preConfigure (WebAppContext context) throws Exception
     {
-        
+
         MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
         if (metaData == null)
-        {
-            metaData = new MetaData (context);
-            context.setAttribute(MetaData.METADATA, metaData);
-        }
-        
-        
+            throw new IllegalStateException("No metadata");
+
+
         //parse webdefault.xml
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
@@ -91,14 +88,14 @@ public class WebXmlConfiguration implements Configuration
             if (Log.isDebugEnabled()) Log.debug("Cannot configure webapp after it is started");
             return;
         }
-        
+
         MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
         if (metaData == null)
-        {
-            metaData = new MetaData (context);
-            context.setAttribute(MetaData.METADATA, metaData);
-        }
+            throw new IllegalStateException("No metadata");
+
+        metaData.addDescriptorProcessor(new StandardDescriptorProcessor());
         
+        /*
         StandardDescriptorProcessor descriptorProcessor = (StandardDescriptorProcessor)context.getAttribute(StandardDescriptorProcessor.STANDARD_PROCESSOR);
         if (descriptorProcessor == null)
         {
@@ -114,7 +111,7 @@ public class WebXmlConfiguration implements Configuration
         
         //process override-web.xml            
         descriptorProcessor.process(metaData.getOverrideWeb());
-      
+        */
     }
 
     public void postConfigure(WebAppContext context) throws Exception

@@ -21,7 +21,7 @@ import org.eclipse.jetty.util.resource.Resource;
 /**
  * FragmentConfiguration
  * 
- * This configuration supports some Servlet 3.0 features in jetty-7. 
+ * 
  * 
  * Process web-fragments in jars
  */
@@ -33,16 +33,13 @@ public class FragmentConfiguration implements Configuration
     {
         if (!context.isConfigurationDiscovered())
             return;
-        
+
         MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
         if (metaData == null)
-        {
-            metaData = new MetaData (context);
-            context.setAttribute(MetaData.METADATA, metaData);
-        }
-      
-        //parse web-fragment.xmls
-        parseWebFragments(context, metaData);
+            throw new IllegalStateException("No metadata");
+
+        //find all web-fragment.xmls
+        findWebFragments(context, metaData);
         
     }
     
@@ -53,26 +50,10 @@ public class FragmentConfiguration implements Configuration
         
         MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
         if (metaData == null)
-        {
-            metaData = new MetaData (context);
-            context.setAttribute(MetaData.METADATA, metaData);
-        }
+            throw new IllegalStateException("No metadata");
         
-        StandardDescriptorProcessor processor = (StandardDescriptorProcessor)context.getAttribute(StandardDescriptorProcessor.STANDARD_PROCESSOR);
-        if (processor == null)
-        {
-            processor = new StandardDescriptorProcessor(metaData);
-            context.setAttribute(StandardDescriptorProcessor.STANDARD_PROCESSOR, processor);
-        }
-        
-        //order the fragments first
+        //order the fragments
         metaData.orderFragments(); 
-          
-        //process the fragments - TODO change this
-       List<FragmentDescriptor>fragments = metaData.getOrderedFragments();
-       for (FragmentDescriptor frag:fragments)
-           processor.process(frag);
-           
     }
 
     public void deconfigure(WebAppContext context) throws Exception
@@ -91,14 +72,14 @@ public class FragmentConfiguration implements Configuration
      * 
      * @throws Exception
      */
-    public void parseWebFragments (final WebAppContext context, final MetaData processor) throws Exception
+    public void findWebFragments (final WebAppContext context, final MetaData metaData) throws Exception
     {
         List<Resource> frags = (List<Resource>)context.getAttribute(FRAGMENT_RESOURCES);
         if (frags!=null)
         {
             for (Resource frag : frags)
             {
-                processor.addFragment(Resource.newResource("jar:"+frag.getURL()+"!/META-INF/web-fragment.xml"));
+                metaData.addFragment(frag, Resource.newResource("jar:"+frag.getURL()+"!/META-INF/web-fragment.xml"));
             }
         }
     }

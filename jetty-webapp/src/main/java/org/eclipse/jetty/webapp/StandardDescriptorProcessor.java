@@ -83,10 +83,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
    
     
     
-    public StandardDescriptorProcessor (MetaData processor)
+    public StandardDescriptorProcessor ()
     {
-        _metaData = processor;
-        _context = _metaData.getContext();
+ 
         try
         {
             registerVisitor("context-param", this.getClass().getDeclaredMethod("visitContextParam", __signature));
@@ -121,6 +120,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
      */
     public void start(Descriptor descriptor)
     {
+        _metaData = descriptor.getMetaData();
+        _context = _metaData.getContext();
+        
         //Get the current objects from the context
         _servletHandler = _context.getServletHandler();
         _securityHandler = (SecurityHandler)_context.getSecurityHandler();
@@ -166,6 +168,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
         if (_errorPages != null && _context.getErrorHandler() instanceof ErrorPageErrorHandler)
             ((ErrorPageErrorHandler)_context.getErrorHandler()).setErrorPages(_errorPages);
+        
+        _metaData = null;
+        _context = null;
     }
     
     public void visitContextParam (Descriptor descriptor, XmlParser.Node node)
@@ -249,11 +254,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String pvalue = paramNode.getString("param-value", false, true);
             
             Origin origin = _metaData.getOrigin(servlet_name+"servlet.init-param."+pname);
+            
             switch (origin)
             {
                 case NotSet:
                 {
                     //init-param not already set, so set it
+                    
                     registration.setInitParameter(pname, pvalue); 
                     _metaData.setOrigin(servlet_name+"servlet.init-param."+pname, descriptor);
                     break;

@@ -49,9 +49,12 @@ public class MetaData
     protected Descriptor _webDefaultsRoot;
     protected Descriptor _webXmlRoot;
     protected Descriptor _webOverrideRoot;
+    protected List<DiscoveredAnnotation> _annotations = new ArrayList<DiscoveredAnnotation>();
+    protected List<DescriptorProcessor> _descriptorProcessors = new ArrayList<DescriptorProcessor>();
     protected List<FragmentDescriptor> _webFragmentRoots = new ArrayList<FragmentDescriptor>();
     protected Map<String,FragmentDescriptor> _webFragmentNameMap = new HashMap<String,FragmentDescriptor>();
     protected Map<Resource, FragmentDescriptor> _webFragmentResourceMap = new HashMap<Resource, FragmentDescriptor>();
+    protected Map<Resource, List<DiscoveredAnnotation>> _webFragmentAnnotations = new HashMap<Resource, List<DiscoveredAnnotation>>();
     protected List<Resource> _orderedResources;
     protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected StandardDescriptorProcessor _standardDescriptorProcessor;
@@ -103,9 +106,10 @@ public class MetaData
                     FragmentDescriptor f = others.remove(item);
                     if (f != null)
                     {
-                        orderedList.add(f.getResource()); //take from others and put into final list in order, ignoring duplicate names
+                        Resource jar = getJarForFragment(item);
+                        orderedList.add(jar); //take from others and put into final list in order, ignoring duplicate names
                         //remove resource from list for resource matching name of descriptor
-                        tmp.remove(f.getResource());
+                        tmp.remove(jar);
                     }
                 }
                 else
@@ -164,29 +168,29 @@ public class MetaData
          * @see org.eclipse.jetty.webapp.MetaData.Ordering#order(java.util.List)
          */
         public List<Resource> order(List<Resource> jars)
-        {           
+        {         
             //for each jar, put it into the ordering according to the fragment ordering
-            for (Resource r:jars)
+            for (Resource jar:jars)
             {
                 //check if the jar has a fragment descriptor
-                FragmentDescriptor descriptor = _webFragmentResourceMap.get(r);
+                FragmentDescriptor descriptor = _webFragmentResourceMap.get(jar);
                 if (descriptor != null)
                 {
                     switch (descriptor.getOtherType())
                     {
                         case None:
                         {
-                            ((RelativeOrdering)_ordering).addNoOthers(r);
+                            ((RelativeOrdering)_ordering).addNoOthers(jar);
                             break;
                         }
                         case Before:
                         { 
-                            ((RelativeOrdering)_ordering).addBeforeOthers(r);
+                            ((RelativeOrdering)_ordering).addBeforeOthers(jar);
                             break;
                         }
                         case After:
                         {
-                            ((RelativeOrdering)_ordering).addAfterOthers(r);
+                            ((RelativeOrdering)_ordering).addAfterOthers(jar);
                             break;
                         }
                     } 
@@ -194,7 +198,7 @@ public class MetaData
                 else
                 {
                     //jar fragment has no descriptor, but there is a relative ordering in place, so it must be part of the others
-                    ((RelativeOrdering)_ordering).addNoOthers(r);
+                    ((RelativeOrdering)_ordering).addNoOthers(jar);
                 }
             }            
                 
@@ -294,7 +298,7 @@ public class MetaData
                            {
                                changes = true;
                                // must be in the noOthers list or it would have been an error
-                               Resource bResource = getResourceForFragment(b);
+                               Resource bResource = getJarForFragment(b);
                                if (bResource != null)
                                {
                                    //If its in the no-others list, insert into this list so that we are before it
@@ -334,7 +338,7 @@ public class MetaData
                            {
                                changes = true;
                                //take it out of the noOthers list and put it in the right place in this list
-                               Resource aResource = getResourceForFragment(a);
+                               Resource aResource = getJarForFragment(a);
                                if (aResource != null)
                                {
                                    if (_noOthers.remove(aResource))
@@ -460,11 +464,11 @@ public class MetaData
         */
        protected void insert(List<Resource> list, int index, String fragName)
        {
-           FragmentDescriptor fd = getFragment(fragName);
-           if (fd == null)
-              throw new IllegalStateException("Fragment is null for insertion");
+           Resource jar = getJarForFragment(fragName);
+           if (jar == null)
+               throw new IllegalStateException("No jar for insertion");
            
-           insert(list, index, fd.getResource());
+           insert(list, index, jar);
        }
        
        protected void insert(List<Resource> list, int index, Resource resource)
@@ -492,7 +496,8 @@ public class MetaData
           if (fd == null)
               return -1;
           
-          Resource r = fd.getResource();
+          
+          Resource r = getJarForFragment(fragmentName);
           if (r == null)
               return -1;
           
@@ -593,7 +598,14 @@ public class MetaData
     }
     
     
-    public void addFragment (Resource fragment)
+    /**
+     * Add a web-fragment.xml
+     * 
+     * @param jarResource the jar the fragment is contained in
+     * @param xmlResource the resource representing the xml file
+     * @throws Exception
+     */
+    public void addFragment (Resource jarResource, Resource xmlResource)
     throws Exception
     { 
         Boolean metaComplete = (Boolean)_context.getAttribute(METADATA_COMPLETE);
@@ -601,8 +613,8 @@ public class MetaData
             return; //do not process anything else if web.xml/web-override.xml set metadata-complete
         
         //Metadata-complete is not set, or there is no web.xml
-        FragmentDescriptor descriptor = new FragmentDescriptor(fragment, this);
-        _webFragmentResourceMap.put(fragment, descriptor);
+        FragmentDescriptor descriptor = new FragmentDescriptor(xmlResource, this);
+        _webFragmentResourceMap.put(jarResource, descriptor);
         _webFragmentRoots.add(descriptor);
         
         descriptor.parse();
@@ -618,30 +630,103 @@ public class MetaData
             _ordering = new RelativeOrdering();
     }
 
+    /**
+     * Annotations not associated with a WEB-INF/lib fragment jar.
+     * These are from WEB-INF/classes or the ??container path??
+     * @param annotations
+     */
+    public void addDiscoveredAnnotations(List<DiscoveredAnnotation> annotations)
+    {
+        _annotations.addAll(annotations);
+    }
 
+    public void addDiscoveredAnnotations(Resource resource, List<DiscoveredAnnotation> annotations)
+    {
+        _webFragmentAnnotations.put(resource, annotations);
+    }
+    
+    public void addDescriptorProcessor(DescriptorProcessor p)
+    {
+        _descriptorProcessors.add(p);
+    }
     
     public void orderFragments ()
     {
+        //if we have already ordered them don't do it again
+        if (_orderedResources != null)
+            return;
+        
         if (_ordering != null)
         {
             //Get the jars in WEB-INF/lib according to the order specified    
             _orderedResources = _ordering.order((List<Resource>)_context.getAttribute(WebInfConfiguration.WEB_INF_JAR_RESOURCES));
+            
             _context.setAttribute(WebInfConfiguration.WEB_INF_ORDERED_JAR_RESOURCES, _orderedResources);
             List<String> orderedJars = new ArrayList<String>();
-         
-                for (Resource webInfJar:_orderedResources)
-                {
-                    //get just the name of the jar file
-                    String fullname = webInfJar.getName();
-                    int i = fullname.indexOf(".jar");          
-                    int j = fullname.lastIndexOf("/", i);
-                    orderedJars.add(fullname.substring(j+1,i+4));
-                }
+
+            for (Resource webInfJar:_orderedResources)
+            {
+                //get just the name of the jar file
+                String fullname = webInfJar.getName();
+                int i = fullname.indexOf(".jar");          
+                int j = fullname.lastIndexOf("/", i);
+                orderedJars.add(fullname.substring(j+1,i+4));
+            }
 
             _context.setAttribute(ServletContext.ORDERED_LIBS, orderedJars);
         }
         else
             _orderedResources = new ArrayList<Resource>((List<Resource>)_context.getAttribute(WebInfConfiguration.WEB_INF_JAR_RESOURCES));
+    }
+    
+    
+    /**
+     * Resolve all servlet/filter/listener metadata from all sources: descriptors and annotations.
+     * 
+     */
+    public void resolve ()
+    throws Exception
+    {
+        //TODO - apply all descriptors and annotations in order:
+        //apply descriptorProcessors to web-defaults.xml
+        //apply descriptorProcessors to web.xml
+        //apply descriptorProcessors to web-override.xml
+        //apply discovered annotations from container path
+        //apply discovered annotations from WEB-INF/classes
+        //for the ordering of the jars in WEB-INF/lib:
+        //  +apply descriptorProcessors to web-fragment.xml
+        //  +apply discovered annotations
+      
+        for (DescriptorProcessor p:_descriptorProcessors)
+        {
+            p.process(getWebDefault());
+            p.process(getWebXml());
+            p.process(getOverrideWeb());
+        }
+        
+        for (DiscoveredAnnotation a:_annotations)
+            a.apply();
+    
+        
+        List<Resource> resources = getOrderedResources();
+        for (Resource r:resources)
+        {
+            FragmentDescriptor fd = _webFragmentResourceMap.get(r);
+            if (fd != null)
+            {
+                for (DescriptorProcessor p:_descriptorProcessors)
+                {
+                    p.process(fd);
+                }
+            }
+            
+            List<DiscoveredAnnotation> fragAnnotations = _webFragmentAnnotations.get(r);
+            if (fragAnnotations != null)
+            {
+                for (DiscoveredAnnotation a:fragAnnotations)
+                    a.apply();
+            }
+        }
     }
     
     public boolean isDistributable ()
@@ -651,7 +736,8 @@ public class MetaData
                 || (_webXmlRoot != null && _webXmlRoot.isDistributable())
                 || (_webOverrideRoot != null && _webOverrideRoot.isDistributable()));
 
-        for (Resource r: _orderedResources)
+        List<Resource> orderedResources = getOrderedResources();
+        for (Resource r: orderedResources)
         {  
             FragmentDescriptor d = _webFragmentResourceMap.get(r);
             if (d!=null)
@@ -711,9 +797,9 @@ public class MetaData
         _ordering = o;
     }
     
-    public FragmentDescriptor getFragment (Resource r)
+    public FragmentDescriptor getFragment (Resource jar)
     {
-        return _webFragmentResourceMap.get(r);
+        return _webFragmentResourceMap.get(jar);
     }
     
     public FragmentDescriptor getFragment(String name)
@@ -721,12 +807,19 @@ public class MetaData
         return _webFragmentNameMap.get(name);
     }
     
-    public Resource getResourceForFragment (String name)
+    public Resource getJarForFragment (String name)
     {
         FragmentDescriptor f = getFragment(name);
         if (f == null)
             return null;
-        return f.getResource();
+        
+        Resource jar = null;
+        for (Resource r: _webFragmentResourceMap.keySet())
+        {
+            if (_webFragmentResourceMap.get(r).equals(f))
+                jar = r;
+        }
+        return jar;
     }
     
     public Map<String,FragmentDescriptor> getNamedFragments ()
