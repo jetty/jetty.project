@@ -47,11 +47,8 @@ import org.eclipse.jetty.xml.XmlParser;
 
 
 
-
-
 /**
  * WebXmlProcessor
- *
  *
  */
 public class WebXmlProcessor
@@ -76,8 +73,8 @@ public class WebXmlProcessor
     protected Object _servletMappings;
     protected Object _listeners;
     protected Object _welcomeFiles;
-    protected Set<String> _roles = new HashSet<String>();
-    protected Object _constraintMappings;
+    protected Set<String> _newRoles = new HashSet<String>();
+    protected List<ConstraintMapping> _newConstraintMappings;
     protected Map _errorPages;
     protected boolean _hasJSP;
     protected String _jspServletName;
@@ -395,15 +392,10 @@ public class WebXmlProcessor
         _servletMappings = LazyList.array2List(_servletHandler.getServletMappings());
         _listeners = LazyList.array2List(_context.getEventListeners());
         _welcomeFiles = LazyList.array2List(_context.getWelcomeFiles());
-        if (_securityHandler instanceof ConstraintAware)
-        {
-             _constraintMappings = LazyList.array2List(((ConstraintAware) _securityHandler).getConstraintMappings());
-            
-            if (((ConstraintAware) _securityHandler).getRoles() != null)
-            {
-                _roles.addAll(((ConstraintAware) _securityHandler).getRoles());
-            }
-        }
+        
+        _newConstraintMappings=new ArrayList<ConstraintMapping>();
+        _newRoles=new HashSet<String>();
+        
        _errorPages = _context.getErrorHandler() instanceof ErrorPageErrorHandler ? ((ErrorPageErrorHandler)_context.getErrorHandler()).getErrorPages() : null; 
        
         Iterator iter = config.iterator();
@@ -439,9 +431,10 @@ public class WebXmlProcessor
         // TODO jaspi check this
         if (_securityHandler instanceof ConstraintAware)
         {
-            ((ConstraintAware) _securityHandler).setConstraintMappings((ConstraintMapping[]) LazyList.toArray(_constraintMappings,
-                                                                                                              ConstraintMapping.class),
-                                                                                                               _roles);
+            for (String role : _newRoles)
+                ((ConstraintAware)_securityHandler).addRole(role);
+            for (ConstraintMapping mapping : _newConstraintMappings)
+                ((ConstraintAware)_securityHandler).addConstraintMapping(mapping);
         }
 
         if (_errorPages != null && _context.getErrorHandler() instanceof ErrorPageErrorHandler)
@@ -987,7 +980,7 @@ public class WebXmlProcessor
                             mapping.setMethod(method);
                             mapping.setPathSpec(url);
                             mapping.setConstraint(sc);
-                            _constraintMappings = LazyList.add(_constraintMappings, mapping);
+                            _newConstraintMappings.add(mapping);
                         }
                     }
                     else
@@ -995,7 +988,7 @@ public class WebXmlProcessor
                         ConstraintMapping mapping = new ConstraintMapping();
                         mapping.setPathSpec(url);
                         mapping.setConstraint(sc);
-                        _constraintMappings = LazyList.add(_constraintMappings, mapping);
+                        _newConstraintMappings.add(mapping);
                     }
                 }
             }
@@ -1047,7 +1040,7 @@ public class WebXmlProcessor
     {
         XmlParser.Node roleNode = node.get("role-name");
         String role = roleNode.toString(false, true);
-        _roles.add(role);
+        _newRoles.add(role);
     }
 
     /* ------------------------------------------------------------ */

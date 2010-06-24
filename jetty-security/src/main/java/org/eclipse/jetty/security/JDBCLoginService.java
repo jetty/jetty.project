@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Properties;
 
 import org.eclipse.jetty.http.security.Credential;
-import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;

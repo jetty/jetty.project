@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.security;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -20,9 +21,29 @@ import java.util.Set;
  */
 public interface ConstraintAware
 {
-    ConstraintMapping[] getConstraintMappings();
-
+    List<ConstraintMapping> getConstraintMappings();
     Set<String> getRoles();
-
-    void setConstraintMappings(ConstraintMapping[] constraintMappings, Set<String> roles);
+    
+    /* ------------------------------------------------------------ */
+    /** Set Constraint Mappings and roles.
+     * Can only be called during initialization.
+     * @param constraintMappings
+     * @param roles
+     */
+    void setConstraintMappings(List<ConstraintMapping> constraintMappings, Set<String> roles);
+    
+    /* ------------------------------------------------------------ */
+    /** Add a Constraint Mapping.
+     * May be called for running webapplication as an annotated servlet is instantiated.
+     * @param mapping
+     */
+    void addConstraintMapping(ConstraintMapping mapping);
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Add a Role definition.
+     * May be called on running webapplication as an annotated servlet is instantiated.
+     * @param role
+     */
+    void addRole(String role);
 }

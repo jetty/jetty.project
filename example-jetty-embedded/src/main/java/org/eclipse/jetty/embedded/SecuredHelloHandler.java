@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.embedded;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -49,7 +50,7 @@ public class SecuredHelloHandler
         knownRoles.add("user");
         knownRoles.add("admin");
         
-        security.setConstraintMappings(new ConstraintMapping[] {mapping}, knownRoles);
+        security.setConstraintMappings(Collections.singletonList(mapping), knownRoles);
         security.setAuthenticator(new BasicAuthenticator());
         security.setLoginService(loginService);
         security.setStrict(false);

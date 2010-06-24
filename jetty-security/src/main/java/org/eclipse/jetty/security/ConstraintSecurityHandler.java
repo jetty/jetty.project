@@ -14,9 +14,13 @@
 package org.eclipse.jetty.security;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.http.security.Constraint;
@@ -36,9 +40,9 @@ import org.eclipse.jetty.util.StringMap;
  */
 public class ConstraintSecurityHandler extends SecurityHandler implements ConstraintAware
 {
-    private ConstraintMapping[] _constraintMappings;
-    private Set<String> _roles;
-    private PathMap _constraintMap = new PathMap();
+    private final List<ConstraintMapping> _constraintMappings= new CopyOnWriteArrayList<ConstraintMapping>();
+    private final Set<String> _roles = new CopyOnWriteArraySet<String>();
+    private final PathMap _constraintMap = new PathMap();
     private boolean _strict = true;
 
     
@@ -76,7 +80,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     /**
      * @return Returns the contraintMappings.
      */
-    public ConstraintMapping[] getConstraintMappings()
+    public List<ConstraintMapping> getConstraintMappings()
     {
         return _constraintMappings;
     }
@@ -96,7 +100,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      *            The contraintMappings to set, from which the set of known roles
      *            is determined.
      */
-    public void setConstraintMappings(ConstraintMapping[] constraintMappings)
+    public void setConstraintMappings(List<ConstraintMapping> constraintMappings)
     {
         setConstraintMappings(constraintMappings,null);
     }
@@ -110,11 +114,12 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      *            The contraintMappings to set.
      * @param roles The known roles (or null to determine them from the mappings)
      */
-    public void setConstraintMappings(ConstraintMapping[] constraintMappings, Set<String> roles)
+    public void setConstraintMappings(List<ConstraintMapping> constraintMappings, Set<String> roles)
     {
         if (isStarted())
             throw new IllegalStateException("Started");
-        _constraintMappings = constraintMappings;
+        _constraintMappings.clear();
+        _constraintMappings.addAll(constraintMappings);
         
         if (roles==null)
         {
@@ -146,7 +151,48 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (isStarted())
             throw new IllegalStateException("Started");
         
-        this._roles = roles;
+        _roles.clear();
+        _roles.addAll(roles);
+    }
+    
+    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.security.ConstraintAware#addConstraintMapping(org.eclipse.jetty.security.ConstraintMapping)
+     */
+    public void addConstraintMapping(ConstraintMapping mapping)
+    {
+        _constraintMappings.add(mapping);
+        if (mapping.getConstraint()!=null && mapping.getConstraint().getRoles()!=null)
+            for (String role :  mapping.getConstraint().getRoles())
+                addRole(role);
+                
+        if (isStarted())
+        {
+            processContraintMapping(mapping);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.security.ConstraintAware#addRole(java.lang.String)
+     */
+    public void addRole(String role)
+    {
+        boolean modified = _roles.add(role);
+        if (isStarted() && modified && _strict)
+        {
+            // Add the new role to currently defined any role role infos
+            for (Map<String,RoleInfo> map : (Collection<Map<String,RoleInfo>>)_constraintMap.values())
+            {
+                for (RoleInfo info : map.values())
+                {
+                    if (info.isAnyRole())
+                        info.addRole(role);
+                }
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -161,92 +207,95 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         {
             for (ConstraintMapping mapping : _constraintMappings)
             {
-                Map<String, RoleInfo> mappings = (Map<String, RoleInfo>)_constraintMap.get(mapping.getPathSpec());
-                if (mappings == null)
-                {
-                    mappings = new StringMap();
-                    _constraintMap.put(mapping.getPathSpec(),mappings);
-                }
-                RoleInfo allMethodsRoleInfo = mappings.get(null);
-                if (allMethodsRoleInfo != null && allMethodsRoleInfo.isForbidden())
-                {
-                    continue;
-                }
-                String httpMethod = mapping.getMethod();
-                RoleInfo roleInfo = mappings.get(httpMethod);
-                if (roleInfo == null)
-                {
-                    roleInfo = new RoleInfo();
-                    mappings.put(httpMethod,roleInfo);
-                    if (allMethodsRoleInfo != null)
-                    {
-                        roleInfo.combine(allMethodsRoleInfo);
-                    }
-                }
-                if (roleInfo.isForbidden())
-                {
-                    continue;
-                }
-                Constraint constraint = mapping.getConstraint();
-                boolean forbidden = constraint.isForbidden();
-                roleInfo.setForbidden(forbidden);
-                if (forbidden)
-                {
-                    if (httpMethod == null)
-                    {
-                        mappings.clear();
-                        mappings.put(null,roleInfo);
-                    }
-                }
-                else
-                {
-                    UserDataConstraint userDataConstraint = UserDataConstraint.get(constraint.getDataConstraint());
-                    roleInfo.setUserDataConstraint(userDataConstraint);
-
-                    boolean checked = constraint.getAuthenticate();
-                    roleInfo.setChecked(checked);
-                    if (roleInfo.isChecked())
-                    {
-                        if (constraint.isAnyRole())
-                        {
-                            if (_strict)
-                            {
-                                // * means "all defined roles"
-                                for (String role : _roles)
-                                    roleInfo.addRole(role);
-                            }
-                            else
-                                // * means any role
-                                roleInfo.setAnyRole(true);
-                        }
-                        else
-                        {
-                            String[] newRoles = constraint.getRoles();
-                            for (String role : newRoles)
-                            {
-                                if (_strict &&!_roles.contains(role))
-                                    throw new IllegalArgumentException("Attempt to use undeclared role: " + role + ", known roles: " + _roles);
-                                roleInfo.addRole(role);
-                            }
-                        }
-                    }
-                    if (httpMethod == null)
-                    {
-                        for (Map.Entry<String, RoleInfo> entry : mappings.entrySet())
-                        {
-                            if (entry.getKey() != null)
-                            {
-                                RoleInfo specific = entry.getValue();
-                                specific.combine(roleInfo);
-                            }
-                        }
-                    }
-                }
+                processContraintMapping(mapping);
             }
         }
         super.doStart();
     }
 
+    protected void processContraintMapping(ConstraintMapping mapping)
+    {
+        Map<String, RoleInfo> mappings = (Map<String, RoleInfo>)_constraintMap.get(mapping.getPathSpec());
+        if (mappings == null)
+        {
+            mappings = new StringMap();
+            _constraintMap.put(mapping.getPathSpec(),mappings);
+        }
+        RoleInfo allMethodsRoleInfo = mappings.get(null);
+        if (allMethodsRoleInfo != null && allMethodsRoleInfo.isForbidden())
+            return;
+        
+        String httpMethod = mapping.getMethod();
+        RoleInfo roleInfo = mappings.get(httpMethod);
+        if (roleInfo == null)
+        {
+            roleInfo = new RoleInfo();
+            mappings.put(httpMethod,roleInfo);
+            if (allMethodsRoleInfo != null)
+            {
+                roleInfo.combine(allMethodsRoleInfo);
+            }
+        }
+        if (roleInfo.isForbidden())
+            return;
+        
+        Constraint constraint = mapping.getConstraint();
+        boolean forbidden = constraint.isForbidden();
+        roleInfo.setForbidden(forbidden);
+        if (forbidden)
+        {
+            if (httpMethod == null)
+            {
+                mappings.clear();
+                mappings.put(null,roleInfo);
+            }
+        }
+        else
+        {
+            UserDataConstraint userDataConstraint = UserDataConstraint.get(constraint.getDataConstraint());
+            roleInfo.setUserDataConstraint(userDataConstraint);
+
+            boolean checked = constraint.getAuthenticate();
+            roleInfo.setChecked(checked);
+            if (roleInfo.isChecked())
+            {
+                if (constraint.isAnyRole())
+                {
+                    if (_strict)
+                    {
+                        // * means "all defined roles"
+                        for (String role : _roles)
+                            roleInfo.addRole(role);
+                    }
+                    else
+                        // * means any role
+                        roleInfo.setAnyRole(true);
+                }
+                else
+                {
+                    String[] newRoles = constraint.getRoles();
+                    for (String role : newRoles)
+                    {
+                        if (_strict &&!_roles.contains(role))
+                            throw new IllegalArgumentException("Attempt to use undeclared role: " + role + ", known roles: " + _roles);
+                        roleInfo.addRole(role);
+                    }
+                }
+            }
+            if (httpMethod == null)
+            {
+                for (Map.Entry<String, RoleInfo> entry : mappings.entrySet())
+                {
+                    if (entry.getKey() != null)
+                    {
+                        RoleInfo specific = entry.getValue();
+                        specific.combine(roleInfo);
+                    }
+                }
+            }
+        }
+    }
+    
     protected Object prepareConstraintInfo(String pathInContext, Request request)
     {
         Map<String, RoleInfo> mappings = (Map<String, RoleInfo>)_constraintMap.match(pathInContext);
@@ -353,8 +402,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (roleInfo.isAnyRole() && request.getAuthType()!=null)
             return true;
         
-        String[] roles = roleInfo.getRoles();
-        for (String role : roles)
+        for (String role : roleInfo.getRoles())
         {
             if (userIdentity.isUserInRole(role, null))
                 return true;

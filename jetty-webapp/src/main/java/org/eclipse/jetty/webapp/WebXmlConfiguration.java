@@ -158,8 +158,6 @@ public class WebXmlConfiguration implements Configuration
 
         context.setEventListeners(null);
         context.setWelcomeFiles(null);
-        if (_securityHandler instanceof ConstraintAware) 
-            ((ConstraintAware) _securityHandler).setConstraintMappings(new ConstraintMapping[]{}, Collections.EMPTY_SET);
 
         if (context.getErrorHandler() instanceof ErrorPageErrorHandler)
             ((ErrorPageErrorHandler) 
