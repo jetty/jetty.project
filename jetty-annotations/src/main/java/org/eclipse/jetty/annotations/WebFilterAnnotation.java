@@ -26,7 +26,9 @@ import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.MetaData.Origin;
 
 /**
  * WebFilterAnnotation
@@ -66,6 +68,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
             Log.warn(clazz.getName()+" is not assignable from javax.servlet.Filter");
             return;
         }
+        MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
         
         WebFilter filterAnnotation = (WebFilter)clazz.getAnnotation(WebFilter.class);
 
@@ -85,13 +88,18 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
         {
             //Filter with this name does not already exist, so add it
             holder = _context.getServletHandler().newFilterHolder(Holder.Source.ANNOTATION);
-            holder.setHeldClass(clazz);
             holder.setName(name);
-            holder.setDisplayName(filterAnnotation.displayName());
+            
+            holder.setHeldClass(clazz);
+            metaData.setOrigin(name+".filter.filter-class");
+ 
+            holder.setDisplayName(filterAnnotation.displayName()); 
+            metaData.setOrigin(name+".filter.display-name");
 
             for (WebInitParam ip:  filterAnnotation.initParams())
             {
                 holder.setInitParameter(ip.name(), ip.value());
+                metaData.setOrigin(name+".filter.init-param."+ip.name());
             }
 
             FilterMapping mapping = new FilterMapping();
@@ -123,8 +131,10 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                 dispatcherSet.add(d);
             }
             mapping.setDispatcherTypes(dispatcherSet);
+            metaData.setOrigin(name+".filter.mappings");
 
             holder.setAsyncSupported(filterAnnotation.asyncSupported());
+            metaData.setOrigin(name+".filter.async-supported");
 
             _context.getServletHandler().addFilter(holder);
             _context.getServletHandler().addFilterMapping(mapping);
@@ -138,8 +148,12 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
             //init-params of the same name.
             for (WebInitParam ip:  filterAnnotation.initParams())
             {
-                if (holder.getInitParameter(ip.name()) == null)
+                //if (holder.getInitParameter(ip.name()) == null)
+                if (metaData.getOrigin(name+".filter.init-param."+ip.name())==Origin.NotSet)
+                {
                     holder.setInitParameter(ip.name(), ip.value());
+                    metaData.setOrigin(name+".filter.init-param."+ip.name());
+                }
             }
             
             FilterMapping[] mappings = _context.getServletHandler().getFilterMappings();
@@ -155,7 +169,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                     }
                 }
             }
-            //if the web.xml didn't specify at least one mapping, use the mappings from the annotation and the DispatcherTypes
+            //if a descriptor didn't specify at least one mapping, use the mappings from the annotation and the DispatcherTypes
             //from the annotation
             if (!mappingExists)
             {
@@ -187,8 +201,8 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
                     dispatcherSet.add(d);
                 }
                 mapping.setDispatcherTypes(dispatcherSet);
-                
-                _context.getServletHandler().addFilterMapping(mapping);          
+                _context.getServletHandler().addFilterMapping(mapping);   
+                metaData.setOrigin(name+".filter.mappings");
             }
         }
     }

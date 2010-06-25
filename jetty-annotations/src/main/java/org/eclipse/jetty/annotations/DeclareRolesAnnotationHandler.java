@@ -32,7 +32,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
 
-    protected WebAppContext _wac;
+    protected WebAppContext _context;
     
     /**
      * @param introspectAncestors
@@ -40,7 +40,7 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
     public DeclareRolesAnnotationHandler(WebAppContext context)
     {
         super(false);
-        _wac = context;
+        _context = context;
     }
  
 
@@ -61,11 +61,11 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
         if (roles != null && roles.length > 0)
         {
             HashSet<String> union = new HashSet<String>();
-            Set<String> existing = ((ConstraintSecurityHandler)_wac.getSecurityHandler()).getRoles();
+            Set<String> existing = ((ConstraintSecurityHandler)_context.getSecurityHandler()).getRoles();
             if (existing != null)
                 union.addAll(existing);
             union.addAll(Arrays.asList(roles));
-            ((ConstraintSecurityHandler)_wac.getSecurityHandler()).setRoles(union);
+            ((ConstraintSecurityHandler)_context.getSecurityHandler()).setRoles(union);
         }
     }
 

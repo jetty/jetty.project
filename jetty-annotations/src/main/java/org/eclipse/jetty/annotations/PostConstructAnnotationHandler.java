@@ -21,18 +21,19 @@ import javax.annotation.PostConstruct;
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.PostConstructCallback;
+import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    protected WebAppContext _wac;
+    protected WebAppContext _context;
     protected LifeCycleCallbackCollection _callbacks;
 
     public PostConstructAnnotationHandler (WebAppContext wac)
     {
         super(true);
-        _wac = wac;
-        _callbacks = (LifeCycleCallbackCollection)_wac.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
+        _context = wac;
+        _callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
     }
 
 
@@ -55,7 +56,17 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
                         throw new IllegalStateException(m+" throws checked exceptions");
                     if (Modifier.isStatic(m.getModifiers()))
                         throw new IllegalStateException(m+" is static");
-
+                   
+                    //ServletSpec 3.0 p80 If web.xml declares even one post-construct then all post-constructs
+                    //in fragments must be ignored. Otherwise, they are additive.
+                    MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+                    MetaData.Origin origin = metaData.getOrigin("post-construct");
+                    if (origin != null && 
+                        (origin == MetaData.Origin.WebXml ||
+                         origin == MetaData.Origin.WebDefaults || 
+                         origin == MetaData.Origin.WebOverride))
+                        return;
+                    
                     PostConstructCallback callback = new PostConstructCallback();
                     callback.setTarget(clazz.getName(), m.getName());
                     _callbacks.add(callback);

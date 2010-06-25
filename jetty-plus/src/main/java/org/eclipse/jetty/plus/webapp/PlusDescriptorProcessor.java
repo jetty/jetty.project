@@ -123,7 +123,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 //type from the element, but what to do if there is more
                 //than one <injection> element, do you just pick the type
                 //of the first one?
-                addInjection (descriptor, node, name, TypeUtil.fromName(type));
+                addInjections (descriptor, node, name, TypeUtil.fromName(type));
                 Object value = TypeUtil.valueOf(type,valueStr);
                 bindEnvEntry(name, value);   
                 break;
@@ -140,7 +140,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     //We're processing web-defaults, web.xml or web-override. Any of them can
                     //set or change the env-entry.
                     _metaData.setOrigin("env-entry."+name, descriptor);
-                    addInjection (descriptor, node, name, TypeUtil.fromName(type));
+                    addInjections (descriptor, node, name, TypeUtil.fromName(type));
                     Object value = TypeUtil.valueOf(type,valueStr);
                     bindEnvEntry(name, value);   
                 }
@@ -151,7 +151,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     //If it was declared in a web-fragment, then we can keep merging fragments.
                     Descriptor d = _metaData.getOriginDescriptor("env-entry."+name+".injection");
                     if (d==null || d instanceof FragmentDescriptor)
-                        addInjection(descriptor, node, name, TypeUtil.fromName(type));
+                        addInjections(descriptor, node, name, TypeUtil.fromName(type));
                 }
                 break;
             }
@@ -206,14 +206,14 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         {
             case NotSet:
             {
-                //No descriptor previously declared a resource-ref of this name.
+                //No descriptor or annotation previously declared a resource-ref of this name.
                 _metaData.setOrigin("resource-ref."+jndiName, descriptor);
                 
                 //check for <injection> elements
                 Class typeClass = TypeUtil.fromName(type);
                 if (typeClass==null)
                     typeClass = _context.loadClass(type);
-                addInjection (descriptor, node, jndiName, typeClass);   
+                addInjections(descriptor, node, jndiName, typeClass);                  
                 bindResourceRef(jndiName, typeClass);
                 break;
             }
@@ -232,15 +232,17 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     Class typeClass = TypeUtil.fromName(type);
                     if (typeClass==null)
                         typeClass = _context.loadClass(type);
-                    addInjection (descriptor, node, jndiName, typeClass);
+                    
+                    addInjections(descriptor, node, jndiName, typeClass);
                    
                     //bind the entry into jndi
                     bindResourceRef(jndiName, typeClass);
                 }
                 else
                 {
-                    //A web xml declared the resource-ref. Check to see if any injections have been
-                    //declared for it. If an injection was declared in web.xml then don't merge any injections.
+                    //A web xml declared the resource-ref and we're processing a 
+                    //web-fragment. Check to see if any injections were declared for it by web.xml. 
+                    //If any injection was declared in web.xml then don't merge any injections.
                     //If it was declared in a web-fragment, then we can keep merging fragments.
                     Descriptor d = _metaData.getOriginDescriptor("resource-ref."+jndiName+".injection");
                     if (d==null || d instanceof FragmentDescriptor)
@@ -248,7 +250,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                         Class typeClass = TypeUtil.fromName(type);
                         if (typeClass==null)
                             typeClass = _context.loadClass(type);
-                        addInjection(descriptor, node, jndiName, TypeUtil.fromName(type));
+                        addInjections(descriptor, node, jndiName, TypeUtil.fromName(type));
                     }
                 }
                 break;
@@ -290,7 +292,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 Class typeClass = TypeUtil.fromName(type);
                 if (typeClass==null)
                     typeClass = _context.loadClass(type);
-                addInjection (descriptor, node, jndiName, typeClass);
+                addInjections (descriptor, node, jndiName, typeClass);
                 bindResourceEnvRef(jndiName, typeClass);
              break;
             }
@@ -308,7 +310,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     Class typeClass = TypeUtil.fromName(type);
                     if (typeClass==null)
                         typeClass = _context.loadClass(type);
-                    addInjection (descriptor, node, jndiName, typeClass);
+                    addInjections (descriptor, node, jndiName, typeClass);
                     bindResourceEnvRef(jndiName, typeClass); 
                 }
                 else
@@ -321,7 +323,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                         Class typeClass = TypeUtil.fromName(type);
                         if (typeClass==null)
                             typeClass = _context.loadClass(type);
-                        addInjection (descriptor, node, jndiName, typeClass);
+                        addInjections (descriptor, node, jndiName, typeClass);
                     }
                 }
                 break;
@@ -359,7 +361,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 Class typeClass = TypeUtil.fromName(type);
                 if (typeClass==null)
                     typeClass = _context.loadClass(type);
-                addInjection(descriptor, node, jndiName, typeClass);   
+                addInjections(descriptor, node, jndiName, typeClass);   
                 bindMessageDestinationRef(jndiName, typeClass);
                 _metaData.setOrigin("message-destination-ref."+jndiName, descriptor);
                 break;
@@ -375,7 +377,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     Class typeClass = TypeUtil.fromName(type);
                     if (typeClass==null)
                         typeClass = _context.loadClass(type);
-                    addInjection(descriptor, node, jndiName, typeClass);   
+                    addInjections(descriptor, node, jndiName, typeClass);   
                     bindMessageDestinationRef(jndiName, typeClass);
                     _metaData.setOrigin("message-destination-ref."+jndiName, descriptor);
                 }
@@ -389,7 +391,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                         Class typeClass = TypeUtil.fromName(type);
                         if (typeClass==null)
                             typeClass = _context.loadClass(type);
-                        addInjection(descriptor, node, jndiName, typeClass);   
+                        addInjections(descriptor, node, jndiName, typeClass);   
                     }
                 }
                 break;
@@ -590,7 +592,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param valueClass
      * @return 
      */
-    public void addInjection (Descriptor descriptor, XmlParser.Node node, String jndiName, Class valueClass)
+    public void addInjections (Descriptor descriptor, XmlParser.Node node, String jndiName, Class valueClass)
     {
         Iterator  itor = node.iterator("injection-target");
         
@@ -620,6 +622,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 injection.setJndiName(jndiName);
                 injection.setTarget(clazz, targetName, valueClass);
                 injections.add(injection);
+                
                 //Record which was the first descriptor to declare an injection for this name
                 if (_metaData.getOriginDescriptor(node.getTag()+"."+jndiName+".injection") == null)
                     _metaData.setOrigin(node.getTag()+"."+jndiName+".injection", descriptor);
@@ -630,6 +633,8 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             }
         }
     }
+    
+  
 
     
     /** 

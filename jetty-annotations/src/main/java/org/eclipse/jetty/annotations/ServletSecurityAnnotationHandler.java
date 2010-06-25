@@ -52,12 +52,12 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
 
-    private WebAppContext _wac;
+    private WebAppContext _context;
     
     public ServletSecurityAnnotationHandler(WebAppContext wac)
     {
         super(false);
-        _wac = wac;
+        _context = wac;
     }
     
     /** 
@@ -65,7 +65,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
      */
     public void doHandle(Class clazz)
     {
-        if (!(_wac.getSecurityHandler() instanceof ConstraintAware))
+        if (!(_context.getSecurityHandler() instanceof ConstraintAware))
         {
             Log.warn("SecurityHandler not ConstraintAware, skipping security annotation processing");
             return;
@@ -79,7 +79,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
        //of the url patterns defined for this servlet, then skip the security annotation.
       
        List<ServletMapping> servletMappings = getServletMappings(clazz.getCanonicalName());
-       List<ConstraintMapping> constraintMappings =  LazyList.array2List(((ConstraintAware)_wac.getSecurityHandler()).getConstraintMappings());
+       List<ConstraintMapping> constraintMappings =  LazyList.array2List(((ConstraintAware)_context.getSecurityHandler()).getConstraintMappings());
      
        if (constraintsExist(servletMappings, constraintMappings))
        {
@@ -102,7 +102,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
                                                     servletSecurity.httpMethodConstraints()));
 
        //set up the security constraints produced by the annotation
-       ConstraintAware securityHandler = (ConstraintAware)_wac.getSecurityHandler();
+       ConstraintAware securityHandler = (ConstraintAware)_context.getSecurityHandler();
        
        securityHandler.setConstraintMappings((ConstraintMapping[]) LazyList.toArray(constraintMappings,ConstraintMapping.class),securityHandler.getRoles()); 
     }
@@ -234,11 +234,11 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
     protected List<ServletMapping> getServletMappings(String className)
     {
         List<ServletMapping> results = new ArrayList<ServletMapping>();
-        ServletMapping[] mappings = _wac.getServletHandler().getServletMappings();
+        ServletMapping[] mappings = _context.getServletHandler().getServletMappings();
         for (ServletMapping mapping : mappings)
         {
             //Check the name of the servlet that this mapping applies to, and then find the ServletHolder for it to find it's class
-            ServletHolder holder = _wac.getServletHandler().getServlet(mapping.getServletName());
+            ServletHolder holder = _context.getServletHandler().getServlet(mapping.getServletName());
             if (holder.getClassName().equals(className))
               results.add(mapping);
         }

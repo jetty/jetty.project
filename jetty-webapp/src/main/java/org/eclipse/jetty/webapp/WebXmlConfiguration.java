@@ -116,8 +116,6 @@ public class WebXmlConfiguration implements Configuration
 
     public void postConfigure(WebAppContext context) throws Exception
     {
-        context.setAttribute(MetaData.METADATA, null); 
-        context.setAttribute(MetaData.METADATA_COMPLETE, null);
         context.setAttribute(MetaData.WEBXML_CLASSNAMES, null); 
     }
 

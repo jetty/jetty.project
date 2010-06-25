@@ -22,7 +22,9 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.MetaData.Origin;
 
 /**
  * WebListenerAnnotation
@@ -66,7 +68,9 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
                     HttpSessionAttributeListener.class.isAssignableFrom(clazz))
             {
                 java.util.EventListener listener = (java.util.EventListener)clazz.newInstance();
-                _context.addEventListener(listener);
+                MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+                if (metaData.getOrigin(clazz.getName()+".listener") == Origin.NotSet)
+                    _context.addEventListener(listener);
             }
             else
                 Log.warn(clazz.getName()+" does not implement one of the servlet listener interfaces");

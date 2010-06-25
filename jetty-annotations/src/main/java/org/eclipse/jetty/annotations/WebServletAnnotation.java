@@ -25,7 +25,9 @@ import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.MetaData.Origin;
 
 /**
  * WebServletAnnotation
@@ -85,6 +87,8 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             urlPatternList.add(Util.normalizePattern(p));
         
         String servletName = (annotation.name().equals("")?clazz.getName():annotation.name());
+        
+        MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
 
         //Find out if a <servlet>  of this type already exists with this name
         ServletHolder[] holders = _context.getServletHandler().getServlets();
@@ -105,15 +109,26 @@ public class WebServletAnnotation extends DiscoveredAnnotation
 
         if (isNew)
         {
+            //No servlet of this name has already been defined, either by a descriptor
+            //or another annotation (which would be impossible).
             holder = _context.getServletHandler().newServletHolder(Holder.Source.ANNOTATION);
             holder.setHeldClass(clazz);   
+            metaData.setOrigin(servletName+".servlet.servlet-class");
+            
             holder.setName(servletName);
             holder.setDisplayName(annotation.displayName());
+            metaData.setOrigin(servletName+".servlet.display-name");
+            
             holder.setInitOrder(annotation.loadOnStartup());
+            metaData.setOrigin(servletName+".servlet.load-on-startup");
+            
             holder.setAsyncSupported(annotation.asyncSupported());
+            metaData.setOrigin(servletName+".servlet.async-supported");
+            
             for (WebInitParam ip:annotation.initParams())
             {
                 holder.setInitParameter(ip.name(), ip.value());
+                metaData.setOrigin(servletName+".servlet.init-param."+ip.name());
             }
           
             _context.getServletHandler().addServlet(holder);
@@ -121,6 +136,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             mapping.setServletName(holder.getName());
             mapping.setPathSpecs( LazyList.toStringArray(urlPatternList));
             _context.getServletHandler().addServletMapping(mapping);
+            metaData.setOrigin(servletName+".servlet.mappings");
         }
         else
         {
@@ -128,8 +144,12 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             //if not, add it
             for (WebInitParam ip:annotation.initParams())
             {
-                if (holder.getInitParameter(ip.name()) == null)
+              //if (holder.getInitParameter(ip.name()) == null)
+                if (metaData.getOrigin(servletName+".servlet.init-param"+ip.name())==Origin.NotSet)
+                {
                     holder.setInitParameter(ip.name(), ip.value());
+                    metaData.setOrigin(servletName+".servlet.init-param."+ip.name());
+                }  
             }
             
             //check the url-patterns, if there annotation has a new one, add it
@@ -137,7 +157,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
 
             //ServletSpec 3.0 p81 If a servlet already has url mappings from a 
             //descriptor the annotation is ignored
-            if (mappings == null)
+            if (mappings == null && metaData.getOriginDescriptor(servletName+".servlet.mappings") != null)
             {
                 ServletMapping mapping = new ServletMapping();
                 mapping.setServletName(servletName);

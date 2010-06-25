@@ -26,18 +26,20 @@ import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectab
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.MetaData.Origin;
 
 public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    protected WebAppContext _wac;
+    protected WebAppContext _context;
     protected InjectionCollection _injections;
 
     public ResourceAnnotationHandler (WebAppContext wac)
     {
         super(true);
-        _wac = wac;
-        _injections = (InjectionCollection)_wac.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+        _context = wac;
+        _injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
     }
 
 
@@ -78,8 +80,8 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
              
              try
              {
-                 if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac, name,mappedName))
-                     if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac.getServer(), name,mappedName))
+                 if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_context, name,mappedName))
+                     if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_context.getServer(), name,mappedName))
                          throw new IllegalStateException("No resource at "+(mappedName==null?name:mappedName));
              }
              catch (NamingException e)
@@ -109,29 +111,41 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             }
 
             //work out default name
-            String name = clazz.getCanonicalName()+"/"+field.getName();
-          
+            String name = clazz.getCanonicalName()+"/"+field.getName();     
            
             //allow @Resource name= to override the field name
             name = (resource.name()!=null && !resource.name().trim().equals("")? resource.name(): name);
             String mappedName = (resource.mappedName()!=null && !resource.mappedName().trim().equals("")?resource.mappedName():null);
             //get the type of the Field
             Class type = field.getType();
-
-            //check if an injection has already been setup for this target by web.xml
-            Injection webXmlInjection = _injections.getInjection(name, clazz, field);
-            if (webXmlInjection == null)
+            
+            //Servlet Spec 3.0 p. 76
+            //If a descriptor has specified at least 1 injection target for this
+            //resource, then it overrides this annotation
+            MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+            if (metaData.getOriginDescriptor("resource-ref."+name+".injection") != null)
             {
+                //at least 1 injection was specified for this resource by a descriptor, so
+                //it overrides this annotation
+                return;
+            }
+                
+            //No injections for this resource in any descriptors, so we can add it
+            //Does the injection already exist?
+            Injection injection = _injections.getInjection(name, clazz, field);
+            if (injection == null)
+            {
+                //No injection has been specified, add it
                 try
                 {
-                    boolean bound = org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac, name, mappedName);
+                    boolean bound = org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_context, name, mappedName);
                     if (!bound)
-                        bound = org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac.getServer(), name, mappedName);
+                        bound = org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName);
                     if (!bound)
                         bound =  org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(null, name, mappedName); 
                     if (!bound)
                     {
-                        //see if there is an env-entry value been bound from web.xml
+                        //see if there is an env-entry value been bound
                         try
                         {
                             InitialContext ic = new InitialContext();
@@ -149,11 +163,14 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     { 
                         Log.debug("Bound "+(mappedName==null?name:mappedName) + " as "+ name);
                         //   Make the Injection for it if the binding succeeded
-                        Injection injection = new Injection();
+                        injection = new Injection();
                         injection.setTarget(clazz, field, type);
                         injection.setJndiName(name);
                         injection.setMappingName(mappedName);
                         _injections.add(injection); 
+                        
+                        //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination 
+                        metaData.setOrigin("resource-ref."+name+".injection");
                     }  
                     else if (!Util.isEnvEntryType(type))
                     {   
@@ -244,19 +261,31 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             Class paramType = method.getParameterTypes()[0];
 
             Class resourceType = resource.type();
+            
+            //Servlet Spec 3.0 p. 76
+            //If a descriptor has specified at least 1 injection target for this
+            //resource, then it overrides this annotation
+            MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+            if (metaData.getOriginDescriptor("resource-ref."+name+".injection") != null)
+            {
+                //at least 1 injection was specified for this resource by a descriptor, so
+                //it overrides this annotation
+                return;
+            }
+            
             //check if an injection has already been setup for this target by web.xml
-            Injection webXmlInjection = _injections.getInjection(name, clazz, method, paramType);
-            if (webXmlInjection == null)
+            Injection injection = _injections.getInjection(name, clazz, method, paramType);
+            if (injection == null)
             {
                 try
                 {
                     //try binding name to environment
                     //try the webapp's environment first
-                    boolean bound = org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac, name, mappedName);
+                    boolean bound = org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_context, name, mappedName);
 
                     //try the server's environment
                     if (!bound)
-                        bound = org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac.getServer(), name, mappedName);
+                        bound = org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName);
 
                     //try the jvm's environment
                     if (!bound)
@@ -283,11 +312,13 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     {
                         Log.debug("Bound "+(mappedName==null?name:mappedName) + " as "+ name);
                         //   Make the Injection for it
-                        Injection injection = new Injection();
+                        injection = new Injection();
                         injection.setTarget(clazz, method,paramType,resourceType);
                         injection.setJndiName(name);
                         injection.setMappingName(mappedName);
                         _injections.add(injection);
+                        //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination 
+                        metaData.setOrigin("resource-ref."+name+".injection");
                     } 
                     else if (!Util.isEnvEntryType(paramType))
                     {

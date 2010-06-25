@@ -15,6 +15,7 @@ import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Test;
 
@@ -33,6 +34,7 @@ public class TestResourceAnnotations
         wac.setServer(server);
         InjectionCollection injections = new InjectionCollection();
         wac.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
+        wac.setAttribute(MetaData.METADATA, new MetaData(wac));
         InitialContext ic = new InitialContext();
         Context comp = (Context)ic.lookup("java:comp");
         Context env = comp.createSubcontext("env");

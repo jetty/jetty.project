@@ -253,7 +253,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String pname = paramNode.getString("param-name", false, true);
             String pvalue = paramNode.getString("param-value", false, true);
             
-            Origin origin = _metaData.getOrigin(servlet_name+"servlet.init-param."+pname);
+            Origin origin = _metaData.getOrigin(servlet_name+".servlet.init-param."+pname);
             
             switch (origin)
             {
@@ -262,7 +262,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     //init-param not already set, so set it
                     
                     registration.setInitParameter(pname, pvalue); 
-                    _metaData.setOrigin(servlet_name+"servlet.init-param."+pname, descriptor);
+                    _metaData.setOrigin(servlet_name+".servlet.init-param."+pname, descriptor);
                     break;
                 }
                 case WebXml:
@@ -274,7 +274,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
                         registration.setInitParameter(pname, pvalue); 
-                        _metaData.setOrigin(servlet_name+"servlet.init-param."+pname, descriptor);
+                        _metaData.setOrigin(servlet_name+".servlet.init-param."+pname, descriptor);
                     }
                     break;
                 }
@@ -333,14 +333,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             descriptor.addClassName(servlet_class);
             
-            Origin o = _metaData.getOrigin(servlet_name+".servlet-class");
+            Origin o = _metaData.getOrigin(servlet_name+".servlet.servlet-class");
             switch (o)
             {
                 case NotSet:
                 {
                     //the class of the servlet has not previously been set, so set it
                     holder.setClassName(servlet_class);
-                    _metaData.setOrigin(servlet_name+".servlet-class", descriptor);
+                    _metaData.setOrigin(servlet_name+".servlet.servlet-class", descriptor);
                     break;
                 }
                 case WebXml:
@@ -351,7 +351,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
                         holder.setClassName(servlet_class);
-                        _metaData.setOrigin(servlet_name+".servlet-class", descriptor);
+                        _metaData.setOrigin(servlet_name+".servlet.servlet-class", descriptor);
                     }
                     break;
                 }
@@ -397,14 +397,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 }
             }
 
-            Origin o = _metaData.getOrigin(servlet_name+".load-on-startup");
+            Origin o = _metaData.getOrigin(servlet_name+".servlet.load-on-startup");
             switch (o)
             {
                 case NotSet:
                 {
                     //not already set, so set it now
                     registration.setLoadOnStartup(order);
-                    _metaData.setOrigin(servlet_name+".load-on-startup", descriptor);
+                    _metaData.setOrigin(servlet_name+".servlet.load-on-startup", descriptor);
                     break;
                 }
                 case WebXml:
@@ -415,7 +415,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
                         registration.setLoadOnStartup(order);
-                        _metaData.setOrigin(servlet_name+".load-on-startup", descriptor);
+                        _metaData.setOrigin(servlet_name+".servlet.load-on-startup", descriptor);
                     }
                     break;
                 }
@@ -438,14 +438,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             if (roleName != null && roleName.length() > 0 && roleLink != null && roleLink.length() > 0)
             {
                 if (Log.isDebugEnabled()) Log.debug("link role " + roleName + " to " + roleLink + " for " + this);
-                Origin o = _metaData.getOrigin(servlet_name+".role-name."+roleName);
+                Origin o = _metaData.getOrigin(servlet_name+".servlet.role-name."+roleName);
                 switch (o)
                 {
                     case NotSet:
                     {
                         //set it
                         holder.setUserRoleLink(roleName, roleLink);
-                        _metaData.setOrigin(servlet_name+".role-name."+roleName, descriptor);
+                        _metaData.setOrigin(servlet_name+".servlet.role-name."+roleName, descriptor);
                         break;
                     }
                     case WebXml:
@@ -456,7 +456,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         if (!(descriptor instanceof FragmentDescriptor))
                         {
                             holder.setUserRoleLink(roleName, roleLink);
-                            _metaData.setOrigin(servlet_name+".role-name."+roleName, descriptor);
+                            _metaData.setOrigin(servlet_name+".servlet.role-name."+roleName, descriptor);
                         }
                         break;
                     }
@@ -482,14 +482,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
             if (roleName != null)
             {
-                Origin o = _metaData.getOrigin(servlet_name+".run-as");
+                Origin o = _metaData.getOrigin(servlet_name+".servlet.run-as");
                 switch (o)
                 {
                     case NotSet:
                     {
                         //run-as not set, so set it
                         registration.setRunAsRole(roleName);
-                        _metaData.setOrigin(servlet_name+".run-as", descriptor);
+                        _metaData.setOrigin(servlet_name+".servlet.run-as", descriptor);
                         break;
                     }
                     case WebXml:
@@ -500,7 +500,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         if (!(descriptor instanceof FragmentDescriptor))
                         {
                             registration.setRunAsRole(roleName);
-                            _metaData.setOrigin(servlet_name+".run-as", descriptor);
+                            _metaData.setOrigin(servlet_name+".servlet.run-as", descriptor);
                         }
                         break;
                     }
@@ -519,14 +519,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (async!=null)
         {
             boolean val = async.length()==0||Boolean.valueOf(async);
-            Origin o =_metaData.getOrigin(servlet_name+"servlet.async-supported");
+            Origin o =_metaData.getOrigin(servlet_name+".servlet.async-supported");
             switch (o)
             {
                 case NotSet:
                 {
                     //set it
                     registration.setAsyncSupported(val);
-                    _metaData.setOrigin(servlet_name+"servlet.async-supported", descriptor);
+                    _metaData.setOrigin(servlet_name+".servlet.async-supported", descriptor);
                     break;
                 }
                 case WebXml:
@@ -537,7 +537,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
                         registration.setAsyncSupported(val);
-                        _metaData.setOrigin(servlet_name+"servlet.async-supported", descriptor);  
+                        _metaData.setOrigin(servlet_name+".servlet.async-supported", descriptor);  
                     }             
                     break;
                 }
@@ -555,14 +555,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (enabled!=null)
         {
             boolean val = enabled.length()==0||Boolean.valueOf(enabled);
-            Origin o = _metaData.getOrigin(servlet_name+".enabled");
+            Origin o = _metaData.getOrigin(servlet_name+".servlet.enabled");
             switch (o)
             {
                 case NotSet:
                 {
                     //hasn't been set yet, so set it                
                     //TODO
-                    _metaData.setOrigin(servlet_name+".enabled", descriptor);
+                    _metaData.setOrigin(servlet_name+".servlet.enabled", descriptor);
                     break;
                 }
                 case WebXml:
@@ -573,7 +573,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
                         //TODO
-                        _metaData.setOrigin(servlet_name+".enabled", descriptor);
+                        _metaData.setOrigin(servlet_name+".servlet.enabled", descriptor);
                     }
                     break;
                 }
@@ -603,14 +603,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                                                                         (maxRequest==null||"".equals(maxRequest)?-1L:Long.parseLong(maxRequest)),
                                                                         (threshold==null||"".equals(threshold)?0:Integer.parseInt(threshold)));
             
-            Origin o = _metaData.getOrigin(servlet_name+".multipart-config");
+            Origin o = _metaData.getOrigin(servlet_name+".servlet.multipart-config");
             switch (o)
             {
                 case NotSet:
                 {
                     //hasn't been set, so set it
                     registration.setMultipartConfig(element);
-                    _metaData.setOrigin(servlet_name+".multipart-config", descriptor);
+                    _metaData.setOrigin(servlet_name+".servlet.multipart-config", descriptor);
                     break;
                 }
                 case WebXml:
@@ -621,7 +621,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
                         registration.setMultipartConfig(element);
-                        _metaData.setOrigin(servlet_name+".multipart-config", descriptor);  
+                        _metaData.setOrigin(servlet_name+".servlet.multipart-config", descriptor);  
                     }
                     break;
                 }
@@ -653,6 +653,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         ServletMapping mapping = new ServletMapping();
         mapping.setServletName(servlet_name);
 
+        if (_metaData.getOrigin(servlet_name+".servlet.mappings") == Origin.NotSet)
+            _metaData.setOrigin(servlet_name+".servlet.mappings", descriptor);
+        
         ArrayList paths = new ArrayList();
         Iterator iter = node.iterator("url-pattern");
         while (iter.hasNext())
@@ -662,7 +665,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             paths.add(p);
         }
         mapping.setPathSpecs((String[]) paths.toArray(new String[paths.size()]));
-
         _servletMappings = LazyList.add(_servletMappings, mapping);
     }
     
@@ -1013,9 +1015,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
             case WebDefaults:
             {
-                //web-defaults.xml set the welcome-file-list. If we're processing web.xml we
-                //should reset the list.
-                Descriptor d = _metaData.getOriginDescriptor("welcome-file-list");
                 //if web-defaults set the welcome-file-list first and
                 //we're processing web.xml then reset the welcome-file-list
                 if (!(descriptor instanceof DefaultsDescriptor) && !(descriptor instanceof OverrideDescriptor) && !(descriptor instanceof FragmentDescriptor))
@@ -1456,14 +1455,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             descriptor.addClassName(filter_class);
             
-            Origin o = _metaData.getOrigin(name+".filter-class");
+            Origin o = _metaData.getOrigin(name+".filter.filter-class");
             switch (o)
             {
                 case NotSet:
                 {
                     //no class set yet
                     holder.setClassName(filter_class);
-                    _metaData.setOrigin(name+".filter-class", descriptor);
+                    _metaData.setOrigin(name+".filter.filter-class", descriptor);
                     break;
                 }
                 case WebXml:
@@ -1474,7 +1473,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
                         holder.setClassName(filter_class);
-                        _metaData.setOrigin(name+".filter-class", descriptor); 
+                        _metaData.setOrigin(name+".filter.filter-class", descriptor); 
                     }
                     break;
                 }
@@ -1496,14 +1495,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String pname = paramNode.getString("param-name", false, true);
             String pvalue = paramNode.getString("param-value", false, true);
             
-            Origin origin = _metaData.getOrigin(name+"filter.init-param."+pname);
+            Origin origin = _metaData.getOrigin(name+".filter.init-param."+pname);
             switch (origin)
             {
                 case NotSet:
                 {
                     //init-param not already set, so set it
                     holder.setInitParameter(pname, pvalue); 
-                    _metaData.setOrigin(name+"filter.init-param."+pname, descriptor);
+                    _metaData.setOrigin(name+".filter.init-param."+pname, descriptor);
                     break;
                 }
                 case WebXml:
@@ -1515,7 +1514,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
                         holder.setInitParameter(pname, pvalue); 
-                        _metaData.setOrigin(name+"filter.init-param."+pname, descriptor);
+                        _metaData.setOrigin(name+".filter.init-param."+pname, descriptor);
                     }
                     break;
                 }
@@ -1535,14 +1534,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (async!=null)
         {
             boolean val = async.length()==0||Boolean.valueOf(async);
-            Origin o = _metaData.getOrigin(name+"filter.async-supported");
+            Origin o = _metaData.getOrigin(name+".filter.async-supported");
             switch (o)
             {
                 case NotSet:
                 {
                     //set it
                     holder.setAsyncSupported(val);
-                    _metaData.setOrigin(name+"filter.async-supported", descriptor);
+                    _metaData.setOrigin(name+".filter.async-supported", descriptor);
                     break;
                 }
                 case WebXml:
@@ -1553,7 +1552,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
                         holder.setAsyncSupported(val);
-                        _metaData.setOrigin(name+"filter.async-supported", descriptor);  
+                        _metaData.setOrigin(name+".filter.async-supported", descriptor);  
                     }             
                     break;
                 }
@@ -1637,7 +1636,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         Log.warn("Not an EventListener: " + listener);
                         return;
                     }
-
+                    _metaData.setOrigin(className+".listener", descriptor);
                     _listeners = LazyList.add(_listeners, listener);
                 }
             }

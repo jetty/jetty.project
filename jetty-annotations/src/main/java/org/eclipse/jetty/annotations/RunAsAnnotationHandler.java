@@ -20,24 +20,27 @@ import javax.servlet.Servlet;
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.webapp.Descriptor;
+import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    protected WebAppContext _wac;
+    protected WebAppContext _context;
 
     public RunAsAnnotationHandler (WebAppContext wac)
     {
         //Introspect only the given class for a RunAs annotation, as it is a class level annotation,
         //and according to Common Annotation Spec p2-6 a class-level annotation is not inheritable.
         super(false);
-        _wac = wac;
+        _context = wac;
     }
     
     public void doHandle (Class clazz)
     {
-        RunAsCollection runAsCollection = (RunAsCollection)_wac.getAttribute(RunAsCollection.RUNAS_COLLECTION);
+        RunAsCollection runAsCollection = (RunAsCollection)_context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
 
         if (!Servlet.class.isAssignableFrom(clazz))
             return;
@@ -48,10 +51,22 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
             String role = runAs.value();
             if (role != null)
             {
-                org.eclipse.jetty.plus.annotation.RunAs ra = new org.eclipse.jetty.plus.annotation.RunAs();
-                ra.setTargetClassName(clazz.getCanonicalName());
-                ra.setRoleName(role);
-                runAsCollection.add(ra);
+                ServletHolder holder = getServletHolderForClass(clazz);
+                if (holder != null)
+                {
+                    MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+                    Descriptor d = metaData.getOriginDescriptor(holder.getName()+".servlet.run-as");
+                    //if a descriptor has already set the value for run-as, do not 
+                    //let the annotation override it
+                    if (d == null)
+                    {
+                        metaData.setOrigin(holder.getName()+".servlet.run-as");
+                        org.eclipse.jetty.plus.annotation.RunAs ra = new org.eclipse.jetty.plus.annotation.RunAs();
+                        ra.setTargetClassName(clazz.getCanonicalName());
+                        ra.setRoleName(role);
+                        runAsCollection.add(ra);
+                    }
+                }
             }
             else
                 Log.warn("Bad value for @RunAs annotation on class "+clazz.getName());
@@ -71,4 +86,20 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
         Log.warn("@RunAs annotation ignored on method: "+className+"."+methodName+" "+signature);
     }
 
+    private ServletHolder getServletHolderForClass (Class clazz)
+    {
+        ServletHolder holder = null;
+        ServletHolder[] holders = _context.getServletHandler().getServlets();
+        if (holders != null)
+        {
+            for (ServletHolder h : holders)
+            {
+                if (h.getClassName().equals(clazz.getName()))
+                {
+                    holder = h;
+                }
+            }
+        }
+        return holder;
+    }
 }

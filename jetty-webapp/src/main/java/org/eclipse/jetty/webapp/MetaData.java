@@ -45,7 +45,7 @@ public class MetaData
     public enum Origin {NotSet, WebXml, WebDefaults, WebOverride, WebFragment, Annotation};
     
     protected WebAppContext _context;
-    protected Map<String, Descriptor> _origins = new HashMap<String,Descriptor>();
+    protected Map<String, OriginInfo> _origins = new HashMap<String,OriginInfo>();
     protected Descriptor _webDefaultsRoot;
     protected Descriptor _webXmlRoot;
     protected Descriptor _webOverrideRoot;
@@ -60,6 +60,54 @@ public class MetaData
     protected StandardDescriptorProcessor _standardDescriptorProcessor;
  
     
+    public static class OriginInfo
+    {   
+        protected String name;
+        protected Origin origin;
+        protected Descriptor descriptor;
+        
+        public OriginInfo (String n, Descriptor d)
+        {
+            name = n;
+            descriptor = d;           
+            if (d == null)
+                throw new IllegalArgumentException("No descriptor");
+            if (d instanceof FragmentDescriptor)
+                origin = Origin.WebFragment;
+            if (d instanceof OverrideDescriptor)
+                origin =  Origin.WebOverride;
+            if (d instanceof DefaultsDescriptor)
+                origin =  Origin.WebDefaults;
+            origin = Origin.WebXml;
+        }
+        
+        public OriginInfo (String n)
+        {
+            name = n;
+            origin = Origin.Annotation;
+        }
+        
+        public OriginInfo(String n, Origin o)
+        {
+            name = n;
+            origin = o;
+        }
+        
+        public String getName()
+        {
+            return name;
+        }
+        
+        public Origin getOriginType()
+        {
+            return origin;
+        }
+        
+        public Descriptor getDescriptor()
+        {
+            return descriptor;
+        }
+    }
    
     /**
      * Ordering
@@ -830,25 +878,34 @@ public class MetaData
     
     public Origin getOrigin (String name)
     {
-        Descriptor d = _origins.get(name);
-        if (d == null)
+        OriginInfo x =  _origins.get(name);
+        if (x == null)
             return Origin.NotSet;
-        if (d instanceof FragmentDescriptor)
-            return Origin.WebFragment;
-        if (d instanceof OverrideDescriptor)
-            return Origin.WebOverride;
-        if (d instanceof DefaultsDescriptor)
-            return Origin.WebDefaults;
-        return Origin.WebXml;
+        
+        return x.getOriginType();
     }
+  
  
     public Descriptor getOriginDescriptor (String name)
     {
-        return _origins.get(name);
+        OriginInfo o = _origins.get(name);
+        if (o == null)
+            return null;
+        return o.getDescriptor();
     }
     
     public void setOrigin (String name, Descriptor d)
     {
-        _origins.put(name, d);
+        OriginInfo x = new OriginInfo (name, d);
+        _origins.put(name, x);
+    }
+    
+    public void setOrigin (String name)
+    {
+        if (name == null)
+            return;
+       
+        OriginInfo x = new OriginInfo (name, Origin.Annotation);
+        _origins.put(name, x);
     }
 }
