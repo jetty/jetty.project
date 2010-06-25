@@ -15,7 +15,7 @@
 package org.eclipse.jetty.osgi.boot;
 
 /**
- * 
+ * Name of the service properties for a ContextHandler that configure a webapp deployed on jetty OSGi.
  */
 public class OSGiWebappConstants
 {
@@ -66,13 +66,5 @@ public class OSGiWebappConstants
      * location if not null useful to install webapps or jetty context files
      * that are in fact not embedded in a bundle
      */
-    public static final String SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE = "thisBundleInstall";
-
-    // sys prop config of jetty:
-    /**
-     * contains a comma separated list of pathes to the etc/jetty-*.xml files
-     * used to configure jetty. By default the value is 'etc/jetty.xml' when the
-     * path is relative the file is resolved relatively to jettyhome.
-     */
-    public static final String SYS_PROP_JETTY_ETC_FILES = "jetty.etc.files";
+    public static final String SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE = "thisBundleInstall";    
 }

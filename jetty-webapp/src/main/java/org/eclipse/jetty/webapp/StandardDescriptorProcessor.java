@@ -73,7 +73,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     protected Object _listenerClassNames;
     protected Object _welcomeFiles;
     protected Set<String> _roles = new HashSet<String>();
-    protected Object _constraintMappings;
+    protected List<ConstraintMapping> _constraintMappings = new ArrayList<ConstraintMapping>();
     protected Map _errorPages;
     protected boolean _hasJSP;
     protected String _jspServletName;
@@ -134,8 +134,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         _welcomeFiles = LazyList.array2List(_context.getWelcomeFiles());
         if (_securityHandler instanceof ConstraintAware)
         {
-             _constraintMappings = LazyList.array2List(((ConstraintAware) _securityHandler).getConstraintMappings());
-            
+             _constraintMappings.addAll(((ConstraintAware) _securityHandler).getConstraintMappings());            
             if (((ConstraintAware) _securityHandler).getRoles() != null)
             {
                 _roles.addAll(((ConstraintAware) _securityHandler).getRoles());
@@ -161,14 +160,17 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         // TODO jaspi check this
         if (_securityHandler instanceof ConstraintAware)
         {
-            ((ConstraintAware) _securityHandler).setConstraintMappings((ConstraintMapping[]) LazyList.toArray(_constraintMappings,
-                                                                                                              ConstraintMapping.class),
-                                                                                                               _roles);
+            for (ConstraintMapping m:_constraintMappings)
+                ((ConstraintAware) _securityHandler).addConstraintMapping(m);
+            for (String r:_roles)
+                ((ConstraintAware) _securityHandler).addRole(r);
         }
 
         if (_errorPages != null && _context.getErrorHandler() instanceof ErrorPageErrorHandler)
             ((ErrorPageErrorHandler)_context.getErrorHandler()).setErrorPages(_errorPages);
         
+        _roles.clear();
+        _constraintMappings.clear();
         _metaData = null;
         _context = null;
     }
@@ -1251,7 +1253,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             mapping.setMethod(method);
                             mapping.setPathSpec(url);
                             mapping.setConstraint(sc);
-                            _constraintMappings = LazyList.add(_constraintMappings, mapping);
+                            _constraintMappings.add(mapping);
                         }
                     }
                     else
@@ -1259,7 +1261,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         ConstraintMapping mapping = new ConstraintMapping();
                         mapping.setPathSpec(url);
                         mapping.setConstraint(sc);
-                        _constraintMappings = LazyList.add(_constraintMappings, mapping);
+                        _constraintMappings.add(mapping);
                     }
                 }
             }

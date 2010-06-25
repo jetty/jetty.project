@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.security.MessageDigest;
+import java.util.Collections;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -82,7 +83,7 @@ public class DigestPostTest
             mapping.setConstraint(constraint);
             mapping.setPathSpec("/*");
             
-            security.setConstraintMappings(new ConstraintMapping[]{mapping});
+            security.setConstraintMappings(Collections.singletonList(mapping));
             
             HandlerCollection handlers = new HandlerCollection();
             handlers.setHandlers(new Handler[]

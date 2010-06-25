@@ -19,6 +19,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -91,9 +92,13 @@ public class LibExtClassLoaderHelper
      *         is the JettyBootStrapper (an osgi classloader.
      * @throws MalformedURLException
      */
-    public static URLClassLoader createLibEtcClassLoaderHelper(File jettyHome, Server server, ClassLoader parentClassLoader) throws MalformedURLException
+    public static ClassLoader createLibEtcClassLoader(File jettyHome, Server server, 
+    		ClassLoader parentClassLoader) throws MalformedURLException
     {
-    	
+    	if (jettyHome == null)
+    	{
+    		return parentClassLoader;
+    	}
         ArrayList<URL> urls = new ArrayList<URL>();
         File jettyResources = new File(jettyHome,"resources");
         if (jettyResources.exists())
@@ -138,6 +143,52 @@ public class LibExtClassLoaderHelper
         return new URLClassLoader(urls.toArray(new URL[urls.size()]),parentClassLoader);
     }
 
+    /**
+     * @param server
+     * @return a url classloader with the jars of resources, lib/ext and the
+     *         jars passed in the other argument. The parent classloader usually
+     *         is the JettyBootStrapper (an osgi classloader).
+     *         If there was no extra jars to insert, then just return the parentClassLoader.
+     * @throws MalformedURLException
+     */
+    public static ClassLoader createLibExtClassLoader(List<File> jarsContainerOrJars,
+    		List<URL> otherJarsOrFolder, Server server, 
+    		ClassLoader parentClassLoader) throws MalformedURLException
+    {
+    	if (jarsContainerOrJars == null && otherJarsOrFolder == null)
+    	{
+    		return parentClassLoader;
+    	}
+    	List<URL> urls = new ArrayList<URL>();
+    	if (otherJarsOrFolder != null)
+    	{
+    		urls.addAll(otherJarsOrFolder);
+    	}
+    	if (jarsContainerOrJars != null)
+    	{
+	        for (File libExt : jarsContainerOrJars)
+	        {
+	        	if (libExt.isDirectory())
+	        	{
+		            for (File f : libExt.listFiles())
+		            {
+		                if (f.getName().endsWith(".jar"))
+		                {
+		                    // cheap to tolerate folders so let's do it.
+		                    URL url = f.toURI().toURL();
+		                    if (f.isFile())
+		                    {// is this necessary anyways?
+		                        url = new URL("jar:" + url.toString() + "!/");
+		                    }
+		                    urls.add(url);
+		                }
+		            }
+	        	}
+	        }
+    	}
+        return new URLClassLoader(urls.toArray(new URL[urls.size()]),parentClassLoader);
+    }
+    
     /**
      * When we find files typically used for central logging configuration we do
      * what it takes in this method to do what the user expects. Without

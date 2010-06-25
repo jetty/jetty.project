@@ -254,9 +254,12 @@ public class IPAccessHandler extends HandlerWrapper
     {
         patternMap.clear();
         
-        for (String addrPath:entries)
+        if (entries != null && entries.length > 0)
         {
-            add(addrPath, patternMap);
+            for (String addrPath:entries)
+            {
+                add(addrPath, patternMap);
+            }
         }
     }
     

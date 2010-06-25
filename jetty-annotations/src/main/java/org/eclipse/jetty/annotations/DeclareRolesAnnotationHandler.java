@@ -57,15 +57,11 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
             return;
         
         String[] roles = declareRoles.value();
-        
+
         if (roles != null && roles.length > 0)
         {
-            HashSet<String> union = new HashSet<String>();
-            Set<String> existing = ((ConstraintSecurityHandler)_context.getSecurityHandler()).getRoles();
-            if (existing != null)
-                union.addAll(existing);
-            union.addAll(Arrays.asList(roles));
-            ((ConstraintSecurityHandler)_context.getSecurityHandler()).setRoles(union);
+            for (String r:roles)
+                ((ConstraintSecurityHandler)_context.getSecurityHandler()).addRole(r);
         }
     }
 

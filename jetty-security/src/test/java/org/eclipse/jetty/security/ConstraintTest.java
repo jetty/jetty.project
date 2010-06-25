@@ -13,11 +13,16 @@
 
 package org.eclipse.jetty.security;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -40,9 +45,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
@@ -128,10 +130,10 @@ public class ConstraintTest
         knownRoles.add("user");
         knownRoles.add("administrator");
 
-        _security.setConstraintMappings(new ConstraintMapping[]
+        _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
                 {
                         mapping0, mapping1, mapping2, mapping3, mapping4
-                }, knownRoles);
+                }), knownRoles);
     }
 
     @After
@@ -147,7 +149,7 @@ public class ConstraintTest
     @Test
     public void testConstraints() throws Exception
     {
-        ConstraintMapping[] mappings =_security.getConstraintMappings();
+        ConstraintMapping[] mappings =_security.getConstraintMappings().toArray(new ConstraintMapping[0]);
 
         assertTrue (mappings[0].getConstraint().isForbidden());
         assertFalse(mappings[1].getConstraint().isForbidden());

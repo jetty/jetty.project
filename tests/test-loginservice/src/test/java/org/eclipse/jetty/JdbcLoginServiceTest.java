@@ -29,6 +29,7 @@ import java.net.URLDecoder;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
 
 import javax.servlet.ServletException;
@@ -166,7 +167,7 @@ public class JdbcLoginServiceTest
         knownRoles.add("user");
         knownRoles.add("admin");
         
-        security.setConstraintMappings(new ConstraintMapping[] {mapping}, knownRoles);
+        security.setConstraintMappings(Collections.singletonList(mapping), knownRoles);
         security.setAuthenticator(new BasicAuthenticator());
         security.setLoginService(loginService);
         security.setStrict(false);

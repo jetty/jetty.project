@@ -67,6 +67,13 @@
          <groupId>org.apache.maven.plugins</groupId>
          <artifactId>maven-source-plugin</artifactId>
       </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <configuration>
+          <onlyAnalyze>org.eclipse.jetty.plus.*</onlyAnalyze>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <dependencies>

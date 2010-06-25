@@ -19,5 +19,6 @@
   <Call name="addServlet">
     <Arg>org.eclipse.jetty.osgi.httpservice.HttpServiceServletX</Arg>
     <Arg>/*</Arg>
+    <Set name="InitOrder">0</Set>
   </Call>
 </Configure>

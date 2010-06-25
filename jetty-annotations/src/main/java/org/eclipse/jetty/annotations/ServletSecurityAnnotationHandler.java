@@ -79,7 +79,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
        //of the url patterns defined for this servlet, then skip the security annotation.
       
        List<ServletMapping> servletMappings = getServletMappings(clazz.getCanonicalName());
-       List<ConstraintMapping> constraintMappings =  LazyList.array2List(((ConstraintAware)_context.getSecurityHandler()).getConstraintMappings());
+       List<ConstraintMapping> constraintMappings =  ((ConstraintAware)_context.getSecurityHandler()).getConstraintMappings();
      
        if (constraintsExist(servletMappings, constraintMappings))
        {
@@ -87,6 +87,9 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
            return;
        }
 
+       //Make a fresh list
+       constraintMappings = new ArrayList<ConstraintMapping>();
+       
        //Get the values that form the constraints that will apply unless there are HttpMethodConstraints to augment them
        HttpConstraint defaults = servletSecurity.value();
 
@@ -103,8 +106,9 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
 
        //set up the security constraints produced by the annotation
        ConstraintAware securityHandler = (ConstraintAware)_context.getSecurityHandler();
-       
-       securityHandler.setConstraintMappings((ConstraintMapping[]) LazyList.toArray(constraintMappings,ConstraintMapping.class),securityHandler.getRoles()); 
+
+       for (ConstraintMapping m:constraintMappings)
+           securityHandler.addConstraintMapping(m); 
     }
     
  

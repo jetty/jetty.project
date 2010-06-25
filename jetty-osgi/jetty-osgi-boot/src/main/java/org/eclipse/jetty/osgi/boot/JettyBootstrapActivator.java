@@ -18,8 +18,10 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.Properties;
 
-import org.eclipse.jetty.osgi.boot.internal.webapp.JettyContextHandlerExtender;
+import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
+import org.eclipse.jetty.osgi.boot.internal.serverfactory.JettyServerServiceTracker;
 import org.eclipse.jetty.osgi.boot.internal.webapp.JettyContextHandlerServiceTracker;
+import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleTrackerCustomizer;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -27,8 +29,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.util.tracker.BundleTracker;
 
 /**
  * Experiment: bootstrap jetty's complete distrib from an OSGi bundle. Progress:
@@ -54,6 +56,9 @@ import org.osgi.framework.ServiceRegistration;
 public class JettyBootstrapActivator implements BundleActivator
 {
 
+	/** development only: when set to true enable the jetty server service tracker */
+	private static boolean _enableMultipleJettyServers = true;
+	
     private static JettyBootstrapActivator INSTANCE = null;
 
     public static JettyBootstrapActivator getInstance()
@@ -65,6 +70,11 @@ public class JettyBootstrapActivator implements BundleActivator
     private Server _server;
     private JettyContextHandlerServiceTracker _jettyContextHandlerTracker;
     private PackageAdminServiceTracker _packageAdminServiceTracker;
+    private BundleTracker _webBundleTracker;
+    
+//    private ServiceRegistration _jettyServerFactoryService;
+    private JettyServerServiceTracker _jettyServerServiceTracker;
+    
 
     /**
      * Setup a new jetty Server, registers it as a service. Setup the Service
@@ -82,25 +92,42 @@ public class JettyBootstrapActivator implements BundleActivator
         // should activate.
         _packageAdminServiceTracker = new PackageAdminServiceTracker(context);
 
-        // todo: replace all this by the ManagedFactory so that we can start
-        // multiple jetty servers.
-        _server = new Server();
-        // expose the server as a service.
-        _registeredServer = context.registerService(_server.getClass().getName(),_server,new Properties());
+        
+        if (_enableMultipleJettyServers)
+        {//new style...
+        	_jettyServerServiceTracker = new JettyServerServiceTracker();
+            context.addServiceListener(_jettyServerServiceTracker,"(objectclass=" + Server.class.getName() + ")");
+
+            //Register the Jetty Server Factory as a ManagedServiceFactory:
+//          Properties jettyServerMgdFactoryServiceProps = new Properties(); 
+//          jettyServerMgdFactoryServiceProps.put("pid", OSGiWebappConstants.MANAGED_JETTY_SERVER_FACTORY_PID);
+//          _jettyServerFactoryService = context.registerService(
+//          		ManagedServiceFactory.class.getName(),  new JettyServersManagedFactory(),
+//          		jettyServerMgdFactoryServiceProps);
+        
+            _jettyContextHandlerTracker = new JettyContextHandlerServiceTracker(_jettyServerServiceTracker);
+        }
+        else
+        {//old style...
+	        _server = new Server();
+	        // expose the server as a service.
+	        _registeredServer = context.registerService(_server.getClass().getName(),_server,new Properties());
+	        _jettyContextHandlerTracker = new JettyContextHandlerServiceTracker(context,_server);
+        }
         // the tracker in charge of the actual deployment
         // and that will configure and start the jetty server.
-        _jettyContextHandlerTracker = new JettyContextHandlerServiceTracker(context,_server);
-
-        // TODO: add a couple more checks on the properties?
-        // kind of nice not to so we can debug what is missing easily.
         context.addServiceListener(_jettyContextHandlerTracker,"(objectclass=" + ContextHandler.class.getName() + ")");
 
-        // now ready to support the Extender pattern:
-        JettyContextHandlerExtender jettyContexHandlerExtender = new JettyContextHandlerExtender();
-        context.addBundleListener(jettyContexHandlerExtender);
-
-        jettyContexHandlerExtender.init(context);
-
+        if (_enableMultipleJettyServers)
+        {
+        	DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
+        }
+        
+        // now ready to support the Extender pattern:        
+        _webBundleTracker = new BundleTracker(context,
+        		Bundle.ACTIVE | Bundle.STOPPING, new WebBundleTrackerCustomizer());
+        _webBundleTracker.open();
+        
     }
 
     /*
@@ -113,32 +140,68 @@ public class JettyBootstrapActivator implements BundleActivator
     {
         try
         {
+        	
+        	if (_webBundleTracker != null)
+        	{
+        		_webBundleTracker.close();
+        		_webBundleTracker = null;
+        	}
             if (_jettyContextHandlerTracker != null)
             {
                 _jettyContextHandlerTracker.stop();
                 context.removeServiceListener(_jettyContextHandlerTracker);
+                _jettyContextHandlerTracker = null;
+            }
+            if (_jettyServerServiceTracker != null)
+            {
+            	_jettyServerServiceTracker.stop();
+                context.removeServiceListener(_jettyServerServiceTracker);
+                _jettyServerServiceTracker = null;
             }
             if (_packageAdminServiceTracker != null)
             {
                 _packageAdminServiceTracker.stop();
                 context.removeServiceListener(_packageAdminServiceTracker);
+                _packageAdminServiceTracker = null;
             }
             if (_registeredServer != null)
             {
                 try
                 {
                     _registeredServer.unregister();
-                    _registeredServer = null;
                 }
                 catch (IllegalArgumentException ill)
                 {
                     // already unregistered.
                 }
+                finally
+                {
+                	_registeredServer = null;
+                }
             }
+//        	if (_jettyServerFactoryService != null)
+//        	{
+//                try
+//                {
+//                	_jettyServerFactoryService.unregister();
+//                }
+//                catch (IllegalArgumentException ill)
+//                {
+//                    // already unregistered.
+//                }
+//                finally
+//                {
+//                	_jettyServerFactoryService = null;
+//                }
+//        	}
+
         }
         finally
         {
-            _server.stop();
+            if (_server != null)
+            {
+            	_server.stop();
+            }
             INSTANCE = null;
         }
     }
@@ -232,5 +295,6 @@ public class JettyBootstrapActivator implements BundleActivator
     {
         // todo
     }
+    
 
 }

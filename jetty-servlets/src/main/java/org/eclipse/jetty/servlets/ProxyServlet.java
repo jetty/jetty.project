@@ -22,8 +22,13 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.StringTokenizer;
+
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -42,8 +47,10 @@ import org.eclipse.jetty.http.HttpHeaderValues;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.HostMap;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -67,13 +74,15 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * <li>maxThreads - maximum threads
  * <li>maxConnections - maximum connections per destination
  * <li>HostHeader - Force the host header to a particular value
+ * <li>whiteList - comma-separated list of allowed proxy destinations
+ * <li>blackList - comma-separated list of forbidden proxy destinations
  * </ul>
  */
 public class ProxyServlet implements Servlet
 {
     protected Logger _log;
-    HttpClient _client;
-    String _hostHeader;
+    protected HttpClient _client;
+    protected String _hostHeader;
 
     protected HashSet<String> _DontProxyHeaders = new HashSet<String>();
     {
@@ -90,6 +99,8 @@ public class ProxyServlet implements Servlet
 
     protected ServletConfig _config;
     protected ServletContext _context;
+    protected HostMap<PathMap> _white = new HostMap<PathMap>();
+    protected HostMap<PathMap> _black = new HostMap<PathMap>();
 
     /* ------------------------------------------------------------ */
     /* (non-Javadoc)
@@ -129,11 +140,111 @@ public class ProxyServlet implements Servlet
                 _context.setAttribute(config.getServletName()+".ThreadPool",_client.getThreadPool());
                 _context.setAttribute(config.getServletName()+".HttpClient",_client);
             }
+            
+            String white = config.getInitParameter("whiteList");
+            if (white != null)
+            {
+                parseList(white, _white);
+            }
+            String black = config.getInitParameter("blackList");
+            if (black != null)
+            {
+                parseList(black, _black);
+            }
         }
         catch (Exception e)
         {
             throw new ServletException(e);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Helper function to process a parameter value containing a list
+     * of new entries and initialize the specified host map. 
+     * 
+     * @param list comma-separated list of new entries
+     * @param hostMap target host map
+     */
+    private void parseList(String list, HostMap<PathMap> hostMap)
+    {
+        if (list != null && list.length() > 0)
+        {
+            int idx;
+            String entry;
+            
+            StringTokenizer entries = new StringTokenizer(list, ",");
+            while(entries.hasMoreTokens())
+            {
+                entry = entries.nextToken();
+                idx = entry.indexOf('/');
+    
+                String host = idx > 0 ? entry.substring(0,idx) : entry;        
+                String path = idx > 0 ? entry.substring(idx) : "/*";
+                
+                host = host.trim();
+                PathMap pathMap = hostMap.get(host);
+                if (pathMap == null)
+                {
+                    pathMap = new PathMap(true);
+                    hostMap.put(host,pathMap);
+                }
+                if (path != null)
+                {
+                    pathMap.put(path,path);
+                }
+            }
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Check the request hostname and path against white- and blacklist.
+     * 
+     * @param host hostname to check
+     * @param path path to check
+     * @return true if request is allowed to be proxied
+     */
+    public boolean validateDestination(String host, String path)
+    {
+        if (_white.size()>0)
+        {
+            boolean match = false;
+            
+            Object whiteObj = _white.getLazyMatches(host);
+            if (whiteObj != null) 
+            {
+                List whiteList = (whiteObj instanceof List) ? (List)whiteObj : Collections.singletonList(whiteObj);
+
+                for (Object entry: whiteList)
+                {
+                    PathMap pathMap = ((Map.Entry<String, PathMap>)entry).getValue();
+                    if (match = (pathMap!=null && (pathMap.size()==0 || pathMap.match(path)!=null)))
+                        break;
+                }
+            }
+
+            if (!match)
+                return false;
+        }
+
+        if (_black.size() > 0)
+        {
+            Object blackObj = _black.getLazyMatches(host);
+            if (blackObj != null) 
+            {
+                List blackList = (blackObj instanceof List) ? (List)blackObj : Collections.singletonList(blackObj);
+    
+                for (Object entry: blackList)
+                {
+                    PathMap pathMap = ((Map.Entry<String, PathMap>)entry).getValue();
+                    if (pathMap!=null && (pathMap.size()==0 || pathMap.match(path)!=null))
+                        return false;
+                }
+            }
+        }
+        
+        return true;
     }
 
     /* ------------------------------------------------------------ */
@@ -423,6 +534,9 @@ public class ProxyServlet implements Servlet
     protected HttpURI proxyHttpURI(String scheme, String serverName, int serverPort, String uri)
         throws MalformedURLException
     {
+        if (!validateDestination(serverName, uri))
+            return null;
+        
         return new HttpURI(scheme+"://"+serverName+":"+serverPort+uri);
     }
 
@@ -517,8 +631,13 @@ public class ProxyServlet implements Servlet
             {
                 if (!uri.startsWith(_prefix))
                     return null;
+                
+                URI dstUri = new URI(_proxyTo + uri.substring(_prefix.length())).normalize();
+                
+                if (!validateDestination(dstUri.getHost(),dstUri.getPath()))
+                    return null;
 
-                return new HttpURI(new URI(_proxyTo + uri.substring(_prefix.length())).normalize().toString());
+                return new HttpURI(dstUri.toString());
             }
             catch (URISyntaxException ex)
             {

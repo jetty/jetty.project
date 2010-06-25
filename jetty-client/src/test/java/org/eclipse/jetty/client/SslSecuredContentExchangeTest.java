@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -83,7 +84,7 @@ extends ContentExchangeTest
         knownRoles.add("user");
         knownRoles.add("admin");
         
-        security.setConstraintMappings(new ConstraintMapping[] {mapping}, knownRoles);
+        security.setConstraintMappings(Collections.singletonList(mapping), knownRoles);
         security.setAuthenticator(new BasicAuthenticator());
         security.setLoginService(loginService);
         security.setStrict(false);
