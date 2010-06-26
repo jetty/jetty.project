@@ -289,6 +289,17 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
             return null;
         }
     }
+    
+    public boolean isExtract()
+    {
+        return _extractWars;
+    }
+
+    public void setExtract(boolean extract)
+    {
+        _extractWars=extract;
+    }
+
 
     /* ------------------------------------------------------------ */
     /**

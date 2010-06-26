@@ -33,7 +33,6 @@ import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.internal.jsp.TldLocatableURLClassloader;
 import org.eclipse.jetty.osgi.boot.internal.webapp.LibExtClassLoaderHelper;
 import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleDeployerHelper;
-import org.eclipse.jetty.osgi.boot.internal.webapp.WebappRegistrationHelper;
 import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
 import org.eclipse.jetty.osgi.boot.utils.internal.DefaultFileLocatorHelper;
 import org.eclipse.jetty.server.Server;
@@ -224,9 +223,10 @@ public class ServerInstanceWrapper {
     private URL[] getJarsWithTlds() throws Exception
     {
         ArrayList<URL> res = new ArrayList<URL>();
+        WebBundleDeployerHelper.staticInit();//that is not looking great.
         for (WebappRegistrationCustomizer regCustomizer : WebBundleDeployerHelper.JSP_REGISTRATION_HELPERS)
         {
-            URL[] urls = regCustomizer.getJarsWithTlds(_provider, WebBundleDeployerHelper.BUNDLE_FILE_LOCATOR_HELPER);
+        	URL[] urls = regCustomizer.getJarsWithTlds(_provider, WebBundleDeployerHelper.BUNDLE_FILE_LOCATOR_HELPER);
             for (URL url : urls)
             {
                 if (!res.contains(url))
@@ -274,8 +274,7 @@ public class ServerInstanceWrapper {
             }
             catch (SAXParseException saxparse)
             {
-                Log.getLogger(WebappRegistrationHelper.class.getName())
-                	.warn("Unable to configure the jetty/etc file " + jettyConfiguration,saxparse);
+                __logger.warn("Unable to configure the jetty/etc file " + jettyConfiguration,saxparse);
                 throw saxparse;
             }
             finally

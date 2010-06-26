@@ -18,11 +18,13 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.server.Server;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -135,11 +137,10 @@ public class DefaultJettyAtJettyHomeHelper {
 			properties.put(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS, configURLs);
 
 			//these properties usually are the ones passed to this type of configuration.
-			//TODO remove the hardcoded defaults once we use 7.1.5
 			setProperty(properties,SYS_PROP_JETTY_HOME,System.getProperty(SYS_PROP_JETTY_HOME));
 			setProperty(properties,SYS_PROP_JETTY_HOST,System.getProperty(SYS_PROP_JETTY_HOST));
-			setProperty(properties,SYS_PROP_JETTY_PORT,System.getProperty(SYS_PROP_JETTY_PORT, "8080"));
-			setProperty(properties,SYS_PROP_JETTY_PORT_SSL,System.getProperty(SYS_PROP_JETTY_PORT_SSL, "8443"));
+			setProperty(properties,SYS_PROP_JETTY_PORT,System.getProperty(SYS_PROP_JETTY_PORT));
+			setProperty(properties,SYS_PROP_JETTY_PORT_SSL,System.getProperty(SYS_PROP_JETTY_PORT_SSL));
 
    			bundleContext.registerService(Server.class.getName(), server, properties);
 		}
@@ -201,26 +202,18 @@ public class DefaultJettyAtJettyHomeHelper {
             }
             else
             {
-            	int last = etcFile.lastIndexOf('/');
-            	String path = last != -1 && last < etcFile.length() -2
-            		? etcFile.substring(0, last) : "/";
-            	if (!path.startsWith("/"))
-            	{
-            		path = "/" + path;
-            	}
-            	String pattern = last != -1 && last < etcFile.length() -2
-        			? etcFile.substring(last+1) : etcFile;
-        		Enumeration<URL> enUrls = configurationBundle.findEntries(path, pattern, false);
+            	Enumeration<URL> enUrls = BundleFileLocatorHelper.DEFAULT
+            				.findEntries(configurationBundle, etcFile);
         		
         		//default for org.eclipse.osgi.boot where we look inside jettyhome for the default embedded configuration.
         		//default inside jettyhome. this way fragments to the bundle can define their own configuration.
-            	if ((enUrls == null || !enUrls.hasMoreElements()) && pattern.equals("jetty.xml"))
+            	if ((enUrls == null || !enUrls.hasMoreElements()) && etcFile.endsWith("etc/jetty.xml"))
             	{
-            		path = "/jettyhome" + path;
-            		pattern = "jetty-osgi-default.xml";
-            		enUrls = configurationBundle.findEntries(path, pattern, false);
+            		enUrls = BundleFileLocatorHelper.DEFAULT
+            				.findEntries(configurationBundle, "/jettyhome/etc/jetty-osgi-default.xml");
             		System.err.println("Configuring jetty with the default embedded configuration:" +
-            				"bundle: " + configurationBundle.getSymbolicName() + " config: /jettyhome/etc/jetty-osgi-default.xml");
+            				"bundle: " + configurationBundle.getSymbolicName() + 
+            				" config: /jettyhome/etc/jetty-osgi-default.xml");
             	}
         		if (enUrls != null)
         		{
@@ -250,4 +243,5 @@ public class DefaultJettyAtJettyHomeHelper {
 			properties.put(key, value);
 		}
 	}
+	
 }

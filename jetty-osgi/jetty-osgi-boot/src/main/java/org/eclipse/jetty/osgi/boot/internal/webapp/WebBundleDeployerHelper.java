@@ -23,9 +23,8 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.jar.JarFile;
-import java.util.zip.ZipEntry;
 
 import org.eclipse.jetty.deploy.ContextDeployer;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.osgi.boot.utils.WebappRegistrationCustomizer;
 import org.eclipse.jetty.osgi.boot.utils.internal.DefaultBundleClassLoaderHelper;
 import org.eclipse.jetty.osgi.boot.utils.internal.DefaultFileLocatorHelper;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -67,7 +67,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
     private static Logger __logger = Log.getLogger(WebBundleDeployerHelper.class.getName());
 
     private static boolean INITIALIZED = false;
-
+    
     /**
      * By default set to: {@link DefaultBundleClassLoaderHelper}. It supports
      * equinox and apache-felix fragment bundles that are specific to an OSGi
@@ -103,12 +103,12 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
 
     public WebBundleDeployerHelper(ServerInstanceWrapper wrapper)
     {
+    	staticInit();
     	_wrapper = wrapper;
-        staticInit();
     }
 
     // Inject the customizing classes that might be defined in fragment bundles.
-    private static synchronized void staticInit()
+    public static synchronized void staticInit()
     {
         if (!INITIALIZED)
         {
@@ -139,45 +139,60 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
     /* (non-Javadoc)
 	 * @see org.eclipse.jetty.osgi.boot.internal.webapp.IWebBundleDeployerHelper#registerWebapplication(org.osgi.framework.Bundle, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String)
 	 */
-    public ContextHandler registerWebapplication(Bundle bundle, String webappFolderPath, String contextPath, String extraClasspath,
-            String overrideBundleInstallLocation, String webXmlPath, String defaultWebXmlPath) throws Exception
+    public WebAppContext registerWebapplication(Bundle bundle, String webappFolderPath, String contextPath, String extraClasspath,
+            String overrideBundleInstallLocation, String webXmlPath, String defaultWebXmlPath, WebAppContext webAppContext) throws Exception
     {
         File bundleInstall = overrideBundleInstallLocation == null?BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(bundle):new File(
                 overrideBundleInstallLocation);
         File webapp = null;
+        URL baseWebappInstallURL = null;
         if (webappFolderPath != null && webappFolderPath.length() != 0 && !webappFolderPath.equals("."))
         {
-            if (webappFolderPath.startsWith("/") || webappFolderPath.startsWith("file:/"))
+            if (webappFolderPath.startsWith("/") || webappFolderPath.startsWith("file:"))
             {
                 webapp = new File(webappFolderPath);
             }
-            else
+            else if (bundleInstall != null && bundleInstall.isDirectory())
             {
                 webapp = new File(bundleInstall,webappFolderPath);
+            }
+            else if (bundleInstall != null)
+            {
+            	Enumeration<URL> urls = BUNDLE_FILE_LOCATOR_HELPER.findEntries(bundle, webappFolderPath);
+            	if (urls != null && urls.hasMoreElements())
+            	{
+            		baseWebappInstallURL = urls.nextElement();
+            	}
             }
         }
         else
         {
             webapp = bundleInstall;
         }
-        if (!webapp.exists())
+        if (baseWebappInstallURL == null && (webapp == null || !webapp.exists()))
         {
             throw new IllegalArgumentException("Unable to locate " + webappFolderPath + " inside "
                     + (bundleInstall != null?bundleInstall.getAbsolutePath():"unlocated bundle '" + bundle.getSymbolicName() + "'"));
         }
-        return registerWebapplication(bundle,webappFolderPath,webapp,contextPath,extraClasspath,bundleInstall,webXmlPath,defaultWebXmlPath);
+        if (baseWebappInstallURL == null && webapp != null)
+        {
+        	baseWebappInstallURL = webapp.toURI().toURL();
+        }
+        return registerWebapplication(bundle,webappFolderPath,baseWebappInstallURL,contextPath,
+        		extraClasspath,bundleInstall,webXmlPath,defaultWebXmlPath,webAppContext);
     }
-
+    
     /* (non-Javadoc)
 	 * @see org.eclipse.jetty.osgi.boot.internal.webapp.IWebBundleDeployerHelper#registerWebapplication(org.osgi.framework.Bundle, java.lang.String, java.io.File, java.lang.String, java.lang.String, java.io.File, java.lang.String, java.lang.String)
 	 */
-    public ContextHandler registerWebapplication(Bundle contributor, String pathInBundleToWebApp, File webapp, String contextPath, String extraClasspath, File bundleInstall,
-            String webXmlPath, String defaultWebXmlPath) throws Exception
+    private WebAppContext registerWebapplication(Bundle contributor, String pathInBundleToWebApp,
+    		URL baseWebappInstallURL, String contextPath, String extraClasspath, File bundleInstall,
+            String webXmlPath, String defaultWebXmlPath, WebAppContext context) throws Exception
     {
 
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         String[] oldServerClasses = null;
-        WebAppContext context = null;
+        
         try
         {
             // make sure we provide access to all the jetty bundles by going
@@ -187,7 +202,8 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             // that the contributor gives access to.
             Thread.currentThread().setContextClassLoader(composite);
 
-            context = new WebAppContext(webapp.getAbsolutePath(),contextPath);
+            context.setWar(baseWebappInstallURL.toString());
+            context.setContextPath(contextPath);
             context.setExtraClasspath(extraClasspath);
 
             if (webXmlPath != null && webXmlPath.length() != 0)
@@ -242,7 +258,9 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             // through the webapp classloader.
             oldServerClasses = context.getServerClasses();
             context.setServerClasses(null);
+            
             _wrapper.getOSGiAppProvider().addContext(contributor,pathInBundleToWebApp,context);
+            
             return context;
         }
         finally
@@ -267,7 +285,8 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
     /* (non-Javadoc)
 	 * @see org.eclipse.jetty.osgi.boot.internal.webapp.IWebBundleDeployerHelper#registerContext(org.osgi.framework.Bundle, java.lang.String, java.lang.String, java.lang.String)
 	 */
-    public ContextHandler registerContext(Bundle contributor, String contextFileRelativePath, String extraClasspath, String overrideBundleInstallLocation)
+    public ContextHandler registerContext(Bundle contributor, String contextFileRelativePath, String extraClasspath, 
+    			String overrideBundleInstallLocation, ContextHandler handler)
             throws Exception
     {
         File contextsHome = _wrapper.getOSGiAppProvider().getContextXmlDirAsFile();
@@ -276,15 +295,17 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             File prodContextFile = new File(contextsHome,contributor.getSymbolicName() + "/" + contextFileRelativePath);
             if (prodContextFile.exists())
             {
-                return registerContext(contributor,contextFileRelativePath,prodContextFile,extraClasspath,overrideBundleInstallLocation);
+                return registerContext(contributor,contextFileRelativePath,prodContextFile,extraClasspath,
+                		overrideBundleInstallLocation,handler);
             }
         }
-        
-        File contextFile = overrideBundleInstallLocation != null?new File(overrideBundleInstallLocation,contextFileRelativePath):new File(
-                BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(contributor),contextFileRelativePath);
-        if (contextFile.exists())
+        File rootFolder = overrideBundleInstallLocation != null
+        	? Resource.newResource(overrideBundleInstallLocation).getFile()
+        	: BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(contributor);
+        File contextFile = rootFolder != null?new File(rootFolder,contextFileRelativePath):null;
+        if (contextFile != null && contextFile.exists())
         {
-            return registerContext(contributor,contextFileRelativePath,contextFile,extraClasspath,overrideBundleInstallLocation);
+            return registerContext(contributor,contextFileRelativePath,contextFile,extraClasspath,overrideBundleInstallLocation,handler);
         }
         else
         {
@@ -297,39 +318,10 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
                 contextFileRelativePath = "/" + contextFileRelativePath;
             }
             
-            File overrideBundleInstallLocationF = overrideBundleInstallLocation != null ? Resource.newResource(overrideBundleInstallLocation).getFile() : null;
-            if (overrideBundleInstallLocationF == null)
+            URL contextURL = contributor.getEntry(contextFileRelativePath);
+            if (contextURL != null)
             {
-                URL contextURL = contributor.getEntry(contextFileRelativePath);
-                if (contextURL != null)
-                {
-                    return registerContext(contributor,contextFileRelativePath,contextURL.openStream(),extraClasspath,overrideBundleInstallLocation);
-                }
-            }
-            else
-            {
-                JarFile zipFile = null;
-                try
-                {
-                    zipFile = new JarFile(overrideBundleInstallLocation);
-                    ZipEntry entry = zipFile.getEntry(contextFileRelativePath.substring(1));
-                    return registerContext(contributor,contextFileRelativePath,zipFile.getInputStream(entry),extraClasspath,overrideBundleInstallLocation);
-                }
-                catch (Throwable t)
-                {
-
-                }
-                finally
-                {
-                    if (zipFile != null)
-                        try
-                        {
-                            zipFile.close();
-                        }
-                        catch (IOException ioe)
-                        {
-                        }
-                }
+                return registerContext(contributor,contextFileRelativePath,contextURL.openStream(),extraClasspath,overrideBundleInstallLocation,handler);
             }
             throw new IllegalArgumentException("Could not find the context " + "file " + contextFileRelativePath + " for the bundle "
                     + contributor.getSymbolicName() + (overrideBundleInstallLocation != null?" using the install location " + overrideBundleInstallLocation:""));
@@ -346,24 +338,18 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * @param classInBundle
      * @throws Exception
      */
-    private ContextHandler registerContext(Bundle contributor, String pathInBundle, File contextFile, String extraClasspath, String overrideBundleInstallLocation) throws Exception
+    private ContextHandler registerContext(Bundle contributor, String pathInBundle, File contextFile,
+    		String extraClasspath, String overrideBundleInstallLocation, ContextHandler handler) throws Exception
     {
         InputStream contextFileInputStream = null;
         try
         {
             contextFileInputStream = new BufferedInputStream(new FileInputStream(contextFile));
-            return registerContext(contributor, pathInBundle, contextFileInputStream,extraClasspath,overrideBundleInstallLocation);
+            return registerContext(contributor, pathInBundle, contextFileInputStream,extraClasspath,overrideBundleInstallLocation, handler);
         }
         finally
         {
-            if (contextFileInputStream != null)
-                try
-                {
-                    contextFileInputStream.close();
-                }
-                catch (IOException ioe)
-                {
-                }
+        	IO.close(contextFileInputStream);
         }
     }
 
@@ -374,7 +360,8 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      *         happen.
      * @throws Exception
      */
-    private ContextHandler registerContext(Bundle contributor, String pathInsideBundle, InputStream contextFileInputStream, String extraClasspath, String overrideBundleInstallLocation)
+    private ContextHandler registerContext(Bundle contributor, String pathInsideBundle, InputStream contextFileInputStream,
+    		String extraClasspath, String overrideBundleInstallLocation, ContextHandler handler)
             throws Exception
     {
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
@@ -389,7 +376,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             // classes
             // that the contributor gives access to.
             Thread.currentThread().setContextClassLoader(composite);
-            ContextHandler context = createContextHandler(contributor,contextFileInputStream,extraClasspath,overrideBundleInstallLocation);
+            ContextHandler context = createContextHandler(handler, contributor,contextFileInputStream,extraClasspath,overrideBundleInstallLocation);
             if (context == null)
             {
                 return null;// did not happen
@@ -449,11 +436,12 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * @param contextFile
      * @return
      */
-    protected ContextHandler createContextHandler(Bundle bundle, File contextFile, String extraClasspath, String overrideBundleInstallLocation)
+    protected ContextHandler createContextHandler(ContextHandler handlerToConfigure,
+    		Bundle bundle, File contextFile, String extraClasspath, String overrideBundleInstallLocation)
     {
         try
         {
-            return createContextHandler(bundle,new BufferedInputStream(new FileInputStream(contextFile)),extraClasspath,overrideBundleInstallLocation);
+            return createContextHandler(handlerToConfigure,bundle,new BufferedInputStream(new FileInputStream(contextFile)),extraClasspath,overrideBundleInstallLocation);
         }
         catch (FileNotFoundException e)
         {
@@ -468,7 +456,8 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * @return
      */
     @SuppressWarnings("unchecked")
-    protected ContextHandler createContextHandler(Bundle bundle, InputStream contextInputStream, String extraClasspath, String overrideBundleInstallLocation)
+    protected ContextHandler createContextHandler(ContextHandler handlerToConfigure,
+    		Bundle bundle, InputStream contextInputStream, String extraClasspath, String overrideBundleInstallLocation)
     {
         /*
          * Do something identical to what the ContextProvider would have done:
@@ -491,7 +480,17 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             setThisBundleHomeProperty(bundle,properties,overrideBundleInstallLocation);
             xmlConfiguration.setProperties(properties);
 
-            ContextHandler context = (ContextHandler)xmlConfiguration.configure();
+            ContextHandler context = null;
+            if (handlerToConfigure == null)
+            {
+            	context = (ContextHandler)xmlConfiguration.configure();
+            }
+            else
+            {
+            	xmlConfiguration.configure(handlerToConfigure);
+            	context = handlerToConfigure;
+            }
+            
             if (context instanceof WebAppContext)
             {
                 ((WebAppContext)context).setExtraClasspath(extraClasspath);
@@ -534,14 +533,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         }
         finally
         {
-            if (contextInputStream != null)
-                try
-                {
-                    contextInputStream.close();
-                }
-                catch (IOException ioe)
-                {
-                }
+        	IO.close(contextInputStream);
         }
         return null;
     }

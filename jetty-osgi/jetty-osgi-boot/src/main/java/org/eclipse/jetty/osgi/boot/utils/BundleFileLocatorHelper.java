@@ -13,6 +13,8 @@
 package org.eclipse.jetty.osgi.boot.utils;
 
 import java.io.File;
+import java.net.URL;
+import java.util.Enumeration;
 
 import org.eclipse.jetty.osgi.boot.utils.internal.DefaultFileLocatorHelper;
 import org.osgi.framework.Bundle;
@@ -73,5 +75,16 @@ public interface BundleFileLocatorHelper
      *         embedded inside it.
      */
     public File[] locateJarsInsideBundle(Bundle bundle) throws Exception;
+    
+    
+    /**
+	 * Helper method equivalent to Bundle#getEntry(String entryPath) except that
+	 * it searches for entries in the fragments by using the findEntries method.
+	 * 
+	 * @param bundle
+	 * @param entryPath
+	 * @return null or all the entries found for that path.
+	 */
+	public Enumeration<URL> findEntries(Bundle bundle, String entryPath);
 
 }
