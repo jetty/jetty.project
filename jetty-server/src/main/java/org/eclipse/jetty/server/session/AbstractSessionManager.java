@@ -95,6 +95,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     protected int _refreshCookieAge;
     protected boolean _nodeIdInSessionId;
     protected boolean _checkingRemoteSessionIdEncoding;
+    protected String _sessionComment;
 
     public Set<SessionTrackingMode> _sessionTrackingModes;
 
@@ -331,15 +332,32 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             String sessionPath = (_sessionPath==null) ? contextPath : _sessionPath;
             sessionPath = (sessionPath==null||sessionPath.length()==0) ? "/" : sessionPath;
             String id = getNodeId(session);
-            HttpCookie cookie=new HttpCookie(
-                    _sessionCookie,
-                    id,
-                    _sessionDomain,
-                    sessionPath,
-                    _cookieConfig.getMaxAge(),
-                    _cookieConfig.isHttpOnly(),
-                    requestIsSecure&&_cookieConfig.isSecure());      
-                    
+            HttpCookie cookie = null;
+            if (_sessionComment == null)
+            {
+                cookie = new HttpCookie(
+                                        _sessionCookie,
+                                        id,
+                                        _sessionDomain,
+                                        sessionPath,
+                                        _cookieConfig.getMaxAge(),
+                                        _cookieConfig.isHttpOnly(),
+                                        _cookieConfig.isSecure());                  
+            }
+            else
+            {
+                cookie = new HttpCookie(
+                                        _sessionCookie,
+                                        id,
+                                        _sessionDomain,
+                                        sessionPath,
+                                        _cookieConfig.getMaxAge(),
+                                        _cookieConfig.isHttpOnly(),
+                                        _cookieConfig.isSecure(),
+                                        _sessionComment,
+                                        1);    
+            }
+
             return cookie;
         }
         return null;
@@ -683,7 +701,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             @Override
             public String getComment()
             {
-                return null;
+                return _sessionComment;
             }
 
             @Override
@@ -725,7 +743,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             @Override
             public void setComment(String comment)
             {
-                // TODO 
+                _sessionComment = comment; 
             }
 
             @Override
