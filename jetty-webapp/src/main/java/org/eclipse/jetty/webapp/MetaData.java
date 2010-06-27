@@ -690,7 +690,7 @@ public class MetaData
 
     public void addDiscoveredAnnotations(Resource resource, List<DiscoveredAnnotation> annotations)
     {
-        _webFragmentAnnotations.put(resource, annotations);
+        _webFragmentAnnotations.put(resource, new ArrayList<DiscoveredAnnotation>(annotations));
     }
     
     public void addDescriptorProcessor(DescriptorProcessor p)
