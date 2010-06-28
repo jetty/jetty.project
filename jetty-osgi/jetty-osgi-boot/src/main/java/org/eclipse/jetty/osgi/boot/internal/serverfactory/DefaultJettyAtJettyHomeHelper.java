@@ -18,7 +18,6 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Enumeration;
-import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
@@ -41,7 +40,7 @@ public class DefaultJettyAtJettyHomeHelper {
      * used to configure jetty. By default the value is 'etc/jetty.xml' when the
      * path is relative the file is resolved relatively to jettyhome.
      */
-    public static final String SYS_PROP_JETTY_ETC_FILES = "jetty.etc.config.urls";
+    public static final String SYS_PROP_JETTY_ETC_FILES = OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS;
 
     /**
      * Usual system property used as the hostname for a typical jetty configuration.
@@ -136,6 +135,8 @@ public class DefaultJettyAtJettyHomeHelper {
 			String configURLs = jettyHome != null ? getJettyConfigurationURLs(jettyHome) : getJettyConfigurationURLs(jettyHomeBundle);
 			properties.put(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS, configURLs);
 
+			System.err.println("Configuring the default jetty server with " + configURLs);
+			
 			//these properties usually are the ones passed to this type of configuration.
 			setProperty(properties,SYS_PROP_JETTY_HOME,System.getProperty(SYS_PROP_JETTY_HOME));
 			setProperty(properties,SYS_PROP_JETTY_HOST,System.getProperty(SYS_PROP_JETTY_HOST));
@@ -190,13 +191,14 @@ public class DefaultJettyAtJettyHomeHelper {
     private static String getJettyConfigurationURLs(Bundle configurationBundle)
     {
     	String jettyetc = System.getProperty(SYS_PROP_JETTY_ETC_FILES,"etc/jetty.xml");
+    	System.err.println("jettyetc=" + jettyetc);
         StringTokenizer tokenizer = new StringTokenizer(jettyetc,";,", false);
         StringBuilder res = new StringBuilder();
         
         while (tokenizer.hasMoreTokens())
         {
             String etcFile = tokenizer.nextToken().trim();
-            if (etcFile.indexOf(":") != -1)
+            if (etcFile.startsWith("/") || etcFile.indexOf(":") != -1)
             {
             	appendToCommaSeparatedList(res, etcFile);
             }
@@ -214,6 +216,10 @@ public class DefaultJettyAtJettyHomeHelper {
             		System.err.println("Configuring jetty with the default embedded configuration:" +
             				"bundle: " + configurationBundle.getSymbolicName() + 
             				" config: /jettyhome/etc/jetty-osgi-default.xml");
+            	}
+            	if (enUrls == null || !enUrls.hasMoreElements())
+            	{
+            		System.err.println("Unable to locate a jetty configuration file for " + etcFile);
             	}
         		if (enUrls != null)
         		{

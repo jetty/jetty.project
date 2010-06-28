@@ -606,6 +606,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             File location = overrideBundleInstallLocation != null?new File(overrideBundleInstallLocation):BUNDLE_FILE_LOCATOR_HELPER
                     .getBundleInstallLocation(bundle);
             properties.put("this.bundle.install",location.getCanonicalPath());
+            properties.put("this.bundle.install.url",bundle.getEntry("/").toString());
         }
         catch (Throwable t)
         {

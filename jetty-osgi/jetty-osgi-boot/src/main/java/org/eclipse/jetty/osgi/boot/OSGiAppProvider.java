@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2009 Mortbay, Inc.
+// Copyright (c) 2009-2010 Mortbay, Inc.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 
 /**
@@ -44,7 +45,7 @@ import org.osgi.framework.Bundle;
 public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
 {
 
-    private boolean _extractWars = false;
+    private boolean _extractWars = true;
     private boolean _parentLoaderPriority = false;
     private String _defaultsDescriptor;
     private String _tldBundles;
@@ -160,6 +161,10 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     public void addContext(String originId, ContextHandler context) throws Exception
     {
         // TODO apply configuration specific to this provider
+    	if (context instanceof WebAppContext)
+    	{
+    		((WebAppContext)context).setExtractWAR(isExtract());
+    	}
 
         // wrap context as an App
         App app = new App(getDeploymentManager(),this,originId,context);
