@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -29,6 +32,11 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class JettyWebXmlConfiguration implements Configuration
 {
+    /** The value of this property points to the WEB-INF directory of
+	 * the web-app currently installed.
+	 * it is passed as a property to the jetty-web.xml file */
+	public static final String PROPERTY_THIS_WEB_INF_URL = "this.web-inf.url";
+	
     public void preConfigure(WebAppContext context) throws Exception
     {
         // TODO Auto-generated method stub
@@ -74,6 +82,7 @@ public class JettyWebXmlConfiguration implements Configuration
                     if(Log.isDebugEnabled())
                         Log.debug("Configure: "+jetty);
                     XmlConfiguration jetty_config=new XmlConfiguration(jetty.getURL());
+                    setupXmlConfiguration(jetty_config, web_inf);
                     jetty_config.configure(context);
                 }
                 finally
@@ -83,6 +92,21 @@ public class JettyWebXmlConfiguration implements Configuration
                 }
             }
         }
+    }
+    
+    /**
+     * Configures some well-known properties before the XmlConfiguration reads
+     * the configuration.
+     * @param jetty_config The configuration object.
+     */
+    private void setupXmlConfiguration(XmlConfiguration jetty_config, Resource web_inf)
+    {
+    	Map<Object,Object> props = jetty_config.getProperties();
+    	if (props == null)
+    	{
+    		props = new HashMap<Object, Object>();
+    	}
+    	props.put(PROPERTY_THIS_WEB_INF_URL, web_inf.getURL());
     }
     
     
