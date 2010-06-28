@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -36,6 +37,9 @@ public class TestServer
 {
     public static void main(String[] args) throws Exception
     {
+        Log.getLog().setDebugEnabled(false);
+        ((StdErrLog)Log.getLog()).setSource(false);
+        
         String jetty_root = "..";
 
         Server server = new Server();

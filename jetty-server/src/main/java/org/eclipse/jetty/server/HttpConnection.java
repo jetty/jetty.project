@@ -462,7 +462,6 @@ public class HttpConnection implements Connection
 
                     _parser.reset(true);
                     _endp.close();
-                    throw e;
                 }
                 finally
                 {

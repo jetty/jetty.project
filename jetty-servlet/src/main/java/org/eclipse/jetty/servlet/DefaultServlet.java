@@ -16,6 +16,7 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Enumeration;
@@ -566,6 +567,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doOptions(HttpServletRequest req, HttpServletResponse resp)
+        throws ServletException, IOException
+    {
+        resp.setHeader("Allow", "GET,HEAD,POST,OPTIONS");
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Finds a matching welcome file for the supplied {@link Resource}. This will be the first entry in the list of
