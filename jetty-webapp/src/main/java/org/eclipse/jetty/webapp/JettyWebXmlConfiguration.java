@@ -105,6 +105,7 @@ public class JettyWebXmlConfiguration implements Configuration
     	if (props == null)
     	{
     		props = new HashMap<Object, Object>();
+    		jetty_config.setProperties(props);
     	}
     	props.put(PROPERTY_THIS_WEB_INF_URL, web_inf.getURL());
     }
