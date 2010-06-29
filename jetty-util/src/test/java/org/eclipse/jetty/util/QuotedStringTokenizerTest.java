@@ -157,7 +157,8 @@ public class QuotedStringTokenizerTest
         assertEquals("abc",QuotedStringTokenizer.quoteIfNeeded("abc", " ,"));
         assertEquals("\"a c\"",QuotedStringTokenizer.quoteIfNeeded("a c", " ,"));
         assertEquals("\"a'c\"",QuotedStringTokenizer.quoteIfNeeded("a'c", " ,"));  
-        assertEquals("\"a\\n\\r\\t\"",QuotedStringTokenizer.quote("a\n\r\t")); 
+        assertEquals("\"a\\n\\r\\t\"",QuotedStringTokenizer.quote("a\n\r\t"));  
+        assertEquals("\"\\u0000\\u001f\"",QuotedStringTokenizer.quote("\u0000\u001f")); 
     }
 
     @Test
@@ -167,6 +168,7 @@ public class QuotedStringTokenizerTest
         assertEquals("a\"c",QuotedStringTokenizer.unquote("\"a\\\"c\""));
         assertEquals("a'c",QuotedStringTokenizer.unquote("\"a'c\""));
         assertEquals("a\n\r\t",QuotedStringTokenizer.unquote("\"a\\n\\r\\t\""));
+        assertEquals("\u0000\u001f ",QuotedStringTokenizer.unquote("\"\u0000\u001f\u0020\""));
     }
 
 }

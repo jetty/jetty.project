@@ -199,6 +199,16 @@ public class JSONTest
         obj = Array.get(JSON.parse(string),0);
         assertTrue(obj instanceof Double);
     }
+
+
+    /* ------------------------------------------------------------ */
+    @Test
+    public void testZeroByte()
+    {
+        String withzero="\u0000";
+        String json = JSON.toString(withzero);
+        System.err.println(json);
+    }
     
     /* ------------------------------------------------------------ */
     public static class Gadget 

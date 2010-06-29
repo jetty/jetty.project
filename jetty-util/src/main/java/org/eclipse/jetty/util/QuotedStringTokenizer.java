@@ -322,82 +322,47 @@ public class QuotedStringTokenizer
         {
             buf.append('"');
 
-            int i=0;
-            loop:
-                for (;i<s.length();i++)
-                {
-                    char c = s.charAt(i);
-                    switch(c)
-                    {
-                        case '"':
-                            buf.append(s,0,i);
-                            buf.append("\\\"");
-                            break loop;
-                        case '\\':
-                            buf.append(s,0,i);
-                            buf.append("\\\\");
-                            break loop;
-                        case '\n':
-                            buf.append(s,0,i);
-                            buf.append("\\n");
-                            break loop;
-                        case '\r':
-                            buf.append(s,0,i);
-                            buf.append("\\r");
-                            break loop;
-                        case '\t':
-                            buf.append(s,0,i);
-                            buf.append("\\t");
-                            break loop;
-                        case '\f':
-                            buf.append(s,0,i);
-                            buf.append("\\f");
-                            break loop;
-                        case '\b':
-                            buf.append(s,0,i);
-                            buf.append("\\b");
-                            break loop;
-
-                        default:
-                            continue;
-                    }
-                }
-            if (i==s.length())
-                buf.append(s);
-            else
+            for (int i=0;i<s.length();i++)
             {
-                i++;
-                for (;i<s.length();i++)
+                char c = s.charAt(i);
+                switch(c)
                 {
-                    char c = s.charAt(i);
-                    switch(c)
-                    {
-                        case '"':
-                            buf.append("\\\"");
-                            continue;
-                        case '\\':
-                            buf.append("\\\\");
-                            continue;
-                        case '\n':
-                            buf.append("\\n");
-                            continue;
-                        case '\r':
-                            buf.append("\\r");
-                            continue;
-                        case '\t':
-                            buf.append("\\t");
-                            continue;
-                        case '\f':
-                            buf.append("\\f");
-                            continue;
-                        case '\b':
-                            buf.append("\\b");
-                            continue;
+                    case '"':
+                        buf.append("\\\"");
+                        continue;
+                    case '\\':
+                        buf.append("\\\\");
+                        continue;
+                    case '\n':
+                        buf.append("\\n");
+                        continue;
+                    case '\r':
+                        buf.append("\\r");
+                        continue;
+                    case '\t':
+                        buf.append("\\t");
+                        continue;
+                    case '\f':
+                        buf.append("\\f");
+                        continue;
+                    case '\b':
+                        buf.append("\\b");
+                        continue;
 
-                        default:
+                    default:
+                        if (c<0x10)
+                        {
+                            buf.append("\\u000");
+                            buf.append(Integer.toString(c,16));
+                        }
+                        else if (c<=0x1f)
+                        {
+                            buf.append("\\u00");
+                            buf.append(Integer.toString(c,16));
+                        }
+                        else
                             buf.append(c);
-                            continue;
-                    }
+                        continue;
                 }
             }
 
@@ -408,10 +373,7 @@ public class QuotedStringTokenizer
             throw new RuntimeException(e);
         }
     }
-
-
-
-
+    
     /* ------------------------------------------------------------ */
     /** Quote a string into a StringBuffer only if needed.
      * Quotes are forced if any delim characters are present.
@@ -488,6 +450,15 @@ public class QuotedStringTokenizer
                             break;
                         case 'b':
                             b.append('\b');
+                            break;
+                        case '\\':
+                            b.append('\\');
+                            break;
+                        case '/':
+                            b.append('/');
+                            break;
+                        case '"':
+                            b.append('"');
                             break;
                         case 'u':
                             b.append((char)(
