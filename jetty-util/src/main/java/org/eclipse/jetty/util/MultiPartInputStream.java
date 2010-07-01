@@ -283,7 +283,7 @@ public class MultiPartInputStream
      */
     public MultiPartInputStream (InputStream in, String contentType, MultipartConfigElement config)
     {
-        _in = in;
+        _in = new BufferedInputStream(in);
        _contentType = contentType;
        _config = config;
        if (_config == null)
@@ -463,11 +463,14 @@ public class MultiPartInputStream
                             // this is not a boundary
                             if(cr)
                                 part.write(13);
+                    
                             if(lf)
-                                part.write(10);
+                                part.write(10); 
+                            
                             cr=lf=false;
                             if(b>0)
                                 part.write(byteBoundary,0,b);
+                              
                             b=-1;
                             part.write(c);
                         }
@@ -477,8 +480,10 @@ public class MultiPartInputStream
                     {
                         if(cr)
                             part.write(13);
+
                         if(lf)
                             part.write(10);
+
                         cr=lf=false;
                         part.write(byteBoundary,0,b);
                         b=-1;
@@ -494,9 +499,11 @@ public class MultiPartInputStream
                     }
                     // handle CR LF
                     if(cr)
-                        part.write(13);
+                        part.write(13); 
+
                     if(lf)
                         part.write(10);
+
                     cr=(c==13);
                     lf=(c==10||state==10);
                     if(state==10)
