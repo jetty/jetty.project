@@ -238,22 +238,12 @@ public class ContextHandlerTest
         {
             server.start();
             
-            context.setUncheckedPrintWriter(false);
             String response = connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\n\n");
 
             Assert.assertTrue(response.indexOf("Goodbye")>0);
             Assert.assertTrue(response.indexOf("dead")<0);
             Assert.assertTrue(handler.error);
-            Assert.assertTrue(handler.throwable==null);
-            
-            context.setUncheckedPrintWriter(true);
-            Assert.assertTrue(response.indexOf("Goodbye")>0);
-            response = connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\n\n");
-
-            Assert.assertTrue(response.indexOf("Goodbye")>0);
-            Assert.assertTrue(response.indexOf("dead")<0);
-            Assert.assertFalse(handler.error);
-            Assert.assertFalse(handler.throwable==null);            
+            Assert.assertTrue(handler.throwable!=null);
         }
         finally
         {
@@ -312,23 +302,23 @@ public class ContextHandlerTest
             baseRequest.setHandled(true);
             error = false;
             throwable=null;
-            
+
+            response.setStatus(200);
+            response.setContentType("text/plain; charset=utf-8");
+            response.setHeader("Connection","close");
+            PrintWriter writer = response.getWriter();
             try
             {
-                response.setStatus(200);
-                response.setContentType("text/plain; charset=utf-8");
-                response.setHeader("Connection","close");
-                PrintWriter writer = response.getWriter();
                 writer.write("Goodbye cruel world\n");
                 writer.close();
                 response.flushBuffer();
                 writer.write("speaking from the dead");
-                error=writer.checkError();
             }
             catch(Throwable th)
             {
                 throwable=th;
             }
+            error=writer.checkError();
         }
     }
 }

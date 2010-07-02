@@ -46,7 +46,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.UncheckedPrintWriter;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Handler;
@@ -132,7 +131,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     private boolean _shutdown=false;
     private boolean _available=true;
     private volatile int _availability;  // 0=STOPPED, 1=AVAILABLE, 2=SHUTDOWN, 3=UNAVAILABLE
-    private boolean _uncheckedPrintWriter=false;
 
     private final static int __STOPPED=0,__AVAILABLE=1,__SHUTDOWN=2,__UNAVAILABLE=3;
 
@@ -211,24 +209,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         _allowNullPathInfo=allowNullPathInfo;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get the uncheckedPrintWriter.
-     * @return True if {@link UncheckedPrintWriter}s are used by requests in this context.
-     */
-    public boolean isUncheckedPrintWriter()
-    {
-        return _uncheckedPrintWriter;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set the uncheckedPrintWriter.
-     * @param uncheckedPrintWriter True if {@link UncheckedPrintWriter}s are to be used in this context.
-     */
-    public void setUncheckedPrintWriter(boolean uncheckedPrintWriter)
-    {
-        _uncheckedPrintWriter = uncheckedPrintWriter;
-    }
-    
     /* ------------------------------------------------------------ */
     @Override
     public void setServer(Server server)
@@ -826,9 +806,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         // Are we already in this context?
         if (old_context!=_scontext)
         {
-            // unchecked print writers
-            baseRequest.getConnection().setUncheckedPrintWriter(_uncheckedPrintWriter);
-            
             // check the target.
             if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
             {
