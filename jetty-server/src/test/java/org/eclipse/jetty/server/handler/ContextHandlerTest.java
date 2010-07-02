@@ -16,12 +16,15 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import junit.framework.Assert;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
@@ -219,6 +222,44 @@ public class ContextHandlerTest
 
         return root;
     }
+    
+    @Test
+    public void testUncheckedPrintWriter() throws Exception
+    {
+        Server server = new Server();
+        LocalConnector connector = new LocalConnector();
+        server.setConnectors(new Connector[] { connector });
+        ContextHandler context = new ContextHandler("/");
+        WriterHandler handler = new WriterHandler();
+        context.setHandler(handler);
+        server.setHandler(context);
+
+        try
+        {
+            server.start();
+            
+            context.setUncheckedPrintWriter(false);
+            String response = connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\n\n");
+
+            Assert.assertTrue(response.indexOf("Goodbye")>0);
+            Assert.assertTrue(response.indexOf("dead")<0);
+            Assert.assertTrue(handler.error);
+            Assert.assertTrue(handler.throwable==null);
+            
+            context.setUncheckedPrintWriter(true);
+            Assert.assertTrue(response.indexOf("Goodbye")>0);
+            response = connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\n\n");
+
+            Assert.assertTrue(response.indexOf("Goodbye")>0);
+            Assert.assertTrue(response.indexOf("dead")<0);
+            Assert.assertFalse(handler.error);
+            Assert.assertFalse(handler.throwable==null);            
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
 
     private void checkWildcardHost(boolean succeed, Server server, String[] contextHosts, String[] requestHosts) throws Exception
     {
@@ -257,6 +298,37 @@ public class ContextHandlerTest
         public void reset()
         {
             handled = false;
+        }
+    }
+    
+    private static final class WriterHandler extends AbstractHandler
+    {
+        boolean error;
+        Throwable throwable;
+
+
+        public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            error = false;
+            throwable=null;
+            
+            try
+            {
+                response.setStatus(200);
+                response.setContentType("text/plain; charset=utf-8");
+                response.setHeader("Connection","close");
+                PrintWriter writer = response.getWriter();
+                writer.write("Goodbye cruel world\n");
+                writer.close();
+                response.flushBuffer();
+                writer.write("speaking from the dead");
+                error=writer.checkError();
+            }
+            catch(Throwable th)
+            {
+                throwable=th;
+            }
         }
     }
 }

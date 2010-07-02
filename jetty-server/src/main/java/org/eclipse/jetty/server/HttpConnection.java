@@ -122,6 +122,7 @@ public class HttpConnection implements Connection
     private boolean _head = false;
     private boolean _host = false;
     private boolean  _delayedHandling=false;
+    private boolean _uncheckedPrintWriter=false;
 
     /* ------------------------------------------------------------ */
     public static HttpConnection getCurrentConnection()
@@ -170,6 +171,25 @@ public class HttpConnection implements Connection
         _generator = generator;
         _generator.setSendServerVersion(server.getSendServerVersion());
         _server = server;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the uncheckedPrintWriter.
+     * @return True if {@link UncheckedPrintWriter}s are used
+     */
+    public boolean isUncheckedPrintWriter()
+    {
+        return _uncheckedPrintWriter;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the uncheckedPrintWriter.
+     * this is reset to false by {@link #reset(boolean)}.
+     * @param uncheckedPrintWriter True if {@link UncheckedPrintWriter}s are to be used
+     */
+    public void setUncheckedPrintWriter(boolean uncheckedPrintWriter)
+    {
+        _uncheckedPrintWriter = uncheckedPrintWriter;
     }
 
     /* ------------------------------------------------------------ */
@@ -366,7 +386,8 @@ public class HttpConnection implements Connection
         if (_writer==null)
         {
             _writer=new OutputWriter();
-            _printWriter=new UncheckedPrintWriter(_writer);
+            
+            _printWriter=_uncheckedPrintWriter?new UncheckedPrintWriter(_writer):new PrintWriter(_writer);
         }
         _writer.setCharacterEncoding(encoding);
         return _printWriter;
@@ -542,7 +563,7 @@ public class HttpConnection implements Connection
         _generator.reset(returnBuffers); // TODO maybe only release when low on resources
         _responseFields.clear();
         _response.recycle();
-
+        _uncheckedPrintWriter=false;
         _uri.clear();
     }
 
