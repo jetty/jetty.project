@@ -50,7 +50,8 @@ public class HttpConnectionTest
         server = new Server();
         connector = new LocalConnector();
         server.addConnector(connector);
-        connector.setHeaderBufferSize(1024);
+        connector.setRequestHeaderSize(1024);
+        connector.setResponseHeaderSize(1024);
         server.setHandler(new DumpHandler());
         server.start();
     }
@@ -491,7 +492,6 @@ public class HttpConnectionTest
             response=connector.getResponses("CONNECT www.webtide.com:8080 HTTP/1.1\n"+
                                            "Host: myproxy:8888\015\012"+
                                            "\015\012");
-            System.err.println("RESPONSE:"+response);
             offset = checkContains(response,offset,"HTTP/1.1 200");
 
         }

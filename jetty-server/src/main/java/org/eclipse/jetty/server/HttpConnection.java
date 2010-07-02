@@ -394,7 +394,7 @@ public class HttpConnection implements Connection
             _handling=true;
             setCurrentConnection(this);
 
-            while (more_in_buffer)
+            while (more_in_buffer && _endp.isOpen())
             {
                 try
                 {

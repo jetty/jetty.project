@@ -171,7 +171,16 @@ public abstract class RFC2616BaseTest
 
         response = http.request(req1);
         response.assertStatus("3.6 Transfer Coding / Bad 400",HttpStatus.BAD_REQUEST_400);
-
+    }
+    
+    /**
+     * Test Transfer Codings
+     * 
+     * @see <a href="http://tools.ietf.org/html/rfc2616#section-3.6">RFC 2616 (section 3.6)</a>
+     */
+    @Test
+    public void test3_6_2() throws Throwable
+    {
         // Chunked
         StringBuffer req2 = new StringBuffer();
         req2.append("GET /echo/R1 HTTP/1.1\n");
@@ -215,9 +224,17 @@ public abstract class RFC2616BaseTest
         response = responses.get(2); // Response 3
         response.assertStatusOK("3.6.1 Transfer Codings / Response 3 Code");
         response.assertNoBody("3.6.1 Transfer Codings / No Body");
+    }
 
+    /**
+     * Test Transfer Codings
+     * 
+     * @see <a href="http://tools.ietf.org/html/rfc2616#section-3.6">RFC 2616 (section 3.6)</a>
+     */
+    @Test
+    public void test3_6_3() throws Throwable
+    {
         // Chunked
-
         StringBuffer req3 = new StringBuffer();
         req3.append("POST /echo/R1 HTTP/1.1\n");
         req3.append("Host: localhost\n");
@@ -261,8 +278,17 @@ public abstract class RFC2616BaseTest
         response.assertStatusOK("3.6.1 Transfer Codings / Response 3 Code");
         response.assertNoBody("3.6.1 Transfer Codings / No Body");
 
-        // Chunked and keep alive
+    }
 
+    /**
+     * Test Transfer Codings
+     * 
+     * @see <a href="http://tools.ietf.org/html/rfc2616#section-3.6">RFC 2616 (section 3.6)</a>
+     */
+    @Test
+    public void test3_6_4() throws Throwable
+    {
+        // Chunked and keep alive
         StringBuffer req4 = new StringBuffer();
         req4.append("GET /echo/R1 HTTP/1.1\n");
         req4.append("Host: localhost\n");
