@@ -532,6 +532,11 @@ public class HttpExchangeTest extends TestCase
                         response.getOutputStream().write(bout.toByteArray());
                     }
                 }
+                catch(InterruptedException e)
+                {
+                    System.err.println(e);
+                    Log.debug(e);
+                }
                 catch(IOException e)
                 {
                     e.printStackTrace();

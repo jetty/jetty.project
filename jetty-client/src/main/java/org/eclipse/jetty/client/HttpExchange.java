@@ -173,6 +173,7 @@ public class HttpExchange
                         case STATUS_WAITING_FOR_CONNECTION:
                         case STATUS_WAITING_FOR_COMMIT:
                         case STATUS_CANCELLING:
+                        case STATUS_EXCEPTED:
                             set=_status.compareAndSet(oldStatus,newStatus);
                             break;
                     }
@@ -283,6 +284,7 @@ public class HttpExchange
                 case STATUS_CANCELLING:
                     switch (newStatus)
                     {
+                        case STATUS_EXCEPTED:
                         case STATUS_CANCELLED:
                             if (set=_status.compareAndSet(oldStatus,newStatus))
                                 done();
@@ -300,6 +302,9 @@ public class HttpExchange
                     {
                         case STATUS_START:
                             set=_status.compareAndSet(oldStatus,newStatus);
+                            break;
+                        default:
+                            set=true;
                             break;
                     }
                     break;
