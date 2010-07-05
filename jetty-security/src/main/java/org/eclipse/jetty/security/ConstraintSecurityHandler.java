@@ -14,6 +14,7 @@
 package org.eclipse.jetty.security;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -90,7 +91,14 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     {
         return _roles;
     }
-
+    
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setConstraintMappings(ConstraintMapping[] constraintMappings)
+    {
+        setConstraintMappings(Arrays.asList(constraintMappings),null);
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Process the constraints following the combining rules in Servlet 3.0 EA
@@ -104,7 +112,15 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     {
         setConstraintMappings(constraintMappings,null);
     }
-        
+
+    
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setConstraintMappings(ConstraintMapping[] constraintMappings, Set<String> roles)
+    {
+        setConstraintMappings(Arrays.asList(constraintMappings),roles);
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Process the constraints following the combining rules in Servlet 3.0 EA
