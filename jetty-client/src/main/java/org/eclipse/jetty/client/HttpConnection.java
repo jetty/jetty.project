@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -593,6 +594,14 @@ public class HttpConnection implements Connection
 
     public void close() throws IOException
     {
+        //if there is a live, unfinished exchange, set its status to be 
+        //excepted and wake up anyone waiting on waitForDone()
+        if (_exchange != null && !_exchange.isDone())
+        {
+            _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
+            _exchange.getEventListener().onException(new EOFException("local close"));
+        }
+
         _endp.close();
     }
 

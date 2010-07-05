@@ -20,6 +20,8 @@ import java.io.OutputStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -98,8 +100,6 @@ public class HttpExchangeTest extends TestCase
             sender(1,true);
             sender(10,false);
             sender(10,true);
-            sender(20,false);
-            sender(20,true);
         }
     }
 
@@ -215,16 +215,19 @@ public class HttpExchangeTest extends TestCase
         assertTrue(complete.await(45,TimeUnit.SECONDS));
 
         long elapsed=System.currentTimeMillis()-start;
+        
         // make windows-friendly ... System.currentTimeMillis() on windows is dope!
+        /*
         if(elapsed>0)
             System.err.println(nb+"/"+_count+" c="+close+" rate="+(nb*1000/elapsed));
+            */
 
         assertEquals("nb="+nb+" close="+close,0,latch.getCount());
     }
 
     public void testPostWithContentExchange() throws Exception
     {
-        for (int i=0;i<200;i++)
+        for (int i=0;i<20;i++)
         {
             ContentExchange httpExchange=new ContentExchange();
             //httpExchange.setURL(_scheme+"localhost:"+_port+"/");
@@ -242,7 +245,7 @@ public class HttpExchangeTest extends TestCase
 
     public void testGetWithContentExchange() throws Exception
     {
-        for (int i=0;i<100;i++)
+        for (int i=0;i<10;i++)
         {
             ContentExchange httpExchange=new ContentExchange();
             httpExchange.setURL(_scheme+"localhost:"+_port+"/?i="+i);
@@ -256,6 +259,44 @@ public class HttpExchangeTest extends TestCase
             assertEquals(HttpExchange.STATUS_COMPLETED, status);
             Thread.sleep(5);
         }
+    }
+    
+    public void testShutdownWithExchange() throws Exception
+    {
+        final AtomicReference<Throwable> throwable=new AtomicReference<Throwable>();
+        
+        HttpExchange httpExchange=new HttpExchange()
+        {
+
+            /* ------------------------------------------------------------ */
+            /**
+             * @see org.eclipse.jetty.client.HttpExchange#onException(java.lang.Throwable)
+             */
+            @Override
+            protected void onException(Throwable x)
+            {
+                throwable.set(x);
+            }
+            
+        };
+        httpExchange.setURL(_scheme+"localhost:"+_port+"/");
+        httpExchange.setMethod("SLEEP");
+        _httpClient.send(httpExchange);
+        new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try { 
+                    Thread.sleep(250); 
+                    _httpClient.stop();
+                } catch(Exception e) {e.printStackTrace();}
+            }
+        }.start();
+        int status = httpExchange.waitForDone();
+
+        assertTrue(throwable.get().toString().indexOf("local close")>=0);
+        assertEquals(HttpExchange.STATUS_EXCEPTED, status);
     }
 
     public void testBigPostWithContentExchange() throws Exception
@@ -477,6 +518,10 @@ public class HttpExchangeTest extends TestCase
                                 response.getOutputStream().flush();
                         }
                         response.getOutputStream().println("</hello>");
+                    }
+                    else if (request.getMethod().equalsIgnoreCase("SLEEP"))
+                    {
+                        Thread.sleep(1000);
                     }
                     else
                     {

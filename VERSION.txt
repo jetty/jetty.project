@@ -1,6 +1,7 @@
 jetty-7.1.5-SNAPSHOT
  + Update ecj to 3.6 Helios release drop
  + 288194 Add blacklist/whitelist to ProxyServlet and ProxyHandler
+ + 296570 EOFException for HttpExchange when HttpClient.stop called.
  + 311550 The WebAppProvider should allow setTempDirectory
  + 316449 Websocket disconnect fix
  + 316584 Exception on startup if temp path has spaces and extractWAR=false
