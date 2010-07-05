@@ -1,4 +1,4 @@
-jetty-7.1.5-SNAPSHOT
+jetty-7.1.5.v20100705
  + Update ecj to 3.6 Helios release drop
  + 288194 Add blacklist/whitelist to ProxyServlet and ProxyHandler
  + 296570 EOFException for HttpExchange when HttpClient.stop called.
