@@ -33,10 +33,10 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Holder extends AbstractLifeCycle
 {
+    protected final Map<String,String> _initParams=new HashMap<String,String>(3);
     protected transient Class<?> _class;
     protected String _className;
     protected String _displayName;
-    protected Map _initParams;
     protected boolean _extInstance;
     protected boolean _asyncSupported=true;
 
@@ -45,7 +45,9 @@ public class Holder extends AbstractLifeCycle
     protected ServletHandler _servletHandler;
 
     protected Holder()
-    {}
+    {
+        
+    }
 
     /* ---------------------------------------------------------------- */
     protected Holder(Class held)
@@ -190,15 +192,14 @@ public class Holder extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     public void setInitParameter(String param,String value)
     {
-        if (_initParams==null)
-            _initParams=new HashMap(3);
         _initParams.put(param,value);
     }
     
     /* ---------------------------------------------------------------- */
-    public void setInitParameters(Map map)
+    public void setInitParameters(Map<String,String> map)
     {
-        _initParams=map;
+        _initParams.clear();
+        _initParams.putAll(map);
     }
     
     /* ------------------------------------------------------------ */

@@ -52,6 +52,7 @@ public class FilterHolder extends Holder
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void doStart()
         throws Exception
     {
@@ -68,13 +69,13 @@ public class FilterHolder extends Holder
         if (_filter==null)
             _filter=(Filter)newInstance();
         
-        _filter = getServletHandler().customizeFilter(_filter);
-        
+        _filter = getServletHandler().customizeFilter(_filter);        
         _config=new Config();
         _filter.init(_config);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void doStop()
         throws Exception
     {      
@@ -97,6 +98,7 @@ public class FilterHolder extends Holder
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void destroyInstance (Object o)
     throws Exception
     {
@@ -124,6 +126,7 @@ public class FilterHolder extends Holder
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return getName();
@@ -141,8 +144,3 @@ public class FilterHolder extends Holder
         }
     }
 }
-
-
-
-
-

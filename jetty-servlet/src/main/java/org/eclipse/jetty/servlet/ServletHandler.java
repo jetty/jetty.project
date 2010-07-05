@@ -1388,6 +1388,7 @@ public class ServletHandler extends ScopedHandler
                 b.append(indent);
                 b.append(" +-");
                 b.append(f);
+                b.append(f.getFilterHolder().getInitParameters());
                 b.append('\n');
             }
         }
@@ -1400,6 +1401,9 @@ public class ServletHandler extends ScopedHandler
                 b.append(indent);
                 b.append(" +-");
                 b.append(m);
+                ServletHolder h = getServlet(m.getServletName());
+                if (h!=null)
+                    b.append(h.getInitParameters());
                 b.append('\n');
             }
         }
@@ -1413,6 +1417,7 @@ public class ServletHandler extends ScopedHandler
                 b.append(indent);
                 b.append(" +-[]==>");
                 b.append(h.getName());
+                b.append(h.getInitParameters());
                 b.append('\n');
             }
         }
