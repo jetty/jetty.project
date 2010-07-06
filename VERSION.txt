@@ -16,6 +16,10 @@ jetty-7.1.5.v20100705
  + 318470 unboxing NPE protection in HttpConnection
  + 318551 Optional uncheck Printwriter
  + JETTY-1237 Save local/remote address to be available after close
+ + 317007 Unable to run Jetty OSGi when -Dosgi.compatibility.bootdelegation=false
+ + 316909 CNFE: org.xml.sax.SAXException on org.eclipse.jetty.osgi.boot start with jsp fragment
+ + 317231 Ability to configure jetty with a fragment bundle that contains etc/jetty.xml
+ + 319060 Support web-bundles that are not expanded (bundle is zipped)
 
 jetty-7.1.4.v20100610
  + 298551 SslSocketConnector does not need keystore stream
