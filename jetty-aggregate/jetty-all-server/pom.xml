@@ -9,6 +9,9 @@
     <groupId>org.eclipse.jetty.aggregate</groupId>
     <artifactId>jetty-all-server</artifactId>
     <name>Jetty :: Aggregate :: All Server</name>
+    <properties>
+      <bundle-symbolic-name>${project.groupId}.${artifactId}</bundle-symbolic-name>
+    </properties>
 
     <build>
         <sourceDirectory>${project.build.directory}/sources</sourceDirectory>
