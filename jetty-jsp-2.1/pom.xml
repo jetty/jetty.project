@@ -22,6 +22,18 @@
             </goals>
            </execution>
         </executions>
+	<configuration>
+	    <instructions>
+		<Import-Package>
+		    com.sun.org.apache.commons.logging;version="[2.1,3)";split=glassfish,
+		    *
+		</Import-Package>
+		<Export-Package>org.eclipse.jetty*</Export-Package>
+		<!-- disable the uses directive: we don't want to fore eeryone that uses us to
+		have to depend on com.sun.org.apache.commons.logging provided by jasper-glassfish. -->
+		<_nouses>true<_nouses>
+	    </instructions>
+	</configuration>
       </plugin>
       <plugin>
         <!--
