@@ -32,12 +32,11 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class URLResource extends Resource
 {
-
-    
-    protected URL _url;
+    protected final URL _url;
     protected String _urlString;
-    protected transient URLConnection _connection;
-    protected transient InputStream _in=null;
+    
+    protected URLConnection _connection;
+    protected InputStream _in=null;
     transient boolean _useCaches = Resource.__defaultUseCaches;
     
     /* ------------------------------------------------------------ */
@@ -48,6 +47,7 @@ public class URLResource extends Resource
         _connection=connection;
     }
     
+    /* ------------------------------------------------------------ */
     protected URLResource (URL url, URLConnection connection, boolean useCaches)
     {
         this (url, connection);

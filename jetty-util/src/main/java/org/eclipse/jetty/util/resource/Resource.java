@@ -37,10 +37,10 @@ import org.eclipse.jetty.util.log.Log;
 /** 
  * Abstract resource class.
  */
-public abstract class Resource implements Serializable
+public abstract class Resource
 {
     public static boolean __defaultUseCaches = true;
-    Object _associate;
+    volatile Object _associate;
     
     /**
      * Change the default setting for url connection caches.
@@ -51,7 +51,8 @@ public abstract class Resource implements Serializable
     {
         __defaultUseCaches=useCaches;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public static boolean getDefaultUseCaches ()
     {
         return __defaultUseCaches;
@@ -61,6 +62,7 @@ public abstract class Resource implements Serializable
     /** Construct a resource from a uri.
      * @param uri A URI.
      * @return A Resource object.
+     * @throws IOException Problem accessing URI
      */
     public static Resource newResource(URI uri)
         throws IOException
@@ -72,6 +74,7 @@ public abstract class Resource implements Serializable
     /** Construct a resource from a url.
      * @param url A URL.
      * @return A Resource object.
+     * @throws IOException Problem accessing URL
      */
     public static Resource newResource(URL url)
         throws IOException
@@ -199,6 +202,9 @@ public abstract class Resource implements Serializable
     /** Construct a system resource from a string.
      * The resource is tried as classloader resource before being
      * treated as a normal resource.
+     * @param resource Resource as string representation 
+     * @return The new Resource
+     * @throws IOException Problem accessing resource.
      */
     public static Resource newSystemResource(String resource)
         throws IOException
@@ -287,6 +293,7 @@ public abstract class Resource implements Serializable
         return newResource(url,useCaches);
     }
     
+    /* ------------------------------------------------------------ */
     public static boolean isContainedIn (Resource r, Resource containingResource) throws MalformedURLException
     {
         return r.isContainedIn(containingResource);
@@ -298,12 +305,13 @@ public abstract class Resource implements Serializable
     {
         release();
     }
-
+    
+    /* ------------------------------------------------------------ */
     public abstract boolean isContainedIn (Resource r) throws MalformedURLException;
     
     
     /* ------------------------------------------------------------ */
-    /** Release any resources held by the resource.
+    /** Release any temporary resources held by the resource.
      */
     public abstract void release();
     

@@ -46,6 +46,8 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
+import org.eclipse.jetty.server.nio.NIOConnector;
+import org.eclipse.jetty.server.ssl.SslConnector;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -1162,10 +1164,11 @@ public class HttpConnection implements Connection
             if (super._generator.getContentWritten() > 0)
                 throw new IllegalStateException("!empty");
 
+            // Convert HTTP content to contentl
             if (content instanceof HttpContent)
             {
-                HttpContent c = (HttpContent) content;
-                Buffer contentType = c.getContentType();
+                HttpContent httpContent = (HttpContent) content;
+                Buffer contentType = httpContent.getContentType();
                 if (contentType != null && !_responseFields.containsKey(HttpHeaders.CONTENT_TYPE_BUFFER))
                 {
                     String enc = _response.getSetCharacterEncoding();
@@ -1191,21 +1194,22 @@ public class HttpConnection implements Connection
                         }
                     }
                 }
-                if (c.getContentLength() > 0)
-                    _responseFields.putLongField(HttpHeaders.CONTENT_LENGTH_BUFFER, c.getContentLength());
-                Buffer lm = c.getLastModified();
-                long lml=c.getResource().lastModified();
+                if (httpContent.getContentLength() > 0)
+                    _responseFields.putLongField(HttpHeaders.CONTENT_LENGTH_BUFFER, httpContent.getContentLength());
+                Buffer lm = httpContent.getLastModified();
+                long lml=httpContent.getResource().lastModified();
                 if (lm != null)
                     _responseFields.put(HttpHeaders.LAST_MODIFIED_BUFFER, lm,lml);
-                else if (c.getResource()!=null)
+                else if (httpContent.getResource()!=null)
                 {
                     if (lml!=-1)
                         _responseFields.putDateField(HttpHeaders.LAST_MODIFIED_BUFFER, lml);
                 }
 
-                content = c.getBuffer();
+                boolean direct=_connector instanceof NIOConnector && ((NIOConnector)_connector).getUseDirectBuffers() && !(_connector instanceof SslConnector);
+                content = direct?httpContent.getDirectBuffer():httpContent.getIndirectBuffer();
                 if (content==null)
-                    content=c.getInputStream();
+                    content=httpContent.getInputStream();
             }
             else if (content instanceof Resource)
             {
@@ -1214,7 +1218,7 @@ public class HttpConnection implements Connection
                 content=resource.getInputStream();
             }
 
-
+            // Process content.
             if (content instanceof Buffer)
             {
                 super._generator.addContent((Buffer) content, Generator.LAST);

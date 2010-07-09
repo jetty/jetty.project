@@ -32,7 +32,7 @@ public class ResourceCacheTest
     private Resource directory;
     private File[] files=new File[10];
     private String[] names=new String[files.length];
-    private ResourceCache cache = new ResourceCache(new MimeTypes());
+    private ResourceCache cache; 
     private ResourceFactory factory;
 
     @Before
@@ -40,7 +40,7 @@ public class ResourceCacheTest
     {
         for (int i=0;i<files.length;i++)
         {
-            files[i]=File.createTempFile("RCT",".txt");
+            files[i]=File.createTempFile("R-"+i+"-",".txt");
             files[i].deleteOnExit();
             names[i]=files[i].getName();
             FileOutputStream out = new FileOutputStream(files[i]);
@@ -67,83 +67,111 @@ public class ResourceCacheTest
             }
 
         };
+        
+        cache=new ResourceCache(factory,new MimeTypes(),false);
+        
         cache.setMaxCacheSize(95);
         cache.setMaxCachedFileSize(85);
         cache.setMaxCachedFiles(4);
-        cache.start();
     }
 
     @After
     public void destroy() throws Exception
     {
-        cache.stop();
+        cache.flushCache();
     }
 
     @Test
     public void testResourceCache() throws Exception
     {
-        assertTrue(cache.lookup("does not exist",factory)==null);
-        assertTrue(cache.lookup(names[9],factory)==null);
+        assertTrue(cache.lookup("does not exist")==null);
+        assertTrue(cache.lookup(names[9])==null);
 
         Content content;
-        content=cache.lookup(names[8],factory);
+        content=cache.lookup(names[8]);
         assertTrue(content!=null);
         assertEquals(80,content.getContentLength());
 
         assertEquals(80,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());
 
-        content=cache.lookup(names[1],factory);
+        Thread.sleep(2);
+        
+        content=cache.lookup(names[1]);
         assertEquals(90,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
 
-        content=cache.lookup(names[2],factory);
+        Thread.sleep(2);
+        
+        content=cache.lookup(names[2]);
         assertEquals(30,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
 
-        content=cache.lookup(names[3],factory);
+        Thread.sleep(2);
+        
+        content=cache.lookup(names[3]);
         assertEquals(60,cache.getCachedSize());
         assertEquals(3,cache.getCachedFiles());
 
-        content=cache.lookup(names[4],factory);
+        Thread.sleep(2);
+        
+        content=cache.lookup(names[4]);
         assertEquals(90,cache.getCachedSize());
         assertEquals(3,cache.getCachedFiles());
 
-        content=cache.lookup(names[5],factory);
+        Thread.sleep(2);
+        
+        content=cache.lookup(names[5]);
         assertEquals(90,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
 
-        content=cache.lookup(names[6],factory);
+        Thread.sleep(2);
+        
+        content=cache.lookup(names[6]);
         assertEquals(60,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());
 
+        Thread.sleep(2);
+        
         FileOutputStream out = new FileOutputStream(files[6]);
         out.write(' ');
         out.close();
-        content=cache.lookup(names[7],factory);
+        content=cache.lookup(names[7]);
         assertEquals(70,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());
 
-        content=cache.lookup(names[6],factory);
+        Thread.sleep(2);
+        
+        content=cache.lookup(names[6]);
         assertEquals(71,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
 
-        content=cache.lookup(names[0],factory);
+        Thread.sleep(2);
+        
+        content=cache.lookup(names[0]);
         assertEquals(72,cache.getCachedSize());
         assertEquals(3,cache.getCachedFiles());
 
-        content=cache.lookup(names[1],factory);
+        Thread.sleep(2);
+        
+        content=cache.lookup(names[1]);
         assertEquals(82,cache.getCachedSize());
         assertEquals(4,cache.getCachedFiles());
 
-        content=cache.lookup(names[2],factory);
+        Thread.sleep(2);
+        
+        content=cache.lookup(names[2]);
         assertEquals(32,cache.getCachedSize());
         assertEquals(4,cache.getCachedFiles());
 
-        content=cache.lookup(names[3],factory);
+        Thread.sleep(2);
+        
+        content=cache.lookup(names[3]);
         assertEquals(61,cache.getCachedSize());
         assertEquals(4,cache.getCachedFiles());
 
+        Thread.sleep(2);
+        
         cache.flushCache();
         assertEquals(0,cache.getCachedSize());
         assertEquals(0,cache.getCachedFiles());

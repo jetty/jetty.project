@@ -27,16 +27,14 @@ import org.eclipse.jetty.util.log.Log;
 /* ------------------------------------------------------------ */
 class JarFileResource extends JarResource
 {
-    
-    transient JarFile _jarFile;
-    transient File _file;
-    transient String[] _list;
-    transient JarEntry _entry;
-    transient boolean _directory;
-    transient String _jarUrl;
-    transient String _path;
-    transient boolean _exists;
-
+    private JarFile _jarFile;
+    private File _file;
+    private String[] _list;
+    private JarEntry _entry;
+    private boolean _directory;
+    private String _jarUrl;
+    private String _path;
+    private boolean _exists;
     
     /* -------------------------------------------------------- */
     JarFileResource(URL url)
@@ -44,6 +42,7 @@ class JarFileResource extends JarResource
         super(url);
     }
     
+    /* ------------------------------------------------------------ */
     JarFileResource(URL url, boolean useCaches)
     {
         super(url, useCaches);
@@ -65,7 +64,8 @@ class JarFileResource extends JarResource
     @Override
     protected boolean checkConnection()
     {
-        try{
+        try
+        {
             super.checkConnection();
         }
         finally
@@ -84,7 +84,7 @@ class JarFileResource extends JarResource
 
     /* ------------------------------------------------------------ */
     @Override
-    protected void newConnection()
+    protected synchronized void newConnection()
         throws IOException
     {
         super.newConnection();

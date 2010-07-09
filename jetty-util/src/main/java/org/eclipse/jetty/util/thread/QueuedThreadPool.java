@@ -125,7 +125,21 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
         Thread.yield();
         int size=_threads.size();
         if (size>0)
+        {
             Log.warn(size+" threads could not be stopped");
+            
+            if (Log.isDebugEnabled())
+            {
+                for (Thread unstopped : _threads)
+                {
+                    Log.debug("Couldn't stop "+unstopped);
+                    for (StackTraceElement element : unstopped.getStackTrace())
+                    {
+                        Log.debug(" at "+element);
+                    }
+                }
+            }
+        }
         
         synchronized (_joinLock)
         {

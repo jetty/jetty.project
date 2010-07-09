@@ -92,6 +92,9 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *
  *  resourceBase      Set to replace the context resource base
  *
+ *  resourceCache     If set, this is a context attribute name, which the servlet 
+ *                    will use to look for a shared ResourceCache instance.
+ *                        
  *  relativeResourceBase
  *                    Set with a pathname relative to the base of the
  *                    servlet context root. Useful for only serving static content out
@@ -103,9 +106,6 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *  maxCacheSize      The maximum total size of the cache or 0 for no cache.
  *  maxCachedFileSize The maximum size of a file to cache
  *  maxCachedFiles    The maximum number of files to cache
- *  cacheType         Set to "bio", "nio" or "both" to determine the type resource cache.
- *                    A bio cached buffer may be used by nio but is not as efficient as an
- *                    nio buffer.  An nio cached buffer may not be used by bio.
  *
  *  useFileMappedBuffer
  *                    If set to true, it will use mapped file buffer to serve static content
@@ -125,6 +125,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  */
 public class DefaultServlet extends HttpServlet implements ResourceFactory
 {
+    private static final long serialVersionUID = 4930458713846881193L;
     private ServletContext _servletContext;
     private ContextHandler _contextHandler;
 
@@ -136,8 +137,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     private boolean _gzip=true;
 
     private Resource _resourceBase;
-    private NIOResourceCache _nioCache;
-    private ResourceCache _bioCache;
+    private ResourceCache _cache;
 
     private MimeTypes _mimeTypes;
     private String[] _welcomes;
@@ -209,50 +209,42 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         if (t!=null)
             _cacheControl=new ByteArrayBuffer(t);
 
-        try
+        String resourceCache = getInitParameter("resourceCache");
+        int max_cache_size=getInitInt("maxCacheSize", -2);
+        int max_cached_file_size=getInitInt("maxCachedFileSize", -2);
+        int max_cached_files=getInitInt("maxCachedFiles", -2);
+        if (resourceCache!=null)
         {
-            String cache_type =getInitParameter("cacheType");
-            int max_cache_size=getInitInt("maxCacheSize", -2);
-            int max_cached_file_size=getInitInt("maxCachedFileSize", -2);
-            int max_cached_files=getInitInt("maxCachedFiles", -2);
+            if (max_cache_size!=-1 || max_cached_file_size!= -2 || max_cached_files!=-2)
+                _servletContext.log("ignoring resource cache configuration, using resourceCache attribute");
+            if (_relativeResourceBase!=null || _resourceBase!=null)
+                throw new UnavailableException("resourceCache specified with resource bases");
+            _cache=(ResourceCache)_servletContext.getAttribute(resourceCache);
 
-            if (cache_type==null || "nio".equals(cache_type)|| "both".equals(cache_type))
-            {
-                if (max_cache_size==-2 || max_cache_size>0)
-                {
-                    _nioCache=new NIOResourceCache(_mimeTypes);
-                    _nioCache.setUseFileMappedBuffer(_useFileMappedBuffer);
-                    if (max_cache_size>0)
-                        _nioCache.setMaxCacheSize(max_cache_size);
-                    if (max_cached_file_size>=-1)
-                        _nioCache.setMaxCachedFileSize(max_cached_file_size);
-                    if (max_cached_files>=-1)
-                        _nioCache.setMaxCachedFiles(max_cached_files);
-                    _nioCache.start();
-                }
-            }
-            if ("bio".equals(cache_type)|| "both".equals(cache_type))
-            {
-                if (max_cache_size==-2 || max_cache_size>0)
-                {
-                    _bioCache=new ResourceCache(_mimeTypes);
-                    if (max_cache_size>0)
-                        _bioCache.setMaxCacheSize(max_cache_size);
-                    if (max_cached_file_size>=-1)
-                        _bioCache.setMaxCachedFileSize(max_cached_file_size);
-                    if (max_cached_files>=-1)
-                        _bioCache.setMaxCachedFiles(max_cached_files);
-                    _bioCache.start();
-                }
-            }
-            if (_nioCache==null)
-                _bioCache=null;
-
+            if (_cache==null)
+                throw new UnavailableException("Could not find resourceCache "+resourceCache);
         }
-        catch (Exception e)
+        else
         {
-            Log.warn(Log.EXCEPTION,e);
-            throw new UnavailableException(e.toString());
+            try
+            {
+                if (max_cached_files>0)
+                {
+                    _cache= new ResourceCache(this,_mimeTypes,_useFileMappedBuffer);
+
+                    if (max_cache_size>0)
+                        _cache.setMaxCacheSize(max_cache_size);
+                    if (max_cached_file_size>=-1)
+                        _cache.setMaxCachedFileSize(max_cached_file_size);
+                    if (max_cached_files>=-1)
+                        _cache.setMaxCachedFiles(max_cached_files);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.warn(Log.EXCEPTION,e);
+                throw new UnavailableException(e.toString());
+            }
         }
 
         _servletHandler= (ServletHandler) _contextHandler.getChildHandlerByClass(ServletHandler.class);
@@ -332,13 +324,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     }
 
     /* ------------------------------------------------------------ */
+    @SuppressWarnings("unchecked")
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     	throws ServletException, IOException
     {
         String servletPath=null;
         String pathInfo=null;
-        Enumeration reqRanges = null;
+        Enumeration<String> reqRanges = null;
         Boolean included =request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI)!=null;
         if (included!=null && included.booleanValue())
         {
@@ -378,9 +371,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         // Find the resource and content
         Resource resource=null;
         HttpContent content=null;
-
-        Connector connector = HttpConnection.getCurrentConnection().getConnector();
-        ResourceCache cache=(connector instanceof NIOConnector && !(connector instanceof SslConnector)) ?_nioCache:_bioCache;
+        
         try
         {
             // Try gzipped content first
@@ -388,27 +379,27 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             {
                 pathInContextGz=pathInContext+".gz";
 
-                if (cache==null)
+                if (_cache==null)
                 {
                     resource=getResource(pathInContextGz);
                 }
                 else
                 {
-                    content=cache.lookup(pathInContextGz,this);
+                    content=_cache.lookup(pathInContextGz);
 
                     if (content!=null)
                         resource=content.getResource();
-                    else
+                    else if (!(content instanceof ResourceCache.Miss))
                         resource=getResource(pathInContextGz);
                 }
 
                 if (resource==null || !resource.exists()|| resource.isDirectory())
                 {
-                    if (cache!=null && content==null)
+                    if (_cache!=null && content==null)
                     {
                         String real_path=_servletContext.getRealPath(pathInContextGz);
                         if (real_path!=null)
-                            cache.miss(pathInContextGz,_contextHandler.newResource(real_path));
+                            _cache.miss(pathInContextGz,_contextHandler.newResource(real_path));
                     }
                     gzip=false;
                     pathInContextGz=null;
@@ -418,11 +409,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             // find resource
             if (!gzip)
             {
-                if (cache==null)
+                if (_cache==null)
                     resource=getResource(pathInContext);
                 else
                 {
-                    content=cache.lookup(pathInContext,this);
+                    content=_cache.lookup(pathInContext);
 
                     if (content!=null)
                         resource=content.getResource();
@@ -544,7 +535,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     }
 
     /* ------------------------------------------------------------ */
-    private boolean hasDefinedRange(Enumeration reqRanges)
+    private boolean hasDefinedRange(Enumeration<String> reqRanges)
     {
         return (reqRanges!=null && reqRanges.hasMoreElements());
     }
@@ -723,8 +714,21 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                             Enumeration reqRanges)
     throws IOException
     {
-        long content_length=content==null?resource.length():content.getContentLength();
-
+        boolean direct;
+        long content_length;
+        if (content==null)
+        {
+            direct=false;
+            content_length=resource.length();
+        }
+        else
+        {
+            Connector connector = HttpConnection.getCurrentConnection().getConnector();
+            direct=connector instanceof NIOConnector && ((NIOConnector)connector).getUseDirectBuffers() && !(connector instanceof SslConnector);
+            content_length=content.getContentLength();
+        }
+        
+        
         // Get the output stream (or writer)
         OutputStream out =null;
         try{out = response.getOutputStream();}
@@ -740,29 +744,39 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             else
             {
                 // See if a direct methods can be used?
-                if (out instanceof HttpConnection.Output)
+                if (out instanceof HttpConnection.Output && content!=null)
                 {
                     if (response instanceof Response)
                     {
                         writeOptionHeaders(((Response)response).getHttpFields());
                         ((HttpConnection.Output)out).sendContent(content);
                     }
-                    else if (content.getBuffer()!=null)
+                    else 
                     {
-                        writeHeaders(response,content,content_length);
-                        ((HttpConnection.Output)out).sendContent(content.getBuffer());
-                    }
-                    else
-                    {
-                        writeHeaders(response,content,content_length);
-                        resource.writeTo(out,0,content_length);
+                        Buffer buffer = direct?content.getDirectBuffer():content.getIndirectBuffer();
+                        if (buffer!=null)
+                        {
+                            writeHeaders(response,content,content_length);
+                            ((HttpConnection.Output)out).sendContent(buffer);
+                        }
+                        else
+                        {
+                            writeHeaders(response,content,content_length);
+                            resource.writeTo(out,0,content_length);
+                        }
                     }
                 }
-                else
+                else 
                 {
-                    // Write content normally
+                    // Write headers normally
                     writeHeaders(response,content,content_length);
-                    resource.writeTo(out,0,content_length);
+
+                    // Write content normally
+                    Buffer buffer = (content==null)?null:content.getIndirectBuffer();
+                    if (buffer!=null)
+                        buffer.writeTo(out);
+                    else
+                        resource.writeTo(out,0,content_length);
                 }
             }
         }
@@ -944,31 +958,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     @Override
     public void destroy()
     {
-        try
-        {
-            if (_nioCache!=null)
-                _nioCache.stop();
-        }
-        catch(Exception e)
-        {
-            Log.warn(Log.EXCEPTION,e);
-        }
-        finally
-        {
-	    try
-	    {
-		if (_bioCache!=null)
-		    _bioCache.stop();
-	    }
-	    catch(Exception e)
-	    {
-		Log.warn(Log.EXCEPTION,e);
-	    }
-	    finally
-	    {
-                super.destroy();
-	    }
-        }
+        if (_cache!=null)
+            _cache.flushCache();
+        super.destroy();
     }
 
     /* ------------------------------------------------------------ */
@@ -996,7 +988,13 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
 
         /* ------------------------------------------------------------ */
-        public Buffer getBuffer()
+        public Buffer getDirectBuffer()
+        {
+            return null;
+        }
+        
+        /* ------------------------------------------------------------ */
+        public Buffer getIndirectBuffer()
         {
             return null;
         }

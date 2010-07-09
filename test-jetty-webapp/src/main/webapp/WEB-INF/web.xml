@@ -93,7 +93,7 @@
   </filter>
   <filter-mapping>
     <filter-name>GzipFilter</filter-name>
-    <url-pattern>/*</url-pattern>
+    <url-pattern>/dump/gzip/*</url-pattern>
   </filter-mapping>
   
   

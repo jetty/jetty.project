@@ -157,7 +157,7 @@ public class ContentExchangeTest
         getExchange.setMethod(HttpMethods.HEAD);
     
         _client.send(getExchange);
-        int state = getExchange.waitForDone();
+        getExchange.waitForDone();
     
         int responseStatus = getExchange.getResponseStatus();
 

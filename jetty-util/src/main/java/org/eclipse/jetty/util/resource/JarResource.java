@@ -31,8 +31,7 @@ import org.eclipse.jetty.util.log.Log;
 /* ------------------------------------------------------------ */
 public class JarResource extends URLResource
 {
-
-    protected transient JarURLConnection _jarConnection;
+    protected JarURLConnection _jarConnection;
     
     /* -------------------------------------------------------- */
     JarResource(URL url)
@@ -56,7 +55,7 @@ public class JarResource extends URLResource
     
     /* ------------------------------------------------------------ */
     @Override
-    protected boolean checkConnection()
+    protected synchronized boolean checkConnection()
     {
         super.checkConnection();
         try
@@ -119,16 +118,6 @@ public class JarResource extends URLResource
         URL url = new URL(_urlString.substring(4,_urlString.length()-2));      
         InputStream is = url.openStream();
         return is;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public void extract(File dest, boolean deleteOnExit)
-        throws IOException
-    {
-        if (deleteOnExit)
-            dest.deleteOnExit();
-        copyTo(dest);
     }
     
     /* ------------------------------------------------------------ */

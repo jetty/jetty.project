@@ -272,26 +272,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
     /* ------------------------------------------------------------ */
     /**
-     * @deprecated use {@link #setConnectorNames(String[])}
-     */
-    @Deprecated
-    public void setHosts(String[] hosts)
-    {
-        setConnectorNames(hosts);
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get the hosts for the context.
-     * @deprecated
-     */
-    @Deprecated
-    public String[] getHosts()
-    {
-        return getConnectorNames();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * @return an array of connector names that this context
      * will accept a request from.
      */

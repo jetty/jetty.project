@@ -28,7 +28,8 @@ public interface HttpContent
 {
     Buffer getContentType();
     Buffer getLastModified();
-    Buffer getBuffer();
+    Buffer getIndirectBuffer();
+    Buffer getDirectBuffer();
     Resource getResource();
     long getContentLength();
     InputStream getInputStream() throws IOException;

@@ -597,25 +597,6 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the initializeAtStart.
-     * @deprecated
-     */
-    public boolean isInitializeAtStart()
-    {
-        return false;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param initializeAtStart The initializeAtStart to set.
-     * @deprecated
-     */
-    public void setInitializeAtStart(boolean initializeAtStart)
-    {
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * @return true if the handler is started and there are no unavailable servlets 
      */
     public boolean isAvailable()
@@ -719,7 +700,7 @@ public class ServletHandler extends ScopedHandler
     }
     
     /* ------------------------------------------------------------ */
-    public ServletHolder newServletHolder(Class servlet)
+    public ServletHolder newServletHolder(Class<? extends Servlet> servlet)
     {
         return new ServletHolder(servlet);
     }
@@ -780,18 +761,6 @@ public class ServletHandler extends ScopedHandler
                 throw (RuntimeException)e;
             throw new RuntimeException(e);
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Convenience method to add a servlet with a servlet mapping.
-     * @param className
-     * @param pathSpec
-     * @return the ServletHolder
-     * @deprecated use {@link #addServletWithMapping(Class, String)} instead
-     */
-    public ServletHolder addServlet (String className, String pathSpec)
-    {
-        return addServletWithMapping (className, pathSpec);
     }
 
     
@@ -899,19 +868,6 @@ public class ServletHandler extends ScopedHandler
             throw e;
         }
             
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Convenience method to add a filter with a mapping
-     * @param className
-     * @param pathSpec
-     * @param dispatches
-     * @return the filter holder created
-     * @deprecated use {@link #addFilterWithMapping(Class, String, int)} instead
-     */
-    public FilterHolder addFilter (String className,String pathSpec,int dispatches)
-    {
-        return addFilterWithMapping(className, pathSpec, dispatches);
     }
     
     /* ------------------------------------------------------------ */
@@ -1325,6 +1281,7 @@ public class ServletHandler extends ScopedHandler
         _maxFilterChainsCacheSize = maxFilterChainsCacheSize;
     }
     
+    /* ------------------------------------------------------------ */
     /**
      * Customize a servlet.
      * 
@@ -1342,14 +1299,14 @@ public class ServletHandler extends ScopedHandler
         return servlet;
     }
     
-    
+    /* ------------------------------------------------------------ */
     public Servlet customizeServletDestroy (Servlet servlet)
     throws Exception
     {
         return servlet;
     }
     
-    
+    /* ------------------------------------------------------------ */
     /**
      * Customize a Filter.
      * 
@@ -1357,9 +1314,9 @@ public class ServletHandler extends ScopedHandler
      * Subclasses of ServletHandler should override
      * this method.
      * 
-     * @param filter
+     * @param filter The filter to customize.
      * @return the potentially customized filter
-     * @throws Exception
+     * @throws Exception If there was a problem
      */
     public Filter customizeFilter (Filter filter)
     throws Exception
@@ -1367,7 +1324,7 @@ public class ServletHandler extends ScopedHandler
         return filter;
     }
     
-    
+    /* ------------------------------------------------------------ */
     public Filter customizeFilterDestroy (Filter filter)
     throws Exception
     {
@@ -1375,8 +1332,8 @@ public class ServletHandler extends ScopedHandler
     }
     
 
-    
     /* ------------------------------------------------------------ */
+    @Override
     protected void dump(StringBuilder b,String indent)
     {
         super.dump(b,indent);
@@ -1423,6 +1380,4 @@ public class ServletHandler extends ScopedHandler
         }
 
     }
-
-    
 }

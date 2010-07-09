@@ -1,4 +1,5 @@
 jetty-7.2-SNAPSHOT
+ + 319334 Concurrent, sharable ResourceCache
 
 jetty-7.1.5.v20100705
  + Update ecj to 3.6 Helios release drop
