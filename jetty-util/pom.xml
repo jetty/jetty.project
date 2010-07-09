@@ -25,7 +25,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Import-Package>org.slf4j;version="[1.5,1.6)";resolution:=optional,*</Import-Package>
+                <Import-Package>org.slf4j;version="[1.5,1.7)";resolution:=optional,*</Import-Package>
               </instructions>
             </configuration>
            </execution>
