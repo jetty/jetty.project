@@ -21,7 +21,7 @@
     <orbit-javax-servlet-jsp-version>2.1.0.v201004190952</orbit-javax-servlet-jsp-version>
     <orbit-javax-servlet-jsp-jstl-version>1.2.0.v201004190952</orbit-javax-servlet-jsp-jstl-version>
     <orbit-com-sun-el-version>1.0.0.v201004190952</orbit-com-sun-el-version>
-    <orbit-org-apache-jasper-version>2.1.0.v201006280255</orbit-org-apache-jasper-version>
+    <orbit-org-apache-jasper-version>2.1.0.v201007080150</orbit-org-apache-jasper-version>
     <orbit-org-apache-taglibs-standard-version>1.2.0.v201004190952</orbit-org-apache-taglibs-standard-version>
   </properties>
   <build>
