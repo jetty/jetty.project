@@ -10,7 +10,7 @@
   <packaging>pom</packaging>
   <properties>
     <eclipse-mirror>http://mirror.cc.vt.edu/pub/eclipse/eclipse/downloads/drops</eclipse-mirror>
-    <orbit-url>http://download.eclipse.org/tools/orbit/committers/drops/I20100628101947/bundles</orbit-url>
+    <orbit-url>http://download.eclipse.org/tools/orbit/committers/drops/I20100709085604/bundles</orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
     <eclipse-drop>R-3.6-201006080911</eclipse-drop>
     <eclipse-ecj-version>3.6</eclipse-ecj-version>
