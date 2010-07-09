@@ -57,10 +57,8 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  * 
  * @org.apache.xbean.XBean description="Creates a servlet web application at a given context from a resource base"
  * 
- * 
- *
  */
-public class WebAppContext extends ServletContextHandler
+public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context
 {
     public static final String TEMPDIR = "javax.servlet.context.tempdir";
     public static final String BASETEMPDIR = "org.eclipse.jetty.webapp.basetempdir";
@@ -522,6 +520,7 @@ public class WebAppContext extends ServletContextHandler
         return _systemClasses.getPatterns();
     }
     
+    /* ------------------------------------------------------------ */
     public void addSystemClass(String classname)
     {
         if (_systemClasses == null)
@@ -640,7 +639,10 @@ public class WebAppContext extends ServletContextHandler
     
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the java2compliant.
+     * @return True if the classloader should delegate first to the parent 
+     * classloader (standard java behaviour) or false if the classloader 
+     * should first try to load from WEB-INF/lib or WEB-INF/classes (servlet 
+     * spec recommendation).
      */
     public boolean isParentLoaderPriority()
     {

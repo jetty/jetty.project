@@ -1154,6 +1154,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public MimeTypes getMimeTypes()
     {
+        if (_mimeTypes==null)
+            _mimeTypes=new MimeTypes();
         return _mimeTypes;
     }
 
@@ -1334,13 +1336,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
-    /** Convert URL to Resource
-     * wrapper for {@link Resource#newResource(String)} enables extensions to
-     * provide alternate resource implementations.
+    /** Convert a URL or path to a Resource.
+     * The default implementation
+     * is a wrapper for {@link Resource#newResource(String)}.
+     * @param urlOrPath The URL or path to convert
+     * @return The Resource for the URL/path
+     * @throws IOException The Resource could not be created.
      */
-    public Resource newResource(String url) throws IOException
+    public Resource newResource(String urlOrPath) throws IOException
     {
-        return Resource.newResource(url);
+        return Resource.newResource(urlOrPath);
     }
 
     /* ------------------------------------------------------------ */
