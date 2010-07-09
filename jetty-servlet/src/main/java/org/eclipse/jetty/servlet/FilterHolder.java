@@ -124,7 +124,7 @@ public class FilterHolder extends Holder<Filter>
                 Log.warn(e);
             }
         }
-        if (!_instance)
+        if (!_extInstance)
             _filter=null;
         
         _config=null;
@@ -147,7 +147,7 @@ public class FilterHolder extends Holder<Filter>
     public synchronized void setFilter(Filter filter)
     {
         _filter=filter;
-        _instance=true;
+        _extInstance=true;
         setHeldClass(filter.getClass());
         if (getName()==null)
             setName(filter.getClass().getName());
@@ -160,6 +160,7 @@ public class FilterHolder extends Holder<Filter>
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return getName();
@@ -245,8 +246,3 @@ public class FilterHolder extends Holder<Filter>
         }
     }
 }
-
-
-
-
-

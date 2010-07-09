@@ -15,6 +15,16 @@
     <param-value>a context value</param-value>
   </context-param>
 
+  <!-- Add or override filter init parameter -->
+  <filter>
+    <filter-name>TestFilter</filter-name>
+    <filter-class>com.acme.TestFilter</filter-class>
+    <init-param>
+      <param-name>remote</param-name>
+      <param-value>false</param-value>
+    </init-param>
+  </filter>
+
   <!-- Add or override servlet init parameter -->
   <servlet>
     <servlet-name>Dump</servlet-name>

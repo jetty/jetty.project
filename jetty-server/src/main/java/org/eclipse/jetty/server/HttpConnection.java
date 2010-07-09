@@ -395,7 +395,7 @@ public class HttpConnection implements Connection
             _handling=true;
             setCurrentConnection(this);
 
-            while (more_in_buffer)
+            while (more_in_buffer && _endp.isOpen())
             {
                 try
                 {
@@ -463,7 +463,6 @@ public class HttpConnection implements Connection
 
                     _parser.reset(true);
                     _endp.close();
-                    throw e;
                 }
                 finally
                 {

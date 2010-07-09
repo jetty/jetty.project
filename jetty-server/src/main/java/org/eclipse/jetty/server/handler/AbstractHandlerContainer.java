@@ -94,6 +94,8 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
             int last=handlers.length-1;
             for (int h=0;h<=last;h++)
             {
+                if (handlers[h]==null)
+                    continue;
                 b.append(indent);
                 b.append(" +-");
                 if (handlers[h] instanceof AbstractHandler)

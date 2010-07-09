@@ -282,10 +282,10 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         getHttpClient().send(exchange);
 
         int status = exchange.waitForDone();
-        assertEquals(HttpExchange.STATUS_COMPLETED, status);
         assertTrue(exchange.isResponseCompleted());
         assertFalse(exchange.isFailed());
         assertFalse(exchange.isAssociated());
+        assertEquals(HttpExchange.STATUS_COMPLETED, status);
     }
 
     public void testHttpExchangeOnServerException() throws Exception

@@ -37,20 +37,19 @@ import org.eclipse.jetty.util.log.Log;
 public class Holder<T> extends AbstractLifeCycle 
 {
     public enum Source { EMBEDDED, JAVAX_API, DESCRIPTOR, ANNOTATION };
-    
     final private Source _source;
-    
     protected transient Class<? extends T> _class;
+    protected final Map<String,String> _initParams=new HashMap<String,String>(3);
     protected String _className;
     protected String _displayName;
-    protected Map<String,String> _initParams;
-    protected boolean _instance;
-    protected boolean _asyncSupported;
+    protected boolean _extInstance;
+    protected boolean _asyncSupported=true;
 
     /* ---------------------------------------------------------------- */
     protected String _name;
     protected ServletHandler _servletHandler;
 
+    /* ---------------------------------------------------------------- */
     protected Holder(Source source)
     {
         _source=source;
@@ -67,7 +66,7 @@ public class Holder<T> extends AbstractLifeCycle
      */
     public boolean isInstance()
     {
-        return _instance;
+        return _extInstance;
     }
     
     /* ------------------------------------------------------------ */
@@ -99,7 +98,7 @@ public class Holder<T> extends AbstractLifeCycle
     public void doStop()
         throws Exception
     {
-        if (!_instance)
+        if (!_extInstance)
             _class=null;
     }
     
@@ -198,15 +197,14 @@ public class Holder<T> extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     public void setInitParameter(String param,String value)
     {
-        if (_initParams==null)
-            _initParams=new HashMap(3);
         _initParams.put(param,value);
     }
     
     /* ---------------------------------------------------------------- */
-    public void setInitParameters(Map map)
+    public void setInitParameters(Map<String,String> map)
     {
-        _initParams=map;
+        _initParams.clear();
+        _initParams.putAll(map);
     }
     
     /* ------------------------------------------------------------ */

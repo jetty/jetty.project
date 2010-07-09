@@ -20,6 +20,7 @@ import java.util.Properties;
 
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.JettyServerServiceTracker;
+import org.eclipse.jetty.osgi.boot.internal.webapp.IWebBundleDeployerHelper;
 import org.eclipse.jetty.osgi.boot.internal.webapp.JettyContextHandlerServiceTracker;
 import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleTrackerCustomizer;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
@@ -56,9 +57,6 @@ import org.osgi.util.tracker.BundleTracker;
 public class JettyBootstrapActivator implements BundleActivator
 {
 
-	/** development only: when set to true enable the jetty server service tracker */
-	private static boolean _enableMultipleJettyServers = true;
-	
     private static JettyBootstrapActivator INSTANCE = null;
 
     public static JettyBootstrapActivator getInstance()
@@ -92,36 +90,24 @@ public class JettyBootstrapActivator implements BundleActivator
         // should activate.
         _packageAdminServiceTracker = new PackageAdminServiceTracker(context);
 
-        
-        if (_enableMultipleJettyServers)
-        {//new style...
-        	_jettyServerServiceTracker = new JettyServerServiceTracker();
-            context.addServiceListener(_jettyServerServiceTracker,"(objectclass=" + Server.class.getName() + ")");
+    	_jettyServerServiceTracker = new JettyServerServiceTracker();
+        context.addServiceListener(_jettyServerServiceTracker,"(objectclass=" + Server.class.getName() + ")");
 
-            //Register the Jetty Server Factory as a ManagedServiceFactory:
+        //Register the Jetty Server Factory as a ManagedServiceFactory:
 //          Properties jettyServerMgdFactoryServiceProps = new Properties(); 
 //          jettyServerMgdFactoryServiceProps.put("pid", OSGiWebappConstants.MANAGED_JETTY_SERVER_FACTORY_PID);
 //          _jettyServerFactoryService = context.registerService(
 //          		ManagedServiceFactory.class.getName(),  new JettyServersManagedFactory(),
 //          		jettyServerMgdFactoryServiceProps);
-        
-            _jettyContextHandlerTracker = new JettyContextHandlerServiceTracker(_jettyServerServiceTracker);
-        }
-        else
-        {//old style...
-	        _server = new Server();
-	        // expose the server as a service.
-	        _registeredServer = context.registerService(_server.getClass().getName(),_server,new Properties());
-	        _jettyContextHandlerTracker = new JettyContextHandlerServiceTracker(context,_server);
-        }
+    
+        _jettyContextHandlerTracker = new JettyContextHandlerServiceTracker(_jettyServerServiceTracker);
+
         // the tracker in charge of the actual deployment
         // and that will configure and start the jetty server.
         context.addServiceListener(_jettyContextHandlerTracker,"(objectclass=" + ContextHandler.class.getName() + ")");
 
-        if (_enableMultipleJettyServers)
-        {
-        	DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
-        }
+        //see if we shoult start a default jetty instance right now.
+        DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
         
         // now ready to support the Extender pattern:        
         _webBundleTracker = new BundleTracker(context,
@@ -288,6 +274,7 @@ public class JettyBootstrapActivator implements BundleActivator
     {
         ContextHandler contextHandler = new ContextHandler();
         dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH,contextFilePath);
+        dic.put(IWebBundleDeployerHelper.INTERNAL_SERVICE_PROP_UNKNOWN_CONTEXT_HANDLER_TYPE,Boolean.TRUE.toString());
         contributor.getBundleContext().registerService(ContextHandler.class.getName(),contextHandler,dic);
     }
 

@@ -120,7 +120,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (servlet==null || servlet instanceof SingleThreadModel)
             throw new IllegalArgumentException();
 
-        _instance=true;
+        _extInstance=true;
         _servlet=servlet;
         setHeldClass(servlet.getClass());
         if (getName()==null)
@@ -263,7 +263,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (_class!=null && javax.servlet.SingleThreadModel.class.isAssignableFrom(_class))
             _servlet = new SingleThreadedWrapper();
 
-        if (_instance || _initOnStartup)
+        if (_extInstance || _initOnStartup)
         {
             try
             {
@@ -304,7 +304,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             }
         }
 
-        if (!_instance)
+        if (!_extInstance)
             _servlet=null;
 
         _config=null;

@@ -14,11 +14,9 @@
 // ========================================================================
 package org.eclipse.jetty.osgi.boot.internal.webapp;
 
-import java.io.File;
-
 import org.eclipse.jetty.deploy.ContextDeployer;
-import org.eclipse.jetty.deploy.WebAppDeployer;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 
 /**
@@ -27,6 +25,11 @@ import org.osgi.framework.Bundle;
  */
 public interface IWebBundleDeployerHelper {
 
+    /** when this property is present, the type of context handler registered is not
+     * known in advance. */
+    public static final String INTERNAL_SERVICE_PROP_UNKNOWN_CONTEXT_HANDLER_TYPE = "unknownContextHandlerType";
+
+	
 	/**
 	 * Deploy a new web application on the jetty server.
 	 * 
@@ -45,29 +48,10 @@ public interface IWebBundleDeployerHelper {
 	 * @return The contexthandler created and started
 	 * @throws Exception
 	 */
-	public abstract ContextHandler registerWebapplication(Bundle bundle,
+	public abstract WebAppContext registerWebapplication(Bundle bundle,
 			String webappFolderPath, String contextPath, String extraClasspath,
 			String overrideBundleInstallLocation, String webXmlPath,
-			String defaultWebXmlPath) throws Exception;
-
-	/**
-	 * TODO: refactor this into the createContext method of OSGiAppProvider.
-	 * @see WebAppDeployer#scan()
-	
-	 * @param contributor
-	 * @param webapp
-	 * @param contextPath
-	 * @param extraClasspath
-	 * @param bundleInstall
-	 * @param webXmlPath
-	 * @param defaultWebXmlPath
-	 * @return The contexthandler created and started
-	 * @throws Exception
-	 */
-	public abstract ContextHandler registerWebapplication(Bundle contributor,
-			String pathInBundleToWebApp, File webapp, String contextPath,
-			String extraClasspath, File bundleInstall, String webXmlPath,
-			String defaultWebXmlPath) throws Exception;
+			String defaultWebXmlPath, WebAppContext webAppContext) throws Exception;
 
 	/**
 	 * Stop a ContextHandler and remove it from the collection.
@@ -88,11 +72,13 @@ public interface IWebBundleDeployerHelper {
 	 * @param contextFileRelativePath
 	 * @param extraClasspath
 	 * @param overrideBundleInstallLocation
+	 * @param handler the context handler passed in the server
+	 * reference that will be configured, deployed and started.
 	 * @return The contexthandler created and started
 	 * @throws Exception
 	 */
 	public abstract ContextHandler registerContext(Bundle contributor,
 			String contextFileRelativePath, String extraClasspath,
-			String overrideBundleInstallLocation) throws Exception;
+			String overrideBundleInstallLocation, ContextHandler handler) throws Exception;
 
 }

@@ -12,7 +12,7 @@
 // ========================================================================
 package org.eclipse.jetty.osgi.boot.jsp;
 
-import org.eclipse.jetty.osgi.boot.internal.webapp.WebappRegistrationHelper;
+import org.eclipse.jetty.osgi.boot.internal.webapp.WebBundleDeployerHelper;
 import org.eclipse.jetty.osgi.boot.jasper.PluggableWebAppRegistrationCustomizerImpl;
 import org.eclipse.jetty.osgi.boot.jasper.WebappRegistrationCustomizerImpl;
 import org.osgi.framework.BundleActivator;
@@ -36,13 +36,8 @@ public class FragmentActivator implements BundleActivator
      * 
      */
     public void start(BundleContext context) throws Exception {
-        WebappRegistrationHelper.JSP_REGISTRATION_HELPERS.add(new WebappRegistrationCustomizerImpl());
-        WebappRegistrationHelper.JSP_REGISTRATION_HELPERS.add(new PluggableWebAppRegistrationCustomizerImpl());
-//        try {
-//        FragmentActivator.class.getClassLoader().loadClass("does.not.exist");
-//        } catch (Throwable t) {
-//            t.printStackTrace();
-//        }
+        WebBundleDeployerHelper.JSP_REGISTRATION_HELPERS.add(new WebappRegistrationCustomizerImpl());
+        WebBundleDeployerHelper.JSP_REGISTRATION_HELPERS.add(new PluggableWebAppRegistrationCustomizerImpl());
     }
 
     /**

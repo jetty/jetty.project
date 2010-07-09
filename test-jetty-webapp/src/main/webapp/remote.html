@@ -19,13 +19,14 @@ This is a test context that serves several demo filters and servlets.  However, 
 test servlets are not safe for deployment on the internet as (by design) they contain 
 cross domain scripting vulnerabilities and reveal private information.  This page
 is displayed because you have access the context from a non local IP address.
-You can disable the remote address checking by editing the web.xml and changing the
-"remote" init parameter to true for the TestFilter. Once the webapp has been reconfigured,
-you can access the demonstrations <a href="index.html">here</a>, or <a href="http://127.0.0.1:8080/">here</a>
-if you can access the local machine.
+</p>
+<p>
+You can disable the remote address checking by editing contexts/test.d/override-web.xml and changing the
+"remote" init parameter to true for the TestFilter. 
 </p>
 <p>
 This webapp is deployed in $JETTY_HOME/webapp/test and configured by $JETTY_HOME/contexts/test.xml
+and $JETTY_HOME/contexts/test.d/override-web.xml
 </p>
 
 </BODY>

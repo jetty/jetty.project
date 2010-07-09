@@ -188,7 +188,7 @@ public class StdErrLog implements Logger
         if (!_debug)
             return;
         StringBuilder buffer = new StringBuilder(64);
-        format(buffer, ":INFO:", msg, thrown);
+        format(buffer, ":DBUG:", msg, thrown);
         System.err.println(buffer);
     }
 

@@ -41,7 +41,7 @@ public class OSGiServerConstants
     /**
      * List of URLs to the jetty.xml files that configure th server.
      */
-    public static final String MANAGED_JETTY_XML_CONFIG_URLS = "jetty.xml.config.urls";
+    public static final String MANAGED_JETTY_XML_CONFIG_URLS = "jetty.etc.config.urls";
     
     /**
      * List of URLs to the folders where the legacy J2EE shared libraries are stored aka lib/ext, lib/jsp etc.

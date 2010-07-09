@@ -20,6 +20,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
@@ -141,13 +142,19 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             {
             	//location defined in the BundleArchive m_bundleArchive
             	//it is relative to relative to the  BundleArchive's m_archiveRootDir
-            	Object bundleArchive = getFelixBundleArchive(bundle);
-            	File archiveRoot = getFelixBundleArchiveRootDir(bundleArchive);
-            	String currentLocation = getFelixBundleArchiveCurrentLocation(bundleArchive);
-//            	System.err.println("Got the archive root " + archiveRoot.getAbsolutePath()
-//            	+ " current location " + currentLocation);
-            	return new File(archiveRoot, currentLocation != null
-            			? currentLocation : location.substring("file:".length()));
+            	File res = new File(location.substring("file:".length()));
+            	if (!res.exists())
+            	{
+            		return null;
+//                	Object bundleArchive = getFelixBundleArchive(bundle);
+//                	File archiveRoot = getFelixBundleArchiveRootDir(bundleArchive);
+//                	String currentLocation = getFelixBundleArchiveCurrentLocation(bundleArchive);
+//                	System.err.println("Got the archive root " + archiveRoot.getAbsolutePath()
+//                	+ " current location " + currentLocation + " is directory ?");
+//                	res = new File(archiveRoot, currentLocation != null
+//                			? currentLocation : location.substring("file:".length()));
+            	}
+            	return res;
             }
             else if (location.startsWith("reference:file:"))
             {
@@ -182,6 +189,29 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         }
         return webapp;
     }
+    
+    /**
+	 * Helper method equivalent to Bundle#getEntry(String entryPath) except that
+	 * it searches for entries in the fragments by using the Bundle#findEntries method.
+	 * 
+	 * @param bundle
+	 * @param entryPath
+	 * @return null or all the entries found for that path.
+	 */
+	public Enumeration<URL> findEntries(Bundle bundle, String entryPath)
+	{
+    	int last = entryPath.lastIndexOf('/');
+    	String path = last != -1 && last < entryPath.length() -2
+    		? entryPath.substring(0, last) : "/";
+    	if (!path.startsWith("/"))
+    	{
+    		path = "/" + path;
+    	}
+    	String pattern = last != -1 && last < entryPath.length() -2
+			? entryPath.substring(last+1) : entryPath;
+		Enumeration<URL> enUrls = bundle.findEntries(path, pattern, false);
+		return enUrls;
+	}
 
     /**
      * If the bundle is a jar, returns the jar. If the bundle is a folder, look
@@ -231,6 +261,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
     
 
 	//introspection on equinox to invoke the getLocalURL method on BundleURLConnection
+    //equivalent to using the FileLocator without depending on an equinox class.
 	private static Method BUNDLE_URL_CONNECTION_getLocalURL = null;
 	private static Method BUNDLE_URL_CONNECTION_getFileURL = null;
 	/**
@@ -296,63 +327,6 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 			}
 		}
 		return url;
-	}
-	
-	
-	//introspection on felix
-	private static Field m_bundleArchive_FIELD = null;
-	private static Field m_archiveRootDir_FIELD = null;
-	private static Field m_currentLocation_FIELD = null;
-	private static Object getFelixBundleArchive(Bundle bundle)
-	{
-		try
-		{
-			if (m_bundleArchive_FIELD == null)
-			{
-				m_bundleArchive_FIELD = bundle.getClass().getDeclaredField("m_archive");
-				m_bundleArchive_FIELD.setAccessible(true);
-			}
-			return m_bundleArchive_FIELD.get(bundle);
-		}
-		catch (Throwable t)
-		{
-			t.printStackTrace();
-		}
-		return null;
-	}
-	private static File getFelixBundleArchiveRootDir(Object bundleArchive)
-	{
-		try
-		{
-			if (m_archiveRootDir_FIELD == null)
-			{
-				m_archiveRootDir_FIELD = bundleArchive.getClass().getDeclaredField("m_archiveRootDir");
-				m_archiveRootDir_FIELD.setAccessible(true);
-			}
-			return (File)m_archiveRootDir_FIELD.get(bundleArchive);
-		}
-		catch (Throwable t)
-		{
-			t.printStackTrace();
-		}
-		return null;
-	}
-	private static String getFelixBundleArchiveCurrentLocation(Object bundleArchive)
-	{
-		try
-		{
-			if (m_currentLocation_FIELD == null)
-			{
-				m_currentLocation_FIELD = bundleArchive.getClass().getDeclaredField("m_currentLocation");
-				m_currentLocation_FIELD.setAccessible(true);
-			}
-			return (String)m_currentLocation_FIELD.get(bundleArchive);
-		}
-		catch (Throwable t)
-		{
-			t.printStackTrace();
-		}
-		return null;
 	}
 
 }

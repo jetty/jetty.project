@@ -61,6 +61,10 @@ System Properties:
       Ignored exceptions are logged, independent of DEBUG settings
       (default: false)
 
+    org.eclipse.jetty.util.log.SOURCE=[boolean]
+      The source location of logs is logged in the stderr Logger.
+      (default: false)
+      
     com.sun.management.jmxremote
       Enable remote JMX management in Sun JVMS.
       

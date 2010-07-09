@@ -5,8 +5,10 @@ jetty-8.0.0.M1-SNAPSHOT
  + Ensure empty <absolute-ordering> implies exclusion of all fragments
  + Ensure servlet-api jar class inheritance hierarchy is scanned
 
-jetty-7.1.5-SNAPSHOT
+jetty-7.1.5.v20100705
+ + Update ecj to 3.6 Helios release drop
  + 288194 Add blacklist/whitelist to ProxyServlet and ProxyHandler
+ + 296570 EOFException for HttpExchange when HttpClient.stop called.
  + 311550 The WebAppProvider should allow setTempDirectory
  + 316449 Websocket disconnect fix
  + 316584 Exception on startup if temp path has spaces and extractWAR=false
@@ -16,6 +18,10 @@ jetty-7.1.5-SNAPSHOT
  + 316976 removed quotes of JAVA_OPTIONS in jetty.sh
  + 317019 Date HTTP header not sent for HTTP/1.0 requests
  + 317759 Allow roles and constraints to be added after init
+ + 317906 OPTIONS correctly handles TRACE
+ + 318308 Correct quoting of unicode control characters
+ + 318470 unboxing NPE protection in HttpConnection
+ + 318551 Optional uncheck Printwriter
  + JETTY-1237 Save local/remote address to be available after close
 
 jetty-7.1.4.v20100610

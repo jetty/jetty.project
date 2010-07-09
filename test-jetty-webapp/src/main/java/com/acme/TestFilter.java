@@ -29,6 +29,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.util.log.Log;
+
 /* ------------------------------------------------------------ */
 /** TestFilter.
  * 
@@ -50,10 +52,11 @@ public class TestFilter implements Filter
     public void init(FilterConfig filterConfig) throws ServletException
     {
         _context= filterConfig.getServletContext();
-        _remote=Boolean.parseBoolean(_context.getInitParameter("remote"));
+        _remote=Boolean.parseBoolean(filterConfig.getInitParameter("remote"));
         _allowed.add("/favicon.ico");
         _allowed.add("/jetty_banner.gif");
-        _allowed.add("/remote.html");
+        
+        Log.debug("TestFilter#remote="+_remote);
     }
 
     /* ------------------------------------------------------------ */
@@ -65,12 +68,16 @@ public class TestFilter implements Filter
     {
         String from = request.getRemoteHost();
         String to = request.getServerName();
+        String path=((HttpServletRequest)request).getServletPath();
         
-        if ((!_remote&&!from.equals("localhost")&&!from.startsWith("127.0.0.")||
-             !to.equals("localhost")&&!to.startsWith("127.0.0.")) &&
-             !_allowed.contains(((HttpServletRequest)request).getServletPath()))
+        if (!_remote && !_allowed.contains(path) && (
+             !from.equals("localhost") && !from.startsWith("127.") ||
+             !to.equals("localhost")&&!to.startsWith("127.0.0.")))
         {
-            ((HttpServletResponse)response).sendRedirect("/remote.html");
+            if ("/".equals(path))
+                _context.getRequestDispatcher("/remote.html").forward(request,response);
+            else
+                ((HttpServletResponse)response).sendRedirect("/remote.html");
             return;
         }
         

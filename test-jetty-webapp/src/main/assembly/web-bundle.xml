@@ -16,7 +16,20 @@
       </includes>
       <excludes>
         <exclude>WEB-INF/lib/**</exclude>
+        <exclude>WEB-INF/jetty-web.xml</exclude>
       </excludes>
     </fileSet>
   </fileSets>
+  <files>
+    <file>
+      <source>src/main/assembly/embedded-jetty-web-for-webbundle.xml</source>
+      <outputDirectory>WEB-INF</outputDirectory>
+      <destName>jetty-web.xml</destName>
+    </file>
+    <file>
+      <source>src/main/config/etc/realm.properties</source>
+      <outputDirectory>WEB-INF</outputDirectory>
+      <destName>realm.properties</destName>
+    </file>
+  </files>
 </assembly>

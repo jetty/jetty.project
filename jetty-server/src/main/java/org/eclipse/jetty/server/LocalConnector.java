@@ -33,14 +33,6 @@ public class LocalConnector extends AbstractConnector
         return this;
     }
 
-    /**
-     * @deprecated Not needed anymore, as there is no need to reopen the connector to reset its state
-     */
-    @Deprecated
-    public void reopen()
-    {
-    }
-
     public String getResponses(String requests) throws Exception
     {
         return getResponses(requests, false);
@@ -121,7 +113,7 @@ public class LocalConnector extends AbstractConnector
             boolean leaveOpen = keepOpen;
             try
             {
-                while (endPoint.getIn().length() > 0)
+                while (endPoint.getIn().length() > 0 && endPoint.isOpen())
                 {
                     while (true)
                     {

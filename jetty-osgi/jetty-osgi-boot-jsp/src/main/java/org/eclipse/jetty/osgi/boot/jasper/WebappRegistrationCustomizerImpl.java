@@ -148,7 +148,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
     	{
 	        Bundle tldBundle = FrameworkUtil.getBundle(cl);
 	        File tldBundleLocation = locatorHelper.getBundleInstallLocation(tldBundle);
-	        if (tldBundleLocation.isDirectory())
+	        if (tldBundleLocation != null && tldBundleLocation.isDirectory())
 	        {
 	            // try to find the jar files inside this folder
 	            for (File f : tldBundleLocation.listFiles())
@@ -170,7 +170,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
 	            }
 	            
 	        }
-	        else
+	        else if (tldBundleLocation != null)
 	        {
 	            urls.add(tldBundleLocation.toURI().toURL());
 	        }

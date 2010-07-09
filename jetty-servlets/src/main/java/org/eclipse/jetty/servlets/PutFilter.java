@@ -60,6 +60,7 @@ public class PutFilter implements Filter
 
     Set<String> _operations = new HashSet<String>();
     protected ConcurrentMap<String,String> _hidden = new ConcurrentHashMap<String, String>();
+    protected String _options;
 
     protected ServletContext _context;
     protected String _baseURI;
@@ -87,10 +88,12 @@ public class PutFilter implements Filter
 
         _operations.add(__OPTIONS);
         _operations.add(__PUT);
+        _options="GET,HEAD,POST,OPTIONS,PUT";
         if (_delAllowed)
         {
             _operations.add(__DELETE);
             _operations.add(__MOVE);
+            _options+=",DELETE";
         }
     }
 
@@ -284,15 +287,13 @@ public class PutFilter implements Filter
 
         response.setStatus(HttpServletResponse.SC_NO_CONTENT);
         response.flushBuffer();
-
-
     }
 
     /* ------------------------------------------------------------ */
     public void handleOptions(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        // TODO implement
-        throw new UnsupportedOperationException("Not Implemented");
+        // TODO filter real options and add PUT & DELETE
+        response.setHeader("Allow", _options);
     }
 
     /* ------------------------------------------------------------ */
