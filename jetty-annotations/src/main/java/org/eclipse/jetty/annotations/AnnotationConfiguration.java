@@ -163,10 +163,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
                             }
                         }
                         else
-                            Log.info("No classes in HandlesTypes on initializer "+service.getClass());
+                            if (Log.isDebugEnabled()) Log.debug("No classes in HandlesTypes on initializer "+service.getClass());
                     }
                     else
-                        Log.info("No annotation on initializer "+service.getClass());
+                        if (Log.isDebugEnabled()) Log.debug("No annotation on initializer "+service.getClass());
                 }
             }
         }
