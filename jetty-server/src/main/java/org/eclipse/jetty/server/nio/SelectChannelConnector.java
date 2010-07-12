@@ -164,6 +164,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
         SelectChannelEndPoint cep = ((SelectChannelEndPoint)endpoint);
         cep.cancelIdle();
         request.setTimeStamp(cep.getSelectSet().getNow());
+        endpoint.setMaxIdleTime(_maxIdleTime);
         super.customize(endpoint, request);
     }
 
