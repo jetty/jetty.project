@@ -1,4 +1,4 @@
-jetty-8.0.0.M1-SNAPSHOT
+jetty-8.0.0.M1 12 July 2010
  + 306350 Ensure jars excluded by ordering are not scanned for annotations
  + JETTY-1224 Change jetty-8 merge rules for fragment descriptors and annotations
  + Ensure <absolute-ordering> in web.xml overrides relative <ordering> in fragments
