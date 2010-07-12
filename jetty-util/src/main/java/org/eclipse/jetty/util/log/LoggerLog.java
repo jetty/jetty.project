@@ -181,6 +181,14 @@ public class LoggerLog implements Logger
         }
     }
 
+    public void ignore(Throwable ignored)
+    {
+        if (Log.isIgnored())
+        {
+            warn(Log.IGNORED, ignored);
+        }
+    }
+
     public Logger getLogger(String name)
     {
         try
