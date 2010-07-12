@@ -1,6 +1,7 @@
 jetty-7.2-SNAPSHOT
  + 319334 Concurrent, sharable ResourceCache
  + 319370 WebAppClassLoader.Context
+ + 319519 Warn about duplicate configuration files
  + JETTY-1249 Apply max idle time
  + Added ignore to Logger interface
 
