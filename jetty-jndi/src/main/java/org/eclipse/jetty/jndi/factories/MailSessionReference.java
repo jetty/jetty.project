@@ -111,7 +111,7 @@ public class MailSessionReference extends Reference implements ObjectFactory
      * @param arg1 not used
      * @param arg2 not used
      * @param arg3 not used
-     * @return
+     * @return the object found
      * @throws Exception
      */
     public Object getObjectInstance(Object ref, Name arg1, Context arg2, Hashtable arg3) throws Exception

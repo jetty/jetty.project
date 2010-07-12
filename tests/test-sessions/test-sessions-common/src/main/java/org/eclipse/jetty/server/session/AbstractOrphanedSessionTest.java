@@ -23,17 +23,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.testng.annotations.Test;
+import org.eclipse.jetty.http.HttpMethods;
+import org.junit.Test;
 
 /**
  * AbstractOrphanedSessionTest
- *
- *
  */
-
 public abstract class AbstractOrphanedSessionTest
 {
 
@@ -51,18 +48,18 @@ public abstract class AbstractOrphanedSessionTest
         // Disable scavenging for the first server, so that we simulate its "crash".
         String contextPath = "";
         String servletMapping = "/server";
-        int port1 = random.nextInt(50000) + 10000;
         int inactivePeriod = 5;
-        AbstractTestServer server1 = createServer(port1, inactivePeriod, -1);
+        AbstractTestServer server1 = createServer(0, inactivePeriod, -1);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         server1.start();
+        int port1 = server1.getPort();
         try
         {
-            int port2 = random.nextInt(50000) + 10000;
             int scavengePeriod = 2;
-            AbstractTestServer server2 = createServer(port2, inactivePeriod, scavengePeriod);
+            AbstractTestServer server2 = createServer(0, inactivePeriod, scavengePeriod);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
             server2.start();
+            int port2 = server2.getPort();
             try
             {
                 HttpClient client = new HttpClient();

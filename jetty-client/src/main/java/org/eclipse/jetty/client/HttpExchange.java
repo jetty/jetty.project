@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -53,8 +54,8 @@ import org.eclipse.jetty.util.log.Log;
  * see {@link org.eclipse.jetty.client.ContentExchange} and {@link org.eclipse.jetty.client.CachedExchange}.</p>
  *
  * <p>Typically the HttpExchange is passed to the {@link HttpClient#send(HttpExchange)} method, which in
- * turn selects a {@link HttpDestination} and calls its {@link HttpDestination#send(HttpExchange), which
- * then creates or selects a {@link HttpConnection} and calls its {@link HttpConnection#send(HttpExchange).
+ * turn selects a {@link HttpDestination} and calls its {@link HttpDestination#send(HttpExchange)}, which
+ * then creates or selects a {@link HttpConnection} and calls its {@link HttpConnection#send(HttpExchange)}.
  * A developer may wish to directly call send on the destination or connection if they wish to bypass
  * some handling provided (eg Cookie handling in the HttpDestination).</p>
  *
@@ -129,7 +130,7 @@ public class HttpExchange
      *        || onExpire
      *        || onRequestComplete && onResponseComplete
      * </pre>
-     * @return
+     * @return the done status
      * @throws InterruptedException
      */
     public int waitForDone () throws InterruptedException
@@ -172,6 +173,7 @@ public class HttpExchange
                         case STATUS_WAITING_FOR_CONNECTION:
                         case STATUS_WAITING_FOR_COMMIT:
                         case STATUS_CANCELLING:
+                        case STATUS_EXCEPTED:
                             set=_status.compareAndSet(oldStatus,newStatus);
                             break;
                     }
@@ -282,6 +284,7 @@ public class HttpExchange
                 case STATUS_CANCELLING:
                     switch (newStatus)
                     {
+                        case STATUS_EXCEPTED:
                         case STATUS_CANCELLED:
                             if (set=_status.compareAndSet(oldStatus,newStatus))
                                 done();
@@ -299,6 +302,9 @@ public class HttpExchange
                     {
                         case STATUS_START:
                             set=_status.compareAndSet(oldStatus,newStatus);
+                            break;
+                        default:
+                            set=true;
                             break;
                     }
                     break;
@@ -322,6 +328,15 @@ public class HttpExchange
         {
             return _onDone;
         }
+    }
+
+    /**
+     * @deprecated
+     */
+    @Deprecated
+    public boolean isDone (int status)
+    {
+        return isDone();
     }
 
     public HttpEventListener getEventListener()
@@ -659,7 +674,7 @@ public class HttpExchange
 
     /**
      */
-    protected HttpConnection onSwitchProtocol(EndPoint enpd) throws IOException
+    protected Connection onSwitchProtocol(EndPoint endp) throws IOException
     {
         return null;
     }

@@ -51,14 +51,11 @@ public interface UserIdentity
     
 
     /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /**
      * A UserIdentity Scope.
      * A scope is the environment in which a User Identity is to 
      * be interpreted. Typically it is set by the target servlet of 
      * a request.
-     * @see org.eclipse.jetty.servlet.ServletHolder
      */
     interface Scope
     {
@@ -83,14 +80,10 @@ public interface UserIdentity
     }
     
     /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     public interface UnauthenticatedUserIdentity extends UserIdentity
     {
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     public static final UserIdentity UNAUTHENTICATED_IDENTITY = new UnauthenticatedUserIdentity()
     {

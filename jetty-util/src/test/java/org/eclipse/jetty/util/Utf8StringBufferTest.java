@@ -13,10 +13,14 @@
 
 package org.eclipse.jetty.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-public class Utf8StringBufferTest extends junit.framework.TestCase
+import org.junit.Test;
+
+
+public class Utf8StringBufferTest
 {
-
     public void testUtfStringBuffer()
         throws Exception
     {
@@ -30,6 +34,7 @@ public class Utf8StringBufferTest extends junit.framework.TestCase
     }
 
 
+    @Test
     public void testShort()
     throws Exception
     {
@@ -49,6 +54,7 @@ public class Utf8StringBufferTest extends junit.framework.TestCase
         }
     }
     
+    @Test
     public void testLong()
     throws Exception
     {

@@ -34,10 +34,8 @@ import org.eclipse.jetty.util.log.Log;
 
 
 /* ------------------------------------------------------------ */
-/** Abstract resource class.
- *
- * 
- * 
+/** 
+ * Abstract resource class.
  */
 public abstract class Resource implements Serializable
 {
@@ -259,13 +257,13 @@ public abstract class Resource implements Serializable
 
     /* ------------------------------------------------------------ */
     /** Find a classpath resource.
-     * The {@java.lang.Class#getResource} method is used to lookup the resource. If it is not
+     * The {@link java.lang.Class#getResource(String)} method is used to lookup the resource. If it is not
      * found, then the {@link Loader#getResource(Class, String, boolean)} method is used.
      * If it is still not found, then {@link ClassLoader#getSystemResource(String)} is used.
-     * Unlike {@link #getSystemResource} this method does not check for normal resources.
-     * @param name The relative name of the resouce
+     * Unlike {@link ClassLoader#getSystemResource(String)} this method does not check for normal resources.
+     * @param name The relative name of the resource
      * @param useCaches True if URL caches are to be used.
-     * @param checkParents True if forced searching of parent classloaders is performed to work around 
+     * @param checkParents True if forced searching of parent Classloaders is performed to work around 
      * loaders with inverted priorities
      * @return Resource or null
      */
@@ -491,7 +489,7 @@ public abstract class Resource implements Serializable
             buf.append("\">Parent Directory</A></TD><TD></TD><TD></TD></TR>\n");
         }
         
-        String defangedBase = defangURI(base);
+        String encodedBase = hrefEncodeURI(base);
         
         DateFormat dfmt=DateFormat.getDateTimeInstance(DateFormat.MEDIUM,
                                                        DateFormat.MEDIUM);
@@ -500,7 +498,7 @@ public abstract class Resource implements Serializable
             Resource item = addPath(ls[i]);
             
             buf.append("\n<TR><TD><A HREF=\"");
-            String path=URIUtil.addPaths(defangedBase,URIUtil.encodePath(ls[i]));
+            String path=URIUtil.addPaths(encodedBase,URIUtil.encodePath(ls[i]));
             
             buf.append(path);
             
@@ -524,38 +522,36 @@ public abstract class Resource implements Serializable
     }
     
     /**
-     * Defang any characters that could break the URI string in an HREF.
+     * Encode any characters that could break the URI string in an HREF.
      * Such as <a href="/path/to;<script>Window.alert("XSS"+'%20'+"here");</script>">Link</a>
      * 
      * The above example would parse incorrectly on various browsers as the "<" or '"' characters
      * would end the href attribute value string prematurely.
      * 
-     * @param raw the raw text to defang.
+     * @param raw the raw text to encode.
      * @return the defanged text.
      */
-    private static String defangURI(String raw) 
+    private static String hrefEncodeURI(String raw) 
     {
         StringBuffer buf = null;
-        
-        if (buf==null)
+
+        loop:
+        for (int i=0;i<raw.length();i++)
         {
-            for (int i=0;i<raw.length();i++)
+            char c=raw.charAt(i);
+            switch(c)
             {
-                char c=raw.charAt(i);
-                switch(c)
-                {
-                    case '\'':
-                    case '"':
-                    case '<':
-                    case '>':
-                        buf=new StringBuffer(raw.length()<<1);
-                        break;
-                }
+                case '\'':
+                case '"':
+                case '<':
+                case '>':
+                    buf=new StringBuffer(raw.length()<<1);
+                    break loop;
             }
-            if (buf==null)
-                return raw;
         }
-        
+        if (buf==null)
+            return raw;
+
         for (int i=0;i<raw.length();i++)
         {
             char c=raw.charAt(i);       

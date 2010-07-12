@@ -1,13 +1,22 @@
 package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.zip.Checksum;
 
+import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.security.Credential.MD5;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.thread.Timeout;
 
 public class WebSocketConnection implements Connection, WebSocket.Outbound
 {
@@ -17,11 +26,26 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     final WebSocketGenerator _generator;
     final long _timestamp;
     final WebSocket _websocket;
-    final int _maxIdleTimeMs=300000;
+    String _key1;
+    String _key2;
+    ByteArrayBuffer _hixie;
 
-    public WebSocketConnection(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, long maxIdleTime)
+    public WebSocketConnection(WebSocket websocket, EndPoint endpoint)
+        throws IOException
     {
+        this(websocket,endpoint,new WebSocketBuffers(8192),System.currentTimeMillis(),300000);
+    }
+    
+    public WebSocketConnection(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime)
+        throws IOException
+    {
+        // TODO - can we use the endpoint idle mechanism?
+        if (endpoint instanceof AsyncEndPoint)
+            ((AsyncEndPoint)endpoint).cancelIdle();
+        
         _endp = endpoint;
+        _endp.setMaxIdleTime(maxIdleTime);
+        
         _timestamp = timestamp;
         _websocket = websocket;
         _generator = new WebSocketGenerator(buffers, _endp);
@@ -71,10 +95,10 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
             {
                 public void access(EndPoint endp)
                 {
-                    scep.getSelectSet().scheduleTimeout(scep.getTimeoutTask(),_maxIdleTimeMs);
+                    scep.scheduleIdle();
                 }
             };
-            scep.getSelectSet().scheduleTimeout(scep.getTimeoutTask(),_maxIdleTimeMs);
+            scep.scheduleIdle();
         }
         else
         {
@@ -85,6 +109,13 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
             };
         }
     }
+    
+    public void setHixieKeys(String key1,String key2)
+    {
+        _key1=key1;
+        _key2=key2;
+        _hixie=new IndirectNIOBuffer(16);
+    }
 
     public Connection handle() throws IOException
     {
@@ -92,6 +123,53 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
 
         try
         {
+            // handle stupid hixie random bytes
+            if (_hixie!=null)
+            { 
+                while(progress)
+                {
+                    // take bytes from the parser buffer.
+                    if (_parser.getBuffer().length()>0)
+                    {
+                        int l=_parser.getBuffer().length();
+                        if (l>8)
+                            l=8;
+                        _hixie.put(_parser.getBuffer().peek(_parser.getBuffer().getIndex(),l));
+                        _parser.getBuffer().skip(l);
+                        progress=true;
+                    }
+                    
+                    // do we have enough?
+                    if (_hixie.length()<8)
+                    {
+                        // no, then let's fill
+                        int filled=_endp.fill(_hixie);
+                        progress |= filled>0;
+
+                        if (filled<0)
+                        {
+                            _endp.close();
+                            break;
+                        }
+                    }
+                    
+                    // do we now have enough
+                    if (_hixie.length()==8)
+                    {
+                        // we have the silly random bytes
+                        // so let's work out the stupid 16 byte reply.
+                        doTheHixieHixieShake();
+                        _endp.flush(_hixie);
+                        _hixie=null;
+                        _endp.flush();
+                        break;
+                    }
+                }
+                
+                return this;
+            }
+            
+            // handle the framing protocol
             while (progress)
             {
                 int flushed=_generator.flush();
@@ -108,7 +186,6 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         }
         catch(IOException e)
         {
-            e.printStackTrace();
             throw e;
         }
         finally
@@ -125,6 +202,16 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         return this;
     }
 
+    private void doTheHixieHixieShake()
+    {          
+        byte[] result=WebSocketGenerator.doTheHixieHixieShake(
+                WebSocketParser.hixieCrypt(_key1),
+                WebSocketParser.hixieCrypt(_key2),
+                _hixie.asArray());
+        _hixie.clear();
+        _hixie.put(result);
+    }
+    
     public boolean isOpen()
     {
         return _endp!=null&&_endp.isOpen();
@@ -152,7 +239,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
 
     public void sendMessage(byte frame, String content) throws IOException
     {
-        _generator.addFrame(frame,content,_maxIdleTimeMs);
+        _generator.addFrame(frame,content,_endp.getMaxIdleTime());
         _generator.flush();
         checkWriteable();
         _idle.access(_endp);
@@ -165,7 +252,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
 
     public void sendMessage(byte frame, byte[] content, int offset, int length) throws IOException
     {
-        _generator.addFrame(frame,content,offset,length,_maxIdleTimeMs);
+        _generator.addFrame(frame,content,offset,length,_endp.getMaxIdleTime());
         _generator.flush();
         checkWriteable();
         _idle.access(_endp);
@@ -175,7 +262,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         try
         {
-            _generator.flush(_maxIdleTimeMs);
+            _generator.flush(_endp.getMaxIdleTime());
             _endp.close();
         }
         catch(IOException e)

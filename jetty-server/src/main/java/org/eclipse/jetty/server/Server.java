@@ -14,15 +14,12 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -30,7 +27,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.Attributes;
@@ -74,7 +70,9 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _sendDateHeader = false; //send Date: header
     private int _graceful=0;
     private boolean _stopAtShutdown;
+    private int _maxCookieVersion=1;
     
+
     /* ------------------------------------------------------------ */
     public Server()
     {
@@ -83,7 +81,7 @@ public class Server extends HandlerWrapper implements Attributes
     
     /* ------------------------------------------------------------ */
     /** Convenience constructor
-     * Creates server and a {@link SocketConnector} at the passed port.
+     * Creates server and a {@link SelectChannelConnector} at the passed port.
      */
     public Server(int port)
     {
@@ -91,6 +89,20 @@ public class Server extends HandlerWrapper implements Attributes
 
         Connector connector=new SelectChannelConnector();
         connector.setPort(port);
+        setConnectors(new Connector[]{connector});
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Convenience constructor
+     * Creates server and a {@link SelectChannelConnector} at the passed address.
+     */
+    public Server(InetSocketAddress addr)
+    {
+        setServer(this);
+
+        Connector connector=new SelectChannelConnector();
+        connector.setHost(addr.getHostName());
+        connector.setPort(addr.getPort());
         setConnectors(new Connector[]{connector});
     }
 
@@ -198,7 +210,13 @@ public class Server extends HandlerWrapper implements Attributes
         HttpGenerator.setServerVersion(_version);
         MultiException mex=new MultiException();
 
-        Iterator itor = _dependentBeans.iterator();
+        if (_threadPool==null)
+        {
+            QueuedThreadPool tp=new QueuedThreadPool();
+            setThreadPool(tp);
+        }
+        
+        Iterator<Object> itor = _dependentBeans.iterator();
         while (itor.hasNext())
         {   
             try
@@ -208,12 +226,6 @@ public class Server extends HandlerWrapper implements Attributes
                     ((LifeCycle)o).start(); 
             }
             catch (Throwable e) {mex.add(e);}
-        }
-        
-        if (_threadPool==null)
-        {
-            QueuedThreadPool tp=new QueuedThreadPool();
-            setThreadPool(tp);
         }
         
         if (_sessionIdManager!=null)
@@ -299,7 +311,7 @@ public class Server extends HandlerWrapper implements Attributes
         
         if (!_dependentBeans.isEmpty())
         {
-            ListIterator itor = _dependentBeans.listIterator(_dependentBeans.size());
+            ListIterator<Object> itor = _dependentBeans.listIterator(_dependentBeans.size());
             while (itor.hasPrevious())
             {
                 try
@@ -313,7 +325,9 @@ public class Server extends HandlerWrapper implements Attributes
         }
        
         mex.ifExceptionThrow();
-        ShutdownThread.deregister(this);
+
+        if (getStopAtShutdown())
+            ShutdownThread.deregister(this);
     }
 
     /* ------------------------------------------------------------ */
@@ -436,13 +450,30 @@ public class Server extends HandlerWrapper implements Attributes
     {
         return _sendDateHeader;
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /** Get the maximum cookie version.
+     * @return the maximum set-cookie version sent by this server
+     */
+    public int getMaxCookieVersion()
+    {
+        return _maxCookieVersion;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the maximum cookie version.
+     * @param maxCookieVersion the maximum set-cookie version sent by this server
+     */
+    public void setMaxCookieVersion(int maxCookieVersion)
+    {
+        _maxCookieVersion = maxCookieVersion;
+    }
 
     /* ------------------------------------------------------------ */
     /**
      * Add a LifeCycle object to be started/stopped
      * along with the Server.
-     * @deprecated Use {@link #addBean(LifeCycle)}
+     * @deprecated Use {@link #addBean(Object)}
      * @param c
      */
     @Deprecated
@@ -457,7 +488,7 @@ public class Server extends HandlerWrapper implements Attributes
      * The bean will be added to the servers {@link Container}
      * and if it is a {@link LifeCycle} instance, it will be 
      * started/stopped along with the Server.
-     * @param c
+     * @param o the bean object to add
      */
     public void addBean(Object o)
     {
@@ -498,6 +529,34 @@ public class Server extends HandlerWrapper implements Attributes
                 beans.add((T)o);
         }
         return beans;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Get dependent bean of a specific class.
+     * If more than one bean of the type exist, the first is returned.
+     * @see #addBean(Object)
+     * @param clazz
+     * @return bean or null
+     */
+    public <T> T getBean(Class<T> clazz)
+    {
+        Iterator<?> iter = _dependentBeans.iterator();
+        T t=null;
+        int count=0;
+        while (iter.hasNext())
+        {
+            Object o = iter.next();
+            if (clazz.isInstance(o))
+            {
+                count++;
+                if (t==null)
+                    t=(T)o;
+            }
+        }
+        if (count>1)
+            Log.debug("getBean({}) 1 of {}",clazz.getName(),count);
+        
+        return t;
     }
     
     /**
@@ -578,7 +637,7 @@ public class Server extends HandlerWrapper implements Attributes
 
     /* ------------------------------------------------------------ */
     /**
-     * Set graceful shutdown timeout.  If set, the {@link #doStop()} method will not immediately stop the 
+     * Set graceful shutdown timeout.  If set, the internal <code>doStop()</code> method will not immediately stop the 
      * server. Instead, all {@link Connector}s will be closed so that new connections will not be accepted
      * and all handlers that implement {@link Graceful} will be put into the shutdown mode so that no new requests
      * will be accepted, but existing requests can complete.  The server will then wait the configured timeout 

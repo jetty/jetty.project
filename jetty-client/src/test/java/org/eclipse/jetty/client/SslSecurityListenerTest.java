@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CyclicBarrier;
@@ -170,7 +171,7 @@ public class SslSecurityListenerTest extends TestCase
         sh.setAuthenticator(authenticator);
         
         Set<String> roles = new HashSet<String>(Arrays.asList(new String[]{"user", "admin"}));
-        sh.setConstraintMappings(new ConstraintMapping[] { cm }, roles);
+        sh.setConstraintMappings(Collections.singletonList(cm), roles);
         _server.setHandler(sh);
 
         Handler testHandler = new AbstractHandler()

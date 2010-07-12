@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server.handler;
@@ -73,31 +73,35 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
 /** ContextHandler.
- * 
+ *
  * This handler wraps a call to handle by setting the context and
  * servlet path, plus setting the context classloader.
- * 
+ *
  * <p>
  * If the context init parameter "org.eclipse.jetty.server.context.ManagedAttributes"
  * is set to a comma separated list of names, then they are treated as context
  * attribute names, which if set as attributes are passed to the servers Container
  * so that they may be managed with JMX.
- * 
+ *
  * @org.apache.xbean.XBean description="Creates a basic HTTP context"
- *
- * 
- *
  */
 public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful
 {
     private static final ThreadLocal<Context> __context=new ThreadLocal<Context>();
-    public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
     
+    /**
+     * If a context attribute with this name is set, it is interpreted as a 
+     * comma separated list of attribute name. Any other context attributes that
+     * are set with a name from this list will result in a call to {@link #setManagedAttribute(String, Object)},
+     * which typically initiates the creation of a JMX MBean for the attribute value.
+     */
+    public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
+
     /* ------------------------------------------------------------ */
     /** Get the current ServletContext implementation.
      * This call is only valid during a call to doStart and is available to
      * nested handlers to access the context.
-     * 
+     *
      * @return ServletContext implementation
      */
     public static Context getCurrentContext()
@@ -106,14 +110,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     protected Context _scontext;
-    
-    private AttributesMap _attributes;
-    private AttributesMap _contextAttributes;
+
+    private final AttributesMap _attributes;
+    private final AttributesMap _contextAttributes;
+    private final Map<String,String> _initParams;
     private ClassLoader _classLoader;
     private String _contextPath="/";
-    private Map<String,String> _initParams;
     private String _displayName;
-    private Resource _baseResource;  
+    private Resource _baseResource;
     private MimeTypes _mimeTypes;
     private Map<String,String> _localeEncodingMap;
     private String[] _welcomeFiles;
@@ -134,49 +138,51 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     private Map<String,Object> _managedAttributes;
 
     private boolean _shutdown=false;
-    private boolean _available=true;  
+    private boolean _available=true;
     private volatile int _availability;  // 0=STOPPED, 1=AVAILABLE, 2=SHUTDOWN, 3=UNAVAILABLE
-    
+
     private final static int __STOPPED=0,__AVAILABLE=1,__SHUTDOWN=2,__UNAVAILABLE=3;
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /**
-     * 
+     *
      */
     public ContextHandler()
     {
         super();
         _scontext=new Context();
         _attributes=new AttributesMap();
+        _contextAttributes=new AttributesMap();
         _initParams=new HashMap<String,String>();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * 
+     *
      */
     protected ContextHandler(Context context)
     {
         super();
         _scontext=context;
         _attributes=new AttributesMap();
+        _contextAttributes=new AttributesMap();
         _initParams=new HashMap<String,String>();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * 
+     *
      */
     public ContextHandler(String contextPath)
     {
         this();
         setContextPath(contextPath);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * 
+     *
      */
     public ContextHandler(HandlerContainer parent, String contextPath)
     {
@@ -193,7 +199,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         return _scontext;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return the allowNullPathInfo true if /context is not redirected to /context/
@@ -221,13 +227,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             Server old_server=getServer();
             if (old_server!=null && old_server!=server)
                 old_server.getContainer().update(this, _errorHandler, null, "error",true);
-            super.setServer(server); 
+            super.setServer(server);
             if (server!=null && server!=old_server)
                 server.getContainer().update(this, null, _errorHandler, "error",true);
-            _errorHandler.setServer(server); 
+            _errorHandler.setServer(server);
         }
         else
-            super.setServer(server); 
+            super.setServer(server);
     }
 
     /* ------------------------------------------------------------ */
@@ -247,8 +253,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         if ( vhosts == null )
         {
             _vhosts = vhosts;
-        } 
-        else 
+        }
+        else
         {
             _vhosts = new String[vhosts.length];
             for ( int i = 0; i < vhosts.length; i++ )
@@ -274,8 +280,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
-    /** 
-     * @deprecated use {@link #setConnectorNames(String[])} 
+    /**
+     * @deprecated use {@link #setConnectorNames(String[])}
      */
     @Deprecated
     public void setHosts(String[] hosts)
@@ -302,15 +308,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         if (_connectors==null || _connectors.size()==0)
             return null;
-            
+
         return _connectors.toArray(new String[_connectors.size()]);
     }
 
     /* ------------------------------------------------------------ */
     /** Set the names of accepted connectors.
-     * 
+     *
      * Names are either "host:port" or a specific configured name for a connector.
-     * 
+     *
      * @param connectors If non null, an array of connector names that this context
      * will accept a request from.
      */
@@ -321,9 +327,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         else
             _connectors= new HashSet<String>(Arrays.asList(connectors));
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see javax.servlet.ServletContext#getAttribute(java.lang.String)
      */
     public Object getAttribute(String name)
@@ -332,7 +338,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see javax.servlet.ServletContext#getAttributeNames()
      */
     @SuppressWarnings("unchecked")
@@ -340,7 +346,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         return AttributesMap.getAttributeNamesCopy(_attributes);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the attributes.
@@ -349,7 +355,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         return _attributes;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the classLoader.
@@ -402,9 +408,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         return _contextPath;
     }
-   
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see javax.servlet.ServletContext#getInitParameter(java.lang.String)
      */
     public String getInitParameter(String name)
@@ -413,7 +419,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see javax.servlet.ServletContext#getInitParameterNames()
      */
     @SuppressWarnings("unchecked")
@@ -421,7 +427,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         return Collections.enumeration(_initParams.keySet());
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the initParams.
@@ -432,7 +438,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see javax.servlet.ServletContext#getServletContextName()
      */
     public String getDisplayName()
@@ -445,7 +451,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         return _eventListeners;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Set the context event listeners.
@@ -460,26 +466,26 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         _contextAttributeListeners=null;
         _requestListeners=null;
         _requestAttributeListeners=null;
-        
+
         _eventListeners=eventListeners;
-        
+
         for (int i=0; eventListeners!=null && i<eventListeners.length;i ++)
         {
             EventListener listener = _eventListeners[i];
-            
+
             if (listener instanceof ServletContextListener)
                 _contextListeners= LazyList.add(_contextListeners, listener);
-            
+
             if (listener instanceof ServletContextAttributeListener)
                 _contextAttributeListeners= LazyList.add(_contextAttributeListeners, listener);
-            
+
             if (listener instanceof ServletRequestListener)
                 _requestListeners= LazyList.add(_requestListeners, listener);
-            
+
             if (listener instanceof ServletRequestAttributeListener)
                 _requestAttributeListeners= LazyList.add(_requestAttributeListeners, listener);
         }
-    }     
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -489,7 +495,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     * @see ServletRequestListener
     * @see ServletRequestAttributeListener
     */
-    public void addEventListener(EventListener listener) 
+    public void addEventListener(EventListener listener)
     {
         setEventListeners((EventListener[])LazyList.addToArray(getEventListeners(), listener, EventListener.class));
     }
@@ -557,34 +563,34 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         return _logger;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setLogger(Logger logger)
     {
         _logger=logger;
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStart()
      */
     @Override
     protected void doStart() throws Exception
     {
         _availability=__STOPPED;
-        
+
         if (_contextPath==null)
             throw new IllegalStateException("Null contextPath");
-        
+
         _logger=Log.getLogger(getDisplayName()==null?getContextPath():getDisplayName());
         ClassLoader old_classloader=null;
         Thread current_thread=null;
         Context old_context=null;
 
-        _contextAttributes=new AttributesMap();
+        _contextAttributes.clearAttributes();
         try
         {
-            
+
             // Set the classloader
             if (_classLoader!=null)
             {
@@ -592,46 +598,40 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 old_classloader=current_thread.getContextClassLoader();
                 current_thread.setContextClassLoader(_classLoader);
             }
-            
+
 
             if (_mimeTypes==null)
                 _mimeTypes=new MimeTypes();
-            
+
             old_context=__context.get();
             __context.set(_scontext);
-            
-            if (_errorHandler==null)
-                setErrorHandler(new ErrorHandler());
-            
-            
+
             // defers the calling of super.doStart()
             startContext();
-            
 
             _availability=_shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE;
         }
         finally
         {
             __context.set(old_context);
-            
+
             // reset the classloader
             if (_classLoader!=null)
             {
                 current_thread.setContextClassLoader(old_classloader);
             }
-            
+
         }
     }
 
     /* ------------------------------------------------------------ */
     /**
      * Extensible startContext.
-     * this method is called from {@link ContextHandler#doStart()} instead of a 
+     * this method is called from {@link ContextHandler#doStart()} instead of a
      * call to super.doStart().   This allows derived classes to insert additional
      * handling (Eg configuration) before the call to super.doStart by this method
      * will start contained handlers.
-     * @see org.eclipse.jetty.Scope.Context
-     * @see org.eclipse.jetty.webapp.WebAppContext
+     * @see org.eclipse.jetty.server.handler.ContextHandler.Context
      */
     protected void startContext()
     	throws Exception
@@ -643,21 +643,21 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             String[] attributes = managedAttributes.split(",");
             for (String attribute : attributes)
                 _managedAttributes.put(attribute,null);
-            
+
             Enumeration e = _scontext.getAttributeNames();
             while(e.hasMoreElements())
             {
                 String name = (String)e.nextElement();
                 Object value = _scontext.getAttribute(name);
-                setManagedAttribute(name,value);
+                checkManagedAttribute(name,value);
             }
-        }       
-        
+        }
+
         super.doStart();
 
         if (_errorHandler!=null)
             _errorHandler.start();
-        
+
         // Context listeners
         if (_contextListeners != null )
         {
@@ -668,14 +668,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
         }
     }
-    
+
     
     
     public void callContextInitialized (ServletContextListener l, ServletContextEvent e)
     {
         l.contextInitialized(e);
     }
-    
+
     public void callContextDestroyed (ServletContextListener l, ServletContextEvent e)
     {
         l.contextDestroyed(e);
@@ -684,14 +684,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     
     
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
      */
     @Override
     protected void doStop() throws Exception
     {
         _availability=__STOPPED;
-        
+
         ClassLoader old_classloader=null;
         Thread current_thread=null;
 
@@ -706,9 +706,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 old_classloader=current_thread.getContextClassLoader();
                 current_thread.setContextClassLoader(_classLoader);
             }
-            
+
             super.doStop();
-            
+
             // Context listeners
             if (_contextListeners != null )
             {
@@ -721,12 +721,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
             if (_errorHandler!=null)
                 _errorHandler.stop();
-            
+
             Enumeration e = _scontext.getAttributeNames();
             while(e.hasMoreElements())
             {
                 String name = (String)e.nextElement();
-                setManagedAttribute(name,null);
+                checkManagedAttribute(name,null);
             }
         }
         finally
@@ -737,20 +737,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 current_thread.setContextClassLoader(old_classloader);
         }
 
-        if (_contextAttributes!=null)
-            _contextAttributes.clearAttributes();
-        _contextAttributes=null;
+        _contextAttributes.clearAttributes();
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     public boolean checkContext(final String target, final Request baseRequest, final HttpServletResponse response)
             throws IOException, ServletException
-    {   
+    {
         DispatcherType dispatch=baseRequest.getDispatcherType();
-        
+
         switch(_availability)
         {
             case __STOPPED:
@@ -763,14 +761,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 if((DispatcherType.REQUEST.equals(dispatch) && baseRequest.isHandled()))
                     return false;
         }
-        
+
         // Check the vhosts
         if (_vhosts!=null && _vhosts.length>0)
         {
             String vhost = normalizeHostname( baseRequest.getServerName());
 
             boolean match=false;
-            
+
             // TODO non-linear lookup
             for (int i=0;!match && i<_vhosts.length;i++)
             {
@@ -785,7 +783,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             if (!match)
                 return false;
         }
-        
+
         // Check the connector
         if (_connectors!=null && _connectors.size()>0)
         {
@@ -794,29 +792,31 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 return false;
         }
                 
-            
-        if (target.startsWith(_contextPath))
+        // Are we not the root context?
+        if (_contextPath.length()>1)
         {
-            if (_contextPath.length()==target.length() && _contextPath.length()>1 &&!_allowNullPathInfo)
+            // reject requests that are not for us
+            if (!target.startsWith(_contextPath))
+                return false;
+            if (target.length()>_contextPath.length() && target.charAt(_contextPath.length())!='/')
+                return false;
+            
+            // redirect null path infos
+            if (!_allowNullPathInfo && _contextPath.length()==target.length())
             {
                 // context request must end with /
                 baseRequest.setHandled(true);
                 if (baseRequest.getQueryString()!=null)
                     response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH)+"?"+baseRequest.getQueryString());
-                else 
+                else
                     response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH));
                 return false;
             }
         }
-        else
-        {
-            // Not for this context!
-            return false;
-        }
-        
+
         return true;
-    }        
-        
+    }
+
 
 
     /* ------------------------------------------------------------ */
@@ -825,7 +825,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     @Override
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    { 
+    {
         Context old_context=null;
         String old_context_path=null;
         String old_servlet_path=null;
@@ -835,9 +835,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         String pathInfo=null;
 
         DispatcherType dispatch=baseRequest.getDispatcherType();
-        
+
         old_context=baseRequest.getContext();
-  
+
         // Are we already in this context?
         if (old_context!=_scontext)
         {
@@ -848,7 +848,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                     target=URIUtil.compactPath(target);
                 if (!checkContext(target,baseRequest,response))
                     return;
-                
+
                 if (target.length()>_contextPath.length())
                 {
                     if (_contextPath.length()>1)
@@ -875,13 +875,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 current_thread.setContextClassLoader(_classLoader);
             }
         }
-        
+
         try
         {
             old_context_path=baseRequest.getContextPath();
             old_servlet_path=baseRequest.getServletPath();
             old_path_info=baseRequest.getPathInfo();
-            
+
             // Update the paths
             baseRequest.setContext(_scontext);
             if (!DispatcherType.INCLUDE.equals(dispatch) && target.startsWith("/"))
@@ -893,16 +893,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(pathInfo);
             }
-            
+
             // start manual inline of nextScope(target,baseRequest,request,response);
-            //noinspection ConstantIfStatement
-            if (false)
+            if (never())
                 nextScope(target,baseRequest,request,response);
             else if (_nextScope!=null)
                 _nextScope.doScope(target,baseRequest,request, response);
             else if (_outerScope!=null)
                 _outerScope.doHandle(target,baseRequest,request, response);
-            else 
+            else
                 doHandle(target,baseRequest,request, response);
             // end manual inline (pathentic attempt to reduce stack depth)
         }
@@ -915,16 +914,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 {
                     current_thread.setContextClassLoader(old_classloader);
                 }
-                
+
                 // reset the context and servlet path.
                 baseRequest.setContext(old_context);
                 baseRequest.setContextPath(old_context_path);
                 baseRequest.setServletPath(old_servlet_path);
-                baseRequest.setPathInfo(old_path_info); 
+                baseRequest.setPathInfo(old_path_info);
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.handler.ScopedHandler#doHandle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
@@ -954,13 +953,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                         ((ServletRequestListener)LazyList.get(_requestListeners,i)).requestInitialized(sre);
                 }
             }
-            
+
             if (DispatcherType.REQUEST.equals(dispatch) && isProtectedTarget(target))
                 throw new HttpException(HttpServletResponse.SC_NOT_FOUND);
-            
+
             // start manual inline of nextHandle(target,baseRequest,request,response);
             //noinspection ConstantIfStatement
-            if (false)
+            if (never())
                 nextHandle(target,baseRequest,request,response);
             else if (_nextScope!=null && _nextScope==_handler)
                 _nextScope.doHandle(target,baseRequest,request, response);
@@ -985,7 +984,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                     for(int i=0;i<s;i++)
                         ((ServletRequestListener)LazyList.get(_requestListeners,i)).requestDestroyed(sre);
                 }
-                
+
                 if (_requestAttributeListeners!=null)
                 {
                     for(int i=LazyList.size(_requestAttributeListeners);i-->0;)
@@ -994,12 +993,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /* Handle a runnable in this context
      */
     public void handle(Runnable runnable)
-    {   
+    {
         ClassLoader old_classloader=null;
         Thread current_thread=null;
         try
@@ -1011,7 +1010,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 old_classloader=current_thread.getContextClassLoader();
                 current_thread.setContextClassLoader(_classLoader);
             }
-            
+
             runnable.run();
         }
         finally
@@ -1028,64 +1027,49 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      * Called by {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)} when a
      * target within a context is determined.  If the target is protected, 404 is returned.
      * The default implementation always returns false.
-     * @see org.eclipse.jetty.webapp.WebAppContext#isProtectedTarget(String)
      */
     /* ------------------------------------------------------------ */
     protected boolean isProtectedTarget(String target)
-    { 
+    {
         return false;
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see javax.servlet.ServletContext#removeAttribute(java.lang.String)
      */
     public void removeAttribute(String name)
     {
-        setManagedAttribute(name,null);
+        checkManagedAttribute(name,null);
         _attributes.removeAttribute(name);
     }
 
     /* ------------------------------------------------------------ */
     /* Set a context attribute.
      * Attributes set via this API cannot be overriden by the ServletContext.setAttribute API.
-     * Their lifecycle spans the stop/start of a context.  No attribute listener events are 
+     * Their lifecycle spans the stop/start of a context.  No attribute listener events are
      * triggered by this API.
      * @see javax.servlet.ServletContext#setAttribute(java.lang.String, java.lang.Object)
      */
     public void setAttribute(String name, Object value)
     {
-        setManagedAttribute(name,value);
+        checkManagedAttribute(name,value);
         _attributes.setAttribute(name,value);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param attributes The attributes to set.
      */
     public void setAttributes(Attributes attributes)
     {
-        if (attributes instanceof AttributesMap)
+        _attributes.clearAttributes();
+        _attributes.addAll(attributes);
+        Enumeration e = _attributes.getAttributeNames();
+        while (e.hasMoreElements())
         {
-            _attributes = (AttributesMap)attributes;
-            Enumeration e = _attributes.getAttributeNames();
-            while (e.hasMoreElements())
-            {
-                String name = (String)e.nextElement();
-                setManagedAttribute(name,attributes.getAttribute(name));
-            }
-        }
-        else
-        {
-            _attributes=new AttributesMap();
-            Enumeration e = attributes.getAttributeNames();
-            while (e.hasMoreElements())
-            {
-                String name = (String)e.nextElement();
-                Object value=attributes.getAttribute(name);
-                setManagedAttribute(name,value);
-                _attributes.setAttribute(name,value);
-            }
+            String name = (String)e.nextElement();
+            checkManagedAttribute(name,attributes.getAttribute(name));
         }
     }
 
@@ -1096,27 +1080,27 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         while (e.hasMoreElements())
         {
             String name = (String)e.nextElement();
-            setManagedAttribute(name,null);
+            checkManagedAttribute(name,null);
         }
         _attributes.clearAttributes();
     }
 
     /* ------------------------------------------------------------ */
-    private void setManagedAttribute(String name, Object value)
-    {   
+    public void checkManagedAttribute(String name, Object value)
+    {
         if (_managedAttributes!=null && _managedAttributes.containsKey(name))
         {
-            Object old =_managedAttributes.put(name,value);
-            if (old!=null)
-                getServer().getContainer().removeBean(old);
-            if (value!=null)
-            {
-                if (_logger.isDebugEnabled()) _logger.debug("Managing "+name);
-                getServer().getContainer().addBean(value);
-            }
+            setManagedAttribute(name,value);
         }
     }
     
+    /* ------------------------------------------------------------ */
+    public void setManagedAttribute(String name, Object value)
+    {
+        Object old =_managedAttributes.put(name,value);
+        getServer().getContainer().update(this,old,value,name);
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * @param classLoader The classLoader to set.
@@ -1125,7 +1109,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         _classLoader = classLoader;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param contextPath The _contextPath to set.
@@ -1135,7 +1119,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         if (contextPath!=null && contextPath.length()>1 && contextPath.endsWith("/"))
             throw new IllegalArgumentException("ends with /");
         _contextPath = contextPath;
-        
+
         if (getServer()!=null && (getServer().isStarting() || getServer().isStarted()))
         {
             Handler[] contextCollections = getServer().getChildHandlersByClass(ContextHandlerCollection.class);
@@ -1143,18 +1127,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 ((ContextHandlerCollection)contextCollections[h]).mapContexts();
         }
     }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param initParams The initParams to set.
-     */
-    public void setInitParams(Map<String,String> initParams)
-    {
-        if (initParams == null)
-            return;
-        _initParams = new HashMap<String,String>(initParams);
-    }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param servletContextName The servletContextName to set.
@@ -1163,7 +1136,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         _displayName = servletContextName;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the resourceBase.
@@ -1185,12 +1158,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             return null;
         return _baseResource.toString();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param base The resourceBase to set.
      */
-    public void setBaseResource(Resource base) 
+    public void setBaseResource(Resource base)
     {
         _baseResource=base;
     }
@@ -1199,7 +1172,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /**
      * @param resourceBase The base resource as a string.
      */
-    public void setResourceBase(String resourceBase) 
+    public void setResourceBase(String resourceBase)
     {
         try
         {
@@ -1238,7 +1211,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         return _mimeTypes;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param mimeTypes The mimeTypes to set.
@@ -1251,7 +1224,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* ------------------------------------------------------------ */
     /**
      */
-    public void setWelcomeFiles(String[] files) 
+    public void setWelcomeFiles(String[] files)
     {
         _welcomeFiles=files;
     }
@@ -1262,7 +1235,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      * @see <a href="http://jcp.org/aboutJava/communityprocess/final/jsr154/index.html">The Servlet Specification</a>
      * @see #setWelcomeFiles
      */
-    public String[] getWelcomeFiles() 
+    public String[] getWelcomeFiles()
     {
         return _welcomeFiles;
     }
@@ -1288,13 +1261,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             getServer().getContainer().update(this, _errorHandler, errorHandler, "errorHandler",true);
         _errorHandler = errorHandler;
     }
-    
+
     /* ------------------------------------------------------------ */
     public int getMaxFormContentSize()
     {
         return _maxFormContentSize;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setMaxFormContentSize(int maxSize)
     {
@@ -1324,7 +1297,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     @Override
     public String toString()
     {
-        
+
         return super.toString()+"@"+Integer.toHexString(hashCode())+getContextPath()+","+getBaseResource();
     }
 
@@ -1334,13 +1307,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         if (className==null)
             return null;
-        
+
         if (_classLoader==null)
             return Loader.loadClass(this.getClass(), className);
 
         return _classLoader.loadClass(className);
     }
-    
+
 
     /* ------------------------------------------------------------ */
     public void addLocaleEncoding(String locale,String encoding)
@@ -1349,12 +1322,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             _localeEncodingMap=new HashMap<String,String>();
         _localeEncodingMap.put(locale, encoding);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Get the character encoding for a locale. The full locale name is first
      * looked up in the map of encodings. If no encoding is found, then the
-     * locale language is looked up. 
+     * locale language is looked up.
      *
      * @param locale a <code>Locale</code> value
      * @return a <code>String</code> representing the character encoding for
@@ -1369,7 +1342,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             encoding = _localeEncodingMap.get(locale.getLanguage());
         return encoding;
     }
-    
+
     public String getLocaleEncoding (String locale)
     {
         if (_localeEncodingMap==null)
@@ -1379,13 +1352,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
     
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      */
     public Resource getResource(String path) throws MalformedURLException
     {
         if (path==null || !path.startsWith(URIUtil.SLASH))
             throw new MalformedURLException(path);
-        
+
         if (_baseResource==null)
             return null;
 
@@ -1393,7 +1366,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         {
             path=URIUtil.canonicalPath(path);
             Resource resource=_baseResource.addPath(path);
-            
+
             if (!_aliases && resource.getAlias()!=null)
             {
                 if (resource.exists())
@@ -1402,20 +1375,20 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                     Log.debug("Aliased resource: "+resource+"~="+resource.getAlias());
                 return null;
             }
-            
+
             return resource;
         }
         catch(Exception e)
         {
             Log.ignore(e);
         }
-                    
+
         return null;
     }
 
     /* ------------------------------------------------------------ */
     /** Convert URL to Resource
-     * wrapper for {@link Resource#newResource(URL)} enables extensions to 
+     * wrapper for {@link Resource#newResource(URL)} enables extensions to
      * provide alternate resource implementations.
      */
     public Resource newResource(URL url) throws IOException
@@ -1425,7 +1398,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
     /* ------------------------------------------------------------ */
     /** Convert URL to Resource
-     * wrapper for {@link Resource#newResource(String)} enables extensions to 
+     * wrapper for {@link Resource#newResource(String)} enables extensions to
      * provide alternate resource implementations.
      */
     public Resource newResource(String url) throws IOException
@@ -1434,20 +1407,20 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      */
     public Set<String> getResourcePaths(String path)
-    {           
+    {
         try
         {
             path=URIUtil.canonicalPath(path);
             Resource resource=getResource(path);
-            
+
             if (resource!=null && resource.exists())
             {
                 if (!path.endsWith(URIUtil.SLASH))
                     path=path+URIUtil.SLASH;
-                
+
                 String[] l=resource.list();
                 if (l!=null)
                 {
@@ -1455,7 +1428,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                     for(int i=0;i<l.length;i++)
                         set.add(path+l[i]);
                     return set;
-                }   
+                }
             }
         }
         catch(Exception e)
@@ -1472,20 +1445,20 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         if ( host == null )
             return null;
-        
+
         if ( host.endsWith( "." ) )
             return host.substring( 0, host.length() -1);
-      
+
             return host;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Context.
      * <p>
      * A partial implementation of  {@link javax.servlet.ServletContext}.
-     * A complete implementation is provided by the derived {@link org.eclipse.jetty.servlet.ServletContextHandler.Context}.   
+     * A complete implementation is provided by the derived {@link ContextHandler}.
      * </p>
-     * 
+     *
      *
      */
     public class Context implements ServletContext
@@ -1507,14 +1480,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getContext(java.lang.String)
          */
         @Override
         public ServletContext getContext(String uripath)
         {
-            // TODO this is a very poor implementation!
-            // TODO move this to Server
             ContextHandler context=null;
             Handler[] handlers = getServer().getChildHandlersByClass(ContextHandler.class);
             for (int i=0;i<handlers.length;i++)
@@ -1523,20 +1494,21 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                     continue;
                 ContextHandler ch = (ContextHandler)handlers[i];
                 String context_path=ch.getContextPath();
-                if (uripath.equals(context_path) || (uripath.startsWith(context_path)&&uripath.charAt(context_path.length())=='/'))
+                
+                if (uripath.equals(context_path) || (uripath.startsWith(context_path)&&uripath.charAt(context_path.length())=='/') || "/".equals(context_path))
                 {
                     if (context==null || context_path.length()>context.getContextPath().length())
                         context=ch;
                 }
             }
-            
+
             if (context!=null)
                 return context._scontext;
             return null;
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getMajorVersion()
          */
         @Override
@@ -1547,7 +1519,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
       
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getMimeType(java.lang.String)
          */
         @Override
@@ -1562,7 +1534,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getMinorVersion()
          */
         @Override
@@ -1572,7 +1544,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getNamedDispatcher(java.lang.String)
          */
         @Override
@@ -1582,7 +1554,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
         
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getRequestDispatcher(java.lang.String)
          */
         @Override
@@ -1593,7 +1565,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
             if (!uriInContext.startsWith("/"))
                 return null;
-            
+
             try
             {
                 String query=null;
@@ -1619,7 +1591,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
         
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getRealPath(java.lang.String)
          */
         @Override
@@ -1631,7 +1603,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 path = URIUtil.SLASH;
             else if(path.charAt(0)!='/')
                 path = URIUtil.SLASH + path;
-                
+
             try
             {
                 Resource resource=ContextHandler.this.getResource(path);
@@ -1646,7 +1618,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             {
                 Log.ignore(e);
             }
-            
+
             return null;
         }
 
@@ -1659,9 +1631,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 return resource.getURL();
             return null;
         }
-        
+
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getResourceAsStream(java.lang.String)
          */
         @Override
@@ -1682,17 +1654,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getResourcePaths(java.lang.String)
          */
         @Override
         public Set getResourcePaths(String path)
-        {            
+        {
             return ContextHandler.this.getResourcePaths(path);
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getServerInfo()
          */
         @Override
@@ -1702,7 +1674,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getServlet(java.lang.String)
          */
         @Override
@@ -1713,7 +1685,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getServletNames()
          */
         @SuppressWarnings("unchecked")
@@ -1725,7 +1697,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getServlets()
          */
         @SuppressWarnings("unchecked")
@@ -1737,7 +1709,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#log(java.lang.Exception, java.lang.String)
          */
         @Override
@@ -1747,7 +1719,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#log(java.lang.String)
          */
         @Override
@@ -1757,7 +1729,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#log(java.lang.String, java.lang.Throwable)
          */
         @Override
@@ -1767,7 +1739,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getInitParameter(java.lang.String)
          */
         @Override
@@ -1777,7 +1749,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getInitParameterNames()
          */
         @SuppressWarnings("unchecked")
@@ -1788,7 +1760,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getAttribute(java.lang.String)
          */
         @Override
@@ -1801,7 +1773,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getAttributeNames()
          */
         @SuppressWarnings("unchecked")
@@ -1818,33 +1790,25 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             Enumeration<String> e = _attributes.getAttributeNames();
             while(e.hasMoreElements())
                 set.add(e.nextElement());
-            
+
             return Collections.enumeration(set);
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#setAttribute(java.lang.String, java.lang.Object)
          */
         @Override
         public synchronized void setAttribute(String name, Object value)
         {
-            
-            if (_contextAttributes==null)
-            {
-            	// Set it on the handler
-            	ContextHandler.this.setAttribute(name, value);
-                return;
-            }
-
-            setManagedAttribute(name,value);
+            checkManagedAttribute(name,value);
             Object old_value=_contextAttributes.getAttribute(name);
-            
+
             if (value==null)
                 _contextAttributes.removeAttribute(name);
             else
                 _contextAttributes.setAttribute(name,value);
-            
+
             if (_contextAttributeListeners!=null)
             {
                 ServletContextAttributeEvent event =
@@ -1853,7 +1817,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 for(int i=0;i<LazyList.size(_contextAttributeListeners);i++)
                 {
                     ServletContextAttributeListener l = (ServletContextAttributeListener)LazyList.get(_contextAttributeListeners,i);
-                    
+
                     if (old_value==null)
                         l.attributeAdded(event);
                     else if (value==null)
@@ -1865,21 +1829,21 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#removeAttribute(java.lang.String)
          */
         @Override
         public synchronized void removeAttribute(String name)
         {
-            setManagedAttribute(name,null);
-            
+            checkManagedAttribute(name,null);
+
             if (_contextAttributes==null)
             {
             	// Set it on the handler
             	_attributes.removeAttribute(name);
                 return;
             }
-            
+
             Object old_value=_contextAttributes.getAttribute(name);
             _contextAttributes.removeAttribute(name);
             if (old_value!=null)
@@ -1896,7 +1860,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
-        /* 
+        /*
          * @see javax.servlet.ServletContext#getServletContextName()
          */
         @Override
@@ -1914,7 +1878,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         {
             if ((_contextPath != null) && _contextPath.equals(URIUtil.SLASH))
                 return "";
-            
+
             return _contextPath;
         }
 
@@ -2128,7 +2092,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             return _minorVersion;
         }
 
-        
         public void setEffectiveMajorVersion (int v)
         {
             _majorVersion = v;

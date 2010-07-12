@@ -151,7 +151,7 @@ public class ContextFactory implements ObjectFactory
      * Keep trying ancestors of the given classloader to find one to which
      * the context is bound.
      * @param loader
-     * @return
+     * @return the context from the parent class loader
      */
     public Context getParentClassLoaderContext (ClassLoader loader)
     {

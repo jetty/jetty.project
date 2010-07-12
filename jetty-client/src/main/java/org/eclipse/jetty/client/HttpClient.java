@@ -75,11 +75,8 @@ import org.eclipse.jetty.util.thread.Timeout;
  * be allocated from a destination, so that multiple request sources are not multiplexed
  * over the same connection.
  *
- *
- *
- *
- * @see {@link HttpExchange}
- * @see {@link HttpDestination}
+ * @see HttpExchange
+ * @see HttpDestination
  */
 public class HttpClient extends HttpBuffers implements Attributes
 {
@@ -212,10 +209,6 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param name
-     * @return
-     */
     public void clearAttributes()
     {
         _attributes.clearAttributes();
@@ -287,7 +280,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     /**
      * returns the SecurityRealmResolver reg_realmResolveristered with the HttpClient or null
      *
-     * @return
+     * @return the SecurityRealmResolver reg_realmResolveristered with the HttpClient or null
      */
     public RealmResolver getRealmResolver()
     {
@@ -303,7 +296,7 @@ public class HttpClient extends HttpBuffers implements Attributes
 
     /**
      * Registers a listener that can listen to the stream of execution between the client and the
-     * server and influence events.  Sequential calls to the method wrapper sequentially wrap the preceeding
+     * server and influence events.  Sequential calls to the method wrapper sequentially wrap the preceding
      * listener in a delegation model.
      * <p/>
      * NOTE: the SecurityListener is a special listener which doesn't need to be added via this
@@ -320,7 +313,8 @@ public class HttpClient extends HttpBuffers implements Attributes
         }
         _registeredListeners.add(listenerClass);
     }
-
+    
+    /* ------------------------------------------------------------ */
     public LinkedList<String> getRegisteredListeners()
     {
         return _registeredListeners;
@@ -528,7 +522,7 @@ public class HttpClient extends HttpBuffers implements Attributes
      * if a keystore location has been provided then client will attempt to use it as the keystore,
      * otherwise we simply ignore certificates and run with a loose ssl context.
      *
-     * @return
+     * @return the SSL context
      * @throws IOException
      */
     protected SSLContext getSSLContext() throws IOException
@@ -807,12 +801,36 @@ public class HttpClient extends HttpBuffers implements Attributes
     /* ------------------------------------------------------------ */
     public void setKeyManagerPassword(String keyManagerPassword)
     {
-        this._keyManagerPassword = new Password(keyManagerPassword).toString();;
+        this._keyManagerPassword = new Password(keyManagerPassword).toString();
     }
 
     /* ------------------------------------------------------------ */
     public void setTrustStorePassword(String trustStorePassword)
     {
-        this._trustStorePassword = new Password(trustStorePassword).toString();;
+        this._trustStorePassword = new Password(trustStorePassword).toString();
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String getKeyStoreType()
+    {
+        return this._keyStoreType;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setKeyStoreType(String keyStoreType)
+    {
+        this._keyStoreType = keyStoreType;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String getTrustStoreType()
+    {
+        return this._trustStoreType;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setTrustStoreType(String trustStoreType)
+    {
+        this._trustStoreType = trustStoreType;
     }
 }

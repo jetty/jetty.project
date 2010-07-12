@@ -28,10 +28,29 @@
   <name>Jetty Tests :: Parent</name>
   <packaging>pom</packaging>
   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <configuration>
+          <!-- No Point running Findbugs on testing projects -->
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <!-- DO NOT DEPLOY (or Release) -->
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
   <modules>
     <module>test-integration</module>
     <module>test-webapps</module>
     <module>test-sessions</module>
+    <module>test-loginservice</module>
   </modules>
 </project>

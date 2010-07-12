@@ -60,6 +60,11 @@ public abstract class AbstractTestServer
         _server.setHandler(_contexts);
         _server.start();
     }
+    
+    public int getPort()
+    {
+        return _server.getConnectors()[0].getLocalPort();
+    }
 
     public ServletContextHandler addContext(String contextPath)
     {

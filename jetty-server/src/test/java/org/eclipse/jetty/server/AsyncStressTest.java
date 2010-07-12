@@ -4,24 +4,22 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -30,8 +28,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -39,8 +35,13 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-public class AsyncStressTest extends TestCase
+import static org.junit.Assert.assertEquals;
+
+public class AsyncStressTest
 {
     protected Server _server = new Server();
     protected SuspendHandler _handler = new SuspendHandler();
@@ -50,9 +51,18 @@ public class AsyncStressTest extends TestCase
     protected Random _random = new Random();
     protected QueuedThreadPool _threads=new QueuedThreadPool();
     protected boolean _stress;
+    private final static String[][] __paths =
+    {
+        {"/path","NORMAL"},
+        {"/path/info","NORMAL"},
+        {"/path?sleep=<PERIOD>","SLEPT"},
+        {"/path?suspend=<PERIOD>","TIMEOUT"},
+        {"/path?suspend=60000&resume=<PERIOD>","RESUMED"},
+        {"/path?suspend=60000&complete=<PERIOD>","COMPLETED"},
+    };
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void init() throws Exception
     {
         _stress= Boolean.getBoolean("STRESS");
         _threads.setMaxThreads(50);
@@ -66,23 +76,28 @@ public class AsyncStressTest extends TestCase
         _addr=InetAddress.getLocalHost();
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void destroy() throws Exception
     {
         _server.stop();
+        _server.join();
     }
 
-    final static String[][] __paths = 
+    @Test
+    public void testAsync() throws Throwable
     {
-        {"/path","NORMAL"},
-        {"/path/info","NORMAL"},
-        {"/path?sleep=<PERIOD>","SLEPT"},
-        {"/path?suspend=<PERIOD>","TIMEOUT"},
-        {"/path?suspend=60000&resume=<PERIOD>","RESUMED"},
-        {"/path?suspend=60000&complete=<PERIOD>","COMPLETED"},
-    };
-    
-    public void doConnections(int connections,final int loops) throws Throwable
+        if (_stress)
+        {
+            System.err.println("STRESS!");
+            doConnections(1600,240);
+        }
+        else
+        {
+            doConnections(80,80);
+        }
+    }
+
+    private void doConnections(int connections,final int loops) throws Throwable
     {
         Socket[] socket = new Socket[connections];
         int [][] path = new int[connections][loops];
@@ -109,13 +124,13 @@ public class AsyncStressTest extends TestCase
                 String uri=__paths[p][0].replace("<PERIOD>",Integer.toString(period));
 
                 long start=System.currentTimeMillis();
-                String request = 
-                    "GET "+uri+" HTTP/1.1\r\n"+
-                    "Host: localhost\r\n"+
-                    "start: "+start+"\r\n"+
-                    "result: "+__paths[p][1]+"\r\n"+
-                    ((l+1<loops)?"":"Connection: close\r\n")+
-                    "\r\n";
+                String request =
+                        "GET "+uri+" HTTP/1.1\r\n"+
+                                "Host: localhost\r\n"+
+                                "start: "+start+"\r\n"+
+                                "result: "+__paths[p][1]+"\r\n"+
+                                ((l+1<loops)?"":"Connection: close\r\n")+
+                                "\r\n";
                 socket[i].getOutputStream().write(request.getBytes("UTF-8"));
                 socket[i].getOutputStream().flush();
             }
@@ -127,7 +142,7 @@ public class AsyncStressTest extends TestCase
 
         System.err.println();
         Log.info("Sent "+(loops*__paths.length)+" requests");
-        
+
         String[] results=new String[connections];
         for (int i=0;i<connections;i++)
         {
@@ -141,14 +156,14 @@ public class AsyncStressTest extends TestCase
         Log.info("Read "+connections+" connections");
 
         for (int i=0;i<connections;i++)
-        {       
+        {
             int offset=0;
             String result=results[i];
             for (int l=0;l<loops;l++)
             {
                 String expect = __paths[path[i][l]][1];
                 expect=expect+" "+expect;
-                
+
                 offset=result.indexOf("200 OK",offset)+6;
                 offset=result.indexOf("\r\n\r\n",offset)+4;
                 int end=result.indexOf("\n",offset);
@@ -159,28 +174,15 @@ public class AsyncStressTest extends TestCase
         }
     }
 
-    public void testAsync() throws Throwable
-    {
-        if (_stress)
-        {
-            System.err.println("STRESS!");
-            doConnections(1600,240);
-        }
-        else
-        {
-            doConnections(80,80);
-        }
-    }
-    
     private static class SuspendHandler extends HandlerWrapper
     {
         private final Timer _timer;
-        
-        public SuspendHandler()
+
+        private SuspendHandler()
         {
             _timer=new Timer();
         }
-        
+
         @Override
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
@@ -189,9 +191,9 @@ public class AsyncStressTest extends TestCase
             long suspend_for=-1;
             long resume_after=-1;
             long complete_after=-1;
-            
+
             final String uri=baseRequest.getUri().toString();
-            
+
             if (request.getParameter("read")!=null)
                 read_before=Integer.parseInt(request.getParameter("read"));
             if (request.getParameter("sleep")!=null)
@@ -202,7 +204,7 @@ public class AsyncStressTest extends TestCase
                 resume_after=Integer.parseInt(request.getParameter("resume"));
             if (request.getParameter("complete")!=null)
                 complete_after=Integer.parseInt(request.getParameter("complete"));
-            
+
             if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
             {
                 if (read_before>0)
@@ -224,7 +226,6 @@ public class AsyncStressTest extends TestCase
                     asyncContext.addListener(__asyncListener);
                     if (suspend_for>0)
                         asyncContext.setTimeout(suspend_for);
-                    
                     if (complete_after>0)
                     {
                         TimerTask complete = new TimerTask()
@@ -246,7 +247,7 @@ public class AsyncStressTest extends TestCase
                                     System.err.println(baseRequest+"=="+br);
                                     System.err.println(uri+"=="+br.getUri());
                                     System.err.println(asyncContext+"=="+br.getAsyncContinuation());
-                                    
+
                                     Log.warn(e);
                                     System.exit(1);
                                 }
@@ -283,7 +284,7 @@ public class AsyncStressTest extends TestCase
                     {
                         asyncContext.dispatch();
                     }
-                    
+
                 }
                 else if (sleep_for>=0)
                 {
@@ -298,14 +299,12 @@ public class AsyncStressTest extends TestCase
                     response.setStatus(200);
                     response.getOutputStream().println("SLEPT "+request.getHeader("result"));
                     baseRequest.setHandled(true);
-                    return;
                 }
                 else
                 {
                     response.setStatus(200);
                     response.getOutputStream().println("NORMAL "+request.getHeader("result"));
                     baseRequest.setHandled(true);
-                    return;
                 }
             }
             else if (request.getAttribute("TIMEOUT")!=null)

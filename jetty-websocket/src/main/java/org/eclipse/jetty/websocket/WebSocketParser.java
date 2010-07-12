@@ -190,10 +190,26 @@ public class WebSocketParser
             _buffer.put(buffer);
             buffer.clear();
         }
-
-
     }
-
+    
+    /* ------------------------------------------------------------ */
+    static long hixieCrypt(String key)
+    {
+        // Don't ask me what all this is about.
+        // I think it's pretend secret stuff, kind of
+        // like talking in pig latin!
+        long number=0;
+        int spaces=0;
+        for (char c : key.toCharArray())
+        {
+            if (Character.isDigit(c))
+                number=number*10+(c-'0');
+            else if (c==' ')
+                spaces++;
+        }
+        return number/spaces;
+    }
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

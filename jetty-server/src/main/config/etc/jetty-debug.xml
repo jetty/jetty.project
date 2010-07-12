@@ -13,7 +13,7 @@
         <Set name="handler"><Ref id="oldhandler"/></Set>
 	<Set name="outputStream">
 	  <New class="org.eclipse.jetty.util.RolloverFileOutputStream">
-	    <Arg type="String"><SystemProperty name="jetty.logs" default="./logs"/>/yyyy_mm_dd.debug.log</Arg>
+	    <Arg type="String"><Property name="jetty.logs" default="./logs"/>/yyyy_mm_dd.debug.log</Arg>
 	    <Arg type="boolean">true</Arg> <!-- append -->
 	    <Arg type="int">90</Arg> <!-- retain days -->
 	  </New>

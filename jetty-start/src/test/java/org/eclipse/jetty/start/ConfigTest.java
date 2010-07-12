@@ -5,13 +5,13 @@
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
 //
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 //
 // The Apache License v2.0 is available at
 // http://www.apache.org/licenses/LICENSE-2.0.txt
 //
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.start;
@@ -25,31 +25,29 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import junit.framework.TestCase;
+import org.junit.Assert;
+import org.junit.Test;
 
-public class ConfigTest extends TestCase
+public class ConfigTest
 {
-    private File jettyHomeDir;
-    private File resourcesDir;
-
     private void assertEquals(String msg, Classpath expected, Classpath actual)
     {
-        assertNotNull(msg + " : expected classpath should not be null",expected);
-        assertNotNull(msg + " : actual classpath should not be null",actual);
-        assertTrue(msg + " : expected should have an entry",expected.count() >= 1);
-        assertTrue(msg + " : actual should have an entry",actual.count() >= 1);
+        Assert.assertNotNull(msg + " : expected classpath should not be null",expected);
+        Assert.assertNotNull(msg + " : actual classpath should not be null",actual);
+        Assert.assertTrue(msg + " : expected should have an entry",expected.count() >= 1);
+        Assert.assertTrue(msg + " : actual should have an entry",actual.count() >= 1);
         if (expected.count() != actual.count())
         {
             expected.dump(System.err);
             actual.dump(System.err);
-            assertEquals(msg + " : count",expected.count(),actual.count());
+            Assert.assertEquals(msg + " : count",expected.count(),actual.count());
         }
 
         List<File> actualEntries = Arrays.asList(actual.getElements());
         List<File> expectedEntries = Arrays.asList(expected.getElements());
 
         int len = expectedEntries.size();
-        
+
         for (int i = 0; i < len; i++)
         {
             File expectedFile = expectedEntries.get(i);
@@ -58,18 +56,18 @@ public class ConfigTest extends TestCase
             {
                 expected.dump(System.err);
                 actual.dump(System.err);
-                assertEquals(msg + ": entry [" + i + "]",expectedEntries.get(i),actualEntries.get(i));
+                Assert.assertEquals(msg + ": entry [" + i + "]",expectedEntries.get(i),actualEntries.get(i));
             }
         }
     }
 
     private void assertEquals(String msg, Collection<String> expected, Collection<String> actual)
     {
-        assertTrue(msg + " : expected should have an entry",expected.size() >= 1);
-        assertEquals(msg + " : size",expected.size(),actual.size());
+        Assert.assertTrue(msg + " : expected should have an entry",expected.size() >= 1);
+        Assert.assertEquals(msg + " : size",expected.size(),actual.size());
         for (String expectedVal : expected)
         {
-            assertTrue(msg + " : should contain <" + expectedVal + ">",actual.contains(expectedVal));
+            Assert.assertTrue(msg + " : should contain <" + expectedVal + ">",actual.contains(expectedVal));
         }
     }
 
@@ -81,12 +79,7 @@ public class ConfigTest extends TestCase
 
     private File getJettyHomeDir()
     {
-        if (jettyHomeDir == null)
-        {
-            jettyHomeDir = new File(getTestResourcesDir(),"jetty.home");
-        }
-
-        return jettyHomeDir;
+        return new File(getTestResourcesDir(),"jetty.home");
     }
 
     private String getTestableJettyHome()
@@ -96,19 +89,15 @@ public class ConfigTest extends TestCase
 
     private File getTestResourcesDir()
     {
-        if (resourcesDir == null)
-        {
-            File src = new File(System.getProperty("user.dir"),"src");
-            File test = new File(src,"test");
-            resourcesDir = new File(test,"resources");
-        }
-
-        return resourcesDir;
+        File src = new File(System.getProperty("user.dir"),"src");
+        File test = new File(src,"test");
+        return new File(test,"resources");
     }
 
-    /**
+    /*
      * Test for SUBJECT "/=" for assign canonical path
      */
+    @Test
     public void testSubjectAssignCanonicalPath() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -117,12 +106,13 @@ public class ConfigTest extends TestCase
         Config cfg = new Config();
         cfg.parse(buf);
 
-        assertEquals(getTestResourcesDir().getCanonicalPath(),cfg.getProperty("test.resources.dir"));
+        Assert.assertEquals(getTestResourcesDir().getCanonicalPath(),cfg.getProperty("test.resources.dir"));
     }
 
-    /**
+    /*
      * Test for SUBJECT "~=" for assigning Start Properties
      */
+    @Test
     public void testSubjectAssignStartProperty() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -132,13 +122,14 @@ public class ConfigTest extends TestCase
         Config options = new Config();
         options.parse(buf);
 
-        assertEquals("foo",options.getProperty("test.jetty.start.text"));
-        assertEquals("Eatagramovabits",options.getProperty("test.jetty.start.quote"));
+        Assert.assertEquals("foo",options.getProperty("test.jetty.start.text"));
+        Assert.assertEquals("Eatagramovabits",options.getProperty("test.jetty.start.quote"));
     }
 
-    /**
+    /*
      * Test for SUBJECT "=" for assigning System Properties
      */
+    @Test
     public void testSubjectAssignSystemProperty() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -148,13 +139,14 @@ public class ConfigTest extends TestCase
         Config options = new Config();
         options.parse(buf);
 
-        assertEquals("foo",System.getProperty("test.jetty.start.text"));
-        assertEquals("Eatagramovabits",System.getProperty("test.jetty.start.quote"));
+        Assert.assertEquals("foo",System.getProperty("test.jetty.start.text"));
+        Assert.assertEquals("Eatagramovabits",System.getProperty("test.jetty.start.quote"));
     }
 
-    /**
+    /*
      * Test for SUBJECT ending with "/**", all jar and zip components in dir (deep, recursive)
      */
+    @Test
     public void testSubjectComponentDirDeep() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -191,9 +183,10 @@ public class ConfigTest extends TestCase
         assertEquals("Components (Deep)",expected,actual);
     }
 
-    /**
+    /*
      * Test for SUBJECT ending with "/*", all jar and zip components in dir (shallow, no recursion)
      */
+    @Test
     public void testSubjectComponentDirShallow() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -225,9 +218,10 @@ public class ConfigTest extends TestCase
         assertEquals("Components (Shallow)",expected,actual);
     }
 
-    /**
+    /*
      * Test for SUBJECT ending with ".class", a Main Class
      */
+    @Test
     public void testSubjectMainClass() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -236,12 +230,13 @@ public class ConfigTest extends TestCase
         Config options = new Config();
         options.parse(buf);
 
-        assertEquals("org.eclipse.jetty.xml.XmlConfiguration",options.getMainClassname());
+        Assert.assertEquals("org.eclipse.jetty.xml.XmlConfiguration",options.getMainClassname());
     }
 
-    /**
+    /*
      * Test for SUBJECT ending with ".class", a Main Class
      */
+    @Test
     public void testSubjectMainClassConditionalPropertySet() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -252,12 +247,13 @@ public class ConfigTest extends TestCase
         options.setProperty("start.class","net.company.server.Start");
         options.parse(buf);
 
-        assertEquals("net.company.server.Start",options.getMainClassname());
+        Assert.assertEquals("net.company.server.Start",options.getMainClassname());
     }
 
-    /**
+    /*
      * Test for SUBJECT ending with ".class", a Main Class
      */
+    @Test
     public void testSubjectMainClassConditionalPropertyUnset() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -268,12 +264,13 @@ public class ConfigTest extends TestCase
         // The "start.class" property is unset.
         options.parse(buf);
 
-        assertEquals("org.eclipse.jetty.xml.XmlConfiguration",options.getMainClassname());
+        Assert.assertEquals("org.eclipse.jetty.xml.XmlConfiguration",options.getMainClassname());
     }
 
-    /**
+    /*
      * Test for SUBJECT ending with "/", a simple Classpath Entry
      */
+    @Test
     public void testSubjectSimpleComponent() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -293,9 +290,10 @@ public class ConfigTest extends TestCase
         assertEquals("Simple Component",expected,actual);
     }
 
-    /**
+    /*
      * Test for SUBJECT ending with "/", a simple Classpath Entry
      */
+    @Test
     public void testSubjectSimpleComponentMultiple() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -317,9 +315,10 @@ public class ConfigTest extends TestCase
         assertEquals("Simple Component",expected,actual);
     }
 
-    /**
+    /*
      * Test for SUBJECT ending with "/", a simple Classpath Entry
      */
+    @Test
     public void testSubjectSimpleComponentNotExists() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -340,9 +339,10 @@ public class ConfigTest extends TestCase
         assertEquals("Simple Component",expected,actual);
     }
 
-    /**
+    /*
      * Test for SUBJECT ending with ".xml", an XML Configuration File
      */
+    @Test
     public void testSubjectXmlConfigAlt() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -359,13 +359,14 @@ public class ConfigTest extends TestCase
 
         List<String> actual = options.getXmlConfigs();
         String expected = new File("src/test/resources/test-alt.xml").getAbsolutePath();
-        assertEquals("XmlConfig.size",1,actual.size());
-        assertEquals(expected,actual.get(0));
+        Assert.assertEquals("XmlConfig.size",1,actual.size());
+        Assert.assertEquals(expected,actual.get(0));
     }
 
-    /**
+    /*
      * Test for SUBJECT ending with ".xml", an XML Configuration File
      */
+    @Test
     public void testSubjectXmlConfigDefault() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -380,13 +381,14 @@ public class ConfigTest extends TestCase
 
         List<String> actual = options.getXmlConfigs();
         String expected = getJettyEtcFile("test-jetty.xml");
-        assertEquals("XmlConfig.size",1,actual.size());
-        assertEquals(expected,actual.get(0));
+        Assert.assertEquals("XmlConfig.size",1,actual.size());
+        Assert.assertEquals(expected,actual.get(0));
     }
 
-    /**
+    /*
      * Test for SUBJECT ending with ".xml", an XML Configuration File.
      */
+    @Test
     public void testSubjectXmlConfigMultiple() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -409,9 +411,10 @@ public class ConfigTest extends TestCase
         assertEquals("Multiple XML Configs",expected,actual);
     }
 
-    /**
+    /*
      * Test Section Handling
      */
+    @Test
     public void testSectionClasspathSingle() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -426,12 +429,12 @@ public class ConfigTest extends TestCase
         options.parse(buf);
 
         Classpath defaultClasspath = options.getClasspath();
-        assertNotNull("Default Classpath should not be null",defaultClasspath);
+        Assert.assertNotNull("Default Classpath should not be null",defaultClasspath);
         Classpath foocp = options.getSectionClasspath("Foo");
-        assertNull("Foo Classpath should not exist",foocp);
+        Assert.assertNull("Foo Classpath should not exist",foocp);
 
         Classpath allcp = options.getSectionClasspath("All");
-        assertNotNull("Classpath section 'All' should exist",allcp);
+        Assert.assertNotNull("Classpath section 'All' should exist",allcp);
 
         File lib = new File(getJettyHomeDir(),"lib");
 
@@ -441,10 +444,11 @@ public class ConfigTest extends TestCase
 
         assertEquals("Single Classpath Section",expected,allcp);
     }
-    
-    /**
+
+    /*
      * Test Section Handling
      */
+    @Test
     public void testSectionClasspathAvailable() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -459,12 +463,12 @@ public class ConfigTest extends TestCase
         options.parse(buf);
 
         Classpath defaultClasspath = options.getClasspath();
-        assertNotNull("Default Classpath should not be null",defaultClasspath);
+        Assert.assertNotNull("Default Classpath should not be null",defaultClasspath);
         Classpath foocp = options.getSectionClasspath("Foo");
-        assertNull("Foo Classpath should not exist",foocp);
+        Assert.assertNull("Foo Classpath should not exist",foocp);
 
         Classpath allcp = options.getSectionClasspath("All");
-        assertNotNull("Classpath section 'All' should exist",allcp);
+        Assert.assertNotNull("Classpath section 'All' should exist",allcp);
 
         File lib = new File(getJettyHomeDir(),"lib");
 
@@ -475,9 +479,10 @@ public class ConfigTest extends TestCase
         assertEquals("Single Classpath Section",expected,allcp);
     }
 
-    /**
+    /*
      * Test Section Handling, with multiple defined sections.
      */
+    @Test
     public void testSectionClasspathMultiples() throws IOException
     {
         StringBuffer buf = new StringBuffer();
@@ -506,10 +511,10 @@ public class ConfigTest extends TestCase
         cfg.parse(buf);
 
         Classpath defaultClasspath = cfg.getClasspath();
-        assertNotNull("Default Classpath should not be null",defaultClasspath);
+        Assert.assertNotNull("Default Classpath should not be null",defaultClasspath);
 
         Classpath foocp = cfg.getSectionClasspath("Foo");
-        assertNull("Foo Classpath should not exist",foocp);
+        Assert.assertNull("Foo Classpath should not exist",foocp);
 
         // Test if entire section list can be fetched
         Set<String> sections = cfg.getSectionIds();
@@ -527,7 +532,7 @@ public class ConfigTest extends TestCase
 
         // Test fetch of specific section by name works
         Classpath cpAll = cfg.getSectionClasspath("All");
-        assertNotNull("Classpath section 'All' should exist",cpAll);
+        Assert.assertNotNull("Classpath section 'All' should exist",cpAll);
 
         File lib = new File(getJettyHomeDir(),"lib");
 
@@ -539,14 +544,14 @@ public class ConfigTest extends TestCase
         expectedAll.addComponent(new File(lib,"LOGGING.JAR"));
 
         assertEquals("Classpath 'All' Section",expectedAll,cpAll);
-        
+
         // Test combined classpath fetch of multiple sections works
         List<String> activated = new ArrayList<String>();
         activated.add("server");
         activated.add("logging");
-        
+
         Classpath cpCombined = cfg.getCombinedClasspath(activated);
-        
+
         Classpath expectedCombined = new Classpath();
         // from default
         expectedCombined.addComponent(new File(lib,"spec.zip"));
@@ -559,17 +564,16 @@ public class ConfigTest extends TestCase
         // from '*'
         expectedCombined.addComponent(new File(lib,"io.jar"));
         expectedCombined.addComponent(new File(lib,"util.jar"));
-        
+
         assertEquals("Classpath combined 'server,logging'",expectedCombined,cpCombined);
     }
-    
 
-    
+    @Test
     public void testDynamicSection() throws IOException
     {
         StringBuffer buf = new StringBuffer();
         buf.append("[All,default,=$(jetty.home)/lib/*]\n");
-    
+
         String jettyHome = getTestableJettyHome();
 
         Config options = new Config();
@@ -577,32 +581,31 @@ public class ConfigTest extends TestCase
         options.parse(buf);
 
         Classpath defaultClasspath = options.getClasspath();
-        assertNotNull("Default Classpath should not be null",defaultClasspath);
+        Assert.assertNotNull("Default Classpath should not be null",defaultClasspath);
         Classpath foocp = options.getSectionClasspath("foo");
-        assertNotNull("Foo Classpath should not exist",foocp);
+        Assert.assertNotNull("Foo Classpath should not exist",foocp);
 
         Classpath allcp = options.getSectionClasspath("All");
-        assertNotNull("Classpath section 'All' should exist",allcp);
-    
+        Assert.assertNotNull("Classpath section 'All' should exist",allcp);
+
         Classpath extcp = options.getSectionClasspath("ext");
-        assertNotNull("Classpath section 'ext' should exist", extcp);
+        Assert.assertNotNull("Classpath section 'ext' should exist", extcp);
 
-        assertEquals("Deep Classpath Section",0,foocp.count());
+        Assert.assertEquals("Deep Classpath Section",0,foocp.count());
 
-        Classpath expected = new Classpath();
         File lib = new File(getJettyHomeDir(),"lib");
         File ext = new File(lib, "ext");
-        expected = new Classpath();
+        Classpath expected = new Classpath();
         expected.addComponent(new File(ext,"custom-impl.jar"));
         assertEquals("Single Classpath Section",expected,extcp);
-       
     }
-    
+
+    @Test
     public void testDeepDynamicSection() throws IOException
     {
         StringBuffer buf = new StringBuffer();
         buf.append("[All,default,=$(jetty.home)/lib/**]\n");
-    
+
 
         String jettyHome = getTestableJettyHome();
 
@@ -611,15 +614,15 @@ public class ConfigTest extends TestCase
         options.parse(buf);
 
         Classpath defaultClasspath = options.getClasspath();
-        assertNotNull("Default Classpath should not be null",defaultClasspath);
+        Assert.assertNotNull("Default Classpath should not be null",defaultClasspath);
         Classpath foocp = options.getSectionClasspath("foo");
-        assertNotNull("Foo Classpath should not exist",foocp);
+        Assert.assertNotNull("Foo Classpath should not exist",foocp);
 
         Classpath allcp = options.getSectionClasspath("All");
-        assertNotNull("Classpath section 'All' should exist",allcp);
-    
+        Assert.assertNotNull("Classpath section 'All' should exist",allcp);
+
         Classpath extcp = options.getSectionClasspath("ext");
-        assertNotNull("Classpath section 'ext' should exist", extcp);
+        Assert.assertNotNull("Classpath section 'ext' should exist", extcp);
 
         File lib = new File(getJettyHomeDir(),"lib");
 
@@ -628,11 +631,10 @@ public class ConfigTest extends TestCase
         File bar = new File(foo, "bar");
         expected.addComponent(new File(bar,"foobar.jar"));
         assertEquals("Deep Classpath Section",expected,foocp);
-        
+
         File ext = new File(lib, "ext");
         expected = new Classpath();
         expected.addComponent(new File(ext,"custom-impl.jar"));
         assertEquals("Single Classpath Section",expected,extcp);
-       
     }
 }

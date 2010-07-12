@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.security;
 
-import java.util.Arrays;
-
-import org.eclipse.jetty.util.LazyList;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * 
@@ -27,13 +26,12 @@ import org.eclipse.jetty.util.LazyList;
  */
 public class RoleInfo
 {
-    private final static String[] NO_ROLES={};
     private boolean _isAnyRole;
     private boolean _checked;
     private boolean _forbidden;
     private UserDataConstraint _userDataConstraint;
 
-    private String[] _roles = NO_ROLES;
+    private final Set<String> _roles = new CopyOnWriteArraySet<String>();
 
     public RoleInfo()
     {    
@@ -50,7 +48,7 @@ public class RoleInfo
         if (!checked)
         {
             _forbidden=false;
-            _roles=NO_ROLES;
+            _roles.clear();
             _isAnyRole=false;
         }
     }
@@ -68,7 +66,7 @@ public class RoleInfo
             _checked = true;
             _userDataConstraint = null;
             _isAnyRole=false;
-            _roles=NO_ROLES;
+            _roles.clear();
         }
     }
 
@@ -83,7 +81,7 @@ public class RoleInfo
         if (anyRole)
         {
             _checked = true;
-            _roles=NO_ROLES;
+            _roles.clear();
         }
     }
 
@@ -105,14 +103,14 @@ public class RoleInfo
         }
     }
 
-    public String[] getRoles()
+    public Set<String> getRoles()
     {
         return _roles;
     }
     
     public void addRole(String role)
     {
-        _roles=(String[])LazyList.addToArray(_roles,role,String.class);
+        _roles.add(role);
     }
 
     public void combine(RoleInfo other)
@@ -126,14 +124,15 @@ public class RoleInfo
         else if (!_isAnyRole)
         {
             for (String r : other._roles)
-                _roles=(String[])LazyList.addToArray(_roles,r,String.class);
+                _roles.add(r);
         }
         
         setUserDataConstraint(other._userDataConstraint);
     }
     
+    @Override
     public String toString()
     {
-        return "{RoleInfo"+(_forbidden?",F":"")+(_checked?",C":"")+(_isAnyRole?",*":Arrays.asList(_roles).toString())+"}";
+        return "{RoleInfo"+(_forbidden?",F":"")+(_checked?",C":"")+(_isAnyRole?",*":_roles)+"}";
     }
 }

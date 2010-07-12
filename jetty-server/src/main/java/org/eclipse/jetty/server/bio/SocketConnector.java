@@ -4,13 +4,13 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
- 
+
 package org.eclipse.jetty.server.bio;
 
 import java.io.IOException;
@@ -39,21 +39,22 @@ import org.eclipse.jetty.util.log.Log;
  * This connector implements a traditional blocking IO and threading model.
  * Normal JRE sockets are used and a thread is allocated per connection.
  * Buffers are managed so that large buffers are only allocated to active connections.
- * 
+ *
  * This Connector should only be used if NIO is not available.
- * 
+ *
  * @org.apache.xbean.XBean element="bioConnector" description="Creates a BIO based socket connector"
- * 
- * 
+ *
+ *
  */
 public class SocketConnector extends AbstractConnector
 {
     protected ServerSocket _serverSocket;
     protected final Set<EndPoint> _connections;
-    
+    protected volatile int _localPort=-1;
+
     /* ------------------------------------------------------------ */
     /** Constructor.
-     * 
+     *
      */
     public SocketConnector()
     {
@@ -65,7 +66,7 @@ public class SocketConnector extends AbstractConnector
     {
         return _serverSocket;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void open() throws IOException
     {
@@ -73,6 +74,10 @@ public class SocketConnector extends AbstractConnector
         if (_serverSocket==null || _serverSocket.isClosed())
         _serverSocket= newServerSocket(getHost(),getPort(),getAcceptQueueSize());
         _serverSocket.setReuseAddress(getReuseAddress());
+        _localPort=_serverSocket.getLocalPort();
+        if (_localPort<=0)
+            throw new IllegalStateException("port not allocated for "+this);
+            
     }
 
     /* ------------------------------------------------------------ */
@@ -81,26 +86,27 @@ public class SocketConnector extends AbstractConnector
         ServerSocket ss= host==null?
             new ServerSocket(port,backlog):
             new ServerSocket(port,backlog,InetAddress.getByName(host));
-       
+
         return ss;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void close() throws IOException
     {
         if (_serverSocket!=null)
             _serverSocket.close();
         _serverSocket=null;
+        _localPort=-2;
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void accept(int acceptorID)
     	throws IOException, InterruptedException
-    {   
+    {
         Socket socket = _serverSocket.accept();
         configure(socket);
-        
+
         ConnectorEndPoint connection=new ConnectorEndPoint(socket);
         connection.dispatch();
     }
@@ -109,7 +115,7 @@ public class SocketConnector extends AbstractConnector
     /**
      * Allows subclass to override Conection if required.
      */
-    protected HttpConnection newHttpConnection(EndPoint endpoint) 
+    protected Connection newConnection(EndPoint endpoint)
     {
         return new HttpConnection(this, endpoint, getServer());
     }
@@ -121,21 +127,15 @@ public class SocketConnector extends AbstractConnector
     {
         ConnectorEndPoint connection = (ConnectorEndPoint)endpoint;
         int lrmit = isLowResources()?_lowResourceMaxIdleTime:_maxIdleTime;
-        if (connection._sotimeout!=lrmit)
-        {
-            connection._sotimeout=lrmit;
-            ((Socket)endpoint.getTransport()).setSoTimeout(lrmit);
-        }
-              
+        connection.setMaxIdleTime(lrmit);
+
         super.customize(endpoint, request);
     }
 
     /* ------------------------------------------------------------------------------- */
     public int getLocalPort()
     {
-        if (_serverSocket==null || _serverSocket.isClosed())
-            return -1;
-        return _serverSocket.getLocalPort();
+        return _localPort;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -157,7 +157,7 @@ public class SocketConnector extends AbstractConnector
         {
             set= new HashSet(_connections);
         }
-        
+
         Iterator iter=set.iterator();
         while(iter.hasNext())
         {
@@ -173,14 +173,12 @@ public class SocketConnector extends AbstractConnector
     {
         boolean _dispatched=false;
         volatile Connection _connection;
-        int _sotimeout;
         protected final Socket _socket;
-        
+
         public ConnectorEndPoint(Socket socket) throws IOException
         {
-            super(socket);
-            _connection = newHttpConnection(this);
-            _sotimeout=socket.getSoTimeout();
+            super(socket,_maxIdleTime);
+            _connection = newConnection(this);
             _socket=socket;
         }
 
@@ -195,7 +193,7 @@ public class SocketConnector extends AbstractConnector
                 connectionUpgraded(_connection,connection);
             _connection=connection;
         }
-        
+
         public void dispatch() throws IOException
         {
             if (getThreadPool()==null || !getThreadPool().dispatch(this))
@@ -204,7 +202,7 @@ public class SocketConnector extends AbstractConnector
                 close();
             }
         }
-        
+
         @Override
         public int fill(Buffer buffer) throws IOException
         {
@@ -212,8 +210,8 @@ public class SocketConnector extends AbstractConnector
             if (l<0)
                 close();
             return l;
-        } 
-        
+        }
+
         @Override
         public void close() throws IOException
         {
@@ -231,21 +229,14 @@ public class SocketConnector extends AbstractConnector
                 {
                     _connections.add(this);
                 }
-                
+
                 while (isStarted() && !isClosed())
                 {
                     if (_connection.isIdle())
                     {
                         if (isLowResources())
-                        {
-                            int lrmit = getLowResourcesMaxIdleTime();
-                            if (lrmit>=0 && _sotimeout!= lrmit)
-                            {
-                                _sotimeout=lrmit;
-                                _socket.setSoTimeout(_sotimeout);
-                            }
-                        }
-                    }  
+                            setMaxIdleTime(getLowResourcesMaxIdleTime());
+                    }
 
                     _connection=_connection.handle();
                 }
@@ -269,7 +260,7 @@ public class SocketConnector extends AbstractConnector
                 catch(IOException e2){Log.ignore(e2);}
             }
             finally
-            { 
+            {
                 connectionClosed(_connection);
                 synchronized(_connections)
                 {

@@ -1,12 +1,13 @@
 package org.eclipse.jetty.util.statistic;
 
-import org.eclipse.jetty.util.statistic.SampleStatistic;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 
 /* ------------------------------------------------------------ */
-public class SampleStatisticTest extends TestCase
+public class SampleStatisticTest
 {
     private static long[][] data = 
     {
@@ -26,6 +27,7 @@ public class SampleStatisticTest extends TestCase
     };
     
     
+    @Test
     public void testData()
         throws Exception
     {

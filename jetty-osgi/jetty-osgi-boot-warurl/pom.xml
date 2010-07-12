@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>8.0.0.M1</version>
+    <version>8.0.0.M1-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -65,11 +65,12 @@
           </archive>
         </configuration>
       </plugin>
-      <!-- always include the sources to be able to prepare the eclipse-jetty-SDK feature
-      with a snapshot. -->
       <plugin>
-         <groupId>org.apache.maven.plugins</groupId>
-         <artifactId>maven-source-plugin</artifactId>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <configuration>
+          <onlyAnalyze>org.eclipse.jetty.osgi.boot.warurl.*</onlyAnalyze>
+        </configuration>
       </plugin>
     </plugins>
   </build>

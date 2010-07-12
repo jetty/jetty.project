@@ -90,7 +90,7 @@ public class TestableJettyServer
 
     public void addConfiguration(File xmlConfigFile) throws MalformedURLException
     {
-        xmlConfigurations.add(xmlConfigFile.toURL());
+        xmlConfigurations.add(xmlConfigFile.toURI().toURL());
     }
 
     public void addConfiguration(String testConfigName) throws MalformedURLException
@@ -103,6 +103,7 @@ public class TestableJettyServer
         properties.setProperty(key,value);
     }
 
+    @SuppressWarnings("unchecked")
     public void load() throws Exception
     {
         XmlConfiguration last = null;

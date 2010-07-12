@@ -34,16 +34,16 @@ public class MultiPartInputStreamTest extends TestCase
 {
     protected String _contentType = "multipart/form-data, boundary=AaB03x";
     protected String _multi = 
-        "--AaB03x\n"+
-        "content-disposition: form-data; name=\"field1\"\n"+
+        "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"field1\"\r\n"+
         "\r\n"+
-        "Joe Blow\n"+
-        "--AaB03x\n"+
-        "content-disposition: form-data; name=\"stuff\"; filename=\"stuff.txt\"\n"+
-        "Content-Type: text/plain\n"+
+        "Joe Blow\r\n"+
+        "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"stuff\"; filename=\"stuff.txt\"\r\n"+
+        "Content-Type: text/plain\r\n"+
         "\r\n"+
-        "000000000000000000000000000000000000000000000000000\n"+
-        "--AaB03x--";
+        "000000000000000000000000000000000000000000000000000\r\n"+
+        "--AaB03x--\r\n";
     
     protected String _dirname = System.getProperty("java.io.tmpdir")+File.separator+"myfiles-"+System.currentTimeMillis();
     
@@ -112,7 +112,7 @@ public class MultiPartInputStreamTest extends TestCase
     throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);  
-        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
+        MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()),
                                                              _contentType,
                                                              config);
         

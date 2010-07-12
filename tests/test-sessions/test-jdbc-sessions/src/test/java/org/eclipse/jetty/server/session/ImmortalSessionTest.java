@@ -12,7 +12,7 @@
 // ========================================================================
 package org.eclipse.jetty.server.session;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 /**
  * ImmortalSessionTest
@@ -22,18 +22,14 @@ import org.testng.annotations.Test;
 
 public class ImmortalSessionTest extends AbstractImmortalSessionTest
 {
-
-
     public AbstractTestServer createServer(int port, int maxInactiveMs, int scavengeMs)
     {
         return new JdbcTestServer(port, maxInactiveMs, scavengeMs);
     }
 
-
-    @Test(groups={"jdbc-all"})
+    @Test
     public void testImmortalSession() throws Exception
     {
         super.testImmortalSession();
     }
-
 }

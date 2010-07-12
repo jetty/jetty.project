@@ -45,4 +45,15 @@ public interface AsyncEndPoint extends EndPoint
      * it becomes writable.
      */
     public void scheduleWrite();
+    
+    /* ------------------------------------------------------------ */
+    /** Schedule a call to the idle timeout
+     */
+    public void scheduleIdle();   
+    
+    /* ------------------------------------------------------------ */
+    /** Cancel a call to the idle timeout
+     */
+    public void cancelIdle();
+
 }

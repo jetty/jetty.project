@@ -257,14 +257,14 @@ public class TestSecurityAnnotationConversions extends TestCase
         compareResults (expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
 
-    private void compareResults (ConstraintMapping[] expectedMappings, ConstraintMapping[] actualMappings)
+    private void compareResults (ConstraintMapping[] expectedMappings, List<ConstraintMapping> actualMappings)
     {
         assertNotNull(actualMappings);
-        assertEquals(expectedMappings.length, actualMappings.length);
+        assertEquals(expectedMappings.length, actualMappings.size());
 
-        for (int k=0; k < actualMappings.length; k++)
+        for (int k=0; k < actualMappings.size(); k++)
         {   
-            ConstraintMapping am = actualMappings[k];
+            ConstraintMapping am = actualMappings.get(k);
             boolean matched  = false;
           
             for (int i=0; i< expectedMappings.length && !matched; i++)

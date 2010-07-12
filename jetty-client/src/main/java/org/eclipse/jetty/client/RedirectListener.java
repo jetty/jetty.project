@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Buffer;
 
@@ -26,8 +27,8 @@ import org.eclipse.jetty.io.Buffer;
  */
 public class RedirectListener extends HttpEventListenerWrapper
 {
+    private final HttpExchange _exchange;
     private HttpDestination _destination;
-    private HttpExchange _exchange;
     private String _location;
     private int _attempts;
     private boolean _requestComplete;
@@ -44,6 +45,7 @@ public class RedirectListener extends HttpEventListenerWrapper
         _exchange = ex;
     }
 
+    @Override
     public void onResponseStatus( Buffer version, int status, Buffer reason )
         throws IOException
     {
@@ -61,6 +63,7 @@ public class RedirectListener extends HttpEventListenerWrapper
     }
 
 
+    @Override
     public void onResponseHeader( Buffer name, Buffer value )
         throws IOException
     {
@@ -77,6 +80,7 @@ public class RedirectListener extends HttpEventListenerWrapper
         super.onResponseHeader(name,value);
     }
 
+    @Override
     public void onRequestComplete() throws IOException
     {
         _requestComplete = true;
@@ -87,6 +91,7 @@ public class RedirectListener extends HttpEventListenerWrapper
         }
     }
 
+    @Override
     public void onResponseComplete() throws IOException
     {
         _responseComplete = true;
@@ -109,7 +114,23 @@ public class RedirectListener extends HttpEventListenerWrapper
                 else
                     _exchange.setURI(_location);
 
-                _destination.resend(_exchange);
+                // destination may have changed
+                HttpDestination destination=_destination.getHttpClient().getDestination(_exchange.getAddress(),HttpSchemes.HTTPS.equals(String.valueOf(_exchange.getScheme())));
+                
+                if (_destination==destination)
+                    _destination.resend(_exchange);
+                else
+                {
+                    // unwrap to find ultimate listener.
+                    HttpEventListener listener=this;
+                    while(listener instanceof HttpEventListenerWrapper)
+                        listener=((HttpEventListenerWrapper)listener).getEventListener();
+                    //reset the listener
+                    _exchange.getEventListener().onRetry();
+                    _exchange.reset();
+                    _exchange.setEventListener(listener);
+                    destination.send(_exchange);
+                }
 
                 return false;
             }

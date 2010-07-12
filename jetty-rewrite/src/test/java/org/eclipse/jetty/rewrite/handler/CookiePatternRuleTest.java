@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 package org.eclipse.jetty.rewrite.handler;
 
@@ -17,24 +17,29 @@ import java.util.Enumeration;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.junit.Before;
+import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 
 public class CookiePatternRuleTest extends AbstractRuleTestCase
-{   
-    public void setUp() throws Exception
+{
+    @Before
+    public void init() throws Exception
     {
-        super.setUp();
+        start(false);
     }
-    
+
+    @Test
     public void testSingleCookie() throws IOException
     {
         String[][] cookie = {
                 {"cookie", "value"}
         };
-
         assertCookies(cookie);
     }
-    
+
+    @Test
     public void testMultipleCookies() throws IOException
     {
         String[][] cookies = {
@@ -42,16 +47,13 @@ public class CookiePatternRuleTest extends AbstractRuleTestCase
                 {"name", "wolfgangpuck"},
                 {"age", "28"}
         };
-        
         assertCookies(cookies);
     }
-    
+
     private void assertCookies(String[][] cookies) throws IOException
     {
-        for (int i = 0; i < cookies.length; i++)
+        for (String[] cookie : cookies)
         {
-            String[] cookie = cookies[i];
-            
             // set cookie pattern
             CookiePatternRule rule = new CookiePatternRule();
             rule.setPattern("*");
@@ -62,7 +64,7 @@ public class CookiePatternRuleTest extends AbstractRuleTestCase
 
             // apply cookie pattern
             rule.apply(_request.getRequestURI(), _request, _response);
-            
+
             // verify
             HttpFields httpFields = _response.getHttpFields();
             Enumeration e = httpFields.getValues(HttpHeaders.SET_COOKIE_BUFFER);
@@ -72,7 +74,7 @@ public class CookiePatternRuleTest extends AbstractRuleTestCase
                 String[] result = ((String)e.nextElement()).split("=");
                 assertEquals(cookies[index][0], result[0]);
                 assertEquals(cookies[index][1], result[1]);
-                
+
                 // +1 cookies index
                 index++;
             }

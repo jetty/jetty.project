@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server.handler;
@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -33,7 +32,6 @@ import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.FileResource;
@@ -42,12 +40,12 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
 /** Resource Handler.
- * 
+ *
  * This handle will serve static content and handle If-Modified-Since headers.
  * No caching is done.
  * Requests that cannot be handled are let pass (Eg no 404's)
- * 
- * 
+ *
+ *
  * @org.apache.xbean.XBean
  */
 public class ResourceHandler extends AbstractHandler
@@ -90,7 +88,7 @@ public class ResourceHandler extends AbstractHandler
     /**
      * Set if resource aliases (eg symlink, 8.3 names, case insensitivity) are allowed.
      * Allowing aliases can significantly increase security vulnerabilities.
-     * If this handler is deployed inside a ContextHandler, then the 
+     * If this handler is deployed inside a ContextHandler, then the
      * {@link ContextHandler#isAliases()} takes precedent.
      * @param aliases True if aliases are supported.
      */
@@ -124,13 +122,13 @@ public class ResourceHandler extends AbstractHandler
     {
         Context scontext = ContextHandler.getCurrentContext();
         _context = (scontext==null?null:scontext.getContextHandler());
-        
+
         if (_context!=null)
             _aliases=_context.isAliases();
-        
+
         if (!_aliases && !FileResource.getCheckAliases())
             throw new IllegalStateException("Alias checking disabled");
-        
+
         super.doStart();
     }
 
@@ -156,12 +154,12 @@ public class ResourceHandler extends AbstractHandler
         return _baseResource.toString();
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param base The resourceBase to set.
      */
-    public void setBaseResource(Resource base) 
+    public void setBaseResource(Resource base)
     {
         _baseResource=base;
     }
@@ -170,7 +168,7 @@ public class ResourceHandler extends AbstractHandler
     /**
      * @param resourceBase The base resource as a string.
      */
-    public void setResourceBase(String resourceBase) 
+    public void setResourceBase(String resourceBase)
     {
         try
         {
@@ -203,18 +201,18 @@ public class ResourceHandler extends AbstractHandler
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      */
     public Resource getResource(String path) throws MalformedURLException
     {
         if (path==null || !path.startsWith("/"))
             throw new MalformedURLException(path);
-        
+
         Resource base = _baseResource;
         if (base==null)
         {
             if (_context==null)
-                return null;            
+                return null;
             base=_context.getBaseResource();
             if (base==null)
                 return null;
@@ -229,7 +227,7 @@ public class ResourceHandler extends AbstractHandler
         {
             Log.ignore(e);
         }
-                    
+
         return null;
     }
 
@@ -254,7 +252,7 @@ public class ResourceHandler extends AbstractHandler
     {
         _welcomeFiles=welcomeFiles;
     }
-    
+
     /* ------------------------------------------------------------ */
     protected Resource getWelcome(Resource directory) throws MalformedURLException, IOException
     {
@@ -269,14 +267,14 @@ public class ResourceHandler extends AbstractHandler
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (baseRequest.isHandled())
             return;
-        
+
         boolean skipContentBody = false;
         if(!HttpMethods.GET.equals(request.getMethod()))
         {
@@ -284,9 +282,9 @@ public class ResourceHandler extends AbstractHandler
                 return;
             skipContentBody = true;
         }
-     
+
         Resource resource=getResource(request);
-        
+
         if (resource==null || !resource.exists())
             return;
         if (!_aliases && resource.getAlias()!=null)
@@ -297,7 +295,7 @@ public class ResourceHandler extends AbstractHandler
 
         // We are going to server something
         baseRequest.setHandled(true);
-        
+
         if (resource.isDirectory())
         {
             if (!request.getPathInfo().endsWith(URIUtil.SLASH))
@@ -305,7 +303,7 @@ public class ResourceHandler extends AbstractHandler
                 response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH)));
                 return;
             }
-            
+
             Resource welcome=getWelcome(resource);
             if (welcome!=null && welcome.exists())
                 resource=welcome;
@@ -316,7 +314,7 @@ public class ResourceHandler extends AbstractHandler
                 return;
             }
         }
-        
+
         // set some headers
         long last_modified=resource.lastModified();
         if (last_modified>0)
@@ -328,11 +326,11 @@ public class ResourceHandler extends AbstractHandler
                 return;
             }
         }
-        
+
         Buffer mime=_mimeTypes.getMimeByExtension(resource.toString());
         if (mime==null)
             mime=_mimeTypes.getMimeByExtension(request.getPathInfo());
-        
+
         // set the headers
         doResponseHeaders(response,resource,mime!=null?mime.toString():null);
         response.setDateHeader(HttpHeaders.LAST_MODIFIED,last_modified);
@@ -342,7 +340,7 @@ public class ResourceHandler extends AbstractHandler
         OutputStream out =null;
         try {out = response.getOutputStream();}
         catch(IllegalStateException e) {out = new WriterOutputStream(response.getWriter());}
-        
+
         // See if a short direct method can be used?
         if (out instanceof HttpConnection.Output)
         {
@@ -369,7 +367,7 @@ public class ResourceHandler extends AbstractHandler
         else
             response.sendError(HttpStatus.FORBIDDEN_403);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Set the response headers.
      * This method is called to set the response headers such as content type and content length.
@@ -384,25 +382,25 @@ public class ResourceHandler extends AbstractHandler
             response.setContentType(mimeType);
 
         long length=resource.length();
-        
+
         if (response instanceof Response)
         {
             HttpFields fields = ((Response)response).getHttpFields();
 
             if (length>0)
                 fields.putLongField(HttpHeaders.CONTENT_LENGTH_BUFFER,length);
-                
+
             if (_cacheControl!=null)
                 fields.put(HttpHeaders.CACHE_CONTROL_BUFFER,_cacheControl);
         }
         else
         {
             if (length>0)
-                response.setHeader(HttpHeaders.CONTENT_LENGTH,TypeUtil.toString(length));
-                
+                response.setHeader(HttpHeaders.CONTENT_LENGTH,Long.toString(length));
+
             if (_cacheControl!=null)
                 response.setHeader(HttpHeaders.CACHE_CONTROL,_cacheControl.toString());
         }
-        
+
     }
 }

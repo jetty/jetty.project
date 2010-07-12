@@ -15,6 +15,7 @@ package org.eclipse.jetty.deploy;
 
 import java.util.ArrayList;
 
+import org.eclipse.jetty.deploy.providers.MonitoredDirAppProvider;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -40,7 +41,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * by {@link #getContexts()}. {@link ContextHandlerCollection#getContextClass()}
  * 
  * <p>
- * This deployer does not do hot deployment or undeployment. Nor does it support per webapplication configuration. For
+ * This deployer does not do hot deployment or undeployment. Nor does it support per web application configuration. For
  * these features see {@link ContextDeployer}.
  * 
  * @see DeploymentManager
@@ -149,7 +150,7 @@ public class WebAppDeployer extends AbstractLifeCycle
     /**
      * Get a contextAttribute that will be set for every Context deployed by this deployer.
      * @param name
-     * @return
+     * @return the attribute value
      */
     public Object getAttribute (String name)
     {

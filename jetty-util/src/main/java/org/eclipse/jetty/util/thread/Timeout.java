@@ -23,10 +23,7 @@ import org.eclipse.jetty.util.log.Log;
  * is changed, this affects all scheduled tasks.
  * <p>
  * The nested class Task should be extended by users of this class to obtain call back notification of 
- * expiries. 
- * 
- * 
- *
+ * expires. 
  */
 public class Timeout
 {
@@ -91,7 +88,7 @@ public class Timeout
      * expired Task, but without calling it's {@link Task#expire()} or
      * {@link Task#expired()} methods.
      * 
-     * @returns the next expired task or null.
+     * @return the next expired task or null.
      */
     public Task expired()
     {

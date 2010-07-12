@@ -73,6 +73,16 @@ public class LikeJettyXml
         ssl_connector.setTruststore(jetty_home + "/etc/keystore");
         ssl_connector.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         ssl_connector.setStatsOn(true);
+        ssl_connector.setExcludeCipherSuites(
+                new String[] {
+                    "SSL_RSA_WITH_DES_CBC_SHA",
+                    "SSL_DHE_RSA_WITH_DES_CBC_SHA",
+                    "SSL_DHE_DSS_WITH_DES_CBC_SHA",
+                    "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
+                    "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
+                    "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
+                    "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"
+                });
         server.addConnector(ssl_connector);
 
         HandlerCollection handlers = new HandlerCollection();

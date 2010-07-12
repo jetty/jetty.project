@@ -49,7 +49,11 @@ public abstract class WebSocketServlet extends HttpServlet
     {
         if ("WebSocket".equals(request.getHeader("Upgrade")))
         {
-            String protocol=request.getHeader("WebSocket-Protocol");
+            boolean hixie = request.getHeader("Sec-WebSocket-Key1")!=null;
+            
+            String protocol=request.getHeader(hixie?"Sec-WebSocket-Protocol":"WebSocket-Protocol");
+            if (protocol==null)
+                protocol=request.getHeader("Sec-WebSocket-Protocol");
             WebSocket websocket=doWebSocketConnect(request,protocol);
 
             String host=request.getHeader("Host");
@@ -59,7 +63,11 @@ public abstract class WebSocketServlet extends HttpServlet
             if (websocket!=null)
                 _websocket.upgrade(request,response,websocket,origin,protocol);
             else
+            {
+                if (hixie)
+                    response.setHeader("Connection","close");
                 response.sendError(503);
+            }
         }
         else
             super.service(request,response);

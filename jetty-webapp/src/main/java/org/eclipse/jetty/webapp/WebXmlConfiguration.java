@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2003-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2003-2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -34,20 +34,18 @@ public class WebXmlConfiguration implements Configuration
     
     /* ------------------------------------------------------------------------------- */
     /**
-     * Process webdefaults.xml
+     * 
      * 
      * 
      */
     public void preConfigure (WebAppContext context) throws Exception
     {
-        
-        WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
-        if (processor == null)
-        {
-            processor = new WebXmlProcessor (context);
-            context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
-        }
-        
+
+        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
+        if (metaData == null)
+            throw new IllegalStateException("No metadata");
+
+
         //parse webdefault.xml
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
@@ -55,7 +53,7 @@ public class WebXmlConfiguration implements Configuration
             Resource dftResource = Resource.newSystemResource(defaultsDescriptor);
             if (dftResource == null) 
                 dftResource = context.newResource(defaultsDescriptor);
-            processor.parseDefaults (dftResource);
+            metaData.setDefaults (dftResource);
            
         }
         
@@ -63,7 +61,7 @@ public class WebXmlConfiguration implements Configuration
         Resource webxml = findWebXml(context);
         if (webxml != null) 
         {      
-            processor.parseWebXml(webxml);
+            metaData.setWebXml(webxml);
         }
         
         //parse but don't process override-web.xml
@@ -73,7 +71,7 @@ public class WebXmlConfiguration implements Configuration
             Resource orideResource = Resource.newSystemResource(overrideDescriptor);
             if (orideResource == null) 
                 orideResource = context.newResource(overrideDescriptor);
-            processor.parseOverride(orideResource);
+            metaData.setOverride(orideResource);
         }
     }
 
@@ -90,31 +88,35 @@ public class WebXmlConfiguration implements Configuration
             if (Log.isDebugEnabled()) Log.debug("Cannot configure webapp after it is started");
             return;
         }
+
+        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
+        if (metaData == null)
+            throw new IllegalStateException("No metadata");
+
+        metaData.addDescriptorProcessor(new StandardDescriptorProcessor());
         
-        WebXmlProcessor processor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
-        if (processor == null)
+        /*
+        StandardDescriptorProcessor descriptorProcessor = (StandardDescriptorProcessor)context.getAttribute(StandardDescriptorProcessor.STANDARD_PROCESSOR);
+        if (descriptorProcessor == null)
         {
-            processor = new WebXmlProcessor (context);
-            context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, processor);
+            descriptorProcessor = new StandardDescriptorProcessor(metaData);
+            context.setAttribute(StandardDescriptorProcessor.STANDARD_PROCESSOR, descriptorProcessor);
         }
         
-      
         //process web-default.xml
-        processor.process(processor.getWebDefault());
+        descriptorProcessor.process(metaData.getWebDefault());
 
         //process web.xml 
-        processor.process(processor.getWebXml());
+        descriptorProcessor.process(metaData.getWebXml());
         
         //process override-web.xml            
-        processor.process(processor.getOverrideWeb());
-      
+        descriptorProcessor.process(metaData.getOverrideWeb());
+        */
     }
 
     public void postConfigure(WebAppContext context) throws Exception
     {
-        context.setAttribute(WebXmlProcessor.WEB_PROCESSOR, null); 
-        context.setAttribute(WebXmlProcessor.METADATA_COMPLETE, null);
-        context.setAttribute(WebXmlProcessor.WEBXML_CLASSNAMES, null); 
+        context.setAttribute(MetaData.WEBXML_CLASSNAMES, null); 
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -154,8 +156,6 @@ public class WebXmlConfiguration implements Configuration
 
         context.setEventListeners(null);
         context.setWelcomeFiles(null);
-        if (_securityHandler instanceof ConstraintAware) 
-            ((ConstraintAware) _securityHandler).setConstraintMappings(new ConstraintMapping[]{}, Collections.EMPTY_SET);
 
         if (context.getErrorHandler() instanceof ErrorPageErrorHandler)
             ((ErrorPageErrorHandler) 

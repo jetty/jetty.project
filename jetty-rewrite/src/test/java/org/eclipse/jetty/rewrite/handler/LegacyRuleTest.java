@@ -4,59 +4,58 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.rewrite.handler;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class LegacyRuleTest extends AbstractRuleTestCase
 {
-    private LegacyRule _rule;
-    
-    String[][] _tests=
+    private String[][] _tests=
     {
             {"/foo/bar","/*","/replace/foo/bar"},
             {"/foo/bar","/foo/*","/replace/bar"},
             {"/foo/bar","/foo/bar","/replace"}
     };
-    
-    public void setUp() throws Exception
+    private LegacyRule _rule;
+
+    @Before
+    public void init() throws Exception
     {
-        super.setUp();
+        start(false);
         _rule = new LegacyRule();
     }
-    
-    public void tearDown()
+
+    @After
+    public void destroy()
     {
         _rule = null;
     }
-    
+
+    @Test
     public void testMatchAndApply() throws Exception
     {
-        for (int i=0;i<_tests.length;i++)
+        for (String[] _test : _tests)
         {
-            _rule.addRewriteRule(_tests[i][1], "/replace");
-            
-            String result = _rule.matchAndApply(_tests[i][0], _request, _response);
-        
-            assertEquals(_tests[i][1], _tests[i][2], result);
+            _rule.addRewriteRule(_test[1], "/replace");
+            String result = _rule.matchAndApply(_test[0], _request, _response);
+            assertEquals(_test[1], _test[2], result);
         }
     }
-    
+
+    @Test(expected = IllegalArgumentException.class)
     public void testAddRewrite()
     {
-        try
-        {
-            _rule.addRewriteRule("*.txt", "/replace");
-            fail();
-        } 
-        catch (IllegalArgumentException e)
-        {
-        }
+        _rule.addRewriteRule("*.txt", "/replace");
     }
 }

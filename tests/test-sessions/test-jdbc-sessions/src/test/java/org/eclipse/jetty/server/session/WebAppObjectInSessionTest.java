@@ -12,7 +12,8 @@
 // ========================================================================
 package org.eclipse.jetty.server.session;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
+
 /**
  * WebAppObjectInSessionTest
  *
@@ -26,11 +27,9 @@ public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
         return new JdbcTestServer(port);
     }
 
-    @Test(groups={"jdbc-all"})
+    @Test
     public void testWebappObjectInSession() throws Exception
     {
         super.testWebappObjectInSession();
     }
-
-    
 }

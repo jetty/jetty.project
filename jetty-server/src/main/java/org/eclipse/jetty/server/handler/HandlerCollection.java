@@ -109,8 +109,8 @@ public class HandlerCollection extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
-    /* 
-     * @see org.eclipse.jetty.server.server.EventHandler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+    /**
+     * @see Handler#handle(String, Request, HttpServletRequest, HttpServletResponse)
      */
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) 
         throws IOException, ServletException

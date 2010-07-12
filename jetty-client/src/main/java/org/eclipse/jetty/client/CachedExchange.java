@@ -35,14 +35,14 @@ public class CachedExchange extends HttpExchange
         _responseFields = cacheHeaders ? new HttpFields() : null;
     }
 
-    public int getResponseStatus()
+    public synchronized int getResponseStatus()
     {
         if (getStatus() < HttpExchange.STATUS_PARSING_HEADERS)
             throw new IllegalStateException("Response not received yet");
         return _responseStatus;
     }
 
-    public HttpFields getResponseFields()
+    public synchronized HttpFields getResponseFields()
     {
         if (getStatus() < HttpExchange.STATUS_PARSING_CONTENT)
             throw new IllegalStateException("Headers not completely received yet");
@@ -50,14 +50,14 @@ public class CachedExchange extends HttpExchange
     }
 
     @Override
-    protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+    protected synchronized void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
     {
         _responseStatus = status;
         super.onResponseStatus(version, status, reason);
     }
 
     @Override
-    protected void onResponseHeader(Buffer name, Buffer value) throws IOException
+    protected synchronized void onResponseHeader(Buffer name, Buffer value) throws IOException
     {
         if (_responseFields != null)
             _responseFields.add(name, value);

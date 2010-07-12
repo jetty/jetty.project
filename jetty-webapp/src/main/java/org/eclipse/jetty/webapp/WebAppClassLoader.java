@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 
 
 /* ------------------------------------------------------------ */
@@ -38,11 +39,11 @@ import org.eclipse.jetty.util.resource.Resource;
  * Specializes URLClassLoader with some utility and file mapping
  * methods.
  *
- * This loader defaults to the 2.3 servlet spec behaviour where non
+ * This loader defaults to the 2.3 servlet spec behavior where non
  * system classes are loaded from the classpath in preference to the
  * parent loader.  Java2 compliant loading, where the parent loader
  * always has priority, can be selected with the 
- * {@link org.eclipse.jetty.server.server.webapp.WebAppContext#setParentLoaderPriority(boolean)} 
+ * {@link org.eclipse.jetty.webapp.WebAppContext#setParentLoaderPriority(boolean)} 
  * method and influenced with {@link WebAppContext#isServerClass(String)} and 
  * {@link WebAppContext#isSystemClass(String)}.
  *
@@ -123,6 +124,26 @@ public class WebAppClassLoader extends URLClassLoader
     {
         return _context;
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param resource Comma or semicolon separated path of filenames or URLs
+     * pointing to directories or jar files. Directories should end
+     * with '/'.
+     */
+    public void addClassPath(Resource resource)
+        throws IOException
+    {
+        if (resource instanceof ResourceCollection)
+        {
+            for (Resource r : ((ResourceCollection)resource).getResources())
+                addClassPath(r);
+        }
+        else
+        {
+            addClassPath(resource.toString());
+        }
+    }
     
     /* ------------------------------------------------------------ */
     /**
@@ -180,9 +201,6 @@ public class WebAppClassLoader extends URLClassLoader
     /** Add elements to the class path for the context from the jar and zip files found
      *  in the specified resource.
      * @param lib the resource that contains the jar and/or zip files.
-     * @param append true if the classpath entries are to be appended to any
-     * existing classpath, or false if they replace the existing classpath.
-     * @see #setClassPath(String)
      */
     public void addJars(Resource lib)
     {
@@ -191,10 +209,11 @@ public class WebAppClassLoader extends URLClassLoader
             String[] files=lib.list();
             for (int f=0;files!=null && f<files.length;f++)
             {
-                try {
+                try 
+                {
                     Resource fn=lib.addPath(files[f]);
                     String fnlc=fn.getName().toLowerCase();
-                    if (isFileSupported(fnlc))
+                    if (!fn.isDirectory() && isFileSupported(fnlc))
                     {
                         String jar=fn.toString();
                         jar=StringUtil.replace(jar, ",", "%2C");

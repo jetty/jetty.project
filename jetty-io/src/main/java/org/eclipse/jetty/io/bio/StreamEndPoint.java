@@ -31,6 +31,7 @@ public class StreamEndPoint implements EndPoint
 {
     InputStream _in;
     OutputStream _out;
+    int _maxIdleTime;
 
     /**
      *
@@ -72,6 +73,10 @@ public class StreamEndPoint implements EndPoint
         return !isOpen();
     }
 
+    public void shutdownOutput() throws IOException
+    {    
+    }
+    
     /*
      * @see org.eclipse.io.BufferIO#close()
      */
@@ -279,6 +284,18 @@ public class StreamEndPoint implements EndPoint
     public boolean isBufferred()
     {
         return false;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public int getMaxIdleTime()
+    {
+        return _maxIdleTime;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setMaxIdleTime(int timeMs) throws IOException
+    {
+        _maxIdleTime=timeMs;
     }
 
 }

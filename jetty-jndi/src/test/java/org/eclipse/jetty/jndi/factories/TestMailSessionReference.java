@@ -4,17 +4,16 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.jndi.factories;
 
 import java.util.Properties;
-
 import javax.mail.Session;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -22,19 +21,20 @@ import javax.naming.LinkRef;
 import javax.naming.Name;
 import javax.naming.NameParser;
 
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.jndi.NamingUtil;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
- * TestMailSessionReference
- *
  *
  */
-public class TestMailSessionReference extends TestCase
+public class TestMailSessionReference
 {
-    public void testMailSessionReference ()
-    throws Exception
+    @Test
+    public void testMailSessionReference () throws Exception
     {
         InitialContext icontext = new InitialContext();
         MailSessionReference sref = new MailSessionReference();
@@ -52,20 +52,20 @@ public class TestMailSessionReference extends TestCase
         Properties sessionProps =  session.getProperties();
         assertEquals(props, sessionProps);
         assertTrue (session.getDebug());
-        
+
         Context foo = icontext.createSubcontext("foo");
         NameParser parser = icontext.getNameParser("");
         Name objectNameInNamespace = parser.parse(icontext.getNameInNamespace());
         objectNameInNamespace.addAll(parser.parse("mail/Session"));
-        
+
         NamingUtil.bind(foo, "mail/Session", new LinkRef(objectNameInNamespace.toString()));
-        
+
         Object o = foo.lookup("mail/Session");
         assertNotNull(o);
         Session fooSession = (Session)o;
         assertEquals(props, fooSession.getProperties());
         assertTrue(fooSession.getDebug());
-        
+
         icontext.destroySubcontext("mail");
         icontext.destroySubcontext("foo");
     }

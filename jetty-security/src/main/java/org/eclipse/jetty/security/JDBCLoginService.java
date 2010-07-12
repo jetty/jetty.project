@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import org.eclipse.jetty.http.security.Password;
+import org.eclipse.jetty.http.security.Credential;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
@@ -168,7 +168,6 @@ public class JDBCLoginService extends MappedLoginService
      * Load JDBC connection configuration from properties file.
      * 
      * @param config Filename or url of user properties file.
-     * @exception java.io.IOException
      */
     public void setConfig(String config)
     {        
@@ -249,7 +248,7 @@ public class JDBCLoginService extends MappedLoginService
                     roles.add(rs.getString(_roleTableRoleField));
 
                 stat.close();
-                return putUser(username, new Password(credentials),roles.toArray(new String[roles.size()]));
+                return putUser(username, Credential.getCredential(credentials),roles.toArray(new String[roles.size()]));
             }
         }
         catch (SQLException e)

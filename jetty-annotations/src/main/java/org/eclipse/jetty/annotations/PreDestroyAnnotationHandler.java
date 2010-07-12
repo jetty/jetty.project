@@ -21,23 +21,23 @@ import javax.annotation.PreDestroy;
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.PreDestroyCallback;
+import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    WebAppContext _wac;
+    WebAppContext _context;
     LifeCycleCallbackCollection _callbacks;
     
     public PreDestroyAnnotationHandler (WebAppContext wac)
     {
         super(true);
-        _wac = wac;
-        _callbacks = (LifeCycleCallbackCollection)_wac.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
+        _context = wac;
+        _callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
     }
 
     public void doHandle(Class clazz)
-    {
-        
+    { 
         //Check that the PreDestroy is on a class that we're interested in
         if (Util.isServletType(clazz))
         {
@@ -55,7 +55,17 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
                         throw new IllegalStateException(m+" throws checked exceptions");
                     if (Modifier.isStatic(m.getModifiers()))
                         throw new IllegalStateException(m+" is static");
-
+                    
+                    //ServletSpec 3.0 p80 If web.xml declares even one predestroy then all predestroys
+                    //in fragments must be ignored. Otherwise, they are additive.                    
+                    MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+                    MetaData.Origin origin = metaData.getOrigin("pre-destroy");
+                    if (origin != null && 
+                            (origin == MetaData.Origin.WebXml ||
+                             origin == MetaData.Origin.WebDefaults || 
+                             origin == MetaData.Origin.WebOverride))
+                            return;
+                    
                     PreDestroyCallback callback = new PreDestroyCallback();
                     callback.setTarget(clazz.getName(), m.getName());
                     _callbacks.add(callback);

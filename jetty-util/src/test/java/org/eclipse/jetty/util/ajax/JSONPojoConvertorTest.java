@@ -13,15 +13,20 @@
 
 package org.eclipse.jetty.util.ajax;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
+
+
 /**
  * Test to converts POJOs to JSON and vice versa.
- * 
- * 
- *
  */
-public class JSONPojoConvertorTest extends TestCase
+public class JSONPojoConvertorTest
 {
+    @Test
     public void testFoo()
     {
         JSON json = new JSON();
@@ -66,6 +71,7 @@ public class JSONPojoConvertorTest extends TestCase
         assertEquals(Color.Green,br.getColor());
     }
     
+    @Test
     public void testExclude()
     {
         JSON json = new JSON();

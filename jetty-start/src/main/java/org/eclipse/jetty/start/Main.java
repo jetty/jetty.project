@@ -13,17 +13,18 @@
 package org.eclipse.jetty.start;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.ConnectException;
@@ -33,12 +34,11 @@ import java.security.Policy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TimeZone;
 
-import org.eclipse.jetty.start.log.RedirectedStreamLogger;
 
 /*-------------------------------------------*/
 /**
@@ -49,21 +49,28 @@ import org.eclipse.jetty.start.log.RedirectedStreamLogger;
  * 
  * <p>
  * The behaviour of Main is controlled by the parsing of the {@link Config} "org/eclipse/start/start.config" file
- * obtained as a resource or file. This can be overridden with the START system property.
+ * obtained as a resource or file.
  * </p>
  */
 public class Main
 {
+    private static final int EXIT_USAGE = 1;
+    private static final int ERR_LOGGING = -1;
+    private static final int ERR_INVOKE_MAIN = -2;
+    private static final int ERR_SECURITY = -3;
+    private static final int ERR_NOT_STOPPED = -4;
+    private static final int ERR_UNKNOWN = -5;
     private boolean _showUsage = false;
     private boolean _dumpVersions = false;
+    private boolean _listConfig = false;
     private boolean _listOptions = false;
     private boolean _dryRun = false;
     private boolean _exec = false;
     private boolean _secure = false;
-    private boolean _fromDaemon = false;
     private final Config _config = new Config();
     private Set<String> _sysProps = new HashSet<String>();
-    private List<String> _xArgs = new ArrayList<String>();
+    private List<String> _jvmArgs = new ArrayList<String>();
+    private String _startConfig = null;
 
     private String _jettyHome;
 
@@ -77,6 +84,7 @@ public class Main
         catch (Throwable t)
         {
             t.printStackTrace(System.err);
+            System.exit(ERR_UNKNOWN);
         }
     }
 
@@ -86,16 +94,43 @@ public class Main
         {
             List<String> arguments = new ArrayList<String>();
 
-            arguments.addAll(loadStartIni()); // Add Arguments from start.ini (if it exists)
-            if (args.length>0)
-                arguments.addAll(Arrays.asList(args)); // Add Arguments on Command Line
+            // add the command line args and look for start.ini args
+            boolean ini=false;
+            for (String arg : args)
+            {
+                if (arg.startsWith("--ini=")||arg.equals("--ini"))
+                {
+                    ini=true;
+                    if (arg.length()>6)
+                    {
+                        arguments.addAll(loadStartIni(arg.substring(6)));
+                        continue;
+                    }
+                }
+                else if (arg.startsWith("--config="))
+                {
+                    _startConfig=arg.substring(9);
+                }
+                else
+                {
+                    arguments.add(arg);
+                }
+            }
+            
+            // if no non-option inis, add the start.ini
+            if (!ini)
+            {
+                arguments.addAll(0,loadStartIni(null));
+            }
             
             // The XML Configuration Files to initialize with
             List<String> xmls = new ArrayList<String>();
 
+            // Process the arguments
+            int startup=0;
             for (String arg : arguments)
             {
-                if ("--help".equals(arg))
+                if ("--help".equals(arg) || "-?".equals(arg))
                 {
                     _showUsage = true;
                     continue;
@@ -103,8 +138,8 @@ public class Main
 
                 if ("--stop".equals(arg))
                 {
-                    int port = Integer.parseInt(_config.getProperty("STOP.KEY",System.getProperty("STOP.PORT","-1")));
-                    String key = _config.getProperty("STOP.KETY",System.getProperty("STOP.KEY",null));
+                    int port = Integer.parseInt(_config.getProperty("STOP.PORT",System.getProperty("STOP.PORT","-1")));
+                    String key = _config.getProperty("STOP.KEY",System.getProperty("STOP.KEY",null));
                     stop(port,key);
                     return;
                 }
@@ -121,6 +156,12 @@ public class Main
                     continue;
                 }
 
+                if ("--list-config".equals(arg))
+                {
+                    _listConfig=true;
+                    continue;
+                }
+
                 if ("--exec-print".equals(arg)||"--dry-run".equals(arg))
                 {
                     _dryRun = true;
@@ -134,12 +175,31 @@ public class Main
                 }
 
                 // Special internal indicator that jetty was started by the jetty.sh Daemon
-                if ("--fromDaemon".equals(arg))
+                if ("--daemon".equals(arg))
                 {
-                    _fromDaemon = true;
-                    PrintStream logger = new PrintStream(new RedirectedStreamLogger("daemon_yyyy_mm_dd.log",false,90,TimeZone.getTimeZone("GMT")));
+                    File startDir = new File(System.getProperty("jetty.logs","logs"));
+                    if (!startDir.exists() || !startDir.canWrite() )
+                        startDir = new File(".");
+                    File startLog = new File(startDir,"start.log");
+                    if (!startLog.exists() && !startLog.createNewFile())
+                    {
+                        // Output about error is lost in majority of cases.
+                        System.err.println("Unable to create: " + startLog.getAbsolutePath());
+                        // Toss a unique exit code indicating this failure.
+                        System.exit(ERR_LOGGING);
+                    }
+
+                    if (!startLog.canWrite())
+                    {
+                        // Output about error is lost in majority of cases.
+                        System.err.println("Unable to write to: " + startLog.getAbsolutePath());
+                        // Toss a unique exit code indicating this failure.
+                        System.exit(ERR_LOGGING);
+                    }
+                    PrintStream logger = new PrintStream(new FileOutputStream(startLog,false));
                     System.setOut(logger);
                     System.setErr(logger);
+                    System.out.println("Establishing start.log on " + new Date());
                     continue;
                 }
 
@@ -149,9 +209,9 @@ public class Main
                     continue;
                 }
 
-                if (arg.startsWith("-X"))
+                if (arg.startsWith("--pre="))
                 {
-                    _xArgs.add(arg);
+                    xmls.add(startup++,arg.substring(6));
                     continue;
                 }
                 
@@ -173,15 +233,30 @@ public class Main
                     continue;
                 }
 
+                if (arg.startsWith("-"))
+                {
+                    _jvmArgs.add(arg);
+                    continue;
+                }
+
                 // Is this a Property?
-                else if (arg.indexOf('=') >= 0)
+                if (arg.indexOf('=') >= 0)
                 {
                     String[] assign = arg.split("=",2);
 
                     switch(assign.length)
                     {
                         case 2:
-                            this._config.setProperty(assign[0],assign[1]);
+                            if ("OPTIONS".equals(assign[0]))
+                            {
+                                String opts[] = assign[1].split(",");
+                                for (String opt : opts)
+                                    _config.addActiveOption(opt);
+                            }
+                            else
+                            {
+                                this._config.setProperty(assign[0],assign[1]);
+                            }
                             break;
                         case 1:
                             this._config.setProperty(assign[0],null);
@@ -189,20 +264,12 @@ public class Main
                         default:
                             break;
                     }
+                    
                     continue;
                 }
-
+                
                 // Anything else is considered an XML file.
                 xmls.add(arg);
-            }
-
-            // Special case for OPTIONS property
-            String options = _config.getProperty("OPTIONS");
-            if (options!=null)
-            {
-                String ids[] = options.split(",");
-                for (String id : ids)
-                    _config.addActiveOption(id);
             }
             
             start(xmls);
@@ -211,18 +278,23 @@ public class Main
         {
             t.printStackTrace(System.err);
             System.out.println("Use java -jar start.jar --help for usage information.");
+            System.exit(ERR_UNKNOWN);
         }
     }
 
     /**
      * If a start.ini is present in the CWD, then load it into the argument list.
      */
-    private List<String> loadStartIni()
+    private List<String> loadStartIni(String ini)
     {
         String jettyHome=System.getProperty("jetty.home");
-        File startIniFile = (jettyHome!=null)?  new File(jettyHome,"start.ini"):new File("start.ini");
+        File startIniFile = ini==null?((jettyHome!=null)?  new File(jettyHome,"start.ini"):new File("start.ini")):new File(ini);
         if (!startIniFile.exists() || !startIniFile.canRead())
         {
+            if (ini != null)
+            {
+                System.err.println("Warning - can't find ini file: " + ini);
+            }
             // No start.ini found, skip load.
             return Collections.emptyList();
         }
@@ -239,15 +311,18 @@ public class Main
             String arg;
             while ((arg = buf.readLine()) != null)
             {
-                arg=arg.trim();
-                if (arg.length()==0 || arg.startsWith("#"))
+                arg = arg.trim();
+                if (arg.length() == 0 || arg.startsWith("#"))
+                {
                     continue;
+                }
                 args.add(arg);
             }
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
+            System.exit(ERR_UNKNOWN);
         }
         finally
         {
@@ -267,7 +342,7 @@ public class Main
         {
             System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
             System.err.println("ERROR: detailed usage resource unavailable");
-            System.exit(1);
+            System.exit(EXIT_USAGE);
         }
 
         BufferedReader buf = null;
@@ -278,61 +353,81 @@ public class Main
 
             while ((line = buf.readLine()) != null)
             {
-                if (line.startsWith("@OPTIONS@"))
+                if (line.endsWith("@") && line.indexOf('@')!=line.lastIndexOf('@'))
                 {
-                    List<String> sortedOptions = new ArrayList<String>();
-                    sortedOptions.addAll(_config.getSectionIds());
-                    Collections.sort(sortedOptions);
+                    String indent=line.substring(0,line.indexOf("@"));
+                    String info=line.substring(line.indexOf('@'),line.lastIndexOf('@'));
 
-                    System.err.println("      Available OPTIONS: ");
+                    if (info.equals("@OPTIONS"))
+                    {
+                        List<String> sortedOptions = new ArrayList<String>();
+                        sortedOptions.addAll(_config.getSectionIds());
+                        Collections.sort(sortedOptions);
 
-                    for (String option : sortedOptions)
-                    {
-                        System.err.println("         [" + option + "]");
-                    }
-                }
-                else if (line.startsWith("@CONFIGS@"))
-                {
-                    System.err.println("    Configurations Available in ${jetty.home}/etc/: ");
-                    File etc = new File(System.getProperty("jetty.home","."),"etc");
-                    if (!etc.exists())
-                    {
-                        System.err.println("      Unable to find " + etc);
-                        continue;
-                    }
-
-                    if (!etc.isDirectory())
-                    {
-                        System.err.println("      Unable list dir " + etc);
-                        continue;
-                    }
-
-                    File configs[] = etc.listFiles(new FileFilter()
-                    {
-                        public boolean accept(File path)
+                        for (String option : sortedOptions)
                         {
-                            if (!path.isFile())
-                            {
-                                return false;
-                            }
-
-                            String name = path.getName().toLowerCase();
-                            return (name.startsWith("jetty") && name.endsWith(".xml"));
+                            if ("*".equals(option) || option.trim().length()==0)
+                                continue;
+                            System.out.print(indent);
+                            System.out.println(option);
                         }
-                    });
-
-                    List<File> configFiles = new ArrayList<File>();
-                    configFiles.addAll(Arrays.asList(configs));
-                    Collections.sort(configFiles);
-
-                    for (File configFile : configFiles)
+                    }
+                    else if (info.equals("@CONFIGS"))
                     {
-                        System.err.println("         etc/" + configFile.getName());
+                        File etc = new File(System.getProperty("jetty.home","."),"etc");
+                        if (!etc.exists() || !etc.isDirectory())
+                        {
+                            System.out.print(indent);
+                            System.out.println("Unable to find/list " + etc);
+                            continue;
+                        }
+
+                        File configs[] = etc.listFiles(new FileFilter()
+                        {
+                            public boolean accept(File path)
+                            {
+                                if (!path.isFile())
+                                {
+                                    return false;
+                                }
+
+                                String name = path.getName().toLowerCase();
+                                return (name.startsWith("jetty") && name.endsWith(".xml"));
+                            }
+                        });
+
+                        List<File> configFiles = new ArrayList<File>();
+                        configFiles.addAll(Arrays.asList(configs));
+                        Collections.sort(configFiles);
+
+                        for (File configFile : configFiles)
+                        {
+                            System.out.print(indent);
+                            System.out.print("etc/");
+                            System.out.println(configFile.getName());
+                        }
+                    }
+                    else if (info.equals("@STARTINI"))
+                    {
+                        List<String> ini = loadStartIni(null);
+                        if (ini!=null && ini.size()>0)
+                        {
+                            for (String a : ini)
+                            {
+                                System.out.print(indent);
+                                System.out.println(a);
+                            }
+                        }
+                        else
+                        {
+                            System.out.print(indent);
+                            System.out.println("none");
+                        }
                     }
                 }
                 else
                 {
-                    System.err.println(line);
+                    System.out.println(line);
                 }
             }
         }
@@ -342,19 +437,9 @@ public class Main
         }
         finally
         {
-            if (buf != null)
-            {
-                try
-                {
-                    buf.close();
-                }
-                catch (IOException ignore)
-                {
-                    /* ignore */
-                }
-            }
+            close(buf);
         }
-        System.exit(1);
+        System.exit(EXIT_USAGE);
     }
 
     public void invokeMain(ClassLoader classloader, String classname, List<String> args) throws IllegalAccessException, InvocationTargetException,
@@ -374,13 +459,19 @@ public class Main
         if (Config.isDebug() || invoked_class == null)
         {
             if (invoked_class == null)
+            {
                 System.err.println("ClassNotFound: " + classname);
+            }
             else
+            {
                 System.err.println(classname + " " + invoked_class.getPackage().getImplementationVersion());
+            }
 
             if (invoked_class == null)
             {
-                usage();
+                System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
+                System.err.println("       java -jar start.jar --help  # for more information");
+                System.exit(ERR_INVOKE_MAIN);
                 return;
             }
         }
@@ -395,36 +486,19 @@ public class Main
     }
 
     /* ------------------------------------------------------------ */
-    public static void close(Reader reader)
+    public static void close(Closeable c)
     {
-        if (reader == null)
+        if (c == null)
         {
             return;
         }
         try
         {
-            reader.close();
+            c.close();
         }
         catch (IOException e)
         {
-            e.printStackTrace();
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public static void close(InputStream stream)
-    {
-        if (stream == null)
-        {
-            return;
-        }
-        try
-        {
-            stream.close();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
     }
 
@@ -441,12 +515,6 @@ public class Main
         if (configuredXmls.isEmpty())
         {
             throw new FileNotFoundException("No XML configuration files specified in start.config or command line.");
-        }
-
-        // Add required logging if executed via the daemon.
-        if (_fromDaemon)
-        {
-            configuredXmls.add("etc/jetty-logging.xml");
         }
 
         // Add mandatory options for secure mode
@@ -496,6 +564,12 @@ public class Main
             showAllOptionsWithVersions(classpath);
             return;
         }
+        
+        if (_listConfig)
+        {
+            listConfig();
+            return;
+        }
 
         // Show Command Line to execute Jetty
         if (_dryRun)
@@ -516,8 +590,10 @@ public class Main
             return;
         }
         
-        if (_xArgs.size()>0 || _sysProps.size()>0)
+        if (_jvmArgs.size() > 0 || _sysProps.size() > 0)
+        {
             System.err.println("WARNING: System properties and/or JVM args set.  Consider using --dry-run or --exec");
+        }
 
         // Set current context class loader to what is selected.
         Thread.currentThread().setContextClassLoader(cl);
@@ -534,12 +610,16 @@ public class Main
             // Check for override of start class (via "jetty.server" property)
             String mainClass = System.getProperty("jetty.server");
             if (mainClass != null)
+            {
                 classname = mainClass;
+            }
 
             // Check for override of start class (via "main.class" property)
             mainClass = System.getProperty("main.class");
             if (mainClass != null)
+            {
                 classname = mainClass;
+            }
 
             Config.debug("main.class=" + classname);
 
@@ -547,7 +627,8 @@ public class Main
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
+            System.exit(ERR_INVOKE_MAIN);
         }
     }
 
@@ -609,18 +690,18 @@ public class Main
     {
         StringBuilder cmd = new StringBuilder();
         cmd.append(findJavaBin());
-        for (String x:_xArgs)
+        for (String x:_jvmArgs)
             cmd.append(' ').append(x);
         cmd.append(" -Djetty.home=").append(_jettyHome);
         for (String p:_sysProps)
         {
-            cmd.append(" -D").append(p);
+            cmd.append("   -D").append(p);
             String v=System.getProperty(p);
-            if (v!=null)
+            if (v!=null && v.length()>0)
                 cmd.append('=').append(v);
         }
-        cmd.append(" -cp ").append(classpath.toString());
-        cmd.append(' ').append(_config.getMainClassname());
+        cmd.append("   -cp ").append(classpath.toString());
+        cmd.append("   ").append(_config.getMainClassname());
         for (String xml : xmls)
         {
             cmd.append(' ').append(xml);
@@ -785,28 +866,23 @@ public class Main
             }
             catch (SecurityException e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
             catch (NoSuchMethodException e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
             catch (IllegalArgumentException e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
             catch (IllegalAccessException e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
             catch (InvocationTargetException e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
         }
     }
@@ -861,12 +937,15 @@ public class Main
             {
                 Policy policy = Policy.getPolicy();
                 if (policy != null)
+                {
                     policy.refresh();
+                }
             }
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
+            System.exit(ERR_SECURITY);
         }
     }
 
@@ -881,6 +960,34 @@ public class Main
         return ret;
     }
 
+    private void listConfig()
+    {
+        InputStream cfgstream = null;
+        try
+        {
+            cfgstream=getConfigStream();
+            byte[] buf=new byte[4096];
+            
+            int len=0;
+            
+            while (len>=0)
+            {
+                len=cfgstream.read(buf);
+                if (len>0)
+                    System.out.write(buf,0,len);
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace(System.err);
+            System.exit(ERR_UNKNOWN);
+        }
+        finally
+        {
+            close(cfgstream);
+        }
+    }
+    
     /**
      * Load Configuration.
      * 
@@ -898,18 +1005,9 @@ public class Main
         {
             // Pass in xmls.size into Config so that conditions based on "nargs" work.
             _config.setArgCount(xmls.size());
-
-            // What start.config should we use?
-            String cfgName = System.getProperty("START","org/eclipse/jetty/start/start.config");
-            Config.debug("config=" + cfgName);
-
-            // Look up config as resource first.
-            cfgstream = getClass().getClassLoader().getResourceAsStream(cfgName);
-
-            // resource not found, try filesystem next
-            if (cfgstream == null)
-                cfgstream = new FileInputStream(cfgName);
-
+            
+            cfgstream=getConfigStream();
+                
             // parse the config
             _config.parse(cfgstream);
             
@@ -937,8 +1035,8 @@ public class Main
         catch (Exception e)
         {
             e.printStackTrace();
-            System.exit(1);
-            return null; // never executed (just to satisfy javac compiler)
+            System.exit(ERR_UNKNOWN);
+            return null; // never executed (just here to satisfy javac compiler)
         }
         finally
         {
@@ -946,10 +1044,32 @@ public class Main
         }
     }
 
+    private InputStream getConfigStream() throws FileNotFoundException
+    {
+        String config=_startConfig;
+        if (config == null || config.length() == 0)
+        {
+            config = System.getProperty("START","org/eclipse/jetty/start/start.config");
+        }
+        
+        Config.debug("config=" + config);
+
+        // Look up config as resource first.
+        InputStream cfgstream = getClass().getClassLoader().getResourceAsStream(config);
+
+        // resource not found, try filesystem next
+        if (cfgstream == null)
+        {
+            cfgstream = new FileInputStream(config);
+        }
+        
+        return cfgstream;
+    }
+
     private void startMonitor()
     {
-        int port = Integer.parseInt(System.getProperty("STOP.PORT","-1"));
-        String key = System.getProperty("STOP.KEY",null);
+        int port = Integer.parseInt(_config.getProperty("STOP.PORT",System.getProperty("STOP.PORT","-1")));
+        String key = _config.getProperty("STOP.KEY",System.getProperty("STOP.KEY",null));
 
         Monitor.monitor(port,key);
     }
@@ -965,7 +1085,9 @@ public class Main
         try
         {
             if (_port <= 0)
+            {
                 System.err.println("STOP.PORT system property must be specified");
+            }
             if (_key == null)
             {
                 _key = "";
@@ -974,18 +1096,26 @@ public class Main
             }
 
             Socket s = new Socket(InetAddress.getByName("127.0.0.1"),_port);
-            OutputStream out = s.getOutputStream();
-            out.write((_key + "\r\nstop\r\n").getBytes());
-            out.flush();
-            s.close();
+            try
+            {
+                OutputStream out = s.getOutputStream();
+                out.write((_key + "\r\nstop\r\n").getBytes());
+                out.flush();
+            }
+            finally
+            {
+                s.close();
+            }
         }
         catch (ConnectException e)
         {
             System.err.println("ERROR: Not running!");
+            System.exit(ERR_NOT_STOPPED);
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
+            System.exit(ERR_UNKNOWN);
         }
     }
 }

@@ -141,7 +141,6 @@ public class PropertyFileLoginModule extends AbstractLoginModule
     /** 
      * Don't implement this as we want to pre-fetch all of the
      * users.
-     * @see org.eclipse.jetty.plus.jaas.spi.AbstractLoginModule#lazyLoadUser(java.lang.String)
      * @param username
      * @throws Exception
      */

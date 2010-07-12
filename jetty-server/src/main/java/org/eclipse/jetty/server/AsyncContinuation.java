@@ -672,7 +672,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 {
                     _expireAt = System.currentTimeMillis()+_timeoutMs;
                     long wait=_timeoutMs;
-                    while (_expireAt>0 && wait>0)
+                    while (_expireAt>0 && wait>0 && _connection.getServer().isRunning())
                     {
                         try
                         {
@@ -685,7 +685,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
                         wait=_expireAt-System.currentTimeMillis();
                     }
 
-                    if (_expireAt>0 && wait<=0)
+                    if (_expireAt>0 && wait<=0 && _connection.getServer().isRunning())
                     {
                         expired();
                     }
@@ -823,11 +823,19 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
-    public void start(Runnable run)
+    public void start(final Runnable run)
     {
         final AsyncEventState event=_event;
         if (event!=null)
-            ((Context)event.getServletContext()).getContextHandler().handle(run);
+        {
+            _connection.getServer().getThreadPool().dispatch(new Runnable()
+            {
+                public void run()
+                {
+                    ((Context)event.getServletContext()).getContextHandler().handle(run);
+                }
+            });
+        }
     }
 
     /* ------------------------------------------------------------ */

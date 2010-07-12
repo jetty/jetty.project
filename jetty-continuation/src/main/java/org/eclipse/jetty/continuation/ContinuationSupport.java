@@ -96,8 +96,8 @@ public class ContinuationSupport
      * vary depending on the container in which the application is 
      * deployed. It may be an implementation native to the container (eg
      * org.eclipse.jetty.server.AsyncContinuation) or one of the utility
-     * implementations provided such as {@link FauxContinuation} or 
-     * {@link Servlet3Continuation}.
+     * implementations provided such as an internal <code>FauxContinuation</code>
+     * or a real implementation like {@link org.eclipse.jetty.continuation.Servlet3Continuation}.
      * @param request The request 
      * @return a Continuation instance
      */
@@ -147,10 +147,10 @@ public class ContinuationSupport
 
     /* ------------------------------------------------------------ */
     /**
-     * @param request
-     * @param response
+     * @param request the servlet request
+     * @param response the servlet response
      * @deprecated use {@link #getContinuation(ServletRequest)}
-     * @return
+     * @return the continuation
      */
     @Deprecated
     public static Continuation getContinuation(final ServletRequest request, final ServletResponse response)

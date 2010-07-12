@@ -29,18 +29,20 @@ import java.util.jar.JarFile;
 
 import javax.servlet.http.HttpServlet;
 
+import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelper;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleReference;
 
 /**
  * Extends the webappclassloader to insert the classloader provided by the osgi
  * bundle at the same level than any other jars palced in the webappclassloader.
  */
-public class OSGiWebappClassLoader extends WebAppClassLoader
+public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleReference
 {
 
     private Logger __logger = Log.getLogger(OSGiWebappClassLoader.class.getName().toString());
@@ -67,14 +69,34 @@ public class OSGiWebappClassLoader extends WebAppClassLoader
     }
 
     private ClassLoader _osgiBundleClassLoader;
+    private Bundle _contributor;
     private boolean _lookInOsgiFirst = true;
     private Set<String> _libsAlreadyInManifest = new HashSet<String>();
 
-    public OSGiWebappClassLoader(ClassLoader parent, WebAppContext context, Bundle contributor) throws IOException
+    /**
+     * @param parent The parent classloader. In this case 
+     * @param context The WebAppContext
+     * @param contributor The bundle that defines this web-application.
+     * @throws IOException
+     */
+    public OSGiWebappClassLoader(ClassLoader parent, WebAppContext context, Bundle contributor,
+    		BundleClassLoaderHelper bundleClassLoaderHelper) throws IOException
     {
         super(parent,context);
-        _osgiBundleClassLoader = WebappRegistrationHelper.BUNDLE_CLASS_LOADER_HELPER.getBundleClassLoader(contributor);
+        _contributor = contributor;
+        _osgiBundleClassLoader = bundleClassLoaderHelper.getBundleClassLoader(contributor);
     }
+    
+	/**
+	 * Returns the <code>Bundle</code> that defined this web-application.
+	 * 
+	 * @return The <code>Bundle</code> object associated with this
+	 *         <code>BundleReference</code>.
+	 */
+	public Bundle getBundle()
+	{
+		return _contributor;
+	}
 
     /**
      * Reads the manifest. If the manifest is already configured to loads a few

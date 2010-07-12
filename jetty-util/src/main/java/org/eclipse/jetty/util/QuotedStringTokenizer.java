@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.IOException;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
@@ -266,7 +267,7 @@ public class QuotedStringTokenizer
      * @param s The string to quote.
      * @return quoted string
      */
-    public static String quote(String s, String delim)
+    public static String quoteIfNeeded(String s, String delim)
     {
         if (s==null)
             return null;
@@ -309,370 +310,100 @@ public class QuotedStringTokenizer
    
     }
 
-    
     /* ------------------------------------------------------------ */
-    /** Quote a string into a StringBuffer.
+    /** Quote a string into an Appendable.
      * The characters ", \, \n, \r, \t, \f and \b are escaped
-     * @param buf The StringBuffer
+     * @param buf The Appendable
      * @param s The String to quote.
      */
-    public static void quote(StringBuffer buf, String s)
+    public static void quote(Appendable buf, String s)
     {
-        synchronized(buf)
+        try
         {
             buf.append('"');
-            
-            int i=0;
-            loop:
-            for (;i<s.length();i++)
+
+            for (int i=0;i<s.length();i++)
             {
                 char c = s.charAt(i);
                 switch(c)
                 {
                     case '"':
-                        buf.append(s,0,i);
                         buf.append("\\\"");
-                        break loop;
-                    case '\\':
-                        buf.append(s,0,i);
-                        buf.append("\\\\");
-                        break loop;
-                    case '\n':
-                        buf.append(s,0,i);
-                        buf.append("\\n");
-                        break loop;
-                    case '\r':
-                        buf.append(s,0,i);
-                        buf.append("\\r");
-                        break loop;
-                    case '\t':
-                        buf.append(s,0,i);
-                        buf.append("\\t");
-                        break loop;
-                    case '\f':
-                        buf.append(s,0,i);
-                        buf.append("\\f");
-                        break loop;
-                    case '\b':
-                        buf.append(s,0,i);
-                        buf.append("\\b");
-                        break loop;
-                        
-                    default:
                         continue;
-                }
-            }
-            if (i==s.length())
-                buf.append(s);
-            else
-            {
-                i++;
-                for (;i<s.length();i++)
-                {
-                    char c = s.charAt(i);
-                    switch(c)
-                    {
-                        case '"':
-                            buf.append("\\\"");
-                            continue;
-                        case '\\':
-                            buf.append("\\\\");
-                            continue;
-                        case '\n':
-                            buf.append("\\n");
-                            continue;
-                        case '\r':
-                            buf.append("\\r");
-                            continue;
-                        case '\t':
-                            buf.append("\\t");
-                            continue;
-                        case '\f':
-                            buf.append("\\f");
-                            continue;
-                        case '\b':
-                            buf.append("\\b");
-                            continue;
+                    case '\\':
+                        buf.append("\\\\");
+                        continue;
+                    case '\n':
+                        buf.append("\\n");
+                        continue;
+                    case '\r':
+                        buf.append("\\r");
+                        continue;
+                    case '\t':
+                        buf.append("\\t");
+                        continue;
+                    case '\f':
+                        buf.append("\\f");
+                        continue;
+                    case '\b':
+                        buf.append("\\b");
+                        continue;
 
-                        default:
+                    default:
+                        if (c<0x10)
+                        {
+                            buf.append("\\u000");
+                            buf.append(Integer.toString(c,16));
+                        }
+                        else if (c<=0x1f)
+                        {
+                            buf.append("\\u00");
+                            buf.append(Integer.toString(c,16));
+                        }
+                        else
                             buf.append(c);
                         continue;
-                    }
                 }
             }
-            
+
             buf.append('"');
         } 
-        
-        
-        
-    }
-
-
-    /* ------------------------------------------------------------ */
-    /** Quote a string into a StringBuffer.
-     * The characters ", \, \n, \r, \t, \f and \b are escaped
-     * @param buf The StringBuffer
-     * @param s The String to quote.
-     */
-    public static void quote(StringBuilder buf, String s)
-    {
-        buf.append('"');
-
-        int i=0;
-        loop:
-            for (;i<s.length();i++)
-            {
-                char c = s.charAt(i);
-                switch(c)
-                {
-                    case '"':
-                        buf.append(s,0,i);
-                        buf.append("\\\"");
-                        break loop;
-                    case '\\':
-                        buf.append(s,0,i);
-                        buf.append("\\\\");
-                        break loop;
-                    case '\n':
-                        buf.append(s,0,i);
-                        buf.append("\\n");
-                        break loop;
-                    case '\r':
-                        buf.append(s,0,i);
-                        buf.append("\\r");
-                        break loop;
-                    case '\t':
-                        buf.append(s,0,i);
-                        buf.append("\\t");
-                        break loop;
-                    case '\f':
-                        buf.append(s,0,i);
-                        buf.append("\\f");
-                        break loop;
-                    case '\b':
-                        buf.append(s,0,i);
-                        buf.append("\\b");
-                        break loop;
-
-                    default:
-                        continue;
-                }
-            }
-        if (i==s.length())
-            buf.append(s);
-        else
+        catch(IOException e)
         {
-            i++;
-            for (;i<s.length();i++)
-            {
-                char c = s.charAt(i);
-                switch(c)
-                {
-                    case '"':
-                        buf.append("\\\"");
-                        continue;
-                    case '\\':
-                        buf.append("\\\\");
-                        continue;
-                    case '\n':
-                        buf.append("\\n");
-                        continue;
-                    case '\r':
-                        buf.append("\\r");
-                        continue;
-                    case '\t':
-                        buf.append("\\t");
-                        continue;
-                    case '\f':
-                        buf.append("\\f");
-                        continue;
-                    case '\b':
-                        buf.append("\\b");
-                        continue;
-
-                    default:
-                        buf.append(c);
-                    continue;
-                }
-            }
-        }
-
-        buf.append('"');
-    } 
-
-
-
-
-    
-    /* ------------------------------------------------------------ */
-    /** Quote a string into a StringBuffer.
-     * The characters ", \, \n, \r, \t, \f, \b are escaped.
-     * Quotes are forced if any escaped characters are present or there
-     * is a ", ', space, +, =, ; or % character.
-     * 
-     * @param buf The StringBuffer
-     * @param s The String to quote.
-     */
-    public static void quoteIfNeeded(StringBuffer buf, String s)
-    {
-        synchronized(buf)
-        {
-            int e=-1;
-            
-            search: for (int i=0;i<s.length();i++)
-            {
-                char c = s.charAt(i);
-                switch(c)
-                {
-                    case '"':
-                    case '\\':
-                    case '\n':
-                    case '\r':
-                    case '\t':
-                    case '\f':
-                    case '\b':
-                    case '%':
-                    case '+':
-                    case ' ':
-                    case ';':
-                    case '=':
-                        e=i;
-                        buf.append('"');
-                        // TODO when 1.4 support is dropped: buf.append(s,0,e);
-                        for (int j=0;j<e;j++)
-                            buf.append(s.charAt(j));
-                        break search;
-                        
-                    default:
-                        continue;
-                }
-            }
-            
-            if (e<0)
-            {
-                buf.append(s);
-                return;
-            }
-            
-            for (int i=e;i<s.length();i++)
-            {
-                char c = s.charAt(i);
-                switch(c)
-                {
-                    case '"':
-                        buf.append("\\\"");
-                        continue;
-                    case '\\':
-                        buf.append("\\\\");
-                        continue;
-                    case '\n':
-                        buf.append("\\n");
-                        continue;
-                    case '\r':
-                        buf.append("\\r");
-                        continue;
-                    case '\t':
-                        buf.append("\\t");
-                        continue;
-                    case '\f':
-                        buf.append("\\f");
-                        continue;
-                    case '\b':
-                        buf.append("\\b");
-                        continue;
-                        
-                    default:
-                        buf.append(c);
-                        continue;
-                }
-            }
-            buf.append('"');
+            throw new RuntimeException(e);
         }
     }
     
     /* ------------------------------------------------------------ */
-    /** Quote a string into a StringBuffer.
-     * The characters ", \, \n, \r, \t, \f, \b are escaped.
-     * Quotes are forced if any escaped characters are present or there
-     * is a ", ', space, + or % character.
+    /** Quote a string into a StringBuffer only if needed.
+     * Quotes are forced if any delim characters are present.
      * 
-     * @param buf The StringBuilder
+     * @param buf The StringBuffer
      * @param s The String to quote.
+     * @param delim String of characters that must be quoted.
+     * @return true if quoted;
      */
-    public static void quoteIfNeeded(StringBuilder buf, String s)
+    public static boolean quoteIfNeeded(Appendable buf, String s,String delim)
     {
-        int e=-1;
-
-        search: for (int i=0;i<s.length();i++)
+        for (int i=0;i<s.length();i++)
         {
             char c = s.charAt(i);
-            switch(c)
+            if (delim.indexOf(c)>=0)
             {
-                case '"':
-                case '\\':
-                case '\n':
-                case '\r':
-                case '\t':
-                case '\f':
-                case '\b':
-                case '%':
-                case '+':
-                case ' ':
-                case ';':
-                case '=':
-                    e=i;
-                    buf.append('"');
-                    // TODO when 1.4 support is dropped: buf.append(s,0,e);
-                    for (int j=0;j<e;j++)
-                        buf.append(s.charAt(j));
-                    break search;
-
-                default:
-                    continue;
+            	quote(buf,s);
+            	return true;
             }
         }
-
-        if (e<0)
+    	
+        try
         {
             buf.append(s);
-            return;
+            return false;
         }
-
-        for (int i=e;i<s.length();i++)
+        catch(IOException e)
         {
-            char c = s.charAt(i);
-            switch(c)
-            {
-                case '"':
-                    buf.append("\\\"");
-                    continue;
-                case '\\':
-                    buf.append("\\\\");
-                    continue;
-                case '\n':
-                    buf.append("\\n");
-                    continue;
-                case '\r':
-                    buf.append("\\r");
-                    continue;
-                case '\t':
-                    buf.append("\\t");
-                    continue;
-                case '\f':
-                    buf.append("\\f");
-                    continue;
-                case '\b':
-                    buf.append("\\b");
-                    continue;
-
-                default:
-                    buf.append(c);
-                continue;
-            }
+            throw new RuntimeException(e);
         }
-        buf.append('"');
-
     }
     
     /* ------------------------------------------------------------ */
@@ -719,6 +450,15 @@ public class QuotedStringTokenizer
                             break;
                         case 'b':
                             b.append('\b');
+                            break;
+                        case '\\':
+                            b.append('\\');
+                            break;
+                        case '/':
+                            b.append('/');
+                            break;
+                        case '"':
+                            b.append('"');
                             break;
                         case 'u':
                             b.append((char)(

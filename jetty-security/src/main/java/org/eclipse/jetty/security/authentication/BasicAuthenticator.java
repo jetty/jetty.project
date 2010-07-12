@@ -36,9 +36,6 @@ import org.eclipse.jetty.util.StringUtil;
 public class BasicAuthenticator extends LoginAuthenticator 
 {   
     /* ------------------------------------------------------------ */
-    /**
-     * @param loginService
-     */
     public BasicAuthenticator()
     {
     }

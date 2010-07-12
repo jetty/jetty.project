@@ -137,7 +137,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         Socket socket = _serverSocket.accept();
         configure(socket);
         
-        ConnectorEndPoint connection=new SslConnection(socket);
+        ConnectorEndPoint connection=new SslConnectorEndPoint(socket);
         connection.dispatch();
     }
     
@@ -205,14 +205,10 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     	try
         {
             if (keystorePath!=null)
-            {
                 keystoreInputStream = Resource.newResource(keystorePath).getInputStream();
-                keystore=KeyStore.getInstance(keystoreType);
-                keystore.load(keystoreInputStream,keystorePassword==null?null:keystorePassword.toString().toCharArray());
-                return keystore;
-            }
-            
-            return null;
+            keystore=KeyStore.getInstance(keystoreType);
+            keystore.load(keystoreInputStream,keystorePassword==null?null:keystorePassword.toString().toCharArray());
+            return keystore;
         }
         finally
         {
@@ -363,13 +359,13 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     
     /* ------------------------------------------------------------ */
     /**
-     * @param addr The {@link SocketAddress address} that this server should listen on 
+     * @param host The host name that this server should listen on
+     * @param port the port that this server should listen on 
      * @param backlog See {@link ServerSocket#bind(java.net.SocketAddress, int)}
      * @return A new {@link ServerSocket socket object} bound to the supplied address with all other
      * settings as per the current configuration of this connector. 
-     * @see #setWantClientAuth
-     * @see #setNeedClientAuth
-     * @see #setCipherSuites
+     * @see #setWantClientAuth(boolean)
+     * @see #setNeedClientAuth(boolean)
      * @exception IOException
      */
 
@@ -411,10 +407,10 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
                 	excludedCSList = new ArrayList<String>();
                 }
                 String[] enabledCipherSuites = socket.getEnabledCipherSuites();
-                List<String> enabledCSList=Arrays.asList(enabledCipherSuites);
+                List<String> enabledCSList = new ArrayList<String>(Arrays.asList(enabledCipherSuites));
                 
                 String[] supportedCipherSuites = socket.getSupportedCipherSuites();
-                List<String> supportedCSList=Arrays.asList(supportedCipherSuites);
+                List<String> supportedCSList = Arrays.asList(supportedCipherSuites);
                 
             	for (String cipherName : includedCSList)
                 {
@@ -432,7 +428,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
                         enabledCSList.remove(cipherName);
                     }
                 }
-                enabledCipherSuites=enabledCSList.toArray(new String[0]);
+                enabledCipherSuites = enabledCSList.toArray(new String[enabledCSList.size()]);
 
                 socket.setEnabledCipherSuites(enabledCipherSuites);
             }
@@ -557,7 +553,6 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * @throws Exception 
      * @see org.eclipse.jetty.server.ssl.SslConnector#setSslContext(javax.net.ssl.SSLContext)
      */
     public SSLContext getSslContext()
@@ -577,10 +572,10 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * Set the value of the _wantClientAuth property. This property is used when
-     * {@link #newServerSocket(SocketAddress, int) opening server sockets}.
+     * Set the value of the _wantClientAuth property. This property is used 
+     * internally when opening server sockets.
      * 
-     * @param wantClientAuth true iff we want client certificate authentication.
+     * @param wantClientAuth true if we want client certificate authentication.
      * @see SSLServerSocket#setWantClientAuth
      */
     public void setWantClientAuth(boolean wantClientAuth)
@@ -607,11 +602,16 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     }
 
     /* ------------------------------------------------------------ */
-    public class SslConnection extends ConnectorEndPoint
+    public class SslConnectorEndPoint extends ConnectorEndPoint
     {
-        public SslConnection(Socket socket) throws IOException
+        public SslConnectorEndPoint(Socket socket) throws IOException
         {
             super(socket);
+        }
+        
+        @Override
+        public void shutdownOutput() throws IOException
+        {
         }
         
         @Override
@@ -667,7 +667,8 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     /* ------------------------------------------------------------ */
     /**
      * Unsupported.
-     * @see org.eclipse.jetty.server.ssl.SslConnector#getAlgorithm()
+     * 
+     * TODO: we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
      */
     public String getAlgorithm()
     {
@@ -677,7 +678,8 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     /* ------------------------------------------------------------ */
     /**
      * Unsupported.
-     * @see org.eclipse.jetty.server.ssl.SslConnector#setAlgorithm(java.lang.String)
+     * 
+     * TODO: we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
      */
     public void setAlgorithm(String algorithm)
     {

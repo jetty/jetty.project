@@ -18,10 +18,12 @@ package org.eclipse.jetty.test.support.rawhttp;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.test.AbstractJettyTestCase;
+import org.junit.Assert;
+import org.junit.Test;
 
-public class HttpRequestTesterTest extends AbstractJettyTestCase
+public class HttpRequestTesterTest
 {
+    @Test
     public void testBasicHttp10Request() throws IOException
     {
         HttpRequestTester request = new HttpRequestTester();
@@ -37,9 +39,10 @@ public class HttpRequestTesterTest extends AbstractJettyTestCase
         expectedRequest.append("Host: fakehost\r\n");
         expectedRequest.append("\r\n");
 
-        assertEquals("Basic Request",expectedRequest.toString(),rawRequest);
+        Assert.assertEquals("Basic Request",expectedRequest.toString(),rawRequest);
     }
 
+    @Test
     public void testBasicHttp11Request() throws IOException
     {
         HttpRequestTester request = new HttpRequestTester();
@@ -59,6 +62,6 @@ public class HttpRequestTesterTest extends AbstractJettyTestCase
         expectedRequest.append("0\r\n");
         expectedRequest.append("\r\n");
 
-        assertEquals("Basic Request",expectedRequest.toString(),rawRequest);
+        Assert.assertEquals("Basic Request",expectedRequest.toString(),rawRequest);
     }
 }

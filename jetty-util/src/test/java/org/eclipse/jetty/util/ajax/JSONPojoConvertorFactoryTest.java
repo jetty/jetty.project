@@ -13,14 +13,18 @@
 
 package org.eclipse.jetty.util.ajax;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 
 
 /**
  * Test to convert POJOs to JSON and vice versa with automatic convertor creation.
  */
-public class JSONPojoConvertorFactoryTest extends TestCase {
-    
+public class JSONPojoConvertorFactoryTest
+{    
+    @Test
     public void testFoo()
     {
         JSON jsonOut = new JSON();

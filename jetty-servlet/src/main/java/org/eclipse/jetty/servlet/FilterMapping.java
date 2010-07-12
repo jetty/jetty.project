@@ -167,6 +167,20 @@ public class FilterMapping
     
     /* ------------------------------------------------------------ */
     /**
+     * @param dispatches The dispatches to set.
+     * @see #DEFAULT
+     * @see #REQUEST
+     * @see #ERROR
+     * @see #FORWARD
+     * @see #INCLUDE
+     */
+    public void setDispatches(int dispatches)
+    {
+        _dispatches = dispatches;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
      * @param filterName The filterName to set.
      */
     public void setFilterName(String filterName)

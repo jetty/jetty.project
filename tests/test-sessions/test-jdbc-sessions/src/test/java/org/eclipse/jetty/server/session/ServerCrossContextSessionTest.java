@@ -12,12 +12,10 @@
 // ========================================================================
 package org.eclipse.jetty.server.session;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 /**
  * ServerCrossContextSessionTest
- *
- *
  */
 public class ServerCrossContextSessionTest extends AbstractServerCrossContextSessionTest
 {
@@ -27,12 +25,9 @@ public class ServerCrossContextSessionTest extends AbstractServerCrossContextSes
         return new JdbcTestServer(port);
     }
 
-    @Test(groups={"jdbc-all"})
+    @Test
     public void testCrossContextDispatch() throws Exception
     {
         super.testCrossContextDispatch();
     }
-    
-    
-
 }

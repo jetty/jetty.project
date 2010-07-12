@@ -13,17 +13,22 @@
 
 package org.eclipse.jetty.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.HashSet;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class BlockingArrayQueueTest extends TestCase
+
+public class BlockingArrayQueueTest
 {
     
+    @Test
     public void testWrap() throws Exception
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<String>(3);
@@ -66,6 +71,7 @@ public class BlockingArrayQueueTest extends TestCase
 
     }
 
+    @Test
     public void testRemove() throws Exception
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<String>(3,3);
@@ -85,6 +91,7 @@ public class BlockingArrayQueueTest extends TestCase
             assertEquals(i+"!",queue.get(i));
     }
 
+    @Test
     public void testGrow() throws Exception
     {
         BlockingArrayQueue<String> queue = new BlockingArrayQueue<String>(3,2);
@@ -128,11 +135,9 @@ public class BlockingArrayQueueTest extends TestCase
             s+=2;
             c+=2;
         }
-        
-        
-        
     }
     
+    @Test
     public void testTake() throws Exception
     {
         final String[] data=new String[4];
@@ -178,6 +183,7 @@ public class BlockingArrayQueueTest extends TestCase
     
     volatile boolean _running;
     
+    @Test
     public void testConcurrentAccess() throws Exception
     {
         final int THREADS=50;
@@ -306,9 +312,5 @@ public class BlockingArrayQueueTest extends TestCase
         HashSet<Integer> consSet = new HashSet<Integer>(consumed);
         
         assertEquals(prodSet,consSet);
-        
-        
-        
-        
     }
 }

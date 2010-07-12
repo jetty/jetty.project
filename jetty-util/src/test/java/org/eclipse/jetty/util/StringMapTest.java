@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
@@ -20,37 +24,28 @@ import java.io.ObjectOutputStream;
 import java.util.Map;
 import java.util.Set;
 
-import junit.framework.TestCase;
+import org.junit.Before;
+import org.junit.Test;
 
 
 /**
  * 
  *
  */
-public class StringMapTest extends TestCase
+public class StringMapTest
 {
     StringMap m0;
     StringMap m1;
     StringMap m5;
     StringMap m5i;
 
-    /**
-     * Constructor for StringMapTest.
-     * @param arg0
-     */
-    public StringMapTest(String arg0)
-    {
-        super(arg0);
-    }
-
     /*
      * @see TestCase#setUp()
      */
-    @Override
-    protected void setUp() throws Exception
+    
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
-        
         m0=new StringMap();
         m1=new StringMap(false);
         m1.put("abc", "0");
@@ -70,15 +65,7 @@ public class StringMapTest extends TestCase
         m5i.put("bbb", null);
     }
 
-    /*
-     * @see TestCase#tearDown()
-     */
-    @Override
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-
+    @Test
     public void testSize()
     {
         assertEquals(0, m0.size());
@@ -96,6 +83,7 @@ public class StringMapTest extends TestCase
         assertEquals(5, m5i.size());
     }
 
+    @Test
     public void testIsEmpty()
     {
         assertTrue(m0.isEmpty());
@@ -104,6 +92,7 @@ public class StringMapTest extends TestCase
         assertFalse(m5i.isEmpty());
     }
 
+    @Test
     public void testClear()
     {
         m0.clear();
@@ -123,6 +112,7 @@ public class StringMapTest extends TestCase
     /*
      * Test for Object put(Object, Object)
      */
+    @Test
     public void testPutGet()
     {
         assertEquals("2",m5.get("abc"));
@@ -146,11 +136,10 @@ public class StringMapTest extends TestCase
         
     }
 
-
-
     /*
      * Test for Map.Entry getEntry(String, int, int)
      */
+    @Test
     public void testGetEntryStringintint()
     {
         Map.Entry entry;
@@ -187,6 +176,7 @@ public class StringMapTest extends TestCase
     /*
      * Test for Map.Entry getEntry(char[], int, int)
      */
+    @Test
     public void testGetEntrycharArrayintint()
     {
         char[] xabcyz = {'x','a','b','c','y','z'};
@@ -210,6 +200,7 @@ public class StringMapTest extends TestCase
     /*
      * Test for Object remove(Object)
      */
+    @Test
     public void testRemove()
     {
         m0.remove("abc");
@@ -230,10 +221,10 @@ public class StringMapTest extends TestCase
         assertEquals(null,m5i.get(null));
     }
 
-
     /*
      * Test for Set entrySet()
      */
+    @Test
     public void testEntrySet()
     {
         Set es0=m0.entrySet();
@@ -247,6 +238,7 @@ public class StringMapTest extends TestCase
     /*
      * Test for boolean containsKey(Object)
      */
+    @Test
     public void testContainsKey()
     {
         assertTrue(m5.containsKey("abc"));
@@ -260,6 +252,7 @@ public class StringMapTest extends TestCase
         assertTrue(m5i.containsKey("ABC"));
     }
 
+    @Test
     public void testWriteExternal()
         throws Exception
     {
@@ -288,6 +281,7 @@ public class StringMapTest extends TestCase
         
     }
     
+    @Test
     public void testToString()
     {
         assertEquals("{}",m0.toString());
@@ -295,7 +289,7 @@ public class StringMapTest extends TestCase
         assertTrue(m5.toString().indexOf("abc=2")>0);
     }
     
-    
+    @Test
     public void testIgnoreCase()
     {
         StringMap map = new StringMap(true);

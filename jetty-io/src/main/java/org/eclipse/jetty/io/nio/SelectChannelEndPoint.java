@@ -46,10 +46,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     private boolean _readBlocked;
     private boolean _writeBlocked;
     private boolean _open;
-    private final Timeout.Task _idleTask = new IdleTask();
+    private volatile long _idleTimestamp;
 
     /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key)
+        throws IOException
     {
         super(channel);
 
@@ -61,7 +62,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         _key = key;
 
         _connection = _manager.newConnection(channel,this);
-        _manager.endPointOpened(this); 
         
         scheduleIdle();
     }
@@ -198,13 +198,22 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /* ------------------------------------------------------------ */
     public void scheduleIdle()
     {
-        _selectSet.scheduleIdle(_idleTask);
+        _idleTimestamp=System.currentTimeMillis();
     }
 
     /* ------------------------------------------------------------ */
     public void cancelIdle()
     {
-        _selectSet.cancelIdle(_idleTask);
+        _idleTimestamp=0;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void checkIdleTimestamp(long now)
+    {
+        if (_idleTimestamp!=0 && _maxIdleTime!=0 && now>(_idleTimestamp+_maxIdleTime))
+        {
+            idleExpired();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -336,6 +345,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
             finally
             {
                 _writeBlocked=false;
+                if (_idleTimestamp!=-1)
+                    scheduleIdle();
             }
         }
         return true;
@@ -424,7 +435,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                                 cancelIdle();
 
                                 if (_open)
-                                    _manager.endPointClosed(this);
+                                {
+                                    _selectSet.destroyEndPoint(this);
+                                }
                                 _open=false;
                                 _key = null;
                             }
@@ -437,7 +450,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                 }
                 else
                 {
-                    if (_key.isValid())
+                    if (_key!=null && _key.isValid())
                         _key.interestOps(0);
                     else
                         _key=null;
@@ -450,7 +463,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                 
                 cancelIdle();
                 if (_open)
-                    _manager.endPointClosed(this);
+                {
+                    _selectSet.destroyEndPoint(this);
+                }
                 _open=false;
                 _key = null;
             }
@@ -548,14 +563,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         synchronized(this)
         {
             return "SCEP@" + hashCode() + "\t[d=" + _dispatched + ",io=" + _interestOps+
-            ",w=" + _writable + ",b=" + _readBlocked + "|" + _writeBlocked + "]";
+            ",w=" + _writable + ",rb=" + _readBlocked + ",wb=" + _writeBlocked + "]";
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    public Timeout.Task getTimeoutTask()
-    {
-        return _idleTask;
     }
 
     /* ------------------------------------------------------------ */
@@ -565,24 +574,16 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     }
 
     /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private class IdleTask extends Timeout.Task
+    /**
+     * Don't set the SoTimeout
+     * @see org.eclipse.jetty.io.nio.ChannelEndPoint#setMaxIdleTime(int)
+     */
+    @Override
+    public void setMaxIdleTime(int timeMs) throws IOException
     {
-        /* ------------------------------------------------------------ */
-        /*
-         * @see org.eclipse.thread.Timeout.Task#expire()
-         */
-        @Override
-        public void expired()
-        {
-            idleExpired();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "TimeoutTask:" + SelectChannelEndPoint.this.toString();
-        }
+        _maxIdleTime=timeMs;
     }
+
+    
+    
 }

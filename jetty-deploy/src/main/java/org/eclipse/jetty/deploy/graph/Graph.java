@@ -138,7 +138,7 @@ public class Graph
     /**
      * Find all edges that are connected {@link Edge#getFrom()} the specific node.
      * 
-     * @param node
+     * @param from
      *            the node with potential edges from it
      * @return the set of edges from the node
      */

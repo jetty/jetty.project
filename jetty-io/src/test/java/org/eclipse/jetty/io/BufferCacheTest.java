@@ -4,61 +4,42 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.io;
 
-import junit.framework.TestCase;
+import org.junit.Before;
+import org.junit.Test;
 
-/* ------------------------------------------------------------------------------- */
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+
 /**
- * 
- * 
+ *
  */
-public class BufferCacheTest extends TestCase
+public class BufferCacheTest
 {
-    final static String[] S=
-    { "S0", "S1", "s2", "s3" };
+    private final static String[] S = {"S0", "S1", "s2", "s3" };
 
-    BufferCache cache;
+    private BufferCache cache;
 
-    public BufferCacheTest(String arg0)
+    @Before
+    public void init() throws Exception
     {
-        super(arg0);
-    }
-
-    public static void main(String[] args)
-    {
-        junit.textui.TestRunner.run(BufferCacheTest.class);
-    }
-
-    /**
-     * @see TestCase#setUp()
-     */
-    @Override
-    protected void setUp() throws Exception
-    {
-        super.setUp();
         cache=new BufferCache();
         cache.add(S[1],1);
         cache.add(S[2],2);
         cache.add(S[3],3);
     }
 
-    /**
-     * @see TestCase#tearDown()
-     */
-    @Override
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-
+    @Test
     public void testLookupIndex()
     {
         for (int i=0; i<S.length; i++)
@@ -75,6 +56,7 @@ public class BufferCacheTest extends TestCase
         }
     }
 
+    @Test
     public void testGetBuffer()
     {
         for (int i=0; i<S.length; i++)
@@ -90,6 +72,7 @@ public class BufferCacheTest extends TestCase
         }
     }
 
+    @Test
     public void testLookupBuffer()
     {
         for (int i=0; i<S.length; i++)
@@ -100,35 +83,37 @@ public class BufferCacheTest extends TestCase
 
             assertEquals(S[i],b.toString());
             if (i>0)
-                assertTrue(""+i,S[i]==b.toString());
+                assertSame(""+i, S[i], b.toString());
             else
             {
-                assertTrue(""+i,S[i]!=b.toString());
-                assertEquals(""+i,S[i],b.toString());
+                assertNotSame(""+i, S[i], b.toString());
+                assertEquals(""+i, S[i], b.toString());
             }
         }
     }
 
+    @Test
     public void testLookupPartialBuffer()
     {
         cache.add("44444",4);
-        
+
         ByteArrayBuffer buf=new ByteArrayBuffer("44444");
         Buffer b=cache.lookup(buf);
         assertEquals("44444",b.toString());
         assertEquals(4,cache.getOrdinal(b));
-        
+
         buf=new ByteArrayBuffer("4444");
         b=cache.lookup(buf);
         assertEquals(-1,cache.getOrdinal(b));
-        
+
         buf=new ByteArrayBuffer("44444x");
         b=cache.lookup(buf);
         assertEquals(-1,cache.getOrdinal(b));
-        
+
 
     }
 
+    @Test
     public void testInsensitiveLookupBuffer()
     {
         for (int i=0; i<S.length; i++)
@@ -139,12 +124,13 @@ public class BufferCacheTest extends TestCase
 
             assertTrue("test"+i,S[i].equalsIgnoreCase(b.toString()));
             if (i>0)
-                assertTrue("test"+i,S[i]==b.toString());
+                assertSame("test"+i, S[i], b.toString());
             else
-                assertTrue("test"+i,S[i]!=b.toString());
+                assertNotSame("test"+i, S[i], b.toString());
         }
     }
 
+    @Test
     public void testToString()
     {
         for (int i=0; i<S.length; i++)
@@ -155,10 +141,9 @@ public class BufferCacheTest extends TestCase
 
             assertEquals(S[i],b);
             if (i>0)
-                assertTrue(S[i]==b);
+                assertSame(S[i], b);
             else
-                assertTrue(S[i]!=b);
+                assertNotSame(S[i], b);
         }
     }
-
 }

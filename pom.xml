@@ -1,10 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>12</version>
+    <version>15</version>
   </parent>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
@@ -13,20 +12,19 @@
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
   <properties>
-    <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <felix.bundle.version>2.0.0</felix.bundle.version>
-    <activation-version>1.1</activation-version>
-    <ant-version>1.6.5</ant-version>
-    <jta-spec-version>1.1.1</jta-spec-version>
+    <javax-activation-version>1.1</javax-activation-version>
+    <javax-mail-version>1.4.1</javax-mail-version>
+    <javax-transaction-version>1.1.1</javax-transaction-version>
+    <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <junit-version>3.8.2</junit-version>
-    <mail-version>1.4</mail-version>
-    <slf4j-version>1.5.10</slf4j-version>
-    <eclipse-compiler-version>3.1.1</eclipse-compiler-version>
-    <cometd-version>1.0.1</cometd-version>
+    <junit4-version>4.8.1</junit4-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <slf4j-version>1.5.10</slf4j-version>
     <servlet.spec.groupId>org.mortbay.jetty</servlet.spec.groupId>
     <servlet.spec.artifactId>servlet-api</servlet.spec.artifactId>
     <servlet.spec.version>3.0.20100224</servlet.spec.version>
+    <build-support-version>1.0</build-support-version>
   </properties>
   <scm>
     <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags/jetty-8.0.0.M1</connection>
@@ -48,26 +46,54 @@
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
           <tagBase>svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags</tagBase>
+          <autoVersionSubmodules>true</autoVersionSubmodules>
         </configuration>
       </plugin>
-       <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-remote-resources-plugin</artifactId>
-          <executions>
-            <execution>
-              <phase>generate-resources</phase>
-              <goals>
-                <goal>process</goal>
-              </goals>
-              <configuration>
-                <resourceBundles>
-                  <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0</resourceBundle>
-                </resourceBundles>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-        
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-remote-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>process</goal>
+            </goals>
+            <configuration>
+              <resourceBundles>
+                <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.0</resourceBundle>
+              </resourceBundles>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- source maven plugin creates the source bundle and adds manifest -->
+      <plugin>
+        <inherited>true</inherited>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.1.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <archive>
+                <manifestEntries>
+                  <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
+                  <Bundle-Name>${project.name}</Bundle-Name>
+                  <Bundle-SymbolicName>${bundle-symbolic-name}.source;singleton:=true</Bundle-SymbolicName>
+                  <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
+                  <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
+                  <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
+                </manifestEntries>
+              </archive>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <!-- Build helper maven plugin sets the parsedVersion.osgiVersion property -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -76,58 +102,111 @@
         <executions>
           <execution>
             <id>set-osgi-version</id>
-            <phase>compile</phase>
+            <phase>validate</phase>
             <goals>
               <goal>parse-version</goal>
             </goals>
           </execution>
         </executions>
-      </plugin>        
+      </plugin>
+      <!-- Enforcer Plugin -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>1.0-alpha-4</version>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireMavenVersion>
+                  <version>[2.0.6,)</version>
+                </requireMavenVersion>
+                <requireJavaVersion>
+                  <version>[1.5,)</version>
+                </requireJavaVersion>
+                <versionTxtRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.VersionTxtRule" />
+                <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
+                <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
+                <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule" />
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+        <dependencies>
+           <dependency>
+             <groupId>org.eclipse.jetty.toolchain</groupId>
+             <artifactId>jetty-build-support</artifactId>
+             <version>${build-support-version}</version>
+           </dependency>
+        </dependencies>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <version>2.5</version>
+        <configuration>
+          <targetJdk>1.5</targetJdk>
+          <rulesets>
+            <ruleset>jetty/pmd_ruleset.xml</ruleset>
+          </rulesets>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.eclipse.jetty.toolchain</groupId>
+            <artifactId>jetty-build-support</artifactId>
+            <version>${build-support-version}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
     </plugins>
     <pluginManagement>
       <plugins>
-       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <Implementation-Version>${project.version}</Implementation-Version>
-              <Implementation-Vendor>Eclipse.org - Jetty</Implementation-Vendor>
-              <url>${jetty.url}</url>
-            </manifestEntries>
-          </archive>
-        </configuration>
-       </plugin>
-       <plugin>
-         <groupId>org.apache.maven.plugins</groupId>
-         <artifactId>maven-surefire-plugin</artifactId>
-         <version>2.4.2</version>
-         <configuration>
-           <failIfNoTests>false</failIfNoTests>
-         </configuration>
-       </plugin>
-       <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <version>2.0.0</version>
-        <extensions>true</extensions>
-        <configuration>        
-          <instructions>
-            <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
-            <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
-            <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
-            <Bundle-Localization>plugin</Bundle-Localization>
-            <Bundle-Classpath>.</Bundle-Classpath>
-            <Bundle-Copyright>Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
-            <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
-          </instructions>
-        </configuration>
-       </plugin>
-       <plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <configuration>
+            <archive>
+              <manifestEntries>
+                <Implementation-Version>${project.version}</Implementation-Version>
+                <Implementation-Vendor>Eclipse.org - Jetty</Implementation-Vendor>
+                <url>${jetty.url}</url>
+              </manifestEntries>
+            </archive>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.4.2</version>
+          <configuration>
+            <failIfNoTests>false</failIfNoTests>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <version>2.0.0</version>
+          <extensions>true</extensions>
+          <configuration>
+            <instructions>
+              <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
+              <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
+              <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
+              <Bundle-Localization>plugin</Bundle-Localization>
+              <Bundle-Classpath>.</Bundle-Classpath>
+              <Bundle-Copyright>Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+              <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
+            </instructions>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>2.2-beta-3</version>
+          <version>2.2-beta-5</version>
           <dependencies>
             <dependency>
               <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -135,39 +214,63 @@
               <version>1.0</version>
             </dependency>
           </dependencies>
-       </plugin>
-       
-       <!-- source maven plugin creates the source bundle and adds manifest -->
-       <plugin>
-          <inherited>true</inherited>
-          <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
-            <version>2.1.1</version>
-            <executions>
-              <execution>
-              <id>attach-sources</id>
-              <phase>process-classes</phase>
-              <goals>
-                <goal>jar</goal>
-              </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <archive>
-                <manifestEntries>
-                  <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
-                  <Bundle-Name>${name}</Bundle-Name>
-                  <Bundle-SymbolicName>${bundle-symbolic-name}.source;singleton:=true</Bundle-SymbolicName>
-                  <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
-                  <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
-                  <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
-                </manifestEntries>
-              </archive>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>findbugs-maven-plugin</artifactId>
+          <version>2.3.1</version>
+          <configuration>
+            <findbugsXmlOutput>true</findbugsXmlOutput>
+            <xmlOutput>true</xmlOutput>
+            <effort>Max</effort>
+            <onlyAnalyze>org.eclipse.jetty.*</onlyAnalyze>
           </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
   </build>
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jxr-plugin</artifactId>
+        <version>2.2</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <additionalJOption>-J-Xmx128m</additionalJOption>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <configuration>
+          <targetJdk>1.5</targetJdk>
+          <rulesets>
+            <ruleset>jetty/pmd_ruleset.xml</ruleset>
+          </rulesets>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </reporting>
+  <!--
+  <repositories>
+    <repository>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>sonatype-snapshots</id>
+      <name>Sonatype Jetty Snapshots</name>
+      <url>http://oss.sonatype.org/content/groups/jetty</url>
+    </repository>
+  </repositories>
+   -->
   <modules>
     <module>jetty-util</module>
     <module>jetty-io</module>
@@ -235,28 +338,23 @@
         <version>${slf4j-version}</version>
       </dependency>
       <dependency>
-        <groupId>ant</groupId>
-        <artifactId>ant</artifactId>
-        <version>${ant-version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.apache.geronimo.specs</groupId>
         <artifactId>geronimo-jta_1.1_spec</artifactId>
-        <version>${jta-spec-version}</version>
+        <version>${javax-transaction-version}</version>
       </dependency>
       <dependency>
         <groupId>javax.mail</groupId>
         <artifactId>mail</artifactId>
-        <version>${mail-version}</version>
+        <version>${javax-mail-version}</version>
       </dependency>
       <dependency>
         <groupId>javax.activation</groupId>
         <artifactId>activation</artifactId>
-        <version>${activation-version}</version>
+        <version>${javax-activation-version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
-  <!-- 
+  <!--
     Usage:
     configure settings.xml for jetty.eclipse.website server entry
     > mvn -Paggregate-site javadoc:aggregate jxr:jxr
@@ -277,27 +375,26 @@
             </configuration>
           </plugin>
           <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-javadoc-plugin</artifactId>
-              <configuration>
-                <excludePackageNames>com.acme</excludePackageNames>
-                <links>
-                  <link>http://java.sun.com/j2se/1.5.0/docs/api</link>
-                  <link>http://java.sun.com/javaee/5/docs/api</link>
-                  <link>http://junit.sourceforge.net/javadoc/</link>
-                </links>
-              </configuration>
-            </plugin>
-          </plugins>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <excludePackageNames>com.acme</excludePackageNames>
+              <links>
+                <link>http://java.sun.com/javase/6/docs/api/</link>
+                <link>http://java.sun.com/javaee/6/docs/api</link>
+                <link>http://junit.sourceforge.net/javadoc/</link>
+              </links>
+              <tags>
+                <tag>
+                  <name>org.apache.xbean.XBean</name>
+                  <placement>X</placement>
+                  <head />
+                </tag>
+              </tags>
+            </configuration>
+          </plugin>
+        </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>jetty-spec</id>
-      <properties>
-        <servlet.spec.groupId>org.mortbay.jetty</servlet.spec.groupId>
-        <servlet.spec.artifactId>servlet-api</servlet.spec.artifactId>
-        <servlet.spec.version>3.0.20100224</servlet.spec.version>
-      </properties>
     </profile>
   </profiles>
 </project>

@@ -256,15 +256,13 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /* ------------------------------------------------------------ */
     protected IdentityService findIdentityService()
     {
-        List<IdentityService> services = getServer().getBeans(IdentityService.class);
-        if (services!=null && services.size()>0)
-            return services.get(0);
-        return null;
+        return getServer().getBean(IdentityService.class);
     }
     
     /* ------------------------------------------------------------ */
     /** 
      */
+    @Override
     protected void doStart()
         throws Exception
     {
@@ -354,6 +352,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         
     }
 
+    /* ------------------------------------------------------------ */
     protected boolean checkSecurity(Request request)
     {
         switch(request.getDispatcherType())

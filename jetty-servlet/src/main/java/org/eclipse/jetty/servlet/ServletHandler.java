@@ -68,9 +68,6 @@ import org.eclipse.jetty.util.log.Log;
  * 
  * Unless run as part of a {@link ServletContextHandler} or derivative, the {@link #initialize()}
  * method must be called manually after start().
- * 
- * @see org.eclipse.jetty.webapp.WebAppContext
- * 
  */
 public class ServletHandler extends ScopedHandler
 {
@@ -383,7 +380,7 @@ public class ServletHandler extends ScopedHandler
                 baseRequest.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, ((ServletHolder.Registration)servlet_holder.getRegistration()).getMultipartConfig());
 
                 // start manual inline of nextScope(target,baseRequest,request,response);
-                if (false)
+                if (never())
                     nextScope(target,baseRequest,request,response);
                 else if (_nextScope!=null)
                     _nextScope.doScope(target,baseRequest,request, response);
@@ -813,8 +810,8 @@ public class ServletHandler extends ScopedHandler
     /** Convenience method to add a servlet with a servlet mapping.
      * @param className
      * @param pathSpec
-     * @return
-     * @deprecated
+     * @return the ServletHolder
+     * @deprecated use {@link #addServletWithMapping(Class, String)} instead
      */
     public ServletHolder addServlet (String className, String pathSpec)
     {
@@ -842,7 +839,7 @@ public class ServletHandler extends ScopedHandler
     
     /* ------------------------------------------------------------ */
     /** 
-     * @see {@link #newFilterHolder(Class)}
+     * @see #newFilterHolder(Class)
      */
     public FilterHolder newFilterHolder(Holder.Source source)
     {
@@ -857,7 +854,7 @@ public class ServletHandler extends ScopedHandler
 
     
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a filter.
+    /** Convenience method to add a filter.
      * @param filter  class of filter to create
      * @param pathSpec filter mappings for filter
      * @param dispatches see {@link FilterMapping#setDispatches(int)}
@@ -873,7 +870,7 @@ public class ServletHandler extends ScopedHandler
     }
     
     /* ------------------------------------------------------------ */
-    /** convenience method to add a filter.
+    /** Convenience method to add a filter.
      * @param className of filter
      * @param pathSpec filter mappings for filter
      * @param dispatches see {@link FilterMapping#setDispatches(int)}
@@ -890,7 +887,7 @@ public class ServletHandler extends ScopedHandler
     }
     
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a filter.
+    /** Convenience method to add a filter.
      * @param holder filter holder to add
      * @param pathSpec filter mappings for filter
      * @param dispatches see {@link FilterMapping#setDispatches(int)}
@@ -929,7 +926,8 @@ public class ServletHandler extends ScopedHandler
      * @param className
      * @param pathSpec
      * @param dispatches
-     * @return
+     * @return the filter holder created
+     * @deprecated use {@link #addFilterWithMapping(Class, String, int)} instead
      */
     public FilterHolder addFilter (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
@@ -1371,6 +1369,7 @@ public class ServletHandler extends ScopedHandler
                 b.append(indent);
                 b.append(" +-");
                 b.append(f);
+                b.append(f.getFilterHolder().getInitParameters());
                 b.append('\n');
             }
         }
@@ -1383,6 +1382,9 @@ public class ServletHandler extends ScopedHandler
                 b.append(indent);
                 b.append(" +-");
                 b.append(m);
+                ServletHolder h = getServlet(m.getServletName());
+                if (h!=null)
+                    b.append(h.getInitParameters());
                 b.append('\n');
             }
         }
@@ -1396,6 +1398,7 @@ public class ServletHandler extends ScopedHandler
                 b.append(indent);
                 b.append(" +-[]==>");
                 b.append(h.getName());
+                b.append(h.getInitParameters());
                 b.append('\n');
             }
         }

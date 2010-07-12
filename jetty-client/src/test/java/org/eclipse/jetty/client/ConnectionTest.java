@@ -14,49 +14,161 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import junit.framework.TestCase;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$ $Date$
  */
-public class ConnectionTest extends TestCase
+public class ConnectionTest
 {
+    @Test
+    public void testServerClosedConnection() throws Exception
+    {
+        ServerSocket serverSocket = new ServerSocket();
+        serverSocket.bind(null);
+        int port=serverSocket.getLocalPort();
+
+        HttpClient httpClient = new HttpClient();
+        httpClient.setMaxConnectionsPerAddress(1);
+        httpClient.start();
+        try
+        {
+            CountDownLatch latch = new CountDownLatch(1);
+            HttpExchange exchange = new ConnectionExchange(latch);
+            exchange.setAddress(new Address("localhost", port));
+            exchange.setURI("/");
+            httpClient.send(exchange);
+
+            Socket remote = serverSocket.accept();
+            OutputStream output = remote.getOutputStream();
+            output.write("HTTP/1.1 200 OK\r\n".getBytes("UTF-8"));
+            output.write("Content-Length: 0\r\n".getBytes("UTF-8"));
+            output.write("\r\n".getBytes("UTF-8"));
+            output.flush();
+
+            assertEquals(HttpExchange.STATUS_COMPLETED, exchange.waitForDone());
+
+            remote.close();
+
+            // Need to wait a bit to allow the client to detect
+            // that the server has closed the connection
+            Thread.sleep(500);
+
+            // The server has closed the connection and another attempt to send
+            // with the same connection would fail because the connection has been
+            // closed by the client as well.
+            // The client must open a new connection in this case, and we check
+            // that the new request completes correctly
+            exchange.reset();
+            httpClient.send(exchange);
+
+            remote = serverSocket.accept();
+            output = remote.getOutputStream();
+            output.write("HTTP/1.1 200 OK\r\n".getBytes("UTF-8"));
+            output.write("Content-Length: 0\r\n".getBytes("UTF-8"));
+            output.write("\r\n".getBytes("UTF-8"));
+            output.flush();
+
+            assertEquals(HttpExchange.STATUS_COMPLETED, exchange.waitForDone());
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
     public void testConnectionFailed() throws Exception
     {
-        ServerSocket socket = new ServerSocket();
-        socket.bind(null);
-        int port=socket.getLocalPort();
-        socket.close();
+        ServerSocket serverSocket = new ServerSocket();
+        serverSocket.bind(null);
+        int port=serverSocket.getLocalPort();
+        serverSocket.close();
 
         HttpClient httpClient = new HttpClient();
         httpClient.start();
-
-        CountDownLatch latch = new CountDownLatch(1);
-        HttpExchange exchange = new ConnectionExchange(latch);
-        exchange.setAddress(new Address("localhost", port));
-        exchange.setURI("/");
-        httpClient.send(exchange);
-
-        boolean passed = latch.await(4000, TimeUnit.MILLISECONDS);
-        assertTrue(passed);
-
-        long wait = 100;
-        long maxWait = 10 * wait;
-        long curWait = wait;
-        while (curWait < maxWait && !exchange.isDone())
+        try
         {
-            Thread.sleep(wait);
-            curWait += wait;
-        }
+            CountDownLatch latch = new CountDownLatch(1);
+            HttpExchange exchange = new ConnectionExchange(latch);
+            exchange.setAddress(new Address("localhost", port));
+            exchange.setURI("/");
+            httpClient.send(exchange);
 
-        assertEquals(HttpExchange.STATUS_EXCEPTED, exchange.getStatus());
+            boolean passed = latch.await(4000, TimeUnit.MILLISECONDS);
+            assertTrue(passed);
+
+            long wait = 100;
+            long maxWait = 10 * wait;
+            long curWait = wait;
+            while (curWait < maxWait && !exchange.isDone())
+            {
+                Thread.sleep(wait);
+                curWait += wait;
+            }
+
+            assertEquals(HttpExchange.STATUS_EXCEPTED, exchange.getStatus());
+        }
+        finally
+        {
+            httpClient.stop();
+        }
     }
 
+    @Test
+    public void testMultipleConnectionsFailed() throws Exception
+    {
+        ServerSocket serverSocket = new ServerSocket();
+        serverSocket.bind(null);
+        int port=serverSocket.getLocalPort();
+        serverSocket.close();
+
+        HttpClient httpClient = new HttpClient();
+        httpClient.setMaxConnectionsPerAddress(1);
+        httpClient.start();
+        try
+        {
+            HttpExchange[] exchanges = new HttpExchange[20];
+            final CountDownLatch latch = new CountDownLatch(exchanges.length);
+            for (int i = 0; i < exchanges.length; ++i)
+            {
+                HttpExchange exchange = new HttpExchange()
+                {
+                    @Override
+                    protected void onConnectionFailed(Throwable x)
+                    {
+                        latch.countDown();
+                    }
+                };
+                exchange.setAddress(new Address("localhost", port));
+                exchange.setURI("/");
+                exchanges[i] = exchange;
+            }
+
+            for (HttpExchange exchange : exchanges)
+                httpClient.send(exchange);
+
+            for (HttpExchange exchange : exchanges)
+                assertEquals(HttpExchange.STATUS_EXCEPTED, exchange.waitForDone());
+
+            assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
     public void testConnectionTimeoutWithSocketConnector() throws Exception
     {
         HttpClient httpClient = new HttpClient();
@@ -64,7 +176,6 @@ public class ConnectionTest extends TestCase
         int connectTimeout = 5000;
         httpClient.setConnectTimeout(connectTimeout);
         httpClient.start();
-
         try
         {
             CountDownLatch latch = new CountDownLatch(1);
@@ -86,6 +197,7 @@ public class ConnectionTest extends TestCase
         }
     }
 
+    @Test
     public void testConnectionTimeoutWithSelectConnector() throws Exception
     {
         HttpClient httpClient = new HttpClient();
@@ -93,7 +205,6 @@ public class ConnectionTest extends TestCase
         int connectTimeout = 5000;
         httpClient.setConnectTimeout(connectTimeout);
         httpClient.start();
-
         try
         {
             CountDownLatch latch = new CountDownLatch(1);
@@ -115,56 +226,62 @@ public class ConnectionTest extends TestCase
         }
     }
 
+    @Test
     public void testIdleConnection() throws Exception
     {
-        ServerSocket socket = new ServerSocket();
-        socket.bind(null);
-        int port=socket.getLocalPort();
+        ServerSocket serverSocket = new ServerSocket();
+        serverSocket.bind(null);
+        int port=serverSocket.getLocalPort();
 
         HttpClient httpClient = new HttpClient();
         httpClient.setIdleTimeout(700);
         httpClient.start();
+        try
+        {
+            HttpExchange exchange = new ConnectionExchange();
+            exchange.setAddress(new Address("localhost", port));
+            exchange.setURI("/");
+            HttpDestination dest = httpClient.getDestination(new Address("localhost", port),false);
 
-        HttpExchange exchange = new ConnectionExchange();
-        exchange.setAddress(new Address("localhost", port));
-        exchange.setURI("/");
-        HttpDestination dest = httpClient.getDestination(new Address("localhost", port),false);
+            httpClient.send(exchange);
+            Socket s = serverSocket.accept();
+            byte[] buf = new byte[4096];
+            s.getInputStream().read(buf);
+            assertEquals(1,dest.getConnections());
+            assertEquals(0,dest.getIdleConnections());
 
-        httpClient.send(exchange);
-        Socket s = socket.accept();
-        byte[] buf = new byte[4096];
-        s.getInputStream().read(buf);
-        assertEquals(1,dest.getConnections());
-        assertEquals(0,dest.getIdleConnections());
+            s.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes());
 
-        s.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes());
+            Thread.sleep(300);
+            assertEquals(1,dest.getConnections());
+            assertEquals(1,dest.getIdleConnections());
 
-        Thread.sleep(300);
-        assertEquals(1,dest.getConnections());
-        assertEquals(1,dest.getIdleConnections());
+            exchange = new ConnectionExchange();
+            exchange.setAddress(new Address("localhost", port));
+            exchange.setURI("/");
 
-        exchange = new ConnectionExchange();
-        exchange.setAddress(new Address("localhost", port));
-        exchange.setURI("/");
+            httpClient.send(exchange);
+            s.getInputStream().read(buf);
+            assertEquals(1,dest.getConnections());
+            assertEquals(0,dest.getIdleConnections());
+            s.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes());
 
-        httpClient.send(exchange);
-        s.getInputStream().read(buf);
-        assertEquals(1,dest.getConnections());
-        assertEquals(0,dest.getIdleConnections());
-        s.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes());
+            Thread.sleep(500);
 
-        Thread.sleep(500);
+            assertEquals(1,dest.getConnections());
+            assertEquals(1,dest.getIdleConnections());
 
-        assertEquals(1,dest.getConnections());
-        assertEquals(1,dest.getIdleConnections());
+            Thread.sleep(500);
 
-        Thread.sleep(500);
+            assertEquals(0,dest.getConnections());
+            assertEquals(0,dest.getIdleConnections());
 
-        assertEquals(0,dest.getConnections());
-        assertEquals(0,dest.getIdleConnections());
-
-        socket.close();
-
+            serverSocket.close();
+        }
+        finally
+        {
+            httpClient.stop();
+        }
     }
 
     private class ConnectionExchange extends HttpExchange
@@ -187,7 +304,7 @@ public class ConnectionTest extends TestCase
             if (latch!=null)
                 latch.countDown();
         }
-        
+
         @Override
         protected void onException(Throwable x)
         {

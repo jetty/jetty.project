@@ -50,7 +50,7 @@ import org.eclipse.jetty.util.ajax.JSON;
  * <li>{@link HandlerWrapper} which will nest one handler inside another. In
  * this example, the HelloHandler is nested inside a HandlerWrapper that sets
  * the greeting as a request attribute.
- * <li>{@link ListHandler} which will call a collection of handlers until the
+ * <li>{@link HandlerList} which will call a collection of handlers until the
  * request is marked as handled. In this example, a list is used to combine the
  * param handler (which only handles the request if there are parameters) and
  * the wrapper handler. Frequently handler lists are terminated with the

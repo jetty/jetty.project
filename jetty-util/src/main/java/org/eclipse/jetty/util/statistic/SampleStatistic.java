@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * deviation of continuous sequence of samples.
  * <p>
  * Calculates estimates of mean, variance, and standard deviation
- * characteristics of a sample using a non synchronised
+ * characteristics of a sample using a non synchronized
  * approximation of the on-line algorithm presented
  * in Donald Knuth's Art of Computer Programming, Volume 2,
  * Seminumerical Algorithms, 3rd edition, page 232,
@@ -73,7 +73,7 @@ public class SampleStatistic
 
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the max value
      */
     public long getMax()
     {

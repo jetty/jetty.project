@@ -4,58 +4,60 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.annotations;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
-import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
-import org.eclipse.jetty.annotations.AnnotationParser.ListValue;
-import org.eclipse.jetty.annotations.AnnotationParser.SimpleValue;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
+import org.eclipse.jetty.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
-
-
-import junit.framework.TestCase;
+import org.junit.Test;
 
 /**
  * TestServletAnnotations
  *
  *
  */
-public class TestServletAnnotations extends TestCase
+public class TestServletAnnotations
 {
-
-
-    public void testServletAnnotation()
-    throws Exception
+    @Test
+    public void testServletAnnotation() throws Exception
     {
         List<String> classes = new ArrayList<String>();
         classes.add("org.eclipse.jetty.annotations.ServletC");
         AnnotationParser parser = new AnnotationParser();
 
         WebAppContext wac = new WebAppContext();
+        wac.setAttribute(MetaData.METADATA, new MetaData(wac));
         LifeCycleCallbackCollection collection = new LifeCycleCallbackCollection();
         wac.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, collection);
         RunAsCollection runAsCollection = new RunAsCollection();
         wac.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);
+        List<DiscoveredAnnotation> discoveredAnnotations = new ArrayList<DiscoveredAnnotation>();
+        wac.setAttribute(AnnotationConfiguration.DISCOVERED_ANNOTATIONS, discoveredAnnotations);
         parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new WebServletAnnotationHandler(wac));
        
-        parser.parse(classes, new ClassNameResolver () 
+        parser.parse(classes, new ClassNameResolver ()
         {
             public boolean isExcluded(String name)
             {
@@ -66,8 +68,12 @@ public class TestServletAnnotations extends TestCase
             {
                 return false;
             }
-
         });
+        
+        assertEquals(1, discoveredAnnotations.size());
+        assertTrue(discoveredAnnotations.get(0) instanceof WebServletAnnotation);
+        
+        discoveredAnnotations.get(0).apply();
        
         ServletHolder[] holders = wac.getServletHandler().getServlets();
         assertNotNull(holders);
@@ -88,6 +94,7 @@ public class TestServletAnnotations extends TestCase
     throws Exception
     { 
         WebAppContext wac = new WebAppContext();
+        wac.setAttribute(MetaData.METADATA, new MetaData(wac));
         ConstraintSecurityHandler sh = new ConstraintSecurityHandler();
         wac.setSecurityHandler(sh);
         sh.setRoles(new HashSet<String>(Arrays.asList(new String[]{"humpty", "dumpty"})));

@@ -115,12 +115,15 @@ public class JaspiAuthenticator implements Authenticator
             {
             Set<UserIdentity> ids = clientSubject.getPrivateCredentials(UserIdentity.class);
                 UserIdentity userIdentity;
-                if (ids.size() > 0) {
+                if (ids.size() > 0)
+                {
                     userIdentity = ids.iterator().next();
-//                    return new FormAuthenticator.FormAuthentication(this,ids.iterator().next());
                 } else {
                     CallerPrincipalCallback principalCallback = _callbackHandler.getThreadCallerPrincipalCallback();
-                    if (principalCallback == null) throw new NullPointerException("No CallerPrincipalCallback");
+                    if (principalCallback == null)
+                    {
+                        return Authentication.UNAUTHENTICATED;
+                    }
                     Principal principal = principalCallback.getPrincipal();
                     if (principal == null) {
                         String principalName = principalCallback.getName();

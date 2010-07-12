@@ -51,9 +51,6 @@ import org.eclipse.jetty.util.resource.Resource;
  * 
  * If DIGEST Authentication is used, the password must be in a recoverable
  * format, either plain text or OBF:.
- * 
- * @see org.eclipse.jetty.security.Password
- * 
  */
 public class HashLoginService extends MappedLoginService
 {
@@ -105,8 +102,6 @@ public class HashLoginService extends MappedLoginService
      * names.
      * 
      * @param config Filename or url of user properties file.
-     * @exception java.io.IOException if user properties file could not be
-     *                    loaded
      */
     public void setConfig(String config)
     {

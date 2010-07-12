@@ -337,7 +337,7 @@ public class ObjectMBean implements DynamicMBean
         catch (InvocationTargetException e)
         {
             Log.warn(Log.EXCEPTION, e);
-            throw new ReflectionException((Exception) e.getTargetException());
+            throw new ReflectionException(new Exception(e.getCause()));
         }
     }
 
@@ -405,7 +405,7 @@ public class ObjectMBean implements DynamicMBean
         catch (InvocationTargetException e)
         {
             Log.warn(Log.EXCEPTION, e);
-            throw new ReflectionException((Exception) e.getTargetException());
+            throw new ReflectionException(new Exception(e.getCause()));
         }
     }
 
@@ -470,7 +470,7 @@ public class ObjectMBean implements DynamicMBean
         catch (InvocationTargetException e)
         {
             Log.warn(Log.EXCEPTION, e);
-            throw new ReflectionException((Exception) e.getTargetException());
+            throw new ReflectionException(new Exception(e.getCause()));
         }
         finally
         {

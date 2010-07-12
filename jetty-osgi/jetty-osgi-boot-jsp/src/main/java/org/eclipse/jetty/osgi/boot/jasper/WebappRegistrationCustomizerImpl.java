@@ -118,7 +118,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
      * Support only 2 types of packaging for the bundle: - the bundle is a jar (recommended for runtime.) - the bundle is a folder and contain jars in the root
      * and/or in the lib folder (nice for PDE developement situations) Unsupported: the bundle is a jar that embeds more jars.
      * 
-     * @return
+     * @return array of URLs
      * @throws Exception
      */
     public URL[] getJarsWithTlds(OSGiAppProvider provider, BundleFileLocatorHelper locatorHelper) throws Exception
@@ -148,7 +148,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
     	{
 	        Bundle tldBundle = FrameworkUtil.getBundle(cl);
 	        File tldBundleLocation = locatorHelper.getBundleInstallLocation(tldBundle);
-	        if (tldBundleLocation.isDirectory())
+	        if (tldBundleLocation != null && tldBundleLocation.isDirectory())
 	        {
 	            // try to find the jar files inside this folder
 	            for (File f : tldBundleLocation.listFiles())
@@ -170,7 +170,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
 	            }
 	            
 	        }
-	        else
+	        else if (tldBundleLocation != null)
 	        {
 	            urls.add(tldBundleLocation.toURI().toURL());
 	        }

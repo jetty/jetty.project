@@ -6,9 +6,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.server.Connector;
@@ -25,6 +23,7 @@ public class WebInfConfiguration implements Configuration
     public static final String TEMPDIR_CREATED = "org.eclipse.jetty.tmpdirCreated";
     public static final String CONTAINER_JAR_RESOURCES = "org.eclipse.jetty.containerJars";
     public static final String WEB_INF_JAR_RESOURCES = "org.eclipse.jetty.webInfJars";
+    public static final String WEB_INF_ORDERED_JAR_RESOURCES = "org.eclipse.jetty.webInfOrderedJars";
     public static final String CONTAINER_JAR_PATTERN = "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern";
     public static final String WEBINF_JAR_PATTERN = "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern";
     
@@ -139,7 +138,7 @@ public class WebInfConfiguration implements Configuration
             // Look for classes directory
             Resource classes= web_inf.addPath("classes/");
             if (classes.exists())
-                ((WebAppClassLoader)context.getClassLoader()).addClassPath(classes.toString());
+                ((WebAppClassLoader)context.getClassLoader()).addClassPath(classes);
 
             // Look for jars
             Resource lib= web_inf.addPath("lib/");
@@ -219,68 +218,52 @@ public class WebInfConfiguration implements Configuration
      * contents if dir already exists.
      * </li>
      * </ol>
-     * 
-     * @return
      */
     public void resolveTempDirectory (WebAppContext context)
     {
       //If a tmp directory is already set, we're done
         File tmpDir = context.getTempDirectory();
-        if (tmpDir!=null && tmpDir.isDirectory() && tmpDir.canWrite())
-            return; //Already have a suitable tmp dir configured
+        if (tmpDir != null && tmpDir.isDirectory() && tmpDir.canWrite())
+        {
+            return; // Already have a suitable tmp dir configured
+        }
         
 
-        //None configured, try and come up with one
-        //First ... see if one is configured in a context attribute
-        //either as a File or name of a file
-        Object t = context.getAttribute(WebAppContext.TEMPDIR);
-        if (t != null)
+        // No temp directory configured, try to establish one.
+        // First we check the context specific, javax.servlet specified, temp directory attribute
+        File servletTmpDir = asFile(context.getAttribute(WebAppContext.TEMPDIR));
+        if (servletTmpDir != null && servletTmpDir.isDirectory() && servletTmpDir.canWrite())
         {
-            //Is it a File?
-            if (t instanceof File)
-            {
-                tmpDir=(File)t;
-                if (tmpDir.isDirectory() && tmpDir.canWrite())
-                {
-                    context.setTempDirectory(tmpDir);
-                    return;
-                }
-            }
-            // The context attribute specified a name not a File
-            if (t instanceof String)
-            {
-                try
-                {
-                    tmpDir=new File((String)t);
-
-                    if (tmpDir.isDirectory() && tmpDir.canWrite())
-                    {
-                        context.setAttribute(context.TEMPDIR,tmpDir);
-                        context.setTempDirectory(tmpDir);
-                        return;
-                    }
-                }
-                catch(Exception e)
-                {
-                    Log.warn(Log.EXCEPTION,e);
-                }
-            }
+            // Use as tmpDir
+            tmpDir = servletTmpDir;
+            // Ensure Attribute has File object
+            context.setAttribute(WebAppContext.TEMPDIR,tmpDir);
+            // Set as TempDir in context.
+            context.setTempDirectory(tmpDir);
+            return;
         }
 
-        // Second ... make a tmp directory, in a work directory if one exists
-        String temp = getCanonicalNameForWebAppTmpDir(context);
-        
         try
         {
-            //Put the tmp dir in the work directory if we had one
+            // Put the tmp dir in the work directory if we had one
             File work =  new File(System.getProperty("jetty.home"),"work");
-            if (!work.exists() || !work.canWrite() || !work.isDirectory())
-                    work = null;
-            
-            if (work!=null)
+            if (work.exists() && work.canWrite() && work.isDirectory())
+            {
                 makeTempDirectory(work, context, false); //make a tmp dir inside work, don't delete if it exists
+            }
             else
-                makeTempDirectory(new File(System.getProperty("java.io.tmpdir")), context, true); //make a tmpdir, delete if it already exists
+            {
+                File baseTemp = asFile(context.getAttribute(WebAppContext.BASETEMPDIR));
+                if (baseTemp != null && baseTemp.isDirectory() && baseTemp.canWrite())
+                {
+                    // Use baseTemp directory (allow the funky Jetty_0_0_0_0.. subdirectory logic to kick in
+                    makeTempDirectory(baseTemp,context,false);
+                }
+                else
+                {
+                    makeTempDirectory(new File(System.getProperty("java.io.tmpdir")),context,true); //make a tmpdir, delete if it already exists
+                }
+            }
         }
         catch(Exception e)
         {
@@ -309,7 +292,31 @@ public class WebInfConfiguration implements Configuration
         }
     }
     
-    
+    /**
+     * Given an Object, return File reference for object.
+     * Typically used to convert anonymous Object from getAttribute() calls to a File object.
+     * @param fileattr the file attribute to analyze and return from (supports type File and type String, all others return null)
+     * @return the File object, null if null, or null if not a File or String
+     */
+    private File asFile(Object fileattr)
+    {
+        if (fileattr == null)
+        {
+            return null;
+        }
+        if (fileattr instanceof File)
+        {
+            return (File)fileattr;
+        }
+        if (fileattr instanceof String)
+        {
+            return new File((String)fileattr);
+        }
+        return null;
+    }
+
+
+
     public void makeTempDirectory (File parent, WebAppContext context, boolean deleteExisting)
     throws IOException
     {
@@ -365,6 +372,7 @@ public class WebInfConfiguration implements Configuration
     public void unpack (WebAppContext context) throws IOException
     {
         Resource web_app = context.getBaseResource();
+        _preUnpackBaseResource = context.getBaseResource();
         
         if (web_app == null)
         {
@@ -408,9 +416,12 @@ public class WebInfConfiguration implements Configuration
                 {
                     // look for a sibling like "foo/" to a "foo.war"
                     File warfile=Resource.newResource(war).getFile();
-                    File sibling = new File(warfile.getParent(),warfile.getName().substring(0,warfile.getName().length()-4));
-                    if (sibling.exists() && sibling.isDirectory() && sibling.canWrite())
-                        extractedWebAppDir=sibling;
+                    if (warfile!=null)
+                    {
+                        File sibling = new File(warfile.getParent(),warfile.getName().substring(0,warfile.getName().length()-4));
+                        if (sibling.exists() && sibling.isDirectory() && sibling.canWrite())
+                            extractedWebAppDir=sibling;
+                    }
                 }
                 
                 if (extractedWebAppDir==null)
@@ -463,7 +474,7 @@ public class WebInfConfiguration implements Configuration
                 Log.debug("webapp=" + web_app);
         }
         
-        _preUnpackBaseResource = context.getBaseResource();
+        
         
         // Do we need to extract WEB-INF/lib?
         Resource web_inf= web_app.addPath("WEB-INF/");
@@ -499,7 +510,7 @@ public class WebInfConfiguration implements Configuration
                 web_inf_classes.copyTo(webInfClassesDir);
             }
             
-            web_inf=Resource.newResource(extractedWebInfDir.toURL());
+            web_inf=Resource.newResource(extractedWebInfDir.getCanonicalPath());
             
             ResourceCollection rc = new ResourceCollection(new Resource[]{web_inf,web_app});
             
@@ -530,7 +541,7 @@ public class WebInfConfiguration implements Configuration
     /**
      * Check if the tmpDir itself is called "work", or if the tmpDir
      * is in a directory called "work".
-     * @return
+     * @return true if File is a temporary or work directory
      */
     public boolean isTempWorkDirectory (File tmpDir)
     {
@@ -546,13 +557,13 @@ public class WebInfConfiguration implements Configuration
     
     
     /**
-     * Create a canonical name for a webapp tmp directory.
+     * Create a canonical name for a webapp temp directory.
      * The form of the name is:
-     *  "Jetty_"+host+"_"+port+"__"+resourceBase+"_"+context+"_"+virtualhost+base36 hashcode of whole string
+     *  <code>"Jetty_"+host+"_"+port+"__"+resourceBase+"_"+context+"_"+virtualhost+base36_hashcode_of_whole_string</code>
      *  
      *  host and port uniquely identify the server
      *  context and virtual host uniquely identify the webapp
-     * @return
+     * @return the canonical name for the webapp temp directory
      */
     public String getCanonicalNameForWebAppTmpDir (WebAppContext context)
     {
@@ -643,7 +654,7 @@ public class WebInfConfiguration implements Configuration
     /**
      * Look for jars in WEB-INF/lib
      * @param context
-     * @return
+     * @return the list of jar resources found within context 
      * @throws Exception
      */
     protected List<Resource> findJars (WebAppContext context) 

@@ -25,18 +25,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
-import org.testng.annotations.Test;
+import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.junit.Test;
 
 /**
  * AbstractServerCrossContextSessionTest
- *
- *
  */
-
 public abstract class AbstractServerCrossContextSessionTest
 {
 

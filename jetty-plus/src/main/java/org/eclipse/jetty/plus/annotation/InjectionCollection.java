@@ -32,6 +32,7 @@ public class InjectionCollection
     public static final String INJECTION_COLLECTION = "org.eclipse.jetty.injectionCollection";
     private HashMap<String, List<Injection>> _injectionMap = new HashMap<String, List<Injection>>();//map of classname to injections
     
+    
     public void add (Injection injection)
     {
         if ((injection==null) || injection.getTargetClass()==null) 
@@ -47,7 +48,6 @@ public class InjectionCollection
             injections = new ArrayList<Injection>();
             _injectionMap.put(injection.getTargetClass().getCanonicalName(), injections);
         }
-        
         injections.add(injection);
     }
 
@@ -59,6 +59,7 @@ public class InjectionCollection
 
         return _injectionMap.get(className);
     }
+  
     
     
     public Injection getInjection (String jndiName, Class clazz, Field field)

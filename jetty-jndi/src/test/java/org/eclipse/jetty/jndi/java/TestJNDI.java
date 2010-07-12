@@ -4,21 +4,19 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.jndi.java;
-
 
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Hashtable;
-
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.LinkRef;
@@ -32,57 +30,31 @@ import javax.naming.Reference;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
 import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.util.log.Log;
+import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-
-public class TestJNDI extends TestCase
+/**
+ *
+ */
+public class TestJNDI
 {
-
-
     public static class MyObjectFactory implements ObjectFactory
     {
         public static String myString = "xxx";
 
-        public Object getObjectInstance(Object obj,
-                                        Name name,
-                                        Context nameCtx,
-                                        Hashtable environment)
-            throws Exception
-            {
-                return myString;
-            }
+        public Object getObjectInstance(Object obj, Name name, Context nameCtx, Hashtable environment) throws Exception
+        {
+            return myString;
+        }
     }
 
-    public TestJNDI (String name)
-    {
-        super (name);
-    }
-
-
-    public static Test suite ()
-    {
-        return new TestSuite (TestJNDI.class);
-    }
-
-    public void setUp ()
-        throws Exception
-    {
-    }
-
-
-    public void tearDown ()
-        throws Exception
-    {
-    }
-
-    public void testIt ()
-    throws Exception
+    @Test
+    public void testIt() throws Exception
     {
         try
         {
@@ -99,16 +71,12 @@ public class TestJNDI extends TestCase
             initCtxA.bind ("blah", "123");
             assertEquals ("123", initCtxA.lookup("blah"));
 
-
-
-
             InitialContext initCtx = new InitialContext();
             Context sub0 = (Context)initCtx.lookup("java:");
 
             if(Log.isDebugEnabled())Log.debug("------ Looked up java: --------------");
 
             Name n = sub0.getNameParser("").parse("/red/green/");
-
 
             if(Log.isDebugEnabled())Log.debug("get(0)="+n.get(0));
             if(Log.isDebugEnabled())Log.debug("getPrefix(1)="+n.getPrefix(1));
@@ -166,42 +134,35 @@ public class TestJNDI extends TestCase
                 //expected exception
             }
 
-
-
             //check bindings at comp
             Context sub1 = (Context)initCtx.lookup("java:comp");
 
             Context sub2 = sub1.createSubcontext ("env");
 
             initCtx.bind ("java:comp/env/rubbish", "abc");
-            assertEquals ("abc", (String)initCtx.lookup("java:comp/env/rubbish"));
-
-
+            assertEquals ("abc", initCtx.lookup("java:comp/env/rubbish"));
 
             //check binding LinkRefs
             LinkRef link = new LinkRef ("java:comp/env/rubbish");
             initCtx.bind ("java:comp/env/poubelle", link);
-            assertEquals ("abc", (String)initCtx.lookup("java:comp/env/poubelle"));
+            assertEquals ("abc", initCtx.lookup("java:comp/env/poubelle"));
 
             //check binding References
             StringRefAddr addr = new StringRefAddr("blah", "myReferenceable");
             Reference ref = new Reference (java.lang.String.class.getName(),
                     addr,
                     MyObjectFactory.class.getName(),
-                    (String)null);
+                    null);
 
             initCtx.bind ("java:comp/env/quatsch", ref);
-            assertEquals (MyObjectFactory.myString, (String)initCtx.lookup("java:comp/env/quatsch"));
+            assertEquals (MyObjectFactory.myString, initCtx.lookup("java:comp/env/quatsch"));
 
             //test binding something at java:
             Context sub3 = initCtx.createSubcontext("java:zero");
             initCtx.bind ("java:zero/one", "ONE");
             assertEquals ("ONE", initCtx.lookup("java:zero/one"));
 
-
-
-
-            //change the current thread's classloader to check distinct naming                                              
+            //change the current thread's classloader to check distinct naming
             currentThread.setContextClassLoader(childLoader2);
 
             Context otherSub1 = (Context)initCtx.lookup("java:comp");
@@ -215,7 +176,6 @@ public class TestJNDI extends TestCase
                 //expected
             }
 
-
             //put the thread's classloader back
             currentThread.setContextClassLoader(childLoader1);
 
@@ -227,11 +187,11 @@ public class TestJNDI extends TestCase
             initCtx.rebind ("java:comp/env/mullheim", "hij");
             assertEquals ("hij", initCtx.lookup("java:comp/env/mullheim"));
 
-            //test that the other bindings are already there       
-            assertEquals ("xyz", (String)initCtx.lookup("java:comp/env/poubelle"));
+            //test that the other bindings are already there
+            assertEquals ("xyz", initCtx.lookup("java:comp/env/poubelle"));
 
             //test java:/comp/env/stuff
-            assertEquals ("xyz", (String)initCtx.lookup("java:/comp/env/poubelle/"));
+            assertEquals ("xyz", initCtx.lookup("java:/comp/env/poubelle/"));
 
             //test list Names
             NamingEnumeration nenum = initCtx.list ("java:comp/env");
@@ -244,10 +204,10 @@ public class TestJNDI extends TestCase
 
             assertEquals (4, results.size());
 
-            assertEquals ("java.lang.String", (String)results.get("rubbish"));
-            assertEquals ("javax.naming.LinkRef", (String)results.get("poubelle"));
-            assertEquals ("java.lang.String", (String)results.get("mullheim"));
-            assertEquals ("javax.naming.Reference", (String)results.get("quatsch"));
+            assertEquals ("java.lang.String", results.get("rubbish"));
+            assertEquals ("javax.naming.LinkRef", results.get("poubelle"));
+            assertEquals ("java.lang.String", results.get("mullheim"));
+            assertEquals ("javax.naming.Reference", results.get("quatsch"));
 
             //test list Bindings
             NamingEnumeration benum = initCtx.list("java:comp/env");
@@ -265,13 +225,11 @@ public class TestJNDI extends TestCase
             InitialContext closeInit = new InitialContext();
             closeInit.close();
 
-
-
             //check locking the context
             Context ectx = (Context)initCtx.lookup("java:comp");
             ectx.bind("crud", "xxx");
             ectx.addToEnvironment("org.eclipse.jndi.immutable", "TRUE");
-            assertEquals ("xxx", (String)initCtx.lookup("java:comp/crud"));
+            assertEquals ("xxx", initCtx.lookup("java:comp/crud"));
             try
             {
                 ectx.bind("crud2", "xxx2");
@@ -282,7 +240,7 @@ public class TestJNDI extends TestCase
             }
 
             //test what happens when you close an initial context that was used
-            initCtx.close();   
+            initCtx.close();
         }
         finally
         {
@@ -290,6 +248,5 @@ public class TestJNDI extends TestCase
             Context comp = (Context)ic.lookup("java:comp");
             comp.destroySubcontext("env");
         }
-    } 
-
+    }
 }

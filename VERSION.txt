@@ -1,18 +1,159 @@
-jetty-8.0.0.M1 8 April 2010
+jetty-8.0.0.M1 12 July 2010
  + 306350 Ensure jars excluded by ordering are not scanned for annotations
+ + JETTY-1224 Change jetty-8 merge rules for fragment descriptors and annotations
  + Ensure <absolute-ordering> in web.xml overrides relative <ordering> in fragments
  + Ensure empty <absolute-ordering> implies exclusion of all fragments
  + Ensure servlet-api jar class inheritance hierarchy is scanned
+
+jetty-7.1.5.v20100705
+ + Update ecj to 3.6 Helios release drop
+ + 288194 Add blacklist/whitelist to ProxyServlet and ProxyHandler
+ + 296570 EOFException for HttpExchange when HttpClient.stop called.
+ + 311550 The WebAppProvider should allow setTempDirectory
+ + 316449 Websocket disconnect fix
+ + 316584 Exception on startup if temp path has spaces and extractWAR=false
+ + 316597 Removed null check and fixed name in Resource#hrefEncodeURI
+ + 316970 jetty.sh fails to find JETTY_HOME in standard directories
+ + 316973 jetty.sh claims java installation is invalid
+ + 316976 removed quotes of JAVA_OPTIONS in jetty.sh
+ + 317019 Date HTTP header not sent for HTTP/1.0 requests
+ + 317759 Allow roles and constraints to be added after init
+ + 317906 OPTIONS correctly handles TRACE
+ + 318308 Correct quoting of unicode control characters
+ + 318470 unboxing NPE protection in HttpConnection
+ + 318551 Optional uncheck Printwriter
+ + JETTY-1237 Save local/remote address to be available after close
+
+jetty-7.1.4.v20100610
+ + 298551 SslSocketConnector does not need keystore stream
+ + 295715 AbstractSessionManager decoupled from Context
+ + 292326 Stop continuations if server is stopped.
+ + 292814 Make QoSFilter and DoSFilter JMX manageable
+ + 293222 Improve request log to handle/show asynchronous latency
+ + 294212 Can not customize session cookie path
+ + 301608 Deregister shutdown hooks
+ + 302350 org.eclipse.jetty.server.NCSARequestLog is missing JavaDoc
+ + 303661 jetty.sh failes if JETTY_HOME is not writeable
+ + 304100 Better document JMX setup in jetty-jmx.xml
+ + 305300 AsyncContext.start dispatches runnable
+ + 314299 Create test harness for JDBCLoginService
+ + 314581 Implement the Sec-Websocket handshake
+ + 315190 CrossOriginFilter avoid headers not understood by WebSocket
+ + 315687 included init script fails to test for JETTY_HOME as empty
+ + 315715 Improved Cookie version handling. Server.setMaxCookieVersion
+ + 315744 Fixed STOP.PORT and STOP.KEY in start.jar
+ + 315748 Removed --fromDaemon from start.jar (replaced with --daemon)
+ + 315925 Improved context xml configuration handling
+ + 315995 Incorrect package name in system classes list
+ + 316119 Fixed maxIdleTime for SocketEndPoint
+ + 316254 Implement @DeclareRoles
+ + 316334 Breaking change on org.eclipse.jetty.client.HttpExchange
+ + 316399 Debug output in MultiPartFilter
+ + 316413 Restarting webapp for packed war fails
+ + 316557 OSGi HttpService failure due to undeployed context handlers
+ + JETTY-547 Delay close after shutdown until request read
+ + JETTY-1231 Support context request log handler
+
+jetty-7.1.3.v20100526
+ + 296567 HttpClient RedirectListener handles new HttpDestination
+ + 297598 JDBCLoginService uses hardcoded credential class
+ + 305898 Websocket handles query string in URI
+ + 307457 Exchanges are left unhandled when connection is lost
+ + 313205 Unable to run test-jdbc-sessions tests
+ + 314177 JSTL support is broken
+ + 314009 jetty.xml configuration file on command line
+ + 314459 support maven3 for builds
+
+jetty-7.1.2.v20100523
+ + 308866 Update test suite to JUnit4 - Module jetty-util
+ + 312948 Recycle SSL crypto buffers
+ + 313196 randomly allocate ports for session test.
+ + 313278 Implement octet ranges in IPAccessHandler
+ + 313336 secure websockets
+ + 314009 updated README.txt
+ + Update links to jetty website and wiki on test webapp
+
+jetty-7.1.1.v20100517
+ + 302344 Make the list of available contexts if root context is not configured optional
+ + 304803 Remove TypeUtil Integer and Long caches
+ + 306226 HttpClient should allow changing the keystore and truststore type
+ + 308857 Update test suite to JUnit4 - Module jetty-jndi
+ + 308856 Update test suite to JUnit4 - Module jetty-jmx
+ + 308860 Update test suite to JUnit4 - Module jetty-rewrite
+ + 308850 Update test suite to JUnit4 - Module jetty-annotations
+ + 308853 Update test suite to JUnit4 - Module jetty-deploy
+ + 308854 Update test suite to JUnit4 - Module jetty-http
+ + 308859 Update test suite to JUnit4 - Module jetty-policy
+ + 308858 Update test suite to JUnit4 - Module jetty-plus
+ + 308863 Update test suite to JUnit4 - Module jetty-servlet
+ + 308855 Update test suite to JUnit4 - Module jetty-io
+ + 308862 Update test suite to JUnit4 - Module jetty-server
+ + 308867 Update test suite to JUnit4 - Module jetty-webapp
+ + 310918 Fixed write blocking for client HttpConnection
+ + 312526 Protect shutdown thread initialization during shutdown
+
+jetty-7.1.0 5 May 2010
+ + 306353 fixed cross context dispatch to root context.
+ + 311154 Added deprecated StringBuffer API for backwards compatibility
+ + 311554 Protect shutdown thread from Server#doStop
+ + 312243 Optimized timeout handling
+
+jetty-7.1.0.RC1 5 May 2010
+ + 286889 Allow System and Server classes to be set on Server instance and when applied to all webapps
+ + 291448 SessionManager has isCheckingRemoteSessionIdEncoding
+ + 296650 JETTY-1198 reset idle timeout on request body chunks
+ + 297104 HTTP CONNECT does not work correct with SSL destinations
+ + 306782 Close connection when expected 100 continues is not sent
+ + 308848 Update test suite to JUnit4 - Module jetty-ajp
+ + 308861 Update test suite to JUnit4 - Module jetty-security
+ + 308864 Update test suite to JUnit4 - Module jetty-servlets
+ + 308865 Update test suite to JUnit4 - Module jetty-start
+ + 308868 Update test suite to JUnit4 - Module jetty-websocket
+ + 308869 Update test suite to JUnit4 - Module jetty-xml
+ + 309153 Hide extracted WEB-INF/lib when running a non-extracted war
+ + 309369 Added WebSocketLoadTest
+ + 309686 Fixed response buffers usage
+ + 310094 Improved start.jar options handling and configs
+ + 310382 NPE protection when WAR is not a file
+ + 310562 SslSocketConnector fails to start if excludeCipherSuites is set
+ + 310634 Get the localport when opening a server socket.
+ + 310703 Update test suite to JUnit4 - Module tests/test-integration
+ + 310918 Synchronize content exchange
+ + 311154 Use Appendable in preference to StringBuilder/StringBuffer in APIs
+ + 311362 Optional org.eclipse.jetty.util.log.stderr.SOURCE
+ + JETTY-1030 - Improve jetty.sh script
+ + JETTY-1142 Replace Set-Cookies with same name
+
+jetty-7.1.0.RC0 27 April 2010
+ + 294563 Websocket client connection
+ + 297104 Improve handling of CONNECT method
  + 306349 ProxyServlet does not work unless deployed at /
+ + 307294 Add AbstractLifeCycle.AbstractLifeCycleListener implementation
  + 307847 Fixed combining mime type parameters
  + 307898 Handle large/async websocket messages
+ + 308009 ObjectMBean incorrectly casts getTargetException() to Exception
+ + 308420 convert jetty-plus.xml to use DeploymentManager
+ + 308925 Protect the test webapp from remote access
+ + 309466 Removed synchronization from StdErrLog
+ + 309765 Added JSP module
+ + 310051 _configurationClasses now defaults to null in WebAppContext
+ + 310094 Improved start.jar usage and config files
+ + 310431 Default ErrorHandler as server Bean
+ + 310467 Allow SocketConnector to create generic Connection objects
+ + 310603 Make Logger interface consistent
+ + 310605 Make a clean room implementation of the JSP logger bridge
+ + Add AnnotationConfiguration to jetty-plus.xml
+ + Fix jetty-plus.xml reference to addLifeCycle
+ + JETTY-1200 SSL NIO Endpoint wraps non NIO buffers
  + JETTY-1202 Use platform default algorithm for SecureRandom
  + Merged 7.0.2.v20100331
  + Add NPE protection to ContainerInitializerConfiguration
  + Temporarily remove jetty-osgi module to clarify jsp version compatibility
+ + JETTY-1212 handle long content lengths
+ + JETTY-1214 avoid ISE when scavenging invalid session
+ + JETTY-903 Stop both caches
 
-
-jetty-7.0.2.v20100331
+jetty-7.0.2.v20100331 31 March 2010
  + 297552 Don't call Continuation timeouts from acceptor tick
  + 298236 Additional unit tests for jetty-client
  + 306783 NPE in StdErrLog when Throwable is null
@@ -24,6 +165,17 @@ jetty-7.0.2.v20100331
  + Take excess logging statements out of startup
  + Ensure webapps with no WEB-INF don't scan WEB-INF/lib
  + Allow Configuration array to be set on Server instance for all web apps
+
+jetty-6.1.24 21 April 2010
+ + JETTY-903 Stop both caches
+ + JETTY-1198 reset idle timeout on request body chunks
+ + JETTY-1200 SSL NIO Endpoint wraps non NIO buffers
+ + JETTY-1211 SetUID loadlibrary name and debug
+ + 308925 Protect the test webapp from remote access
+ + COMETD-99 ClientImpl logs exceptions in listeners with "debug" level
+ + COMETD-100 ClientImpl logs "null" as clientId
+ + COMETD-107 Reloading the application with reload extension does not fire /meta/connect handlers until long poll timeout expires
+ + Upgraded to cometd 1.1.1 client
 
 jetty-6.1.23 2 April 2010
  + JSON parses NaN as null

@@ -162,7 +162,7 @@ public class CrossOriginFilter implements Filter
     {
         String origin = request.getHeader(ORIGIN_HEADER);
         // Is it a cross origin request ?
-        if (origin != null)
+        if (origin != null && isEnabled(request))
         {
             if (originMatches(origin))
             {
@@ -184,6 +184,18 @@ public class CrossOriginFilter implements Filter
         }
 
         chain.doFilter(request, response);
+    }
+
+    protected boolean isEnabled(HttpServletRequest request)
+    {
+        // WebSocket clients such as Chrome 5 implement a version of the WebSocket
+        // protocol that does not accept extra response headers on the upgrade response
+        if ("Upgrade".equalsIgnoreCase(request.getHeader("Connection")) &&
+            "WebSocket".equalsIgnoreCase(request.getHeader("Upgrade")))
+        {
+            return false;
+        }
+        return true;
     }
 
     private boolean originMatches(String origin)

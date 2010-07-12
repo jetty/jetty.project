@@ -34,9 +34,6 @@ import org.eclipse.jetty.util.log.Log;
  *       this.bars=bars;
  *   }
  * </pre>
- *   
- * 
- *
  */
 public class Container
 {
@@ -73,7 +70,7 @@ public class Container
      * @param oldChild The previous value of the child.  If this is non null and differs from <code>child</code>, then a remove event is generated.
      * @param child The current child. If this is non null and differs from <code>oldChild</code>, then an add event is generated.
      * @param relationship The name of the relationship
-     * @param addRemoveBean If true add/remove is called for the new/old children as well as the relationships
+     * @param addRemove If true add/remove is called for the new/old children as well as the relationships
      */
     public synchronized void update(Object parent, Object oldChild, final Object child, String relationship,boolean addRemove)
     {
@@ -112,7 +109,7 @@ public class Container
      * This array is modified and children that remain in the new children array are nulled out of the old children array.
      * @param children The current array of children. An add event is generated for any child in this array but not in the <code>oldChildren</code> array.
      * @param relationship The name of the relationship
-     * @param addRemoveBean If true add/remove is called for the new/old children as well as the relationships
+     * @param addRemove If true add/remove is called for the new/old children as well as the relationships
      */
     public synchronized void update(Object parent, Object[] oldChildren, final Object[] children, String relationship, boolean addRemove)
     {

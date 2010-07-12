@@ -24,9 +24,9 @@ import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.webapp.Fragment;
+import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebXmlProcessor;
+import org.eclipse.jetty.webapp.MetaData;
 
 
 /**
@@ -59,23 +59,29 @@ public class Configuration implements org.eclipse.jetty.webapp.Configuration
     {
         bindUserTransaction(context);
         
-        WebXmlProcessor webXmlProcessor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
-        if (webXmlProcessor == null)
-           throw new IllegalStateException ("No processor for web xml");
+        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
+        if (metaData == null)
+           throw new IllegalStateException ("No metadata");
         
-        PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor(webXmlProcessor);
-        webXmlProcessor.process(webXmlProcessor.getWebDefault(), plusProcessor);
-        webXmlProcessor.process(webXmlProcessor.getWebXml(), plusProcessor);
+        metaData.addDescriptorProcessor(new PlusDescriptorProcessor());
+        
+        /*
+         * THE PROCESSING IS NOW DONE IN metadata.resolve ()
+         
+        PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor(metaData);
+        plusProcessor.process(metaData.getWebDefault());
+        plusProcessor.process(metaData.getWebXml());
      
 
         //Process plus-elements of each descriptor
-        for (Fragment frag: webXmlProcessor.getFragments())
+        for (FragmentDescriptor frag: metaData.getOrderedFragments())
         {
-            webXmlProcessor.process(frag, plusProcessor);
+            plusProcessor.process(frag);
         }
 
         //process the override-web.xml descriptor
-        webXmlProcessor.process(webXmlProcessor.getOverrideWeb(), plusProcessor);
+        plusProcessor.process(metaData.getOverrideWeb());
+        */
     }
     
     public void postConfigure(WebAppContext context) throws Exception

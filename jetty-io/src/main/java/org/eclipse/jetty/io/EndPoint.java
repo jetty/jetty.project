@@ -16,16 +16,19 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 
 
-
 /**
  * 
  * A transport EndPoint
  */
 public interface EndPoint
 {
+    /**
+     * Shutdown any backing output stream associated with the endpoint
+     */
+    void shutdownOutput() throws IOException;
     
     /**
-     * Close any backing stream associated with the buffer
+     * Close any backing stream associated with the endpoint
      */
     void close() throws IOException;
 
@@ -148,5 +151,26 @@ public interface EndPoint
      * @throws IOException 
      */
     public void flush() throws IOException;
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Get the max idle time in ms.
+     * <p>The max idle time is the time the endpoint can be idle before
+     * extraordinary handling takes place.  This loosely corresponds to
+     * the {@link java.net.Socket#getSoTimeout()} for blocking connections,
+     * but {@link AsyncEndPoint} implementations must use other mechanisms
+     * to implement the max idle time.
+     * @return the max idle time in ms.
+     */
+    public int getMaxIdleTime();
+    
+    /* ------------------------------------------------------------ */
+    /** Set the max idle time.
+     * @param timeMs the max idle time in MS.
+     * @throws IOException if the timeout cannot be set.
+     */
+    public void setMaxIdleTime(int timeMs) throws IOException;
+    
+    
     
 }

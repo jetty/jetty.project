@@ -14,46 +14,54 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
-
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  *
- *
  */
-public class InvokerTest extends TestCase
+public class InvokerTest
 {
-    Server _server;
-    LocalConnector _connector;
-    ServletContextHandler _context;
+    private Server _server;
+    private LocalConnector _connector;
 
-    protected void setUp() throws Exception
+    @Before
+    public void init() throws Exception
     {
-        super.setUp();
         _server = new Server();
         _connector = new LocalConnector();
-        _context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
         _server.setSendServerVersion(false);
         _server.addConnector(_connector);
-        _server.setHandler(_context);
+        _server.setHandler(context);
 
-        _context.setContextPath("/");
+        context.setContextPath("/");
 
-        ServletHolder holder = _context.addServlet(Invoker.class, "/servlet/*");
+        ServletHolder holder = context.addServlet(Invoker.class, "/servlet/*");
         holder.setInitParameter("nonContextServlets","true");
         _server.start();
     }
 
+    @After
+    public void destroy() throws Exception
+    {
+        _server.stop();
+        _server.join();
+    }
+
+    @Test
     public void testInvoker() throws Exception
     {
         String requestPath = "/servlet/"+TestServlet.class.getName();

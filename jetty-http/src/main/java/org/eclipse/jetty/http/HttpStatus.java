@@ -4,23 +4,21 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.http;
-
-import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * <p>
  * HttpStatusCode enum class, for status codes based on various HTTP RFCs. (see
  * table below)
  * </p>
- * 
+ *
  * <table border="1" cellpadding="5">
  * <tr>
  * <th>Enum</th>
@@ -33,14 +31,14 @@ import org.eclipse.jetty.util.TypeUtil;
  * <th>
  * <a href="http://tools.ietf.org/html/rfc2518">RFC 2518 - WEBDAV</a></th>
  * </tr>
- * 
+ *
  * <tr>
  * <td><strong><code>Informational - 1xx</code></strong></td>
  * <td colspan="5">{@link #isInformational(int)}</td>
  * </tr>
- * 
+ *
  * <tr>
- * <td>{@link #CONTINUE}</td>
+ * <td>{@link #CONTINUE_100}</td>
  * <td>100</td>
  * <td>Continue</td>
  * <td>&nbsp;</td>
@@ -49,7 +47,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #SWITCHING_PROTOCOLS}</td>
+ * <td>{@link #SWITCHING_PROTOCOLS_101}</td>
  * <td>101</td>
  * <td>Switching Protocols</td>
  * <td>&nbsp;</td>
@@ -58,7 +56,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #PROCESSING}</td>
+ * <td>{@link #PROCESSING_102}</td>
  * <td>102</td>
  * <td>Processing</td>
  * <td>&nbsp;</td>
@@ -66,14 +64,14 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc2518#section-10.1">Sec. 10.1</a></td>
  * </tr>
- * 
+ *
  * <tr>
  * <td><strong><code>Success - 2xx</code></strong></td>
  * <td colspan="5">{@link #isSuccess(int)}</td>
  * </tr>
- * 
+ *
  * <tr>
- * <td>{@link #OK}</td>
+ * <td>{@link #OK_200}</td>
  * <td>200</td>
  * <td>OK</td>
  * <td>
@@ -83,7 +81,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #CREATED}</td>
+ * <td>{@link #CREATED_201}</td>
  * <td>201</td>
  * <td>Created</td>
  * <td>
@@ -93,7 +91,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #ACCEPTED}</td>
+ * <td>{@link #ACCEPTED_202}</td>
  * <td>202</td>
  * <td>Accepted</td>
  * <td>
@@ -103,7 +101,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #NON_AUTHORITATIVE_INFORMATION}</td>
+ * <td>{@link #NON_AUTHORITATIVE_INFORMATION_203}</td>
  * <td>203</td>
  * <td>Non Authoritative Information</td>
  * <td>&nbsp;</td>
@@ -112,7 +110,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #NO_CONTENT}</td>
+ * <td>{@link #NO_CONTENT_204}</td>
  * <td>204</td>
  * <td>No Content</td>
  * <td>
@@ -122,7 +120,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #RESET_CONTENT}</td>
+ * <td>{@link #RESET_CONTENT_205}</td>
  * <td>205</td>
  * <td>Reset Content</td>
  * <td>&nbsp;</td>
@@ -131,7 +129,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #PARTIAL_CONTENT}</td>
+ * <td>{@link #PARTIAL_CONTENT_206}</td>
  * <td>206</td>
  * <td>Partial Content</td>
  * <td>&nbsp;</td>
@@ -140,7 +138,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #MULTI_STATUS}</td>
+ * <td>{@link #MULTI_STATUS_207}</td>
  * <td>207</td>
  * <td>Multi-Status</td>
  * <td>&nbsp;</td>
@@ -159,14 +157,14 @@ import org.eclipse.jetty.util.TypeUtil;
  * >draft/01</a></td>
  * <td>&nbsp;</td>
  * </tr>
- * 
+ *
  * <tr>
  * <td><strong><code>Redirection - 3xx</code></strong></td>
  * <td colspan="5">{@link #isRedirection(int)}</td>
  * </tr>
- * 
+ *
  * <tr>
- * <td>{@link #MULTIPLE_CHOICES}</td>
+ * <td>{@link #MULTIPLE_CHOICES_300}</td>
  * <td>300</td>
  * <td>Multiple Choices</td>
  * <td>
@@ -176,7 +174,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #MOVED_PERMANENTLY}</td>
+ * <td>{@link #MOVED_PERMANENTLY_301}</td>
  * <td>301</td>
  * <td>Moved Permanently</td>
  * <td>
@@ -186,7 +184,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #MOVED_TEMPORARILY}</td>
+ * <td>{@link #MOVED_TEMPORARILY_302}</td>
  * <td>302</td>
  * <td>Moved Temporarily</td>
  * <td>
@@ -195,7 +193,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #FOUND}</td>
+ * <td>{@link #FOUND_302}</td>
  * <td>302</td>
  * <td>Found</td>
  * <td>(was "<code>302 Moved Temporarily</code>")</td>
@@ -204,7 +202,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #SEE_OTHER}</td>
+ * <td>{@link #SEE_OTHER_303}</td>
  * <td>303</td>
  * <td>See Other</td>
  * <td>&nbsp;</td>
@@ -213,7 +211,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #NOT_MODIFIED}</td>
+ * <td>{@link #NOT_MODIFIED_304}</td>
  * <td>304</td>
  * <td>Not Modified</td>
  * <td>
@@ -223,7 +221,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #USE_PROXY}</td>
+ * <td>{@link #USE_PROXY_305}</td>
  * <td>305</td>
  * <td>Use Proxy</td>
  * <td>&nbsp;</td>
@@ -241,7 +239,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #TEMPORARY_REDIRECT}</td>
+ * <td>{@link #TEMPORARY_REDIRECT_307}</td>
  * <td>307</td>
  * <td>Temporary Redirect</td>
  * <td>&nbsp;</td>
@@ -249,14 +247,14 @@ import org.eclipse.jetty.util.TypeUtil;
  * <a href="http://tools.ietf.org/html/rfc2616#section-10.3.8">Sec. 10.3.8</a></td>
  * <td>&nbsp;</td>
  * </tr>
- * 
+ *
  * <tr>
  * <td><strong><code>Client Error - 4xx</code></strong></td>
  * <td colspan="5">{@link #isClientError(int)}</td>
  * </tr>
- * 
+ *
  * <tr>
- * <td>{@link #BAD_REQUEST}</td>
+ * <td>{@link #BAD_REQUEST_400}</td>
  * <td>400</td>
  * <td>Bad Request</td>
  * <td>
@@ -266,7 +264,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #UNAUTHORIZED}</td>
+ * <td>{@link #UNAUTHORIZED_401}</td>
  * <td>401</td>
  * <td>Unauthorized</td>
  * <td>
@@ -276,7 +274,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #PAYMENT_REQUIRED}</td>
+ * <td>{@link #PAYMENT_REQUIRED_402}</td>
  * <td>402</td>
  * <td>Payment Required</td>
  * <td>
@@ -286,7 +284,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #FORBIDDEN}</td>
+ * <td>{@link #FORBIDDEN_403}</td>
  * <td>403</td>
  * <td>Forbidden</td>
  * <td>
@@ -296,7 +294,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #NOT_FOUND}</td>
+ * <td>{@link #NOT_FOUND_404}</td>
  * <td>404</td>
  * <td>Not Found</td>
  * <td>
@@ -306,7 +304,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #METHOD_NOT_ALLOWED}</td>
+ * <td>{@link #METHOD_NOT_ALLOWED_405}</td>
  * <td>405</td>
  * <td>Method Not Allowed</td>
  * <td>&nbsp;</td>
@@ -315,7 +313,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #NOT_ACCEPTABLE}</td>
+ * <td>{@link #NOT_ACCEPTABLE_406}</td>
  * <td>406</td>
  * <td>Not Acceptable</td>
  * <td>&nbsp;</td>
@@ -324,7 +322,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #PROXY_AUTHENTICATION_REQUIRED}</td>
+ * <td>{@link #PROXY_AUTHENTICATION_REQUIRED_407}</td>
  * <td>407</td>
  * <td>Proxy Authentication Required</td>
  * <td>&nbsp;</td>
@@ -333,7 +331,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #REQUEST_TIMEOUT}</td>
+ * <td>{@link #REQUEST_TIMEOUT_408}</td>
  * <td>408</td>
  * <td>Request Timeout</td>
  * <td>&nbsp;</td>
@@ -342,7 +340,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #CONFLICT}</td>
+ * <td>{@link #CONFLICT_409}</td>
  * <td>409</td>
  * <td>Conflict</td>
  * <td>&nbsp;</td>
@@ -352,7 +350,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #GONE}</td>
+ * <td>{@link #GONE_410}</td>
  * <td>410</td>
  * <td>Gone</td>
  * <td>&nbsp;</td>
@@ -362,7 +360,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #LENGTH_REQUIRED}</td>
+ * <td>{@link #LENGTH_REQUIRED_411}</td>
  * <td>411</td>
  * <td>Length Required</td>
  * <td>&nbsp;</td>
@@ -372,7 +370,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #PRECONDITION_FAILED}</td>
+ * <td>{@link #PRECONDITION_FAILED_412}</td>
  * <td>412</td>
  * <td>Precondition Failed</td>
  * <td>&nbsp;</td>
@@ -382,7 +380,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #REQUEST_ENTITY_TOO_LARGE}</td>
+ * <td>{@link #REQUEST_ENTITY_TOO_LARGE_413}</td>
  * <td>413</td>
  * <td>Request Entity Too Large</td>
  * <td>&nbsp;</td>
@@ -392,7 +390,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #REQUEST_URI_TOO_LONG}</td>
+ * <td>{@link #REQUEST_URI_TOO_LONG_414}</td>
  * <td>414</td>
  * <td>Request-URI Too Long</td>
  * <td>&nbsp;</td>
@@ -402,7 +400,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #UNSUPPORTED_MEDIA_TYPE}</td>
+ * <td>{@link #UNSUPPORTED_MEDIA_TYPE_415}</td>
  * <td>415</td>
  * <td>Unsupported Media Type</td>
  * <td>&nbsp;</td>
@@ -412,7 +410,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #REQUESTED_RANGE_NOT_SATISFIABLE}</td>
+ * <td>{@link #REQUESTED_RANGE_NOT_SATISFIABLE_416}</td>
  * <td>416</td>
  * <td>Requested Range Not Satisfiable</td>
  * <td>&nbsp;</td>
@@ -422,7 +420,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #EXPECTATION_FAILED}</td>
+ * <td>{@link #EXPECTATION_FAILED_417}</td>
  * <td>417</td>
  * <td>Expectation Failed</td>
  * <td>&nbsp;</td>
@@ -495,7 +493,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #UNPROCESSABLE_ENTITY}</td>
+ * <td>{@link #UNPROCESSABLE_ENTITY_422}</td>
  * <td>422</td>
  * <td>Unprocessable Entity</td>
  * <td>&nbsp;</td>
@@ -504,7 +502,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <a href="http://tools.ietf.org/html/rfc2518#section-10.3">Sec. 10.3</a></td>
  * </tr>
  * <tr>
- * <td>{@link #LOCKED}</td>
+ * <td>{@link #LOCKED_423}</td>
  * <td>423</td>
  * <td>Locked</td>
  * <td>&nbsp;</td>
@@ -513,7 +511,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <a href="http://tools.ietf.org/html/rfc2518#section-10.4">Sec. 10.4</a></td>
  * </tr>
  * <tr>
- * <td>{@link #FAILED_DEPENDENCY}</td>
+ * <td>{@link #FAILED_DEPENDENCY_424}</td>
  * <td>424</td>
  * <td>Failed Dependency</td>
  * <td>&nbsp;</td>
@@ -521,14 +519,14 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc2518#section-10.5">Sec. 10.5</a></td>
  * </tr>
- * 
+ *
  * <tr>
  * <td><strong><code>Server Error - 5xx</code></strong></td>
  * <td colspan="5">{@link #isServerError(int)}</td>
  * </tr>
- * 
+ *
  * <tr>
- * <td>{@link #INTERNAL_SERVER_ERROR}</td>
+ * <td>{@link #INTERNAL_SERVER_ERROR_500}</td>
  * <td>500</td>
  * <td>Internal Server Error</td>
  * <td>
@@ -538,7 +536,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #NOT_IMPLEMENTED}</td>
+ * <td>{@link #NOT_IMPLEMENTED_501}</td>
  * <td>501</td>
  * <td>Not Implemented</td>
  * <td>
@@ -548,7 +546,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #BAD_GATEWAY}</td>
+ * <td>{@link #BAD_GATEWAY_502}</td>
  * <td>502</td>
  * <td>Bad Gateway</td>
  * <td>
@@ -558,7 +556,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #SERVICE_UNAVAILABLE}</td>
+ * <td>{@link #SERVICE_UNAVAILABLE_503}</td>
  * <td>503</td>
  * <td>Service Unavailable</td>
  * <td>
@@ -568,7 +566,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #GATEWAY_TIMEOUT}</td>
+ * <td>{@link #GATEWAY_TIMEOUT_504}</td>
  * <td>504</td>
  * <td>Gateway Timeout</td>
  * <td>&nbsp;</td>
@@ -577,7 +575,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #HTTP_VERSION_NOT_SUPPORTED}</td>
+ * <td>{@link #HTTP_VERSION_NOT_SUPPORTED_505}</td>
  * <td>505</td>
  * <td>HTTP Version Not Supported</td>
  * <td>&nbsp;</td>
@@ -594,7 +592,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
- * <td>{@link #INSUFFICIENT_STORAGE}</td>
+ * <td>{@link #INSUFFICIENT_STORAGE_507}</td>
  * <td>507</td>
  * <td>Insufficient Storage</td>
  * <td>&nbsp;</td>
@@ -602,9 +600,9 @@ import org.eclipse.jetty.util.TypeUtil;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc2518#section-10.6">Sec. 10.6</a></td>
  * </tr>
- * 
+ *
  * </table>
- * 
+ *
  * @version $Id$
  */
 public class HttpStatus
@@ -612,7 +610,7 @@ public class HttpStatus
     public final static int CONTINUE_100 = 100;
     public final static int SWITCHING_PROTOCOLS_101 = 101;
     public final static int PROCESSING_102 = 102;
-    
+
     public final static int OK_200 = 200;
     public final static int CREATED_201 = 201;
     public final static int ACCEPTED_202 = 202;
@@ -621,7 +619,7 @@ public class HttpStatus
     public final static int RESET_CONTENT_205 = 205;
     public final static int PARTIAL_CONTENT_206 = 206;
     public final static int MULTI_STATUS_207 = 207;
-    
+
     public final static int MULTIPLE_CHOICES_300 = 300;
     public final static int MOVED_PERMANENTLY_301 = 301;
     public final static int MOVED_TEMPORARILY_302 = 302;
@@ -630,7 +628,7 @@ public class HttpStatus
     public final static int NOT_MODIFIED_304 = 304;
     public final static int USE_PROXY_305 = 305;
     public final static int TEMPORARY_REDIRECT_307 = 307;
-    
+
     public final static int BAD_REQUEST_400 = 400;
     public final static int UNAUTHORIZED_401 = 401;
     public final static int PAYMENT_REQUIRED_402 = 402;
@@ -652,7 +650,7 @@ public class HttpStatus
     public final static int UNPROCESSABLE_ENTITY_422 = 422;
     public final static int LOCKED_423 = 423;
     public final static int FAILED_DEPENDENCY_424 = 424;
-    
+
     public final static int INTERNAL_SERVER_ERROR_500 = 500;
     public final static int NOT_IMPLEMENTED_501 = 501;
     public final static int BAD_GATEWAY_502 = 502;
@@ -660,9 +658,9 @@ public class HttpStatus
     public final static int GATEWAY_TIMEOUT_504 = 504;
     public final static int HTTP_VERSION_NOT_SUPPORTED_505 = 505;
     public final static int INSUFFICIENT_STORAGE_507 = 507;
-    
+
     public static final int MAX_CODE = 507;
-    
+
 
     private static final Code[] codeMap = new Code[MAX_CODE+1];
 
@@ -673,7 +671,7 @@ public class HttpStatus
             codeMap[code._code] = code;
         }
     }
-    
+
 
     public enum Code
     {
@@ -843,7 +841,7 @@ public class HttpStatus
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
          * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
          * HTTP/1.1</a>.
-         * 
+         *
          * @return true if within range of codes that belongs to
          *         <code>Informational</code> messages.
          */
@@ -858,7 +856,7 @@ public class HttpStatus
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
          * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
          * HTTP/1.1</a>.
-         * 
+         *
          * @return true if within range of codes that belongs to
          *         <code>Success</code> messages.
          */
@@ -873,7 +871,7 @@ public class HttpStatus
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
          * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
          * HTTP/1.1</a>.
-         * 
+         *
          * @return true if within range of codes that belongs to
          *         <code>Redirection</code> messages.
          */
@@ -888,7 +886,7 @@ public class HttpStatus
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
          * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
          * HTTP/1.1</a>.
-         * 
+         *
          * @return true if within range of codes that belongs to
          *         <code>Client Error</code> messages.
          */
@@ -903,7 +901,7 @@ public class HttpStatus
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
          * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
          * HTTP/1.1</a>.
-         * 
+         *
          * @return true if within range of codes that belongs to
          *         <code>Server Error</code> messages.
          */
@@ -916,7 +914,7 @@ public class HttpStatus
 
     /**
      * Get the HttpStatusCode for a specific code
-     * 
+     *
      * @param code
      *            the code to lookup.
      * @return the {@link HttpStatus} if found, or null if not found.
@@ -929,10 +927,10 @@ public class HttpStatus
         }
         return null;
     }
-    
+
     /**
      * Get the status message for a specific code.
-     * 
+     *
      * @param code
      *            the code to look up
      * @return the specific message, or the code number itself if code
@@ -947,7 +945,7 @@ public class HttpStatus
         }
         else
         {
-            return TypeUtil.toString(code);
+            return Integer.toString(code);
         }
     }
 
@@ -956,7 +954,7 @@ public class HttpStatus
      * <code>Informational</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
-     * 
+     *
      * @param code
      *            the code to test.
      * @return true if within range of codes that belongs to
@@ -972,7 +970,7 @@ public class HttpStatus
      * <code>Success</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
-     * 
+     *
      * @param code
      *            the code to test.
      * @return true if within range of codes that belongs to
@@ -988,7 +986,7 @@ public class HttpStatus
      * <code>Redirection</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
-     * 
+     *
      * @param code
      *            the code to test.
      * @return true if within range of codes that belongs to
@@ -1004,7 +1002,7 @@ public class HttpStatus
      * <code>Client Error</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
-     * 
+     *
      * @param code
      *            the code to test.
      * @return true if within range of codes that belongs to
@@ -1020,7 +1018,7 @@ public class HttpStatus
      * <code>Server Error</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
      * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
-     * 
+     *
      * @param code
      *            the code to test.
      * @return true if within range of codes that belongs to

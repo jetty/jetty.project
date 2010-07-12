@@ -53,7 +53,7 @@ public class EnvConfiguration implements Configuration
  
 
     /** 
-     * @see org.eclipse.jetty.webapp.Configuration#configureDefaults()
+     * @see Configuration#configure(WebAppContext)
      * @throws Exception
      */
     public void preConfigure (WebAppContext context) throws Exception
@@ -108,7 +108,7 @@ public class EnvConfiguration implements Configuration
     
     /** 
      * Remove all jndi setup
-     * @see org.eclipse.jetty.webapp.Configuration#deconfigureWebApp()
+     * @see Configuration#deconfigure(WebAppContext)
      * @throws Exception
      */
     public void deconfigure (WebAppContext context) throws Exception

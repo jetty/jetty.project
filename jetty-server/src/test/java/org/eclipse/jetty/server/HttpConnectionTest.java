@@ -21,60 +21,49 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  *
- *
  */
-public class HttpConnectionTest extends TestCase
+public class HttpConnectionTest
 {
-    Server server = new Server();
-    LocalConnector connector = new LocalConnector();
+    private Server server;
+    private LocalConnector connector;
 
-    /**
-     * Constructor
-     * @param arg0
-     */
-    public HttpConnectionTest(String arg0)
+    @Before
+    public void init() throws Exception
     {
-        super(arg0);
-        server.setConnectors(new Connector[]{connector});
+        server = new Server();
+        connector = new LocalConnector();
+        server.addConnector(connector);
+        connector.setRequestHeaderSize(1024);
+        connector.setResponseHeaderSize(1024);
         server.setHandler(new DumpHandler());
-    }
-
-    /*
-     * @see TestCase#setUp()
-     */
-    protected void setUp() throws Exception
-    {
-        super.setUp();
-	connector.setHeaderBufferSize(1024);
         server.start();
     }
 
-    /*
-     * @see TestCase#tearDown()
-     */
-    protected void tearDown() throws Exception
+    @After
+    public void destroy() throws Exception
     {
-        super.tearDown();
         server.stop();
+        server.join();
     }
 
-
-
-    /* --------------------------------------------------------------- */
+    @Test
     public void testFragmentedChunk()
     {
         String response=null;
@@ -118,7 +107,7 @@ public class HttpConnectionTest extends TestCase
         }
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void testEmpty() throws Exception
     {
         String response=connector.getResponses("GET /R1 HTTP/1.1\n"+
@@ -133,7 +122,7 @@ public class HttpConnectionTest extends TestCase
         offset = checkContains(response,offset,"/R1");
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void testBad() throws Exception
     {
         String response=connector.getResponses("GET & HTTP/1.1\n"+
@@ -163,7 +152,7 @@ public class HttpConnectionTest extends TestCase
 
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void testAutoFlush() throws Exception
     {
         String response=null;
@@ -184,7 +173,7 @@ public class HttpConnectionTest extends TestCase
             offset = checkContains(response,offset,"12345");
     }
 
-    /* --------------------------------------------------------------- */
+    @Test
     public void testCharset()
     {
 
@@ -246,17 +235,15 @@ public class HttpConnectionTest extends TestCase
         }
     }
 
-
-    
-    /* --------------------------------------------------------------- */
+    @Test
     public void testUnconsumedError() throws Exception
-    {        
+    {
 
         String response=null;
         String requests=null;
         int offset=0;
 
-        offset=0; 
+        offset=0;
         requests="GET /R1?read=1&error=500 HTTP/1.1\n"+
         "Host: localhost\n"+
         "Transfer-Encoding: chunked\n"+
@@ -280,17 +267,17 @@ public class HttpConnectionTest extends TestCase
         offset = checkContains(response,offset,"/R2");
         offset = checkContains(response,offset,"encoding=UTF-8");
         offset = checkContains(response,offset,"abcdefghij");
-        
+
     }
-    
-    /* --------------------------------------------------------------- */
+
+    @Test
     public void testUnconsumedException() throws Exception
-    {        
+    {
         String response=null;
         String requests=null;
         int offset=0;
 
-        offset=0; 
+        offset=0;
         requests="GET /R1?read=1&ISE=true HTTP/1.1\n"+
         "Host: localhost\n"+
         "Transfer-Encoding: chunked\n"+
@@ -328,7 +315,8 @@ public class HttpConnectionTest extends TestCase
         }
     }
 
-    public void testConnection ()
+    @Test
+    public void testConnection()
     {
         String response=null;
         try
@@ -356,6 +344,7 @@ public class HttpConnectionTest extends TestCase
         }
     }
 
+    @Test
     public void testOversizedBuffer()
     {
         String response = null;
@@ -381,11 +370,10 @@ public class HttpConnectionTest extends TestCase
 
         }
     }
-    
-    
-    public void testOversizedResponse ()
-    throws Exception
-    {  
+
+    @Test
+    public void testOversizedResponse() throws Exception
+    {
         String str = "thisisastringthatshouldreachover1kbytes";
         for (int i=0;i<400;i++)
             str+="xxxxxxxxxxxx";
@@ -393,7 +381,7 @@ public class HttpConnectionTest extends TestCase
         String response = null;
         server.stop();
         server.setHandler(new DumpHandler()
-        {  
+        {
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 try
@@ -402,7 +390,7 @@ public class HttpConnectionTest extends TestCase
                     response.setHeader(HttpHeaders.CONTENT_TYPE,MimeTypes.TEXT_HTML);
                     response.setHeader("LongStr", longstr);
                     PrintWriter writer = response.getWriter();
-                    writer.write("<html><h1>FOO</h1></html>");  
+                    writer.write("<html><h1>FOO</h1></html>");
                     writer.flush();
                     writer.close();
                     throw new RuntimeException("SHOULD NOT GET HERE");
@@ -415,28 +403,28 @@ public class HttpConnectionTest extends TestCase
             }
         });
         server.start();
-        
-        try 
+
+        try
         {
             int offset = 0;
-          
+
             response = connector.getResponses("GET / HTTP/1.1\n"+
                 "Host: localhost\n" +
                 "\015\012"
              );
-          
+
             offset = checkContains(response, offset, "HTTP/1.1 500");
-        } 
+        }
         catch(Exception e)
         {
             e.printStackTrace();
             if(response != null)
                 System.err.println(response);
-            fail("Exception");      
+            fail("Exception");
         }
     }
-    
 
+    @Test
     public void testAsterisk()
     {
         String response = null;
@@ -481,6 +469,31 @@ public class HttpConnectionTest extends TestCase
                                            "12345\015\012"+
                                            "0;\015\012\015\012");
             offset = checkContains(response,offset,"HTTP/1.1 400 Bad Request");
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            assertTrue(false);
+            if (response!=null)
+                 System.err.println(response);
+        }
+
+    }
+
+    @Test
+    public void testCONNECT()
+    {
+        String response = null;
+
+        try
+        {
+            int offset=0;
+
+            response=connector.getResponses("CONNECT www.webtide.com:8080 HTTP/1.1\n"+
+                                           "Host: myproxy:8888\015\012"+
+                                           "\015\012");
+            offset = checkContains(response,offset,"HTTP/1.1 200");
+
         }
         catch (Exception e)
         {

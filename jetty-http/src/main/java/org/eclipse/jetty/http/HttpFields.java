@@ -285,17 +285,15 @@ public class HttpFields
     };
     
     
-   
-    
-    
-    
     public final static String __01Jan1970=formatCookieDate(0);
     public final static Buffer __01Jan1970_BUFFER=new ByteArrayBuffer(__01Jan1970);
 
     /* -------------------------------------------------------------- */
-    protected final ArrayList<Field> _fields = new ArrayList<Field>(20);
-    protected final HashMap<Buffer,Field> _bufferMap = new HashMap<Buffer,Field>(32);
-    protected int _revision;
+    private final ArrayList<Field> _fields = new ArrayList<Field>(20);
+    private final HashMap<Buffer,Field> _bufferMap = new HashMap<Buffer,Field>(32);
+    private final int _maxCookieVersion;
+    private int _revision;
+    
 
    
     
@@ -305,8 +303,18 @@ public class HttpFields
      */
     public HttpFields()
     {
+    	_maxCookieVersion=1;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Constructor.
+     */
+    public HttpFields(int maxCookieVersion)
+    {
+    	_maxCookieVersion=maxCookieVersion;
+    }
+    
     /* -------------------------------------------------------------- */
     /**
      * Get Collection of header names. 
@@ -981,7 +989,6 @@ public class HttpFields
      * Format a set cookie value
      * 
      * @param cookie The cookie.
-     * @param cookie2 If true, use the alternate cookie 2 header
      */
     public void addSetCookie(HttpCookie cookie)
     {
@@ -996,12 +1003,19 @@ public class HttpFields
                 cookie.isHttpOnly(),
                 cookie.getVersion());
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Format a set cookie value
-     * @param cookie The cookie.
-     * @param cookie2 If true, use the alternate cookie 2 header
+     * 
+     * @param name the name
+     * @param value the value
+     * @param domain the domain
+     * @param path the path
+     * @param maxAge the maximum age
+     * @param comment the comment (only present on versions > 0)
+     * @param isSecure true if secure cookie
+     * @param isHttpOnly true if for http only
+     * @param version version of cookie logic to use (0 == default behavior)
      */
     public void addSetCookie(
             final String name, 
@@ -1012,19 +1026,29 @@ public class HttpFields
             final String comment, 
             final boolean isSecure,
             final boolean isHttpOnly, 
-            final int version)
+            int version)
     {
+    	String delim=_maxCookieVersion==0?"":"\"\\\n\r\t\f\b%+ ;=";
+    	
         // Check arguments
         if (name == null || name.length() == 0) throw new IllegalArgumentException("Bad cookie name");
 
         // Format value and params
         StringBuilder buf = new StringBuilder(128);
         String name_value_params;
-        QuotedStringTokenizer.quoteIfNeeded(buf, name);
+        boolean quoted = QuotedStringTokenizer.quoteIfNeeded(buf, name, delim);
         buf.append('=');
+        String start=buf.toString();
         if (value != null && value.length() > 0)
-            QuotedStringTokenizer.quoteIfNeeded(buf, value);
+            quoted|=QuotedStringTokenizer.quoteIfNeeded(buf, value, delim);
+        
+        // upgrade to version 1 cookies if quoted.
+        if (quoted&&version==0 && _maxCookieVersion>=1)
+            version=1;
 
+        if (version>_maxCookieVersion)
+            version=_maxCookieVersion;
+        
         if (version > 0)
         {
             buf.append(";Version=");
@@ -1032,7 +1056,7 @@ public class HttpFields
             if (comment != null && comment.length() > 0)
             {
                 buf.append(";Comment=");
-                QuotedStringTokenizer.quoteIfNeeded(buf, comment);
+                QuotedStringTokenizer.quoteIfNeeded(buf, comment, delim);
             }
         }
         if (path != null && path.length() > 0)
@@ -1041,25 +1065,24 @@ public class HttpFields
             if (path.trim().startsWith("\""))
                 buf.append(path);
             else
-                QuotedStringTokenizer.quoteIfNeeded(buf,path);
+                QuotedStringTokenizer.quoteIfNeeded(buf,path,delim);
         }
         if (domain != null && domain.length() > 0)
         {
             buf.append(";Domain=");
-            QuotedStringTokenizer.quoteIfNeeded(buf,domain.toLowerCase());
+            QuotedStringTokenizer.quoteIfNeeded(buf,domain.toLowerCase(),delim);
         }
 
         if (maxAge >= 0)
         {
-            if (version == 0)
-            {
-                buf.append(";Expires=");
-                if (maxAge == 0)
-                    buf.append(__01Jan1970);
-                else
-                    formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
-            }
-            else
+        	// Always add the expires param as some browsers still don't handle max-age
+        	buf.append(";Expires=");
+        	if (maxAge == 0)
+        		buf.append(__01Jan1970);
+        	else
+        		formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
+            
+            if (version >0)
             {
                 buf.append(";Max-Age=");
                 buf.append(maxAge);
@@ -1077,8 +1100,28 @@ public class HttpFields
 
         // TODO - straight to Buffer?
         name_value_params = buf.toString();
-        put(HttpHeaders.EXPIRES_BUFFER, __01Jan1970_BUFFER);
+        
+        // look for existing cookie
+        Field field = getField(HttpHeaders.SET_COOKIE_BUFFER);
+        if (field != null)
+        {
+            final int revision=_revision;
+            
+            while (field!=null)
+            {
+                if (field._revision!=revision || field._value!=null && field._value.toString().startsWith(start))
+                {
+                    field.reset(new ByteArrayBuffer(name_value_params),-1,revision);
+                    return;
+                }
+                field=field._next;
+            }
+        }
+        
         add(HttpHeaders.SET_COOKIE_BUFFER, new ByteArrayBuffer(name_value_params));
+        
+        // Expire responses with set-cookie headers so they do not get cached.
+        put(HttpHeaders.EXPIRES_BUFFER, __01Jan1970_BUFFER);
     }
 
     /* -------------------------------------------------------------- */
@@ -1281,7 +1324,7 @@ public class HttpFields
     /**
      * List values in quality order.
      * 
-     * @param enum Enumeration of values with quality parameters
+     * @param e Enumeration of values with quality parameters
      * @return values in quality order.
      */
     public static List qualityList(Enumeration e)

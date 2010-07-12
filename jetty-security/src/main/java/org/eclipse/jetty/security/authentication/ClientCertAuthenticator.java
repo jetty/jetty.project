@@ -46,7 +46,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
     }
     
     /**
-     * @return
+     * @return Authentication for request
      * @throws ServerAuthException
      */
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException

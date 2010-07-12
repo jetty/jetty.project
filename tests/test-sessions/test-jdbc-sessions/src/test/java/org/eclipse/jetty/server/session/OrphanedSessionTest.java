@@ -12,27 +12,21 @@
 // ========================================================================
 package org.eclipse.jetty.server.session;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 /**
  * OrphanedSessionTest
- *
- *
  */
 public class OrphanedSessionTest extends AbstractOrphanedSessionTest
 {
-
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {
         return new JdbcTestServer(port,max,scavenge);
     }
 
-    @Test(groups={"jdbc-all"})
+    @Test
     public void testOrphanedSession() throws Exception
     {
         super.testOrphanedSession();
     }
-    
-    
-
 }

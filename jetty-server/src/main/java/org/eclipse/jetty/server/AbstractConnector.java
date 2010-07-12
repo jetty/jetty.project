@@ -68,15 +68,10 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     private boolean _useDNS;
     private boolean _forwarded;
     private String _hostHeader;
-    private String _forwardedHostHeader = "X-Forwarded-Host"; // default to
-                                                              // mod_proxy_http
-                                                              // header
-    private String _forwardedServerHeader = "X-Forwarded-Server"; // default to
-                                                                  // mod_proxy_http
-                                                                  // header
-    private String _forwardedForHeader = "X-Forwarded-For"; // default to
-                                                            // mod_proxy_http
-                                                            // header
+    
+    private String _forwardedHostHeader = "X-Forwarded-Host"; 
+    private String _forwardedServerHeader = "X-Forwarded-Server"; 
+    private String _forwardedForHeader = "X-Forwarded-For"; 
     private boolean _reuseAddress = true;
 
     protected int _maxIdleTime = 200000;
@@ -87,101 +82,70 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     private final AtomicLong _statsStartedAt = new AtomicLong(-1L);
 
-    private final CounterStatistic _connectionStats = new CounterStatistic(); // connections
-                                                                              // to
-                                                                              // server
-    private final SampleStatistic _requestStats = new SampleStatistic(); // requests
-                                                                                 // per
-                                                                                 // connection
-    private final SampleStatistic _connectionDurationStats = new SampleStatistic(); // duration
-                                                                                            // of
-                                                                                            // a
-                                                                                            // connection
+    /** connections to server */
+    private final CounterStatistic _connectionStats = new CounterStatistic(); 
+    /** requests per connection */
+    private final SampleStatistic _requestStats = new SampleStatistic(); 
+    /** duration of a connection */
+    private final SampleStatistic _connectionDurationStats = new SampleStatistic(); 
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     /**
      */
     public AbstractConnector()
     {
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     public final Buffer newBuffer(int size)
     {
         // TODO remove once no overrides established
         return null;
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     @Override
     public Buffer newRequestBuffer(int size)
     {
         return new ByteArrayBuffer(size);
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     @Override
     public Buffer newRequestHeader(int size)
     {
         return new ByteArrayBuffer(size);
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     @Override
     public Buffer newResponseBuffer(int size)
     {
         return new ByteArrayBuffer(size);
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     @Override
     public Buffer newResponseHeader(int size)
     {
         return new ByteArrayBuffer(size);
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     @Override
     protected boolean isRequestHeader(Buffer buffer)
     {
         return true;
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     @Override
     protected boolean isResponseHeader(Buffer buffer)
     {
         return true;
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     /*
      */
     public Server getServer()
@@ -189,19 +153,13 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         return _server;
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     public void setServer(Server server)
     {
         _server = server;
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.http.HttpListener#getHttpServer()
      */
@@ -210,19 +168,13 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         return _threadPool;
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     public void setThreadPool(ThreadPool pool)
     {
         _threadPool = pool;
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     /**
      */
     public void setHost(String host)
@@ -230,10 +182,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         _host = host;
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     /*
      */
     public String getHost()
@@ -241,10 +190,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         return _host;
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.server.server.HttpListener#setPort(int)
      */
@@ -253,10 +199,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         _port = port;
     }
 
-    /*
-     * --------------------------------------------------------------------------
-     * -----
-     */
+    /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.server.server.HttpListener#getPort()
      */
@@ -490,8 +433,6 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         try
         {
             socket.setTcpNoDelay(true);
-            if (_maxIdleTime >= 0)
-                socket.setSoTimeout(_maxIdleTime);
             if (_soLingerTime >= 0)
                 socket.setSoLinger(true,_soLingerTime / 1000);
             else
@@ -777,7 +718,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @param forwardedHostHeader
+     * @param forwardedServerHeader
      *            The header name for forwarded server (default
      *            x-forwarded-server)
      */
@@ -794,12 +735,12 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @param forwardedHostHeader
+     * @param forwardedRemoteAddressHeader
      *            The header name for forwarded for (default x-forwarded-for)
      */
-    public void setForwardedForHeader(String forwardedRemoteAddressHeade)
+    public void setForwardedForHeader(String forwardedRemoteAddressHeader)
     {
-        _forwardedForHeader = forwardedRemoteAddressHeade;
+        _forwardedForHeader = forwardedRemoteAddressHeader;
     }
 
     /* ------------------------------------------------------------ */

@@ -24,6 +24,7 @@ import javax.servlet.annotation.HandlesTypes;
 
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -34,6 +35,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class AnnotationConfiguration extends AbstractConfiguration
 {
     public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";
+  
+    
     
     public void preConfigure(final WebAppContext context) throws Exception
     {
@@ -59,13 +62,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
             //Only scan jars and classes if metadata is not complete and the web app is version 3.0, or
             //a 2.5 version webapp that has specifically asked to discover annotations
             if (Log.isDebugEnabled()) Log.debug("parsing annotations");
-                       
+            
             AnnotationParser parser = new AnnotationParser();
             //Discoverable annotations - those that you have to look for without loading a class
             parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new WebServletAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.servlet.annotation.WebFilter", new WebFilterAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.servlet.annotation.WebListener", new WebListenerAnnotationHandler(context));
-            
             ClassInheritanceHandler classHandler = new ClassInheritanceHandler();
             parser.registerClassHandler(classHandler);
             registerServletContainerInitializerAnnotationHandlers(context, parser);
@@ -74,17 +76,30 @@ public class AnnotationConfiguration extends AbstractConfiguration
             {
                 if (Log.isDebugEnabled()) Log.debug("Scanning all classses for annotations: webxmlVersion="+context.getServletContext().getEffectiveMajorVersion()+" configurationDiscovered="+context.isConfigurationDiscovered());
                 parseContainerPath(context, parser);
-                parseWebInfLib (context, parser);
+                //email from Rajiv Mordani jsrs 315 7 April 2010
+                //    If there is a <others/> then the ordering should be 
+                //          WEB-INF/classes the order of the declared elements + others.
+                //    In case there is no others then it is 
+                //          WEB-INF/classes + order of the elements.
                 parseWebInfClasses(context, parser);
+                parseWebInfLib (context, parser);
             } 
-            else
-            {
-                if (Log.isDebugEnabled()) Log.debug("Scanning only classes in web.xml for annotations");
-                parse25Classes(context, parser);
-            }
             
             //save the type inheritance map created by the parser for later reference
             context.setAttribute(CLASS_INHERITANCE_MAP, classHandler.getMap());
+            
+            /*
+             * processing is now done in metadata.resolve()
+             * 
+            //TODO change the time at which the discovered annotations are applied. According to the
+            //servlet spec  p.81, the annotations associated with a fragment have to be applied directly
+            //after those of the fragment's descriptor. For now, to make progress, we just process them
+            //as we have been doing, ie after all the descriptors have been processed.
+            for (ClassAnnotation annotation:discoveredAnnotations)
+            {
+                annotation.apply();
+            }
+            */
         }    
     }
 
@@ -105,6 +120,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     
 
     public void registerServletContainerInitializerAnnotationHandlers (WebAppContext context, AnnotationParser parser)
+    throws Exception
     {     
         //TODO verify my interpretation of the spec. That is, that metadata-complete has nothing
         //to do with finding the ServletContainerInitializers, classes designated to be of interest to them,
@@ -125,7 +141,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         {
             for (ServletContainerInitializer service : loadedInitializers)
             {
-                if (!isFromExcludedJar(context, orderedJars, service))
+                if (!isFromExcludedJar(context, service))
                 { 
                     HandlesTypes annotation = service.getClass().getAnnotation(HandlesTypes.class);
                     ContainerInitializer initializer = new ContainerInitializer();
@@ -147,10 +163,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
                             }
                         }
                         else
-                            Log.info("No classes in HandlesTypes on initializer "+service.getClass());
+                            if (Log.isDebugEnabled()) Log.debug("No classes in HandlesTypes on initializer "+service.getClass());
                     }
                     else
-                        Log.info("No annotation on initializer "+service.getClass());
+                        if (Log.isDebugEnabled()) Log.debug("No annotation on initializer "+service.getClass());
                 }
             }
         }
@@ -163,26 +179,29 @@ public class AnnotationConfiguration extends AbstractConfiguration
      * @param service
      * @return
      */
-    public boolean isFromExcludedJar (WebAppContext context, List<String> orderedJars, ServletContainerInitializer service)
+    public boolean isFromExcludedJar (WebAppContext context, ServletContainerInitializer service)
+    throws Exception
     {
-        boolean isExcluded = false;
-        
-        try
-        {
-            String loadingJarName = Thread.currentThread().getContextClassLoader().getResource(service.getClass().getName().replace('.','/')+".class").toString();
-         
-            int i = loadingJarName.indexOf(".jar");          
-            int j = loadingJarName.lastIndexOf("/", i);
-            loadingJarName = loadingJarName.substring(j+1,i+4);
-          
-            if (orderedJars != null)
-                isExcluded = orderedJars.contains(loadingJarName);
-        }
-        catch (Exception e)
-        {
-            Log.warn("Problem determining jar containing ServletContaininerInitializer "+service, e);   
-        }
+        List<String> orderedLibs = (List<String>)context.getAttribute(ServletContext.ORDERED_LIBS);
 
-        return isExcluded;
+        //If no ordering, nothing is excluded
+        if (orderedLibs == null)
+            return false;
+
+        //ordering that does not include any jars, everything excluded
+        if (orderedLibs.isEmpty())
+            return true; 
+
+
+        String loadingJarName = Thread.currentThread().getContextClassLoader().getResource(service.getClass().getName().replace('.','/')+".class").toString();
+
+        int i = loadingJarName.indexOf(".jar");  
+        if (i < 0)
+            return false; //not from a jar therefore not from WEB-INF so not excludable
+
+        int j = loadingJarName.lastIndexOf("/", i);
+        loadingJarName = loadingJarName.substring(j+1,i+4);
+
+        return (!orderedLibs.contains(loadingJarName));
     }
 }

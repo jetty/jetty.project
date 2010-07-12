@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2009 Mortbay, Inc.
+// Copyright (c) 2009-2010 Mortbay, Inc.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,8 @@ import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.osgi.framework.Bundle;
 
 /**
  * AppProvider for OSGi. Supports the configuration of ContextHandlers and
@@ -43,7 +45,7 @@ import org.eclipse.jetty.util.resource.Resource;
 public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
 {
 
-    private boolean _extractWars = false;
+    private boolean _extractWars = true;
     private boolean _parentLoaderPriority = false;
     private String _defaultsDescriptor;
     private String _tldBundles;
@@ -91,8 +93,6 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     /**
      * Default OSGiAppProvider consutructed when none are defined in the
      * jetty.xml configuration.
-     * 
-     * @param contextsDir
      */
     public OSGiAppProvider()
     {
@@ -111,7 +111,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         this();
         setMonitoredDir(Resource.newResource(contextsDir.toURI()));
     }
-
+    
     /**
      * Returns the ContextHandler that was created by WebappRegistractionHelper
      * 
@@ -140,19 +140,39 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         super.setDeploymentManager(deploymentManager);
     }
 
+    private static String getOriginId(Bundle contributor, String pathInBundle)
+    {
+    	return contributor.getSymbolicName() + "-" + contributor.getVersion().toString() +
+    		(pathInBundle.startsWith("/") ? pathInBundle : "/" + pathInBundle);
+    }
+    
     /**
      * @param context
      * @throws Exception
      */
-    public void addContext(ContextHandler context) throws Exception
+    public void addContext(Bundle contributor, String pathInBundle, ContextHandler context) throws Exception
+    {
+    	addContext(getOriginId(contributor, pathInBundle), context);
+    }
+    /**
+     * @param context
+     * @throws Exception
+     */
+    public void addContext(String originId, ContextHandler context) throws Exception
     {
         // TODO apply configuration specific to this provider
+    	if (context instanceof WebAppContext)
+    	{
+    		((WebAppContext)context).setExtractWAR(isExtract());
+    	}
 
         // wrap context as an App
-        App app = new App(getDeploymentManager(),this,context.getDisplayName(),context);
+        App app = new App(getDeploymentManager(),this,originId,context);
         getDeployedApps().put(context.getDisplayName(),app);
         getDeploymentManager().addApp(app);
     }
+    
+    
 
     /**
      * Called by the scanner of the context files directory. If we find the
@@ -274,6 +294,17 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
             return null;
         }
     }
+    
+    public boolean isExtract()
+    {
+        return _extractWars;
+    }
+
+    public void setExtract(boolean extract)
+    {
+        _extractWars=extract;
+    }
+
 
     /* ------------------------------------------------------------ */
     /**

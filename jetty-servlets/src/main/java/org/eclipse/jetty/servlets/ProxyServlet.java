@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.servlets;
@@ -22,8 +22,12 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.StringTokenizer;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
@@ -43,10 +47,11 @@ import org.eclipse.jetty.http.HttpHeaderValues;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.HostMap;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -54,7 +59,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
  * Asynchronous Proxy Servlet.
- * 
+ *
  * Forward requests to another server either as a standard web proxy (as defined by
  * RFC2616) or as a transparent proxy.
  * <p>
@@ -62,22 +67,22 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * the web application.
  * <p>
  * To facilitate JMX monitoring, the "HttpClient", it's "ThreadPool" and the "Logger"
- * are set as context attributes prefixed with "org.eclipse.jetty.servlets."+name
- * (unless otherwise set with attrPrefix). This attribute prefix is also used for the
- * logger name.
+ * are set as context attributes prefixed with the servlet name.
  * <p>
  * The following init parameters may be used to configure the servlet: <ul>
  * <li>name - Name of Proxy servlet (default: "ProxyServlet"
  * <li>maxThreads - maximum threads
  * <li>maxConnections - maximum connections per destination
  * <li>HostHeader - Force the host header to a particular value
- * </ul> 
+ * <li>whiteList - comma-separated list of allowed proxy destinations
+ * <li>blackList - comma-separated list of forbidden proxy destinations
+ * </ul>
  */
 public class ProxyServlet implements Servlet
 {
-    protected Logger _log; 
-    HttpClient _client;
-    String _hostHeader;
+    protected Logger _log;
+    protected HttpClient _client;
+    protected String _hostHeader;
 
     protected HashSet<String> _DontProxyHeaders = new HashSet<String>();
     {
@@ -94,7 +99,8 @@ public class ProxyServlet implements Servlet
 
     protected ServletConfig _config;
     protected ServletContext _context;
-    protected String _name="ProxyServlet";
+    protected HostMap<PathMap> _white = new HostMap<PathMap>();
+    protected HostMap<PathMap> _black = new HostMap<PathMap>();
 
     /* ------------------------------------------------------------ */
     /* (non-Javadoc)
@@ -107,41 +113,138 @@ public class ProxyServlet implements Servlet
 
         _client=new HttpClient();
         _client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-        
+
         _hostHeader=config.getInitParameter("HostHeader");
-        
-        
+
+
         try
         {
-            String t = config.getInitParameter("attrPrefix");
-            if (t!=null)
-                _name=t;
-            _log= Log.getLogger("org.eclipse.jetty.servlets."+_name);
+            _log= Log.getLogger("org.eclipse.jetty.servlets."+config.getServletName());
 
-            t = config.getInitParameter("maxThreads");
+            String t = config.getInitParameter("maxThreads");
             if (t!=null)
                 _client.setThreadPool(new QueuedThreadPool(Integer.parseInt(t)));
             else
                 _client.setThreadPool(new QueuedThreadPool());
-            ((QueuedThreadPool)_client.getThreadPool()).setName(_name.substring(_name.lastIndexOf('.')+1));
-            
+            ((QueuedThreadPool)_client.getThreadPool()).setName(config.getServletName());
+
             t = config.getInitParameter("maxConnections");
             if (t!=null)
                 _client.setMaxConnectionsPerAddress(Integer.parseInt(t));
-            
+
             _client.start();
-            
+
             if (_context!=null)
             {
-                _context.setAttribute("org.eclipse.jetty.servlets."+_name+".Logger",_log);
-                _context.setAttribute("org.eclipse.jetty.servlets."+_name+".ThreadPool",_client.getThreadPool());
-                _context.setAttribute("org.eclipse.jetty.servlets."+_name+".HttpClient",_client);
+                _context.setAttribute(config.getServletName()+".Logger",_log);
+                _context.setAttribute(config.getServletName()+".ThreadPool",_client.getThreadPool());
+                _context.setAttribute(config.getServletName()+".HttpClient",_client);
+            }
+            
+            String white = config.getInitParameter("whiteList");
+            if (white != null)
+            {
+                parseList(white, _white);
+            }
+            String black = config.getInitParameter("blackList");
+            if (black != null)
+            {
+                parseList(black, _black);
             }
         }
         catch (Exception e)
         {
             throw new ServletException(e);
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Helper function to process a parameter value containing a list
+     * of new entries and initialize the specified host map. 
+     * 
+     * @param list comma-separated list of new entries
+     * @param hostMap target host map
+     */
+    private void parseList(String list, HostMap<PathMap> hostMap)
+    {
+        if (list != null && list.length() > 0)
+        {
+            int idx;
+            String entry;
+            
+            StringTokenizer entries = new StringTokenizer(list, ",");
+            while(entries.hasMoreTokens())
+            {
+                entry = entries.nextToken();
+                idx = entry.indexOf('/');
+    
+                String host = idx > 0 ? entry.substring(0,idx) : entry;        
+                String path = idx > 0 ? entry.substring(idx) : "/*";
+                
+                host = host.trim();
+                PathMap pathMap = hostMap.get(host);
+                if (pathMap == null)
+                {
+                    pathMap = new PathMap(true);
+                    hostMap.put(host,pathMap);
+                }
+                if (path != null)
+                {
+                    pathMap.put(path,path);
+                }
+            }
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Check the request hostname and path against white- and blacklist.
+     * 
+     * @param host hostname to check
+     * @param path path to check
+     * @return true if request is allowed to be proxied
+     */
+    public boolean validateDestination(String host, String path)
+    {
+        if (_white.size()>0)
+        {
+            boolean match = false;
+            
+            Object whiteObj = _white.getLazyMatches(host);
+            if (whiteObj != null) 
+            {
+                List whiteList = (whiteObj instanceof List) ? (List)whiteObj : Collections.singletonList(whiteObj);
+
+                for (Object entry: whiteList)
+                {
+                    PathMap pathMap = ((Map.Entry<String, PathMap>)entry).getValue();
+                    if (match = (pathMap!=null && (pathMap.size()==0 || pathMap.match(path)!=null)))
+                        break;
+                }
+            }
+
+            if (!match)
+                return false;
+        }
+
+        if (_black.size() > 0)
+        {
+            Object blackObj = _black.getLazyMatches(host);
+            if (blackObj != null) 
+            {
+                List blackList = (blackObj instanceof List) ? (List)blackObj : Collections.singletonList(blackObj);
+    
+                for (Object entry: blackList)
+                {
+                    PathMap pathMap = ((Map.Entry<String, PathMap>)entry).getValue();
+                    if (pathMap!=null && (pathMap.size()==0 || pathMap.match(path)!=null))
+                        return false;
+                }
+            }
+        }
+        
+        return true;
     }
 
     /* ------------------------------------------------------------ */
@@ -153,7 +256,7 @@ public class ProxyServlet implements Servlet
         return _config;
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /** Get the hostHeader.
      * @return the hostHeader
@@ -180,7 +283,7 @@ public class ProxyServlet implements Servlet
             IOException
     {
         final int debug=_log.isDebugEnabled()?req.hashCode():0;
-        
+
         final HttpServletRequest request = (HttpServletRequest)req;
         final HttpServletResponse response = (HttpServletResponse)res;
         if ("CONNECT".equalsIgnoreCase(request.getMethod()))
@@ -193,7 +296,7 @@ public class ProxyServlet implements Servlet
             final OutputStream out=response.getOutputStream();
 
             final Continuation continuation = ContinuationSupport.getContinuation(request);
-            
+
             if (!continuation.isInitial())
                 response.sendError(HttpServletResponse.SC_GATEWAY_TIMEOUT); // Need better test that isInitial
             else
@@ -206,10 +309,10 @@ public class ProxyServlet implements Servlet
                                          request.getServerName(),
                                          request.getServerPort(),
                                          uri);
-                
+
                 if (debug!=0)
                     _log.debug(debug+" proxy "+uri+"-->"+url);
-                    
+
                 if (url==null)
                 {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
@@ -248,7 +351,7 @@ public class ProxyServlet implements Servlet
                     {
                         if (debug!=0)
                             _log.debug(debug+" "+version+" "+status+" "+reason);
-                        
+
                         if (reason!=null && reason.length()>0)
                             response.setStatus(status,reason.toString());
                         else
@@ -264,7 +367,7 @@ public class ProxyServlet implements Servlet
                         {
                             if (debug!=0)
                                 _log.debug(debug+" "+name+": "+value);
-                            
+
                             response.addHeader(name.toString(),value.toString());
                         }
                         else if (debug!=0)
@@ -303,7 +406,7 @@ public class ProxyServlet implements Servlet
                 exchange.setMethod(request.getMethod());
                 exchange.setURL(url.toString());
                 exchange.setVersion(request.getProtocol());
-                
+
                 if (debug!=0)
                     _log.debug(debug+" "+request.getMethod()+" "+url+" "+request.getProtocol());
 
@@ -320,7 +423,7 @@ public class ProxyServlet implements Servlet
                 // force host
                 if (_hostHeader!=null)
                     exchange.setRequestHeader("Host",_hostHeader);
-                
+
                 // copy headers
                 boolean xForwardedFor=false;
                 boolean hasContent=false;
@@ -344,7 +447,7 @@ public class ProxyServlet implements Servlet
                     else if ("content-length".equals(lhdr))
                     {
                         contentLength=request.getContentLength();
-                        exchange.setRequestHeader(HttpHeaders.CONTENT_LENGTH,TypeUtil.toString(contentLength));
+                        exchange.setRequestHeader(HttpHeaders.CONTENT_LENGTH,Long.toString(contentLength));
                         if (contentLength>0)
                             hasContent=true;
                     }
@@ -373,8 +476,8 @@ public class ProxyServlet implements Servlet
 
                 if (hasContent)
                     exchange.setRequestContentSource(in);
-                
-                continuation.suspend(response); 
+
+                continuation.suspend(response);
                 _client.send(exchange);
 
             }
@@ -431,6 +534,9 @@ public class ProxyServlet implements Servlet
     protected HttpURI proxyHttpURI(String scheme, String serverName, int serverPort, String uri)
         throws MalformedURLException
     {
+        if (!validateDestination(serverName, uri))
+            return null;
+        
         return new HttpURI(scheme+"://"+serverName+":"+serverPort+uri);
     }
 
@@ -450,17 +556,17 @@ public class ProxyServlet implements Servlet
     {
 
     }
-    
+
     /**
      * Transparent Proxy.
-     * 
-     * This convenience extension to ProxyServlet configures the servlet as a transparent proxy. 
+     *
+     * This convenience extension to ProxyServlet configures the servlet as a transparent proxy.
      * The servlet is configured with init parameters:
      * <ul>
      * <li>ProxyTo - a URI like http://host:80/context to which the request is proxied.
      * <li>Prefix - a URI prefix that is striped from the start of the forwarded URI.
      * </ul>
-     * For example, if a request was received at /foo/bar and the ProxyTo was http://host:80/context 
+     * For example, if a request was received at /foo/bar and the ProxyTo was http://host:80/context
      * and the Prefix was /foo, then the request would be proxied to http://host:80/context/bar
      * 
      */
@@ -515,7 +621,7 @@ public class ProxyServlet implements Servlet
             if (!_prefix.startsWith("/"))
                 throw new UnavailableException("Prefix parameter must start with a '/'.");
 
-            _log.info(_name + " @ " + _prefix + " to " + _proxyTo);
+            _log.info(config.getServletName()+" @ " + _prefix + " to " + _proxyTo);
         }
 
         @Override
@@ -525,8 +631,13 @@ public class ProxyServlet implements Servlet
             {
                 if (!uri.startsWith(_prefix))
                     return null;
+                
+                URI dstUri = new URI(_proxyTo + uri.substring(_prefix.length())).normalize();
+                
+                if (!validateDestination(dstUri.getHost(),dstUri.getPath()))
+                    return null;
 
-                return new HttpURI(new URI(_proxyTo + uri.substring(_prefix.length())).normalize().toString());
+                return new HttpURI(dstUri.toString());
             }
             catch (URISyntaxException ex)
             {

@@ -19,6 +19,8 @@ import javax.servlet.annotation.MultipartConfig;
 
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.webapp.Descriptor;
+import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -28,13 +30,13 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    protected WebAppContext _wac;
+    protected WebAppContext _context;
 
     public MultiPartConfigAnnotationHandler(WebAppContext context)
     {
         //TODO verify that MultipartConfig is not inheritable
         super(false); 
-        _wac = context;
+        _context = context;
     }
     /** 
      * @see org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler#doHandle(java.lang.Class)
@@ -48,24 +50,41 @@ public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnno
         if (multi == null)
             return;
         
-        
+        MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+              
         //TODO: The MultipartConfigElement needs to be set on the ServletHolder's Registration.
         //How to identify the correct Servlet?  If the Servlet has no WebServlet annotation on it, does it mean that this MultipartConfig
         //annotation applies to all declared instances in web.xml/programmatically?
         //Assuming TRUE for now.
-        
-        ServletHolder[] holders = _wac.getServletHandler().getServlets();
 
+        ServletHolder holder = getServletHolderForClass(clazz);
+        if (holder != null)
+        {
+            Descriptor d = metaData.getOriginDescriptor(holder.getName()+".servlet.multipart-config");
+            //if a descriptor has already set the value for multipart config, do not 
+            //let the annotation override it
+            if (d == null)
+            {
+                metaData.setOrigin(holder.getName()+".servlet.multipart-config");
+                holder.getRegistration().setMultipartConfig(new MultipartConfigElement(multi));
+            }
+        }
+    }
+    
+    private ServletHolder getServletHolderForClass (Class clazz)
+    {
+        ServletHolder holder = null;
+        ServletHolder[] holders = _context.getServletHandler().getServlets();
         if (holders != null)
         {
             for (ServletHolder h : holders)
             {
                 if (h.getClassName().equals(clazz.getName()))
                 {
-                    h.getRegistration().setMultipartConfig(new MultipartConfigElement(multi));
+                    holder = h;
                 }
             }
         }
+        return holder;
     }
-
 }

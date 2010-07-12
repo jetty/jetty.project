@@ -20,10 +20,8 @@ import java.util.Queue;
 /* ------------------------------------------------------------ */
 /** Queue backed by circular array.
  * 
- * This partial Queue implementation (also with {@link #pop()} for stack operation)
+ * This partial Queue implementation (also with {@link #remove()} for stack operation)
  * is backed by a growable circular array.
- * 
- * 
  *
  * @param <E>
  */
@@ -214,7 +212,7 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     /* ------------------------------------------------------------ */
     /**
      * Get without synchronization or bounds checking.
-     * @see get(int)
+     * @see #get(int)
      */
     public E getUnsafe(int index)
     {

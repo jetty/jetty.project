@@ -159,7 +159,7 @@ public class AppLifeCycleTest
 
     /**
      * Request multiple lifecycle paths with a single lifecycle instance. Just to ensure that there is no state
-     * maintained between {@link AppLifeCycle#findPath(Node, Node)} requests.
+     * maintained between {@link AppLifeCycle#getPath(Node, Node)} requests.
      * 
      * @throws IOException
      */

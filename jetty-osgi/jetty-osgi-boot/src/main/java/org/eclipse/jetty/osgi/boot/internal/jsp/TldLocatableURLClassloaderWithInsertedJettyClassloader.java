@@ -30,7 +30,7 @@ public class TldLocatableURLClassloaderWithInsertedJettyClassloader extends TldL
 
     /**
      * 
-     * @param osgiClassLoader
+     * @param osgiClassLoaderParent
      *            The parent classloader
      * @param internalClassLoader
      *            The classloader that will be at the same level than the

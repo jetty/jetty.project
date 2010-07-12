@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.List;
 import java.util.Locale;
 
 import javax.servlet.ServletOutputStream;
@@ -29,6 +31,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeaderValues;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
@@ -43,14 +46,10 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 
-/* ------------------------------------------------------------ */
 /** Response.
  * <p>
- * Implements {@link javax.servlet.HttpServletResponse} from the {@link javax.servlet} package.
+ * Implements {@link javax.servlet.http.HttpServletResponse} from the <code>javax.servlet.http</code> package.
  * </p>
- *
- * 
- *
  */
 public class Response implements HttpServletResponse
 {
@@ -156,16 +155,30 @@ public class Response implements HttpServletResponse
      */
     public String encodeURL(String url)
     {
-        Request request=_connection.getRequest();
+        final Request request=_connection.getRequest();
         SessionManager sessionManager = request.getSessionManager();
         if (sessionManager==null)
             return url;
+        
+        if (sessionManager.isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(url))
+        {
+            HttpURI uri = new HttpURI(url);
+            int port=uri.getPort();
+            if (port<0) 
+                port = HttpSchemes.HTTPS.equalsIgnoreCase(uri.getScheme())?443:80;
+            if (!request.getServerName().equalsIgnoreCase(uri.getHost()) ||
+                request.getServerPort()!=port ||
+                !uri.getPath().startsWith(request.getContextPath()))
+                return url;
+        }
+        
         String sessionURLPrefix = sessionManager.getSessionIdPathParameterNamePrefix();
         if (sessionURLPrefix==null)
             return url;
 
         if (url==null)
             return null;
+        
         // should not encode if cookies in evidence
         if (request.isRequestedSessionIdFromCookie())
         {
@@ -190,15 +203,12 @@ public class Response implements HttpServletResponse
         if (session == null)
             return url;
 
-
         // invalid session
         if (!sessionManager.isValid(session))
             return url;
 
         String id=sessionManager.getNodeId(session);
 
-
-        // TODO Check host and port are for this server
         // Already encoded
         int prefix=url.indexOf(sessionURLPrefix);
         if (prefix!=-1)
@@ -224,7 +234,7 @@ public class Response implements HttpServletResponse
     }
 
     /* ------------------------------------------------------------ */
-    /*
+    /**
      * @see javax.servlet.http.HttpServletResponse#encodeRedirectURL(java.lang.String)
      */
     public String encodeRedirectURL(String url)
@@ -233,21 +243,17 @@ public class Response implements HttpServletResponse
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see javax.servlet.http.HttpServletResponse#encodeUrl(java.lang.String)
-     */
+    @Deprecated
     public String encodeUrl(String url)
     {
         return encodeURL(url);
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see javax.servlet.http.HttpServletResponse#encodeRedirectUrl(java.lang.String)
-     */
+    @Deprecated
     public String encodeRedirectUrl(String url)
     {
-        return encodeURL(url);
+        return encodeRedirectURL(url);
     }
 
     /* ------------------------------------------------------------ */
@@ -288,14 +294,14 @@ public class Response implements HttpServletResponse
             ContextHandler.Context context = request.getContext();
             if (context!=null)
                 error_handler=context.getContextHandler().getErrorHandler();
+            if (error_handler==null)
+                error_handler = _connection.getConnector().getServer().getBean(ErrorHandler.class);
             if (error_handler!=null)
             {
-                // TODO - probably should reset these after the request?
                 request.setAttribute(Dispatcher.ERROR_STATUS_CODE,new Integer(code));
                 request.setAttribute(Dispatcher.ERROR_MESSAGE, message);
                 request.setAttribute(Dispatcher.ERROR_REQUEST_URI, request.getRequestURI());
                 request.setAttribute(Dispatcher.ERROR_SERVLET_NAME,request.getServletName());
-
                 error_handler.handle(null,_connection.getRequest(),_connection.getRequest(),this );
             }
             else
@@ -715,7 +721,7 @@ public class Response implements HttpServletResponse
 
                         if (_contentType==null)
                         {
-                            _contentType = _mimeType+";charset="+QuotedStringTokenizer.quote(_characterEncoding,";= ");
+                            _contentType = _mimeType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
                             _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
                         }
                     }
@@ -724,16 +730,16 @@ public class Response implements HttpServletResponse
                         int i1=_contentType.indexOf("charset=",i0);
                         if (i1<0)
                         {
-                            _contentType = _contentType+";charset="+QuotedStringTokenizer.quote(_characterEncoding,";= ");
+                            _contentType = _contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
                         }
                         else
                         {
                             int i8=i1+8;
                             int i2=_contentType.indexOf(" ",i8);
                             if (i2<0)
-                                _contentType=_contentType.substring(0,i8)+QuotedStringTokenizer.quote(_characterEncoding,";= ");
+                                _contentType=_contentType.substring(0,i8)+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
                             else
-                                _contentType=_contentType.substring(0,i8)+QuotedStringTokenizer.quote(_characterEncoding,";= ")+_contentType.substring(i2);
+                                _contentType=_contentType.substring(0,i8)+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ")+_contentType.substring(i2);
                         }
                         _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
                     }
@@ -861,12 +867,12 @@ public class Response implements HttpServletResponse
                         }
                         else if (i2<0)
                         {
-                            _contentType=contentType.substring(0,i1)+";charset="+QuotedStringTokenizer.quote(_characterEncoding,";= ");
+                            _contentType=contentType.substring(0,i1)+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
                             _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
                         }
                         else
                         {
-                            _contentType=contentType.substring(0,i1)+contentType.substring(i2)+";charset="+QuotedStringTokenizer.quote(_characterEncoding,";= ");
+                            _contentType=contentType.substring(0,i1)+contentType.substring(i2)+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
                             _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
                         }
                     }
@@ -912,7 +918,7 @@ public class Response implements HttpServletResponse
                 else // No encoding in the params.
                 {
                     _cachedMimeType=null;
-                    _contentType=_characterEncoding==null?contentType:contentType+";charset="+QuotedStringTokenizer.quote(_characterEncoding,";= ");
+                    _contentType=_characterEncoding==null?contentType:contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
                     _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
                 }
             }
@@ -933,13 +939,13 @@ public class Response implements HttpServletResponse
                         }
                         else
                         {
-                            _contentType=_mimeType+";charset="+QuotedStringTokenizer.quote(_characterEncoding,";= ");
+                            _contentType=_mimeType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
                             _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
                         }
                     }
                     else
                     {
-                        _contentType=contentType+";charset="+QuotedStringTokenizer.quote(_characterEncoding,";= ");
+                        _contentType=contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
                         _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
                     }
                 }

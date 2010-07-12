@@ -35,9 +35,6 @@ import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
 /** SessionHandler.
- *
- * 
- *
  */
 public class SessionHandler extends ScopedHandler
 {
@@ -224,8 +221,7 @@ public class SessionHandler extends ScopedHandler
             throws IOException, ServletException
     {
         // start manual inline of nextHandle(target,baseRequest,request,response);
-        //noinspection ConstantIfStatement
-        if (false)
+        if (never())
             nextHandle(target,baseRequest,request,response);
         else if (_nextScope!=null && _nextScope==_handler)
             _nextScope.doHandle(target,baseRequest,request, response);
@@ -236,8 +232,8 @@ public class SessionHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /** Look for a requested session ID in cookies and URI parameters
+     * @param baseRequest
      * @param request
-     * @param dispatch
      */
     protected void setRequestedId(Request baseRequest, HttpServletRequest request)
     {

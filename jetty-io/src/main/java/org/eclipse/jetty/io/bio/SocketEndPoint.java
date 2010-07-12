@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2004-2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -29,9 +29,9 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class SocketEndPoint extends StreamEndPoint
 {
-    Socket _socket;
-    InetSocketAddress _local;
-    InetSocketAddress _remote;
+    final Socket _socket;
+    final InetSocketAddress _local;
+    final InetSocketAddress _remote;
 
     /**
      * 
@@ -41,6 +41,23 @@ public class SocketEndPoint extends StreamEndPoint
     {
         super(socket.getInputStream(),socket.getOutputStream());
         _socket=socket;
+        _local=(InetSocketAddress)_socket.getLocalSocketAddress();
+        _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
+        super.setMaxIdleTime(_socket.getSoTimeout());
+    }
+    
+    /**
+     * 
+     */
+    protected SocketEndPoint(Socket socket, int maxIdleTime)
+        throws IOException      
+    {
+        super(socket.getInputStream(),socket.getOutputStream());
+        _socket=socket;
+        _local=(InetSocketAddress)_socket.getLocalSocketAddress();
+        _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
+        _socket.setSoTimeout(maxIdleTime>0?maxIdleTime:0);
+        super.setMaxIdleTime(maxIdleTime);
     }
 
     /* (non-Javadoc)
@@ -52,27 +69,25 @@ public class SocketEndPoint extends StreamEndPoint
         return super.isOpen() && _socket!=null && !_socket.isClosed() && !_socket.isInputShutdown() && !_socket.isOutputShutdown();
     }
 
+
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.jetty.io.bio.StreamEndPoint#shutdownOutput()
+     */
+    @Override
+    public void shutdownOutput() throws IOException
+    {    
+        if (!_socket.isClosed() && !_socket.isOutputShutdown())
+            _socket.shutdownOutput();
+    }
+    
     /* (non-Javadoc)
      * @see org.eclipse.io.BufferIO#close()
      */
     @Override
     public void close() throws IOException
     {
-        if (!_socket.isClosed() && !_socket.isOutputShutdown())
-        {
-            try
-            {
-                _socket.shutdownOutput();
-            }
-            catch(IOException e)
-            {
-                Log.ignore(e);
-            }
-            catch(UnsupportedOperationException e)
-            {
-                Log.ignore(e);
-            }
-        }
         _socket.close();
         _in=null;
         _out=null;
@@ -86,9 +101,6 @@ public class SocketEndPoint extends StreamEndPoint
     @Override
     public String getLocalAddr()
     {
-        if (_local==null)
-            _local=(InetSocketAddress)_socket.getLocalSocketAddress();
-        
        if (_local==null || _local.getAddress()==null || _local.getAddress().isAnyLocalAddress())
            return StringUtil.ALL_INTERFACES;
         
@@ -102,9 +114,6 @@ public class SocketEndPoint extends StreamEndPoint
     @Override
     public String getLocalHost()
     {
-        if (_local==null)
-            _local=(InetSocketAddress)_socket.getLocalSocketAddress();
-        
        if (_local==null || _local.getAddress()==null || _local.getAddress().isAnyLocalAddress())
            return StringUtil.ALL_INTERFACES;
         
@@ -119,8 +128,6 @@ public class SocketEndPoint extends StreamEndPoint
     public int getLocalPort()
     {
         if (_local==null)
-            _local=(InetSocketAddress)_socket.getLocalSocketAddress();
-        if (_local==null)
             return -1;
         return _local.getPort();
     }
@@ -132,8 +139,6 @@ public class SocketEndPoint extends StreamEndPoint
     @Override
     public String getRemoteAddr()
     {
-        if (_remote==null)
-            _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
         if (_remote==null)
             return null;
         InetAddress addr = _remote.getAddress();
@@ -148,8 +153,6 @@ public class SocketEndPoint extends StreamEndPoint
     public String getRemoteHost()
     {
         if (_remote==null)
-            _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
-        if (_remote==null)
             return null;
         return _remote.getAddress().getCanonicalHostName();
     }
@@ -161,8 +164,6 @@ public class SocketEndPoint extends StreamEndPoint
     @Override
     public int getRemotePort()
     {
-        if (_remote==null)
-            _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
         if (_remote==null)
             return -1;
         return _remote.getPort();
@@ -177,4 +178,18 @@ public class SocketEndPoint extends StreamEndPoint
     {
         return _socket;
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.bio.StreamEndPoint#setMaxIdleTime(int)
+     */
+    @Override
+    public void setMaxIdleTime(int timeMs) throws IOException
+    {
+        if (timeMs!=getMaxIdleTime())
+            _socket.setSoTimeout(timeMs>0?timeMs:0);
+        super.setMaxIdleTime(timeMs);
+    }
+    
+    
 }

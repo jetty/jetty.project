@@ -14,6 +14,8 @@
 package com.acme;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -25,15 +27,23 @@ import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
 /** TestFilter.
  * 
- *
+ * This filter checks for a none local request, and if the init parameter
+ * "remote" is not set to true, then all non local requests are forwarded
+ * to /remote.html
+ * 
  */
 public class TestFilter implements Filter
 {
+    private boolean _remote;
     private ServletContext _context;
+    private final Set<String> _allowed = new HashSet<String>();
     
     /* ------------------------------------------------------------ */
     /* 
@@ -42,6 +52,11 @@ public class TestFilter implements Filter
     public void init(FilterConfig filterConfig) throws ServletException
     {
         _context= filterConfig.getServletContext();
+        _remote=Boolean.parseBoolean(filterConfig.getInitParameter("remote"));
+        _allowed.add("/favicon.ico");
+        _allowed.add("/jetty_banner.gif");
+        
+        Log.debug("TestFilter#remote="+_remote);
     }
 
     /* ------------------------------------------------------------ */
@@ -51,6 +66,21 @@ public class TestFilter implements Filter
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException
     {
+        String from = request.getRemoteHost();
+        String to = request.getServerName();
+        String path=((HttpServletRequest)request).getServletPath();
+        
+        if (!_remote && !_allowed.contains(path) && (
+             !from.equals("localhost") && !from.startsWith("127.") ||
+             !to.equals("localhost")&&!to.startsWith("127.0.0.")))
+        {
+            if ("/".equals(path))
+                _context.getRequestDispatcher("/remote.html").forward(request,response);
+            else
+                ((HttpServletResponse)response).sendRedirect("/remote.html");
+            return;
+        }
+        
         Integer old_value=null;
         ServletRequest r = request;
         while (r instanceof ServletRequestWrapper)

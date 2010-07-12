@@ -15,20 +15,9 @@
 // ========================================================================
 package org.eclipse.jetty.deploy;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.xml.XmlConfiguration;
-import org.xml.sax.SAXException;
+import org.omg.CORBA.portable.ApplicationException;
 
 /**
  * The information about an App that is managed by the {@link DeploymentManager}
@@ -98,8 +87,8 @@ public class App
      * Create it if needed.
      * 
      * @return the {@link ContextHandler} to use for the App when fully started.
-     *         (Portions of which might be ignored when App is in the
-     *         {@link AppState#STAGED} state}
+     *         (Portions of which might be ignored when App is not yet 
+     *         {@link AppLifeCycle#DEPLOYED} or {@link AppLifeCycle#STARTED})
      * @throws Exception
      */
     public ContextHandler getContextHandler() throws Exception
@@ -107,7 +96,15 @@ public class App
         if (_context == null)
         {
             _context = getAppProvider().createContextHandler(this);
-            this._context.setAttributes(new AttributesMap(_manager.getContextAttributes()));
+            
+            AttributesMap attributes = _manager.getContextAttributes();
+            if (attributes!=null && attributes.size()>0)
+            {
+                // Merge the manager attributes under the existing attributes
+                attributes = new AttributesMap(attributes);
+                attributes.addAll(_context.getAttributes());
+                _context.setAttributes(attributes);
+            }
         }
         return _context;
     }

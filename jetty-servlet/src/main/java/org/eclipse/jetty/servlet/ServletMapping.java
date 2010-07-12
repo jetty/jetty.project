@@ -28,7 +28,7 @@ public class ServletMapping
     
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the pathSpec.
+     * @return Returns the pathSpecs.
      */
     public String[] getPathSpecs()
     {
@@ -46,7 +46,7 @@ public class ServletMapping
     
     /* ------------------------------------------------------------ */
     /**
-     * @param pathSpec The pathSpec to set.
+     * @param pathSpecs The pathSpecs to set.
      */
     public void setPathSpecs(String[] pathSpecs)
     {

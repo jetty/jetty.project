@@ -24,7 +24,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.jetty.deploy.bindings.StandardDeployer;
 import org.eclipse.jetty.deploy.bindings.StandardStarter;
@@ -305,9 +304,9 @@ public class DeploymentManager extends AbstractLifeCycle
     /**
      * Get Set of {@link App}s by {@link Node}
      * 
-     * @param state
-     *            the state to look for.
-     * @return
+     * @param node
+     *            the node to look for.
+     * @return the collection of apps for the node
      */
     public Collection<App> getApps(Node node)
     {
@@ -358,7 +357,7 @@ public class DeploymentManager extends AbstractLifeCycle
      * Get a contextAttribute that will be set for every Context deployed by this provider.
      * 
      * @param name
-     * @return
+     * @return the context attribute value
      */
     public Object getContextAttribute(String name)
     {
