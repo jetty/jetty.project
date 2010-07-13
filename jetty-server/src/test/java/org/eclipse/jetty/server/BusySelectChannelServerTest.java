@@ -38,7 +38,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
             @Override
             protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
             {
-                return new SelectChannelEndPoint(channel,selectSet,key)
+                return new SelectChannelEndPoint(channel,selectSet,key, _maxIdleTime)
                 {
                     int write;
                     int read;

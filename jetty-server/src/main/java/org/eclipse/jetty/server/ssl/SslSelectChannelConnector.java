@@ -520,7 +520,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Override
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
-        SslSelectChannelEndPoint endp = new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,createSSLEngine());
+        SslSelectChannelEndPoint endp = new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,createSSLEngine(), SslSelectChannelConnector.this._maxIdleTime);
         endp.setAllowRenegotiate(_allowRenegotiate);
         return endp;
     }

@@ -64,6 +64,20 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     private final boolean _debug = __log.isDebugEnabled(); // snapshot debug status for optimizer 
 
     /* ------------------------------------------------------------ */
+    public SslSelectChannelEndPoint(Buffers buffers,SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey key, SSLEngine engine, int maxIdleTime)
+            throws IOException
+    {
+        super(channel,selectSet,key, maxIdleTime);
+        _buffers=buffers;
+        
+        // ssl
+        _engine=engine;
+        _session=engine.getSession();
+
+        if (_debug) __log.debug(_session+" channel="+channel);
+    }
+    
+    /* ------------------------------------------------------------ */
     public SslSelectChannelEndPoint(Buffers buffers,SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey key, SSLEngine engine)
             throws IOException
     {
@@ -76,7 +90,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
         if (_debug) __log.debug(_session+" channel="+channel);
     }
-    
     /* ------------------------------------------------------------ */
     private void needOutBuffer()
     {

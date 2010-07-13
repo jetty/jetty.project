@@ -48,6 +48,24 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     private volatile long _idleTimestamp;
 
     /* ------------------------------------------------------------ */
+    public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime)
+        throws IOException
+    {
+        super(channel, maxIdleTime);
+
+        _manager = selectSet.getManager();
+        _selectSet = selectSet;
+        _dispatched = false;
+        _redispatched = false;
+        _open=true;       
+        _key = key;
+
+        _connection = _manager.newConnection(channel,this);
+        
+        scheduleIdle();
+    }
+
+    /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key)
         throws IOException
     {
@@ -64,7 +82,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         
         scheduleIdle();
     }
-
     /* ------------------------------------------------------------ */
     public SelectionKey getSelectionKey()
     {
