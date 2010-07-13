@@ -458,7 +458,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 retry_next=_timeout.getTimeToNext();
 
                 // workout how low to wait in select
-                long wait = 1000L;  
+                long wait = _changes.size()==0?200L:0L;  
                 if (wait > 0 && retry_next >= 0 && wait > retry_next)
                     wait = retry_next;
     
