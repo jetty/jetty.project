@@ -5,6 +5,7 @@ jetty-7.2-SNAPSHOT
  + 319655 Reset HEAD status 
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1247 synchronize recylcing of SSL NIO buffers 
+ + JETTY-1248 fix parsing of bad multiparts
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1251 Replace then close selector for JVM bugs
  + Added ignore to Logger interface
