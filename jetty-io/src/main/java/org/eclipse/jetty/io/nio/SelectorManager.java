@@ -556,8 +556,16 @@ public abstract class SelectorManager extends AbstractLifeCycle
                                     else
                                         addChange(channel,attachment);
                                 }
-                                _selector.close();
+                                Selector old_selector=_selector;
                                 _selector=new_selector;
+                                try
+                                {
+                                    old_selector.close();
+                                }
+                                catch(Exception e)
+                                {
+                                    Log.ignore(e);
+                                }
                                 return;
                             }
                         }
