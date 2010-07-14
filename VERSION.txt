@@ -3,7 +3,7 @@ jetty-7.2-SNAPSHOT
  + 319370 WebAppClassLoader.Context
  + 319519 Warn about duplicate configuration files
  + JETTY-1247 synchronize recylcing of SSL NIO buffers 
- + JETTY-1249 Apply max idle time
+ + JETTY-1249 Apply max idle time to all connectors
  + Added ignore to Logger interface
 
 jetty-7.1.5.v20100705

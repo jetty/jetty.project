@@ -13,32 +13,33 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
-
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import junit.framework.Assert;
+
 import org.eclipse.jetty.util.IO;
-import org.junit.Assert;
 import org.junit.Test;
 
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
-
+    static
+    {
+        System.setProperty("org.mortbay.io.nio.IDLE_TICK","100");
+    }
+    
+    
     @Test
     public void testSelectConnectorMaxIdleWithRequest() throws Exception
     {  
-        /*
-         * Test not working for Blocking connector
         configureServer(new EchoHandler());
-        Socket client=new Socket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        client.setSoTimeout(10000);
 
         assertFalse(client.isClosed());
         
@@ -54,37 +55,42 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 "content-length: "+contentB.length+"\r\n"+
         "\r\n").getBytes("utf-8"));
         os.write(contentB);
-        
+
+        long start = System.currentTimeMillis();
         String in = IO.toString(is);
         System.err.println(in);
          
-        Thread.sleep(600);
+        Thread.sleep(300);
         assertEquals(-1, is.read());
-        */
+
+        Assert.assertTrue(System.currentTimeMillis()-start>200);
+        Assert.assertTrue(System.currentTimeMillis()-start<1000);
     }
     
-   
 
     @Test
     public void testSelectConnectorMaxIdleNoRequest() throws Exception
     {  
-        /* Test is not working for Select and Blocking connectors - gregw to look at the SelectorManager and the idle timeout
         configureServer(new EchoHandler());
-        Socket client=new Socket(HOST,_connector.getLocalPort());
-        OutputStream os=client.getOutputStream();
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        client.setSoTimeout(10000);
+        InputStream is=client.getInputStream();
         assertFalse(client.isClosed());
       
-        Thread.sleep(1100);
+        Thread.sleep(500);
+        long start = System.currentTimeMillis();
         try
-        { 
-            os.write(("xx").getBytes("utf-8"));
-            Assert.fail("Connection not closed");
-        }
-        catch (IOException e)
         {
-            //expected result
+            IO.toString(is);
+            assertEquals(-1, is.read());
         }
-         */
+        catch(Exception e)
+        {
+            // SSL throws
+        }
+        Assert.assertTrue(System.currentTimeMillis()-start<200);
+        
+        
     }  
    
 }

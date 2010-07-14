@@ -108,7 +108,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new HelloWorldHandler());
 
-        Socket client=new Socket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
             OutputStream os=client.getOutputStream();
@@ -133,7 +133,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new EchoHandler());
 
-        Socket client=new Socket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
             OutputStream os=client.getOutputStream();
@@ -166,7 +166,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new HelloWorldHandler());
 
-        Socket client=new Socket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
             OutputStream os=client.getOutputStream();
@@ -202,7 +202,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         byte[] bytes=REQUEST2.getBytes();
         for (int i=0; i<LOOPS; i++)
         {
-            Socket client=new Socket(HOST,_connector.getLocalPort());
+            Socket client=newSocket(HOST,_connector.getLocalPort());
             try
             {
                 OutputStream os=client.getOutputStream();
@@ -247,7 +247,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Sort the list
             Arrays.sort(points);
 
-            Socket client=new Socket(HOST,_connector.getLocalPort());
+            Socket client=newSocket(HOST,_connector.getLocalPort());
             try
             {
                 OutputStream os=client.getOutputStream();
@@ -283,7 +283,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Sort the list
             Arrays.sort(points);
 
-            Socket client=new Socket(HOST,_connector.getLocalPort());
+            Socket client=newSocket(HOST,_connector.getLocalPort());
             try
             {
                 OutputStream os=client.getOutputStream();
@@ -321,7 +321,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         };
         for (int i=0; i<badPoints.length; ++i)
         {
-            Socket client=new Socket(HOST,_connector.getLocalPort());
+            Socket client=newSocket(HOST,_connector.getLocalPort());
             try
             {
                 OutputStream os=client.getOutputStream();
@@ -384,7 +384,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new DataHandler());
 
         long start=System.currentTimeMillis();
-        Socket client=new Socket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
             OutputStream os=client.getOutputStream();
@@ -444,7 +444,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         //for (int pipeline=1;pipeline<32;pipeline++)
         for (int pipeline=1;pipeline<32;pipeline++)
         {
-            Socket client=new Socket(HOST,_connector.getLocalPort());
+            Socket client=newSocket(HOST,_connector.getLocalPort());
             try
             {
                 client.setSoTimeout(5000);
@@ -497,7 +497,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new EchoHandler());
 
-        Socket client=new Socket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
             OutputStream os=client.getOutputStream();
@@ -585,7 +585,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new EchoHandler());
 
-        Socket client=new Socket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
             OutputStream os=client.getOutputStream();

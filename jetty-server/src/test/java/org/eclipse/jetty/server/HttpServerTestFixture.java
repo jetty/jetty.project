@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.net.Socket;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -27,6 +28,11 @@ public class HttpServerTestFixture
     protected static Server _server;
     protected static Connector _connector;
 
+    protected Socket newSocket(String host,int port) throws Exception
+    {
+        return new Socket(host,port);
+    }
+    
     protected static void startServer(Connector connector) throws Exception
     {
         _server = new Server();
