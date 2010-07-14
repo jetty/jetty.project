@@ -119,7 +119,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     /* ------------------------------------------------------------ */
     private void freeOutBuffer()
     {
-        if (_outNIOBuffer!=null)
+        if (_outNIOBuffer!=null && _outNIOBuffer.length()==0)
         {
             synchronized (this)
             { 
@@ -135,7 +135,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     /* ------------------------------------------------------------ */
     private void freeInBuffer()
     {
-        if (_inNIOBuffer!=null)
+        if (_inNIOBuffer!=null && _inNIOBuffer.length()==0)
         {
             synchronized (this)
             { 
@@ -294,15 +294,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         finally
         {
             super.close();
-            synchronized (this)
-            {
-                if (_inNIOBuffer!=null)
-                    _buffers.returnBuffer(_inNIOBuffer);
-                _inNIOBuffer=null;
-                if (_outNIOBuffer!=null)
-                    _buffers.returnBuffer(_outNIOBuffer);
-                _outNIOBuffer=null;
-            }
         }   
     }
 
