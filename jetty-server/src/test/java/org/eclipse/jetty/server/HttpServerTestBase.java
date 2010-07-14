@@ -581,6 +581,60 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
+    public void testHead() throws Exception
+    {
+        configureServer(new EchoHandler(false));
+
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        try
+        {
+            OutputStream os=client.getOutputStream();
+            InputStream is=client.getInputStream();
+
+            os.write((
+                "POST /R1 HTTP/1.1\015\012"+
+                "Host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                "content-type: text/plain; charset=utf-8\r\n"+
+                "content-length: 10\r\n"+
+                "\015\012"+
+                "123456789\n" +
+                
+                "HEAD /R1 HTTP/1.1\015\012"+
+                "Host: "+HOST+":"+_connector.getLocalPort()+"\015\012"+
+                "content-type: text/plain; charset=utf-8\r\n"+
+                "content-length: 10\r\n"+
+                "\015\012"+
+                "123456789\n"+
+                
+                "POST /R1 HTTP/1.1\015\012"+
+                "Host: "+HOST+":"+_connector.getLocalPort()+"\015\012"+
+                "content-type: text/plain; charset=utf-8\r\n"+
+                "content-length: 10\r\n"+
+                "Connection: close\015\012"+
+                "\015\012"+
+                "123456789\n"
+                
+                ).getBytes("iso-8859-1"));
+            
+            String in = IO.toString(is);
+
+            System.err.println(in);
+            
+            int index=in.indexOf("123456789");
+            assertTrue(index>0);
+            index=in.indexOf("123456789",index+1);
+            assertTrue(index>0);
+            index=in.indexOf("123456789",index+1);
+            assertTrue(index==-1);
+            
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+    
+    @Test
     public void testRecycledReaders() throws Exception
     {
         configureServer(new EchoHandler());

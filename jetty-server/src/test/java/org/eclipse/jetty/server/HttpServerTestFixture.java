@@ -60,6 +60,16 @@ public class HttpServerTestFixture
 
     protected static class EchoHandler extends AbstractHandler
     {
+        boolean musthavecontent=true;
+        
+        public EchoHandler()
+        {}
+        
+        public EchoHandler(boolean content)
+        {
+            musthavecontent=false;
+        }
+        
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
@@ -72,19 +82,28 @@ public class HttpServerTestFixture
                 response.setCharacterEncoding(request.getCharacterEncoding());
 
             PrintWriter writer=response.getWriter();
-            BufferedReader reader=request.getReader();
+
             int count=0;
-            String line;
-
-            while ((line=reader.readLine())!=null)
+            BufferedReader reader=request.getReader();
+            if (request.getContentLength()!=0)
             {
-                writer.print(line);
-                writer.print("\n");
-                count+=line.length();
+                String line;
+                
+                while ((line=reader.readLine())!=null)
+                {
+                    writer.print(line);
+                    writer.print("\n");
+                    count+=line.length();
+                }
             }
-
+            
             if (count==0)
-                throw new IllegalStateException("no input recieved");
+            {
+                if (musthavecontent)
+                    throw new IllegalStateException("no input recieved");
+
+                writer.println("No content");
+            }
 
             // just to be difficult
             reader.close();

@@ -246,6 +246,8 @@ public abstract class AbstractGenerator implements Generator
      */
     public void setHead(boolean head)
     {
+        System.err.println("setHead "+head);
+        new Throwable().printStackTrace();
         _head = head;
     }
 
