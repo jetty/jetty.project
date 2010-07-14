@@ -89,22 +89,11 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     private SSLContext _context;
     Buffers _sslBuffers;
 
-
-    /**
-     * Return the chain of X509 certificates used to negotiate the SSL Session.
-     * <p>
-     * Note: in order to do this we must convert a
-     * javax.security.cert.X509Certificate[], as used by JSSE to a
-     * java.security.cert.X509Certificate[],as required by the Servlet specs.
-     * 
-     * @param sslSession
-     *                the javax.net.ssl.SSLSession to use as the source of the
-     *                cert chain.
-     * @return the chain of java.security.cert.X509Certificates used to
-     *         negotiate the SSL connection. <br>
-     *         Will be null if the chain is missing or empty.
-     */
-
+    /* ------------------------------------------------------------ */
+    public SslSelectChannelConnector()
+    {
+        setUseDirectBuffers(false);
+    }
   
     /* ------------------------------------------------------------ */
     /**
@@ -143,11 +132,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         SSLSession sslSession=sslEngine.getSession();
         
         SslCertificates.customize(sslSession,endpoint,request);
-    }
-
-    /* ------------------------------------------------------------ */
-    public SslSelectChannelConnector()
-    {
     }
 
     /* ------------------------------------------------------------ */
