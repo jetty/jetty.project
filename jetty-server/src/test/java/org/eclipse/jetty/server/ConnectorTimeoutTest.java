@@ -58,7 +58,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         long start = System.currentTimeMillis();
         String in = IO.toString(is);
-        System.err.println(in);
          
         Thread.sleep(300);
         assertEquals(-1, is.read());

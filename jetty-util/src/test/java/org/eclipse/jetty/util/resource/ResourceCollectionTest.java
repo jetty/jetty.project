@@ -52,9 +52,7 @@ public class ResourceCollectionTest
         assertEquals("1 - one", getContent(rc2, "1.txt"));
         assertEquals("2 - two", getContent(rc2, "2.txt"));
         assertEquals("3 - three", getContent(rc2, "3.txt"));
-        
-        for(String s : rc1.list())
-            System.err.println(s);        
+             
     }
     
     @Test
