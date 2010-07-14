@@ -617,8 +617,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 ).getBytes("iso-8859-1"));
             
             String in = IO.toString(is);
-
-            System.err.println(in);
             
             int index=in.indexOf("123456789");
             assertTrue(index>0);
