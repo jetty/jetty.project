@@ -129,13 +129,14 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
                 while(progress)
                 {
                     // take bytes from the parser buffer.
-                    if (_parser.getBuffer().length()>0)
+                    Buffer buffer=_parser.getBuffer();
+                    if (buffer!=null && buffer.length()>0)
                     {
-                        int l=_parser.getBuffer().length();
+                        int l=buffer.length();
                         if (l>8)
                             l=8;
-                        _hixie.put(_parser.getBuffer().peek(_parser.getBuffer().getIndex(),l));
-                        _parser.getBuffer().skip(l);
+                        _hixie.put(buffer.peek(buffer.getIndex(),l));
+                        buffer.skip(l);
                         progress=true;
                     }
                     
