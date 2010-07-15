@@ -2,6 +2,7 @@ jetty-7.1.6-SNAPSHOT
  + 319519 Warn about duplicate configuration files
  + 319655 Reset HEAD status 
  + JETTY-1247 synchronize recylcing of SSL NIO buffers 
+ + JETTY-1248 fix parsing of bad multiparts
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1251 Replace then close selector for JVM bugs
 
