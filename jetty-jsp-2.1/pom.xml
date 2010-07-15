@@ -31,7 +31,7 @@
 		<Export-Package>org.eclipse.jetty*</Export-Package>
 		<!-- disable the uses directive: we don't want to fore eeryone that uses us to
 		have to depend on com.sun.org.apache.commons.logging provided by jasper-glassfish. -->
-		<_nouses>true<_nouses>
+		<_nouses>true</_nouses>
 	    </instructions>
 	</configuration>
       </plugin>
