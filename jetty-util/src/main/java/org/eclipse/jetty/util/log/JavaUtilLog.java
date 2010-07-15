@@ -114,6 +114,14 @@ public class JavaUtilLog implements Logger
         return new JavaUtilLog(name);
     }
 
+    public void ignore(Throwable ignored)
+    {
+        if (Log.isIgnored())
+        {
+            warn(Log.IGNORED, ignored);
+        }
+    }
+
     private String format(String msg, Object... args)
     {
         msg = String.valueOf(msg); // Avoids NPE

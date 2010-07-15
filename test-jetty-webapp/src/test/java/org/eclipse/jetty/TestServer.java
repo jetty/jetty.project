@@ -22,6 +22,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -37,7 +38,7 @@ public class TestServer
 {
     public static void main(String[] args) throws Exception
     {
-        Log.getLog().setDebugEnabled(true);
+        Log.getLog().setDebugEnabled(false);
         ((StdErrLog)Log.getLog()).setSource(false);
         
         String jetty_root = "..";
@@ -50,7 +51,6 @@ public class TestServer
         server.getContainer().addEventListener(mbContainer);
         server.addBean(mbContainer);
         mbContainer.addBean(Log.getLog());
-
         
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
@@ -58,12 +58,27 @@ public class TestServer
         server.setThreadPool(threadPool);
 
         // Setup Connectors
-        SelectChannelConnector connector = new SelectChannelConnector();
-        connector.setPort(8080);
-        connector.setMaxIdleTime(30000);
-        connector.setConfidentialPort(8443);
-        server.setConnectors(new Connector[]
-        { connector });
+        SelectChannelConnector connector0 = new SelectChannelConnector();
+        connector0.setPort(8080);
+        connector0.setMaxIdleTime(30000);
+        connector0.setConfidentialPort(8443);
+        connector0.setUseDirectBuffers(true);
+        server.addConnector(connector0);
+        
+        // Setup Connectors
+        SelectChannelConnector connector1 = new SelectChannelConnector();
+        connector1.setPort(8081);
+        connector1.setMaxIdleTime(30000);
+        connector1.setConfidentialPort(8443);
+        connector1.setUseDirectBuffers(false);
+        server.addConnector(connector1);
+        
+        // Setup Connectors
+        SocketConnector connector2 = new SocketConnector();
+        connector2.setPort(8082);
+        connector2.setMaxIdleTime(30000);
+        connector2.setConfidentialPort(8443);
+        server.addConnector(connector2);
 
         SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
         ssl_connector.setPort(8443);

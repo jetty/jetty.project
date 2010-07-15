@@ -325,4 +325,12 @@ public class StdErrLog implements Logger
     {
         return "StdErrLog:" + _name + ":DEBUG=" + _debug;
     }
+
+    public void ignore(Throwable ignored)
+    {
+        if (Log.isIgnored())
+        {
+            warn(Log.IGNORED, ignored);
+        }
+    }
 }

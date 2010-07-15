@@ -534,7 +534,6 @@ public class HttpExchangeTest extends TestCase
                 }
                 catch(InterruptedException e)
                 {
-                    System.err.println(e);
                     Log.debug(e);
                 }
                 catch(IOException e)

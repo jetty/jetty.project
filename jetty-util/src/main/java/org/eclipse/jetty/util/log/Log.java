@@ -116,6 +116,10 @@ public class Log
         return __log;
     }
 
+    static boolean isIgnored()
+    {
+        return __ignored;
+    }
 
     /**
      * Set Log to parent Logger.

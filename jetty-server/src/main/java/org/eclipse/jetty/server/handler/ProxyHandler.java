@@ -421,7 +421,9 @@ public class ProxyHandler extends HandlerWrapper
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey selectionKey) throws IOException
         {
-            return new SelectChannelEndPoint(channel, selectSet, selectionKey);
+            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, selectionKey);
+            // TODO endp.setMaxIdleTime(_writeTimeout);
+            return endp;
         }
 
         @Override

@@ -124,10 +124,11 @@ public class ChatServlet extends HttpServlet
             }
             else 
             {
-                Continuation continuation = ContinuationSupport.getContinuation(request,response);
+                Continuation continuation = ContinuationSupport.getContinuation(request);
                 if (continuation.isInitial()) 
                 {
                     // No chat in queue, so suspend and wait for timeout or chat
+                    continuation.setTimeout(20000);
                     continuation.suspend();
                     member._continuation=continuation;
                 }

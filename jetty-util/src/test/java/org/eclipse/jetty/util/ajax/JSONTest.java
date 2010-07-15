@@ -90,8 +90,6 @@ public class JSONTest
         
         obj7.put("x","value");
 
-        System.err.println();
-        System.err.println();
 
         String s = JSON.toString(map);
         assertTrue(s.indexOf("\"n1\":null")>=0);
@@ -110,7 +108,6 @@ public class JSONTest
         gadget.setWoggles(new Woggle[]{w0,w1});
         
         s = JSON.toString(new Gadget[]{gadget});
-        System.out.println(s);
         assertTrue(s.startsWith("["));
         assertTrue(s.indexOf("\"modulated\":false")>=0);
         assertTrue(s.indexOf("\"shields\":42")>=0);
@@ -207,7 +204,6 @@ public class JSONTest
     {
         String withzero="\u0000";
         String json = JSON.toString(withzero);
-        System.err.println(json);
     }
     
     /* ------------------------------------------------------------ */
@@ -365,10 +361,9 @@ public class JSONTest
         map.put("g0",g0);
 
         StringBuffer buf = new StringBuffer();
-        json.append(buf,map);
+        json.append((Appendable)buf,map);
         String js=buf.toString();
         
-        System.err.println(js);
         assertTrue(js.indexOf("\"date\":\"Thu Jan 01 00:00:00 GMT 1970\"")>=0);
         assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle")>=0);
         assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo")<0);
@@ -380,9 +375,8 @@ public class JSONTest
         json.addConvertor(Enum.class,new JSONEnumConvertor(false));
         w0.nested=null;
         buf = new StringBuffer();
-        json.append(buf,map);
+        json.append((Appendable)buf,map);
         js=buf.toString();
-        System.err.println(js);
         assertTrue(js.indexOf("\"date\":\"Thu Jan 01 00:00:00 GMT 1970\"")<0);
         assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Woggle")>=0);
         assertTrue(js.indexOf("org.eclipse.jetty.util.ajax.JSONTest$Gizmo")<0);
@@ -399,9 +393,8 @@ public class JSONTest
         json.addConvertor(Date.class,new JSONDateConvertor(DateCache.DEFAULT_FORMAT,TimeZone.getTimeZone("GMT"),true,l));
         json.addConvertor(Enum.class,new JSONEnumConvertor(true));
         buf = new StringBuffer();
-        json.append(buf,map);
+        json.append((Appendable)buf,map);
         js=buf.toString();
-        System.err.println(js);
         map2=(HashMap)json.parse(new JSON.StringSource(js));
         
         assertTrue(map2.get("date") instanceof Date);

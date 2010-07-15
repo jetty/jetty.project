@@ -56,14 +56,71 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
 public class WebAppClassLoader extends URLClassLoader 
 {
     private String _name;
-    private WebAppContext _context;
+    private Context _context;
     private ClassLoader _parent;
     private HashSet<String> _extensions;
+    
+    
+    /* ------------------------------------------------------------ */
+    /** The Context in which the classloader operates.
+     */
+    public interface Context
+    {
+        /* ------------------------------------------------------------ */
+        /** Convert a URL or path to a Resource.
+         * The default implementation
+         * is a wrapper for {@link Resource#newResource(String)}.
+         * @param urlOrPath The URL or path to convert
+         * @return The Resource for the URL/path
+         * @throws IOException The Resource could not be created.
+         */
+        Resource newResource(String urlOrPath) throws IOException;
+
+        /* ------------------------------------------------------------ */
+        /**
+         * @return Returns the permissions.
+         */
+        PermissionCollection getPermissions();
+
+        /* ------------------------------------------------------------ */
+        /** Is the class a System Class.
+         * A System class is a class that is visible to a webapplication,
+         * but that cannot be overridden by the contents of WEB-INF/lib or
+         * WEB-INF/classes 
+         * @param clazz The fully qualified name of the class.
+         * @return True if the class is a system class.
+         */
+        boolean isSystemClass(String clazz);
+
+        /* ------------------------------------------------------------ */
+        /** Is the class a Server Class.
+         * A Server class is a class that is part of the implementation of 
+         * the server and is NIT visible to a webapplication. The web
+         * application may provide it's own implementation of the class,
+         * to be loaded from WEB-INF/lib or WEB-INF/classes 
+         * @param clazz The fully qualified name of the class.
+         * @return True if the class is a server class.
+         */
+        boolean isServerClass(String clazz);
+
+        /* ------------------------------------------------------------ */
+        /**
+         * @return True if the classloader should delegate first to the parent 
+         * classloader (standard java behaviour) or false if the classloader 
+         * should first try to load from WEB-INF/lib or WEB-INF/classes (servlet 
+         * spec recommendation).
+         */
+        boolean isParentLoaderPriority();
+        
+        /* ------------------------------------------------------------ */
+        String getExtraClasspath();
+        
+    }
     
     /* ------------------------------------------------------------ */
     /** Constructor.
      */
-    public WebAppClassLoader(WebAppContext context)
+    public WebAppClassLoader(Context context)
         throws IOException
     {
         this(null,context);
@@ -72,7 +129,7 @@ public class WebAppClassLoader extends URLClassLoader
     /* ------------------------------------------------------------ */
     /** Constructor.
      */
-    public WebAppClassLoader(ClassLoader parent, WebAppContext context)
+    public WebAppClassLoader(ClassLoader parent, Context context)
         throws IOException
     {
         super(new URL[]{},parent!=null?parent
@@ -120,7 +177,7 @@ public class WebAppClassLoader extends URLClassLoader
     
 
     /* ------------------------------------------------------------ */
-    public ContextHandler getContext()
+    public Context getContext()
     {
         return _context;
     }

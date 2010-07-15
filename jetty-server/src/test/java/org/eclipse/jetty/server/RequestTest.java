@@ -50,8 +50,9 @@ public class RequestTest
     {
         _server = new Server();
         _connector = new LocalConnector();
-        _connector.setHeaderBufferSize(512);
+        _connector.setRequestHeaderSize(512);
         _connector.setRequestBufferSize(1024);
+        _connector.setResponseHeaderSize(512);
         _connector.setResponseBufferSize(2048);
         _server.addConnector(_connector);
         _handler = new RequestHandler();
@@ -186,7 +187,6 @@ public class RequestTest
         "ABCDEFGHIJ\r\n";
 
         String responses = _connector.getResponses(request);
-        System.err.println("response="+responses);
 
         int index=responses.indexOf("read="+(int)'0');
         assertTrue(index>0);
@@ -231,7 +231,6 @@ public class RequestTest
         "ABCDEFGHIJ\r\n";
 
         String responses = _connector.getResponses(request);
-        System.err.println("response="+responses);
 
         int index=responses.indexOf("read="+(int)'0');
         assertTrue(index>0);

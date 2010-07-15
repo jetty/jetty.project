@@ -121,6 +121,29 @@ public class HttpConnectionTest
         offset = checkContains(response,offset,"HTTP/1.1 200");
         offset = checkContains(response,offset,"/R1");
     }
+    
+    @Test
+    public void testHead() throws Exception
+    {
+        String responsePOST=connector.getResponses("POST /R1 HTTP/1.1\015\012"+
+                "Host: localhost\015\012"+
+                "\015\012");
+        
+        String responseHEAD=connector.getResponses("HEAD /R1 HTTP/1.1\015\012"+
+                "Host: localhost\015\012"+
+                "\015\012");
+        
+        assertTrue(responsePOST.startsWith(responseHEAD.substring(0,responseHEAD.length()-2)));
+        assertTrue(responsePOST.length()>responseHEAD.length());
+        
+        responsePOST=connector.getResponses("POST /R1 HTTP/1.1\015\012"+
+                "Host: localhost\015\012"+
+                "\015\012");
+        
+        assertTrue(responsePOST.startsWith(responseHEAD.substring(0,responseHEAD.length()-2)));
+        assertTrue(responsePOST.length()>responseHEAD.length());
+
+    }
 
     @Test
     public void testBad() throws Exception

@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jetty.client.ContentExchangeTest.TestHandler;
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.security.Constraint;
@@ -40,6 +39,7 @@ public class SecuredErrorStatusTest
     private Realm _testRealm;
     private Realm _dummyRealm;
     
+    @Override
     public void testPutUnauthorized()
         throws Exception
     {
@@ -60,6 +60,7 @@ public class SecuredErrorStatusTest
         setRealm(_testRealm);
     }
     
+    @Override
     public void testGetUnauthorized()
         throws Exception
     {
@@ -80,6 +81,7 @@ public class SecuredErrorStatusTest
         setRealm(_testRealm);
     }
 
+    @Override
     protected void configureServer(Server server)
         throws Exception
     {

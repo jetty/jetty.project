@@ -13,11 +13,16 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Comparator;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpFields;
@@ -25,7 +30,9 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.View;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.io.nio.DirectNIOBuffer;
+import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
@@ -34,38 +41,44 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 /** 
  * 
  */
-public class ResourceCache extends AbstractLifeCycle
+public class ResourceCache
 {
-    protected final Map _cache;
+    private final ConcurrentMap<String,Content> _cache;
+    private final AtomicInteger _cachedSize;
+    private final AtomicInteger _cachedFiles;
+    private final boolean  _useFileMappedBuffer;
+    private final ResourceFactory _factory;
+    
     private final MimeTypes _mimeTypes;
     private int _maxCachedFileSize =1024*1024;
     private int _maxCachedFiles=2048;
-    private int _maxCacheSize =16*1024*1024;
-
-    protected int _cachedSize;
-    protected int _cachedFiles;
-    protected Content _mostRecentlyUsed;
-    protected Content _leastRecentlyUsed;
+    private int _maxCacheSize =32*1024*1024;
 
     /* ------------------------------------------------------------ */
     /** Constructor.
+     * @param mimeTypes Mimetype to use for meta data
+     * @param fileMappedBuffers True if file mapped buffers can be used for DirectBuffers
      */
-    public ResourceCache(MimeTypes mimeTypes)
+    public ResourceCache(ResourceFactory factory, MimeTypes mimeTypes,boolean fileMappedBuffers)
     {
-        _cache=new HashMap();
+        _factory = factory;
+        _cache=new ConcurrentHashMap<String,Content>();
+        _cachedSize=new AtomicInteger();
+        _cachedFiles=new AtomicInteger();
+        _useFileMappedBuffer=fileMappedBuffers;
         _mimeTypes=mimeTypes;
     }
 
     /* ------------------------------------------------------------ */
     public int getCachedSize()
     {
-        return _cachedSize;
+        return _cachedSize.get();
     }
     
     /* ------------------------------------------------------------ */
     public int getCachedFiles()
     {
-        return _cachedFiles;
+        return _cachedFiles.get();
     }
     
     
@@ -79,7 +92,7 @@ public class ResourceCache extends AbstractLifeCycle
     public void setMaxCachedFileSize(int maxCachedFileSize)
     {
         _maxCachedFileSize = maxCachedFileSize;
-        flushCache();
+        shrinkCache();
     }
 
     /* ------------------------------------------------------------ */
@@ -92,7 +105,7 @@ public class ResourceCache extends AbstractLifeCycle
     public void setMaxCacheSize(int maxCacheSize)
     {
         _maxCacheSize = maxCacheSize;
-        flushCache();
+        shrinkCache();
     }
 
     /* ------------------------------------------------------------ */
@@ -111,6 +124,7 @@ public class ResourceCache extends AbstractLifeCycle
     public void setMaxCachedFiles(int maxCachedFiles)
     {
         _maxCachedFiles = maxCachedFiles;
+        shrinkCache();
     }
     
     /* ------------------------------------------------------------ */
@@ -118,18 +132,14 @@ public class ResourceCache extends AbstractLifeCycle
     {
         if (_cache!=null)
         {
-            synchronized(this)
+            while (_cache.size()>0)
             {
-                ArrayList<Content> values=new ArrayList<Content>(_cache.values());
-                for (Content content : values)
-                    content.invalidate();
-                
-                _cache.clear();
-                
-                _cachedSize=0;
-                _cachedFiles=0;
-                _mostRecentlyUsed=null;
-                _leastRecentlyUsed=null;
+                for (String path : _cache.keySet())
+                {
+                    Content content = _cache.remove(path);
+                    if (content!=null)
+                        content.invalidate();
+                }
             }
         }
     }
@@ -139,49 +149,26 @@ public class ResourceCache extends AbstractLifeCycle
      * Get either a valid entry object or create a new one if possible.
      *
      * @param pathInContext The key into the cache
-     * @param factory If no matching entry is found, this {@link ResourceFactory} will be used to create the {@link Resource} 
-     *                for the new enry that is created.
      * @return The entry matching <code>pathInContext</code>, or a new entry if no matching entry was found
+     * @throws IOException Problem loading the resource
      */
-    public Content lookup(String pathInContext, ResourceFactory factory)
+    public Content lookup(String pathInContext)
         throws IOException
     {
         Content content=null;
-        
+
         // Look up cache operations
-        synchronized(_cache)
-        {
-            // Look for it in the cache
-            content = (Content)_cache.get(pathInContext);
+        content = _cache.get(pathInContext);
         
-            if (content!=null && content.isValid())
-            {
-                return content;
-            }    
-        }
-        Resource resource=factory.getResource(pathInContext);
-        return load(pathInContext,resource);
+        if (content!=null && content.isValid())
+            return content;
+       
+        Resource resource=_factory.getResource(pathInContext);
+        Content loaded = load(pathInContext,resource);
+
+        return loaded;
     }
 
-    /* ------------------------------------------------------------ */
-    public Content lookup(String pathInContext, Resource resource)
-        throws IOException
-    {
-        Content content=null;
-        
-        // Look up cache operations
-        synchronized(_cache)
-        {
-            // Look for it in the cache
-            content = (Content)_cache.get(pathInContext);
-        
-            if (content!=null && content.isValid())
-            {
-                return content;
-            }    
-        }
-        return load(pathInContext,resource);
-    }
 
     /* ------------------------------------------------------------ */
     private Content load(String pathInContext, Resource resource)
@@ -191,115 +178,122 @@ public class ResourceCache extends AbstractLifeCycle
         if (resource!=null && resource.exists() && !resource.isDirectory())
         {
             long len = resource.length();
+            
+            // Will it fit in the cache?
             if (len>0 && len<_maxCachedFileSize && len<_maxCacheSize)
             {   
-                int must_be_smaller_than=_maxCacheSize-(int)len;
+                // Create the Content (to increment the cache sizes before adding the content 
+                content = new Content(pathInContext,resource);
                 
-                synchronized(_cache)
-                {
-                    // check the cache is not full of locked content before loading content
-
-                    while(_leastRecentlyUsed!=null && (_cachedSize>must_be_smaller_than || (_maxCachedFiles>0 && _cachedFiles>=_maxCachedFiles)))
-                        _leastRecentlyUsed.invalidate();
-                    
-                    if(_cachedSize>must_be_smaller_than || (_maxCachedFiles>0 && _cachedFiles>=_maxCachedFiles))
-                        return null;
-                }
+                // reduce the cache to an acceptable size.
+                shrinkCache();
                 
-                content = new Content(resource);
-                fill(content);
-
-                synchronized(_cache)
+                // Add it to the cache.
+                Content added = _cache.putIfAbsent(pathInContext,content);
+                if (added!=null)
                 {
-                    // check that somebody else did not fill this spot.
-                    Content content2 =(Content)_cache.get(pathInContext);
-                    if (content2!=null)
-                    {
-                        content.release();
-                        return content2;
-                    }
-
-                    while(_leastRecentlyUsed!=null && (_cachedSize>must_be_smaller_than || (_maxCachedFiles>0 && _cachedFiles>=_maxCachedFiles)))
-                        _leastRecentlyUsed.invalidate();
-                    
-                    if(_cachedSize>must_be_smaller_than || (_maxCachedFiles>0 && _cachedFiles>=_maxCachedFiles))
-                        return null; // this could waste an allocated File or DirectBuffer
-                    
-                    content.cache(pathInContext);
-                    
-                    return content;
+                    content.invalidate();
+                    content=added;
                 }
+                return content;
             }
         }
 
         return null; 
     }
+    
+    /* ------------------------------------------------------------ */
+    private void shrinkCache()
+    {
+        // While we need to shrink
+        while (_cache.size()>0 && (_cachedFiles.get()>_maxCachedFiles || _cachedSize.get()>_maxCacheSize))
+        {
+            // Scan the entire cache and generate an ordered list by last accessed time.
+            SortedSet<Content> sorted= new TreeSet<Content>(
+                    new Comparator<Content>()
+                    {
+                        public int compare(Content c1, Content c2)
+                        {
+                            if (c1._lastAccessed<c2._lastAccessed)
+                                return -1;
+                            
+                            if (c1._lastAccessed>c2._lastAccessed)
+                                return 1;
+
+                            if (c1._length<c2._length)
+                                return -1;
+                            
+                            return c1._key.compareTo(c2._key);
+                        }
+                    });
+            for (Content content : _cache.values())
+                sorted.add(content);
+            
+            // Invalidate least recently used first
+            for (Content content : sorted)
+            {
+                if (_cachedFiles.get()<=_maxCachedFiles && _cachedSize.get()<=_maxCacheSize)
+                    break;
+                if (content==_cache.remove(content.getKey()))
+                    content.invalidate();
+            }
+        }
+    }
 
     /* ------------------------------------------------------------ */
     /** Remember a Resource Miss!
-     * @param pathInContext
-     * @param resource
-     * @throws IOException
+     * @param pathInContext Path the cache resource at
+     * @param resource The resource to cache.
      */
     public void miss(String pathInContext, Resource resource)
-        throws IOException
     {
-        synchronized(_cache)
-        {
-            while(_maxCachedFiles>0 && _cachedFiles>=_maxCachedFiles && _leastRecentlyUsed!=null)
-                _leastRecentlyUsed.invalidate();
-            if (_maxCachedFiles>0 && _cachedFiles>=_maxCachedFiles)
-                return;
-            
-            // check that somebody else did not fill this spot.
-            Miss miss = new Miss(resource);
-            Content content2 =(Content)_cache.get(pathInContext);
-            if (content2!=null)
-            {
-                miss.release();
-                return;
-            }
+        if (_maxCachedFiles>0 && _cachedFiles.get()>=_maxCachedFiles)
+            return;
 
-            miss.cache(pathInContext);
-        }
+        // check that somebody else did not fill this spot.
+        Miss miss = new Miss(pathInContext,resource);
+        if (_cache.putIfAbsent(pathInContext,miss)!=null)
+            miss.invalidate();
     }
     
     /* ------------------------------------------------------------ */
-    @Override
-    public synchronized void doStart()
-        throws Exception
-    {
-        _cache.clear();
-        _cachedSize=0;
-        _cachedFiles=0;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Stop the context.
-     */
-    @Override
-    public void doStop()
-        throws InterruptedException
-    {
-        flushCache();
-    }
-
-    /* ------------------------------------------------------------ */
-    protected void fill(Content content)
-        throws IOException
+    protected Buffer getIndirectBuffer(Resource resource)
     {
         try
         {
-            InputStream in = content.getResource().getInputStream();
-            int len=(int)content.getResource().length();
-            Buffer buffer = new ByteArrayBuffer(len);
-            buffer.readFrom(in,len);
-            in.close();
-            content.setBuffer(buffer);
+            int len=(int)resource.length();
+            Buffer buffer = new IndirectNIOBuffer(len);
+            InputStream is = resource.getInputStream();
+            buffer.readFrom(is,len);
+            is.close();
+            return buffer;
         }
-        finally
+        catch(IOException e)
         {
-            content.getResource().release();
+            Log.warn(e);
+            return null;
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    protected Buffer getDirectBuffer(Resource resource)
+    {
+        try
+        {
+            if (_useFileMappedBuffer && resource.getFile()!=null) 
+                return new DirectNIOBuffer(resource.getFile());
+
+            int len=(int)resource.length();
+            Buffer buffer = new DirectNIOBuffer(len);
+            InputStream is = resource.getInputStream();
+            buffer.readFrom(is,len);
+            is.close();
+            return buffer;
+        }
+        catch(IOException e)
+        {
+            Log.warn(e);
+            return null;
         }
     }
     
@@ -310,94 +304,33 @@ public class ResourceCache extends AbstractLifeCycle
     public class Content implements HttpContent
     {
         final Resource _resource;
+        final int _length;
+        final String _key;
         final long _lastModified;
-        boolean _locked;
-        String _key;
-        Content _prev;
-        Content _next;
+        final Buffer _lastModifiedBytes;
+        final Buffer _contentType;
         
-        Buffer _lastModifiedBytes;
-        Buffer _contentType;
-        Buffer _buffer;
+        volatile long _lastAccessed;
+        AtomicReference<Buffer> _indirectBuffer=new AtomicReference<Buffer>();
+        AtomicReference<Buffer> _directBuffer=new AtomicReference<Buffer>();
 
         /* ------------------------------------------------------------ */
-        Content(Resource resource)
-        {
-            _resource=resource;
-
-            _next=this;
-            _prev=this;
-            _contentType=_mimeTypes.getMimeByExtension(_resource.toString());
-            
-            _lastModified=resource.lastModified();
-        }
-
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @return true if the content is locked in the cache
-         */
-        public boolean isLocked()
-        {
-            return _locked;
-        }
-
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @param locked true if the content is locked in the cache
-         */
-        public void setLocked(boolean locked)
-        {
-            synchronized (_cache)
-            {
-                if (_locked && !locked)
-                {
-                    _locked = locked;
-                    _next=_mostRecentlyUsed;
-                    _mostRecentlyUsed=this;
-                    if (_next!=null)
-                        _next._prev=this;
-                    _prev=null;
-                    if (_leastRecentlyUsed==null)
-                        _leastRecentlyUsed=this;
-                }
-                else if (!_locked && locked)
-                {
-                    if (_prev!=null)
-                        _prev._next=_next;
-                    if (_next!=null)
-                        _next._prev=_prev;
-                    _next=_prev=null;
-                }
-                else
-                    _locked = locked;
-            }
-        }
-
-
-        /* ------------------------------------------------------------ */
-        void cache(String pathInContext)
+        Content(String pathInContext,Resource resource)
         {
             _key=pathInContext;
+            _resource=resource;
+
+            _contentType=_mimeTypes.getMimeByExtension(_resource.toString());
+            boolean exists=resource.exists();
+            _lastModified=exists?resource.lastModified():-1;
+            _lastModifiedBytes=_lastModified<0?null:new ByteArrayBuffer(HttpFields.formatDate(_lastModified));
             
-            if (!_locked)
-            {
-                _next=_mostRecentlyUsed;
-                _mostRecentlyUsed=this;
-                if (_next!=null)
-                    _next._prev=this;
-                _prev=null;
-                if (_leastRecentlyUsed==null)
-                    _leastRecentlyUsed=this;
-            }
-            _cache.put(_key,this);
-            if (_buffer!=null)
-                _cachedSize+=_buffer.length();
-            _cachedFiles++;
-            if (_lastModified!=-1)
-                _lastModifiedBytes=new ByteArrayBuffer(HttpFields.formatDate(_lastModified));
+            _length=exists?(int)resource.length():0;
+            _cachedSize.addAndGet(_length);
+            _cachedFiles.incrementAndGet();
+            _lastAccessed=System.currentTimeMillis();
         }
+
 
         /* ------------------------------------------------------------ */
         public String getKey()
@@ -422,59 +355,22 @@ public class ResourceCache extends AbstractLifeCycle
         {
             if (_lastModified==_resource.lastModified())
             {
-                if (!_locked && _mostRecentlyUsed!=this)
-                {
-                    Content tp = _prev;
-                    Content tn = _next;
-
-                    _next=_mostRecentlyUsed;
-                    _mostRecentlyUsed=this;
-                    if (_next!=null)
-                        _next._prev=this;
-                    _prev=null;
-
-                    if (tp!=null)
-                        tp._next=tn;
-                    if (tn!=null)
-                        tn._prev=tp;
-
-                    if (_leastRecentlyUsed==this && tp!=null)
-                        _leastRecentlyUsed=tp;
-                }
+                _lastAccessed=System.currentTimeMillis();
                 return true;
             }
 
-            invalidate();
+            if (this==_cache.remove(_key))
+                invalidate();
             return false;
         }
 
         /* ------------------------------------------------------------ */
-        public void invalidate()
+        protected void invalidate()
         {
-            synchronized(this)
-            {
-                // Invalidate it
-                _cache.remove(_key);
-                _key=null;
-                if (_buffer!=null)
-                    _cachedSize=_cachedSize-_buffer.length();
-                _cachedFiles--;
-                
-                if (_mostRecentlyUsed==this)
-                    _mostRecentlyUsed=_next;
-                else
-                    _prev._next=_next;
-                
-                if (_leastRecentlyUsed==this)
-                    _leastRecentlyUsed=_prev;
-                else
-                    _next._prev=_prev;
-                
-                _prev=null;
-                _next=null;
-                _resource.release();
-                
-            }
+            // Invalidate it
+            _cachedSize.addAndGet(-_length);
+            _cachedFiles.decrementAndGet();
+            _resource.release(); 
         }
 
         /* ------------------------------------------------------------ */
@@ -490,45 +386,66 @@ public class ResourceCache extends AbstractLifeCycle
         }
 
         /* ------------------------------------------------------------ */
-        public void setContentType(Buffer type)
-        {
-            _contentType=type;
-        }
-
-        /* ------------------------------------------------------------ */
         public void release()
         {
+            // don't release while cached. Release when invalidated.
         }
 
         /* ------------------------------------------------------------ */
-        public Buffer getBuffer()
+        public Buffer getIndirectBuffer()
         {
-            if (_buffer==null)
+            Buffer buffer = _indirectBuffer.get();
+            if (buffer==null)
+            {
+                synchronized (_indirectBuffer)
+                {
+                    if (_indirectBuffer.get()==null)
+                    {
+                        buffer=ResourceCache.this.getIndirectBuffer(_resource);
+                        _indirectBuffer.set(buffer);
+                    }
+                }
+            }
+            if (buffer==null)
                 return null;
-            return new View(_buffer);
+            return new View(buffer);
+        }
+        
+
+        /* ------------------------------------------------------------ */
+        public Buffer getDirectBuffer()
+        {
+            Buffer buffer = _directBuffer.get();
+            if (buffer==null)
+            {
+                synchronized (_directBuffer)
+                {
+                    if (_directBuffer.get()==null)
+                    {
+                        buffer=ResourceCache.this.getDirectBuffer(_resource);
+                        _directBuffer.set(buffer);
+                    }
+                }
+            }
+            if (buffer==null)
+                return null;
+                        
+            return new View(buffer);
         }
         
         /* ------------------------------------------------------------ */
-        public void setBuffer(Buffer buffer)
-        {
-            _buffer=buffer;
-        }
-
-        /* ------------------------------------------------------------ */
         public long getContentLength()
         {
-            if (_buffer==null)
-            {
-                if (_resource!=null)
-                    return _resource.length();
-                return -1;
-            }
-            return _buffer.length();
+            return _length;
         }
 
         /* ------------------------------------------------------------ */
         public InputStream getInputStream() throws IOException
         {
+            Buffer indirect = getIndirectBuffer();
+            if (indirect!=null && indirect.array()!=null)
+                return new ByteArrayInputStream(indirect.array(),indirect.getIndex(),indirect.length());
+           
             return _resource.getInputStream();
         }   
 
@@ -549,9 +466,9 @@ public class ResourceCache extends AbstractLifeCycle
      */
     public class Miss extends Content
     {
-        Miss(Resource resource)
+        Miss(String pathInContext,Resource resource)
         {
-            super(resource);
+            super(pathInContext,resource);
         }
 
         /* ------------------------------------------------------------ */
@@ -560,7 +477,8 @@ public class ResourceCache extends AbstractLifeCycle
         {
             if (_resource.exists())
             {
-                invalidate();
+                if (this==_cache.remove(_key))
+                    invalidate();
                 return false;
             }
             return true;

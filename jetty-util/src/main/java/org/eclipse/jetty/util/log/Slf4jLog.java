@@ -95,6 +95,14 @@ public class Slf4jLog implements Logger
         return new Slf4jLog(name);
     }
 
+    public void ignore(Throwable ignored)
+    {
+        if (Log.isIgnored())
+        {
+            warn(Log.IGNORED, ignored);
+        }
+    }
+
     @Override
     public String toString()
     {

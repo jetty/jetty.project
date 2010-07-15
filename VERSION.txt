@@ -1,3 +1,16 @@
+jetty-8.0.0.M2-SNAPSHOT
+
+jetty-7.2-SNAPSHOT
+ + 319334 Concurrent, sharable ResourceCache
+ + 319370 WebAppClassLoader.Context
+ + 319519 Warn about duplicate configuration files
+ + 319655 Reset HEAD status 
+ + JETTY-1245 Do not use direct buffers with NIO SSL
+ + JETTY-1247 synchronize recylcing of SSL NIO buffers 
+ + JETTY-1249 Apply max idle time to all connectors
+ + JETTY-1251 Replace then close selector for JVM bugs
+ + Added ignore to Logger interface
+
 jetty-8.0.0.M1 12 July 2010
  + 306350 Ensure jars excluded by ordering are not scanned for annotations
  + JETTY-1224 Change jetty-8 merge rules for fragment descriptors and annotations
@@ -23,6 +36,10 @@ jetty-7.1.5.v20100705
  + 318470 unboxing NPE protection in HttpConnection
  + 318551 Optional uncheck Printwriter
  + JETTY-1237 Save local/remote address to be available after close
+ + 317007 Unable to run Jetty OSGi when -Dosgi.compatibility.bootdelegation=false
+ + 316909 CNFE: org.xml.sax.SAXException on org.eclipse.jetty.osgi.boot start with jsp fragment
+ + 317231 Ability to configure jetty with a fragment bundle that contains etc/jetty.xml
+ + 319060 Support web-bundles that are not expanded (bundle is zipped)
 
 jetty-7.1.4.v20100610
  + 298551 SslSocketConnector does not need keystore stream

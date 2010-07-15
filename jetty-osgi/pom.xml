@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>8.0.0.M1-SNAPSHOT</version>
+    <version>8.0.0.M2-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.jetty.osgi</groupId>
@@ -100,6 +100,19 @@
         <version>${equinox-http-servlet-version}</version>
       </dependency>
       <dependency>
+<<<<<<< .working
+=======
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>jsp-2.1-glassfish</artifactId>
+        <version>${jsp-2.1-glassfish-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>jsp-api-2.1-glassfish</artifactId>
+        <version>${jsp-2.1-glassfish-version}</version>
+      </dependency>
+      <dependency>
+>>>>>>> .merge-right.r2120
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j-version}</version>

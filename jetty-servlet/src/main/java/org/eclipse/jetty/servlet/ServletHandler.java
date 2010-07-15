@@ -627,25 +627,6 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the initializeAtStart.
-     * @deprecated
-     */
-    public boolean isInitializeAtStart()
-    {
-        return false;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param initializeAtStart The initializeAtStart to set.
-     * @deprecated
-     */
-    public void setInitializeAtStart(boolean initializeAtStart)
-    {
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * @return true if the handler is started and there are no unavailable servlets 
      */
     public boolean isAvailable()
@@ -804,18 +785,6 @@ public class ServletHandler extends ScopedHandler
                 throw (RuntimeException)e;
             throw new RuntimeException(e);
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Convenience method to add a servlet with a servlet mapping.
-     * @param className
-     * @param pathSpec
-     * @return the ServletHolder
-     * @deprecated use {@link #addServletWithMapping(Class, String)} instead
-     */
-    public ServletHolder addServlet (String className, String pathSpec)
-    {
-        return addServletWithMapping (className, pathSpec);
     }
 
     
@@ -1357,7 +1326,10 @@ public class ServletHandler extends ScopedHandler
         _contextHandler.destroyFilter(filter);
     }
     
+   
+
     /* ------------------------------------------------------------ */
+    @Override
     protected void dump(StringBuilder b,String indent)
     {
         super.dump(b,indent);
