@@ -817,7 +817,7 @@ public class MetaData
     
     public List<Resource> getOrderedResources ()
     {
-        return _orderedResources;
+        return _orderedResources == null? new ArrayList<Resource>(): _orderedResources;
     }
     
     public List<FragmentDescriptor> getOrderedFragments ()
