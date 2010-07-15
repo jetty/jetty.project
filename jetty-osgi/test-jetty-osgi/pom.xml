@@ -1,0 +1,277 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.osgi</groupId>
+    <artifactId>jetty-osgi-project</artifactId>
+    <version>7.1.5-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.eclipse.jetty.osgi</groupId>
+  <artifactId>test-jetty-osgi</artifactId>
+  <name>Jetty :: OSGi :: Test</name>
+  <description>Jetty OSGi Integration test</description>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.boot.test</bundle-symbolic-name>
+    <eclipse-mirror>http://mirror.cc.vt.edu/pub/eclipse/eclipse/downloads/drops</eclipse-mirror>
+<!-- <orbit-url>http://download.eclipse.org/tools/orbit/downloads/drops/R20100519200754/bundles</orbit-url> -->
+    <orbit-url>http://download.eclipse.org/tools/orbit/committers/drops/I20100628101947/bundles</orbit-url>
+    <assembly-directory>target/distribution</assembly-directory>
+    <eclipse-drop>S-3.6RC4-201006031500</eclipse-drop>
+    <eclipse-ecj-version>3.6RC4</eclipse-ecj-version>
+    <orbit-javax-activation-version>${javax-activation-version}.0.v201005080500</orbit-javax-activation-version>
+    <orbit-javax-el-version>2.1.0.v201004190952</orbit-javax-el-version>
+    <orbit-javax-mail-glassfish-version>${javax-mail-version}.v201005082020</orbit-javax-mail-glassfish-version>
+    <orbit-javax-servlet-version>2.5.0.v200910301333</orbit-javax-servlet-version>
+    <orbit-javax-servlet-jsp-version>2.1.0.v201004190952</orbit-javax-servlet-jsp-version>
+    <orbit-javax-servlet-jsp-jstl-version>1.2.0.v201004190952</orbit-javax-servlet-jsp-jstl-version>
+    <orbit-com-sun-el-version>1.0.0.v201004190952</orbit-com-sun-el-version>
+    <orbit-org-apache-jasper-version>2.1.0.v201006280255</orbit-org-apache-jasper-version>
+    <orbit-org-apache-taglibs-standard-version>1.2.0.v201004190952</orbit-org-apache-taglibs-standard-version>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-osgi-boot</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-osgi-boot-jsp</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>jetty-httpservice</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-deploy</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-xml</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-websocket</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <!-- can't use javax.servlet:servlet-api:2.5 it is not a bundle.
+    the mortbay one is a bundle -->
+    <dependency>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>servlet-api</artifactId>
+        <version>2.5-20081211</version>
+      <scope>runtime</scope>
+    </dependency>
+    
+    <dependency>
+    	<groupId>org.eclipse</groupId>
+    	<artifactId>osgi</artifactId>
+        <version>${osgi-version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.eclipse.osgi</groupId>
+        <artifactId>services</artifactId>
+        <version>${osgi-services-version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.equinox.http</groupId>
+      <artifactId>servlet</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlets</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>test-jetty-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>webbundle</classifier>
+      <scope>test</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.ops4j.pax.exam</groupId>
+      <artifactId>pax-exam</artifactId>
+      <version>1.2.0</version>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ops4j.pax.exam</groupId>
+      <artifactId>pax-exam-junit</artifactId>
+      <version>1.2.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ops4j.pax.exam</groupId>
+      <artifactId>pax-exam-container-default</artifactId>
+      <version>1.2.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit4-version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+	  <groupId>org.ops4j.pax.exam</groupId>
+	  <artifactId>maven-paxexam-plugin</artifactId>
+	  <version>1.2.0</version>
+	  <executions>
+	      <execution>
+		  <id>generate-config</id>
+		  <goals>
+		      <goal>generate-depends-file</goal>
+		      <goal>generate-config</goal>
+		  </goals>
+	      </execution>
+	  </executions>
+	  <configuration>
+	      <options>
+		  <workingDirectory>${project.build.directory}/paxexam</workingDirectory>
+	      </options>
+	  </configuration>
+      </plugin>
+      
+      <!-- prepare the orbit jars in the target/distribution folder copied from jetty-distribution/pom.xml -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.4</version>
+        <executions>
+          <execution>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <!-- This is the Orbit Downloads Process -->
+
+                <!-- Step 1: download orbit artifact into orbit-cache (if not present) -->
+                <property name="orbit-cache" value="${user.home}/.m2/eclipse-orbit" />
+
+                <mkdir dir="${orbit-cache}" />
+                <get dest="${orbit-cache}" verbose="true" skipexisting="true">
+                  <url url="${orbit-url}/javax.servlet_${orbit-javax-servlet-version}.jar" />
+                  <url url="${orbit-url}/javax.activation_${orbit-javax-activation-version}.jar" />
+                  <url url="${orbit-url}/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
+                  <url url="${orbit-url}/javax.el_${orbit-javax-el-version}.jar" />
+                  <url url="${orbit-url}/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" />
+                  <url url="${orbit-url}/javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" />
+                  <url url="${orbit-url}/com.sun.el_${orbit-com-sun-el-version}.jar" />
+                  <url url="${orbit-url}/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />
+                  <url url="${orbit-url}/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
+                </get>
+
+                <mkdir dir="${orbit-cache}/${eclipse-drop}" />
+                <get dest="${orbit-cache}/${eclipse-drop}" verbose="true" skipexisting="true">
+                  <url url="${eclipse-mirror}/${eclipse-drop}/ecj-${eclipse-ecj-version}.jar" />
+                </get>
+
+                <!-- Step 2: copy the orbit artifact from orbit-cache to the appropriate lib directory -->
+
+                <!-- ${jetty.home}/lib/ -->
+                <mkdir dir="${assembly-directory}/lib" />
+                <copy file="${orbit-cache}/javax.servlet_${orbit-javax-servlet-version}.jar" tofile="${assembly-directory}/lib/servlet-api-2.5.jar" />
+
+                <!-- ${jetty.home}/lib/jndi/ -->
+                <mkdir dir="${assembly-directory}/lib/jndi" />
+                <copy todir="${assembly-directory}/lib/jndi">
+                  <fileset dir="${orbit-cache}">
+                    <include name="javax.activation_${orbit-javax-activation-version}.jar" />
+                    <include name="javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
+                  </fileset>
+                </copy>
+
+                <!-- ${jetty.home}/lib/jsp/ -->
+                <mkdir dir="${assembly-directory}/lib/jsp" />
+                <copy todir="${assembly-directory}/lib/jsp">
+                  <fileset dir="${orbit-cache}">
+                    <include name="javax.el_${orbit-javax-el-version}.jar" />
+                    <include name="javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" />
+                    <include name="javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" />
+                    <include name="com.sun.el_${orbit-com-sun-el-version}.jar" />
+                    <include name="org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />
+                    <include name="org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
+                  </fileset>
+                  <fileset dir="${orbit-cache}/${eclipse-drop}">
+                    <include name="ecj-${eclipse-ecj-version}.jar" />
+                  </fileset>
+                </copy>
+
+              </tasks>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>      
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-eclipse-plugin</artifactId>
+        <configuration>
+          <manifest>prevent/overwriting/by/pointing/to/nonexisting/MANIFEST.MF</manifest>
+          <pde>false</pde>
+          <downloadSources>true</downloadSources>
+          <sourceExcludes>
+            <sourceExclude>**/.svn/**</sourceExclude>
+          </sourceExcludes>
+        </configuration>
+      </plugin>
+      
+    </plugins>
+  </build>
+
+</project>
