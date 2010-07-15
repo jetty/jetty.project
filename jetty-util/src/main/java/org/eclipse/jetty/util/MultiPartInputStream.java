@@ -355,14 +355,17 @@ public class MultiPartInputStream
         boolean lastPart=false;
         String contentDisposition=null;
         String contentType=null;
-        while(!lastPart)
+        outer:while(!lastPart)
         {
             MultiMap<String> headers = new MultiMap<String>();
             while(true)
             {
                 bytes=TypeUtil.readLine(_in);
+                if(bytes==null)
+                    break outer;
+
                 // If blank line, end of part headers
-                if(bytes==null || bytes.length==0)
+                if(bytes.length==0)
                     break;
                 
                 total += bytes.length;
