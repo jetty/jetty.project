@@ -1,4 +1,4 @@
-jetty-7.1.6-SNAPSHOT
+jetty-7.1.6.v20100715
  + 319519 Warn about duplicate configuration files
  + 319655 Reset HEAD status 
  + JETTY-1247 synchronize recylcing of SSL NIO buffers 
