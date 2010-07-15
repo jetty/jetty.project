@@ -26,7 +26,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.thread.Timeout;
 
 /* ------------------------------------------------------------ */
 /**
@@ -49,6 +48,24 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     private volatile long _idleTimestamp;
 
     /* ------------------------------------------------------------ */
+    public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime)
+        throws IOException
+    {
+        super(channel, maxIdleTime);
+
+        _manager = selectSet.getManager();
+        _selectSet = selectSet;
+        _dispatched = false;
+        _redispatched = false;
+        _open=true;       
+        _key = key;
+
+        _connection = _manager.newConnection(channel,this);
+        
+        scheduleIdle();
+    }
+
+    /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key)
         throws IOException
     {
@@ -65,7 +82,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         
         scheduleIdle();
     }
-
     /* ------------------------------------------------------------ */
     public SelectionKey getSelectionKey()
     {
@@ -212,6 +228,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     {
         if (_idleTimestamp!=0 && _maxIdleTime!=0 && now>(_idleTimestamp+_maxIdleTime))
         {
+            System.err.println("IDLE "+this);
             idleExpired();
         }
     }

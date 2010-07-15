@@ -20,9 +20,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -52,6 +49,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
     private static final int __MAX_SELECTS=Integer.getInteger("org.mortbay.io.nio.MAX_SELECTS",25000).intValue();
     private static final int __BUSY_PAUSE=Integer.getInteger("org.mortbay.io.nio.BUSY_PAUSE",50).intValue();
     private static final int __BUSY_KEY=Integer.getInteger("org.mortbay.io.nio.BUSY_KEY",-1).intValue();
+    private static final int __IDLE_TICK=Integer.getInteger("org.mortbay.io.nio.IDLE_TICK",400).intValue();
     
     private int _maxIdleTime;
     private int _lowResourcesMaxIdleTime;
@@ -458,7 +456,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 retry_next=_timeout.getTimeToNext();
 
                 // workout how low to wait in select
-                long wait = 1000L;  
+                long wait = _changes.size()==0?__IDLE_TICK:0L;  
                 if (wait > 0 && retry_next >= 0 && wait > retry_next)
                     wait = retry_next;
     
@@ -745,7 +743,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 }
 
                 // Idle tick
-                if (now-_idleTick>1000)
+                if (now-_idleTick>__IDLE_TICK)
                 {
                     _idleTick=now;
                     

@@ -843,6 +843,7 @@ public class HttpConnection implements Connection
 
             try
             {
+                _head=false;
                 switch (HttpMethods.CACHE.getOrdinal(method))
                 {
                   case HttpMethods.CONNECT_ORDINAL:

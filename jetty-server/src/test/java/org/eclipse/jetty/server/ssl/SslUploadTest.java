@@ -14,6 +14,8 @@
 
 package org.eclipse.jetty.server.ssl;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +23,7 @@ import java.io.OutputStream;
 import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
@@ -35,8 +38,6 @@ import org.eclipse.jetty.util.IO;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * @version $Revision$ $Date$

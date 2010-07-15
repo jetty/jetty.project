@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,27 +30,20 @@ import java.net.Socket;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Random;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.IO;
-import org.junit.AfterClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
 
 /**
  *
  */
-public abstract class HttpServerTestBase
+public abstract class HttpServerTestBase extends HttpServerTestFixture
 {
-    private static final boolean stress = Boolean.getBoolean("STRESS");
-
     /** The request. */
     private static final String REQUEST1_HEADER="POST / HTTP/1.0\n"+"Host: localhost\n"+"Content-Type: text/xml; charset=utf-8\n"+"Connection: close\n"+"Content-Length: ";
     private static final String REQUEST1_CONTENT="<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n"
@@ -99,37 +96,9 @@ public abstract class HttpServerTestBase
         "\n"+
         RESPONSE2_CONTENT;
 
-    // Useful constants
-    private static final long PAUSE=10L;
-    private static final int LOOPS=stress?250:25;
-    private static final String HOST="localhost";
 
-    private static Server _server;
-    private static Connector _connector;
 
-    protected static void startServer(Connector connector) throws Exception
-    {
-        _server = new Server();
-        _connector = connector;
-        _server.addConnector(_connector);
-        _server.setHandler(new HandlerWrapper());
-        _server.start();
-    }
 
-    @AfterClass
-    public static void stopServer() throws Exception
-    {
-        _server.stop();
-        _server.join();
-    }
-
-    protected void configureServer(Handler handler) throws Exception
-    {
-        HandlerWrapper current = (HandlerWrapper)_server.getHandler();
-        current.stop();
-        current.setHandler(handler);
-        current.start();
-    }
 
     /*
      * Feed the server the entire request at once.
@@ -139,7 +108,7 @@ public abstract class HttpServerTestBase
     {
         configureServer(new HelloWorldHandler());
 
-        Socket client=new Socket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
             OutputStream os=client.getOutputStream();
@@ -164,7 +133,7 @@ public abstract class HttpServerTestBase
     {
         configureServer(new EchoHandler());
 
-        Socket client=new Socket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
             OutputStream os=client.getOutputStream();
@@ -197,7 +166,7 @@ public abstract class HttpServerTestBase
     {
         configureServer(new HelloWorldHandler());
 
-        Socket client=new Socket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
             OutputStream os=client.getOutputStream();
@@ -233,7 +202,7 @@ public abstract class HttpServerTestBase
         byte[] bytes=REQUEST2.getBytes();
         for (int i=0; i<LOOPS; i++)
         {
-            Socket client=new Socket(HOST,_connector.getLocalPort());
+            Socket client=newSocket(HOST,_connector.getLocalPort());
             try
             {
                 OutputStream os=client.getOutputStream();
@@ -278,7 +247,7 @@ public abstract class HttpServerTestBase
             // Sort the list
             Arrays.sort(points);
 
-            Socket client=new Socket(HOST,_connector.getLocalPort());
+            Socket client=newSocket(HOST,_connector.getLocalPort());
             try
             {
                 OutputStream os=client.getOutputStream();
@@ -314,7 +283,7 @@ public abstract class HttpServerTestBase
             // Sort the list
             Arrays.sort(points);
 
-            Socket client=new Socket(HOST,_connector.getLocalPort());
+            Socket client=newSocket(HOST,_connector.getLocalPort());
             try
             {
                 OutputStream os=client.getOutputStream();
@@ -352,7 +321,7 @@ public abstract class HttpServerTestBase
         };
         for (int i=0; i<badPoints.length; ++i)
         {
-            Socket client=new Socket(HOST,_connector.getLocalPort());
+            Socket client=newSocket(HOST,_connector.getLocalPort());
             try
             {
                 OutputStream os=client.getOutputStream();
@@ -415,7 +384,7 @@ public abstract class HttpServerTestBase
         configureServer(new DataHandler());
 
         long start=System.currentTimeMillis();
-        Socket client=new Socket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
             OutputStream os=client.getOutputStream();
@@ -475,7 +444,7 @@ public abstract class HttpServerTestBase
         //for (int pipeline=1;pipeline<32;pipeline++)
         for (int pipeline=1;pipeline<32;pipeline++)
         {
-            Socket client=new Socket(HOST,_connector.getLocalPort());
+            Socket client=newSocket(HOST,_connector.getLocalPort());
             try
             {
                 client.setSoTimeout(5000);
@@ -528,7 +497,7 @@ public abstract class HttpServerTestBase
     {
         configureServer(new EchoHandler());
 
-        Socket client=new Socket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
             OutputStream os=client.getOutputStream();
@@ -612,11 +581,65 @@ public abstract class HttpServerTestBase
     }
 
     @Test
+    public void testHead() throws Exception
+    {
+        configureServer(new EchoHandler(false));
+
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        try
+        {
+            OutputStream os=client.getOutputStream();
+            InputStream is=client.getInputStream();
+
+            os.write((
+                "POST /R1 HTTP/1.1\015\012"+
+                "Host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                "content-type: text/plain; charset=utf-8\r\n"+
+                "content-length: 10\r\n"+
+                "\015\012"+
+                "123456789\n" +
+                
+                "HEAD /R1 HTTP/1.1\015\012"+
+                "Host: "+HOST+":"+_connector.getLocalPort()+"\015\012"+
+                "content-type: text/plain; charset=utf-8\r\n"+
+                "content-length: 10\r\n"+
+                "\015\012"+
+                "123456789\n"+
+                
+                "POST /R1 HTTP/1.1\015\012"+
+                "Host: "+HOST+":"+_connector.getLocalPort()+"\015\012"+
+                "content-type: text/plain; charset=utf-8\r\n"+
+                "content-length: 10\r\n"+
+                "Connection: close\015\012"+
+                "\015\012"+
+                "123456789\n"
+                
+                ).getBytes("iso-8859-1"));
+            
+            String in = IO.toString(is);
+
+            System.err.println(in);
+            
+            int index=in.indexOf("123456789");
+            assertTrue(index>0);
+            index=in.indexOf("123456789",index+1);
+            assertTrue(index>0);
+            index=in.indexOf("123456789",index+1);
+            assertTrue(index==-1);
+            
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+    
+    @Test
     public void testRecycledReaders() throws Exception
     {
         configureServer(new EchoHandler());
 
-        Socket client=new Socket(HOST,_connector.getLocalPort());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
             OutputStream os=client.getOutputStream();
@@ -729,96 +752,4 @@ public abstract class HttpServerTestBase
         Thread.sleep(PAUSE);
     }
 
-    private static class EchoHandler extends AbstractHandler
-    {
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            baseRequest.setHandled(true);
-
-            if (request.getContentType()!=null)
-                response.setContentType(request.getContentType());
-            if (request.getParameter("charset")!=null)
-                response.setCharacterEncoding(request.getParameter("charset"));
-            else if (request.getCharacterEncoding()!=null)
-                response.setCharacterEncoding(request.getCharacterEncoding());
-
-            PrintWriter writer=response.getWriter();
-            BufferedReader reader=request.getReader();
-            int count=0;
-            String line;
-
-            while ((line=reader.readLine())!=null)
-            {
-                writer.print(line);
-                writer.print("\n");
-                count+=line.length();
-            }
-
-            if (count==0)
-                throw new IllegalStateException("no input recieved");
-
-            // just to be difficult
-            reader.close();
-            writer.close();
-
-            if (reader.read()>=0)
-                throw new IllegalStateException("Not closed");
-        }
-    }
-
-    private static class HelloWorldHandler extends AbstractHandler
-    {
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            baseRequest.setHandled(true);
-            response.setStatus(200);
-            response.getOutputStream().print("Hello world\r\n");
-        }
-    }
-
-    private static class DataHandler extends AbstractHandler
-    {
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            baseRequest.setHandled(true);
-            response.setStatus(200);
-
-            InputStream in = request.getInputStream();
-            String input=IO.toString(in);
-
-            String tmp = request.getParameter("writes");
-            int writes=Integer.parseInt(tmp==null?"10":tmp);
-            tmp = request.getParameter("block");
-            int block=Integer.parseInt(tmp==null?"10":tmp);
-            String encoding=request.getParameter("encoding");
-            String chars=request.getParameter("chars");
-
-            String chunk = (input+"\u0a870123456789A\u0a87CDEFGHIJKLMNOPQRSTUVWXYZ\u0250bcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
-                .substring(0,block);
-            response.setContentType("text/plain");
-            if (encoding==null)
-            {
-                byte[] bytes=chunk.getBytes("ISO-8859-1");
-                OutputStream out=response.getOutputStream();
-                for (int i=0;i<writes;i++)
-                    out.write(bytes);
-            }
-            else if ("true".equals(chars))
-            {
-                response.setCharacterEncoding(encoding);
-                Writer out=response.getWriter();
-                char[] c=chunk.toCharArray();
-                for (int i=0;i<writes;i++)
-                    out.write(c);
-            }
-            else
-            {
-                response.setCharacterEncoding(encoding);
-                Writer out=response.getWriter();
-                for (int i=0;i<writes;i++)
-                    out.write(chunk);
-            }
-
-        }
-    }
 }
