@@ -68,7 +68,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
             Log.warn(clazz.getName()+" is not assignable from javax.servlet.Filter");
             return;
         }
-        MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+        MetaData metaData = _context.getMetaData();
         
         WebFilter filterAnnotation = (WebFilter)clazz.getAnnotation(WebFilter.class);
 

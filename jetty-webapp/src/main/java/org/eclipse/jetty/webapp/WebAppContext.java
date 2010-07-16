@@ -134,6 +134,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _configurationDiscovered=true;
     private boolean _configurationClassesSet=false;
     private boolean _configurationsSet=false;
+    
+    private final MetaData _metadata;
 
     public static WebAppContext getCurrentWebAppContext()
     {
@@ -152,7 +154,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         super(SESSIONS|SECURITY); 
         _scontext=new Context();
-        setErrorHandler(new ErrorPageErrorHandler());
+        setErrorHandler(new ErrorPageErrorHandler());      
+        //Make a new MetaData to hold descriptor and annotation metadata
+        _metadata = new MetaData(this);
     }
     
     /* ------------------------------------------------------------ */
@@ -166,7 +170,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _scontext=new Context();
         setContextPath(contextPath);
         setWar(webApp);
-        setErrorHandler(new ErrorPageErrorHandler());
+        setErrorHandler(new ErrorPageErrorHandler());      
+        //Make a new MetaData to hold descriptor and annotation metadata
+        _metadata = new MetaData(this);
     }
     
     /* ------------------------------------------------------------ */
@@ -180,7 +186,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super(parent,contextPath,SESSIONS|SECURITY);
         _scontext=new Context();
         setWar(webApp);
-        setErrorHandler(new ErrorPageErrorHandler());
+        setErrorHandler(new ErrorPageErrorHandler());      
+        //Make a new MetaData to hold descriptor and annotation metadata
+        _metadata = new MetaData(this);
     }
 
     /* ------------------------------------------------------------ */
@@ -190,7 +198,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         super(null,sessionHandler,securityHandler,servletHandler,errorHandler);
         _scontext=new Context();
-        setErrorHandler(errorHandler!=null?errorHandler:new ErrorPageErrorHandler());
+        setErrorHandler(errorHandler!=null?errorHandler:new ErrorPageErrorHandler());      
+        //Make a new MetaData to hold descriptor and annotation metadata
+        _metadata = new MetaData(this);
     }
 
     /* ------------------------------------------------------------ */
@@ -370,11 +380,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             
           
-
-            // Prepare for configuration           
-            //Make a new MetaData to hold descriptor and annotation metadata
-            MetaData metadata = new MetaData(this);
-            setAttribute(MetaData.METADATA, metadata);
+            // Prepare for configuration     
             
             for (int i=0;i<_configurations.length;i++)
                 _configurations[i].preConfigure(this);
@@ -802,7 +808,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     @Override
     public void addEventListener(EventListener listener)
-    {
+    {   
         setEventListeners((EventListener[])LazyList.addToArray(getEventListeners(), listener, EventListener.class));
     }
 
@@ -996,7 +1002,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             _configurations[i].configure(this);
  
         //resolve the metadata
-        ((MetaData)getAttribute(MetaData.METADATA)).resolve();
+        _metadata.resolve(this);
         
         super.startContext();
     }
@@ -1024,6 +1030,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 
             return resource.getURL();
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    public MetaData getMetaData()
+    {
+        return _metadata;
     }
 
 }

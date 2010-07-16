@@ -48,7 +48,6 @@ public class TestServletAnnotations
         AnnotationParser parser = new AnnotationParser();
 
         WebAppContext wac = new WebAppContext();
-        wac.setAttribute(MetaData.METADATA, new MetaData(wac));
         LifeCycleCallbackCollection collection = new LifeCycleCallbackCollection();
         wac.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, collection);
         RunAsCollection runAsCollection = new RunAsCollection();
@@ -94,7 +93,6 @@ public class TestServletAnnotations
     throws Exception
     { 
         WebAppContext wac = new WebAppContext();
-        wac.setAttribute(MetaData.METADATA, new MetaData(wac));
         ConstraintSecurityHandler sh = new ConstraintSecurityHandler();
         wac.setSecurityHandler(sh);
         sh.setRoles(new HashSet<String>(Arrays.asList(new String[]{"humpty", "dumpty"})));

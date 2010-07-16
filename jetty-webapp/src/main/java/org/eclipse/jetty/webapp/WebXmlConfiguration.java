@@ -40,12 +40,6 @@ public class WebXmlConfiguration implements Configuration
      */
     public void preConfigure (WebAppContext context) throws Exception
     {
-
-        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
-        if (metaData == null)
-            throw new IllegalStateException("No metadata");
-
-
         //parse webdefault.xml
         String defaultsDescriptor = context.getDefaultsDescriptor();
         if (defaultsDescriptor != null && defaultsDescriptor.length() > 0)
@@ -53,7 +47,7 @@ public class WebXmlConfiguration implements Configuration
             Resource dftResource = Resource.newSystemResource(defaultsDescriptor);
             if (dftResource == null) 
                 dftResource = context.newResource(defaultsDescriptor);
-            metaData.setDefaults (dftResource);
+            context.getMetaData().setDefaults (dftResource);
            
         }
         
@@ -61,7 +55,7 @@ public class WebXmlConfiguration implements Configuration
         Resource webxml = findWebXml(context);
         if (webxml != null) 
         {      
-            metaData.setWebXml(webxml);
+            context.getMetaData().setWebXml(webxml);
         }
         
         //parse but don't process override-web.xml
@@ -71,7 +65,7 @@ public class WebXmlConfiguration implements Configuration
             Resource orideResource = Resource.newSystemResource(overrideDescriptor);
             if (orideResource == null) 
                 orideResource = context.newResource(overrideDescriptor);
-            metaData.setOverride(orideResource);
+            context.getMetaData().setOverride(orideResource);
         }
     }
 
@@ -89,28 +83,24 @@ public class WebXmlConfiguration implements Configuration
             return;
         }
 
-        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
-        if (metaData == null)
-            throw new IllegalStateException("No metadata");
-
-        metaData.addDescriptorProcessor(new StandardDescriptorProcessor());
+        context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
         
         /*
         StandardDescriptorProcessor descriptorProcessor = (StandardDescriptorProcessor)context.getAttribute(StandardDescriptorProcessor.STANDARD_PROCESSOR);
         if (descriptorProcessor == null)
         {
-            descriptorProcessor = new StandardDescriptorProcessor(metaData);
+            descriptorProcessor = new StandardDescriptorProcessor(context.getMetaData());
             context.setAttribute(StandardDescriptorProcessor.STANDARD_PROCESSOR, descriptorProcessor);
         }
         
         //process web-default.xml
-        descriptorProcessor.process(metaData.getWebDefault());
+        descriptorProcessor.process(context.getMetaData().getWebDefault());
 
         //process web.xml 
-        descriptorProcessor.process(metaData.getWebXml());
+        descriptorProcessor.process(context.getMetaData().getWebXml());
         
         //process override-web.xml            
-        descriptorProcessor.process(metaData.getOverrideWeb());
+        descriptorProcessor.process(context.getMetaData().getOverrideWeb());
         */
     }
 

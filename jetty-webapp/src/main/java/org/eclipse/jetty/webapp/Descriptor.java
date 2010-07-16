@@ -44,7 +44,6 @@ public class Descriptor
     protected ArrayList<String> _classNames = new ArrayList<String>();
     protected boolean _distributable;
     protected boolean _validating;
-    protected MetaData _metaData;
     protected boolean _isOrdered = false;
     protected List<String> _ordering = new ArrayList<String>();
     
@@ -75,7 +74,7 @@ public class Descriptor
 
         try
         {
-            Class jsp_page = Loader.loadClass(WebXmlConfiguration.class, "javax.servlet.jsp.JspPage");
+            Class<?> jsp_page = Loader.loadClass(WebXmlConfiguration.class, "javax.servlet.jsp.JspPage");
             jsp20xsd = jsp_page.getResource("/javax/servlet/resources/jsp_2_0.xsd");
             jsp21xsd = jsp_page.getResource("/javax/servlet/resources/jsp_2_1.xsd");
         }
@@ -131,10 +130,9 @@ public class Descriptor
     
     
     
-    public Descriptor (Resource xml, MetaData md)
+    public Descriptor (Resource xml)
     {
         _xml = xml;
-        _metaData = md;
     }
     
     public void parse ()
@@ -178,11 +176,6 @@ public class Descriptor
     public Resource getResource ()
     {
         return _xml;
-    }
-    
-    public MetaData getMetaData()
-    {
-        return _metaData;
     }
     
     public void processVersion ()

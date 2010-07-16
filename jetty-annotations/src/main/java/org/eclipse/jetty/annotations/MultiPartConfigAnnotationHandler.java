@@ -50,7 +50,7 @@ public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnno
         if (multi == null)
             return;
         
-        MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+        MetaData metaData = _context.getMetaData();
               
         //TODO: The MultipartConfigElement needs to be set on the ServletHolder's Registration.
         //How to identify the correct Servlet?  If the Servlet has no WebServlet annotation on it, does it mean that this MultipartConfig

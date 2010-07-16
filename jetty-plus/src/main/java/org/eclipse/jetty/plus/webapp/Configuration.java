@@ -26,7 +26,6 @@ import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.MetaData;
 
 
 /**
@@ -59,29 +58,7 @@ public class Configuration implements org.eclipse.jetty.webapp.Configuration
     {
         bindUserTransaction(context);
         
-        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
-        if (metaData == null)
-           throw new IllegalStateException ("No metadata");
-        
-        metaData.addDescriptorProcessor(new PlusDescriptorProcessor());
-        
-        /*
-         * THE PROCESSING IS NOW DONE IN metadata.resolve ()
-         
-        PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor(metaData);
-        plusProcessor.process(metaData.getWebDefault());
-        plusProcessor.process(metaData.getWebXml());
-     
-
-        //Process plus-elements of each descriptor
-        for (FragmentDescriptor frag: metaData.getOrderedFragments())
-        {
-            plusProcessor.process(frag);
-        }
-
-        //process the override-web.xml descriptor
-        plusProcessor.process(metaData.getOverrideWeb());
-        */
+        context.getMetaData().addDescriptorProcessor(new PlusDescriptorProcessor());
     }
     
     public void postConfigure(WebAppContext context) throws Exception

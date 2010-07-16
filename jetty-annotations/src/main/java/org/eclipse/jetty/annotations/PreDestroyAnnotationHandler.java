@@ -58,7 +58,7 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
                     
                     //ServletSpec 3.0 p80 If web.xml declares even one predestroy then all predestroys
                     //in fragments must be ignored. Otherwise, they are additive.                    
-                    MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+                    MetaData metaData = _context.getMetaData();
                     MetaData.Origin origin = metaData.getOrigin("pre-destroy");
                     if (origin != null && 
                             (origin == MetaData.Origin.WebXml ||

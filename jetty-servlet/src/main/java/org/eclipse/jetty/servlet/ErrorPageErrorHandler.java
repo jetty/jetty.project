@@ -43,8 +43,8 @@ public class ErrorPageErrorHandler extends ErrorHandler
     public final static String ERROR_PAGE="org.eclipse.jetty.server.error_page";
 
     protected ServletContext _servletContext;
-    protected Map _errorPages; // code or exception to URL
-    protected List _errorPageList; // list of ErrorCode by range
+    private final Map<String,String> _errorPages= new HashMap<String,String>(); // code or exception to URL
+    private final List<ErrorCodeRange> _errorPageList=new ArrayList<ErrorCodeRange>(); // list of ErrorCode by range
 
     /* ------------------------------------------------------------ */
     public ErrorPageErrorHandler()
@@ -54,6 +54,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
     /**
      * @see org.eclipse.jetty.server.handler.ErrorHandler#handle(String, Request, HttpServletRequest, HttpServletResponse)
      */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         String method = request.getMethod();
@@ -65,7 +66,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
         if (_errorPages!=null)
         {
             String error_page= null;
-            Class exClass= (Class)request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE);
+            Class<?> exClass= (Class<?>)request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE);
 
             if (ServletException.class.equals(exClass))
             {
@@ -147,7 +148,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
     /**
      * @return Returns the errorPages.
      */
-    public Map getErrorPages()
+    public Map<String,String> getErrorPages()
     {
         return _errorPages;
     }
@@ -156,9 +157,11 @@ public class ErrorPageErrorHandler extends ErrorHandler
     /**
      * @param errorPages The errorPages to set. A map of Exception class name  or error code as a string to URI string
      */
-    public void setErrorPages(Map errorPages)
+    public void setErrorPages(Map<String,String> errorPages)
     {
-        _errorPages = errorPages;
+        _errorPages.clear();
+        if (errorPages!=null)
+            _errorPages.putAll(errorPages);
     }
 
     /* ------------------------------------------------------------ */
@@ -168,11 +171,21 @@ public class ErrorPageErrorHandler extends ErrorHandler
      * @param exception The exception
      * @param uri The URI of the error page.
      */
-    public void addErrorPage(Class exception,String uri)
+    public void addErrorPage(Class<? extends Throwable> exception,String uri)
     {
-        if (_errorPages==null)
-            _errorPages=new HashMap();
         _errorPages.put(exception.getName(),uri);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Add Error Page mapping for an exception class
+     * This method is called as a result of an exception-type element in a web.xml file
+     * or may be called directly
+     * @param exception The exception
+     * @param uri The URI of the error page.
+     */
+    public void addErrorPage(String exceptionClassName,String uri)
+    {
+        _errorPages.put(exceptionClassName,uri);
     }
 
     /* ------------------------------------------------------------ */
@@ -184,8 +197,6 @@ public class ErrorPageErrorHandler extends ErrorHandler
      */
     public void addErrorPage(int code,String uri)
     {
-        if (_errorPages==null)
-            _errorPages=new HashMap();
         _errorPages.put(Integer.toString(code),uri);
     }
 
@@ -199,14 +210,11 @@ public class ErrorPageErrorHandler extends ErrorHandler
      */
     public void addErrorPage(int from, int to, String uri)
     {
-        if (_errorPageList == null)
-        {
-            _errorPageList = new ArrayList();
-        }
         _errorPageList.add(new ErrorCodeRange(from, to, uri));
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStart() throws Exception
     {
         super.doStart();
@@ -214,6 +222,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStop() throws Exception
     {
         // TODO Auto-generated method stub
@@ -254,6 +263,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
             return _uri;
         }
 
+        @Override
         public String toString()
         {
             return "from: " + _from + ",to: " + _to + ",uri: " + _uri;

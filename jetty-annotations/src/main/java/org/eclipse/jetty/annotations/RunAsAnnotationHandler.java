@@ -54,7 +54,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
                 ServletHolder holder = getServletHolderForClass(clazz);
                 if (holder != null)
                 {
-                    MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+                    MetaData metaData = _context.getMetaData();
                     Descriptor d = metaData.getOriginDescriptor(holder.getName()+".servlet.run-as");
                     //if a descriptor has already set the value for run-as, do not 
                     //let the annotation override it

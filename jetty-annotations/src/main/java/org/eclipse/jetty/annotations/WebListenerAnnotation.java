@@ -68,7 +68,7 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
                     HttpSessionAttributeListener.class.isAssignableFrom(clazz))
             {
                 java.util.EventListener listener = (java.util.EventListener)clazz.newInstance();
-                MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+                MetaData metaData = _context.getMetaData();
                 if (metaData.getOrigin(clazz.getName()+".listener") == Origin.NotSet)
                     _context.addEventListener(listener);
             }

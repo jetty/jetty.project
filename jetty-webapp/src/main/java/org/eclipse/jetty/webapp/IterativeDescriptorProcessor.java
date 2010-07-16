@@ -29,10 +29,10 @@ import org.eclipse.jetty.xml.XmlParser;
  */
 public abstract class IterativeDescriptorProcessor implements DescriptorProcessor
 {
-    public static final Class[] __signature = new Class[]{Descriptor.class, XmlParser.Node.class};
+    public static final Class<?>[] __signature = new Class[]{WebAppContext.class, Descriptor.class, XmlParser.Node.class};
     protected Map<String, Method> _visitors = new HashMap<String, Method>();
-    public abstract void start(Descriptor descriptor);
-    public abstract void end(Descriptor descriptor);
+    public abstract void start(WebAppContext context, Descriptor descriptor);
+    public abstract void end(WebAppContext context, Descriptor descriptor);
 
     /**
      * Register a method to be called back when visiting the node with the given name.
@@ -50,13 +50,13 @@ public abstract class IterativeDescriptorProcessor implements DescriptorProcesso
     /** 
      * @see org.eclipse.jetty.webapp.DescriptorProcessor#process(org.eclipse.jetty.webapp.Descriptor)
      */
-    public void process(Descriptor descriptor)
+    public void process(WebAppContext context, Descriptor descriptor)
     throws Exception
     {
         if (descriptor == null)
             return;
 
-        start(descriptor);
+        start(context,descriptor);
 
         XmlParser.Node root = descriptor.getRoot();
         Iterator iter = root.iterator();
@@ -66,19 +66,19 @@ public abstract class IterativeDescriptorProcessor implements DescriptorProcesso
             Object o = iter.next();
             if (!(o instanceof XmlParser.Node)) continue;
             node = (XmlParser.Node) o;
-            visit(descriptor, node);
+            visit(context, descriptor, node);
         }
 
-        end(descriptor);
+        end(context,descriptor);
     }
 
 
-    protected void visit (final Descriptor descriptor, final XmlParser.Node node)
+    protected void visit (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     throws Exception
     {
         String name = node.getTag();
         Method m =  _visitors.get(name);
         if (m != null)
-            m.invoke(this, new Object[]{descriptor, node});
+            m.invoke(this, new Object[]{context, descriptor, node});
     }
 }

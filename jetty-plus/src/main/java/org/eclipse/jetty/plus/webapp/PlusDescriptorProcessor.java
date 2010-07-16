@@ -48,9 +48,6 @@ import org.eclipse.jetty.xml.XmlParser;
 
 public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 {
-    protected WebAppContext _context;
-    protected MetaData _metaData;
-
     public PlusDescriptorProcessor ()
     {
         try
@@ -69,22 +66,18 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
     }
 
     /** 
-     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#start(org.eclipse.jetty.webapp.Descriptor)
+     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#start(WebAppContext, org.eclipse.jetty.webapp.Descriptor)
      */
-    public void start(Descriptor descriptor)
+    public void start(WebAppContext context, Descriptor descriptor)
     {     
-        _metaData = descriptor.getMetaData();
-        _context = _metaData.getContext();
     }
     
     
     /** 
-     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#end(org.eclipse.jetty.webapp.Descriptor)
+     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#end(org.eclipse.jetty.webapp.Descriptor, WebAppContext)
      */
-    public void end(Descriptor descriptor)
+    public void end(WebAppContext context,Descriptor descriptor)
     {
-        _metaData = null;
-        _context = null;
     }
 
     
@@ -96,7 +89,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param node
      * @throws Exception
      */
-    public void visitEnvEntry (Descriptor descriptor, XmlParser.Node node)
+    public void visitEnvEntry (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     throws Exception
     {
         String name=node.getString("env-entry-name",false,true);
@@ -111,19 +104,19 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             return;
         }
         
-        Origin o = _metaData.getOrigin("env-entry."+name);
+        Origin o = context.getMetaData().getOrigin("env-entry."+name);
         switch (o)
         {
             case NotSet:
             {
                 //no descriptor has configured an env-entry of this name previously
-                _metaData.setOrigin("env-entry."+name, descriptor);
+                context.getMetaData().setOrigin("env-entry."+name, descriptor);
                 //the javaee_5.xsd says that the env-entry-type is optional
                 //if there is an <injection> element, because you can get
                 //type from the element, but what to do if there is more
                 //than one <injection> element, do you just pick the type
                 //of the first one?
-                addInjections (descriptor, node, name, TypeUtil.fromName(type));
+                addInjections (context, descriptor, node, name, TypeUtil.fromName(type));
                 Object value = TypeUtil.valueOf(type,valueStr);
                 bindEnvEntry(name, value);   
                 break;
@@ -139,8 +132,8 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     //We're processing web-defaults, web.xml or web-override. Any of them can
                     //set or change the env-entry.
-                    _metaData.setOrigin("env-entry."+name, descriptor);
-                    addInjections (descriptor, node, name, TypeUtil.fromName(type));
+                    context.getMetaData().setOrigin("env-entry."+name, descriptor);
+                    addInjections (context, descriptor, node, name, TypeUtil.fromName(type));
                     Object value = TypeUtil.valueOf(type,valueStr);
                     bindEnvEntry(name, value);   
                 }
@@ -149,9 +142,9 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     //A web.xml declared the env-entry. Check to see if any injections have been
                     //declared for it. If it was declared in web.xml then don't merge any injections.
                     //If it was declared in a web-fragment, then we can keep merging fragments.
-                    Descriptor d = _metaData.getOriginDescriptor("env-entry."+name+".injection");
+                    Descriptor d = context.getMetaData().getOriginDescriptor("env-entry."+name+".injection");
                     if (d==null || d instanceof FragmentDescriptor)
-                        addInjections(descriptor, node, name, TypeUtil.fromName(type));
+                        addInjections(context, descriptor, node, name, TypeUtil.fromName(type));
                 }
                 break;
             }
@@ -193,7 +186,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param node
      * @throws Exception
      */
-    public void visitResourceRef (Descriptor descriptor, XmlParser.Node node)
+    public void visitResourceRef (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     throws Exception
     {
         String jndiName = node.getString("res-ref-name",false,true);
@@ -201,20 +194,20 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         String auth = node.getString("res-auth", false, true);
         String shared = node.getString("res-sharing-scope", false, true);
         
-        Origin o = _metaData.getOrigin("resource-ref."+jndiName);
+        Origin o = context.getMetaData().getOrigin("resource-ref."+jndiName);
         switch (o)
         {
             case NotSet:
             {
                 //No descriptor or annotation previously declared a resource-ref of this name.
-                _metaData.setOrigin("resource-ref."+jndiName, descriptor);
+                context.getMetaData().setOrigin("resource-ref."+jndiName, descriptor);
                 
                 //check for <injection> elements
-                Class typeClass = TypeUtil.fromName(type);
+                Class<?> typeClass = TypeUtil.fromName(type);
                 if (typeClass==null)
-                    typeClass = _context.loadClass(type);
-                addInjections(descriptor, node, jndiName, typeClass);                  
-                bindResourceRef(jndiName, typeClass);
+                    typeClass = context.loadClass(type);
+                addInjections(context, descriptor, node, jndiName, typeClass);                  
+                bindResourceRef(context,jndiName, typeClass);
                 break;
             }
             case WebXml:
@@ -226,17 +219,17 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     //We're processing web-defaults, web.xml or web-override. Any of them can
                     //set or change the resource-ref.
-                    _metaData.setOrigin("resource-ref."+jndiName, descriptor);
+                    context.getMetaData().setOrigin("resource-ref."+jndiName, descriptor);
      
                     //check for <injection> elements
-                    Class typeClass = TypeUtil.fromName(type);
+                    Class<?> typeClass = TypeUtil.fromName(type);
                     if (typeClass==null)
-                        typeClass = _context.loadClass(type);
+                        typeClass = context.loadClass(type);
                     
-                    addInjections(descriptor, node, jndiName, typeClass);
+                    addInjections(context, descriptor, node, jndiName, typeClass);
                    
                     //bind the entry into jndi
-                    bindResourceRef(jndiName, typeClass);
+                    bindResourceRef(context,jndiName, typeClass);
                 }
                 else
                 {
@@ -244,13 +237,13 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     //web-fragment. Check to see if any injections were declared for it by web.xml. 
                     //If any injection was declared in web.xml then don't merge any injections.
                     //If it was declared in a web-fragment, then we can keep merging fragments.
-                    Descriptor d = _metaData.getOriginDescriptor("resource-ref."+jndiName+".injection");
+                    Descriptor d = context.getMetaData().getOriginDescriptor("resource-ref."+jndiName+".injection");
                     if (d==null || d instanceof FragmentDescriptor)
                     { 
-                        Class typeClass = TypeUtil.fromName(type);
+                        Class<?> typeClass = TypeUtil.fromName(type);
                         if (typeClass==null)
-                            typeClass = _context.loadClass(type);
-                        addInjections(descriptor, node, jndiName, TypeUtil.fromName(type));
+                            typeClass = context.loadClass(type);
+                        addInjections(context, descriptor, node, jndiName, TypeUtil.fromName(type));
                     }
                 }
                 break;
@@ -275,13 +268,13 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param node
      * @throws Exception
      */
-    public void visitResourceEnvRef (Descriptor descriptor, XmlParser.Node node)
+    public void visitResourceEnvRef (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     throws Exception
     {
         String jndiName = node.getString("resource-env-ref-name",false,true);
         String type = node.getString("resource-env-ref-type", false, true);
         
-        Origin o = _metaData.getOrigin("resource-env-ref."+jndiName);
+        Origin o = context.getMetaData().getOrigin("resource-env-ref."+jndiName);
         switch (o)
         {
             case NotSet:
@@ -289,11 +282,11 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 //First declaration of resource-env-ref with this jndiName
                 //JavaEE Spec sec 5.7.1.3 says the resource-env-ref-type
                 //is mandatory, but the schema says it is optional!
-                Class typeClass = TypeUtil.fromName(type);
+                Class<?> typeClass = TypeUtil.fromName(type);
                 if (typeClass==null)
-                    typeClass = _context.loadClass(type);
-                addInjections (descriptor, node, jndiName, typeClass);
-                bindResourceEnvRef(jndiName, typeClass);
+                    typeClass = context.loadClass(type);
+                addInjections (context, descriptor, node, jndiName, typeClass);
+                bindResourceEnvRef(context,jndiName, typeClass);
              break;
             }
             case WebXml:
@@ -306,24 +299,24 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     //We're processing web-defaults, web.xml or web-override. Any of them can
                     //set or change the resource-env-ref.
-                    _metaData.setOrigin("resource-env-ref."+jndiName, descriptor);
-                    Class typeClass = TypeUtil.fromName(type);
+                    context.getMetaData().setOrigin("resource-env-ref."+jndiName, descriptor);
+                    Class<?> typeClass = TypeUtil.fromName(type);
                     if (typeClass==null)
-                        typeClass = _context.loadClass(type);
-                    addInjections (descriptor, node, jndiName, typeClass);
-                    bindResourceEnvRef(jndiName, typeClass); 
+                        typeClass = context.loadClass(type);
+                    addInjections (context, descriptor, node, jndiName, typeClass);
+                    bindResourceEnvRef(context,jndiName, typeClass); 
                 }
                 else
                 {
                     //We're processing a web-fragment. It can only contribute injections if the
                     //there haven't been any injections declared yet, or they weren't declared in a WebXml file.
-                    Descriptor d = _metaData.getOriginDescriptor("resource-env-ref."+jndiName+".injection");
+                    Descriptor d = context.getMetaData().getOriginDescriptor("resource-env-ref."+jndiName+".injection");
                     if (d == null || d instanceof FragmentDescriptor)
                     {
-                        Class typeClass = TypeUtil.fromName(type);
+                        Class<?> typeClass = TypeUtil.fromName(type);
                         if (typeClass==null)
-                            typeClass = _context.loadClass(type);
-                        addInjections (descriptor, node, jndiName, typeClass);
+                            typeClass = context.loadClass(type);
+                        addInjections (context, descriptor, node, jndiName, typeClass);
                     }
                 }
                 break;
@@ -345,25 +338,25 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param node
      * @throws Exception
      */
-    public void visitMessageDestinationRef (Descriptor descriptor, XmlParser.Node node)
+    public void visitMessageDestinationRef (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     throws Exception
     {
         String jndiName = node.getString("message-destination-ref-name",false,true);
         String type = node.getString("message-destination-type",false,true);
         String usage = node.getString("message-destination-usage",false,true);
         
-        Origin o = _metaData.getOrigin("message-destination-ref."+jndiName);
+        Origin o = context.getMetaData().getOrigin("message-destination-ref."+jndiName);
         switch (o)
         {
             case NotSet:
             {       
                 //A message-destination-ref of this name has not been previously declared
-                Class typeClass = TypeUtil.fromName(type);
+                Class<?> typeClass = TypeUtil.fromName(type);
                 if (typeClass==null)
-                    typeClass = _context.loadClass(type);
-                addInjections(descriptor, node, jndiName, typeClass);   
-                bindMessageDestinationRef(jndiName, typeClass);
-                _metaData.setOrigin("message-destination-ref."+jndiName, descriptor);
+                    typeClass = context.loadClass(type);
+                addInjections(context, descriptor, node, jndiName, typeClass);   
+                bindMessageDestinationRef(context,jndiName, typeClass);
+                context.getMetaData().setOrigin("message-destination-ref."+jndiName, descriptor);
                 break;
             }
             case WebXml:
@@ -374,24 +367,24 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 //Only allow other web-default, web.xml, web-override to change it.
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
-                    Class typeClass = TypeUtil.fromName(type);
+                    Class<?> typeClass = TypeUtil.fromName(type);
                     if (typeClass==null)
-                        typeClass = _context.loadClass(type);
-                    addInjections(descriptor, node, jndiName, typeClass);   
-                    bindMessageDestinationRef(jndiName, typeClass);
-                    _metaData.setOrigin("message-destination-ref."+jndiName, descriptor);
+                        typeClass = context.loadClass(type);
+                    addInjections(context, descriptor, node, jndiName, typeClass);   
+                    bindMessageDestinationRef(context,jndiName, typeClass);
+                    context.getMetaData().setOrigin("message-destination-ref."+jndiName, descriptor);
                 }
                 else
                 {
                     //A web-fragment has declared a message-destination-ref with the same name as a web xml.
                     //It can only contribute injections, and only if the web xml didn't declare any.
-                    Descriptor d = _metaData.getOriginDescriptor("message-destination-ref."+jndiName+".injection");
+                    Descriptor d = context.getMetaData().getOriginDescriptor("message-destination-ref."+jndiName+".injection");
                     if (d == null || d instanceof FragmentDescriptor)
                     { 
-                        Class typeClass = TypeUtil.fromName(type);
+                        Class<?> typeClass = TypeUtil.fromName(type);
                         if (typeClass==null)
-                            typeClass = _context.loadClass(type);
-                        addInjections(descriptor, node, jndiName, typeClass);   
+                            typeClass = context.loadClass(type);
+                        addInjections(context, descriptor, node, jndiName, typeClass);   
                     }
                 }
                 break;
@@ -416,7 +409,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * resources have been setup but before the class is put into use
      * @param node
      */
-    public void visitPostConstruct(Descriptor descriptor, XmlParser.Node node)
+    public void visitPostConstruct(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String className = node.getString("lifecycle-callback-class", false, true);
         String methodName = node.getString("lifecycle-callback-method", false, true);
@@ -431,20 +424,20 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             Log.warn("No lifecycle-callback-method specified for class "+className);
             return;
         }
-        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
+        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
         //ServletSpec 3.0 p80 If web.xml declares a post-construct then all post-constructs
         //in fragments must be ignored. Otherwise, they are additive.
-        Origin o = _metaData.getOrigin("post-construct");
+        Origin o = context.getMetaData().getOrigin("post-construct");
         switch (o)
         {
             case NotSet:
             {
                 //No post-constructs have been declared previously.
-                _metaData.setOrigin("post-construct", descriptor);
+                context.getMetaData().setOrigin("post-construct", descriptor);
                 
                 try
                 {
-                    Class clazz = _context.loadClass(className);
+                    Class<?> clazz = context.loadClass(className);
                     LifeCycleCallback callback = new PostConstructCallback();
                     callback.setTarget(clazz, methodName);
                     callbacks.add(callback);
@@ -465,7 +458,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     try
                     {
-                        Class clazz = _context.loadClass(className);
+                        Class<?> clazz = context.loadClass(className);
                         LifeCycleCallback callback = new PostConstructCallback();
                         callback.setTarget(clazz, methodName);
                         callbacks.add(callback);
@@ -482,7 +475,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 //A web-fragment first declared a post-construct. Allow all other web-fragments to merge in their post-constructs
                 try
                 {
-                    Class clazz = _context.loadClass(className);
+                    Class<?> clazz = context.loadClass(className);
                     LifeCycleCallback callback = new PostConstructCallback();
                     callback.setTarget(clazz, methodName);
                     callbacks.add(callback);
@@ -504,7 +497,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * the instance is being destroyed
      * @param node
      */
-    public void visitPreDestroy(Descriptor descriptor, XmlParser.Node node)
+    public void visitPreDestroy(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String className = node.getString("lifecycle-callback-class", false, true);
         String methodName = node.getString("lifecycle-callback-method", false, true);
@@ -518,19 +511,19 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             Log.warn("No lifecycle-callback-method specified for pre-destroy class "+className);
             return;
         } 
-        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
+        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
         
-        Origin o = _metaData.getOrigin("pre-destroy");
+        Origin o = context.getMetaData().getOrigin("pre-destroy");
         switch(o)
         {
             case NotSet:
             {
                 //No pre-destroys have been declared previously. Record this descriptor
                 //as the first declarer.
-                _metaData.setOrigin("pre-destroy", descriptor);
+                context.getMetaData().setOrigin("pre-destroy", descriptor);
                 try
                 {
-                    Class clazz = _context.loadClass(className);
+                    Class<?> clazz = context.loadClass(className);
                     LifeCycleCallback callback = new PreDestroyCallback();
                     callback.setTarget(clazz, methodName);
                     callbacks.add(callback);
@@ -551,7 +544,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     try
                     {
-                        Class clazz = _context.loadClass(className);
+                        Class<?> clazz = context.loadClass(className);
                         LifeCycleCallback callback = new PreDestroyCallback();
                         callback.setTarget(clazz, methodName);
                         callbacks.add(callback);
@@ -568,7 +561,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 //No pre-destroys in web xml, so allow all fragments to merge their pre-destroys.
                 try
                 {
-                    Class clazz = _context.loadClass(className);
+                    Class<?> clazz = context.loadClass(className);
                     LifeCycleCallback callback = new PreDestroyCallback();
                     callback.setTarget(clazz, methodName);
                     callbacks.add(callback);
@@ -592,7 +585,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param valueClass
      * @return 
      */
-    public void addInjections (Descriptor descriptor, XmlParser.Node node, String jndiName, Class valueClass)
+    public void addInjections (WebAppContext context, Descriptor descriptor, XmlParser.Node node, String jndiName, Class<?> valueClass)
     {
         Iterator  itor = node.iterator("injection-target");
         
@@ -612,20 +605,20 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 continue;
             }
 
-            InjectionCollection injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+            InjectionCollection injections = (InjectionCollection)context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
             // comments in the javaee_5.xsd file specify that the targetName is looked
             // for first as a java bean property, then if that fails, as a field
             try
             {
-                Class clazz = _context.loadClass(targetClassName);
+                Class<?> clazz = context.loadClass(targetClassName);
                 Injection injection = new Injection();
                 injection.setJndiName(jndiName);
                 injection.setTarget(clazz, targetName, valueClass);
                 injections.add(injection);
                 
                 //Record which was the first descriptor to declare an injection for this name
-                if (_metaData.getOriginDescriptor(node.getTag()+"."+jndiName+".injection") == null)
-                    _metaData.setOrigin(node.getTag()+"."+jndiName+".injection", descriptor);
+                if (context.getMetaData().getOriginDescriptor(node.getTag()+"."+jndiName+".injection") == null)
+                    context.getMetaData().setOrigin(node.getTag()+"."+jndiName+".injection", descriptor);
             }
             catch (ClassNotFoundException e)
             {
@@ -683,10 +676,10 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param name
      * @throws Exception
      */
-    public void bindResourceRef(String name, Class typeClass)
+    public void bindResourceRef(WebAppContext context, String name, Class<?> typeClass)
     throws Exception
     {
-        bindEntry(name, typeClass);
+        bindEntry(context, name, typeClass);
     }
 
     /** 
@@ -694,17 +687,17 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param name
      * @throws Exception
      */
-    public void bindResourceEnvRef(String name, Class typeClass)
+    public void bindResourceEnvRef(WebAppContext context, String name, Class<?> typeClass)
     throws Exception
     {
-        bindEntry(name, typeClass);
+        bindEntry(context, name, typeClass);
     }
     
     
-    public void bindMessageDestinationRef(String name, Class typeClass)
+    public void bindMessageDestinationRef(WebAppContext context, String name, Class<?> typeClass)
     throws Exception
     {
-        bindEntry(name, typeClass);
+        bindEntry(context, name, typeClass);
     }
    
     
@@ -723,7 +716,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param typeClass 
      * @throws Exception
      */
-    protected void bindEntry (String name, Class typeClass)
+    protected void bindEntry (WebAppContext context, String name, Class<?> typeClass)
     throws Exception
     {
         String nameInEnvironment = name;
@@ -731,7 +724,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         
         //check if the name in web.xml has been mapped to something else
         //check a context-specific naming environment first
-        Object scope = _context;
+        Object scope = context;
         NamingEntry ne = NamingEntryUtil.lookupNamingEntry(scope, name);
     
         if (ne!=null && (ne instanceof Link))
@@ -742,14 +735,14 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         }
 
         //try finding that mapped name in the webapp's environment first
-        scope = _context;
+        scope = context;
         bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
         
         if (bound)
             return;
         
         //try the server's environment
-        scope = _context.getServer();
+        scope = context.getServer();
         bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
         if (bound)
             return;
@@ -764,7 +757,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         //eg       javax.sql.DataSource/default
         nameInEnvironment = typeClass.getName()+"/default";
         //First try the server scope
-        NamingEntry defaultNE = NamingEntryUtil.lookupNamingEntry(_context.getServer(), nameInEnvironment);
+        NamingEntry defaultNE = NamingEntryUtil.lookupNamingEntry(context.getServer(), nameInEnvironment);
         if (defaultNE==null)
             defaultNE = NamingEntryUtil.lookupNamingEntry(null, nameInEnvironment);
         

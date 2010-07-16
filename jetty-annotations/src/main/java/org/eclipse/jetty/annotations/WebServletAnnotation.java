@@ -88,7 +88,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         
         String servletName = (annotation.name().equals("")?clazz.getName():annotation.name());
         
-        MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+        MetaData metaData = _context.getMetaData();
 
         //Find out if a <servlet>  of this type already exists with this name
         ServletHolder[] holders = _context.getServletHandler().getServlets();

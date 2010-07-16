@@ -1,4 +1,5 @@
 jetty-8.0.0.M2-SNAPSHOT
+ + 320073 Reconsile configuration mechanism
 
 jetty-7.2-SNAPSHOT
  + 319334 Concurrent, sharable ResourceCache

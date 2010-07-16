@@ -34,7 +34,6 @@ public class TestResourceAnnotations
         wac.setServer(server);
         InjectionCollection injections = new InjectionCollection();
         wac.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
-        wac.setAttribute(MetaData.METADATA, new MetaData(wac));
         InitialContext ic = new InitialContext();
         Context comp = (Context)ic.lookup("java:comp");
         Context env = comp.createSubcontext("env");

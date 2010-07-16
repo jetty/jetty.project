@@ -122,7 +122,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             //Servlet Spec 3.0 p. 76
             //If a descriptor has specified at least 1 injection target for this
             //resource, then it overrides this annotation
-            MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+            MetaData metaData = _context.getMetaData();
             if (metaData.getOriginDescriptor("resource-ref."+name+".injection") != null)
             {
                 //at least 1 injection was specified for this resource by a descriptor, so
@@ -265,7 +265,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             //Servlet Spec 3.0 p. 76
             //If a descriptor has specified at least 1 injection target for this
             //resource, then it overrides this annotation
-            MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+            MetaData metaData = _context.getMetaData();
             if (metaData.getOriginDescriptor("resource-ref."+name+".injection") != null)
             {
                 //at least 1 injection was specified for this resource by a descriptor, so

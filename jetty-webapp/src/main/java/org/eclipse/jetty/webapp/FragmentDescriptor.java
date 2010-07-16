@@ -40,11 +40,11 @@ public class FragmentDescriptor extends Descriptor
     protected List<String> _afters = new ArrayList<String>();
     protected String _name;
     
-    
-    public FragmentDescriptor (Resource xml, MetaData processor)
-    throws Exception
+
+    public FragmentDescriptor (Resource xml)
+        throws Exception
     {
-        super (xml, processor);
+        super (xml);
     }       
     
     public String getName ()
@@ -52,8 +52,9 @@ public class FragmentDescriptor extends Descriptor
         return _name;
     }
     
+    @Override
     public void parse () 
-    throws Exception
+        throws Exception
     {
         super.parse();
         processName();
@@ -71,6 +72,7 @@ public class FragmentDescriptor extends Descriptor
                 _name = tmp;
         }
     }
+    @Override
     public void processOrdering ()
     {
         //Process a fragment jar's web-fragment.xml<ordering> elements
