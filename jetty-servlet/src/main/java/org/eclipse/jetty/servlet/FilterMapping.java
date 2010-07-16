@@ -16,8 +16,9 @@ package org.eclipse.jetty.servlet;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.DispatcherType;
+
+import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.Handler;
 
 
@@ -36,18 +37,18 @@ public class FilterMapping
     /* ------------------------------------------------------------ */
     /** Dispatch type from name
      */
-    public static int dispatch(String type)
+    public static DispatcherType dispatch(String type)
     {
         if ("request".equalsIgnoreCase(type))
-            return REQUEST;
+            return DispatcherType.REQUEST;
         if ("forward".equalsIgnoreCase(type))
-            return FORWARD;
+            return DispatcherType.FORWARD;
         if ("include".equalsIgnoreCase(type))
-            return INCLUDE;
+            return DispatcherType.INCLUDE;
         if ("error".equalsIgnoreCase(type))
-            return ERROR;
+            return DispatcherType.ERROR;
         if ("async".equalsIgnoreCase(type))
-            return ASYNC;
+            return DispatcherType.ASYNC;
         throw new IllegalArgumentException(type);
     }
     
@@ -70,28 +71,6 @@ public class FilterMapping
     		  return ERROR;
     	}
         throw new IllegalArgumentException(type.toString());
-    }
-
-    
-    /* ------------------------------------------------------------ */
-    /** Dispatch type from name
-     */
-    public static DispatcherType dispatch(int type)
-    {
-    	switch(type)
-    	{
-    	  case REQUEST:
-    		  return DispatcherType.REQUEST;
-    	  case ASYNC:
-    		  return DispatcherType.ASYNC;
-    	  case FORWARD:
-    		  return DispatcherType.FORWARD;
-    	  case INCLUDE:
-    		  return DispatcherType.INCLUDE;
-    	  case ERROR:
-    		  return DispatcherType.ERROR;
-    	}
-        throw new IllegalArgumentException(""+type);
     }
 	
 
@@ -142,15 +121,6 @@ public class FilterMapping
     
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the dispatches.
-     */
-    public int getDispatches()
-    {
-        return _dispatches;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
      * @return Returns the filterName.
      */
     public String getFilterName()
@@ -180,15 +150,22 @@ public class FilterMapping
     public void setDispatcherTypes(EnumSet<DispatcherType> dispatcherTypes) 
     {
         _dispatches=DEFAULT;
-        if (dispatcherTypes.contains(DispatcherType.ERROR)) 
-            _dispatches|=ERROR;
-        if (dispatcherTypes.contains(DispatcherType.FORWARD)) 
-            _dispatches|=FORWARD;
-        if (dispatcherTypes.contains(DispatcherType.INCLUDE)) 
-            _dispatches|=INCLUDE;
-        if (dispatcherTypes.contains(DispatcherType.REQUEST)) 
-            _dispatches|=REQUEST;
+        if (dispatcherTypes!=null)
+        {
+            if (dispatcherTypes.contains(DispatcherType.ERROR)) 
+                _dispatches|=ERROR;
+            if (dispatcherTypes.contains(DispatcherType.FORWARD)) 
+                _dispatches|=FORWARD;
+            if (dispatcherTypes.contains(DispatcherType.INCLUDE)) 
+                _dispatches|=INCLUDE;
+            if (dispatcherTypes.contains(DispatcherType.REQUEST)) 
+                _dispatches|=REQUEST;
+            if (dispatcherTypes.contains(DispatcherType.ASYNC)) 
+                _dispatches|=ASYNC;
+        }
     }
+    
+    
     
     /* ------------------------------------------------------------ */
     /**

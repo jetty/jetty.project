@@ -13,8 +13,17 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+
+import org.eclipse.jetty.server.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
+import org.eclipse.jetty.servlet.api.FilterRegistration;
+import javax.servlet.ServletException;
 
 import org.eclipse.jetty.util.log.Log;
 
@@ -22,25 +31,26 @@ import org.eclipse.jetty.util.log.Log;
 /** 
  * 
  */
-public class FilterHolder extends Holder
+public class FilterHolder extends Holder<Filter>
 {    
     /* ------------------------------------------------------------ */
     private transient Filter _filter;
     private transient Config _config;
-        
+    
     /* ---------------------------------------------------------------- */
-    /** Constructor for Serialization.
+    /** Constructor 
      */
     public FilterHolder()
     {
     }   
+ 
     
     /* ---------------------------------------------------------------- */
-    /** Constructor for Serialization.
+    /** Constructor 
      */
-    public FilterHolder(Class filter)
+    public FilterHolder(Class<? extends Filter> filter)
     {
-        super (filter);
+        setHeldClass(filter);
     }
 
     /* ---------------------------------------------------------------- */
@@ -67,9 +77,22 @@ public class FilterHolder extends Holder
         }
 
         if (_filter==null)
-            _filter=(Filter)newInstance();
+        {
+            try
+            {
+                _filter=((ServletContextHandler.Context)_servletHandler.getServletContext()).createFilter(getHeldClass());
+            }
+            catch (ServletException se)
+            {
+                Throwable cause = se.getRootCause();
+                if (cause instanceof InstantiationException)
+                    throw (InstantiationException)cause;
+                if (cause instanceof IllegalAccessException)
+                    throw (IllegalAccessException)cause;
+                throw se;
+            }
+        }
         
-        _filter = getServletHandler().customizeFilter(_filter);        
         _config=new Config();
         _filter.init(_config);
     }
@@ -100,13 +123,13 @@ public class FilterHolder extends Holder
     /* ------------------------------------------------------------ */
     @Override
     public void destroyInstance (Object o)
-    throws Exception
+        throws Exception
     {
         if (o==null)
             return;
         Filter f = (Filter)o;
         f.destroy();
-        getServletHandler().customizeFilterDestroy(f);
+        getServletHandler().destroyFilter(f);
     }
 
     /* ------------------------------------------------------------ */
@@ -132,6 +155,74 @@ public class FilterHolder extends Holder
         return getName();
     }
     
+    /* ------------------------------------------------------------ */
+    public FilterRegistration.Dynamic getRegistration()
+    {
+        return new Registration();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    protected class Registration extends HolderRegistration implements FilterRegistration.Dynamic
+    {
+        public void addMappingForServletNames(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... servletNames)
+        {
+            illegalStateIfContextStarted();
+            FilterMapping mapping = new FilterMapping();
+            mapping.setFilterHolder(FilterHolder.this);
+            mapping.setServletNames(servletNames);
+            mapping.setDispatcherTypes(dispatcherTypes);
+            if (isMatchAfter)
+                _servletHandler.addFilterMapping(mapping);
+            else
+                _servletHandler.prependFilterMapping(mapping);
+        }
+
+        public void addMappingForUrlPatterns(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... urlPatterns)
+        {
+            illegalStateIfContextStarted();
+            FilterMapping mapping = new FilterMapping();
+            mapping.setFilterHolder(FilterHolder.this);
+            mapping.setPathSpecs(urlPatterns);
+            mapping.setDispatcherTypes(dispatcherTypes);
+            if (isMatchAfter)
+                _servletHandler.addFilterMapping(mapping);
+            else
+                _servletHandler.prependFilterMapping(mapping);
+        }
+
+        public Collection<String> getServletNameMappings()
+        {
+            FilterMapping[] mappings =_servletHandler.getFilterMappings();
+            List<String> names=new ArrayList<String>();
+            for (FilterMapping mapping : mappings)
+            {
+                if (mapping.getFilterHolder()!=FilterHolder.this)
+                    continue;
+                String[] servlets=mapping.getServletNames();
+                if (servlets!=null && servlets.length>0)
+                    names.addAll(Arrays.asList(servlets));
+            }
+            return names;
+        }
+
+        public Collection<String> getUrlPatternMappings()
+        {
+            FilterMapping[] mappings =_servletHandler.getFilterMappings();
+            List<String> patterns=new ArrayList<String>();
+            for (FilterMapping mapping : mappings)
+            {
+                if (mapping.getFilterHolder()!=FilterHolder.this)
+                    continue;
+                String[] specs=mapping.getPathSpecs();
+                if (specs!=null && specs.length>0)
+                    patterns.addAll(Arrays.asList(specs));
+            }
+            return patterns;
+        }
+    }
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

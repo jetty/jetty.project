@@ -39,12 +39,9 @@ public class Injection
     private String _jndiName;
     private String _mappingName;
     private Member _target;
-    private String _className;
-    private String _fieldName;
-    private String _methodName;
-    private String _paramCanonicalName;
-    private String _annotationResourceType;
-    
+    private Class _paramClass;
+    private Class _resourceClass;
+
     
     public Injection ()
     {}
@@ -58,35 +55,24 @@ public class Injection
         return _targetClass;
     }
 
-    
-    public String getTargetClassName()
+    public Class getParamClass ()
     {
-        return _className;
+        return _paramClass;
     }
-
-    public String getFieldName ()
+   
+    public Class getResourceClass ()
     {
-        return _fieldName;
-    }
-    
-    public String getMethodName ()
-    {
-        return _methodName;
-    }
-    
-    public String getParamCanonicalName ()
-    {
-        return _paramCanonicalName;
+        return _resourceClass;
     }
     
     public boolean isField ()
     {
-        return (_fieldName != null);
+        return (_target != null && _target instanceof Field);
     }
     
     public boolean isMethod ()
     {
-        return (_methodName != null);
+        return (_target != null && _target instanceof Method);
     }
     
     /**
@@ -126,59 +112,51 @@ public class Injection
         return _target;
     }
     
- 
- 
-    /**
-     * Set up an injection target that is a field
-     * @param className
-     * @param fieldName
-     */
-    public void setTarget (String className, String fieldName, String annotationResourceType)
+
+    public void setTarget(Class clazz, Field field, Class resourceType)
     {
-        _className = className;
-        _fieldName = fieldName;
-        _annotationResourceType = annotationResourceType;
+        _targetClass = clazz;
+        _target = field;
+        _resourceClass = resourceType;
+    }
+    public void setTarget(Class clazz, Method method, Class arg, Class resourceType)
+    {
+        _targetClass = clazz;
+        _target = method;
+        _resourceClass = resourceType;
+        _paramClass = arg;
     }
     
-    public void setTarget (String className, String methodName, String paramCanonicalName, String annotationResourceType)
+   
+    public void setTarget (Class clazz, String target, Class resourceType)
     {
-        _className = className;
-        _methodName = methodName;
-        _paramCanonicalName = paramCanonicalName;
-        _annotationResourceType = annotationResourceType;
-    }
-    
-    
-    public void setTarget (Class clazz, String targetName, Class targetType)
-    {
+        _targetClass = clazz;
+        _resourceClass = resourceType;
+        
         //first look for a javabeans style setter matching the targetName
-        String setter = "set"+targetName.substring(0,1).toUpperCase()+targetName.substring(1);
+        String setter = "set"+target.substring(0,1).toUpperCase()+target.substring(1);
         try
         {
-            Log.debug("Looking for method for setter: "+setter+" with arg "+targetType);
-            _target = IntrospectionUtil.findMethod(clazz, setter, new Class[] {targetType}, true, false); 
+            Log.debug("Looking for method for setter: "+setter+" with arg "+_resourceClass);
+            _target = IntrospectionUtil.findMethod(clazz, setter, new Class[] {_resourceClass}, true, false);
             _targetClass = clazz;
-            _className = clazz.getCanonicalName();
-            _methodName = targetName;
-            _paramCanonicalName = targetType.getCanonicalName();
+            _paramClass = _resourceClass;
         }
         catch (NoSuchMethodException me)
         {
             //try as a field
             try
             {
-                _target = IntrospectionUtil.findField(clazz, targetName, targetType, true, false);
-                _targetClass = clazz;   
-                _className = clazz.getCanonicalName();
-                _fieldName = targetName;
+                _target = IntrospectionUtil.findField(clazz, target, resourceType, true, false);
+                _targetClass = clazz;
             }
             catch (NoSuchFieldException fe)
             {
-                throw new IllegalArgumentException("No such field or method "+targetName+" on class "+_targetClass);
+                throw new IllegalArgumentException("No such field or method "+target+" on class "+_targetClass);
             }
         }
-    }
 
+    }
     
     /**
      * Inject a value for a Resource from JNDI into an object
@@ -186,19 +164,6 @@ public class Injection
      */
     public void inject (Object injectable)
     { 
-        try
-        {
-            if (_target == null)
-                loadField();
-
-            if (_target == null)
-                loadMethod();
-        }
-        catch (Exception e)
-        {
-            throw new IllegalStateException (e);
-        }
-
         if (_target != null)
         {
             if (_target instanceof Field)
@@ -223,7 +188,7 @@ public class Injection
         return context.lookup("java:comp/env/"+getJndiName());
     }
     
-    
+
 
     /**
      * Inject value from jndi into a field of an instance
@@ -231,24 +196,19 @@ public class Injection
      * @param injectable
      */
     protected void injectField (Field field, Object injectable)
-    {   
-        if (validateInjection())
+    {        
+        try
         {
-            try
-            {
-                boolean accessibility = field.isAccessible();
-                field.setAccessible(true);
-                field.set(injectable, lookupInjectedValue());
-                field.setAccessible(accessibility);
-            }
-            catch (Exception e)
-            {
-                Log.warn(e);
-                throw new IllegalStateException("Inject failed for field "+field.getName());
-            }
+            boolean accessibility = field.isAccessible();
+            field.setAccessible(true);
+            field.set(injectable, lookupInjectedValue());
+            field.setAccessible(accessibility);
         }
-        else
-            throw new IllegalStateException ("Invalid injection for "+_className+"."+_fieldName);
+        catch (Exception e)
+        {
+            Log.warn(e);
+            throw new IllegalStateException("Inject failed for field "+field.getName());
+        }
     }
 
     /**
@@ -258,100 +218,18 @@ public class Injection
      */
     protected void injectMethod (Method method, Object injectable)
     {
-        if (validateInjection())
+        try
         {
-            try
-            {
-                boolean accessibility = method.isAccessible();
-                method.setAccessible(true);
-                method.invoke(injectable, new Object[] {lookupInjectedValue()});
-                method.setAccessible(accessibility);
-            }
-            catch (Exception e)
-            {
-                Log.warn(e);
-                throw new IllegalStateException("Inject failed for method "+method.getName());
-            }
+            boolean accessibility = method.isAccessible();
+            method.setAccessible(true);
+            method.invoke(injectable, new Object[] {lookupInjectedValue()});
+            method.setAccessible(accessibility);
         }
-        else
-        throw new IllegalStateException("Invalid injection for "+_className+"."+_methodName);
+        catch (Exception e)
+        {
+            Log.warn(e);
+            throw new IllegalStateException("Inject failed for method "+method.getName());
+        }
     }
-
-
-
-    protected void loadField()
-    throws ClassNotFoundException, NoSuchFieldException
-    {
-        if (_fieldName == null || _className == null)
-            return;
-        
-        if (_targetClass == null)
-            _targetClass = Loader.loadClass(null, _className);
-        
-        _target = _targetClass.getDeclaredField(_fieldName);
-    }
-    
-    
-    /**
-     * Load the target class and method.
-     * A valid injection target method only has 1 argument.
-     * @throws ClassNotFoundException
-     * @throws NoSuchMethodException
-     */
-    protected void loadMethod ()
-    throws ClassNotFoundException, NoSuchMethodException
-    {
-        if (_methodName == null || _className == null)
-            return;
-
-        if (_targetClass == null)
-            _targetClass = Loader.loadClass(null, _className);
-          
-        Class arg =  TypeUtil.fromName(_paramCanonicalName);
-        
-        if (arg == null)
-            arg = Loader.loadClass(null, _paramCanonicalName);
-      
-        _target = _targetClass.getDeclaredMethod(_methodName, new Class[] {arg}); 
-    }
-    
-    
-    private boolean validateInjection ()
-    {
    
-        //check that if the injection came from an annotation, the type specified in the annotation
-        //is compatible with the field or method to inject
-        //JavaEE spec sec 5.2.4
-        if (_annotationResourceType != null)
-        {
-            if (_target == null)
-                return false;
-            
-            try
-            {
-                Class<?> annotationType = TypeUtil.fromName(_annotationResourceType);
-                if (annotationType == null)
-                    annotationType = Loader.loadClass(null, _annotationResourceType);
-
-                if (_target instanceof Field)
-                {
-                    return ((Field)_target).getType().isAssignableFrom(annotationType);
-                }
-                else if (_target instanceof Method)
-                {
-                    Class<?>[] args = ((Method)_target).getParameterTypes();
-                    return args[0].isAssignableFrom(annotationType);
-                }
-
-                return false;
-            }
-            catch (Exception e)
-            {
-                Log.warn("Unable to verify injection for "+_className+"."+ (_fieldName==null?_methodName:_fieldName));
-                return false;
-            }
-        }
-        else
-            return true;
-    }
 }

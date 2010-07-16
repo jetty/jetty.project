@@ -16,8 +16,11 @@ package org.eclipse.jetty.servlet;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
+import org.eclipse.jetty.servlet.api.Registration;
 import javax.servlet.ServletContext;
 import javax.servlet.UnavailableException;
 
@@ -31,10 +34,10 @@ import org.eclipse.jetty.util.log.Log;
 /** 
  * 
  */
-public class Holder extends AbstractLifeCycle
+public class Holder<T> extends AbstractLifeCycle 
 {
+    protected transient Class<? extends T> _class;
     protected final Map<String,String> _initParams=new HashMap<String,String>(3);
-    protected transient Class<?> _class;
     protected String _className;
     protected String _displayName;
     protected boolean _extInstance;
@@ -44,22 +47,20 @@ public class Holder extends AbstractLifeCycle
     protected String _name;
     protected ServletHandler _servletHandler;
 
+    /* ---------------------------------------------------------------- */
     protected Holder()
     {
-        
     }
 
-    /* ---------------------------------------------------------------- */
-    protected Holder(Class held)
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if this holder was created for a specific instance.
+     */
+    public boolean isInstance()
     {
-        _class=held;
-        if (held!=null)
-        {
-            _className=held.getName();
-            _name=held.getName()+"-"+this.hashCode();
-        }
+        return _extInstance;
     }
-
+    
     /* ------------------------------------------------------------ */
     public void doStart()
         throws Exception
@@ -85,6 +86,7 @@ public class Holder extends AbstractLifeCycle
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void doStop()
         throws Exception
     {
@@ -99,7 +101,7 @@ public class Holder extends AbstractLifeCycle
     }
     
     /* ------------------------------------------------------------ */
-    public Class getHeldClass()
+    public Class<? extends T> getHeldClass()
     {
         return _class;
     }
@@ -127,7 +129,7 @@ public class Holder extends AbstractLifeCycle
     }
 
     /* ---------------------------------------------------------------- */
-    public Map getInitParameters()
+    public Map<String,String> getInitParameters()
     {
         return _initParams;
     }
@@ -148,16 +150,6 @@ public class Holder extends AbstractLifeCycle
     }
     
     /* ------------------------------------------------------------ */
-    public synchronized Object newInstance()
-        throws InstantiationException,
-               IllegalAccessException
-    {
-        if (_class==null)
-            throw new InstantiationException("!"+_className);
-        return _class.newInstance();
-    }
-
-    /* ------------------------------------------------------------ */
     public void destroyInstance(Object instance)
     throws Exception
     {
@@ -177,10 +169,15 @@ public class Holder extends AbstractLifeCycle
     /**
      * @param held The class to hold
      */
-    public void setHeldClass(Class held)
+    public void setHeldClass(Class<? extends T> held)
     {
         _class=held;
-        _className = held!=null?held.getName():null;
+        if (held!=null)
+        {
+            _className=held.getName();
+            if (_name==null)
+                _name=held.getName()+"-"+this.hashCode();
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -275,6 +272,72 @@ public class Holder extends AbstractLifeCycle
         {
             return Holder.this.getInitParameterNames();
         }
+    }
+
+    /* -------------------------------------------------------- */
+    /* -------------------------------------------------------- */
+    /* -------------------------------------------------------- */
+    protected class HolderRegistration implements Registration.Dynamic
+    {
+        public void setAsyncSupported(boolean isAsyncSupported)
+        {
+            illegalStateIfContextStarted();
+            Holder.this.setAsyncSupported(isAsyncSupported);
+        }
+
+        public void setDescription(String description)
+        {
+            if (Log.isDebugEnabled())
+                Log.debug(this+" is "+description);
+        }
+
+        public String getClassName()
+        {
+            return Holder.this.getClassName();
+        }
+
+        public String getInitParameter(String name)
+        {
+            return Holder.this.getInitParameter(name);
+        }
+
+        public Map<String, String> getInitParameters()
+        {
+            return Holder.this.getInitParameters();
+        }
+
+        public String getName()
+        {
+            return Holder.this.getName();
+        }
+
+        public boolean setInitParameter(String name, String value)
+        {
+            illegalStateIfContextStarted();
+            if (Holder.this.getInitParameter(name)!=null)
+                return false;
+            Holder.this.setInitParameter(name,value);
+            return true;
+        }
+
+        public Set<String> setInitParameters(Map<String, String> initParameters)
+        {
+            illegalStateIfContextStarted();
+            Set<String> clash=null;
+            for (String name : initParameters.keySet())
+            {
+                if (Holder.this.getInitParameter(name)!=null)
+                {
+                    if (clash==null)
+                        clash=new HashSet<String>();
+                    clash.add(name);
+                }
+            }
+            if (clash!=null)
+                return clash;
+            Holder.this.setInitParameters(initParameters);
+            return Collections.emptySet();
+        }; 
     }
 }
 

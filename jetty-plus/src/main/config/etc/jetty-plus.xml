@@ -58,7 +58,6 @@
   <!-- Uncomment the following to set up a deployer that will      -->
   <!-- deploy webapps from a directory called webapps-plus. Note   -->
   <!-- that you will need to create this directory first!          -->
-  <!--
   <Ref id="DeploymentManager">
       <Call name="addAppProvider">
         <Arg>
@@ -74,6 +73,5 @@
         </Arg>
       </Call>
   </Ref>
-  -->
 </Configure>
 

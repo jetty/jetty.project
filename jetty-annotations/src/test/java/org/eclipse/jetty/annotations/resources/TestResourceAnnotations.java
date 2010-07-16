@@ -6,6 +6,7 @@ import java.util.List;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
+import org.eclipse.jetty.annotations.AnnotationIntrospector;
 import org.eclipse.jetty.annotations.AnnotationParser;
 import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.annotations.ResourceAnnotationHandler;
@@ -13,6 +14,8 @@ import org.eclipse.jetty.annotations.ResourcesAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Test;
 
@@ -21,40 +24,29 @@ import static org.junit.Assert.assertNotNull;
 
 public class TestResourceAnnotations
 {
+ 
     @Test
-    public void testResourceAnnotations() throws Exception
+    public void testResourceAnnotations ()
+    throws Exception
     {
         Server server = new Server();
         WebAppContext wac = new WebAppContext();
         wac.setServer(server);
         InjectionCollection injections = new InjectionCollection();
         wac.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
+        wac.setAttribute(MetaData.METADATA, new MetaData(wac));
         InitialContext ic = new InitialContext();
         Context comp = (Context)ic.lookup("java:comp");
         Context env = comp.createSubcontext("env");
+        
+        org.eclipse.jetty.plus.jndi.EnvEntry resourceA = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", new Integer(1000), false);
+        org.eclipse.jetty.plus.jndi.EnvEntry resourceB = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", new Integer(2000), false);
 
-        org.eclipse.jetty.plus.jndi.EnvEntry resourceA = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", 1000, false);
-        org.eclipse.jetty.plus.jndi.EnvEntry resourceB = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", 2000, false);
-
-        ArrayList<String> classNames = new ArrayList<String>();
-        classNames.add(ResourceA.class.getName());
-        classNames.add(ResourceB.class.getName());
-
-        AnnotationParser parser = new AnnotationParser();
+        AnnotationIntrospector parser = new AnnotationIntrospector();
         ResourceAnnotationHandler handler = new ResourceAnnotationHandler(wac);
-        parser.registerAnnotationHandler("javax.annotation.Resource", handler);
-        parser.parse(classNames, new ClassNameResolver()
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }
-        });
+        parser.registerHandler(handler);
+        parser.introspect(ResourceA.class);
+        parser.introspect(ResourceB.class);
 
         //processing classA should give us these jndi name bindings:
         // java:comp/env/myf
@@ -82,7 +74,7 @@ public class TestResourceAnnotations
         //only 1 field injection because the other has no Resource mapping
         assertEquals(1, resBInjections.size());
         Injection fi = resBInjections.get(0);
-        assertEquals ("f", fi.getFieldName());
+        assertEquals ("f", fi.getTarget().getName());
 
         //3 method injections on class ResourceA, 4 field injections
         List<Injection> resAInjections = injections.getInjections(ResourceA.class.getCanonicalName());
@@ -126,9 +118,11 @@ public class TestResourceAnnotations
 
         comp.destroySubcontext("env");
     }
-
+    
+  
     @Test
-    public void testResourcesAnnotation() throws Exception
+    public void testResourcesAnnotation ()
+    throws Exception
     {
         Server server = new Server();
         WebAppContext wac = new WebAppContext();
@@ -138,29 +132,15 @@ public class TestResourceAnnotations
         InitialContext ic = new InitialContext();
         Context comp = (Context)ic.lookup("java:comp");
         Context env = comp.createSubcontext("env");
-        org.eclipse.jetty.plus.jndi.EnvEntry resourceA = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", 1000, false);
-        org.eclipse.jetty.plus.jndi.EnvEntry resourceB = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", 2000, false);
-
-        ArrayList<String> classNames = new ArrayList<String>();
-        classNames.add(ResourceA.class.getName());
-        classNames.add(ResourceB.class.getName());
-
-        AnnotationParser parser = new AnnotationParser();
+        org.eclipse.jetty.plus.jndi.EnvEntry resourceA = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", new Integer(1000), false);
+        org.eclipse.jetty.plus.jndi.EnvEntry resourceB = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", new Integer(2000), false);
+             
+        AnnotationIntrospector introspector = new AnnotationIntrospector();
         ResourcesAnnotationHandler handler = new ResourcesAnnotationHandler(wac);
-        parser.registerAnnotationHandler("javax.annotation.Resources", handler);
-        parser.parse(classNames, new ClassNameResolver()
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }
-        });
-
+        introspector.registerHandler(handler);
+        introspector.introspect(ResourceA.class);
+        introspector.introspect(ResourceB.class);
+        
         assertEquals(resourceA.getObjectToBind(), env.lookup("peach"));
         assertEquals(resourceB.getObjectToBind(), env.lookup("pear"));
     }

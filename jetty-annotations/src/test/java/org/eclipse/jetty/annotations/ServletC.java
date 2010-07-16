@@ -1,5 +1,5 @@
 //  ========================================================================
-// Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2008-2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -17,7 +17,7 @@ import java.io.IOException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import javax.annotation.Resources;
+import javax.annotation.security.DeclareRoles;
 import javax.annotation.security.RunAs;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -26,11 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 
 
 
-
-@Resources({
-    @Resource(name="apple", mappedName="foo"),
-    @Resource(name="banana", mappedName="foo")
-})
+@DeclareRoles({"alice"})
 @RunAs("admin")
 public class ServletC extends HttpServlet
 {

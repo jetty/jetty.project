@@ -45,7 +45,8 @@ import org.eclipse.jetty.xml.XmlParser;
  * &lt;/bile&gt;
  * 
  * 
- *
+ * TODO - this has been superceded by the new TldScanner in jasper which uses ServletContainerInitializer to
+ * find all the listeners in tag libs and register them.
  */
 public class TagLibConfiguration implements Configuration
 {

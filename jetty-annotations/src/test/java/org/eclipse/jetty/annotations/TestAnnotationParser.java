@@ -15,7 +15,7 @@ package org.eclipse.jetty.annotations;
 import java.util.Arrays;
 import java.util.List;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.junit.Test;
 
@@ -31,7 +31,7 @@ public class TestAnnotationParser
         String[] classNames = new String[]{"org.eclipse.jetty.annotations.ClassA"};
         AnnotationParser parser = new AnnotationParser();
 
-        class SampleAnnotationHandler implements AnnotationHandler
+        class SampleAnnotationHandler implements DiscoverableAnnotationHandler
         {
             private List<String> methods = Arrays.asList("a", "b", "c", "d", "l");
 
@@ -104,7 +104,7 @@ public class TestAnnotationParser
         String[] classNames = new String[]{"org.eclipse.jetty.annotations.ClassB"};
         AnnotationParser parser = new AnnotationParser();
 
-        class MultiAnnotationHandler implements AnnotationHandler
+        class MultiAnnotationHandler implements DiscoverableAnnotationHandler
         {
             public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
                                     List<Value> values)

@@ -371,11 +371,16 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             
           
 
-            // Prepare for configuration
+            // Prepare for configuration           
+            //Make a new MetaData to hold descriptor and annotation metadata
+            MetaData metadata = new MetaData(this);
+            setAttribute(MetaData.METADATA, metadata);
+            
             for (int i=0;i<_configurations.length;i++)
                 _configurations[i].preConfigure(this);
             
             super.doStart();
+        
             
             // Clean up after configuration
             for (int i=0;i<_configurations.length;i++)
@@ -986,12 +991,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     protected void startContext()
         throws Exception
     {
- 
-        
         // Configure webapp
         for (int i=0;i<_configurations.length;i++)
             _configurations[i].configure(this);
-
+ 
+        //resolve the metadata
+        ((MetaData)getAttribute(MetaData.METADATA)).resolve();
         
         super.startContext();
     }

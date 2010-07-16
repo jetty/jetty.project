@@ -21,6 +21,7 @@ import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.MetaData;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -50,6 +51,10 @@ public class TestConfiguration
             WebAppContext wac = new MyWebAppContext();
             wac.setServer(server);
             wac.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), wac));
+            
+            MetaData metaData = new MetaData(wac);
+            
+            PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor();
 
             //bind some EnvEntrys at the server level
             EnvEntry ee1 = new EnvEntry(server, "xxx/a", "100", true);
@@ -73,8 +78,7 @@ public class TestConfiguration
             assertNotNull(NamingEntryUtil.lookupNamingEntry(wac, "zzz/c"));
             assertNotNull(NamingEntryUtil.lookupNamingEntry(wac, "zzz/e"));
 
-            Configuration config = new Configuration();
-
+            //make a new env configuration
             EnvConfiguration envConfig = new EnvConfiguration();
 
 
@@ -105,20 +109,20 @@ public class TestConfiguration
             ne = (NamingEntry)ic.lookup("java:comp/env/"+NamingEntry.__contextName+"/zzz/e");
             assertNotNull(ne);
 
-            config.bindEnvEntry(wac, "foo", "99");
+            plusProcessor.bindEnvEntry("foo", "99");
             assertEquals("99",ic.lookup( "java:comp/env/foo"));
 
-            config.bindEnvEntry(wac, "xxx/a", "7");
+            plusProcessor.bindEnvEntry("xxx/a", "7");
             assertEquals("900", ic.lookup("java:comp/env/xxx/a")); //webapp overrides web.xml
-            config.bindEnvEntry(wac, "yyy/b", "7");
+            plusProcessor.bindEnvEntry("yyy/b", "7");
             assertEquals("910", ic.lookup("java:comp/env/yyy/b"));//webapp overrides web.xml
-            config.bindEnvEntry(wac,"zzz/c", "7");
+            plusProcessor.bindEnvEntry("zzz/c", "7");
             assertEquals("7", ic.lookup("java:comp/env/zzz/c"));//webapp does NOT override web.xml
-            config.bindEnvEntry(wac,"zzz/d", "7");
+            plusProcessor.bindEnvEntry("zzz/d", "7");
             assertEquals("7", ic.lookup("java:comp/env/zzz/d"));//server does NOT override web.xml
-            config.bindEnvEntry(wac,"zzz/e", "7");
+            plusProcessor.bindEnvEntry("zzz/e", "7");
             assertEquals("7", ic.lookup("java:comp/env/zzz/e"));//webapp does NOT override web.xml
-            config.bindEnvEntry(wac,"zzz/f", "7");
+            plusProcessor.bindEnvEntry("zzz/f", "7");
             assertEquals("500", ic.lookup("java:comp/env/zzz/f"));//server overrides web.xml
 
             ((Context)ic.lookup("java:comp")).destroySubcontext("env");

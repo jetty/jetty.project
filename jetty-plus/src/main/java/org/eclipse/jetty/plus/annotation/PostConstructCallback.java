@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.plus.annotation;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
@@ -45,8 +46,8 @@ public class PostConstructCallback extends LifeCycleCallback
     }
     
     
-    public void callback (Object instance)
-    throws Exception
+    public void callback (Object instance) 
+    throws SecurityException, IllegalArgumentException, NoSuchMethodException, ClassNotFoundException, IllegalAccessException, InvocationTargetException
     {
         super.callback(instance);
     }

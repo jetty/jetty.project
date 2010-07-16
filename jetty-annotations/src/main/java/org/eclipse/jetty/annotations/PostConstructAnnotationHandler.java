@@ -13,77 +13,65 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.util.List;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import javax.annotation.PostConstruct;
+
+import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.PostConstructCallback;
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-public class PostConstructAnnotationHandler implements AnnotationHandler
+public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    protected WebAppContext _wac;
+    protected WebAppContext _context;
     protected LifeCycleCallbackCollection _callbacks;
 
     public PostConstructAnnotationHandler (WebAppContext wac)
     {
-        _wac = wac;
-        _callbacks = (LifeCycleCallbackCollection)_wac.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
+        super(true);
+        _context = wac;
+        _callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
     }
 
 
-    public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                            List<Value> values)
-    {
-       Log.warn ("@PostConstruct annotation not applicable to classes: "+className);
-    }
-
-    public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<Value> values)
-    {
-      Log.warn("@PostConstruct annotation not applicable to fields: "+className+"."+fieldName);  
-    }
-
-    public void handleMethod(String className, String methodName, int access, String desc, String signature, String[] exceptions, String annotation,
-                             List<Value> values)
+    public void doHandle(Class clazz)
     {  
-        try
+        //Check that the PostConstruct is on a class that we're interested in
+        if (Util.isServletType(clazz))
         {
-            org.objectweb.asm.Type[] args = org.objectweb.asm.Type.getArgumentTypes(desc);      
-         
-            if (args.length != 0)
+            Method[] methods = clazz.getDeclaredMethods();
+            for (int i=0; i<methods.length; i++)
             {
-                Log.warn("Skipping PostConstruct annotation on "+className+"."+methodName+": has parameters");
-                return;
+                Method m = (Method)methods[i];
+                if (m.isAnnotationPresent(PostConstruct.class))
+                {
+                    if (m.getParameterTypes().length != 0)
+                        throw new IllegalStateException(m+" has parameters");
+                    if (m.getReturnType() != Void.TYPE)
+                        throw new IllegalStateException(m+" is not void");
+                    if (m.getExceptionTypes().length != 0)
+                        throw new IllegalStateException(m+" throws checked exceptions");
+                    if (Modifier.isStatic(m.getModifiers()))
+                        throw new IllegalStateException(m+" is static");
+                   
+                    //ServletSpec 3.0 p80 If web.xml declares even one post-construct then all post-constructs
+                    //in fragments must be ignored. Otherwise, they are additive.
+                    MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+                    MetaData.Origin origin = metaData.getOrigin("post-construct");
+                    if (origin != null && 
+                        (origin == MetaData.Origin.WebXml ||
+                         origin == MetaData.Origin.WebDefaults || 
+                         origin == MetaData.Origin.WebOverride))
+                        return;
+                    
+                    PostConstructCallback callback = new PostConstructCallback();
+                    callback.setTarget(clazz.getName(), m.getName());
+                    _callbacks.add(callback);
+                }
             }
-            if (org.objectweb.asm.Type.getReturnType(desc) != org.objectweb.asm.Type.VOID_TYPE)
-            {
-                Log.warn("Skipping PostConstruct annotation on "+className+"."+methodName+": is not void");
-                return;
-            }
-            
-            if (exceptions != null && exceptions.length != 0)
-            {
-                Log.warn("Skipping PostConstruct annotation on "+className+"."+methodName+": throws checked exceptions");
-                return;
-            }
-            
-            if ((access & org.objectweb.asm.Opcodes.ACC_STATIC) > 0)
-            {
-                Log.warn("Skipping PostConstruct annotation on "+className+"."+methodName+": is static");
-                return;
-            }
-
-            PostConstructCallback callback = new PostConstructCallback();
-            callback.setTarget(className, methodName);
-            _callbacks.add(callback);
-        }
-        catch (Exception e)
-        {
-            Log.warn(e);
         }
     }
-
 }

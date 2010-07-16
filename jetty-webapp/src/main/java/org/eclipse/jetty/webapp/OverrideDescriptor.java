@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2006-2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -10,22 +10,20 @@
 // http://www.opensource.org/licenses/apache2.0.php
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
-package org.eclipse.jetty.annotations;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
+package org.eclipse.jetty.webapp;
 
-public class ListenerC implements ServletContextListener
+import org.eclipse.jetty.util.resource.Resource;
+
+/**
+ * OverrideDescriptor
+ *
+ *
+ */
+public class OverrideDescriptor extends Descriptor
 {
-
-    public void contextDestroyed(ServletContextEvent arg0)
+    public OverrideDescriptor(Resource xml, MetaData processor)
     {
-       
+        super(xml, processor);
     }
-
-    public void contextInitialized(ServletContextEvent arg0)
-    {
-       
-    }
-
 }

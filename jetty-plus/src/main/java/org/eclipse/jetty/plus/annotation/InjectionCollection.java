@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.plus.annotation;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -30,22 +32,22 @@ public class InjectionCollection
     public static final String INJECTION_COLLECTION = "org.eclipse.jetty.injectionCollection";
     private HashMap<String, List<Injection>> _injectionMap = new HashMap<String, List<Injection>>();//map of classname to injections
     
+    
     public void add (Injection injection)
     {
-        if ((injection==null) || injection.getTargetClassName()==null) 
+        if ((injection==null) || injection.getTargetClass()==null) 
             return;
         
         if (Log.isDebugEnabled())
-            Log.debug("Adding injection for class="+(injection.getTargetClassName()+ " on a "+(injection.isField()?injection.getFieldName():injection.getMethodName())));
+            Log.debug("Adding injection for class="+(injection.getTargetClass()+ " on a "+(injection.getTarget().getName())));
    
         
-        List<Injection> injections = (List<Injection>)_injectionMap.get(injection.getTargetClassName());
+        List<Injection> injections = (List<Injection>)_injectionMap.get(injection.getTargetClass().getCanonicalName());
         if (injections==null)
         {
             injections = new ArrayList<Injection>();
-            _injectionMap.put(injection.getTargetClassName(), injections);
+            _injectionMap.put(injection.getTargetClass().getCanonicalName(), injections);
         }
-        
         injections.add(injection);
     }
 
@@ -57,14 +59,15 @@ public class InjectionCollection
 
         return _injectionMap.get(className);
     }
+  
     
     
-    public Injection getInjection (String jndiName, String className, String fieldName)
+    public Injection getInjection (String jndiName, Class clazz, Field field)
     {
-        if (fieldName == null || className == null)
+        if (field == null || clazz == null)
             return null;
         
-        List<Injection> injections = getInjections(className);
+        List<Injection> injections = getInjections(clazz.getCanonicalName());
         if (injections == null)
             return null;
         Iterator<Injection> itor = injections.iterator();
@@ -72,19 +75,19 @@ public class InjectionCollection
         while (itor.hasNext() && injection == null)
         {
             Injection i = itor.next();
-            if (fieldName.equals(i.getFieldName()))
+            if (i.isField() && field.getName().equals(i.getTarget().getName()))
                 injection = i;
         }
         
         return injection;
     }
     
-    public Injection getInjection (String jndiName, String className, String methodName, String paramCanonicalName)
+    public Injection getInjection (String jndiName, Class clazz, Method method, Class paramClass)
     {
-        if (className == null || methodName == null || paramCanonicalName == null)
+        if (clazz == null || method == null || paramClass == null)
             return null;
         
-        List<Injection> injections = getInjections(className);
+        List<Injection> injections = getInjections(clazz.getCanonicalName());
         if (injections == null)
             return null;
         Iterator<Injection> itor = injections.iterator();
@@ -92,7 +95,7 @@ public class InjectionCollection
         while (itor.hasNext() && injection == null)
         {
             Injection i = itor.next();
-            if (methodName.equals(i.getMethodName()) && paramCanonicalName.equals(i.getParamCanonicalName()))
+            if (i.isMethod() && i.getTarget().getName().equals(method.getName()) && paramClass.equals(i.getParamClass()))
                 injection = i;
         }
         
@@ -101,7 +104,6 @@ public class InjectionCollection
     
     
     public void inject (Object injectable)
-    throws Exception
     {
         if (injectable==null)
             return;

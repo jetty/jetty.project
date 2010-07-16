@@ -43,7 +43,7 @@ import org.objectweb.asm.commons.EmptyVisitor;
 public class AnnotationParser
 { 
     protected List<String> _parsedClassNames = new ArrayList<String>();
-    protected Map<String, AnnotationHandler> _annotationHandlers = new HashMap<String, AnnotationHandler>();
+    protected Map<String, List<DiscoverableAnnotationHandler>> _annotationHandlers = new HashMap<String, List<DiscoverableAnnotationHandler>>();
     protected List<ClassHandler> _classHandlers = new ArrayList<ClassHandler>();
     protected List<MethodHandler> _methodHandlers = new ArrayList<MethodHandler>();
     protected List<FieldHandler> _fieldHandlers = new ArrayList<FieldHandler>();
@@ -157,7 +157,7 @@ public class AnnotationParser
     
     
     
-    public interface AnnotationHandler
+    public interface DiscoverableAnnotationHandler
     {
         public void handleClass (String className, int version, int access, 
                                  String signature, String superName, String[] interfaces, 
@@ -310,12 +310,15 @@ public class AnnotationParser
                 public void visitEnd()
                 {   
                     super.visitEnd();
-                    
+
                     //call all AnnotationHandlers with classname, annotation name + values
-                    AnnotationHandler handler = AnnotationParser.this._annotationHandlers.get(_annotationName);
-                    if (handler != null)
+                    List<DiscoverableAnnotationHandler> handlers = AnnotationParser.this._annotationHandlers.get(_annotationName);
+                    if (handlers != null)
                     {
-                        handler.handleClass(_className, _version, _access, _signature, _superName, _interfaces, _annotationName, _annotationValues);
+                        for (DiscoverableAnnotationHandler h:handlers)
+                        {
+                            h.handleClass(_className, _version, _access, _signature, _superName, _interfaces, _annotationName, _annotationValues);
+                        }
                     }
                 }
             };
@@ -340,10 +343,13 @@ public class AnnotationParser
                         {   
                             super.visitEnd();
                             //call all AnnotationHandlers with classname, method, annotation name + values
-                            AnnotationHandler handler = AnnotationParser.this._annotationHandlers.get(_annotationName);
-                            if (handler != null)
+                            List<DiscoverableAnnotationHandler> handlers = AnnotationParser.this._annotationHandlers.get(_annotationName);
+                            if (handlers != null)
                             {
-                                handler.handleMethod(_className, name, access, methodDesc, signature, exceptions, _annotationName, _annotationValues);
+                                for (DiscoverableAnnotationHandler h:handlers)
+                                {
+                                    h.handleMethod(_className, name, access, methodDesc, signature, exceptions, _annotationName, _annotationValues);
+                                }
                             }
                         }
                     };
@@ -369,10 +375,13 @@ public class AnnotationParser
                         public void visitEnd()
                         {
                             super.visitEnd();
-                            AnnotationHandler handler = AnnotationParser.this._annotationHandlers.get(_annotationName);
-                            if (handler != null)
+                            List<DiscoverableAnnotationHandler> handlers = AnnotationParser.this._annotationHandlers.get(_annotationName);
+                            if (handlers != null)
                             {
-                                handler.handleField(_className, fieldName, access, fieldType, signature, value, _annotationName, _annotationValues);
+                                for (DiscoverableAnnotationHandler h:handlers)
+                                {
+                                    h.handleField(_className, fieldName, access, fieldType, signature, value, _annotationName, _annotationValues);
+                                }
                             }
                         }
                     };
@@ -383,9 +392,22 @@ public class AnnotationParser
     }
     
     
-    public void registerAnnotationHandler (String annotationName, AnnotationHandler handler)
+    /**
+     * Register a handler that will be called back when the named annotation is
+     * encountered on a class.
+     * 
+     * @param annotationName
+     * @param handler
+     */
+    public void registerAnnotationHandler (String annotationName, DiscoverableAnnotationHandler handler)
     {
-        _annotationHandlers.put(annotationName, handler);
+        List<DiscoverableAnnotationHandler> handlers = _annotationHandlers.get(annotationName);
+        if (handlers == null)
+        {
+            handlers = new ArrayList<DiscoverableAnnotationHandler>();
+            _annotationHandlers.put(annotationName, handlers);
+        }
+        handlers.add(handler);
     }
     
     public void registerClassHandler (ClassHandler handler)
@@ -587,6 +609,14 @@ public class AnnotationParser
         scanner.scan(null, uris, true);
     }
     
+    public void parse (URI uri, final ClassNameResolver resolver)
+    throws Exception
+    {
+        if (uri == null)
+            return;
+        URI[] uris = {uri};
+        parse(uris, resolver);
+    }
 
     private void scanClass (InputStream is)
     throws IOException

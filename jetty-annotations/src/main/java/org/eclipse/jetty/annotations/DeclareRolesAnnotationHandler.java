@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2006-2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -11,79 +11,58 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-
 package org.eclipse.jetty.annotations;
 
+import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
+import javax.servlet.Servlet;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.ListValue;
-import org.eclipse.jetty.annotations.AnnotationParser.SimpleValue;
-import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import javax.annotation.security.DeclareRoles;
+import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-public class DeclareRolesAnnotationHandler implements AnnotationHandler
+/**
+ * DeclaresRolesAnnotationHandler
+ *
+ *
+ */
+public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    protected WebAppContext _wac;
+
+    protected WebAppContext _context;
     
-    public DeclareRolesAnnotationHandler (WebAppContext wac)
+    /**
+     * @param introspectAncestors
+     */
+    public DeclareRolesAnnotationHandler(WebAppContext context)
     {
-        _wac = wac;
+        super(false);
+        _context = context;
     }
+ 
 
     /** 
-     * A DeclareRoles annotation is equivalent to a <security-role> in web.xml.
-     * 
-     * @see org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler#handleClass(java.lang.String, int, int, java.lang.String, java.lang.String, java.lang.String[], java.lang.String, java.util.List)
+     * @see org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler#doHandle(java.lang.Class)
      */
-    public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
-                            List<Value> values)
+    public void doHandle(Class clazz)
     {
-        //Add the role names to the list of roles for the webapp
-        Set<String> roles = new HashSet<String>();
+        if (!Servlet.class.isAssignableFrom(clazz))
+            return; //only applicable on javax.servlet.Servlet derivatives
         
-        try
-        {
-            Set<String> existing = ((ConstraintSecurityHandler)_wac.getSecurityHandler()).getRoles();
-            roles.addAll(existing);
-            
-            if (values != null && values.size() == 1)
-            {
-                Value v = values.get(0);
-                if (v instanceof SimpleValue)
-                {
-                    roles.add((String)((SimpleValue)v).getValue());
-                }
-                else if (v instanceof ListValue)
-                {
-                    for (Value vv:((ListValue)v).getList())
-                    { 
-                        roles.add((String)((SimpleValue)vv).getValue());
-                    }
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            Log.warn(e);
-        }
-    }
+        DeclareRoles declareRoles = (DeclareRoles) clazz.getAnnotation(DeclareRoles.class);
+        if (declareRoles == null)
+            return;
+        
+        String[] roles = declareRoles.value();
 
-    public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
-                            List<Value> values)
-    {
-        Log.warn ("@DeclareRoles annotation not applicable for field: "+className+"."+fieldName);
-    }
-
-    public void handleMethod(String className, String methodName, int access, String desc, String signature, String[] exceptions, String annotation,
-                             List<Value> values)
-    {
-        Log.warn ("@DeclareRoles annotation not applicable for method: "+className+"."+methodName);
+        if (roles != null && roles.length > 0)
+        {
+            for (String r:roles)
+                ((ConstraintSecurityHandler)_context.getSecurityHandler()).addRole(r);
+        }
     }
 
 }

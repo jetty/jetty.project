@@ -14,19 +14,26 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
+
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import org.eclipse.jetty.servlet.api.ServletRegistration;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.SingleThreadModel;
 import javax.servlet.UnavailableException;
-
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.RunAsToken;
 import org.eclipse.jetty.server.Request;
@@ -45,7 +52,7 @@ import org.eclipse.jetty.util.log.Log;
  *
  * 
  */
-public class ServletHolder extends Holder implements UserIdentity.Scope, Comparable
+public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope, Comparable
 {
     /* ---------------------------------------------------------------- */
     private int _initOrder;
@@ -67,7 +74,9 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
     /** Constructor .
      */
     public ServletHolder()
-    {}
+    {
+    }
+    
     
     /* ---------------------------------------------------------------- */
     /** Constructor for existing servlet.
@@ -80,9 +89,9 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
     /* ---------------------------------------------------------------- */
     /** Constructor for existing servlet.
      */
-    public ServletHolder(Class servlet)
+    public ServletHolder(Class<? extends Servlet> servlet)
     {
-        super(servlet);
+        setHeldClass(servlet);
     }
 
     /* ---------------------------------------------------------------- */
@@ -123,6 +132,11 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
     {
         _initOnStartup=true;
         _initOrder = order;
+    }
+    
+    public boolean isSetInitOrder()
+    {
+        return _initOnStartup;
     }
 
     /* ------------------------------------------------------------ */
@@ -293,7 +307,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
             return;
         Servlet servlet =  ((Servlet)o);
         servlet.destroy();
-        getServletHandler().customizeServletDestroy(servlet);
+        getServletHandler().destroyServlet(servlet);
     }
 
     /* ------------------------------------------------------------ */
@@ -404,13 +418,9 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
         try
         {
             if (_servlet==null)
-                _servlet=(Servlet)newInstance();
+                _servlet=newInstance();
             if (_config==null)
                 _config=new Config();
-
-            //handle any cusomizations of the servlet, such as @postConstruct
-            if (!(_servlet instanceof SingleThreadedWrapper))
-                _servlet = getServletHandler().customizeServlet(_servlet);
             
             // Handle run as
             if (_identityService!=null)
@@ -466,22 +476,6 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
     public Map<String, String> getRoleRefMap()
     {
         return _roleMap;
-    }
-
-    /* ------------------------------------------------------------ */
-    public String getRunAsRole()
-    {
-        return _runAsRole;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the run-as role for this servlet
-     * @param role run-as role for this servlet
-     */
-    public void setRunAsRole(String role)
-    {
-        _runAsRole=role;
     }
 
     /* ------------------------------------------------------------ */
@@ -563,16 +557,89 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
+    public class Registration extends HolderRegistration implements ServletRegistration.Dynamic
+    {         
+        public Set<String> addMapping(String... urlPatterns)
+        {
+            illegalStateIfContextStarted();
+            Set<String> clash=null;
+            for (String pattern : urlPatterns)
+            {
+                if (_servletHandler.getServletMapping(pattern)!=null)
+                {
+                    if (clash==null)
+                        clash=new HashSet<String>();
+                    clash.add(pattern);
+                }
+            }
+            
+            if (clash!=null)
+                return clash;
+            
+            ServletMapping mapping = new ServletMapping();
+            mapping.setServletName(ServletHolder.this.getName());
+            mapping.setPathSpecs(urlPatterns);
+            _servletHandler.addServletMapping(mapping);
+            
+            return Collections.emptySet();
+        }
+
+        public Collection<String> getMappings()
+        {
+            ServletMapping[] mappings =_servletHandler.getServletMappings();
+            List<String> patterns=new ArrayList<String>();
+            for (ServletMapping mapping : mappings)
+            {
+                if (!mapping.getServletName().equals(getName()))
+                    continue;
+                String[] specs=mapping.getPathSpecs();
+                if (specs!=null && specs.length>0)
+                    patterns.addAll(Arrays.asList(specs));
+            }
+            return patterns;
+        }
+
+        public String getRunAsRole() 
+        {
+            return _runAsRole;
+        }
+
+        public void setLoadOnStartup(int loadOnStartup)
+        {
+            illegalStateIfContextStarted();
+            ServletHolder.this.setInitOrder(loadOnStartup);
+        }
+        
+        public int getInitOrder()
+        {
+            return ServletHolder.this.getInitOrder();
+        }
+
+ 
+        public void setRunAsRole(String role) 
+        {
+            _runAsRole = role;
+        }
+    }
+    
+    public ServletRegistration.Dynamic getRegistration()
+    {
+        return new Registration();
+    }
+    
+    /* -------------------------------------------------------- */
+    /* -------------------------------------------------------- */
+    /* -------------------------------------------------------- */
     private class SingleThreadedWrapper implements Servlet
     {
-        Stack _stack=new Stack();
+        Stack<Servlet> _stack=new Stack<Servlet>();
         
         public void destroy()
         {
             synchronized(this)
             {
                 while(_stack.size()>0)
-                    try { ((Servlet)_stack.pop()).destroy(); } catch (Exception e) { Log.warn(e); }
+                    try { (_stack.pop()).destroy(); } catch (Exception e) { Log.warn(e); }
             }
         }
 
@@ -594,8 +661,7 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
                 {
                     try
                     {
-                        Servlet s = (Servlet) newInstance();
-                        s = getServletHandler().customizeServlet(s);
+                        Servlet s = newInstance();
                         s.init(config);
                         _stack.push(s);
                     }
@@ -622,15 +688,10 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
                 {
                     try
                     {
-                        s = (Servlet) newInstance();
-                        s = getServletHandler().customizeServlet(s);
+                        s = newInstance();
                         s.init(_config);
                     }
                     catch (ServletException e)
-                    {
-                        throw e;
-                    }
-                    catch (IOException e)
                     {
                         throw e;
                     }
@@ -653,7 +714,30 @@ public class ServletHolder extends Holder implements UserIdentity.Scope, Compara
                 }
             }
         }
-        
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return
+     * @throws ServletException
+     * @throws IllegalAccessException
+     * @throws InstantiationException
+     */
+    protected Servlet newInstance() throws ServletException, IllegalAccessException, InstantiationException
+    {
+        try
+        {
+            return ((ServletContextHandler.Context)getServletHandler().getServletContext()).createServlet(getHeldClass());
+        }
+        catch (ServletException se)
+        {
+            Throwable cause = se.getRootCause();
+            if (cause instanceof InstantiationException)
+                throw (InstantiationException)cause;
+            if (cause instanceof IllegalAccessException)
+                throw (IllegalAccessException)cause;
+            throw se;
+        }
     }
 }
 

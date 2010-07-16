@@ -17,30 +17,36 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.Descriptor;
+import org.eclipse.jetty.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.webapp.FragmentDescriptor;
+import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
-import org.eclipse.jetty.webapp.WebXmlProcessor;
-import org.eclipse.jetty.webapp.WebXmlProcessor.Descriptor;
+import org.eclipse.jetty.webapp.Descriptor.MetaDataComplete;
 
 
 public abstract class AbstractConfiguration implements Configuration
 {
     public static final String CONTAINER_JAR_RESOURCES = WebInfConfiguration.CONTAINER_JAR_RESOURCES;
     public static final String WEB_INF_JAR_RESOURCES = WebInfConfiguration.WEB_INF_JAR_RESOURCES;
-    public static final String WEBXML_VERSION = WebXmlProcessor.WEBXML_VERSION;
-    public static final String METADATA_COMPLETE = WebXmlProcessor.METADATA_COMPLETE;
-    public static final String WEBXML_CLASSNAMES = WebXmlProcessor.WEBXML_CLASSNAMES;
-
+    public static final String WEB_INF_ORDERED_JAR_RESOURCES = WebInfConfiguration.WEB_INF_ORDERED_JAR_RESOURCES;
+    public static final String METADATA_COMPLETE = MetaData.METADATA_COMPLETE;
+    public static final String WEBXML_CLASSNAMES = MetaData.WEBXML_CLASSNAMES;
+    public static final String DISCOVERED_ANNOTATIONS = "org.eclipse.jetty.discoveredAnnotations";
+    
     public void parseContainerPath (final WebAppContext context, final AnnotationParser parser)
     throws Exception
     {
         //if no pattern for the container path is defined, then by default scan NOTHING
         Log.debug("Scanning container jars");
-           
+        List<DiscoveredAnnotation> discoveredAnnotations = new ArrayList<DiscoveredAnnotation>();
+        context.setAttribute(DISCOVERED_ANNOTATIONS, discoveredAnnotations);
+        
+       
         //Convert from Resource to URI
         ArrayList<URI> containerUris = new ArrayList<URI>();
         List<Resource> jarResources = (List<Resource>)context.getAttribute(CONTAINER_JAR_RESOURCES);
@@ -68,60 +74,71 @@ public abstract class AbstractConfiguration implements Configuration
                         return false;
                     }
                 });
+        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA);        
+        if (metaData == null)
+            throw new IllegalStateException ("No metadata");
+        
+        metaData.addDiscoveredAnnotations((List<DiscoveredAnnotation>)context.getAttribute(DISCOVERED_ANNOTATIONS));    
+        context.removeAttribute(DISCOVERED_ANNOTATIONS);
     }
     
     
     public void parseWebInfLib (final WebAppContext context, final AnnotationParser parser)
     throws Exception
     {  
-        WebXmlProcessor webXmlProcessor = (WebXmlProcessor)context.getAttribute(WebXmlProcessor.WEB_PROCESSOR); 
-        if (webXmlProcessor == null)
-           throw new IllegalStateException ("No processor for web xml");
+        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
+        if (metaData == null)
+           throw new IllegalStateException ("No metadata");
         
-        List<Descriptor> frags = webXmlProcessor.getFragments();
+        List<FragmentDescriptor> frags = metaData.getFragments();
         
-        //Get the web-inf lib jars who have a web-fragment.xml that is not metadata-complete (or is not set)
+        //email from Rajiv Mordani jsrs 315 7 April 2010
+        //jars that do not have a web-fragment.xml are still considered fragments
+        //they have to participate in the ordering
         ArrayList<URI> webInfUris = new ArrayList<URI>();
-        List<Resource> jarResources = (List<Resource>)context.getAttribute(WEB_INF_JAR_RESOURCES);
         
-        for (Resource r : jarResources)
+        List<Resource> jars = (List<Resource>)context.getAttribute(WEB_INF_ORDERED_JAR_RESOURCES);
+        
+        //No ordering just use the jars in any order
+        if (jars == null || jars.isEmpty())
+            jars = (List<Resource>)context.getAttribute(WEB_INF_JAR_RESOURCES);
+        
+        List<DiscoveredAnnotation> discoveredAnnotations = new ArrayList<DiscoveredAnnotation>();
+        context.setAttribute(DISCOVERED_ANNOTATIONS, discoveredAnnotations);
+        
+        for (Resource r : jars)
         {          
+            discoveredAnnotations.clear(); //start fresh for each jar
             URI uri  = r.getURI();
-            Descriptor d = null;
-            for (Descriptor frag: frags)
+            FragmentDescriptor f = getFragmentFromJar(r, frags);
+           
+            //if a jar has no web-fragment.xml we scan it (because it is not exluded by the ordering)
+            //or if it has a fragment we scan it if it is not metadata complete
+            if (f == null || !isMetaDataComplete(f))
             {
-                Resource fragResource = frag.getResource(); //eg jar:file:///a/b/c/foo.jar!/META-INF/web-fragment.xml
-                if (Resource.isContainedIn(fragResource,r))
-                {
-                    d = frag;
-                    break;
-                }
+                parser.parse(uri, 
+                             new ClassNameResolver()
+                             {
+                                 public boolean isExcluded (String name)
+                                 {    
+                                     if (context.isSystemClass(name)) return true;
+                                     if (context.isServerClass(name)) return false;
+                                     return false;
+                                 }
+
+                                 public boolean shouldOverride (String name)
+                                 {
+                                    //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
+                                    if (context.isParentLoaderPriority())
+                                        return false;
+                                    return true;
+                                 }
+                             });  
+                
+                metaData.addDiscoveredAnnotations(r, discoveredAnnotations);
             }
-
-            //if there was no web-fragment.xml for the jar, or there was one 
-            //and its metadata is NOT complete, we want to exame it for annotations
-            if (d == null || (d != null && !d.isMetaDataComplete()))
-                webInfUris.add(uri);
         }
- 
-       parser.parse(webInfUris.toArray(new URI[webInfUris.size()]), 
-                new ClassNameResolver()
-                {
-                    public boolean isExcluded (String name)
-                    {    
-                        if (context.isSystemClass(name)) return true;
-                        if (context.isServerClass(name)) return false;
-                        return false;
-                    }
-
-                    public boolean shouldOverride (String name)
-                    {
-                        //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
-                        if (context.isParentLoaderPriority())
-                            return false;
-                        return true;
-                    }
-                });  
+        context.removeAttribute(DISCOVERED_ANNOTATIONS);
     }
      
     public void parseWebInfClasses (final WebAppContext context, final AnnotationParser parser)
@@ -133,6 +150,13 @@ public abstract class AbstractConfiguration implements Configuration
             Resource classesDir = context.getWebInf().addPath("classes/");
             if (classesDir.exists())
             {
+                MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
+                if (metaData == null)
+                   throw new IllegalStateException ("No metadata");
+                
+                List<DiscoveredAnnotation> discoveredAnnotations = new ArrayList<DiscoveredAnnotation>();
+                context.setAttribute(DISCOVERED_ANNOTATIONS, discoveredAnnotations);
+                
                 parser.parse(classesDir, 
                              new ClassNameResolver()
                 {
@@ -151,37 +175,36 @@ public abstract class AbstractConfiguration implements Configuration
                         return true;
                     }
                 });
+                
+                //TODO - where to set the annotations discovered from WEB-INF/classes?
+                metaData.addDiscoveredAnnotations (discoveredAnnotations);
+                context.removeAttribute(DISCOVERED_ANNOTATIONS);
             }
         }
     }
     
-    public void parse25Classes (final WebAppContext context, final AnnotationParser parser)
+ 
+    
+    public FragmentDescriptor getFragmentFromJar (Resource jar,  List<FragmentDescriptor> frags)
     throws Exception
     {
-        //only parse servlets, filters and listeners from web.xml
-        if (Log.isDebugEnabled()) Log.debug("Scanning only classes from web.xml");
-        ArrayList<String> classNames = (ArrayList<String>)context.getAttribute(WEBXML_CLASSNAMES);
-        for (String s : classNames)
+        //check if the jar has a web-fragment.xml
+        FragmentDescriptor d = null;
+        for (FragmentDescriptor frag: frags)
         {
-            Class clazz = Loader.loadClass(null, s);
-            parser.parse(clazz,  new ClassNameResolver()
+            Resource fragResource = frag.getResource(); //eg jar:file:///a/b/c/foo.jar!/META-INF/web-fragment.xml
+            if (Resource.isContainedIn(fragResource,jar))
             {
-                public boolean isExcluded (String name)
-                {
-                    if (context.isSystemClass(name)) return true;
-                    if (context.isServerClass(name)) return false;
-                    return false;
-                }
-
-                public boolean shouldOverride (String name)
-                {
-                    //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
-                    if (context.isParentLoaderPriority())
-                        return false;
-                    return true;
-                }
-            }, true);
+                d = frag;
+                break;
+            }
         }
-        
+        return d;
+    }
+    
+    
+    public boolean isMetaDataComplete (Descriptor d)
+    {
+        return (d!=null && d.getMetaDataComplete() == MetaDataComplete.True);
     }
 }

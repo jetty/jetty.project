@@ -1269,7 +1269,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             _localeEncodingMap=new HashMap<String,String>();
         _localeEncodingMap.put(locale, encoding);
     }
-
+    
+    public String getLocaleEncoding (String locale)
+    {
+        if (_localeEncodingMap==null)
+            return null;
+        String encoding = _localeEncodingMap.get(locale);
+        return encoding;
+    }
     /* ------------------------------------------------------------ */
     /**
      * Get the character encoding for a locale. The full locale name is first

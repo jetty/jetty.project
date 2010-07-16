@@ -13,31 +13,29 @@
 
 package org.eclipse.jetty.annotations;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AnnotationHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
-import org.eclipse.jetty.util.MultiMap;
 import org.junit.After;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  *
  */
 public class TestAnnotationInheritance
 {
-    private List<String> classNames = new ArrayList<String>();
-
-    private class SampleHandler implements AnnotationHandler
+    List<String> classNames = new ArrayList<String>();
+  
+    
+    class SampleHandler implements DiscoverableAnnotationHandler
     {
         public final List<String> annotatedClassNames = new ArrayList<String>();
         public final List<String> annotatedMethods = new ArrayList<String>();
@@ -187,41 +185,5 @@ public class TestAnnotationInheritance
             }
         });
         assertEquals (1, handler.annotatedClassNames.size());
-    }
-
-    @Test
-    public void testTypeInheritanceHandling() throws Exception
-    {
-        AnnotationParser parser = new AnnotationParser();
-        ClassInheritanceHandler handler = new ClassInheritanceHandler();
-        parser.registerClassHandler(handler);
-
-        class Foo implements InterfaceD
-        {
-        }
-
-        classNames.clear();
-        classNames.add(ClassA.class.getName());
-        classNames.add(ClassB.class.getName());
-        classNames.add(InterfaceD.class.getName());
-        classNames.add(Foo.class.getName());
-
-        parser.parse(classNames, null);
-
-        MultiMap map = handler.getMap();
-        assertNotNull(map);
-        assertFalse(map.isEmpty());
-        assertEquals(2, map.size());
-        Map stringArrayMap = map.toStringArrayMap();
-        assertTrue (stringArrayMap.keySet().contains("org.eclipse.jetty.annotations.ClassA"));
-        assertTrue (stringArrayMap.keySet().contains("org.eclipse.jetty.annotations.InterfaceD"));
-        String[] classes = (String[])stringArrayMap.get("org.eclipse.jetty.annotations.ClassA");
-        assertEquals(1, classes.length);
-        assertEquals ("org.eclipse.jetty.annotations.ClassB", classes[0]);
-
-        classes = (String[])stringArrayMap.get("org.eclipse.jetty.annotations.InterfaceD");
-        assertEquals(2, classes.length);
-        assertEquals ("org.eclipse.jetty.annotations.ClassB", classes[0]);
-        assertEquals(Foo.class.getName(), classes[1]);
     }
 }

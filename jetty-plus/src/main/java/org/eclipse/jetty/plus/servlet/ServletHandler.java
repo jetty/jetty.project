@@ -70,54 +70,5 @@ public class ServletHandler extends org.eclipse.jetty.servlet.ServletHandler
         this._injections = injections;
     }
     
-    /** 
-     * @see org.eclipse.jetty.servlet.ServletHandler#customizeFilter(javax.servlet.Filter)
-     */
-    public Filter customizeFilter(Filter filter) throws Exception
-    {
-        if (_injections != null)
-            _injections.inject(filter);
-        
-        if (_callbacks != null)
-            _callbacks.callPostConstructCallback(filter);
-        return super.customizeFilter(filter); 
-    }
-    
-    
 
-    /** 
-     * @see org.eclipse.jetty.servlet.ServletHandler#customizeServlet(javax.servlet.Servlet)
-     */
-    public Servlet customizeServlet(Servlet servlet) throws Exception
-    {      
-        if (_injections != null)
-            _injections.inject(servlet);
-        if (_callbacks != null)
-            _callbacks.callPostConstructCallback(servlet);
-        return super.customizeServlet(servlet);
-    }
-
-
-
-    /** 
-     * @see org.eclipse.jetty.servlet.ServletHandler#customizeFilterDestroy(Filter)
-     */
-    public Filter customizeFilterDestroy(Filter filter) throws Exception
-    {
-        if (_callbacks != null)
-            _callbacks.callPreDestroyCallback(filter);
-        return super.customizeFilterDestroy(filter);
-    }
-
-
-
-    /** 
-     * @see org.eclipse.jetty.servlet.ServletHandler#customizeServletDestroy(Servlet)
-     */
-    public Servlet customizeServletDestroy(Servlet servlet) throws Exception
-    {
-        if (_callbacks != null)
-            _callbacks.callPreDestroyCallback(servlet);
-        return super.customizeServletDestroy(servlet);
-    }
 }

@@ -25,7 +25,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * 
  * JettyWebConfiguration.
  * 
- * Looks for Xmlconfiguration files in WEB-INF.  Searches in order for the first of jetty6-web.xml, jetty-web.xml or web-jetty.xml
+ * Looks for Xmlconfiguration files in WEB-INF.  Searches in order for the first of jettyX-web.xml, jetty-web.xml or web-jetty.xml
  *
  * 
  *
