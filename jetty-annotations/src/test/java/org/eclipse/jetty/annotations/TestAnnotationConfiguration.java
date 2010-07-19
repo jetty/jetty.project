@@ -31,10 +31,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class TestAnnotationConfiguration extends TestCase
 {
-
-
-
-    
     public void testGetFragmentFromJar ()
     throws Exception
     {
@@ -76,8 +72,8 @@ public class TestAnnotationConfiguration extends TestCase
         WebAppContext wac = new WebAppContext();
 
         List<FragmentDescriptor> frags = new ArrayList<FragmentDescriptor>();
-        frags.add(new FragmentDescriptor(Resource.newResource("jar:"+url+"file.jar!/fooa.props"), null));
-        frags.add(new FragmentDescriptor(Resource.newResource("jar:"+url+"file2.jar!/foob.props"), null));
+        frags.add(new FragmentDescriptor(Resource.newResource("jar:"+url+"file.jar!/fooa.props")));
+        frags.add(new FragmentDescriptor(Resource.newResource("jar:"+url+"file2.jar!/foob.props")));
 
         assertNotNull(config.getFragmentFromJar(jar1, frags));
     }

@@ -83,6 +83,7 @@ public class TestConfiguration
 
 
             Thread.currentThread().setContextClassLoader(wac.getClassLoader());
+            MetaData metadata = new MetaData(wac);
             envConfig.preConfigure(wac);
             envConfig.configure(wac);
             envConfig.bindEnvEntries(wac);

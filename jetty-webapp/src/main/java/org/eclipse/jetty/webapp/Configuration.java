@@ -31,7 +31,6 @@ public interface Configuration
     
     /* ------------------------------------------------------------------------------- */
     /** Configure WebApp.
-     * 
      * @throws Exception
      */
     public void configure (WebAppContext context) throws Exception;

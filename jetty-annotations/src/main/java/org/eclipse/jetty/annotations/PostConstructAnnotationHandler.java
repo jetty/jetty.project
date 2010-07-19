@@ -59,7 +59,7 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
                    
                     //ServletSpec 3.0 p80 If web.xml declares even one post-construct then all post-constructs
                     //in fragments must be ignored. Otherwise, they are additive.
-                    MetaData metaData = ((MetaData)_context.getAttribute(MetaData.METADATA));
+                    MetaData metaData = _context.getMetaData();
                     MetaData.Origin origin = metaData.getOrigin("post-construct");
                     if (origin != null && 
                         (origin == MetaData.Origin.WebXml ||

@@ -1,6 +1,8 @@
+
 jetty-7.2-SNAPSHOT
  + 319334 Concurrent, sharable ResourceCache
  + 319370 WebAppClassLoader.Context
+ + 320073 Reconsile configuration mechanism
  + 320112 Websocket in aggregate jars
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors

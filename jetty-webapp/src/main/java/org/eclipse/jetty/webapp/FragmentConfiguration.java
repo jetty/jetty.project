@@ -34,12 +34,8 @@ public class FragmentConfiguration implements Configuration
         if (!context.isConfigurationDiscovered())
             return;
 
-        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
-        if (metaData == null)
-            throw new IllegalStateException("No metadata");
-
         //find all web-fragment.xmls
-        findWebFragments(context, metaData);
+        findWebFragments(context, context.getMetaData());
         
     }
     
@@ -48,12 +44,8 @@ public class FragmentConfiguration implements Configuration
         if (!context.isConfigurationDiscovered())
             return;
         
-        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
-        if (metaData == null)
-            throw new IllegalStateException("No metadata");
-        
         //order the fragments
-        metaData.orderFragments(); 
+        context.getMetaData().orderFragments(); 
     }
 
     public void deconfigure(WebAppContext context) throws Exception

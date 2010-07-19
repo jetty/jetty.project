@@ -36,8 +36,6 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class MetaData
 {        
-    public static final String METADATA = "org.eclipse.jetty.metaData";
-    public static final String METADATA_COMPLETE = "org.eclipse.jetty.metadataComplete";
     public static final String WEBXML_MAJOR_VERSION = "org.eclipse.jetty.webXmlMajorVersion";
     public static final String WEBXML_MINOR_VERSION = "org.eclipse.jetty.webXmlMinorVersion";
     public static final String WEBXML_CLASSNAMES = "org.eclipse.jetty.webXmlClassNames";
@@ -50,6 +48,7 @@ public class MetaData
     protected Descriptor _webDefaultsRoot;
     protected Descriptor _webXmlRoot;
     protected Descriptor _webOverrideRoot;
+    protected boolean _metaDataComplete;
     protected List<DiscoveredAnnotation> _annotations = new ArrayList<DiscoveredAnnotation>();
     protected List<DescriptorProcessor> _descriptorProcessors = new ArrayList<DescriptorProcessor>();
     protected List<FragmentDescriptor> _webFragmentRoots = new ArrayList<FragmentDescriptor>();
@@ -137,6 +136,7 @@ public class MetaData
          * Order the list of jars in WEB-INF/lib according to the ordering declarations in the descriptors
          * @see org.eclipse.jetty.webapp.MetaData.Ordering#order(java.util.List)
          */
+        @Override
         public List<Resource> order(List<Resource> jars)
         {           
             List<Resource> orderedList = new ArrayList<Resource>();
@@ -144,7 +144,7 @@ public class MetaData
           
             //1. put everything into the list of named others, and take the named ones out of there,
             //assuming we will want to use the <other> clause
-            Map<String,FragmentDescriptor> others = new HashMap(getNamedFragments());
+            Map<String,FragmentDescriptor> others = new HashMap<String,FragmentDescriptor>(getNamedFragments());
             
             //2. for each name, take out of the list of others, add to tail of list
             int index = -1;
@@ -174,6 +174,7 @@ public class MetaData
             return orderedList;
         }
         
+        @Override
         public boolean isAbsolute()
         {
             return true;
@@ -193,6 +194,7 @@ public class MetaData
             _order.add(OTHER);
         }
         
+        @Override
         public boolean hasOther ()
         {
             return _hasOther;
@@ -216,6 +218,7 @@ public class MetaData
          * in the various web-fragment.xml files.
          * @see org.eclipse.jetty.webapp.MetaData.Ordering#order(java.util.List)
          */
+        @Override
         public List<Resource> order(List<Resource> jars)
         {         
             //for each jar, put it into the ordering according to the fragment ordering
@@ -285,11 +288,13 @@ public class MetaData
             return orderedList;
         }
         
+        @Override
         public boolean isAbsolute ()
         {
             return false;
         }
         
+        @Override
         public boolean hasOther ()
         {
             return !_beforeOthers.isEmpty() || !_afterOthers.isEmpty();
@@ -314,7 +319,7 @@ public class MetaData
        {
            //Take a copy of the list so we can iterate over it and at the same time do random insertions
            boolean changes = false;
-           List<Resource> iterable = new ArrayList(list);
+           List<Resource> iterable = new ArrayList<Resource>(list);
            Iterator<Resource> itor = iterable.iterator();
            
            while (itor.hasNext())
@@ -553,10 +558,8 @@ public class MetaData
           return resources.indexOf(r);
        }
     }
-
-
     
-    public MetaData (WebAppContext context) throws ClassNotFoundException
+    public MetaData (WebAppContext context)
     {
         _context = context;
 
@@ -572,7 +575,7 @@ public class MetaData
     public void setDefaults (Resource webDefaults)
     throws Exception
     {
-        _webDefaultsRoot =  new DefaultsDescriptor(webDefaults, this); 
+        _webDefaultsRoot =  new DefaultsDescriptor(webDefaults); 
         _webDefaultsRoot.parse();
         if (_webDefaultsRoot.isOrdered())
         {
@@ -593,12 +596,9 @@ public class MetaData
     public void setWebXml (Resource webXml)
     throws Exception
     {
-        _webXmlRoot = new Descriptor(webXml, this);
+        _webXmlRoot = new Descriptor(webXml);
         _webXmlRoot.parse();
-        if (_webXmlRoot.getMetaDataComplete() == Descriptor.MetaDataComplete.True)          
-            _context.setAttribute(METADATA_COMPLETE, Boolean.TRUE);
-        else
-            _context.setAttribute(METADATA_COMPLETE, Boolean.FALSE);
+        _metaDataComplete=_webXmlRoot.getMetaDataComplete() == Descriptor.MetaDataComplete.True;
 
         _context.setAttribute(WEBXML_CLASSNAMES, _webXmlRoot.getClassNames());
         
@@ -621,13 +621,21 @@ public class MetaData
     public void setOverride (Resource override)
     throws Exception
     {
-        _webOverrideRoot = new OverrideDescriptor(override, this);
+        _webOverrideRoot = new OverrideDescriptor(override);
         _webOverrideRoot.setValidating(false);
         _webOverrideRoot.parse();
-        if (_webOverrideRoot.getMetaDataComplete() == Descriptor.MetaDataComplete.True)
-            _context.setAttribute(METADATA_COMPLETE, Boolean.TRUE);
-        else if (_webOverrideRoot.getMetaDataComplete() == Descriptor.MetaDataComplete.False)
-            _context.setAttribute(METADATA_COMPLETE, Boolean.FALSE);  
+        
+        switch(_webOverrideRoot.getMetaDataComplete())
+        {
+            case True:
+                _metaDataComplete=true;
+                break;
+            case False:
+                _metaDataComplete=true;
+                break;
+            case NotSet:
+                break;
+        }
         
         if (_webOverrideRoot.isOrdered())
         {
@@ -656,12 +664,11 @@ public class MetaData
     public void addFragment (Resource jarResource, Resource xmlResource)
     throws Exception
     { 
-        Boolean metaComplete = (Boolean)_context.getAttribute(METADATA_COMPLETE);
-        if (metaComplete != null && metaComplete.booleanValue())
+        if (_metaDataComplete)
             return; //do not process anything else if web.xml/web-override.xml set metadata-complete
         
         //Metadata-complete is not set, or there is no web.xml
-        FragmentDescriptor descriptor = new FragmentDescriptor(xmlResource, this);
+        FragmentDescriptor descriptor = new FragmentDescriptor(xmlResource);
         _webFragmentResourceMap.put(jarResource, descriptor);
         _webFragmentRoots.add(descriptor);
         
@@ -732,7 +739,7 @@ public class MetaData
      * Resolve all servlet/filter/listener metadata from all sources: descriptors and annotations.
      * 
      */
-    public void resolve ()
+    public void resolve (WebAppContext context)
     throws Exception
     {
         //TODO - apply all descriptors and annotations in order:
@@ -747,9 +754,9 @@ public class MetaData
       
         for (DescriptorProcessor p:_descriptorProcessors)
         {
-            p.process(getWebDefault());
-            p.process(getWebXml());
-            p.process(getOverrideWeb());
+            p.process(context,getWebDefault());
+            p.process(context,getWebXml());
+            p.process(context,getOverrideWeb());
         }
         
         for (DiscoveredAnnotation a:_annotations)
@@ -764,7 +771,7 @@ public class MetaData
             {
                 for (DescriptorProcessor p:_descriptorProcessors)
                 {
-                    p.process(fd);
+                    p.process(context,fd);
                 }
             }
             
@@ -817,7 +824,8 @@ public class MetaData
     
     public List<Resource> getOrderedResources ()
     {
-        return _orderedResources;
+        return _orderedResources == null? new ArrayList<Resource>(): _orderedResources;
+        //return _orderedResources;
     }
     
     public List<FragmentDescriptor> getOrderedFragments ()
@@ -907,5 +915,10 @@ public class MetaData
        
         OriginInfo x = new OriginInfo (name, Origin.Annotation);
         _origins.put(name, x);
+    }
+
+    public boolean isMetaDataComplete()
+    {
+        return _metaDataComplete;
     }
 }

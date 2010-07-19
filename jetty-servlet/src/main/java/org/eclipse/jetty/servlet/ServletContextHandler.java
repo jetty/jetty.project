@@ -14,14 +14,12 @@
 package org.eclipse.jetty.servlet;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.Filter;
 import javax.servlet.RequestDispatcher;
@@ -73,8 +71,6 @@ public class ServletContextHandler extends ContextHandler
     protected int _options;
     protected Decorator _decorator;
     protected Object _restrictedContextListeners;
-    
-    protected final Set<Object> _created = Collections.newSetFromMap(new ConcurrentHashMap<Object,Boolean>());
     
     /* ------------------------------------------------------------ */
     public ServletContextHandler()
@@ -142,7 +138,6 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected void doStart() throws Exception
     {
-        _created.clear();
         super.doStart();
     }
 
@@ -154,20 +149,6 @@ public class ServletContextHandler extends ContextHandler
     protected void doStop() throws Exception
     {
         super.doStop();
-        _created.clear();
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Check if instance was created by a call to {@link ServletContext#createFilter(Class)},
-     * {@link ServletContext#createServlet(Class)} or {@link ServletContext#createListener(Class)}
-     * @param instance Instance of {@link Servlet}, {@link Filter} or {@link EventListener}
-     * @return True if the instance was created by a call to {@link ServletContext#createFilter(Class)},
-     * {@link ServletContext#createServlet(Class)} or {@link ServletContext#createListener(Class)}
-     */
-    public boolean isCreatedInstance(Object instance)
-    {
-        return _created.contains(instance);
     }
 
     /* ------------------------------------------------------------ */
@@ -595,7 +576,6 @@ public class ServletContextHandler extends ContextHandler
                 T f = c.newInstance();
                 if (_decorator!=null)
                     f=_decorator.decorateFilterInstance(f);
-                _created.add(f);
                 return f;
             }
             catch (InstantiationException e)
@@ -616,7 +596,6 @@ public class ServletContextHandler extends ContextHandler
                 T s = c.newInstance();
                 if (_decorator!=null)
                     s=_decorator.decorateServletInstance(s);
-                _created.add(s);
                 return s;
             }
             catch (InstantiationException e)
@@ -734,7 +713,6 @@ public class ServletContextHandler extends ContextHandler
                 
                 if (_decorator!=null)
                     l=_decorator.decorateListenerInstance(l);
-                _created.add(l);
                 return l;
             }
             catch(ServletException e)

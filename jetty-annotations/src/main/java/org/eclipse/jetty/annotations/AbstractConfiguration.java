@@ -34,7 +34,6 @@ public abstract class AbstractConfiguration implements Configuration
     public static final String CONTAINER_JAR_RESOURCES = WebInfConfiguration.CONTAINER_JAR_RESOURCES;
     public static final String WEB_INF_JAR_RESOURCES = WebInfConfiguration.WEB_INF_JAR_RESOURCES;
     public static final String WEB_INF_ORDERED_JAR_RESOURCES = WebInfConfiguration.WEB_INF_ORDERED_JAR_RESOURCES;
-    public static final String METADATA_COMPLETE = MetaData.METADATA_COMPLETE;
     public static final String WEBXML_CLASSNAMES = MetaData.WEBXML_CLASSNAMES;
     public static final String DISCOVERED_ANNOTATIONS = "org.eclipse.jetty.discoveredAnnotations";
     
@@ -74,11 +73,8 @@ public abstract class AbstractConfiguration implements Configuration
                         return false;
                     }
                 });
-        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA);        
-        if (metaData == null)
-            throw new IllegalStateException ("No metadata");
         
-        metaData.addDiscoveredAnnotations((List<DiscoveredAnnotation>)context.getAttribute(DISCOVERED_ANNOTATIONS));    
+        context.getMetaData().addDiscoveredAnnotations((List<DiscoveredAnnotation>)context.getAttribute(DISCOVERED_ANNOTATIONS));    
         context.removeAttribute(DISCOVERED_ANNOTATIONS);
     }
     
@@ -86,11 +82,7 @@ public abstract class AbstractConfiguration implements Configuration
     public void parseWebInfLib (final WebAppContext context, final AnnotationParser parser)
     throws Exception
     {  
-        MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
-        if (metaData == null)
-           throw new IllegalStateException ("No metadata");
-        
-        List<FragmentDescriptor> frags = metaData.getFragments();
+        List<FragmentDescriptor> frags = context.getMetaData().getFragments();
         
         //email from Rajiv Mordani jsrs 315 7 April 2010
         //jars that do not have a web-fragment.xml are still considered fragments
@@ -135,7 +127,7 @@ public abstract class AbstractConfiguration implements Configuration
                                  }
                              });  
                 
-                metaData.addDiscoveredAnnotations(r, discoveredAnnotations);
+                context.getMetaData().addDiscoveredAnnotations(r, discoveredAnnotations);
             }
         }
         context.removeAttribute(DISCOVERED_ANNOTATIONS);
@@ -150,9 +142,6 @@ public abstract class AbstractConfiguration implements Configuration
             Resource classesDir = context.getWebInf().addPath("classes/");
             if (classesDir.exists())
             {
-                MetaData metaData = (MetaData)context.getAttribute(MetaData.METADATA); 
-                if (metaData == null)
-                   throw new IllegalStateException ("No metadata");
                 
                 List<DiscoveredAnnotation> discoveredAnnotations = new ArrayList<DiscoveredAnnotation>();
                 context.setAttribute(DISCOVERED_ANNOTATIONS, discoveredAnnotations);
@@ -177,7 +166,7 @@ public abstract class AbstractConfiguration implements Configuration
                 });
                 
                 //TODO - where to set the annotations discovered from WEB-INF/classes?
-                metaData.addDiscoveredAnnotations (discoveredAnnotations);
+                context.getMetaData().addDiscoveredAnnotations (discoveredAnnotations);
                 context.removeAttribute(DISCOVERED_ANNOTATIONS);
             }
         }

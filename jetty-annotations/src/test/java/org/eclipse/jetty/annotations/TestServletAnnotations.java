@@ -36,7 +36,6 @@ public class TestServletAnnotations
     throws Exception
     { 
         WebAppContext wac = new WebAppContext();
-        wac.setAttribute(MetaData.METADATA, new MetaData(wac));
         ConstraintSecurityHandler sh = new ConstraintSecurityHandler();
         wac.setSecurityHandler(sh);
         sh.setRoles(new HashSet<String>(Arrays.asList(new String[]{"humpty", "dumpty"})));

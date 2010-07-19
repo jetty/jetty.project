@@ -26,7 +26,6 @@ import junit.framework.TestCase;
 
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.MetaData.AbsoluteOrdering;
-import org.eclipse.jetty.webapp.MetaData.RelativeOrdering;
 
 /**
  * OrderingTest
@@ -47,51 +46,52 @@ public class OrderingTest extends TestCase
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#addPath(java.lang.String)
          */
+        @Override
         public Resource addPath(String path) throws IOException, MalformedURLException
         {
-            // TODO Auto-generated method stub
             return null;
         }
 
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#delete()
          */
+        @Override
         public boolean delete() throws SecurityException
         {
-            // TODO Auto-generated method stub
             return false;
         }
 
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#exists()
          */
+        @Override
         public boolean exists()
         {
-            // TODO Auto-generated method stub
             return false;
         }
 
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#getFile()
          */
+        @Override
         public File getFile() throws IOException
         {
-            // TODO Auto-generated method stub
             return null;
         }
 
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#getInputStream()
          */
+        @Override
         public InputStream getInputStream() throws IOException
         {
-            // TODO Auto-generated method stub
             return null;
         }
 
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#getName()
          */
+        @Override
         public String getName()
         {
             return _name;
@@ -100,81 +100,80 @@ public class OrderingTest extends TestCase
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#getOutputStream()
          */
+        @Override
         public OutputStream getOutputStream() throws IOException, SecurityException
         {
-            // TODO Auto-generated method stub
             return null;
         }
 
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#getURL()
          */
+        @Override
         public URL getURL()
         {
-            // TODO Auto-generated method stub
             return null;
         }
 
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#isContainedIn(org.eclipse.jetty.util.resource.Resource)
          */
+        @Override
         public boolean isContainedIn(Resource r) throws MalformedURLException
         {
-            // TODO Auto-generated method stub
             return false;
         }
 
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#isDirectory()
          */
+        @Override
         public boolean isDirectory()
         {
-            // TODO Auto-generated method stub
             return false;
         }
 
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#lastModified()
          */
+        @Override
         public long lastModified()
         {
-            // TODO Auto-generated method stub
             return 0;
         }
 
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#length()
          */
+        @Override
         public long length()
         {
-            // TODO Auto-generated method stub
             return 0;
         }
 
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#list()
          */
+        @Override
         public String[] list()
         {
-            // TODO Auto-generated method stub
             return null;
         }
 
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#release()
          */
+        @Override
         public void release()
         {
-            // TODO Auto-generated method stub
-            
         }
 
         /** 
          * @see org.eclipse.jetty.util.resource.Resource#renameTo(org.eclipse.jetty.util.resource.Resource)
          */
+        @Override
         public boolean renameTo(Resource dest) throws SecurityException
         {
-            // TODO Auto-generated method stub
             return false;
         }
         
@@ -194,7 +193,7 @@ public class OrderingTest extends TestCase
         TestResource jar1 = new TestResource("A");
         resources.add(jar1);
         TestResource r1 = new TestResource("A/web-fragment.xml");
-        FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
+        FragmentDescriptor f1 = new FragmentDescriptor(r1);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
         metaData._webFragmentResourceMap.put(jar1, f1);
@@ -206,7 +205,7 @@ public class OrderingTest extends TestCase
         TestResource jar2 = new TestResource("B");
         resources.add(jar2);
         TestResource r2 = new TestResource("B/web-fragment.xml");
-        FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
+        FragmentDescriptor f2 = new FragmentDescriptor(r2);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
         metaData._webFragmentResourceMap.put(jar2, f2);
@@ -217,7 +216,7 @@ public class OrderingTest extends TestCase
         TestResource jar3 = new TestResource("C");
         resources.add(jar3);
         TestResource r3 = new TestResource("C/web-fragment.xml");
-        FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
+        FragmentDescriptor f3 = new FragmentDescriptor(r3);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
         metaData._webFragmentResourceMap.put(jar3, f3);
@@ -228,7 +227,7 @@ public class OrderingTest extends TestCase
         TestResource jar4 = new TestResource("D");
         resources.add(jar4);
         TestResource r4 = new TestResource("D/web-fragment.xml");
-        FragmentDescriptor f4 = new FragmentDescriptor(r4, metaData);
+        FragmentDescriptor f4 = new FragmentDescriptor(r4);
         f4._name="D"; 
         metaData._webFragmentNameMap.put(f4._name, f4);
         metaData._webFragmentResourceMap.put(jar4, f4);
@@ -239,7 +238,7 @@ public class OrderingTest extends TestCase
         TestResource jar5 = new TestResource("E");     
         resources.add(jar5);
         TestResource r5 = new TestResource("E/web-fragment.xml");
-        FragmentDescriptor f5 = new FragmentDescriptor(r5, metaData);
+        FragmentDescriptor f5 = new FragmentDescriptor(r5);
         f5._name="E"; 
         metaData._webFragmentNameMap.put(f5._name, f5);
         metaData._webFragmentResourceMap.put(jar5, f5);
@@ -250,7 +249,7 @@ public class OrderingTest extends TestCase
         TestResource jar6 = new TestResource("F");
         resources.add(jar6);
         TestResource r6 = new TestResource("F/web-fragment.xml");
-        FragmentDescriptor f6 = new FragmentDescriptor(r6, metaData);
+        FragmentDescriptor f6 = new FragmentDescriptor(r6);
         f6._name="F";
         metaData._webFragmentNameMap.put(f6._name, f6);
         metaData._webFragmentResourceMap.put(jar6,f6);
@@ -288,7 +287,7 @@ public class OrderingTest extends TestCase
         TestResource jar1 = new TestResource("plain");
         resources.add(jar1);
         TestResource r1 = new TestResource("plain/web-fragment.xml");
-        FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
+        FragmentDescriptor f1 = new FragmentDescriptor(r1);
         f1._name = FragmentDescriptor.NAMELESS+"1";
         metaData._webFragmentNameMap.put(f1._name, f1); 
         metaData._webFragmentResourceMap.put(jar1,f1);
@@ -300,7 +299,7 @@ public class OrderingTest extends TestCase
         TestResource jar2 = new TestResource("B");
         resources.add(jar2);
         TestResource r2 = new TestResource("B/web-fragment.xml");
-        FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
+        FragmentDescriptor f2 = new FragmentDescriptor(r2);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
         metaData._webFragmentResourceMap.put(jar2,f2);
@@ -311,7 +310,7 @@ public class OrderingTest extends TestCase
         TestResource jar3 = new TestResource("C");
         resources.add(jar3);
         TestResource r3 = new TestResource("C/web-fragment.xml");
-        FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
+        FragmentDescriptor f3 = new FragmentDescriptor(r3);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
         metaData._webFragmentResourceMap.put(jar3,f3);
@@ -322,7 +321,7 @@ public class OrderingTest extends TestCase
         TestResource jar4 = new TestResource("D");
         resources.add(jar4);
         TestResource r4 = new TestResource("D/web-fragment.xml");
-        FragmentDescriptor f4 = new FragmentDescriptor(r4, metaData);
+        FragmentDescriptor f4 = new FragmentDescriptor(r4);
         f4._name="D"; 
         metaData._webFragmentNameMap.put(f4._name, f4);
         metaData._webFragmentResourceMap.put(jar4,f4);
@@ -333,7 +332,7 @@ public class OrderingTest extends TestCase
         TestResource jar5 = new TestResource("E");
         resources.add(jar5);
         TestResource r5 = new TestResource("E/web-fragment.xml");
-        FragmentDescriptor f5 = new FragmentDescriptor(r5, metaData);
+        FragmentDescriptor f5 = new FragmentDescriptor(r5);
         f5._name="E";
         metaData._webFragmentNameMap.put(f5._name, f5);
         metaData._webFragmentResourceMap.put(jar5,f5);
@@ -344,7 +343,7 @@ public class OrderingTest extends TestCase
         TestResource jar6 = new TestResource("F");
         resources.add(jar6);
         TestResource r6 = new TestResource("F/web-fragment.xml");
-        FragmentDescriptor f6 = new FragmentDescriptor(r6, metaData);
+        FragmentDescriptor f6 = new FragmentDescriptor(r6);
         f6._name="F";
         metaData._webFragmentNameMap.put(f6._name, f6);
         metaData._webFragmentResourceMap.put(jar6,f6);
@@ -389,7 +388,7 @@ public class OrderingTest extends TestCase
         TestResource jar1 = new TestResource("A");
         resources.add(jar1);
         TestResource r1 = new TestResource("A/web-fragment.xml");
-        FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
+        FragmentDescriptor f1 = new FragmentDescriptor(r1);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
         metaData._webFragmentResourceMap.put(jar1, f1);
@@ -401,7 +400,7 @@ public class OrderingTest extends TestCase
         TestResource jar2 = new TestResource("B");
         resources.add(jar2);
         TestResource r2 = new TestResource("B/web-fragment.xml");
-        FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
+        FragmentDescriptor f2 = new FragmentDescriptor(r2);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
         metaData._webFragmentResourceMap.put(jar2, f2);
@@ -412,7 +411,7 @@ public class OrderingTest extends TestCase
         TestResource jar3 = new TestResource("C");
         resources.add(jar3);
         TestResource r3 = new TestResource("C/web-fragment.xml");
-        FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
+        FragmentDescriptor f3 = new FragmentDescriptor(r3);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
         metaData._webFragmentResourceMap.put(jar3,f3);
@@ -423,7 +422,7 @@ public class OrderingTest extends TestCase
         TestResource jar4 = new TestResource("D");
         resources.add(jar4);
         TestResource r4 = new TestResource("D/web-fragment.xml");
-        FragmentDescriptor f4 = new FragmentDescriptor(r4, metaData);
+        FragmentDescriptor f4 = new FragmentDescriptor(r4);
         f4._name="D"; 
         metaData._webFragmentNameMap.put(f4._name, f4);
         metaData._webFragmentResourceMap.put(jar4, f4);
@@ -462,7 +461,7 @@ public class OrderingTest extends TestCase
         TestResource jar1 = new TestResource("A");
         resources.add(jar1);
         TestResource r1 = new TestResource("A/web-fragment.xml");
-        FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
+        FragmentDescriptor f1 = new FragmentDescriptor(r1);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
         metaData._webFragmentResourceMap.put(jar1, f1);
@@ -474,7 +473,7 @@ public class OrderingTest extends TestCase
         TestResource jar2 = new TestResource("B");
         resources.add(jar2);
         TestResource r2 = new TestResource("B/web-fragment.xml");
-        FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
+        FragmentDescriptor f2 = new FragmentDescriptor(r2);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
         metaData._webFragmentResourceMap.put(jar2,f2);
@@ -486,7 +485,7 @@ public class OrderingTest extends TestCase
         TestResource jar3 = new TestResource("C");
         resources.add(jar3);
         TestResource r3 = new TestResource("C/web-fragment.xml");
-        FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
+        FragmentDescriptor f3 = new FragmentDescriptor(r3);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
         metaData._webFragmentResourceMap.put(jar3,f3);
@@ -520,7 +519,7 @@ public class OrderingTest extends TestCase
         TestResource jar1 = new TestResource("A");
         resources.add(jar1);
         TestResource r1 = new TestResource("A/web-fragment.xml");
-        FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
+        FragmentDescriptor f1 = new FragmentDescriptor(r1);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
         metaData._webFragmentResourceMap.put(jar1, f1);
@@ -532,7 +531,7 @@ public class OrderingTest extends TestCase
         TestResource jar2 = new TestResource("B");
         resources.add(jar2);
         TestResource r2 = new TestResource("B/web-fragment.xml");
-        FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
+        FragmentDescriptor f2 = new FragmentDescriptor(r2);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
         metaData._webFragmentResourceMap.put(jar2, f2);
@@ -566,7 +565,7 @@ public class OrderingTest extends TestCase
         TestResource jar1 = new TestResource("A");
         resources.add(jar1);
         TestResource r1 = new TestResource("A/web-fragment.xml");
-        FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
+        FragmentDescriptor f1 = new FragmentDescriptor(r1);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
         metaData._webFragmentResourceMap.put(jar1,f1);
@@ -578,7 +577,7 @@ public class OrderingTest extends TestCase
         TestResource jar2 = new TestResource("B");
         resources.add(jar2);
         TestResource r2 = new TestResource("B/web-fragment.xml");
-        FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
+        FragmentDescriptor f2 = new FragmentDescriptor(r2);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
         metaData._webFragmentResourceMap.put(jar2,f2);
@@ -590,7 +589,7 @@ public class OrderingTest extends TestCase
         TestResource jar3 = new TestResource("C");
         resources.add(jar3);
         TestResource r3 = new TestResource("C/web-fragment.xml");
-        FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
+        FragmentDescriptor f3 = new FragmentDescriptor(r3);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
         metaData._webFragmentResourceMap.put(jar3,f3);
@@ -631,7 +630,7 @@ public class OrderingTest extends TestCase
         TestResource jar1 = new TestResource("A");
         resources.add(jar1);
         TestResource r1 = new TestResource("A/web-fragment.xml");
-        FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
+        FragmentDescriptor f1 = new FragmentDescriptor(r1);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
         metaData._webFragmentResourceMap.put(jar1,f1);
@@ -639,7 +638,7 @@ public class OrderingTest extends TestCase
         TestResource jar2 = new TestResource("B");
         resources.add(jar2);
         TestResource r2 = new TestResource("B/web-fragment.xml");
-        FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
+        FragmentDescriptor f2 = new FragmentDescriptor(r2);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
         metaData._webFragmentResourceMap.put(jar2, f2);
@@ -647,7 +646,7 @@ public class OrderingTest extends TestCase
         TestResource jar3 = new TestResource("C");
         resources.add(jar3);
         TestResource r3 = new TestResource("C/web-fragment.xml");
-        FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
+        FragmentDescriptor f3 = new FragmentDescriptor(r3);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
         metaData._webFragmentResourceMap.put(jar3, f3);
@@ -655,7 +654,7 @@ public class OrderingTest extends TestCase
         TestResource jar4 = new TestResource("D");
         resources.add(jar4);
         TestResource r4 = new TestResource("D/web-fragment.xml");
-        FragmentDescriptor f4 = new FragmentDescriptor((Resource)null, metaData);
+        FragmentDescriptor f4 = new FragmentDescriptor((Resource)null);
         f4._name="D"; 
         metaData._webFragmentNameMap.put(f4._name, f4);
         metaData._webFragmentResourceMap.put(jar4, f4);
@@ -663,7 +662,7 @@ public class OrderingTest extends TestCase
         TestResource jar5 = new TestResource("E");
         resources.add(jar5);
         TestResource r5 = new TestResource("E/web-fragment.xml");
-        FragmentDescriptor f5 = new FragmentDescriptor((Resource)null, metaData);
+        FragmentDescriptor f5 = new FragmentDescriptor((Resource)null);
         f5._name="E";
         metaData._webFragmentNameMap.put(f5._name, f5);
         metaData._webFragmentResourceMap.put(jar5, f5);
@@ -671,7 +670,7 @@ public class OrderingTest extends TestCase
         TestResource jar6 = new TestResource("plain");
         resources.add(jar6);
         TestResource r6 = new TestResource ("plain/web-fragment.xml");
-        FragmentDescriptor f6 = new FragmentDescriptor((Resource)null, metaData);
+        FragmentDescriptor f6 = new FragmentDescriptor((Resource)null);
         f6._name=FragmentDescriptor.NAMELESS+"1";
         metaData._webFragmentNameMap.put(f6._name, f6);
         metaData._webFragmentResourceMap.put(jar6, f6);
@@ -704,7 +703,7 @@ public class OrderingTest extends TestCase
         TestResource jar1 = new TestResource("A");
         resources.add(jar1);
         TestResource r1 = new TestResource("A/web-fragment.xml");
-        FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
+        FragmentDescriptor f1 = new FragmentDescriptor(r1);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
         metaData._webFragmentResourceMap.put(jar1,f1);
@@ -712,7 +711,7 @@ public class OrderingTest extends TestCase
         TestResource jar2 = new TestResource("B");  
         resources.add(jar2);
         TestResource r2 = new TestResource("B/web-fragment.xml");
-        FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
+        FragmentDescriptor f2 = new FragmentDescriptor(r2);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
         metaData._webFragmentResourceMap.put(jar2,f2);
@@ -720,7 +719,7 @@ public class OrderingTest extends TestCase
         TestResource jar3 = new TestResource("C");
         resources.add(jar3);
         TestResource r3 = new TestResource("C/web-fragment.xml");
-        FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
+        FragmentDescriptor f3 = new FragmentDescriptor(r3);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
         metaData._webFragmentResourceMap.put(jar3,f3);
@@ -728,7 +727,7 @@ public class OrderingTest extends TestCase
         TestResource jar4 = new TestResource("D");
         resources.add(jar4);
         TestResource r4 = new TestResource("D/web-fragment.xml");
-        FragmentDescriptor f4 = new FragmentDescriptor(r4, metaData);
+        FragmentDescriptor f4 = new FragmentDescriptor(r4);
         f4._name="D"; 
         metaData._webFragmentNameMap.put(f4._name, f4);
         metaData._webFragmentResourceMap.put(jar4,f4);
@@ -736,7 +735,7 @@ public class OrderingTest extends TestCase
         TestResource jar5 = new TestResource("E");
         resources.add(jar5);
         TestResource r5 = new TestResource("E/web-fragment.xml");
-        FragmentDescriptor f5 = new FragmentDescriptor(r5, metaData);
+        FragmentDescriptor f5 = new FragmentDescriptor(r5);
         f5._name="E";
         metaData._webFragmentNameMap.put(f5._name, f5);
         metaData._webFragmentResourceMap.put(jar5,f5);
@@ -744,7 +743,7 @@ public class OrderingTest extends TestCase
         TestResource jar6 = new TestResource("plain");
         resources.add(jar6);
         TestResource r6 = new TestResource("plain/web-fragment.xml");
-        FragmentDescriptor f6 = new FragmentDescriptor(r6, metaData);
+        FragmentDescriptor f6 = new FragmentDescriptor(r6);
         f6._name=FragmentDescriptor.NAMELESS+"1";
         metaData._webFragmentNameMap.put(f6._name, f6);
         metaData._webFragmentResourceMap.put(jar6,f6);
@@ -791,7 +790,7 @@ public class OrderingTest extends TestCase
         TestResource jar1 = new TestResource("A");
         resources.add(jar1);
         TestResource r1 = new TestResource("A/web-fragment.xml");
-        FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
+        FragmentDescriptor f1 = new FragmentDescriptor(r1);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
         metaData._webFragmentResourceMap.put(jar1, f1);
@@ -803,7 +802,7 @@ public class OrderingTest extends TestCase
         TestResource jar2 = new TestResource("B");
         resources.add(jar2);
         TestResource r2 = new TestResource("B/web-fragment.xml");
-        FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
+        FragmentDescriptor f2 = new FragmentDescriptor(r2);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
         metaData._webFragmentResourceMap.put(jar2,f2);
@@ -815,7 +814,7 @@ public class OrderingTest extends TestCase
         TestResource jar3 = new TestResource("C");
         resources.add(jar3);
         TestResource r3 = new TestResource("C/web-fragment.xml");
-        FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
+        FragmentDescriptor f3 = new FragmentDescriptor(r3);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
         metaData._webFragmentResourceMap.put(jar3,f3);
@@ -861,7 +860,7 @@ public class OrderingTest extends TestCase
         TestResource jar1 = new TestResource("A");
         resources.add(jar1);
         TestResource r1 = new TestResource("A/web-fragment.xml");
-        FragmentDescriptor f1 = new FragmentDescriptor(r1, metaData);
+        FragmentDescriptor f1 = new FragmentDescriptor(r1);
         f1._name = "A";
         metaData._webFragmentNameMap.put(f1._name, f1);
         metaData._webFragmentResourceMap.put(jar1,f1);
@@ -869,7 +868,7 @@ public class OrderingTest extends TestCase
         TestResource jar2 = new TestResource("B");
         resources.add(jar2);
         TestResource r2 = new TestResource("B/web-fragment.xml");
-        FragmentDescriptor f2 = new FragmentDescriptor(r2, metaData);
+        FragmentDescriptor f2 = new FragmentDescriptor(r2);
         f2._name="B";
         metaData._webFragmentNameMap.put(f2._name, f2);
         metaData._webFragmentResourceMap.put(jar2, f2);
@@ -877,7 +876,7 @@ public class OrderingTest extends TestCase
         TestResource jar3 = new TestResource("C");
         resources.add(jar3);
         TestResource r3 = new TestResource("C/web-fragment.xml");
-        FragmentDescriptor f3 = new FragmentDescriptor(r3, metaData);
+        FragmentDescriptor f3 = new FragmentDescriptor(r3);
         f3._name="C";
         metaData._webFragmentNameMap.put(f3._name, f3);
         metaData._webFragmentResourceMap.put(jar3, f3);
@@ -885,7 +884,7 @@ public class OrderingTest extends TestCase
         TestResource jar4 = new TestResource("D");
         resources.add(jar4);
         TestResource r4 = new TestResource("D/web-fragment.xml");
-        FragmentDescriptor f4 = new FragmentDescriptor((Resource)null, metaData);
+        FragmentDescriptor f4 = new FragmentDescriptor((Resource)null);
         f4._name="D"; 
         metaData._webFragmentNameMap.put(f4._name, f4);
         metaData._webFragmentResourceMap.put(jar4, f4);
@@ -893,7 +892,7 @@ public class OrderingTest extends TestCase
         TestResource jar5 = new TestResource("E");
         resources.add(jar5);
         TestResource r5 = new TestResource("E/web-fragment.xml");
-        FragmentDescriptor f5 = new FragmentDescriptor((Resource)null, metaData);
+        FragmentDescriptor f5 = new FragmentDescriptor((Resource)null);
         f5._name="E";
         metaData._webFragmentNameMap.put(f5._name, f5);
         metaData._webFragmentResourceMap.put(jar5, f5);
@@ -901,7 +900,7 @@ public class OrderingTest extends TestCase
         TestResource jar6 = new TestResource("plain");
         resources.add(jar6);
         TestResource r6 = new TestResource("plain/web-fragment.xml");
-        FragmentDescriptor f6 = new FragmentDescriptor((Resource)null, metaData);
+        FragmentDescriptor f6 = new FragmentDescriptor((Resource)null);
         f6._name=FragmentDescriptor.NAMELESS+"1";
         metaData._webFragmentNameMap.put(f6._name, f6);
         metaData._webFragmentResourceMap.put(jar6, f6);

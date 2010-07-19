@@ -16,6 +16,7 @@
 package org.eclipse.jetty.deploy.providers;
 
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,6 +31,7 @@ public class MonitoredDirAppProviderStartupTest
     @BeforeClass
     public static void setupEnvironment() throws Exception
     {
+        Log.getLog().setDebugEnabled(true);
         jetty = new XmlConfiguredJetty();
         jetty.addConfiguration("jetty.xml");
         jetty.addConfiguration("jetty-deploymgr-contexts.xml");

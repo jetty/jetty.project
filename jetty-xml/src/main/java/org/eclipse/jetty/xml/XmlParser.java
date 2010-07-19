@@ -741,14 +741,15 @@ public class XmlParser
          * @param tag The tag of the nodes.
          * @return Iterator over all child nodes with the specified tag.
          */
-        public Iterator iterator(final String tag)
+        public Iterator<Node> iterator(final String tag)
         {
-            return new Iterator()
+            return new Iterator<Node>()
             {
                 int c = 0;
                 Node _node;
 
                 /* -------------------------------------------------- */
+                @Override
                 public boolean hasNext()
                 {
                     if (_node != null)
@@ -771,7 +772,8 @@ public class XmlParser
                 }
 
                 /* -------------------------------------------------- */
-                public Object next()
+                @Override
+                public Node next()
                 {
                     try
                     {
@@ -787,6 +789,7 @@ public class XmlParser
                 }
 
                 /* -------------------------------------------------- */
+                @Override
                 public void remove()
                 {
                     throw new UnsupportedOperationException("Not supported");

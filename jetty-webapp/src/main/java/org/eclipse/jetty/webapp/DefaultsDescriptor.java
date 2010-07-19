@@ -18,12 +18,11 @@ import org.eclipse.jetty.util.resource.Resource;
 /**
  * DefaultsDescriptor
  *
- *
  */
 public class DefaultsDescriptor extends Descriptor
 {
-    public DefaultsDescriptor(Resource xml, MetaData processor)
+    public DefaultsDescriptor(Resource xml)
     {
-        super(xml, processor);
+        super(xml);
     }
 }

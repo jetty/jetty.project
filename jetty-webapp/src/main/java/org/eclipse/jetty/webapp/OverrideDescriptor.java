@@ -22,8 +22,8 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class OverrideDescriptor extends Descriptor
 {
-    public OverrideDescriptor(Resource xml, MetaData processor)
+    public OverrideDescriptor(Resource xml)
     {
-        super(xml, processor);
+        super(xml);
     }
 }
