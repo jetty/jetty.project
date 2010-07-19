@@ -1,5 +1,6 @@
 
 jetty-7.2-SNAPSHOT
+ + 320264 dupliate mime entry
  + 319334 Concurrent, sharable ResourceCache
  + 319370 WebAppClassLoader.Context
  + 320073 Reconsile configuration mechanism
