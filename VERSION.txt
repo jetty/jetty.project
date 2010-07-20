@@ -6,6 +6,7 @@ jetty-7.2-SNAPSHOT
  + 319444 Two nulls are appended to log statements from ContextHanler$Context 
  + 320073 Reconsile configuration mechanism
  + 320112 Websocket in aggregate jars
+ + 320264 Removed duplicate mime.property entries
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors
  + Added ignore to Logger interface
