@@ -479,6 +479,18 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /* ------------------------------------------------------------ */
+    public String getRunAsRole() 
+    {
+        return _runAsRole;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setRunAsRole(String role) 
+    {
+        _runAsRole = role;
+    }
+    
+    /* ------------------------------------------------------------ */
     /** Service a request with this servlet.
      */
     public void handle(Request baseRequest,
@@ -614,7 +626,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             return ServletHolder.this.getInitOrder();
         }
-
  
         public void setRunAsRole(String role) 
         {
