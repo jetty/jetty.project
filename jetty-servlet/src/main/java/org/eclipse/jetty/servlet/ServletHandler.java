@@ -1409,19 +1409,19 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     @Override
-    protected void dump(StringBuilder b,String indent)
+    protected void dump(Appendable out,String indent) throws IOException
     {
-        super.dump(b,indent);
+        super.dump(out,indent);
 
         if (getFilterMappings()!=null)
         {
             for (FilterMapping f : getFilterMappings())
             {
-                b.append(indent);
-                b.append(" +-");
-                b.append(f);
-                b.append(f.getFilterHolder().getInitParameters());
-                b.append('\n');
+                out.append(indent);
+                out.append(" +-");
+                out.append(String.valueOf(f.toString()));
+                out.append(String.valueOf(f.getFilterHolder().getInitParameters()));
+                out.append('\n');
             }
         }
         HashSet<String> servlets = new HashSet<String>();
@@ -1430,13 +1430,13 @@ public class ServletHandler extends ScopedHandler
             for (ServletMapping m : getServletMappings())
             {
                 servlets.add(m.getServletName());
-                b.append(indent);
-                b.append(" +-");
-                b.append(m);
+                out.append(indent);
+                out.append(" +-");
+                out.append(String.valueOf(m));
                 ServletHolder h = getServlet(m.getServletName());
                 if (h!=null)
-                    b.append(h.getInitParameters());
-                b.append('\n');
+                    out.append(String.valueOf(h.getInitParameters()));
+                out.append('\n');
             }
         }
 
@@ -1446,11 +1446,11 @@ public class ServletHandler extends ScopedHandler
             {
                 if (servlets.contains(h.getName()))
                     continue;
-                b.append(indent);
-                b.append(" +-[]==>");
-                b.append(h.getName());
-                b.append(h.getInitParameters());
-                b.append('\n');
+                out.append(indent);
+                out.append(" +-[]==>");
+                out.append(h.getName());
+                out.append(String.valueOf(h.getInitParameters()));
+                out.append('\n');
             }
         }
 

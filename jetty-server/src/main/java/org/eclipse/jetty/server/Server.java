@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.Attributes;
@@ -649,10 +650,23 @@ public class Server extends HandlerWrapper implements Attributes
         _graceful=timeoutMS;
     }
     
+    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
         return this.getClass().getName()+"@"+Integer.toHexString(hashCode());
+    }
+
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void dump(Appendable out,String indent) throws IOException
+    {
+        out.append(toString()).append(isStarted()?" started":" STOPPED").append('\n');
+        for (Connector c : _connectors)
+            out.append(" +-").append(String.valueOf(c)).append('\n');
+        out.append(" +-").append(String.valueOf(_threadPool)).append('\n');
+        dumpHandlers(out,indent);
     }
 
 

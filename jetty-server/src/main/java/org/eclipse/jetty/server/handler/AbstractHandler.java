@@ -14,6 +14,8 @@
 package org.eclipse.jetty.server.handler;
 
 
+import java.io.IOException;
+
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -106,16 +108,29 @@ public abstract class AbstractHandler extends AbstractLifeCycle implements Handl
     public String dump()
     {
         StringBuilder b = new StringBuilder();
-        dump(b,"");
+        try
+        {
+            dump(b,"");
+        }
+        catch (IOException e)
+        {
+            Log.warn(e);
+        }
         return b.toString();
     }    
 
     /* ------------------------------------------------------------ */
-    protected void dump(StringBuilder b,String indent)
+    public void dump(Appendable out) throws IOException
     {
-        b.append(toString());
-        b.append(isStarted()?" started":" STOPPED");
-        b.append('\n');
+        dump(out,"");
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected void dump(Appendable out,String indent) throws IOException
+    {
+        out.append(toString());
+        out.append(isStarted()?" started":" STOPPED");
+        out.append('\n');
     }
 
 }

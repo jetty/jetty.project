@@ -9,6 +9,7 @@ jetty-7.2-SNAPSHOT
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors
  + Added ignore to Logger interface
+ + Improved debug dump
 
 jetty-7.1.6.v20100715
  + 319519 Warn about duplicate configuration files

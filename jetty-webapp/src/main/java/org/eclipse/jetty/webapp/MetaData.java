@@ -136,7 +136,6 @@ public class MetaData
          * Order the list of jars in WEB-INF/lib according to the ordering declarations in the descriptors
          * @see org.eclipse.jetty.webapp.MetaData.Ordering#order(java.util.List)
          */
-        @Override
         public List<Resource> order(List<Resource> jars)
         {           
             List<Resource> orderedList = new ArrayList<Resource>();
@@ -174,7 +173,6 @@ public class MetaData
             return orderedList;
         }
         
-        @Override
         public boolean isAbsolute()
         {
             return true;
@@ -194,7 +192,6 @@ public class MetaData
             _order.add(OTHER);
         }
         
-        @Override
         public boolean hasOther ()
         {
             return _hasOther;
@@ -218,7 +215,6 @@ public class MetaData
          * in the various web-fragment.xml files.
          * @see org.eclipse.jetty.webapp.MetaData.Ordering#order(java.util.List)
          */
-        @Override
         public List<Resource> order(List<Resource> jars)
         {         
             //for each jar, put it into the ordering according to the fragment ordering
@@ -288,13 +284,11 @@ public class MetaData
             return orderedList;
         }
         
-        @Override
         public boolean isAbsolute ()
         {
             return false;
         }
         
-        @Override
         public boolean hasOther ()
         {
             return !_beforeOthers.isEmpty() || !_afterOthers.isEmpty();

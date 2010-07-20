@@ -749,7 +749,6 @@ public class XmlParser
                 Node _node;
 
                 /* -------------------------------------------------- */
-                @Override
                 public boolean hasNext()
                 {
                     if (_node != null)
@@ -772,7 +771,6 @@ public class XmlParser
                 }
 
                 /* -------------------------------------------------- */
-                @Override
                 public Node next()
                 {
                     try
@@ -789,7 +787,6 @@ public class XmlParser
                 }
 
                 /* -------------------------------------------------- */
-                @Override
                 public void remove()
                 {
                     throw new UnsupportedOperationException("Not supported");
