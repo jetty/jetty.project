@@ -1648,7 +1648,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
          */
         public void log(String msg)
         {
-            _logger.info(msg, null, null);
+            _logger.info(msg);
         }
 
         /* ------------------------------------------------------------ */
