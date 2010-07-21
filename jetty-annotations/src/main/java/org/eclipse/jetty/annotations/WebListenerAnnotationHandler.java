@@ -14,27 +14,25 @@ package org.eclipse.jetty.annotations;
 
 import java.util.List;
 
-import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-public class WebListenerAnnotationHandler implements DiscoverableAnnotationHandler
+public class WebListenerAnnotationHandler extends AbstractDiscoverableAnnotationHandler
 {
-
-    protected WebAppContext _context;
-
-    public WebListenerAnnotationHandler (WebAppContext wac)
+    public WebListenerAnnotationHandler (WebAppContext context)
     {
-        _context = wac;
+       super(context);
     }
     
+    /** 
+     * @see org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler#handleClass(java.lang.String, int, int, java.lang.String, java.lang.String, java.lang.String[], java.lang.String, java.util.List)
+     */
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
                             List<Value> values)
     {
         WebListenerAnnotation wlAnnotation = new WebListenerAnnotation(_context, className);
-        ((List<DiscoveredAnnotation>)_context.getAttribute(AnnotationConfiguration.DISCOVERED_ANNOTATIONS)).add(wlAnnotation);
+        addAnnotation(wlAnnotation);
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,

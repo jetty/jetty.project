@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.net.URL;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -22,21 +22,25 @@ import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.annotation.HandlesTypes;
 
+import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.Descriptor;
+import org.eclipse.jetty.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.Descriptor.MetaDataComplete;
 
 /**
  * Configuration for Annotations
  *
  *
  */
-public class AnnotationConfiguration extends AbstractConfiguration
+public class AnnotationConfiguration implements Configuration
 {
-    public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";
-  
-    
+    public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";    
     
     public void preConfigure(final WebAppContext context) throws Exception
     {
@@ -86,19 +90,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
             
             //save the type inheritance map created by the parser for later reference
             context.setAttribute(CLASS_INHERITANCE_MAP, classHandler.getMap());
-            
-            /*
-             * processing is now done in metadata.resolve()
-             * 
-            //TODO change the time at which the discovered annotations are applied. According to the
-            //servlet spec  p.81, the annotations associated with a fragment have to be applied directly
-            //after those of the fragment's descriptor. For now, to make progress, we just process them
-            //as we have been doing, ie after all the descriptors have been processed.
-            for (ClassAnnotation annotation:discoveredAnnotations)
-            {
-                annotation.apply();
-            }
-            */
         }    
     }
 
@@ -114,7 +105,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     public void postConfigure(WebAppContext context) throws Exception
     {
-        //context.setAttribute(CLASS_INHERITANCE_MAP, null);
     }
     
 
@@ -202,5 +192,186 @@ public class AnnotationConfiguration extends AbstractConfiguration
         loadingJarName = loadingJarName.substring(j+1,i+4);
 
         return (!orderedLibs.contains(loadingJarName));
+    }
+   
+    public void parseContainerPath (final WebAppContext context, final AnnotationParser parser)
+    throws Exception
+    {
+        //if no pattern for the container path is defined, then by default scan NOTHING
+        Log.debug("Scanning container jars");
+        
+        //clear any previously discovered annotations
+        clearAnnotationList(parser.getAnnotationHandlers());       
+        
+        //Convert from Resource to URI
+        ArrayList<URI> containerUris = new ArrayList<URI>();
+        for (Resource r : context.getMetaData().getOrderedContainerJars())
+        {
+            URI uri = r.getURI();
+                containerUris.add(uri);          
+        }
+        
+        parser.parse (containerUris.toArray(new URI[containerUris.size()]),
+                new ClassNameResolver ()
+                {
+                    public boolean isExcluded (String name)
+                    {
+                        if (context.isSystemClass(name)) return false;
+                        if (context.isServerClass(name)) return true;
+                        return false;
+                    }
+
+                    public boolean shouldOverride (String name)
+                    { 
+                        //looking at system classpath
+                        if (context.isParentLoaderPriority())
+                            return true;
+                        return false;
+                    }
+                });
+        
+        //gather together all annotations discovered
+        List<DiscoveredAnnotation> annotations = new ArrayList<DiscoveredAnnotation>();
+        gatherAnnotations(annotations, parser.getAnnotationHandlers());
+
+        context.getMetaData().addDiscoveredAnnotations(annotations);           
+    }
+    
+    
+    public void parseWebInfLib (final WebAppContext context, final AnnotationParser parser)
+    throws Exception
+    {  
+        List<FragmentDescriptor> frags = context.getMetaData().getFragments();
+        
+        //email from Rajiv Mordani jsrs 315 7 April 2010
+        //jars that do not have a web-fragment.xml are still considered fragments
+        //they have to participate in the ordering
+        ArrayList<URI> webInfUris = new ArrayList<URI>();
+        
+        List<Resource> jars = context.getMetaData().getOrderedWebInfJars();
+        
+        //No ordering just use the jars in any order
+        if (jars == null || jars.isEmpty())
+            jars = context.getMetaData().getWebInfJars();
+   
+        for (Resource r : jars)
+        {          
+            //clear any previously discovered annotations from handlers
+            clearAnnotationList(parser.getAnnotationHandlers());
+
+            
+            URI uri  = r.getURI();
+            FragmentDescriptor f = getFragmentFromJar(r, frags);
+           
+            //if a jar has no web-fragment.xml we scan it (because it is not exluded by the ordering)
+            //or if it has a fragment we scan it if it is not metadata complete
+            if (f == null || !isMetaDataComplete(f))
+            {
+                parser.parse(uri, 
+                             new ClassNameResolver()
+                             {
+                                 public boolean isExcluded (String name)
+                                 {    
+                                     if (context.isSystemClass(name)) return true;
+                                     if (context.isServerClass(name)) return false;
+                                     return false;
+                                 }
+
+                                 public boolean shouldOverride (String name)
+                                 {
+                                    //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
+                                    if (context.isParentLoaderPriority())
+                                        return false;
+                                    return true;
+                                 }
+                             });  
+                List<DiscoveredAnnotation> annotations = new ArrayList<DiscoveredAnnotation>();
+                gatherAnnotations(annotations, parser.getAnnotationHandlers());
+                context.getMetaData().addDiscoveredAnnotations(r, annotations);
+            }
+        }
+    }
+     
+    public void parseWebInfClasses (final WebAppContext context, final AnnotationParser parser)
+    throws Exception
+    {
+        Log.debug("Scanning classes in WEB-INF/classes");
+        if (context.getWebInf() != null)
+        {
+            Resource classesDir = context.getWebInf().addPath("classes/");
+            if (classesDir.exists())
+            {
+                clearAnnotationList(parser.getAnnotationHandlers());
+                parser.parse(classesDir, 
+                             new ClassNameResolver()
+                {
+                    public boolean isExcluded (String name)
+                    {
+                        if (context.isSystemClass(name)) return true;
+                        if (context.isServerClass(name)) return false;
+                        return false;
+                    }
+
+                    public boolean shouldOverride (String name)
+                    {
+                        //looking at webapp classpath, found already-parsed class of same name - did it come from system or duplicate in webapp?
+                        if (context.isParentLoaderPriority())
+                            return false;
+                        return true;
+                    }
+                });
+                
+                //TODO - where to set the annotations discovered from WEB-INF/classes?    
+                List<DiscoveredAnnotation> annotations = new ArrayList<DiscoveredAnnotation>();
+                gatherAnnotations(annotations, parser.getAnnotationHandlers());
+                context.getMetaData().addDiscoveredAnnotations (annotations);
+            }
+        }
+    }
+    
+ 
+    
+    public FragmentDescriptor getFragmentFromJar (Resource jar,  List<FragmentDescriptor> frags)
+    throws Exception
+    {
+        //check if the jar has a web-fragment.xml
+        FragmentDescriptor d = null;
+        for (FragmentDescriptor frag: frags)
+        {
+            Resource fragResource = frag.getResource(); //eg jar:file:///a/b/c/foo.jar!/META-INF/web-fragment.xml
+            if (Resource.isContainedIn(fragResource,jar))
+            {
+                d = frag;
+                break;
+            }
+        }
+        return d;
+    }
+    
+    
+    public boolean isMetaDataComplete (Descriptor d)
+    {
+        return (d!=null && d.getMetaDataComplete() == MetaDataComplete.True);
+    }
+    
+    protected void clearAnnotationList (List<DiscoverableAnnotationHandler> handlers)
+    {
+        if (handlers == null)
+            return;
+        
+        for (DiscoverableAnnotationHandler h:handlers)
+        {
+            if (h instanceof AbstractDiscoverableAnnotationHandler)
+                ((AbstractDiscoverableAnnotationHandler)h).resetList();
+        }
+    }
+
+    protected void gatherAnnotations (List<DiscoveredAnnotation> annotations, List<DiscoverableAnnotationHandler> handlers)
+    {
+        for (DiscoverableAnnotationHandler h:handlers)
+        {
+            if (h instanceof AbstractDiscoverableAnnotationHandler)
+                annotations.addAll(((AbstractDiscoverableAnnotationHandler)h).getAnnotationList());
+        }
     }
 }

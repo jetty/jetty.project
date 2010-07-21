@@ -26,20 +26,18 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *
  *
  */
-public class WebFilterAnnotationHandler implements DiscoverableAnnotationHandler
+public class WebFilterAnnotationHandler extends AbstractDiscoverableAnnotationHandler
 {
-    protected WebAppContext _context;
-
-    public WebFilterAnnotationHandler (WebAppContext wac)
+    public WebFilterAnnotationHandler (WebAppContext context)
     {
-        _context = wac;
+        super(context);
     }
 
     public void handleClass(String className, int version, int access, String signature, String superName, String[] interfaces, String annotation,
                             List<Value> values)
     {
         WebFilterAnnotation wfAnnotation = new WebFilterAnnotation(_context, className);
-       ((List<DiscoveredAnnotation>)_context.getAttribute(AnnotationConfiguration.DISCOVERED_ANNOTATIONS)).add(wfAnnotation);
+        addAnnotation(wfAnnotation);
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,

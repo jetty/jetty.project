@@ -101,8 +101,6 @@ public class EnvConfiguration implements Configuration
 
     public void postConfigure(WebAppContext context) throws Exception
     {
-        // TODO Auto-generated method stub
-        
     }
     
     

@@ -33,13 +33,12 @@ import org.eclipse.jetty.webapp.MetaData.Origin;
 public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
     protected WebAppContext _context;
-    protected InjectionCollection _injections;
+   
 
     public ResourceAnnotationHandler (WebAppContext wac)
     {
         super(true);
         _context = wac;
-        _injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
     }
 
 
@@ -132,7 +131,8 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                 
             //No injections for this resource in any descriptors, so we can add it
             //Does the injection already exist?
-            Injection injection = _injections.getInjection(name, clazz, field);
+            
+            Injection injection = ((InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION)).getInjection(name, clazz, field);
             if (injection == null)
             {
                 //No injection has been specified, add it
@@ -167,7 +167,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                         injection.setTarget(clazz, field, type);
                         injection.setJndiName(name);
                         injection.setMappingName(mappedName);
-                        _injections.add(injection); 
+                        ((InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION)).add(injection); 
                         
                         //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination 
                         metaData.setOrigin("resource-ref."+name+".injection");
@@ -274,7 +274,8 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             }
             
             //check if an injection has already been setup for this target by web.xml
-            Injection injection = _injections.getInjection(name, clazz, method, paramType);
+            InjectionCollection injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+            Injection injection = injections.getInjection(name, clazz, method, paramType);
             if (injection == null)
             {
                 try
@@ -316,7 +317,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                         injection.setTarget(clazz, method,paramType,resourceType);
                         injection.setJndiName(name);
                         injection.setMappingName(mappedName);
-                        _injections.add(injection);
+                        injections.add(injection);
                         //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination 
                         metaData.setOrigin("resource-ref."+name+".injection");
                     } 

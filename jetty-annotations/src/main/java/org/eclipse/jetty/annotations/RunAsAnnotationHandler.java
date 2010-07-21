@@ -40,8 +40,6 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
     
     public void doHandle (Class clazz)
     {
-        RunAsCollection runAsCollection = (RunAsCollection)_context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
-
         if (!Servlet.class.isAssignableFrom(clazz))
             return;
         
@@ -64,7 +62,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
                         org.eclipse.jetty.plus.annotation.RunAs ra = new org.eclipse.jetty.plus.annotation.RunAs();
                         ra.setTargetClassName(clazz.getCanonicalName());
                         ra.setRoleName(role);
-                        runAsCollection.add(ra);
+                        ((RunAsCollection)_context.getAttribute(RunAsCollection.RUNAS_COLLECTION)).add(ra);
                     }
                 }
             }

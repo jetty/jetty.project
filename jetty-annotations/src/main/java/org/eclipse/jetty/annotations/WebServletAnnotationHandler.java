@@ -27,15 +27,13 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * Process a WebServlet annotation on a class.
  * 
  */
-public class WebServletAnnotationHandler implements DiscoverableAnnotationHandler
+public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationHandler
 {
-    protected WebAppContext _context;
     
-    public WebServletAnnotationHandler (WebAppContext wac)
+    public WebServletAnnotationHandler (WebAppContext context)
     {
-        _context = wac;
+        super(context);
     }
-    
     
     
     /** 
@@ -51,7 +49,7 @@ public class WebServletAnnotationHandler implements DiscoverableAnnotationHandle
             return;    
        
         WebServletAnnotation annotation = new WebServletAnnotation (_context, className);
-        ((List<DiscoveredAnnotation>)_context.getAttribute(AnnotationConfiguration.DISCOVERED_ANNOTATIONS)).add(annotation);
+        addAnnotation(annotation);
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,

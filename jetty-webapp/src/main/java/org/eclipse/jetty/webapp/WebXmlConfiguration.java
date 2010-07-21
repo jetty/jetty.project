@@ -14,10 +14,7 @@ package org.eclipse.jetty.webapp;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.Collections;
 
-import org.eclipse.jetty.security.ConstraintAware;
-import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
@@ -84,29 +81,10 @@ public class WebXmlConfiguration implements Configuration
         }
 
         context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
-        
-        /*
-        StandardDescriptorProcessor descriptorProcessor = (StandardDescriptorProcessor)context.getAttribute(StandardDescriptorProcessor.STANDARD_PROCESSOR);
-        if (descriptorProcessor == null)
-        {
-            descriptorProcessor = new StandardDescriptorProcessor(context.getMetaData());
-            context.setAttribute(StandardDescriptorProcessor.STANDARD_PROCESSOR, descriptorProcessor);
-        }
-        
-        //process web-default.xml
-        descriptorProcessor.process(context.getMetaData().getWebDefault());
-
-        //process web.xml 
-        descriptorProcessor.process(context.getMetaData().getWebXml());
-        
-        //process override-web.xml            
-        descriptorProcessor.process(context.getMetaData().getOverrideWeb());
-        */
     }
 
     public void postConfigure(WebAppContext context) throws Exception
     {
-        context.setAttribute(MetaData.WEBXML_CLASSNAMES, null); 
     }
 
     /* ------------------------------------------------------------------------------- */
