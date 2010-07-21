@@ -2,16 +2,25 @@ jetty-8.0.0.M2-SNAPSHOT
  + 320073 Reconsile configuration mechanism
 
 jetty-7.2-SNAPSHOT
+ + 320264 dupliate mime entry
  + 319334 Concurrent, sharable ResourceCache
  + 319370 WebAppClassLoader.Context
+ + 319444 Two nulls are appended to log statements from ContextHanler$Context 
+ + 320073 Reconsile configuration mechanism
+ + 320112 Websocket in aggregate jars
+ + 320264 Removed duplicate mime.property entries
+ + JETTY-1245 Do not use direct buffers with NIO SSL
+ + JETTY-1249 Apply max idle time to all connectors
+ + Added ignore to Logger interface
+ + Improved debug dump
+
+jetty-7.1.6.v20100715
  + 319519 Warn about duplicate configuration files
  + 319655 Reset HEAD status 
- + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1247 synchronize recylcing of SSL NIO buffers 
  + JETTY-1248 fix parsing of bad multiparts
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1251 Replace then close selector for JVM bugs
- + Added ignore to Logger interface
 
 jetty-8.0.0.M1 12 July 2010
  + 306350 Ensure jars excluded by ordering are not scanned for annotations

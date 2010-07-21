@@ -401,6 +401,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         return ((RoleInfo)constraintInfo).isChecked();
     }
 
+    @Override
     protected boolean checkWebResourcePermissions(String pathInContext, Request request, Response response, Object constraintInfo, UserIdentity userIdentity)
             throws IOException
     {
@@ -427,15 +428,16 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
     
     /* ------------------------------------------------------------ */
-    protected void dump(StringBuilder b,String indent)
+    @Override
+    protected void dump(Appendable out,String indent) throws IOException
     {
-        super.dump(b,indent);
-        b.append(indent).append(" +=roles=").append(_roles).append('\n');
+        super.dump(out,indent);
+        out.append(indent).append(" +=roles=").append(String.valueOf(_roles)).append('\n');
         
         for (Object path : _constraintMap.keySet())
         {
             Object constraint = _constraintMap.get(path);
-            b.append(indent).append(" +=").append(path).append('=').append(constraint).append('\n');
+            out.append(indent).append(" +=").append(String.valueOf(path)).append('=').append(String.valueOf(constraint)).append('\n');
         }
     }
 }

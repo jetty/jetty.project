@@ -1304,6 +1304,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             _localeEncodingMap=new HashMap<String,String>();
         _localeEncodingMap.put(locale, encoding);
     }
+    
 
     /* ------------------------------------------------------------ */
     /**
@@ -1710,7 +1711,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         @Override
         public void log(String msg)
         {
-            _logger.info(msg, null, null);
+            _logger.info(msg);
         }
 
         /* ------------------------------------------------------------ */

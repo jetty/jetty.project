@@ -45,6 +45,7 @@ public class FilterHolder extends Holder<Filter>
     {
         super (Source.EMBEDDED);
     }   
+ 
     
     /* ---------------------------------------------------------------- */
     /** Constructor 
@@ -91,7 +92,7 @@ public class FilterHolder extends Holder<Filter>
         {
             try
             {
-                _filter=_servletHandler.getServletContext().createFilter(getHeldClass());
+                _filter=((ServletContextHandler.Context)_servletHandler.getServletContext()).createFilter(getHeldClass());
             }
             catch (ServletException se)
             {

@@ -95,5 +95,11 @@
          <groupId>${servlet.spec.groupId}</groupId>
          <artifactId>${servlet.spec.artifactId}</artifactId>
        </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-websocket</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 </project>

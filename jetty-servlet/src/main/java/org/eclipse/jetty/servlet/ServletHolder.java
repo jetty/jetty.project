@@ -79,6 +79,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         super (Source.EMBEDDED);
     }
     
+    
     /* ---------------------------------------------------------------- */
     /** Constructor .
      */
@@ -490,6 +491,18 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /* ------------------------------------------------------------ */
+    public String getRunAsRole() 
+    {
+        return _runAsRole;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setRunAsRole(String role) 
+    {
+        _runAsRole = role;
+    }
+    
+    /* ------------------------------------------------------------ */
     /** Service a request with this servlet.
      */
     public void handle(Request baseRequest,
@@ -759,7 +772,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         try
         {
-            return getServletHandler().getServletContext().createServlet(getHeldClass());
+            return ((ServletContextHandler.Context)getServletHandler().getServletContext()).createServlet(getHeldClass());
         }
         catch (ServletException se)
         {
@@ -772,8 +785,3 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 }
-
-
-
-
-

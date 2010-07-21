@@ -14,6 +14,8 @@
 package org.eclipse.jetty.server.handler;
 
 
+import java.io.IOException;
+
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.util.LazyList;
@@ -84,10 +86,14 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     
     /* ------------------------------------------------------------ */
     @Override
-    protected void dump(StringBuilder b,String indent)
+    protected void dump(Appendable out,String indent) throws IOException
     {
-        super.dump(b,indent);
-
+        super.dump(out,indent);
+        dumpHandlers(out,indent);
+    }
+    
+    protected void dumpHandlers(Appendable out,String indent) throws IOException
+    {
         Handler[] handlers = getHandlers();
         if (handlers!=null)
         {   
@@ -96,14 +102,14 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
             {
                 if (handlers[h]==null)
                     continue;
-                b.append(indent);
-                b.append(" +-");
+                out.append(indent);
+                out.append(" +-");
                 if (handlers[h] instanceof AbstractHandler)
-                    ((AbstractHandler)handlers[h]).dump(b,indent+((h==last)?"   ":" | "));
+                    ((AbstractHandler)handlers[h]).dump(out,indent+((h==last)?"   ":" | "));
                 else
                 {
-                    b.append(handlers[h]);
-                    b.append("\n");
+                    out.append(String.valueOf(handlers[h]));
+                    out.append("\n");
                 }
             }
         }
