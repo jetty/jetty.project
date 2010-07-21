@@ -34,6 +34,8 @@ public class Constraint implements Cloneable, Serializable
 
     public final static String __CERT_AUTH2 = "CLIENT-CERT";
     
+    public final static String __SPNEGO_AUTH = "SPNEGO-AUTH";
+    
     public static boolean validateMethod (String method)
     {
         if (method == null)
