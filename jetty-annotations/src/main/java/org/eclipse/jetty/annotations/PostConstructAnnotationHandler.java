@@ -27,13 +27,11 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
     protected WebAppContext _context;
-    protected LifeCycleCallbackCollection _callbacks;
 
     public PostConstructAnnotationHandler (WebAppContext wac)
     {
         super(true);
         _context = wac;
-        _callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
     }
 
 
@@ -66,10 +64,10 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
                          origin == MetaData.Origin.WebDefaults || 
                          origin == MetaData.Origin.WebOverride))
                         return;
-                    
+                                        
                     PostConstructCallback callback = new PostConstructCallback();
                     callback.setTarget(clazz.getName(), m.getName());
-                    _callbacks.add(callback);
+                    ((LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
                 }
             }
         }

@@ -37,16 +37,15 @@ public class MetaInfConfiguration implements Configuration
     public static final String METAINF_TLDS = TagLibConfiguration.TLD_RESOURCES;
     public static final String METAINF_FRAGMENTS = FragmentConfiguration.FRAGMENT_RESOURCES;
     public static final String METAINF_RESOURCES = WebInfConfiguration.RESOURCE_URLS;
-    public static final String CONTAINER_JAR_RESOURCES = WebInfConfiguration.CONTAINER_JAR_RESOURCES;
-    public static final String WEB_INF_JAR_RESOURCES = WebInfConfiguration.WEB_INF_JAR_RESOURCES;
+  
 
     public void preConfigure(final WebAppContext context) throws Exception
     {
        //Merge all container and webinf lib jars to look for META-INF resources
       
         ArrayList<Resource> jars = new ArrayList<Resource>();
-        jars.addAll((List<Resource>)context.getAttribute(CONTAINER_JAR_RESOURCES));
-        jars.addAll((List<Resource>)context.getAttribute(WEB_INF_JAR_RESOURCES));
+        jars.addAll(context.getMetaData().getOrderedContainerJars());
+        jars.addAll(context.getMetaData().getWebInfJars());
         
         JarScanner scanner = new JarScanner()
         {
@@ -78,15 +77,18 @@ public class MetaInfConfiguration implements Configuration
     }
     
     
+
     public void configure(WebAppContext context) throws Exception
     {
         
     }
 
+
     public void deconfigure(WebAppContext context) throws Exception
     {
  
     }
+
 
     public void postConfigure(WebAppContext context) throws Exception
     {

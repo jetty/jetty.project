@@ -23,7 +23,6 @@ import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
 import org.eclipse.jetty.util.log.Log;
@@ -36,13 +35,60 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class WebAppDecorator implements Decorator
 {
-    private WebAppContext _wac;
+    private WebAppContext _context;
+    private InjectionCollection _injections;
+    private LifeCycleCallbackCollection _callbacks;
+    private RunAsCollection _runAses;
 
     public WebAppDecorator (WebAppContext context)
     {
-        _wac = context;
+        _context = context;
     }
     
+    
+    
+    public InjectionCollection getInjections()
+    {
+        return _injections;
+    }
+
+
+
+    public void setInjections(InjectionCollection injections)
+    {
+        _injections = injections;
+    }
+
+
+
+    public LifeCycleCallbackCollection getLifecycleCallbacks()
+    {
+        return _callbacks;
+    }
+
+
+
+    public void setLifecycleCallbacks(LifeCycleCallbackCollection lifecycleCallbacks)
+    {
+        _callbacks = lifecycleCallbacks;
+    }
+
+
+
+    public RunAsCollection getRunAses()
+    {
+        return _runAses;
+    }
+
+
+
+    public void setRunAses(RunAsCollection runAses)
+    {
+        _runAses = runAses;
+    }
+
+
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateFilterHolder(org.eclipse.jetty.servlet.FilterHolder)
@@ -123,21 +169,19 @@ public class WebAppDecorator implements Decorator
     protected void decorate (Object o) 
     throws ServletException
     {       
-        InjectionCollection injections = (InjectionCollection)_wac.getAttribute(InjectionCollection.INJECTION_COLLECTION);
-        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_wac.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
-        RunAsCollection runAses = (RunAsCollection)_wac.getAttribute(RunAsCollection.RUNAS_COLLECTION);  
 
-        if (runAses != null)
-            runAses.setRunAs(o);
 
-        if (injections != null)
-            injections.inject(o);
+        if (_runAses != null)
+            _runAses.setRunAs(o);
 
-        if (callbacks != null)
+        if (_injections != null)
+            _injections.inject(o);
+
+        if (_callbacks != null)
         {
             try
             {
-                callbacks.callPostConstructCallback(o);
+                _callbacks.callPostConstructCallback(o);
             }
             catch (Exception e)
             {
@@ -148,12 +192,11 @@ public class WebAppDecorator implements Decorator
     
     protected void destroy (Object o)
     {
-        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_wac.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
-        if (callbacks != null)
+        if (_callbacks != null)
         {
             try
             {
-                callbacks.callPreDestroyCallback(o);
+                _callbacks.callPreDestroyCallback(o);
             }
             catch (Exception e)
             {

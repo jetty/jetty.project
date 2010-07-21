@@ -13,39 +13,44 @@
 
 package org.eclipse.jetty.annotations;
 
-import org.eclipse.jetty.webapp.Configuration;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
+import org.eclipse.jetty.annotations.AnnotationParser.Value;
+import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
- * Configuration for Annotations
+ * DiscoverableAnnotationHandler
  *
  *
  */
-public class AnnotationConfiguration implements Configuration
+public abstract class AbstractDiscoverableAnnotationHandler implements DiscoverableAnnotationHandler
 {
+    protected WebAppContext _context;
+    protected List<DiscoveredAnnotation> _annotations = new ArrayList<DiscoveredAnnotation>();
     
-    public void preConfigure(final WebAppContext context) throws Exception
+    public AbstractDiscoverableAnnotationHandler(WebAppContext context)
     {
+        _context = context;
     }
-   
+
     
-    public void configure(WebAppContext context) throws Exception
-    {      
-       WebAppDecoratorWrapper wrapper = new WebAppDecoratorWrapper(context, context.getDecorator());
-       context.setDecorator(wrapper);   
-    }
-
-
-
-    public void deconfigure(WebAppContext context) throws Exception
+    public List<DiscoveredAnnotation> getAnnotationList ()
     {
-        
+        return _annotations;
     }
-
-
-
-
-    public void postConfigure(WebAppContext context) throws Exception
+    
+    public void resetList()
     {
+        _annotations.clear();
     }
+    
+    
+    public void addAnnotation (DiscoveredAnnotation a)
+    {
+        _annotations.add(a);
+    }
+
 }

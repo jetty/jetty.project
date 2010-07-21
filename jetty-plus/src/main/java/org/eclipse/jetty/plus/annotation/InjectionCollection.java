@@ -28,8 +28,9 @@ import org.eclipse.jetty.util.log.Log;
  *
  */
 public class InjectionCollection
-{
+{ 
     public static final String INJECTION_COLLECTION = "org.eclipse.jetty.injectionCollection";
+
     private HashMap<String, List<Injection>> _injectionMap = new HashMap<String, List<Injection>>();//map of classname to injections
     
     

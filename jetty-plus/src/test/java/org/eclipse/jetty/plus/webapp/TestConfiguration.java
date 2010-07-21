@@ -52,7 +52,7 @@ public class TestConfiguration
             wac.setServer(server);
             wac.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), wac));
             
-            MetaData metaData = new MetaData(wac);
+            MetaData metaData = new MetaData();
             
             PlusDescriptorProcessor plusProcessor = new PlusDescriptorProcessor();
 
@@ -83,7 +83,7 @@ public class TestConfiguration
 
 
             Thread.currentThread().setContextClassLoader(wac.getClassLoader());
-            MetaData metadata = new MetaData(wac);
+            MetaData metadata = new MetaData();
             envConfig.preConfigure(wac);
             envConfig.configure(wac);
             envConfig.bindEnvEntries(wac);

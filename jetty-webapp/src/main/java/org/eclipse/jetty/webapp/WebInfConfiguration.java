@@ -21,9 +21,6 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
 public class WebInfConfiguration implements Configuration
 {
     public static final String TEMPDIR_CREATED = "org.eclipse.jetty.tmpdirCreated";
-    public static final String CONTAINER_JAR_RESOURCES = "org.eclipse.jetty.containerJars";
-    public static final String WEB_INF_JAR_RESOURCES = "org.eclipse.jetty.webInfJars";
-    public static final String WEB_INF_ORDERED_JAR_RESOURCES = "org.eclipse.jetty.webInfOrderedJars";
     public static final String CONTAINER_JAR_PATTERN = "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern";
     public static final String WEBINF_JAR_PATTERN = "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern";
     
@@ -56,9 +53,6 @@ public class WebInfConfiguration implements Configuration
         Pattern webInfPattern = (tmp==null?null:Pattern.compile(tmp));
         tmp = (String)context.getAttribute(CONTAINER_JAR_PATTERN);
         Pattern containerPattern = (tmp==null?null:Pattern.compile(tmp));
-        
-        final ArrayList containerJarResources = new ArrayList<Resource>();
-        context.setAttribute(CONTAINER_JAR_RESOURCES, containerJarResources);  
 
         //Apply ordering to container jars - if no pattern is specified, we won't
         //match any of the container jars
@@ -66,7 +60,7 @@ public class WebInfConfiguration implements Configuration
         {
             public void matched(URI uri) throws Exception
             {
-                containerJarResources.add(Resource.newResource(uri));
+                context.getMetaData().addContainerJar(Resource.newResource(uri));
             }      
         };
         ClassLoader loader = context.getClassLoader();
@@ -87,13 +81,12 @@ public class WebInfConfiguration implements Configuration
         }
         
         //Apply ordering to WEB-INF/lib jars
-        final ArrayList webInfJarResources = new ArrayList<Resource>();
-        context.setAttribute(WEB_INF_JAR_RESOURCES, webInfJarResources);
         PatternMatcher webInfJarNameMatcher = new PatternMatcher ()
         {
+            @Override
             public void matched(URI uri) throws Exception
             {
-                webInfJarResources.add(Resource.newResource(uri));
+                context.getMetaData().addWebInfJar(Resource.newResource(uri));
             }      
         };
         List<Resource> jars = findJars(context);
@@ -116,8 +109,7 @@ public class WebInfConfiguration implements Configuration
     
     public void postConfigure(WebAppContext context) throws Exception
     {
-        context.setAttribute(CONTAINER_JAR_RESOURCES, null);
-        context.setAttribute(WEB_INF_JAR_RESOURCES, null);
+        //context.setAttribute(CONTAINER_JAR_RESOURCES, null);
     }
     
 

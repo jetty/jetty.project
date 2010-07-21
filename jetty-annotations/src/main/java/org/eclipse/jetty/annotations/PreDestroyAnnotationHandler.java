@@ -27,13 +27,11 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
     WebAppContext _context;
-    LifeCycleCallbackCollection _callbacks;
     
     public PreDestroyAnnotationHandler (WebAppContext wac)
     {
         super(true);
         _context = wac;
-        _callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
     }
 
     public void doHandle(Class clazz)
@@ -68,7 +66,7 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
                     
                     PreDestroyCallback callback = new PreDestroyCallback();
                     callback.setTarget(clazz.getName(), m.getName());
-                    _callbacks.add(callback);
+                    ((LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
                 }
             }
         }

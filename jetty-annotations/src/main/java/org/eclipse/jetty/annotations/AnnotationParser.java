@@ -19,6 +19,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -410,6 +412,22 @@ public class AnnotationParser
         handlers.add(handler);
     }
     
+    public List<DiscoverableAnnotationHandler> getAnnotationHandlers(String annotationName)
+    {
+        List<DiscoverableAnnotationHandler> handlers = _annotationHandlers.get(annotationName);
+        if (handlers == null)
+            return Collections.emptyList();
+        return new ArrayList<DiscoverableAnnotationHandler>();
+    }
+
+    public List<DiscoverableAnnotationHandler> getAnnotationHandlers()
+    {
+        List<DiscoverableAnnotationHandler> allHandlers = new ArrayList<DiscoverableAnnotationHandler>();
+        for (List<DiscoverableAnnotationHandler> list:_annotationHandlers.values())
+            allHandlers.addAll(list);
+        return allHandlers;
+    }
+
     public void registerClassHandler (ClassHandler handler)
     {
         _classHandlers.add(handler);

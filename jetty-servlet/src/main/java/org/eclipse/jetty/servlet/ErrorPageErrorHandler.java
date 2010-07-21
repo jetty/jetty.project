@@ -31,11 +31,11 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.log.Log;
 
+/* ------------------------------------------------------------ */
 /** Error Page Error Handler
  *
  * An ErrorHandler that maps exceptions and status codes to URIs for dispatch using
  * the internal ERROR style of dispatch.
- *
  *
  */
 public class ErrorPageErrorHandler extends ErrorHandler

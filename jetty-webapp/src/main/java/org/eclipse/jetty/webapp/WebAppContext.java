@@ -156,7 +156,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _scontext=new Context();
         setErrorHandler(new ErrorPageErrorHandler());      
         //Make a new MetaData to hold descriptor and annotation metadata
-        _metadata = new MetaData(this);
+        _metadata = new MetaData();
     }
     
     /* ------------------------------------------------------------ */
@@ -172,7 +172,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         setWar(webApp);
         setErrorHandler(new ErrorPageErrorHandler());      
         //Make a new MetaData to hold descriptor and annotation metadata
-        _metadata = new MetaData(this);
+        _metadata = new MetaData();
     }
     
     /* ------------------------------------------------------------ */
@@ -188,7 +188,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         setWar(webApp);
         setErrorHandler(new ErrorPageErrorHandler());      
         //Make a new MetaData to hold descriptor and annotation metadata
-        _metadata = new MetaData(this);
+        _metadata = new MetaData();
     }
 
     /* ------------------------------------------------------------ */
@@ -200,7 +200,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _scontext=new Context();
         setErrorHandler(errorHandler!=null?errorHandler:new ErrorPageErrorHandler());      
         //Make a new MetaData to hold descriptor and annotation metadata
-        _metadata = new MetaData(this);
+        _metadata = new MetaData();
     }
 
     /* ------------------------------------------------------------ */

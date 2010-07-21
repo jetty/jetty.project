@@ -130,17 +130,7 @@ public class ServletContextHandler extends ContextHandler
             ((HandlerCollection)parent).addHandler(this);
     }    
     
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.handler.ContextHandler#doStart()
-     */
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-    }
-
+ 
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.handler.ContextHandler#doStop()

@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.webapp;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,17 +25,17 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.TestCase;
-
+import org.junit.Test;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.MetaData.AbsoluteOrdering;
+import org.eclipse.jetty.webapp.Ordering.AbsoluteOrdering;
+import org.eclipse.jetty.webapp.Ordering.RelativeOrdering;
 
 /**
  * OrderingTest
  *
  *
  */
-public class OrderingTest extends TestCase
+public class OrderingTest
 {
     public class TestResource extends Resource
     {
@@ -179,15 +182,15 @@ public class OrderingTest extends TestCase
         
     }
     
-    
+    @Test
     public void testRelativeOrdering0 ()
     throws Exception
     {
         //Example from ServletSpec p.70
         WebAppContext wac = new WebAppContext();
-        MetaData metaData = new MetaData(wac);
+        MetaData metaData = new MetaData();
         List<Resource> resources = new ArrayList<Resource>();
-        metaData._ordering = metaData.new RelativeOrdering();
+        metaData._ordering = new RelativeOrdering(metaData);
         
         //A: after others, after C
         TestResource jar1 = new TestResource("A");
@@ -273,14 +276,14 @@ public class OrderingTest extends TestCase
  
   
 
-    
+    @Test
     public void testRelativeOrdering1 ()
     throws Exception
     {
         List<Resource> resources = new ArrayList<Resource>();
         WebAppContext wac = new WebAppContext();
-        MetaData metaData = new MetaData(wac);
-        metaData._ordering = metaData.new RelativeOrdering();
+        MetaData metaData = new MetaData();
+        metaData._ordering = new RelativeOrdering(metaData);
         
         //Example from ServletSpec p.70-71
         //No name: after others, before C
@@ -373,14 +376,14 @@ public class OrderingTest extends TestCase
             fail("No outcome matched "+orderedNames);
     }
     
-   
+    @Test
     public void testRelativeOrdering2 ()
     throws Exception
     {
         List<Resource> resources = new ArrayList<Resource>();
         WebAppContext wac = new WebAppContext();
-        MetaData metaData = new MetaData(wac);
-        metaData._ordering = metaData.new RelativeOrdering();
+        MetaData metaData = new MetaData();
+        metaData._ordering = new RelativeOrdering(metaData);
         
         //Example from Spec p. 71-72
         
@@ -448,14 +451,14 @@ public class OrderingTest extends TestCase
             fail ("No outcome matched "+result);
     }
     
-
+    @Test
     public void testRelativeOrdering3 ()
     throws Exception
     { 
         List<Resource> resources = new ArrayList<Resource>();
         WebAppContext wac = new WebAppContext();
-        MetaData metaData = new MetaData(wac);
-        metaData._ordering = metaData.new RelativeOrdering();
+        MetaData metaData = new MetaData();
+        metaData._ordering = new RelativeOrdering(metaData);
 
         //A: after others, before C
         TestResource jar1 = new TestResource("A");
@@ -503,7 +506,8 @@ public class OrderingTest extends TestCase
         if (!checkResult(result, outcomes))
             fail ("No outcome matched "+result);
     }
-   
+    
+    @Test
     public void testCircular1 ()
     throws Exception
     {
@@ -512,8 +516,8 @@ public class OrderingTest extends TestCase
         //B: after A
         List<Resource> resources = new ArrayList<Resource>();
         WebAppContext wac = new WebAppContext();
-        MetaData metaData = new MetaData(wac);
-        metaData._ordering = metaData.new RelativeOrdering();
+        MetaData metaData = new MetaData();
+        metaData._ordering = new RelativeOrdering(metaData);
         
         //A: after B
         TestResource jar1 = new TestResource("A");
@@ -552,14 +556,14 @@ public class OrderingTest extends TestCase
  
     
     
-   
+    @Test
     public void testInvalid1 ()
     throws Exception
     {      
         List<Resource> resources = new ArrayList<Resource>();
         WebAppContext wac = new WebAppContext();
-        MetaData metaData = new MetaData(wac);
-        metaData._ordering = metaData.new RelativeOrdering();
+        MetaData metaData = new MetaData();
+        metaData._ordering = new RelativeOrdering(metaData);
         
         //A: after others, before C
         TestResource jar1 = new TestResource("A");
@@ -611,7 +615,7 @@ public class OrderingTest extends TestCase
         }
     }
 
-    
+    @Test
     public void testAbsoluteOrdering1 ()
     throws Exception
     {
@@ -620,8 +624,8 @@ public class OrderingTest extends TestCase
         //
         List<Resource> resources = new ArrayList<Resource>();
         WebAppContext wac = new WebAppContext();
-        MetaData metaData = new MetaData(wac);
-        metaData._ordering = metaData.new AbsoluteOrdering();
+        MetaData metaData = new MetaData();
+        metaData._ordering = new AbsoluteOrdering(metaData);
         ((AbsoluteOrdering)metaData._ordering).add("A");
         ((AbsoluteOrdering)metaData._ordering).add("B");
         ((AbsoluteOrdering)metaData._ordering).add("C");
@@ -686,7 +690,7 @@ public class OrderingTest extends TestCase
             fail("No outcome matched "+result);
     }
    
-    
+    @Test
     public void testAbsoluteOrdering2 ()
     throws Exception
     {
@@ -694,8 +698,8 @@ public class OrderingTest extends TestCase
         List<Resource> resources = new ArrayList<Resource>();
         
         WebAppContext wac = new WebAppContext();
-        MetaData metaData = new MetaData(wac);
-        metaData._ordering = metaData.new AbsoluteOrdering();
+        MetaData metaData = new MetaData();
+        metaData._ordering = new AbsoluteOrdering(metaData);
         ((AbsoluteOrdering)metaData._ordering).add("C");
         ((AbsoluteOrdering)metaData._ordering).add("B");
         ((AbsoluteOrdering)metaData._ordering).add("A");
@@ -758,15 +762,16 @@ public class OrderingTest extends TestCase
         if (!checkResult(result, outcomes))
             fail("No outcome matched "+result);
     }
- 
+    
+    @Test
     public void testAbsoluteOrdering3 ()
     throws Exception
     {
         //empty <absolute-ordering>
         
         WebAppContext wac = new WebAppContext();
-        MetaData metaData = new MetaData(wac);
-        metaData._ordering = metaData.new AbsoluteOrdering();
+        MetaData metaData = new MetaData();
+        metaData._ordering = new AbsoluteOrdering(metaData);
         List<Resource> resources = new ArrayList<Resource>();
         
         resources.add(new TestResource("A"));
@@ -776,15 +781,15 @@ public class OrderingTest extends TestCase
         assertTrue(list.isEmpty());
     }
     
-    
+    @Test
     public void testRelativeOrderingWithPlainJars ()
     throws Exception
     {
         //B,A,C other jars with no fragments
         List<Resource> resources = new ArrayList<Resource>();
         WebAppContext wac = new WebAppContext();
-        MetaData metaData = new MetaData(wac);
-        metaData._ordering = metaData.new RelativeOrdering();
+        MetaData metaData = new MetaData();
+        metaData._ordering = new RelativeOrdering(metaData);
 
         //A: after others, before C
         TestResource jar1 = new TestResource("A");
@@ -842,6 +847,7 @@ public class OrderingTest extends TestCase
             fail ("No outcome matched "+result);
     }
     
+    @Test
     public void testAbsoluteOrderingWithPlainJars()
     throws Exception
     {
@@ -850,8 +856,8 @@ public class OrderingTest extends TestCase
         //
         List<Resource> resources = new ArrayList<Resource>();
         WebAppContext wac = new WebAppContext();
-        MetaData metaData = new MetaData(wac);
-        metaData._ordering = metaData.new AbsoluteOrdering();
+        MetaData metaData = new MetaData();
+        metaData._ordering = new AbsoluteOrdering(metaData);
         ((AbsoluteOrdering)metaData._ordering).add("A");
         ((AbsoluteOrdering)metaData._ordering).add("B");
         ((AbsoluteOrdering)metaData._ordering).add("C");
