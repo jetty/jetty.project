@@ -257,16 +257,18 @@ public class MetaData
     public void resolve (WebAppContext context)
     throws Exception
     {
-        //TODO - apply all descriptors and annotations in order:
-        //apply descriptorProcessors to web-defaults.xml
-        //apply descriptorProcessors to web.xml
-        //apply descriptorProcessors to web-override.xml
-        //apply discovered annotations from container path
-        //apply discovered annotations from WEB-INF/classes
-        //for the ordering of the jars in WEB-INF/lib:
-        //  +apply descriptorProcessors to web-fragment.xml
-        //  +apply discovered annotations
-      
+        // Set the ordered lib attribute
+        List<String> orderedLibs = new ArrayList<String>();
+        for (Resource webInfJar:_orderedWebInfJars)
+        {
+            //get just the name of the jar file
+            String fullname = webInfJar.getName();
+            int i = fullname.indexOf(".jar");          
+            int j = fullname.lastIndexOf("/", i);
+            orderedLibs.add(fullname.substring(j+1,i+4));
+        }
+        context.setAttribute(ORDERED_LIBS, orderedLibs);
+
 
         // Set the ordered lib attribute
         List<String> orderedLibs = new ArrayList<String>();

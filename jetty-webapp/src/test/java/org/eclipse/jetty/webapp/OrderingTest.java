@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.webapp;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,8 +25,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.TestCase;
-
+import org.junit.Test;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Ordering.AbsoluteOrdering;
 import org.eclipse.jetty.webapp.Ordering.RelativeOrdering;
@@ -33,7 +35,7 @@ import org.eclipse.jetty.webapp.Ordering.RelativeOrdering;
  *
  *
  */
-public class OrderingTest extends TestCase
+public class OrderingTest
 {
     public class TestResource extends Resource
     {
@@ -180,7 +182,7 @@ public class OrderingTest extends TestCase
         
     }
     
-    
+    @Test
     public void testRelativeOrdering0 ()
     throws Exception
     {
@@ -274,7 +276,7 @@ public class OrderingTest extends TestCase
  
   
 
-    
+    @Test
     public void testRelativeOrdering1 ()
     throws Exception
     {
@@ -374,7 +376,7 @@ public class OrderingTest extends TestCase
             fail("No outcome matched "+orderedNames);
     }
     
-   
+    @Test
     public void testRelativeOrdering2 ()
     throws Exception
     {
@@ -449,7 +451,7 @@ public class OrderingTest extends TestCase
             fail ("No outcome matched "+result);
     }
     
-
+    @Test
     public void testRelativeOrdering3 ()
     throws Exception
     { 
@@ -504,7 +506,8 @@ public class OrderingTest extends TestCase
         if (!checkResult(result, outcomes))
             fail ("No outcome matched "+result);
     }
-   
+    
+    @Test
     public void testCircular1 ()
     throws Exception
     {
@@ -553,7 +556,7 @@ public class OrderingTest extends TestCase
  
     
     
-   
+    @Test
     public void testInvalid1 ()
     throws Exception
     {      
@@ -612,7 +615,7 @@ public class OrderingTest extends TestCase
         }
     }
 
-    
+    @Test
     public void testAbsoluteOrdering1 ()
     throws Exception
     {
@@ -687,7 +690,7 @@ public class OrderingTest extends TestCase
             fail("No outcome matched "+result);
     }
    
-    
+    @Test
     public void testAbsoluteOrdering2 ()
     throws Exception
     {
@@ -759,7 +762,8 @@ public class OrderingTest extends TestCase
         if (!checkResult(result, outcomes))
             fail("No outcome matched "+result);
     }
- 
+    
+    @Test
     public void testAbsoluteOrdering3 ()
     throws Exception
     {
@@ -777,7 +781,7 @@ public class OrderingTest extends TestCase
         assertTrue(list.isEmpty());
     }
     
-    
+    @Test
     public void testRelativeOrderingWithPlainJars ()
     throws Exception
     {
@@ -843,6 +847,7 @@ public class OrderingTest extends TestCase
             fail ("No outcome matched "+result);
     }
     
+    @Test
     public void testAbsoluteOrderingWithPlainJars()
     throws Exception
     {
