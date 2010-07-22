@@ -745,5 +745,7 @@ public class ServletContextHandler extends ContextHandler
         void destroyServletInstance(Servlet s);
         void destroyFilterInstance(Filter f);
         void destroyListenerInstance(EventListener f);
+
+        public Decorator cloneFor(ContextHandler context);
     }
 }

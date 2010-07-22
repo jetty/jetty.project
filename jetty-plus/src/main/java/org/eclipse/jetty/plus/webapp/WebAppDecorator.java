@@ -22,6 +22,7 @@ import javax.servlet.ServletException;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
@@ -35,18 +36,26 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class WebAppDecorator implements Decorator
 {
-    private WebAppContext _context;
     private InjectionCollection _injections;
     private LifeCycleCallbackCollection _callbacks;
     private RunAsCollection _runAses;
 
-    public WebAppDecorator (WebAppContext context)
+    public WebAppDecorator ()
     {
-        _context = context;
     }
     
-    
-    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#cloneFor(org.eclipse.jetty.server.handler.ContextHandler)
+     */
+    public Decorator cloneFor(ContextHandler context)
+    {
+        // TODO maybe need to check for non-shared classloader???
+        return this;
+    }
+
+
+
     public InjectionCollection getInjections()
     {
         return _injections;

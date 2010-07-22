@@ -40,7 +40,7 @@ public class Configuration implements org.eclipse.jetty.webapp.Configuration
     public void preConfigure (WebAppContext context)
     throws Exception
     {      
-        WebAppDecorator decorator = new WebAppDecorator(context);
+        WebAppDecorator decorator = new WebAppDecorator();
         InjectionCollection injections = new InjectionCollection();
         context.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
         decorator.setInjections(injections);

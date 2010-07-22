@@ -168,11 +168,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             throw new IllegalArgumentException("template is started");
         _scontext=new Context();
         setErrorHandler(new ErrorPageErrorHandler());      
+
+        
         //Make a new MetaData to hold descriptor and annotation metadata
         _metadata = template.getMetaData();
         _configurations = new Configuration[]{new MetaDataConfiguration(template)};
 
-        System.err.println("webapp "+getContextPath()+" @ "+hashCode());
+        // TODO we need some better way to work out what attributes should be copied at this stage.
+        
         setAliases(template.isAliases());
         setBaseResource(template.getBaseResource());
         setClassLoader(template.getClassLoader()); // TODO maybe not share classloader?
@@ -181,6 +184,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         setDisplayName(template.getDisplayName());
         setLogger(template.getLogger()); // TODO maybe not shared ???
         setMaxFormContentSize(template.getMaxFormContentSize());  
+        
+        Decorator decorator = template.getDecorator();
+        if (decorator!=null)
+            setDecorator(decorator.cloneFor(this));
         
         Enumeration names=template.getAttributeNames();
         while(names.hasMoreElements())

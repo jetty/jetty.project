@@ -19,6 +19,7 @@ import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
@@ -46,6 +47,13 @@ public class WebAppDecoratorWrapper implements Decorator
         _introspector.registerHandler(new PostConstructAnnotationHandler(context));
         _introspector.registerHandler(new PreDestroyAnnotationHandler(context));
         _introspector.registerHandler(new DeclareRolesAnnotationHandler(context));
+    }
+    
+    /* ------------------------------------------------------------ */
+    public Decorator cloneFor(ContextHandler context)
+    {
+        WebAppContext wac = (WebAppContext)context;
+        return new WebAppDecoratorWrapper(wac,_wrappedDecorator.cloneFor(context));
     }
 
     /* ------------------------------------------------------------ */
