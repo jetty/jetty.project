@@ -24,6 +24,8 @@ public interface Configuration
 
     /* ------------------------------------------------------------------------------- */
     /** Set up for configuration.
+     * <p>
+     * Typically this step discovers configuration resources
      * @throws Exception
      */
     public void preConfigure (WebAppContext context) throws Exception;
@@ -31,6 +33,9 @@ public interface Configuration
     
     /* ------------------------------------------------------------------------------- */
     /** Configure WebApp.
+     * <p>
+     * Typically this step applies the discovered configuration resources to
+     * either the {@link WebAppContext} or the associated {@link MetaData}.
      * @throws Exception
      */
     public void configure (WebAppContext context) throws Exception;

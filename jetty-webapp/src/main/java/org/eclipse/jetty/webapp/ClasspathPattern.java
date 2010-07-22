@@ -230,10 +230,10 @@ public class ClasspathPattern
 
         if (_entries != null)
         {
-            int startIdx = 0;
             name = name.replace('/','.');
             name = name.replaceFirst("^[.]+","");
-
+            name = name.replaceAll("\\$.*$","");
+            
             for (Entry entry : _entries)
             {
                 if (entry != null)

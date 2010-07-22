@@ -131,7 +131,7 @@
     </init-param>
     <init-param>
       <param-name>maxCachedFiles</param-name>
-      <param-value>1000</param-value>
+      <param-value>2048</param-value>
     </init-param>
     <init-param>
       <param-name>cacheType</param-name>

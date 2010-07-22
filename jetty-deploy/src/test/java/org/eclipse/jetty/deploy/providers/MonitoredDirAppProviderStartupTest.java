@@ -58,7 +58,6 @@ public class MonitoredDirAppProviderStartupTest
     public void testStartupContext()
     {
         // Check Server for Handlers
-        jetty.printHandlers(System.out);
         jetty.assertWebAppContextsExists("/foo");
     }
 }

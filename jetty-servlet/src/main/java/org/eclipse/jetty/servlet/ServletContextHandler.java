@@ -129,8 +129,7 @@ public class ServletContextHandler extends ContextHandler
         else if (parent instanceof HandlerCollection)
             ((HandlerCollection)parent).addHandler(this);
     }    
-    
- 
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.handler.ContextHandler#doStop()

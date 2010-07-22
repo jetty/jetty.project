@@ -152,7 +152,7 @@ public class XmlConfiguredJetty
         {
             for (WebAppContext context : contexts)
             {
-                System.out.println("WebAppContext should not exist:\n" + toString(context));
+                System.out.println("WebAppContext should not exist:\n" + context);
             }
             Assert.assertEquals("Contexts.size",0,contexts.size());
         }
@@ -381,12 +381,6 @@ public class XmlConfiguredJetty
 
     }
 
-    public void printHandlers(PrintStream out)
-    {
-        Handler handler = server.getHandler();
-        out.println(toString(handler));
-    }
-
     public void removeContext(String name)
     {
         File destDir = new File(jettyHome,"contexts");
@@ -438,20 +432,6 @@ public class XmlConfiguredJetty
         server.stop();
     }
 
-    public String toString(Handler handler)
-    {
-        if (handler instanceof HandlerCollection)
-        {
-            return ((HandlerCollection)handler).dump();
-        }
-
-        if (handler instanceof AbstractHandler)
-        {
-            return ((AbstractHandler)handler).dump();
-        }
-
-        return handler.toString();
-    }
 
     public void waitForDirectoryScan()
     {

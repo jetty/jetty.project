@@ -216,7 +216,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         if (resourceCache!=null)
         {
             if (max_cache_size!=-1 || max_cached_file_size!= -2 || max_cached_files!=-2)
-                _servletContext.log("ignoring resource cache configuration, using resourceCache attribute");
+                Log.debug("ignoring resource cache configuration, using resourceCache attribute");
             if (_relativeResourceBase!=null || _resourceBase!=null)
                 throw new UnavailableException("resourceCache specified with resource bases");
             _cache=(ResourceCache)_servletContext.getAttribute(resourceCache);

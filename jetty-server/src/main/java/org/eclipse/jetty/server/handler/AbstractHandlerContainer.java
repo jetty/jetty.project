@@ -92,6 +92,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         dumpHandlers(out,indent);
     }
     
+    /* ------------------------------------------------------------ */
     protected void dumpHandlers(Appendable out,String indent) throws IOException
     {
         Handler[] handlers = getHandlers();

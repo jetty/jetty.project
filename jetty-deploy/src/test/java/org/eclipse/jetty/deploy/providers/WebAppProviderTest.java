@@ -1,6 +1,7 @@
 package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
+import java.util.Arrays;
 
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.junit.AfterClass;
@@ -41,16 +42,17 @@ public class WebAppProviderTest
     public void testStartupContext()
     {
         // Check Server for Handlers
-        jetty.printHandlers(System.out);
         jetty.assertWebAppContextsExists("/foo");
 
         File workDir = jetty.getJettyDir("workish");
 
+        System.err.println("workDir="+workDir);
+        
         // Test for regressions
         assertDirNotExists("root of work directory",workDir,"webinf");
         assertDirNotExists("root of work directory",workDir,"jsp");
 
-        // Test for correct behavior
+        // Test for correct behaviour
         Assert.assertTrue("Should have generated directory in work directory: " + workDir,hasJettyGeneratedPath(workDir,"foo.war"));
     }
 
@@ -58,13 +60,14 @@ public class WebAppProviderTest
     {
         for (File path : basedir.listFiles())
         {
-            if (path.exists() && path.isDirectory() && path.getName().startsWith("Jetty_") && path.getName().contains(expectedWarFilename))
+            if (path.exists() && path.isDirectory() && path.getName().startsWith("jetty-") && path.getName().contains(expectedWarFilename))
             {
                 System.out.println("Found expected generated directory: " + path);
                 return true;
             }
         }
 
+        System.err.println("did not find "+expectedWarFilename+" in "+Arrays.asList(basedir.listFiles()));
         return false;
     }
 

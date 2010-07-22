@@ -228,7 +228,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     {
         if (_idleTimestamp!=0 && _maxIdleTime!=0 && now>(_idleTimestamp+_maxIdleTime))
         {
-            System.err.println("IDLE "+this);
             idleExpired();
         }
     }

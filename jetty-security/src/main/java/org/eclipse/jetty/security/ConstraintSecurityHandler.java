@@ -431,13 +431,14 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     protected void dump(Appendable out,String indent) throws IOException
     {
-        super.dump(out,indent);
-        out.append(indent).append(" +=roles=").append(String.valueOf(_roles)).append('\n');
+        out.append(toString()).append(isStarted()?" started":" STOPPED").append('\n');
+        out.append(indent).append(" +-").append(String.valueOf(_roles)).append('\n');
         
         for (Object path : _constraintMap.keySet())
         {
             Object constraint = _constraintMap.get(path);
-            out.append(indent).append(" +=").append(String.valueOf(path)).append('=').append(String.valueOf(constraint)).append('\n');
+            out.append(indent).append(" +-").append(String.valueOf(path)).append('=').append(String.valueOf(constraint)).append('\n');
         }
+        dumpHandlers(out,indent);
     }
 }
