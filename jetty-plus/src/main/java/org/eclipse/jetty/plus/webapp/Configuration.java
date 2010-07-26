@@ -19,9 +19,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 
-import org.eclipse.jetty.plus.annotation.InjectionCollection;
-import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -40,16 +37,7 @@ public class Configuration implements org.eclipse.jetty.webapp.Configuration
     public void preConfigure (WebAppContext context)
     throws Exception
     {      
-        WebAppDecorator decorator = new WebAppDecorator();
-        InjectionCollection injections = new InjectionCollection();
-        context.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
-        decorator.setInjections(injections);
-        LifeCycleCallbackCollection callbacks = new LifeCycleCallbackCollection();
-        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, callbacks);
-        decorator.setLifecycleCallbacks(callbacks);
-        RunAsCollection runAsCollection = new RunAsCollection();
-        context.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);  
-        decorator.setRunAses(runAsCollection);
+        WebAppDecorator decorator = new WebAppDecorator(context);
         context.setDecorator(decorator);  
     }
    
@@ -67,10 +55,6 @@ public class Configuration implements org.eclipse.jetty.webapp.Configuration
     {
         //lock this webapp's java:comp namespace as per J2EE spec
         lockCompEnv(context);
-        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, null);
-        context.setAttribute(InjectionCollection.INJECTION_COLLECTION, null);
-        context.setAttribute(RunAsCollection.RUNAS_COLLECTION, null); 
-
     }
     
     public void deconfigure (WebAppContext context)

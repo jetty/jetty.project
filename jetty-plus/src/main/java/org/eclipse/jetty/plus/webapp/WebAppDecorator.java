@@ -36,12 +36,11 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class WebAppDecorator implements Decorator
 {
-    private InjectionCollection _injections;
-    private LifeCycleCallbackCollection _callbacks;
-    private RunAsCollection _runAses;
+    protected WebAppContext _context;
 
-    public WebAppDecorator ()
+    public WebAppDecorator (WebAppContext context)
     {
+        _context = context;
     }
     
     /* ------------------------------------------------------------ */
@@ -50,51 +49,10 @@ public class WebAppDecorator implements Decorator
      */
     public Decorator cloneFor(ContextHandler context)
     {
-        // TODO maybe need to check for non-shared classloader???
-        return this;
+        return new WebAppDecorator((WebAppContext)context);
     }
 
 
-
-    public InjectionCollection getInjections()
-    {
-        return _injections;
-    }
-
-
-
-    public void setInjections(InjectionCollection injections)
-    {
-        _injections = injections;
-    }
-
-
-
-    public LifeCycleCallbackCollection getLifecycleCallbacks()
-    {
-        return _callbacks;
-    }
-
-
-
-    public void setLifecycleCallbacks(LifeCycleCallbackCollection lifecycleCallbacks)
-    {
-        _callbacks = lifecycleCallbacks;
-    }
-
-
-
-    public RunAsCollection getRunAses()
-    {
-        return _runAses;
-    }
-
-
-
-    public void setRunAses(RunAsCollection runAses)
-    {
-        _runAses = runAses;
-    }
 
 
 
@@ -179,18 +137,20 @@ public class WebAppDecorator implements Decorator
     throws ServletException
     {       
 
+        RunAsCollection runAses = (RunAsCollection)_context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
+        if (runAses != null)
+            runAses.setRunAs(o);
+        
+        InjectionCollection injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+        if (injections != null)
+            injections.inject(o);
 
-        if (_runAses != null)
-            _runAses.setRunAs(o);
-
-        if (_injections != null)
-            _injections.inject(o);
-
-        if (_callbacks != null)
+        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
+        if (callbacks != null)
         {
             try
             {
-                _callbacks.callPostConstructCallback(o);
+                callbacks.callPostConstructCallback(o);
             }
             catch (Exception e)
             {
@@ -201,11 +161,12 @@ public class WebAppDecorator implements Decorator
     
     protected void destroy (Object o)
     {
-        if (_callbacks != null)
+        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION); 
+        if (callbacks != null)
         {
             try
             {
-                _callbacks.callPreDestroyCallback(o);
+                callbacks.callPreDestroyCallback(o);
             }
             catch (Exception e)
             {

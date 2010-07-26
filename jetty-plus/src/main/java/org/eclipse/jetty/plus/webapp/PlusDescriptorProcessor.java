@@ -26,6 +26,7 @@ import org.eclipse.jetty.plus.annotation.LifeCycleCallback;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.PostConstructCallback;
 import org.eclipse.jetty.plus.annotation.PreDestroyCallback;
+import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.Link;
 import org.eclipse.jetty.plus.jndi.NamingEntry;
@@ -69,7 +70,13 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#start(WebAppContext, org.eclipse.jetty.webapp.Descriptor)
      */
     public void start(WebAppContext context, Descriptor descriptor)
-    {     
+    { 
+        InjectionCollection injections = new InjectionCollection();
+        context.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
+        LifeCycleCallbackCollection callbacks = new LifeCycleCallbackCollection();
+        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, callbacks);
+        RunAsCollection runAsCollection = new RunAsCollection();
+        context.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);  
     }
     
     

@@ -37,7 +37,7 @@ public class MetaData
 
     public enum Origin {NotSet, WebXml, WebDefaults, WebOverride, WebFragment, Annotation};
     
-    protected Map<String, OriginInfo> _origins = new HashMap<String,OriginInfo>();
+    protected Map<String, OriginInfo> _origins;
     protected Descriptor _webDefaultsRoot;
     protected Descriptor _webXmlRoot;
     protected Descriptor _webOverrideRoot;
@@ -259,6 +259,9 @@ public class MetaData
     public void resolve (WebAppContext context)
     throws Exception
     {
+        //Ensure origins is fresh
+        _origins = new HashMap<String,OriginInfo>();
+        
         // Set the ordered lib attribute
         List<String> orderedLibs = new ArrayList<String>();
         for (Resource webInfJar:_orderedWebInfJars)
