@@ -95,7 +95,8 @@
                             javax.net.ssl,
                             !org.mortbay.*,
                             org.objectweb.asm;version="3.1.0";resolution:=optional,
-                            org.objectweb.asm.commons;version="3.1.0";resolution:=optional
+                            org.objectweb.asm.commons;version="3.1.0";resolution:=optional,
+                            javax.security.auth.message*;resolution:=optional
                             *
                         </Import-Package>
                         <Export-Package>org.eclipse.jetty*</Export-Package>
