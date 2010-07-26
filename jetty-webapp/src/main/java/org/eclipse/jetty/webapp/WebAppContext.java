@@ -21,6 +21,7 @@ import java.security.PermissionCollection;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpSessionActivationListener;
@@ -172,7 +173,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         
         //Make a new MetaData to hold descriptor and annotation metadata
         _metadata = template.getMetaData();
-        _configurations = new Configuration[]{new MetaDataConfiguration(template)};
+        
+        _configurations = new Configuration[]{new CloneConfiguration(template)};
 
         // TODO we need some better way to work out what attributes should be copied at this stage.
         
@@ -185,11 +187,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         setLogger(template.getLogger()); // TODO maybe not shared ???
         setMaxFormContentSize(template.getMaxFormContentSize());  
         
-        Decorator decorator = template.getDecorator();
-        if (decorator!=null)
-            setDecorator(decorator.cloneFor(this));
-        
-        Enumeration names=template.getAttributeNames();
+        Enumeration<?> names=template.getAttributeNames();
         while(names.hasMoreElements())
         {
             String name = (String)names.nextElement();

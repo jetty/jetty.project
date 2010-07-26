@@ -149,23 +149,22 @@ public class CloudServer
             {
                 return null;
             }
-            
         };
         
-        WebAppClassLoader loader = new WebAppClassLoader(loaderContext);
+        WebAppClassLoader loader = new CloudLoader(loaderContext);
         loader.addClassPath("../test-jetty-webapp/target/classes");
         loader.addJars(Resource.newResource("../test-jetty-webapp/target/test-jetty-webapp-7.2.0-SNAPSHOT/WEB-INF/lib"));
         
         
         // Create a base configuration
         /* Cloud deploy */
-        boolean cloud=Boolean.getBoolean("nocloud");
+        boolean cloud=!Boolean.getBoolean("nocloud");
         if (cloud)
         {
+            Log.info("Cload deploy");
             final WebAppContext template = new WebAppContext();
             template.setClassLoader(loader);
             template.setBaseResource(baseResource);
-            template.setDefaultsDescriptor("src/main/config/etc/webdefault.xml");
             template.setAttribute("instance","-1");
             template.setServer(server);
             template.preConfigure();
@@ -175,7 +174,7 @@ public class CloudServer
             for (int i=0;i<10;i++)
             {
                 final WebAppContext webapp = new WebAppContext(template);
-                webapp.setAttribute("cloudCache",cache);
+                webapp.setAttribute("resourceCache",cache);
                 webapp.setAttribute("instance",i);
 
                 if (i>0)

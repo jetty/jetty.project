@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.annotations;
 
+import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -21,31 +22,17 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *
  *
  */
-public class AnnotationConfiguration implements Configuration
+public class AnnotationConfiguration extends AbstractConfiguration
 {
-    
-    public void preConfigure(final WebAppContext context) throws Exception
-    {
-    }
-   
-    
+    @Override
     public void configure(WebAppContext context) throws Exception
     {      
-       WebAppDecoratorWrapper wrapper = new WebAppDecoratorWrapper(context, context.getDecorator());
-       context.setDecorator(wrapper);   
+       context.addDecorator(new AnnotationDecorator(context));   
     }
 
-
-
-    public void deconfigure(WebAppContext context) throws Exception
+    @Override
+    public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
-        
-    }
-
-
-
-
-    public void postConfigure(WebAppContext context) throws Exception
-    {
+        context.addDecorator(new AnnotationDecorator(context));   
     }
 }

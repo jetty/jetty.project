@@ -19,7 +19,7 @@ import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 
-public class WebInfConfiguration implements Configuration
+public class WebInfConfiguration extends AbstractConfiguration
 {
     public static final String TEMPDIR_CONFIGURED = "org.eclipse.jetty.tmpdirConfigured";
     public static final String CONTAINER_JAR_PATTERN = "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern";
@@ -33,9 +33,7 @@ public class WebInfConfiguration implements Configuration
     
     protected Resource _preUnpackBaseResource;
     
-    
-    
-    
+    @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
         // Look for a work directory
@@ -108,14 +106,8 @@ public class WebInfConfiguration implements Configuration
         webInfJarNameMatcher.match(webInfPattern, uris, true); //null is inclusive, no pattern == all jars match 
     }
     
-    
-    
-    public void postConfigure(WebAppContext context) throws Exception
-    {
-        //context.setAttribute(CONTAINER_JAR_RESOURCES, null);
-    }
-    
 
+    @Override
     public void configure(WebAppContext context) throws Exception
     {
         //cannot configure if the context is already started
@@ -153,7 +145,8 @@ public class WebInfConfiguration implements Configuration
             context.setBaseResource(new ResourceCollection(collection));
         }
     }
-    
+
+    @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
         // delete temp directory if we had to create it or if it isn't called work
@@ -172,6 +165,22 @@ public class WebInfConfiguration implements Configuration
         context.setBaseResource(_preUnpackBaseResource);
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.webapp.AbstractConfiguration#cloneConfigure(org.eclipse.jetty.webapp.WebAppContext, org.eclipse.jetty.webapp.WebAppContext)
+     */
+    @Override
+    public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
+    {
+        File tmpDir=File.createTempFile(WebInfConfiguration.getCanonicalNameForWebAppTmpDir(context),"",template.getTempDirectory().getParentFile());
+        if (tmpDir.exists())
+            tmpDir.delete();
+        tmpDir.mkdir();
+        tmpDir.deleteOnExit();
+        context.setTempDirectory(tmpDir);
+    }
+
+
     /* ------------------------------------------------------------ */
     /**
      * Get a temporary directory in which to unpack the war etc etc.

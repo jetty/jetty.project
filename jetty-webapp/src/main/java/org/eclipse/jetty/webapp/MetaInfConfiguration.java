@@ -32,13 +32,13 @@ import org.eclipse.jetty.util.resource.Resource;
  * <li>resources
  * </ul>
  */
-public class MetaInfConfiguration implements Configuration
+public class MetaInfConfiguration extends AbstractConfiguration
 {
     public static final String METAINF_TLDS = TagLibConfiguration.TLD_RESOURCES;
     public static final String METAINF_FRAGMENTS = FragmentConfiguration.FRAGMENT_RESOURCES;
     public static final String METAINF_RESOURCES = WebInfConfiguration.RESOURCE_URLS;
   
-
+    @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
        //Merge all container and webinf lib jars to look for META-INF resources
@@ -75,21 +75,8 @@ public class MetaInfConfiguration implements Configuration
             scanner.scan(null, uris, true);
         }
     }
-    
-    
 
-    public void configure(WebAppContext context) throws Exception
-    {
-        
-    }
-
-
-    public void deconfigure(WebAppContext context) throws Exception
-    {
- 
-    }
-
-
+    @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
         context.setAttribute(METAINF_FRAGMENTS, null); 

@@ -92,9 +92,13 @@ public class AnnotationIntrospector
             {
                 handler.handle(clazz);
             }
+            catch (RuntimeException e)
+            {
+                throw e;
+            }
             catch (Exception e)
             {
-                Log.warn(e);
+                throw new RuntimeException(e);
             }
         }
      

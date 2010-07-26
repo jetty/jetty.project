@@ -67,13 +67,13 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  * on the servlet itself or as ServletContext initParameters with a prefix
  * of org.eclipse.jetty.servlet.Default. :
  * <PRE>
- *   acceptRanges     If true, range requests and responses are
+ *  acceptRanges      If true, range requests and responses are
  *                    supported
  *
- *   dirAllowed       If true, directory listings are returned if no
+ *  dirAllowed        If true, directory listings are returned if no
  *                    welcome file is found. Else 403 Forbidden.
  *
- *   welcomeServlets  If true, attempt to dispatch to welcome files
+ *  welcomeServlets   If true, attempt to dispatch to welcome files
  *                    that are servlets, but only after no matching static
  *                    resources could be found. If false, then a welcome
  *                    file must exist on disk. If "exact", then exact
@@ -83,17 +83,17 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *                    This must be false if you want directory listings,
  *                    but have index.jsp in your welcome file list.
  *
- *   redirectWelcome  If true, welcome files are redirected rather than
+ *  redirectWelcome   If true, welcome files are redirected rather than
  *                    forwarded to.
  *
- *   gzip             If set to true, then static content will be served as
+ *  gzip              If set to true, then static content will be served as
  *                    gzip content encoded if a matching resource is
  *                    found ending with ".gz"
  *
  *  resourceBase      Set to replace the context resource base
  *
  *  resourceCache     If set, this is a context attribute name, which the servlet 
- *                    will use to look for a shared ResourceCache instance.
+ *                    will use to look for a shared ResourceCache instance. 
  *                        
  *  relativeResourceBase
  *                    Set with a pathname relative to the base of the
@@ -222,29 +222,27 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             _cache=(ResourceCache)_servletContext.getAttribute(resourceCache);
 
             if (_cache==null)
-                throw new UnavailableException("Could not find resourceCache "+resourceCache);
+                Log.debug("Could not find resourceCache "+resourceCache);
         }
-        else
-        {
-            try
-            {
-                if (max_cached_files>0)
-                {
-                    _cache= new ResourceCache(this,_mimeTypes,_useFileMappedBuffer);
 
-                    if (max_cache_size>0)
-                        _cache.setMaxCacheSize(max_cache_size);
-                    if (max_cached_file_size>=-1)
-                        _cache.setMaxCachedFileSize(max_cached_file_size);
-                    if (max_cached_files>=-1)
-                        _cache.setMaxCachedFiles(max_cached_files);
-                }
-            }
-            catch (Exception e)
+        try
+        {
+            if (_cache==null && max_cached_files>0)
             {
-                Log.warn(Log.EXCEPTION,e);
-                throw new UnavailableException(e.toString());
+                _cache= new ResourceCache(this,_mimeTypes,_useFileMappedBuffer);
+
+                if (max_cache_size>0)
+                    _cache.setMaxCacheSize(max_cache_size);
+                if (max_cached_file_size>=-1)
+                    _cache.setMaxCachedFileSize(max_cached_file_size);
+                if (max_cached_files>=-1)
+                    _cache.setMaxCachedFiles(max_cached_files);
             }
+        }
+        catch (Exception e)
+        {
+            Log.warn(Log.EXCEPTION,e);
+            throw new UnavailableException(e.toString());
         }
 
         _servletHandler= (ServletHandler) _contextHandler.getChildHandlerByClass(ServletHandler.class);

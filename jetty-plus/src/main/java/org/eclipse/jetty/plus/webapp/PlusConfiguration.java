@@ -19,8 +19,12 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 
+import org.eclipse.jetty.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
+import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 
@@ -29,20 +33,24 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *
  *
  */
-public class Configuration implements org.eclipse.jetty.webapp.Configuration
+public class PlusConfiguration extends AbstractConfiguration
 {
-
     private Integer _key;
     
+    @Override
     public void preConfigure (WebAppContext context)
     throws Exception
     {      
-        WebAppDecorator decorator = new WebAppDecorator(context);
-        context.setDecorator(decorator);  
+        context.addDecorator(new PlusDecorator(context));  
     }
-   
-  
+ 
+    @Override
+    public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
+    {
+        context.addDecorator(new PlusDecorator(context));  
+    }
 
+    @Override
     public void configure (WebAppContext context)
     throws Exception
     {
@@ -50,13 +58,15 @@ public class Configuration implements org.eclipse.jetty.webapp.Configuration
         
         context.getMetaData().addDescriptorProcessor(new PlusDescriptorProcessor());
     }
-    
+
+    @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
         //lock this webapp's java:comp namespace as per J2EE spec
         lockCompEnv(context);
     }
-    
+
+    @Override
     public void deconfigure (WebAppContext context)
     throws Exception
     {

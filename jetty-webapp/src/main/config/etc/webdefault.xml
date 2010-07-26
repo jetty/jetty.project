@@ -40,63 +40,63 @@
     <param-value>-1</param-value> </context-param>
   -->
 
-
   <!-- ==================================================================== -->
   <!-- The default servlet.                                                 -->
   <!-- This servlet, normally mapped to /, provides the handling for static -->
   <!-- content, OPTIONS and TRACE methods for the context.                  -->
   <!-- The following initParameters are supported:                          -->
-  <!--                                                                      -->
-  <!--   aliases          If true, aliases like symlinks are allowed. Note  -->
-  <!--                    that security constraints might be bypassed by    -->
-  <!--                    aliases static content.                           -->
-  <!--                                                                      -->
-  <!--   acceptRanges     If true, range requests and responses are         -->
-  <!--                    supported                                         -->
-  <!--                                                                      -->
-  <!--   dirAllowed       If true, directory listings are returned if no    -->
-  <!--                    welcome file is found. Else 403 Forbidden.        -->
-  <!--                                                                      -->
-  <!--   welcomeServlets  If true, attempt to dispatch to welcome files     -->
-  <!--                    that are servlets, if no matching static          -->
-  <!--                    resources can be found.                           -->
-  <!--                                                                      -->
-  <!--   redirectWelcome  If true, redirect welcome file requests           -->
-  <!--                    else use request dispatcher forwards              -->
-  <!--                                                                      -->
-  <!--   gzip             If set to true, then static content will be served-->
-  <!--                    as gzip content encoded if a matching resource is -->
-  <!--                    found ending with ".gz"                           -->
-  <!--                                                                      -->
-  <!--   resoureBase      Can be set to replace the context resource base   -->
-  <!--                                                                      -->
-  <!--   relativeResourceBase                                               -->
-  <!--                    Set with a pathname relative to the base of the   -->
-  <!--                    servlet context root. Useful for only serving     -->
-  <!--                    static content from only specific subdirectories. -->
-  <!--                                                                      -->
-  <!--   useFileMappedBuffer                                                -->
-  <!--                    If set to true (the default), a  memory mapped    -->
-  <!--                    file buffer will be used to serve static content  -->
-  <!--                    when using an NIO connector. Setting this value   -->
-  <!--                    to false means that a direct buffer will be used  -->
-  <!--                    instead. If you are having trouble with Windows   -->
-  <!--                    file locking, set this to false.                  -->
-  <!--                                                                      -->
-  <!--  cacheControl      If set, all static content will have this value   -->
-  <!--                    set as the cache-control header.                  -->
-  <!--                                                                      -->
-  <!--  maxCacheSize      Maximum size of the static resource cache         -->
-  <!--                                                                      -->
-  <!--  maxCachedFileSize Maximum size of any single file in the cache      -->
-  <!--                                                                      -->
-  <!--  maxCachedFiles    Maximum number of files in the cache              -->
-  <!--                                                                      -->
-  <!--  cacheType         "nio", "bio" or "both" to determine the type(s)   -->
-  <!--                    of resource cache. A bio cached buffer may be used-->
-  <!--                    by nio but is not as efficient as a nio buffer.   -->
-  <!--                    An nio cached buffer may not be used by bio.      -->
-  <!--                                                                      -->
+  <!--  
+ *  acceptRanges      If true, range requests and responses are
+ *                    supported
+ *
+ *  dirAllowed        If true, directory listings are returned if no
+ *                    welcome file is found. Else 403 Forbidden.
+ *
+ *  welcomeServlets   If true, attempt to dispatch to welcome files
+ *                    that are servlets, but only after no matching static
+ *                    resources could be found. If false, then a welcome
+ *                    file must exist on disk. If "exact", then exact
+ *                    servlet matches are supported without an existing file.
+ *                    Default is true.
+ *
+ *                    This must be false if you want directory listings,
+ *                    but have index.jsp in your welcome file list.
+ *
+ *  redirectWelcome   If true, welcome files are redirected rather than
+ *                    forwarded to.
+ *
+ *  gzip              If set to true, then static content will be served as
+ *                    gzip content encoded if a matching resource is
+ *                    found ending with ".gz"
+ *
+ *  resourceBase      Set to replace the context resource base
+ *
+ *  resourceCache     If set, this is a context attribute name, which the servlet 
+ *                    will use to look for a shared ResourceCache instance. 
+ *                        
+ *  relativeResourceBase
+ *                    Set with a pathname relative to the base of the
+ *                    servlet context root. Useful for only serving static content out
+ *                    of only specific subdirectories.
+ *
+ *  aliases           If True, aliases of resources are allowed (eg. symbolic
+ *                    links and caps variations). May bypass security constraints.
+ *
+ *  maxCacheSize      The maximum total size of the cache or 0 for no cache.
+ *  maxCachedFileSize The maximum size of a file to cache
+ *  maxCachedFiles    The maximum number of files to cache
+ *
+ *  useFileMappedBuffer
+ *                    If set to true, it will use mapped file buffer to serve static content
+ *                    when using NIO connector. Setting this value to false means that
+ *                    a direct buffer will be used instead of a mapped file buffer.
+ *                    By default, this is set to true.
+ *
+ *  cacheControl      If set, all static content will have this value set as the cache-control
+ *                    header.
+ -->
+ 
+ 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <servlet>
     <servlet-name>default</servlet-name>
@@ -134,16 +134,16 @@
       <param-value>2048</param-value>
     </init-param>
     <init-param>
-      <param-name>cacheType</param-name>
-      <param-value>both</param-value>
-    </init-param>
-    <init-param>
       <param-name>gzip</param-name>
       <param-value>true</param-value>
     </init-param>
     <init-param>
       <param-name>useFileMappedBuffer</param-name>
       <param-value>true</param-value>
+    </init-param>
+    <init-param>
+      <param-name>resourceCache</param-name>
+      <param-value>resourceCache</param-value>
     </init-param>
     <!--
     <init-param>

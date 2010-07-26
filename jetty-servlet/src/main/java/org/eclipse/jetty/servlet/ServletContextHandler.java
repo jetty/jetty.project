@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -63,13 +66,13 @@ public class ServletContextHandler extends ContextHandler
     public final static int SECURITY=2;
     public final static int NO_SESSIONS=0;
     public final static int NO_SECURITY=0;
-    
+
+    protected final List<Decorator> _decorators= new ArrayList<Decorator>();
     protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass=org.eclipse.jetty.security.ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
     protected ServletHandler _servletHandler;
     protected int _options;
-    protected Decorator _decorator;
     protected Object _restrictedContextListeners;
     
     /* ------------------------------------------------------------ */
@@ -227,14 +230,14 @@ public class ServletContextHandler extends ContextHandler
     	// OK to Initialize servlet handler now
     	if (_servletHandler != null && _servletHandler.isStarted())
     	{
-    	    if (_decorator!=null)
+    	    for (Decorator decorator : _decorators)
     	    {
                 if (_servletHandler.getFilters()!=null)
                     for (FilterHolder holder:_servletHandler.getFilters())
-                        _decorator.decorateFilterHolder(holder);
+                        decorator.decorateFilterHolder(holder);
     	        if(_servletHandler.getServlets()!=null)
     	            for (ServletHolder holder:_servletHandler.getServlets())
-    	                _decorator.decorateServletHolder(holder);
+    	                decorator.decorateServletHolder(holder);
     	    }   
     	        
     	    _servletHandler.initialize();
@@ -401,34 +404,44 @@ public class ServletContextHandler extends ContextHandler
 
     /* ------------------------------------------------------------ */
     /**
-     * @return The decorator used to resource inject new Filters, Servlets and EventListeners
+     * @return The decorator list used to resource inject new Filters, Servlets and EventListeners
      */
-    public Decorator getDecorator()
+    public List<Decorator> getDecorators()
     {
-        return _decorator;
+        return Collections.unmodifiableList(_decorators);
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * @param decorator The inject used to resource inject new Filters, Servlets and EventListeners
+     * @param decorators The lis of {@link Decorator}s
      */
-    public void setDecorator(Decorator decorator)
+    public void setDecorators(List<Decorator> decorators)
     {
-        _decorator = decorator;
+        _decorators.clear();
+        _decorators.addAll(decorators);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param decorator The decorator to add
+     */
+    public void addDecorator(Decorator decorator)
+    {
+        _decorators.add(decorator);
     }
 
     /* ------------------------------------------------------------ */
     void destroyServlet(Servlet servlet)
     {
-        if (_decorator!=null)
-            _decorator.destroyServletInstance(servlet);
+        for (Decorator decorator : _decorators)
+            decorator.destroyServletInstance(servlet);
     }
 
     /* ------------------------------------------------------------ */
     void destroyFilter(Filter filter)
     {
-        if (_decorator!=null)
-            _decorator.destroyFilterInstance(filter);
+        for (Decorator decorator : _decorators)
+            decorator.destroyFilterInstance(filter);
     }
     
     /* ------------------------------------------------------------ */
@@ -563,8 +576,8 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T f = c.newInstance();
-                if (_decorator!=null)
-                    f=_decorator.decorateFilterInstance(f);
+                for (Decorator decorator : _decorators)
+                    f=decorator.decorateFilterInstance(f);
                 return f;
             }
             catch (InstantiationException e)
@@ -583,8 +596,8 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T s = c.newInstance();
-                if (_decorator!=null)
-                    s=_decorator.decorateServletInstance(s);
+                for (Decorator decorator : _decorators)
+                    s=decorator.decorateServletInstance(s);
                 return s;
             }
             catch (InstantiationException e)
@@ -699,9 +712,9 @@ public class ServletContextHandler extends ContextHandler
                 {
                     throw new ServletException(e);
                 }
-                
-                if (_decorator!=null)
-                    l=_decorator.decorateListenerInstance(l);
+
+                for (Decorator decorator : _decorators)
+                    l=decorator.decorateListenerInstance(l);
                 return l;
             }
             catch(ServletException e)
@@ -733,6 +746,10 @@ public class ServletContextHandler extends ContextHandler
         }
     }
     
+    
+    /* ------------------------------------------------------------ */
+    /** Interface to decorate loaded classes.
+     */
     public interface Decorator
     {
         <T extends Filter> T decorateFilterInstance(T filter) throws ServletException;
@@ -745,7 +762,5 @@ public class ServletContextHandler extends ContextHandler
         void destroyServletInstance(Servlet s);
         void destroyFilterInstance(Filter f);
         void destroyListenerInstance(EventListener f);
-
-        public Decorator cloneFor(ContextHandler context);
     }
 }

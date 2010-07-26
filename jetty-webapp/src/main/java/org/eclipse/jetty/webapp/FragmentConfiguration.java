@@ -25,10 +25,11 @@ import org.eclipse.jetty.util.resource.Resource;
  * 
  * Process web-fragments in jars
  */
-public class FragmentConfiguration implements Configuration
+public class FragmentConfiguration extends AbstractConfiguration
 {
     public final static String FRAGMENT_RESOURCES="org.eclipse.jetty.webFragments";
     
+    @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
         if (!context.isConfigurationDiscovered())
@@ -38,7 +39,8 @@ public class FragmentConfiguration implements Configuration
         findWebFragments(context, context.getMetaData());
         
     }
-    
+
+    @Override
     public void configure(WebAppContext context) throws Exception
     { 
         if (!context.isConfigurationDiscovered())
@@ -48,11 +50,7 @@ public class FragmentConfiguration implements Configuration
         context.getMetaData().orderFragments(); 
     }
 
-    public void deconfigure(WebAppContext context) throws Exception
-    {
-       
-    }
-
+    @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
         context.setAttribute(FRAGMENT_RESOURCES, null);

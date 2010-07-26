@@ -28,6 +28,7 @@ import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -38,7 +39,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  *
  *
  */
-public class EnvConfiguration implements Configuration
+public class EnvConfiguration extends AbstractConfiguration
 {
     private URL jettyEnvXmlUrl;
 
@@ -56,6 +57,7 @@ public class EnvConfiguration implements Configuration
      * @see Configuration#configure(WebAppContext)
      * @throws Exception
      */
+    @Override
     public void preConfigure (WebAppContext context) throws Exception
     {        
         //create a java:comp/env
@@ -65,6 +67,7 @@ public class EnvConfiguration implements Configuration
     /** 
      * @throws Exception
      */
+    @Override
     public void configure (WebAppContext context) throws Exception
     {  
         if (Log.isDebugEnabled())
@@ -99,16 +102,13 @@ public class EnvConfiguration implements Configuration
         bindEnvEntries(context);
     }
 
-    public void postConfigure(WebAppContext context) throws Exception
-    {
-    }
-    
     
     /** 
      * Remove all jndi setup
      * @see Configuration#deconfigure(WebAppContext)
      * @throws Exception
      */
+    @Override
     public void deconfigure (WebAppContext context) throws Exception
     {
         //get rid of any bindings for comp/env for webapp

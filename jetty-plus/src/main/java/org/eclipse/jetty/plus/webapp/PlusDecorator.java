@@ -34,27 +34,14 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *
  *
  */
-public class WebAppDecorator implements Decorator
+public class PlusDecorator implements Decorator
 {
     protected WebAppContext _context;
 
-    public WebAppDecorator (WebAppContext context)
+    public PlusDecorator (WebAppContext context)
     {
         _context = context;
     }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#cloneFor(org.eclipse.jetty.server.handler.ContextHandler)
-     */
-    public Decorator cloneFor(ContextHandler context)
-    {
-        return new WebAppDecorator((WebAppContext)context);
-    }
-
-
-
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -62,8 +49,6 @@ public class WebAppDecorator implements Decorator
      */
     public void decorateFilterHolder(FilterHolder filter) throws ServletException
     {
-        // TODO Auto-generated method stub
-        
     }
     
     /* ------------------------------------------------------------ */

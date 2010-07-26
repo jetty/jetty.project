@@ -48,7 +48,7 @@ import org.eclipse.jetty.xml.XmlParser;
  * TODO - this has been superceded by the new TldScanner in jasper which uses ServletContainerInitializer to
  * find all the listeners in tag libs and register them.
  */
-public class TagLibConfiguration implements Configuration
+public class TagLibConfiguration extends AbstractConfiguration
 {
     public static final String TLD_RESOURCES = "org.eclipse.jetty.tlds";
     
@@ -198,6 +198,7 @@ public class TagLibConfiguration implements Configuration
     }
 
 
+    @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
         Set tlds = new HashSet();
@@ -269,6 +270,7 @@ public class TagLibConfiguration implements Configuration
     }
     
 
+    @Override
     public void configure (WebAppContext context) throws Exception
     {         
         TldProcessor processor = (TldProcessor)context.getAttribute(TldProcessor.TAGLIB_PROCESSOR); 
@@ -282,14 +284,10 @@ public class TagLibConfiguration implements Configuration
         processor.processRoots();
     }
 
+    @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
         context.setAttribute(TldProcessor.TAGLIB_PROCESSOR, null);
-    }
-
-    public void deconfigure(WebAppContext context) throws Exception
-    {
-        
     }
 
 }

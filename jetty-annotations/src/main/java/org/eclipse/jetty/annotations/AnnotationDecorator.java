@@ -30,30 +30,21 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *
  *
  */
-public class WebAppDecoratorWrapper implements Decorator
+public class AnnotationDecorator implements Decorator
 {
-    Decorator _wrappedDecorator;
     AnnotationIntrospector _introspector = new AnnotationIntrospector();
     
     /**
      * @param context
      */
-    public WebAppDecoratorWrapper(WebAppContext context, Decorator wrappedDecorator)
+    public AnnotationDecorator(WebAppContext context)
     {
-        _wrappedDecorator = wrappedDecorator;
         _introspector.registerHandler(new ResourceAnnotationHandler(context));
         _introspector.registerHandler(new ResourcesAnnotationHandler(context));
         _introspector.registerHandler(new RunAsAnnotationHandler(context));
         _introspector.registerHandler(new PostConstructAnnotationHandler(context));
         _introspector.registerHandler(new PreDestroyAnnotationHandler(context));
         _introspector.registerHandler(new DeclareRolesAnnotationHandler(context));
-    }
-    
-    /* ------------------------------------------------------------ */
-    public Decorator cloneFor(ContextHandler context)
-    {
-        WebAppContext wac = (WebAppContext)context;
-        return new WebAppDecoratorWrapper(wac,_wrappedDecorator.cloneFor(context));
     }
 
     /* ------------------------------------------------------------ */
@@ -64,7 +55,6 @@ public class WebAppDecoratorWrapper implements Decorator
      */
     public void decorateFilterHolder(FilterHolder filter) throws ServletException
     {
-        _wrappedDecorator.decorateFilterHolder(filter);
     }
     
     /* ------------------------------------------------------------ */
@@ -78,7 +68,7 @@ public class WebAppDecoratorWrapper implements Decorator
     public <T extends Filter> T decorateFilterInstance(T filter) throws ServletException
     {
         introspect(filter);
-        return _wrappedDecorator.decorateFilterInstance(filter);
+        return filter;
     }
     
     /* ------------------------------------------------------------ */
@@ -92,7 +82,7 @@ public class WebAppDecoratorWrapper implements Decorator
     public <T extends EventListener> T decorateListenerInstance(T listener) throws ServletException
     {
         introspect(listener);
-        return _wrappedDecorator.decorateListenerInstance(listener);
+        return listener;
     }
 
     /* ------------------------------------------------------------ */
@@ -103,7 +93,6 @@ public class WebAppDecoratorWrapper implements Decorator
      */
     public void decorateServletHolder(ServletHolder servlet) throws ServletException
     {
-        _wrappedDecorator.decorateServletHolder(servlet);
     }
 
     /* ------------------------------------------------------------ */
@@ -117,7 +106,7 @@ public class WebAppDecoratorWrapper implements Decorator
     public <T extends Servlet> T decorateServletInstance(T servlet) throws ServletException
     {
         introspect(servlet);
-        return _wrappedDecorator.decorateServletInstance(servlet);
+        return servlet;
     }
 
     /* ------------------------------------------------------------ */
@@ -127,7 +116,6 @@ public class WebAppDecoratorWrapper implements Decorator
      */
     public void destroyFilterInstance(Filter f)
     {
-        _wrappedDecorator.destroyFilterInstance(f);
     }
 
     /* ------------------------------------------------------------ */
@@ -137,7 +125,6 @@ public class WebAppDecoratorWrapper implements Decorator
      */
     public void destroyServletInstance(Servlet s)
     {
-        _wrappedDecorator.destroyServletInstance(s);
     }
 
     
@@ -151,7 +138,6 @@ public class WebAppDecoratorWrapper implements Decorator
      */
     public void destroyListenerInstance(EventListener f)
     {
-        _wrappedDecorator.destroyListenerInstance(f);
     }
 
     /**
