@@ -37,7 +37,7 @@ public class MetaData
 
     public enum Origin {NotSet, WebXml, WebDefaults, WebOverride, WebFragment, Annotation};
     
-    protected Map<String, OriginInfo> _origins;
+    protected Map<String, OriginInfo> _origins  =new HashMap<String,OriginInfo>();
     protected Descriptor _webDefaultsRoot;
     protected Descriptor _webXmlRoot;
     protected Descriptor _webOverrideRoot;
@@ -260,7 +260,7 @@ public class MetaData
     throws Exception
     {
         //Ensure origins is fresh
-        _origins = new HashMap<String,OriginInfo>();
+        _origins.clear();
         
         // Set the ordered lib attribute
         List<String> orderedLibs = new ArrayList<String>();
