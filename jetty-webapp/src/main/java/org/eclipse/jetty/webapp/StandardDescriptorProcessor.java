@@ -270,7 +270,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         //Set the servlet-class
         if (servlet_class != null) 
         {
-            descriptor.addClassName(servlet_class);
+            ((WebDescriptor)descriptor).addClassName(servlet_class);
             
             Origin o = context.getMetaData().getOrigin(servlet_name+".servlet.servlet-class");
             switch (o)
@@ -1006,7 +1006,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String filter_class = node.getString("filter-class", false, true);
         if (filter_class != null) 
         {
-            descriptor.addClassName(filter_class);
+            ((WebDescriptor)descriptor).addClassName(filter_class);
             
             Origin o = context.getMetaData().getOrigin(name+".filter.filter-class");
             switch (o)
@@ -1187,7 +1187,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     }
                 }
                 
-                descriptor.addClassName(className);
+                ((WebDescriptor)descriptor).addClassName(className);
 
                 context.addEventListener(listener);
                 Class<? extends EventListener> listenerClass = (Class<? extends EventListener>)context.loadClass(className);
@@ -1214,7 +1214,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         // the element has no content, so its simple presence
         // indicates that the webapp is distributable...
         //Servlet Spec 3.0 p.74  distributable only if all fragments are distributable
-        descriptor.setDistributable(true);
+        ((WebDescriptor)descriptor).setDistributable(true);
     }
     
     protected EventListener newListenerInstance(WebAppContext context,Class<? extends EventListener> clazz) throws ServletException, InstantiationException, IllegalAccessException

@@ -230,8 +230,9 @@ public class ServletContextHandler extends ContextHandler
     	// OK to Initialize servlet handler now
     	if (_servletHandler != null && _servletHandler.isStarted())
     	{
-    	    for (Decorator decorator : _decorators)
+    	    for (int i=_decorators.size()-1;i>=0; i--)
     	    {
+    	        Decorator decorator = _decorators.get(i);
                 if (_servletHandler.getFilters()!=null)
                     for (FilterHolder holder:_servletHandler.getFilters())
                         decorator.decorateFilterHolder(holder);
@@ -576,8 +577,11 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T f = c.newInstance();
-                for (Decorator decorator : _decorators)
+                for (int i=_decorators.size()-1; i>=0; i--)
+                {
+                    Decorator decorator = _decorators.get(i);
                     f=decorator.decorateFilterInstance(f);
+                }
                 return f;
             }
             catch (InstantiationException e)
@@ -596,8 +600,11 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T s = c.newInstance();
-                for (Decorator decorator : _decorators)
+                for (int i=_decorators.size()-1; i>=0; i--)
+                {
+                    Decorator decorator = _decorators.get(i);
                     s=decorator.decorateServletInstance(s);
+                }
                 return s;
             }
             catch (InstantiationException e)
@@ -713,8 +720,11 @@ public class ServletContextHandler extends ContextHandler
                     throw new ServletException(e);
                 }
 
-                for (Decorator decorator : _decorators)
+                for (int i=_decorators.size()-1; i>=0; i--)
+                {
+                    Decorator decorator = _decorators.get(i);
                     l=decorator.decorateListenerInstance(l);
+                }
                 return l;
             }
             catch(ServletException e)

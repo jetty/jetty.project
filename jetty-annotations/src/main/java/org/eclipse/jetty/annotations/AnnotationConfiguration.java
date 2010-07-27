@@ -14,7 +14,6 @@
 package org.eclipse.jetty.annotations;
 
 import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**

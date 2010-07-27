@@ -51,28 +51,32 @@ import org.eclipse.jetty.xml.XmlParser;
 public class TagLibConfiguration extends AbstractConfiguration
 {
     public static final String TLD_RESOURCES = "org.eclipse.jetty.tlds";
+    private TldProcessor _processor;
+    private List<TldDescriptor> _descriptors = new ArrayList<TldDescriptor>();
     
     
-    public class TldProcessor
+    public static class TldDescriptor extends Descriptor
     {
-        public static final String TAGLIB_PROCESSOR = "org.eclipse.jetty.tagLibProcessor";
-        XmlParser _parser;
-        WebAppContext _context;
-        List<XmlParser.Node> _roots = new ArrayList<XmlParser.Node>();
-        
-        
-        public TldProcessor (WebAppContext context)
-        throws Exception
+        protected static XmlParser __parserSingleton;
+
+        public TldDescriptor(Resource xml)
         {
-            _context = context;
-            createParser();
+            super(xml);
         }
-        
-        private void createParser ()
-        throws Exception
+
+        @Override
+        public void ensureParser() throws ClassNotFoundException
+        {
+           if (__parserSingleton == null)
+               __parserSingleton = newParser();
+            _parser = __parserSingleton;
+        }
+
+        @Override
+        public XmlParser newParser() throws ClassNotFoundException
         {
             // Create a TLD parser
-            _parser = new XmlParser(false);
+            XmlParser parser = new XmlParser(false);
             
             URL taglib11=null;
             URL taglib12=null;
@@ -106,95 +110,110 @@ public class TagLibConfiguration extends AbstractConfiguration
 
             if(taglib11!=null)
             {
-                _parser.redirectEntity("web-jsptaglib_1_1.dtd",taglib11);
-                _parser.redirectEntity("web-jsptaglibrary_1_1.dtd",taglib11);
+                redirect(parser, "web-jsptaglib_1_1.dtd",taglib11);  
+                redirect(parser, "web-jsptaglibrary_1_1.dtd",taglib11);
             }
             if(taglib12!=null)
             {
-                _parser.redirectEntity("web-jsptaglib_1_2.dtd",taglib12);
-                _parser.redirectEntity("web-jsptaglibrary_1_2.dtd",taglib12);
+                redirect(parser, "web-jsptaglib_1_2.dtd",taglib12);
+                redirect(parser, "web-jsptaglibrary_1_2.dtd",taglib12);
             }
             if(taglib20!=null)
             {
-                _parser.redirectEntity("web-jsptaglib_2_0.xsd",taglib20);
-                _parser.redirectEntity("web-jsptaglibrary_2_0.xsd",taglib20);
+                redirect(parser, "web-jsptaglib_2_0.xsd",taglib20);
+                redirect(parser, "web-jsptaglibrary_2_0.xsd",taglib20);
             }
             if(taglib21!=null)
             {
-                _parser.redirectEntity("web-jsptaglib_2_1.xsd",taglib21);
-                _parser.redirectEntity("web-jsptaglibrary_2_1.xsd",taglib21);
+                redirect(parser, "web-jsptaglib_2_1.xsd",taglib21);
+                redirect(parser, "web-jsptaglibrary_2_1.xsd",taglib21);
             }
             
-            _parser.setXpath("/taglib/listener/listener-class");
+            parser.setXpath("/taglib/listener/listener-class");
+            return parser;
         }
         
-        
-        public XmlParser.Node parse (Resource tld)
+        public void parse ()
         throws Exception
         {
+            ensureParser();
             XmlParser.Node root;
             try
             {
                 //xerces on apple appears to sometimes close the zip file instead
                 //of the inputstream, so try opening the input stream, but if
                 //that doesn't work, fallback to opening a new url
-                root = _parser.parse(tld.getInputStream());
+                _root = _parser.parse(_xml.getInputStream());
             }
             catch (Exception e)
             {
-                root = _parser.parse(tld.getURL().toString());
+                _root = _parser.parse(_xml.getURL().toString());
             }
 
-            if (root==null)
+            if (_root==null)
             {
-                Log.warn("No TLD root in {}",tld);
+                Log.warn("No TLD root in {}",_xml);
             }
-            else
-                _roots.add(root);
-            
-            return root;
         }
+    }
+    
+    
+    /**
+     * TldProcessor
+     *
+     * Process TldDescriptors representing tag libs to find listeners.
+     */
+    public class TldProcessor extends IterativeDescriptorProcessor
+    {
+        public static final String TAGLIB_PROCESSOR = "org.eclipse.jetty.tagLibProcessor";
+        XmlParser _parser;
+        List<XmlParser.Node> _roots = new ArrayList<XmlParser.Node>();
         
-        public void processRoots ()
-        {
-            for (XmlParser.Node root: _roots)
-                process(root);
+        
+        public TldProcessor ()
+        throws Exception
+        {  
+            registerVisitor("listener", this.getClass().getDeclaredMethod("visitListener", __signature));
         }
-        
-        public void process (XmlParser.Node root)
+      
+
+        public void visitListener (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
         {     
-            for (int i=0;i<root.size();i++)
+            String className=node.getString("listener-class",false,true);
+            if (Log.isDebugEnabled()) Log.debug("listener="+className);
+
+            try
             {
-                Object o=root.get(i);
-                if (o instanceof XmlParser.Node)
-                {
-                    XmlParser.Node node = (XmlParser.Node)o;
-                    if ("listener".equals(node.getTag()))
-                    {
-                        String className=node.getString("listener-class",false,true);
-                        if (Log.isDebugEnabled()) Log.debug("listener="+className);
-                        
-                        try
-                        {
-                            Class listenerClass = _context.loadClass(className);
-                            EventListener l = (EventListener)listenerClass.newInstance();
-                            _context.addEventListener(l);
-                        }
-                        catch(Exception e)
-                        {
-                            Log.warn("Could not instantiate listener "+className+": "+e);
-                            Log.debug(e);
-                        }
-                        catch(Error e)
-                        {
-                            Log.warn("Could not instantiate listener "+className+": "+e);
-                            Log.debug(e);
-                        }
-                    }
-                }
+                Class listenerClass = context.loadClass(className);
+                EventListener l = (EventListener)listenerClass.newInstance();
+                context.addEventListener(l);
             }
+            catch(Exception e)
+            {
+                Log.warn("Could not instantiate listener "+className+": "+e);
+                Log.debug(e);
+            }
+            catch(Error e)
+            {
+                Log.warn("Could not instantiate listener "+className+": "+e);
+                Log.debug(e);
+            }
+
         }
-        
+
+        @Override
+        public void end(WebAppContext context, Descriptor descriptor)
+        {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public void start(WebAppContext context, Descriptor descriptor)
+        {
+            // TODO Auto-generated method stub
+            
+        }
     }
 
 
@@ -247,11 +266,9 @@ public class TagLibConfiguration extends AbstractConfiguration
         if (tld_resources!=null)
             tlds.addAll(tld_resources);
         
-        // Create a processor for the tlds and save it
-        TldProcessor processor = new TldProcessor (context);
-        context.setAttribute(TldProcessor.TAGLIB_PROCESSOR, processor);
-        
+       
         // Parse the tlds into memory
+        _descriptors.clear();
         Resource tld = null;
         Iterator iter = tlds.iterator();
         while (iter.hasNext())
@@ -260,34 +277,62 @@ public class TagLibConfiguration extends AbstractConfiguration
             {
                 tld = (Resource)iter.next();
                 if (Log.isDebugEnabled()) Log.debug("TLD="+tld);
-                processor.parse(tld);
+                TldDescriptor d = new TldDescriptor(tld);
+                d.parse();
+                _descriptors.add(d);
             }
             catch(Exception e)
             {
                 Log.warn("Unable to parse TLD: " + tld,e);
             }
         }
+        
+        // Create a processor for the tlds and save it
+        _processor = new TldProcessor ();  
     }
     
 
     @Override
     public void configure (WebAppContext context) throws Exception
     {         
-        TldProcessor processor = (TldProcessor)context.getAttribute(TldProcessor.TAGLIB_PROCESSOR); 
-        if (processor == null)
+        if (_processor == null)
         {
             Log.warn("No TldProcessor configured, skipping tld processing");
             return;
         }
 
         //Create listeners from the parsed tld trees
-        processor.processRoots();
+        for (TldDescriptor d:_descriptors)
+            _processor.process(context, d);
     }
 
     @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
-        context.setAttribute(TldProcessor.TAGLIB_PROCESSOR, null);
+        
     }
 
+
+    @Override
+    public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
+    {
+        if (_processor == null)
+        {
+            Log.warn("No TldProcessor for cloneConfigure");
+            return;
+        }
+        
+        for (TldDescriptor d:_descriptors)
+        {
+            _processor.process(context, d);
+        }
+    }
+
+
+    @Override
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+        _descriptors.clear();
+        _processor = null;
+    } 
 }

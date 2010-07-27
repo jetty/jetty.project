@@ -26,6 +26,7 @@ import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
 
+
 public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
     protected WebAppContext _context;
@@ -62,7 +63,13 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
                         org.eclipse.jetty.plus.annotation.RunAs ra = new org.eclipse.jetty.plus.annotation.RunAs();
                         ra.setTargetClassName(clazz.getCanonicalName());
                         ra.setRoleName(role);
-                        ((RunAsCollection)_context.getAttribute(RunAsCollection.RUNAS_COLLECTION)).add(ra);
+                        RunAsCollection raCollection = (RunAsCollection)_context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
+                        if (raCollection == null)
+                        {
+                            raCollection = new RunAsCollection();
+                            _context.setAttribute(RunAsCollection.RUNAS_COLLECTION, raCollection);
+                        }
+                        raCollection.add(ra);
                     }
                 }
             }

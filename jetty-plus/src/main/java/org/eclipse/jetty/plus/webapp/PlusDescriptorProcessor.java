@@ -71,14 +71,29 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      */
     public void start(WebAppContext context, Descriptor descriptor)
     { 
-        InjectionCollection injections = new InjectionCollection();
-        context.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
-        LifeCycleCallbackCollection callbacks = new LifeCycleCallbackCollection();
-        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, callbacks);
-        RunAsCollection runAsCollection = new RunAsCollection();
-        context.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);  
+
+        InjectionCollection injections = (InjectionCollection)context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+        if (injections == null)
+        {
+            injections = new InjectionCollection();
+            context.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
+        }
+
+        LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
+        if (callbacks == null)
+        {
+            callbacks = new LifeCycleCallbackCollection();
+            context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, callbacks);
+        }
+
+        RunAsCollection runAsCollection = (RunAsCollection)context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
+        if (runAsCollection == null)
+        {
+            runAsCollection = new RunAsCollection();
+            context.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);  
+        }
     }
-    
+
     
     /** 
      * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#end(org.eclipse.jetty.webapp.Descriptor, WebAppContext)
@@ -611,6 +626,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 continue;
             }
 
+            InjectionCollection injections = (InjectionCollection)context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+            if (injections == null)
+            {
+                injections = new InjectionCollection();
+                context.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
+            }
             // comments in the javaee_5.xsd file specify that the targetName is looked
             // for first as a java bean property, then if that fails, as a field
             try
@@ -619,7 +640,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 Injection injection = new Injection();
                 injection.setJndiName(jndiName);
                 injection.setTarget(clazz, targetName, valueClass);
-                ((InjectionCollection)context.getAttribute(InjectionCollection.INJECTION_COLLECTION)).add(injection);
+                injections.add(injection);
                 
                 //Record which was the first descriptor to declare an injection for this name
                 if (context.getMetaData().getOriginDescriptor(node.getTag()+"."+jndiName+".injection") == null)
