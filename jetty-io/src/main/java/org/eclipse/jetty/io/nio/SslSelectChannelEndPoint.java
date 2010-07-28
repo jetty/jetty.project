@@ -90,60 +90,56 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
         if (_debug) __log.debug(_session+" channel="+channel);
     }
+    
+    int _outCount;
+    
     /* ------------------------------------------------------------ */
     private void needOutBuffer()
     {
-        if (_outNIOBuffer==null)
+        synchronized (this)
         {
-            synchronized (this)
-            {
-                if (_outNIOBuffer==null)
-                    _outNIOBuffer=(NIOBuffer)_buffers.getBuffer(_session.getPacketBufferSize());
-            }
-        }
-    }
-    
-    /* ------------------------------------------------------------ */
-    private void needInBuffer()
-    {
-        if (_inNIOBuffer==null)
-        {
-            synchronized (this)
-            {
-                if(_inNIOBuffer==null)
-                    _inNIOBuffer=(NIOBuffer)_buffers.getBuffer(_session.getPacketBufferSize());
-            }
+            _outCount++;
+            if (_outNIOBuffer==null)
+                _outNIOBuffer=(NIOBuffer)_buffers.getBuffer(_session.getPacketBufferSize());
         }
     }
     
     /* ------------------------------------------------------------ */
     private void freeOutBuffer()
     {
-        if (_outNIOBuffer!=null && _outNIOBuffer.length()==0)
-        {
-            synchronized (this)
-            { 
-                if (_outNIOBuffer!=null && _outNIOBuffer.length()==0)
-                {    
-                    _buffers.returnBuffer(_outNIOBuffer);
-                    _outNIOBuffer=null;
-                }
+        synchronized (this)
+        { 
+            if (--_outCount<=0 && _outNIOBuffer!=null && _outNIOBuffer.length()==0)
+            {    
+                _buffers.returnBuffer(_outNIOBuffer);
+                _outNIOBuffer=null;
+                _outCount=0;
             }
+        }
+    }
+
+    int _inCount;
+    /* ------------------------------------------------------------ */
+    private void needInBuffer()
+    {
+        synchronized (this)
+        {
+            _inCount++;
+            if(_inNIOBuffer==null)
+                _inNIOBuffer=(NIOBuffer)_buffers.getBuffer(_session.getPacketBufferSize());
         }
     }
     
     /* ------------------------------------------------------------ */
     private void freeInBuffer()
     {
-        if (_inNIOBuffer!=null && _inNIOBuffer.length()==0)
-        {
-            synchronized (this)
-            { 
-                if (_inNIOBuffer!=null && _inNIOBuffer.length()==0)
-                {
-                    _buffers.returnBuffer(_inNIOBuffer);
-                    _inNIOBuffer=null;
-                }
+        synchronized (this)
+        { 
+            if (--_inCount<=0 &&_inNIOBuffer!=null && _inNIOBuffer.length()==0)
+            {
+                _buffers.returnBuffer(_inNIOBuffer);
+                _inNIOBuffer=null;
+                _inCount=0;
             }
         }
     }
@@ -184,10 +180,10 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         long end=System.currentTimeMillis()+((SocketChannel)_channel).socket().getSoTimeout();
         try
         {   
-            if (isBufferingOutput())
+            while (isOpen() && isBufferingOutput()&& System.currentTimeMillis()<end)
             {
                 flush();
-                while (isOpen() && isBufferingOutput() && System.currentTimeMillis()<end)
+                if (isBufferingOutput())
                 {
                     Thread.sleep(100); // TODO non blocking
                     flush();
@@ -198,14 +194,11 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
             loop: while (isOpen() && !(_engine.isInboundDone() && _engine.isOutboundDone()) && System.currentTimeMillis()<end)
             {   
-                if (isBufferingOutput())
+                while (isOpen() && isBufferingOutput() && System.currentTimeMillis()<end)
                 {
                     flush();
-                    while (isOpen() && isBufferingOutput() && System.currentTimeMillis()<end)
-                    {
-                        Thread.sleep(100); // TODO non blocking
-                        flush();
-                    }
+                    if (isBufferingOutput())
+                        Thread.sleep(100);
                 }
 
                 if (_debug) __log.debug(_session+" closing "+_engine.getHandshakeStatus());
@@ -252,6 +245,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                         ByteBuffer out_buffer=_outNIOBuffer.getByteBuffer();
                         try
                         {   
+                            if (_outNIOBuffer.length()>0)
+                                flush();
                             _outNIOBuffer.compact();
                             int put=_outNIOBuffer.putIndex();
                             out_buffer.position(put);
@@ -271,9 +266,10 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 }
             }
         }
-        catch (InterruptedException e)
+        catch (Exception e)
         {
-            Log.ignore(e);
+            Log.debug(e);
+            super.close();
         }
     }
 

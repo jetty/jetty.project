@@ -33,7 +33,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
     @BeforeClass
     public static void init() throws Exception
     {
-        startServer(new SelectChannelConnector()
+        SelectChannelConnector connector=new SelectChannelConnector()
         {
             @Override
             protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
@@ -128,6 +128,8 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                     }
                 };
             }
-        });
+        };
+        connector.setAcceptors(1);
+        startServer(connector);
     }
 }

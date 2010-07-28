@@ -1,6 +1,6 @@
 
 jetty-7.2-SNAPSHOT
- + 320264 dupliate mime entry
+ + 314087 Simplified SelectorManager
  + 319334 Concurrent, sharable ResourceCache
  + 319370 WebAppClassLoader.Context
  + 319444 Two nulls are appended to log statements from ContextHanler$Context 

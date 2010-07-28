@@ -343,6 +343,7 @@ public class HttpExchangeTest extends TestCase
     {
         ContentExchange httpExchange=new ContentExchange()
         {
+            
         };
         //httpExchange.setURL(_scheme+"localhost:"+_port+"/");
         httpExchange.setURL(_scheme+"localhost:"+_port);
@@ -371,7 +372,7 @@ public class HttpExchangeTest extends TestCase
 
                 try
                 {
-                    Thread.sleep(250);
+                    Thread.sleep(25);
                 }
                 catch (InterruptedException e)
                 {

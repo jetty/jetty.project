@@ -31,10 +31,15 @@ import org.eclipse.jetty.util.log.Log;
 /**
  * An Endpoint that can be scheduled by {@link SelectorManager}.
  */
-public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, AsyncEndPoint, ConnectedEndPoint
+public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPoint, ConnectedEndPoint
 {
     private final SelectorManager.SelectSet _selectSet;
     private final SelectorManager _manager;
+    private final Runnable _handler = new Runnable()
+        {
+            public void run() { handle(); }
+        };
+
     private volatile Connection _connection;
     private boolean _dispatched = false;
     private boolean _redispatched = false;
@@ -70,7 +75,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
         throws IOException
     {
         super(channel);
-
+        
         _manager = selectSet.getManager();
         _selectSet = selectSet;
         _dispatched = false;
@@ -179,7 +184,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
                 _redispatched=true;
             else
             {
-                _dispatched = _manager.dispatch(this);
+                _dispatched = _manager.dispatch(_handler);
                 if(!_dispatched)
                 {
                     Log.warn("Dispatched Failed!");
@@ -491,7 +496,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Runnable, 
     /* ------------------------------------------------------------ */
     /* 
      */
-    public void run()
+    private void handle()
     {
         boolean dispatched=true;
         try
