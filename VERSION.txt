@@ -1,5 +1,6 @@
 jetty-8.0.0.M2-SNAPSHOT
  + 320073 Reconsile configuration mechanism
+ + 321068 JSF2 fails to initialize
 
 jetty-7.2-SNAPSHOT
  + 320264 dupliate mime entry

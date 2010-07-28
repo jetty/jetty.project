@@ -39,10 +39,6 @@ public class ContainerInitializerConfiguration  implements Configuration
 
     public void configure(WebAppContext context) throws Exception
     {
-    }
-    
-    public void postConfigure(WebAppContext context) throws Exception
-    {
         List<ContainerInitializer> initializers = (List<ContainerInitializer>)context.getAttribute(CONTAINER_INITIALIZERS);
         MultiMap classMap = (MultiMap)context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
         
@@ -92,6 +88,11 @@ public class ContainerInitializerConfiguration  implements Configuration
             //called, need to check to see if there are any ServletRegistrations remaining
             //that are "preliminary" and fail the deployment if so.
         }
+    }
+    
+    public void postConfigure(WebAppContext context) throws Exception
+    {
+ 
     }
 
     public void deconfigure(WebAppContext context) throws Exception
