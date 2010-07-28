@@ -81,7 +81,6 @@ public class ResourceCache
         return _cachedFiles.get();
     }
     
-    
     /* ------------------------------------------------------------ */
     public int getMaxCachedFileSize()
     {
@@ -169,7 +168,6 @@ public class ResourceCache
         return loaded;
     }
 
-
     /* ------------------------------------------------------------ */
     private Content load(String pathInContext, Resource resource)
         throws IOException
@@ -195,6 +193,7 @@ public class ResourceCache
                     content.invalidate();
                     content=added;
                 }
+                
                 return content;
             }
         }

@@ -176,11 +176,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         
         _configurations = new Configuration[]{new CloneConfiguration(template)};
 
+        
         // TODO we need some better way to work out what attributes should be copied at this stage.
         
         setAliases(template.isAliases());
         setBaseResource(template.getBaseResource());
-        setClassLoader(template.getClassLoader()); // TODO maybe not share classloader?
+        setClassLoader(template.getClassLoader()); 
         setContextPath(template.getContextPath());
         setCompactPath(template.isCompactPath());
         setDisplayName(template.getDisplayName());
@@ -238,7 +239,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         super.setDisplayName(servletContextName);
         ClassLoader cl = getClassLoader();
-        if (cl!=null && cl instanceof WebAppClassLoader)
+        if (cl!=null && cl instanceof WebAppClassLoader && servletContextName!=null)
             ((WebAppClassLoader)cl).setName(servletContextName);
     }
     
@@ -305,7 +306,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setClassLoader(ClassLoader classLoader)
     {
         super.setClassLoader(classLoader);
-        if (classLoader!=null && classLoader instanceof WebAppClassLoader)
+        if (classLoader!=null && classLoader instanceof WebAppClassLoader && getDisplayName()!=null)
             ((WebAppClassLoader)classLoader).setName(getDisplayName());
     }
     
@@ -625,11 +626,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             Object systemClasses = server.getAttribute(SERVER_SYS_CLASSES);
             if (systemClasses != null && systemClasses instanceof String[])
-                _systemClasses = ClasspathPattern.fromArray((String[])systemClasses);
+                _systemClasses = new ClasspathPattern((String[])systemClasses);
         }
         
         if (_systemClasses == null)
-            _systemClasses = ClasspathPattern.fromArray(__dftSystemClasses);
+            _systemClasses = new ClasspathPattern(__dftSystemClasses);
     }
     
     /* ------------------------------------------------------------ */
@@ -645,11 +646,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             Object serverClasses = server.getAttribute(SERVER_SRV_CLASSES);
             if (serverClasses != null || serverClasses instanceof String[])
-                _serverClasses = ClasspathPattern.fromArray((String[])serverClasses);
+                _serverClasses = new ClasspathPattern((String[])serverClasses);
         }
         
         if (_serverClasses == null)
-            _serverClasses = ClasspathPattern.fromArray(__dftServerClasses);
+            _serverClasses = new ClasspathPattern(__dftServerClasses);
     }
     
     /* ------------------------------------------------------------ */
@@ -923,7 +924,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setServerClasses(String[] serverClasses)
     {
-        _serverClasses = ClasspathPattern.fromArray(serverClasses);
+        _serverClasses = new ClasspathPattern(serverClasses);
     }
     
     /* ------------------------------------------------------------ */
@@ -943,7 +944,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setSystemClasses(String[] systemClasses)
     {
-        _systemClasses = ClasspathPattern.fromArray(systemClasses);
+        _systemClasses = new ClasspathPattern(systemClasses);
     }
     
 

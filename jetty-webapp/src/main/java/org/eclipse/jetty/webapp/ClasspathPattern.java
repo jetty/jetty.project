@@ -16,6 +16,7 @@ package org.eclipse.jetty.webapp;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.StringTokenizer;
 
 
@@ -33,49 +34,33 @@ import java.util.StringTokenizer;
 
 public class ClasspathPattern
 {
-    private class Entry
+    private static class Entry
     {
         public String classpath = null;
         public boolean result = false;
         public boolean partial = false;      
     }
     
-    private ArrayList<String> _patterns = null;
-    private ArrayList<Entry> _entries = null;
-
+    final private List<String> _patterns = new ArrayList<String>();
+    final private List<Entry> _entries = new ArrayList<Entry>();
+    
+    /* ------------------------------------------------------------ */
+    public ClasspathPattern()
+    {
+    }
+    
+    /* ------------------------------------------------------------ */
     public ClasspathPattern(String[] patterns)
     {
         setPatterns(patterns);
     }
     
+    /* ------------------------------------------------------------ */
     public ClasspathPattern(String pattern)
     {
         setPattern(pattern);
     }
     
-    /* ------------------------------------------------------------ */
-    /**
-     * Create a new instance from a String array of classpath patterns
-     * 
-     * @param patterns array of classpath patterns
-     * @return new instance
-     */
-    public static ClasspathPattern fromArray(String[] patterns)
-    {
-        return new ClasspathPattern(patterns);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Create a new instance from a classpath pattern sring
-     * 
-     * @param patterns classpath pattern string
-     * @return new instance
-     */
-    public static ClasspathPattern fromString(String patterns)
-    {
-        return new ClasspathPattern(patterns);
-    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -85,28 +70,9 @@ public class ClasspathPattern
      */
     private void setPatterns(String[] patterns)
     {
-        if (patterns == null)
-        {
-            _patterns = null;
-            _entries  = null;
-        }
-        else
-        {
-            _patterns = new ArrayList<String>();
-            _entries = new ArrayList<Entry>();
-        }
-        
-        if (_patterns != null) {
-            Entry entry = null; 
-            for (String pattern : patterns)
-            {
-                entry = createEntry(pattern);
-                if (entry != null) {
-                    _patterns.add(pattern);
-                    _entries.add(entry);
-                }
-            }
-        }
+        _patterns.clear();
+        _entries.clear();
+        addPatterns(patterns);
     }
     
     /* ------------------------------------------------------------ */
@@ -119,20 +85,13 @@ public class ClasspathPattern
     {
         if (patterns != null)
         {
-            if (_patterns == null)
+            Entry entry = null; 
+            for (String pattern : patterns)
             {
-                setPatterns(patterns);
-            }
-            else
-            {
-                Entry entry = null; 
-                for (String pattern : patterns)
-                {
-                    entry = createEntry(pattern);
-                    if (entry != null) {
-                        _patterns.add(pattern);
-                        _entries.add(entry);
-                    }
+                entry = createEntry(pattern);
+                if (entry != null) {
+                    _patterns.add(pattern);
+                    _entries.add(entry);
                 }
             }
         }
@@ -172,14 +131,9 @@ public class ClasspathPattern
      */
     public void setPattern(String pattern)
     {
-        ArrayList<String> patterns = new ArrayList<String>();
-        StringTokenizer entries = new StringTokenizer(pattern, ":,");
-        while (entries.hasMoreTokens())
-        {
-            patterns.add(entries.nextToken());
-        }
-        
-        setPatterns((String[])patterns.toArray());
+        _patterns.clear();
+        _entries.clear();
+        addPattern(pattern);
     }
 
     /* ------------------------------------------------------------ */
@@ -198,7 +152,7 @@ public class ClasspathPattern
             patterns.add(entries.nextToken());
         }
         
-        addPatterns((String[])patterns.toArray());
+        addPatterns((String[])patterns.toArray(new String[patterns.size()]));
     }   
     
     /* ------------------------------------------------------------ */

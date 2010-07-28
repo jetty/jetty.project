@@ -113,12 +113,11 @@ public class CloudServer
                 }
             }
         };
-        ResourceCache cache = new ResourceCache(resources,new MimeTypes(),true);
         
         WebAppClassLoader.Context loaderContext = new WebAppClassLoader.Context()
         {
-            private ClasspathPattern _systemClasses = ClasspathPattern.fromArray(WebAppContext.__dftSystemClasses);
-            private ClasspathPattern _serverClasses = ClasspathPattern.fromArray(WebAppContext.__dftServerClasses);
+            private ClasspathPattern _systemClasses = new ClasspathPattern(WebAppContext.__dftSystemClasses);
+            private ClasspathPattern _serverClasses = new ClasspathPattern(WebAppContext.__dftServerClasses);
             
             public Resource newResource(String urlOrPath) throws IOException
             {
@@ -142,7 +141,7 @@ public class CloudServer
 
             public boolean isParentLoaderPriority()
             {
-                return true;
+                return false;
             }
 
             public String getExtraClasspath()
@@ -151,76 +150,110 @@ public class CloudServer
             }
         };
         
-        WebAppClassLoader loader = new CloudLoader(loaderContext);
+        WebAppClassLoader loader = new WebAppClassLoader(loaderContext);
+        loader.setName("template");
         loader.addClassPath("../test-jetty-webapp/target/classes");
         loader.addJars(Resource.newResource("../test-jetty-webapp/target/test-jetty-webapp-7.2.0-SNAPSHOT/WEB-INF/lib"));
         
         
-        // Create a base configuration
-        /* Cloud deploy */
-        boolean cloud=!Boolean.getBoolean("nocloud");
-        if (cloud)
-        {
-            Log.info("Cload deploy");
-            final WebAppContext template = new WebAppContext();
-            template.setClassLoader(loader);
-            template.setBaseResource(baseResource);
-            template.setAttribute("instance","-1");
-            template.setServer(server);
-            template.preConfigure();
-            template.configure();
-            template.postConfigure();
-
-            for (int i=0;i<10;i++)
-            {
-                final WebAppContext webapp = new WebAppContext(template);
-                webapp.setAttribute("resourceCache",cache);
-                webapp.setAttribute("instance",i);
-
-                if (i>0)
-                    webapp.setVirtualHosts(new String[] {"127.0.0."+i});
-                contexts.addHandler(webapp);
-            }
-        }
-        else
-        {
-            /* Normal deploy */
-
-            for (int i=0;i<10;i++)
-            {
-                final WebAppContext webapp= new WebAppContext();
-                webapp.setWar("../test-jetty-webapp/target/test-jetty-webapp-7.2.0-SNAPSHOT.war");
-                webapp.setAttribute("instance",i);
-
-                if (i>0)
-                    webapp.setVirtualHosts(new String[] {"127.0.0."+i});
-                contexts.addHandler(webapp);
-            }
-        }
-
-
-        server.start();
-        System.err.println(server.dump());
-
+        // Non cloud deployment first
         for (int i=0;i<10;i++)
         {
-            // generate some load
-            for (String uri : new String[] {
-                    "/",
-                    "/d.txt",
-                    "/da.txt",
-                    "/dat.txt",
-                    "/data.txt",
-                    "/data.txt.gz",
-                    "/dump/info"    
-            })
-            {
-                URL url = new URL("http://127.0.0."+(i==0?10:i)+":8080"+uri);
-                System.err.println("GOT "+url+" "+String.valueOf(IO.toString(url.openStream())).length());
-            }
+            final WebAppContext webapp= new WebAppContext();
+            webapp.setWar("../test-jetty-webapp/target/test-jetty-webapp-7.2.0-SNAPSHOT.war");
+            webapp.setAttribute("instance",i);
+
+            if (i>0)
+                webapp.setVirtualHosts(new String[] {"127.0.0."+i});
+            contexts.addHandler(webapp);
         }
         
-        server.join();
+        server.start();
+        load();
+        
+        Runtime.getRuntime().gc();
+        Runtime.getRuntime().gc();
+        
+        long used_normal = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        System.err.println(used_normal);
+        
+        server.stop();
+        contexts.setHandlers(null);
+
+        Runtime.getRuntime().gc();
+        Runtime.getRuntime().gc();
+        
+        long used_stopped = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        System.err.println(used_stopped);
+
+
+        /* Cloud deploy */
+        boolean cloud=!Boolean.getBoolean("nocloud");
+        Log.info("Cloud deploy");
+        final WebAppContext template = new WebAppContext();
+        template.setClassLoader(loader);
+        template.setBaseResource(baseResource);
+        template.setAttribute("instance","-1");
+        template.setServer(server);
+        template.preConfigure();
+        template.configure();
+        template.postConfigure();
+
+        ResourceCache cache = new ResourceCache(resources,new MimeTypes(),true);
+        
+        for (int i=0;i<10;i++)
+        {
+            final WebAppContext webapp = new WebAppContext(template);
+            webapp.setAttribute("resourceCache",cache);
+            webapp.setAttribute("instance",i);
+            CloudLoader cloud_loader = new CloudLoader((WebAppClassLoader)webapp.getClassLoader());
+            // cloud_loader.addPattern("com.acme.");
+            // cloud_loader.addPattern("org.eclipse.jetty.util.");
+            webapp.setClassLoader(cloud_loader);
+
+            if (i>0)
+                webapp.setVirtualHosts(new String[] {"127.0.0."+i});
+            contexts.addHandler(webapp);
+        }
+        server.start();
+        load();
+
+
+        Runtime.getRuntime().gc();
+        Runtime.getRuntime().gc();
+        
+        long used_cloud = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        System.err.println(used_cloud);
+        
+        server.stop();
+        
+        System.err.println(used_normal-used_cloud);
+    }
+    
+    private static void load() throws Exception
+    {
+
+        for (int j=0;j<10;j++)
+        {
+            for (int i=0;i<10;i++)
+            {
+                // generate some load
+                for (String uri : new String[] {
+                        "/",
+                        "/d.txt",
+                        "/da.txt",
+                        "/dat.txt",
+                        "/data.txt",
+                        "/data.txt.gz",
+                        "/dump/info"    
+                })
+                {
+                    URL url = new URL("http://127.0.0."+(i==0?10:i)+":8080"+uri);
+                    String content = String.valueOf(IO.toString(url.openStream()));
+                    // System.err.println("GOT "+url+" "+content.length());
+                }
+            }
+        }
     }
 
 }

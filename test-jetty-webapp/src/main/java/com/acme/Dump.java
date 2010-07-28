@@ -55,7 +55,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Dump extends HttpServlet
 {
-    static boolean fixed;
+    boolean fixed;
+    
     /* ------------------------------------------------------------ */
     @Override
     public void init(ServletConfig config) throws ServletException
@@ -88,7 +89,6 @@ public class Dump extends HttpServlet
         final String dribble= request.getParameter("dribble");
         final boolean flush= request.getParameter("flush")!=null?Boolean.parseBoolean(request.getParameter("flush")):false;
 
-        
         
         if(request.getPathInfo()!=null && request.getPathInfo().toLowerCase().indexOf("script")!=-1)
         {

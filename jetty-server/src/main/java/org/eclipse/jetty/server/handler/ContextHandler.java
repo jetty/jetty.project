@@ -403,7 +403,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /*
      * @see javax.servlet.ServletContext#getInitParameterNames()
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
     public Enumeration getInitParameterNames()
     {
         return Collections.enumeration(_initParams.keySet());
@@ -436,6 +436,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* ------------------------------------------------------------ */
     /**
      * Set the context event listeners.
+     * @param eventListeners the event listeners
      * @see ServletContextListener
      * @see ServletContextAttributeListener
      * @see ServletRequestListener
@@ -1252,7 +1253,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     @Override
     public String toString()
     {
-
         return super.toString()+"@"+Integer.toHexString(hashCode())+getContextPath()+","+getBaseResource();
     }
 

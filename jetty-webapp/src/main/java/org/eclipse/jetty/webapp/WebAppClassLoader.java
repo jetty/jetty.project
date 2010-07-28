@@ -20,6 +20,7 @@ import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -55,7 +56,7 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  */
 public class WebAppClassLoader extends URLClassLoader 
 {
-    private String _name;
+    private String _name=String.valueOf(hashCode());
     private Context _context;
     private ClassLoader _parent;
     private HashSet<String> _extensions;
@@ -319,7 +320,8 @@ public class WebAppClassLoader extends URLClassLoader
         from_webapp.addAll(from_parent);
         return Collections.enumeration(from_webapp);
     }
-    
+
+    /* ------------------------------------------------------------ */
     private List<URL> toList(Enumeration<URL> e)
     {
         List<URL> list = new ArrayList<URL>();
@@ -441,8 +443,8 @@ public class WebAppClassLoader extends URLClassLoader
     public String toString()
     {
         if (Log.isDebugEnabled())
-            return "ContextLoader@" + _name + "(" + LazyList.array2List(getURLs()) + ") / " + _parent;
-        return "ContextLoader@" + _name;
+            return "WebAppClassLoader@" + _name + "(" + LazyList.array2List(getURLs()) + ") / " + _parent;
+        return "WebAppClassLoader@" + _name;
     }
     
 }

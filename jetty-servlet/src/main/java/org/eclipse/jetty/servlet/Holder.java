@@ -62,6 +62,7 @@ public class Holder<T> extends AbstractLifeCycle
     }
     
     /* ------------------------------------------------------------ */
+    @SuppressWarnings("unchecked")
     public void doStart()
         throws Exception
     {
