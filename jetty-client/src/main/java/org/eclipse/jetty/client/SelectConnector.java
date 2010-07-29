@@ -16,20 +16,18 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 
-import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.http.HttpVersions;
+import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ThreadLocalBuffers;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
@@ -218,14 +216,14 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             {
                 if (dest.isProxied())
                 {
-                    String connect = HttpMethods.CONNECT+" "+dest.getAddress()+HttpVersions.HTTP_1_0+"\r\n\r\n";
-                    // TODO need to send this over channel unencrypted and setup endpoint to ignore the 200 OK response.
-
-                    throw new IllegalStateException("Not Implemented");
+                    SSLEngine engine=newSslEngine();
+                    ep = new ProxySelectChannelEndPoint(channel,selectSet,key,_sslBuffers,engine);
                 }
-
-                SSLEngine engine=newSslEngine();
-                ep = new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,engine);
+                else
+                {
+                    SSLEngine engine=newSslEngine();
+                    ep = new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,engine);
+                }
             }
             else
             {
@@ -281,6 +279,206 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
                 }
                 destination.onConnectionFailed(new SocketTimeoutException());
             }
+        }
+    }
+
+    /**
+     * An endpoint that is able to "upgrade" from a normal endpoint to a SSL endpoint.
+     * Since {@link HttpParser} and {@link HttpGenerator} only depend on the {@link EndPoint}
+     * interface, this class overrides all methods of {@link EndPoint} to provide the right
+     * behavior depending on the fact that it has been upgraded or not.
+     */
+    public static class ProxySelectChannelEndPoint extends SslSelectChannelEndPoint
+    {
+        private final SelectChannelEndPoint plainEndPoint;
+        private volatile boolean upgraded = false;
+
+        public ProxySelectChannelEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey key, Buffers sslBuffers, SSLEngine engine) throws IOException
+        {
+            super(sslBuffers, channel, selectSet, key, engine);
+            this.plainEndPoint = new SelectChannelEndPoint(channel, selectSet, key);
+        }
+
+        public void upgrade()
+        {
+            upgraded = true;
+        }
+
+        public void shutdownOutput() throws IOException
+        {
+            if (upgraded)
+                super.shutdownOutput();
+            else
+                plainEndPoint.shutdownOutput();
+        }
+
+        public void close() throws IOException
+        {
+            if (upgraded)
+                super.close();
+            else
+                plainEndPoint.close();
+        }
+
+        public int fill(Buffer buffer) throws IOException
+        {
+            if (upgraded)
+                return super.fill(buffer);
+            else
+                return plainEndPoint.fill(buffer);
+        }
+
+        public int flush(Buffer buffer) throws IOException
+        {
+            if (upgraded)
+                return super.flush(buffer);
+            else
+                return plainEndPoint.flush(buffer);
+        }
+
+        public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
+        {
+            if (upgraded)
+                return super.flush(header, buffer, trailer);
+            else
+                return plainEndPoint.flush(header, buffer, trailer);
+        }
+
+        public String getLocalAddr()
+        {
+            if (upgraded)
+                return super.getLocalAddr();
+            else
+                return plainEndPoint.getLocalAddr();
+        }
+
+        public String getLocalHost()
+        {
+            if (upgraded)
+                return super.getLocalHost();
+            else
+                return plainEndPoint.getLocalHost();
+        }
+
+        public int getLocalPort()
+        {
+            if (upgraded)
+                return super.getLocalPort();
+            else
+                return plainEndPoint.getLocalPort();
+        }
+
+        public String getRemoteAddr()
+        {
+            if (upgraded)
+                return super.getRemoteAddr();
+            else
+                return plainEndPoint.getRemoteAddr();
+        }
+
+        public String getRemoteHost()
+        {
+            if (upgraded)
+                return super.getRemoteHost();
+            else
+                return plainEndPoint.getRemoteHost();
+        }
+
+        public int getRemotePort()
+        {
+            if (upgraded)
+                return super.getRemotePort();
+            else
+                return plainEndPoint.getRemotePort();
+        }
+
+        public boolean isBlocking()
+        {
+            if (upgraded)
+                return super.isBlocking();
+            else
+                return plainEndPoint.isBlocking();
+        }
+
+        public boolean isBufferred()
+        {
+            if (upgraded)
+                return super.isBufferred();
+            else
+                return plainEndPoint.isBufferred();
+        }
+
+        public boolean blockReadable(long millisecs) throws IOException
+        {
+            if (upgraded)
+                return super.blockReadable(millisecs);
+            else
+                return plainEndPoint.blockReadable(millisecs);
+        }
+
+        public boolean blockWritable(long millisecs) throws IOException
+        {
+            if (upgraded)
+                return super.blockWritable(millisecs);
+            else
+                return plainEndPoint.blockWritable(millisecs);
+        }
+
+        public boolean isOpen()
+        {
+            if (upgraded)
+                return super.isOpen();
+            else
+                return plainEndPoint.isOpen();
+        }
+
+        public Object getTransport()
+        {
+            if (upgraded)
+                return super.getTransport();
+            else
+                return plainEndPoint.getTransport();
+        }
+
+        public boolean isBufferingInput()
+        {
+            if (upgraded)
+                return super.isBufferingInput();
+            else
+                return plainEndPoint.isBufferingInput();
+        }
+
+        public boolean isBufferingOutput()
+        {
+            if (upgraded)
+                return super.isBufferingOutput();
+            else
+                return plainEndPoint.isBufferingOutput();
+        }
+
+        public void flush() throws IOException
+        {
+            if (upgraded)
+                super.flush();
+            else
+                plainEndPoint.flush();
+
+        }
+
+        public int getMaxIdleTime()
+        {
+            if (upgraded)
+                return super.getMaxIdleTime();
+            else
+                return plainEndPoint.getMaxIdleTime();
+        }
+
+        public void setMaxIdleTime(int timeMs) throws IOException
+        {
+            if (upgraded)
+                super.setMaxIdleTime(timeMs);
+            else
+                plainEndPoint.setMaxIdleTime(timeMs);
         }
     }
 }

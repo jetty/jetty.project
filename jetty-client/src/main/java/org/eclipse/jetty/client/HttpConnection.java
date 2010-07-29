@@ -36,7 +36,6 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.View;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -209,7 +208,7 @@ public class HttpConnection implements Connection
                             if (_exchange == null)
                                 continue;
                         }
-                        
+
                         long flushed = _generator.flushBuffer();
                         io += flushed;
 
@@ -236,7 +235,7 @@ public class HttpConnection implements Connection
                                 }
                                 else
                                     _generator.complete();
-                            }                            
+                            }
                             else
                                 _generator.complete();
                         }
@@ -254,7 +253,7 @@ public class HttpConnection implements Connection
                         long filled = _parser.parseAvailable();
                         io += filled;
                     }
-                    
+
                     if (io > 0)
                         no_progress = 0;
                     else if (no_progress++ >= 2 && !_endp.isBlocking())
@@ -342,12 +341,12 @@ public class HttpConnection implements Connection
                                 HttpExchange exchange=_exchange;
                                 _exchange.disassociate();
                                 _exchange = null;
-                                
+
                                 if (_status==HttpStatus.SWITCHING_PROTOCOLS_101)
                                 {
                                     Connection switched=exchange.onSwitchProtocol(_endp);
                                     if (switched!=null)
-                                    {    
+                                    {
                                         // switched protocol!
                                         exchange = _pipeline;
                                         _pipeline = null;
@@ -394,13 +393,13 @@ public class HttpConnection implements Connection
             {
                 _exchange.disassociate();
             }
-            
+
             if (!_generator.isComplete() && _generator.getBytesBuffered()>0 && _endp instanceof AsyncEndPoint)
-            {                        
+            {
                 ((AsyncEndPoint)_endp).setWritable(false);
             }
         }
-        
+
         return this;
     }
 
@@ -436,18 +435,27 @@ public class HttpConnection implements Connection
             _exchange.setStatus(HttpExchange.STATUS_SENDING_REQUEST);
             _generator.setVersion(_exchange.getVersion());
 
+            String method=_exchange.getMethod();
             String uri = _exchange.getURI();
-            if (_destination.isProxied() && uri.startsWith("/"))
+            if (_destination.isProxied() && !HttpMethods.CONNECT.equals(method) && uri.startsWith("/"))
             {
-                // TODO suppress port 80 or 443
-                uri = (_destination.isSecure()?HttpSchemes.HTTPS:HttpSchemes.HTTP) + "://" + _destination.getAddress().getHost() + ":"
-                        + _destination.getAddress().getPort() + uri;
+                boolean secure = _destination.isSecure();
+                String host = _destination.getAddress().getHost();
+                int port = _destination.getAddress().getPort();
+                StringBuilder absoluteURI = new StringBuilder();
+                absoluteURI.append(secure ? HttpSchemes.HTTPS : HttpSchemes.HTTP);
+                absoluteURI.append("://");
+                absoluteURI.append(host);
+                // Avoid adding default ports
+                if (!(secure && port == 443 || !secure && port == 80))
+                    absoluteURI.append(":").append(port);
+                absoluteURI.append(uri);
+                uri = absoluteURI.toString();
                 Authentication auth = _destination.getProxyAuthentication();
                 if (auth != null)
                     auth.setCredentials(_exchange);
             }
 
-            String method=_exchange.getMethod();
             _generator.setRequest(method, uri);
             _parser.setHeadResponse(HttpMethods.HEAD.equalsIgnoreCase(method));
 
@@ -594,10 +602,10 @@ public class HttpConnection implements Connection
 
     public void close() throws IOException
     {
-        //if there is a live, unfinished exchange, set its status to be 
+        //if there is a live, unfinished exchange, set its status to be
         //excepted and wake up anyone waiting on waitForDone()
-       
-        if (_exchange != null && !_exchange.isDone()) 
+
+        if (_exchange != null && !_exchange.isDone())
         {
             switch (_exchange.getStatus())
             {
