@@ -258,17 +258,19 @@ public class MetaData
     throws Exception
     {
         // Set the ordered lib attribute
-        List<String> orderedLibs = new ArrayList<String>();
-        for (Resource webInfJar:_orderedWebInfJars)
+        if (_ordering != null)
         {
-            //get just the name of the jar file
-            String fullname = webInfJar.getName();
-            int i = fullname.indexOf(".jar");          
-            int j = fullname.lastIndexOf("/", i);
-            orderedLibs.add(fullname.substring(j+1,i+4));
+            List<String> orderedLibs = new ArrayList<String>();
+            for (Resource webInfJar:_orderedWebInfJars)
+            {
+                //get just the name of the jar file
+                String fullname = webInfJar.getName();
+                int i = fullname.indexOf(".jar");          
+                int j = fullname.lastIndexOf("/", i);
+                orderedLibs.add(fullname.substring(j+1,i+4));
+            }
+            context.setAttribute(ServletContext.ORDERED_LIBS, orderedLibs);
         }
-        context.setAttribute(ServletContext.ORDERED_LIBS, orderedLibs);
-        
 
         // set the webxml version
         if (_webXmlRoot != null)
