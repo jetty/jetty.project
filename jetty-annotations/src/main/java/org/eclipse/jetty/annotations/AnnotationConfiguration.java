@@ -15,12 +15,14 @@ package org.eclipse.jetty.annotations;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
 
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.annotation.HandlesTypes;
+
 
 import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
@@ -125,7 +127,7 @@ public class AnnotationConfiguration implements Configuration
         
         //We use the ServiceLoader mechanism to find the ServletContainerInitializer classes to inspect
         ServiceLoader<ServletContainerInitializer> loadedInitializers = ServiceLoader.load(ServletContainerInitializer.class, context.getClassLoader());
-        List<String> orderedJars = (List<String>) context.getAttribute(ServletContext.ORDERED_LIBS);
+       
         if (loadedInitializers != null)
         {
             for (ServletContainerInitializer service : loadedInitializers)
@@ -171,16 +173,15 @@ public class AnnotationConfiguration implements Configuration
     public boolean isFromExcludedJar (WebAppContext context, ServletContainerInitializer service)
     throws Exception
     {
-        List<String> orderedLibs = (List<String>)context.getAttribute(ServletContext.ORDERED_LIBS);
+        List<Resource> orderedJars = context.getMetaData().getOrderedWebInfJars();
 
         //If no ordering, nothing is excluded
-        if (orderedLibs == null)
+        if (context.getMetaData().getOrdering() == null)
             return false;
 
-        //ordering that does not include any jars, everything excluded
-        if (orderedLibs.isEmpty())
+        //there is an ordering, but there are no jars resulting from the ordering, everything excluded
+        if (orderedJars.isEmpty())
             return true; 
-
 
         String loadingJarName = Thread.currentThread().getContextClassLoader().getResource(service.getClass().getName().replace('.','/')+".class").toString();
 
@@ -188,10 +189,18 @@ public class AnnotationConfiguration implements Configuration
         if (i < 0)
             return false; //not from a jar therefore not from WEB-INF so not excludable
 
-        int j = loadingJarName.lastIndexOf("/", i);
-        loadingJarName = loadingJarName.substring(j+1,i+4);
+        loadingJarName = loadingJarName.substring(0,i+4);
+        loadingJarName = (loadingJarName.startsWith("jar:")?loadingJarName.substring(4):loadingJarName);
+        URI loadingJarURI = Resource.newResource(loadingJarName).getURI();
+        boolean found = false;
+        Iterator<Resource> itor = orderedJars.iterator();
+        while (!found && itor.hasNext())
+        {
+            Resource r = itor.next();         
+            found = r.getURI().equals(loadingJarURI);
+        }
 
-        return (!orderedLibs.contains(loadingJarName));
+        return !found;
     }
    
     public void parseContainerPath (final WebAppContext context, final AnnotationParser parser)
