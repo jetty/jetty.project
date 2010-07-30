@@ -179,7 +179,7 @@
  org.xml.sax.helpers,
  *
                         </Import-Package>
-                        <DynamicImport-Package>org.eclipse.jetty.*;version=[7.2,8)</DynamicImport-Package>
+                        <DynamicImport-Package>org.eclipse.jetty.*;version="[7.2,8)"</DynamicImport-Package>
                         <!--Require-Bundle/-->
                         <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment> 
                     </instructions>
