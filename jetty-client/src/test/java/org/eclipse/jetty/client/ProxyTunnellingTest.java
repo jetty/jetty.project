@@ -19,13 +19,9 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.ProxyHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlets.ProxyServlet;
 import org.junit.After;
 import org.junit.Test;
 
@@ -68,11 +64,6 @@ public class ProxyTunnellingTest
         proxy.addConnector(proxyConnector);
         ProxyHandler proxyHandler = new ProxyHandler();
         proxy.setHandler(proxyHandler);
-        HandlerCollection handlers = new HandlerCollection();
-        proxyHandler.setHandler(handlers);
-        ServletContextHandler context = new ServletContextHandler(handlers, "/", ServletContextHandler.SESSIONS);
-        ServletHolder proxyServlet = new ServletHolder(ProxyServlet.class);
-        context.addServlet(proxyServlet, "/*");
         proxy.start();
     }
 
@@ -93,35 +84,6 @@ public class ProxyTunnellingTest
     {
         proxy.stop();
         proxy.join();
-    }
-
-
-    @Test
-    public void testNoSSL() throws Exception
-    {
-        startServer(new SelectChannelConnector(), new ServerHandler());
-        startProxy();
-
-        HttpClient httpClient = new HttpClient();
-        httpClient.setProxy(new Address("localhost", proxyConnector.getLocalPort()));
-        httpClient.start();
-
-        try
-        {
-            ContentExchange exchange = new ContentExchange(true);
-            String body = "BODY";
-            exchange.setURL("http://localhost:" + serverConnector.getLocalPort() + "/echo?body=" + URLEncoder.encode(body, "UTF-8"));
-            exchange.setMethod(HttpMethods.GET);
-
-            httpClient.send(exchange);
-            assertEquals(HttpExchange.STATUS_COMPLETED, exchange.waitForDone());
-            String content = exchange.getResponseContent();
-            assertEquals(body, content);
-        }
-        finally
-        {
-            httpClient.stop();
-        }
     }
 
     @Test
