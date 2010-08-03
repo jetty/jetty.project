@@ -131,7 +131,16 @@ public class HttpConnection implements Connection
                 AsyncEndPoint scep = (AsyncEndPoint)_endp;
                 scep.scheduleWrite();
             }
-            _destination.getHttpClient().schedule(_timeout);
+
+            long exchTimeout = _exchange.getTimeout();
+            if (exchTimeout > 0)
+            {
+                _destination.getHttpClient().schedule(_timeout, exchTimeout);
+            }
+            else
+            {
+                _destination.getHttpClient().schedule(_timeout);
+            }
 
             return true;
         }

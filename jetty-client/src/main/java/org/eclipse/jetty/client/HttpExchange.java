@@ -96,6 +96,9 @@ public class HttpExchange
     private boolean _configureListeners = true;
     private HttpEventListener _listener = new Listener();
     private volatile HttpConnection _connection;
+    
+    // a timeout for this exchange
+    private long _timeout = -1;
 
     boolean _onRequestCompleteDone;
     boolean _onResponseCompleteDone;
@@ -349,6 +352,16 @@ public class HttpExchange
         _listener=listener;
     }
 
+    public void setTimeout( long timeout )
+    {
+        _timeout = timeout;
+    }
+    
+    public long getTimeout()
+    {
+        return _timeout;
+    }
+    
     /**
      * @param url Including protocol, host and port
      */
