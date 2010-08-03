@@ -20,6 +20,10 @@ import org.eclipse.jetty.webapp.WebInfConfiguration;
  * <p>This specialization of {@link MonitoredDirAppProvider} is the
  * replacement for {@link WebAppDeployer} and it will scan a directory
  * only for war files or directories files.</p>
+ * <p>
+ * Webapps with names root or starting with root- are deployed at /.
+ * If the name is in the format root-hostname, then the webapp is deployed
+ * at / in the virtual host hostname.
  * @see WebAppDeployer
  */
 public class WebAppProvider extends ScanningAppProvider
@@ -31,7 +35,7 @@ public class WebAppProvider extends ScanningAppProvider
     private File _tempDirectory;
     private String[] _configurationClasses;
 
-    private static class Filter implements FilenameFilter
+    public static class Filter implements FilenameFilter
     {
         private File _contexts;
         
@@ -236,10 +240,27 @@ public class WebAppProvider extends ScanningAppProvider
         {
             throw new IllegalStateException("unable to create ContextHandler for "+app);
         }
+
+        // Ensure "/" is Not Trailing in context paths.
+        if (context.endsWith("/") && context.length() > 0) 
+        {
+            context = context.substring(0,context.length() - 1);
+        }
+        
+        // Start building the webapplication
+        WebAppContext wah = new WebAppContext();
+        wah.setDisplayName(context);
         
         // special case of archive (or dir) named "root" is / context
-        if (context.equalsIgnoreCase("root") || context.equalsIgnoreCase("root/")) 
+        if (context.equalsIgnoreCase("root"))
         {
+            context = URIUtil.SLASH;
+        }
+        else if (context.toLowerCase().startsWith("root-"))
+        {
+            int dash=context.toLowerCase().indexOf('-');
+            String virtual = context.substring(dash+1);
+            wah.setVirtualHosts(new String[]{virtual});
             context = URIUtil.SLASH;
         }
 
@@ -249,13 +270,7 @@ public class WebAppProvider extends ScanningAppProvider
             context = "/" + context;
         }
 
-        // Ensure "/" is Not Trailing in context paths.
-        if (context.endsWith("/") && context.length() > 0) 
-        {
-            context = context.substring(0,context.length() - 1);
-        }
 
-        WebAppContext wah = new WebAppContext();
         wah.setContextPath(context);
         wah.setWar(file.getAbsolutePath());
         if (_defaultsDescriptor != null) 

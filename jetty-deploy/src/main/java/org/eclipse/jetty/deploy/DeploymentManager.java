@@ -110,7 +110,7 @@ public class DeploymentManager extends AbstractLifeCycle
 
     private final List<AppProvider> _providers = new ArrayList<AppProvider>();
     private final AppLifeCycle _lifecycle = new AppLifeCycle();
-    private final LinkedList<AppEntry> _apps = new LinkedList<AppEntry>();
+    private final List<AppEntry> _apps = new LinkedList<AppEntry>();
     private AttributesMap _contextAttributes = new AttributesMap();
     private ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;

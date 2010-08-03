@@ -48,50 +48,33 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     private boolean _recursive = false;
     private int _scanInterval = 10;
     private Scanner _scanner;
-    
+
+    /* ------------------------------------------------------------ */
     private final Scanner.DiscreteListener _scannerListener = new Scanner.DiscreteListener()
     {
         public void fileAdded(String filename) throws Exception
         {
-            if (Log.isDebugEnabled()) Log.debug("added ",filename);
-            App app = ScanningAppProvider.this.createApp(filename);
-            if (app != null)
-            {
-                _appMap.put(filename,app);
-                _deploymentManager.addApp(app);
-            }
+            ScanningAppProvider.this.fileAdded(filename);
         }
 
         public void fileChanged(String filename) throws Exception
         {
-            if (Log.isDebugEnabled()) Log.debug("changed ",filename);
-            App app = _appMap.remove(filename);
-            if (app != null)
-            {
-                _deploymentManager.removeApp(app);
-            }
-            app = ScanningAppProvider.this.createApp(filename);
-            if (app != null)
-            {
-                _appMap.put(filename,app);
-                _deploymentManager.addApp(app);
-            }
+            ScanningAppProvider.this.fileChanged(filename);
         }
 
         public void fileRemoved(String filename) throws Exception
         {
-            if (Log.isDebugEnabled()) Log.debug("removed ",filename);
-            App app = _appMap.remove(filename);
-            if (app != null)
-                _deploymentManager.removeApp(app);
+            ScanningAppProvider.this.fileRemoved(filename);
         }
     };
 
+    /* ------------------------------------------------------------ */
     protected ScanningAppProvider(FilenameFilter filter)
     {
         _filenameFilter = filter;
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @return The index of currently deployed applications.
      */
@@ -100,6 +83,7 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
         return _appMap;
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * Called by the Scanner.DiscreteListener to create a new App object.
      * Isolated in a method so that it is possible to override the default App
@@ -115,6 +99,7 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
         return new App(_deploymentManager,this,filename);
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
@@ -140,11 +125,52 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     @Override
     protected void doStop() throws Exception
     {
-        _scanner.stop();
-        _scanner.removeListener(_scannerListener);
-        _scanner = null;
+        if (_scanner!=null)
+        {
+            _scanner.stop();
+            _scanner.removeListener(_scannerListener);
+            _scanner = null;
+        }
     }
 
+    /* ------------------------------------------------------------ */
+    protected void fileAdded(String filename) throws Exception
+    {
+        if (Log.isDebugEnabled()) Log.debug("added ",filename);
+        App app = ScanningAppProvider.this.createApp(filename);
+        if (app != null)
+        {
+            _appMap.put(filename,app);
+            _deploymentManager.addApp(app);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void fileChanged(String filename) throws Exception
+    {
+        if (Log.isDebugEnabled()) Log.debug("changed ",filename);
+        App app = _appMap.remove(filename);
+        if (app != null)
+        {
+            _deploymentManager.removeApp(app);
+        }
+        app = ScanningAppProvider.this.createApp(filename);
+        if (app != null)
+        {
+            _appMap.put(filename,app);
+            _deploymentManager.addApp(app);
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected void fileRemoved(String filename) throws Exception
+    {
+        if (Log.isDebugEnabled()) Log.debug("removed ",filename);
+        App app = _appMap.remove(filename);
+        if (app != null)
+            _deploymentManager.removeApp(app);
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Get the deploymentManager.

@@ -137,7 +137,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _configurationClassesSet=false;
     private boolean _configurationsSet=false;
     
-    private final MetaData _metadata;
+    private MetaData _metadata;
 
     public static WebAppContext getCurrentWebAppContext()
     {
@@ -169,33 +169,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             throw new IllegalArgumentException("template is started");
         _scontext=new Context();
         setErrorHandler(new ErrorPageErrorHandler());      
-
-        
-        //Make a new MetaData to hold descriptor and annotation metadata
-        _metadata = template.getMetaData();
-        
-        _configurations = new Configuration[]{new CloneConfiguration(template)};
-
-        
-        // TODO we need some better way to work out what attributes should be copied at this stage.
-        
-        setAliases(template.isAliases());
-        setBaseResource(template.getBaseResource());
-        setClassLoader(template.getClassLoader()); 
-        setContextPath(template.getContextPath());
-        setCompactPath(template.isCompactPath());
-        setDisplayName(template.getDisplayName());
-        setLogger(template.getLogger()); // TODO maybe not shared ???
-        setMaxFormContentSize(template.getMaxFormContentSize());  
-        
-        Enumeration<?> names=template.getAttributeNames();
-        while(names.hasMoreElements())
-        {
-            String name = (String)names.nextElement();
-            Object val = template.getAttribute(name);
-            if (!name.startsWith("javax.servlet."))
-                setAttribute(name,val);
-        }
+        setTemplate(template);
     }
     
     /* ------------------------------------------------------------ */
@@ -230,6 +204,45 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _metadata = new MetaData();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * Configure this WebAppContext from a shared WebAppContext as template.
+     * <p>The MetaData is reused from the template.
+     * @param template The template to base this webappcontext on
+     */
+    public void setTemplate(WebAppContext template)
+    {
+        if (template==null)
+            throw new IllegalStateException("null template");
+        if (isRunning() || template.isRunning())
+            throw new IllegalStateException("Running");
+        
+        //Make a new MetaData to hold descriptor and annotation metadata
+        _metadata = template.getMetaData();
+        
+        _configurations = new Configuration[]{new CloneConfiguration(template)};
+
+        // TODO we need some better way to work out what attributes should be copied at this stage.
+        
+        setAliases(template.isAliases());
+        setBaseResource(template.getBaseResource());
+        setClassLoader(template.getClassLoader()); 
+        setContextPath(template.getContextPath());
+        setCompactPath(template.isCompactPath());
+        setDisplayName(template.getDisplayName());
+        setLogger(template.getLogger()); // TODO maybe not shared ???
+        setMaxFormContentSize(template.getMaxFormContentSize());  
+        
+        Enumeration<?> names=template.getAttributeNames();
+        while(names.hasMoreElements())
+        {
+            String name = (String)names.nextElement();
+            Object val = template.getAttribute(name);
+            if (!name.startsWith("javax.servlet."))
+                setAttribute(name,val);
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @param servletContextName The servletContextName to set.
