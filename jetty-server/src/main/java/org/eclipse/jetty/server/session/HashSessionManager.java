@@ -94,8 +94,7 @@ public class HashSessionManager extends AbstractSessionManager
      */
     @Override
     public void doStop() throws Exception
-    {
-        
+    {     
         if (_storeDir != null)
             saveSessions();
         
@@ -397,11 +396,13 @@ public class HashSessionManager extends AbstractSessionManager
         _lazyLoad = lazyLoad;
     }
     
+    /* ------------------------------------------------------------ */
     public boolean isLazyLoad()
     {
         return _lazyLoad;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public void restoreSessions () throws Exception
     {
         if (_storeDir==null || !_storeDir.exists())
@@ -424,6 +425,7 @@ public class HashSessionManager extends AbstractSessionManager
                 Session session = restoreSession(in);
                 in.close();          
                 addSession(session, false);
+                session.didActivate();
                 files[i].delete();
             }
             catch (Exception e)
@@ -464,7 +466,9 @@ public class HashSessionManager extends AbstractSessionManager
                         file.delete();
                     file.createNewFile();
                     FileOutputStream fos = new FileOutputStream (file);
+                    session.willPassivate();
                     session.save(fos);
+                        session.didActivate();
                     fos.close();
                 }
                 catch (Exception e)

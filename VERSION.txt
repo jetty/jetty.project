@@ -9,6 +9,8 @@ jetty-7.2-SNAPSHOT
  + 320264 Removed duplicate mime.property entries
  + 320457 Added rfc2045 support to B64Code
  + 321232 BasicAuthenticator ignores bad Authorization header. 
+ + 321307 HashSessionManager calls passivation listeners.
+ 
  + JETTY-912 added per exchange timeout api
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors
