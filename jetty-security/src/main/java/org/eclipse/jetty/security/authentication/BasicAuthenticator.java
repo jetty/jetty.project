@@ -69,12 +69,15 @@ public class BasicAuthenticator extends LoginAuthenticator
                 credentials = credentials.substring(credentials.indexOf(' ')+1);
                 credentials = B64Code.decode(credentials,StringUtil.__ISO_8859_1);
                 int i = credentials.indexOf(':');
-                String username = credentials.substring(0,i);
-                String password = credentials.substring(i+1);
-                
-                UserIdentity user = _loginService.login(username,password);
-                if (user!=null)
-                    return new UserAuthentication(this,user);
+                if (i>0)
+                {
+                    String username = credentials.substring(0,i);
+                    String password = credentials.substring(i+1);
+
+                    UserIdentity user = _loginService.login(username,password);
+                    if (user!=null)
+                        return new UserAuthentication(this,user);
+                }
             }
 
             if (_deferred.isDeferred(response))

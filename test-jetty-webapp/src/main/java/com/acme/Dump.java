@@ -441,6 +441,9 @@ public class Dump extends HttpServlet
             pout.write("<th align=\"right\">getRemoteUser:&nbsp;</th>");
             pout.write("<td>"+request.getRemoteUser()+"</td>");
             pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\">getUserPrincipal:&nbsp;</th>");
+            pout.write("<td>"+request.getUserPrincipal()+"</td>");
+            pout.write("</tr><tr>\n");
             pout.write("<th align=\"right\">getRemoteAddr:&nbsp;</th>");
             pout.write("<td>"+request.getRemoteAddr()+"</td>");
             pout.write("</tr><tr>\n");
