@@ -16,6 +16,7 @@ jetty-7.2-SNAPSHOT
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1250 Parallel start of HandlerCollection
+ + Fix jetty-plus.xml for new configuration names
  + Added ignore to Logger interface
  + Improved debug dump
 
