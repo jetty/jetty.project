@@ -11,11 +11,11 @@ jetty-7.2-SNAPSHOT
  + 321232 BasicAuthenticator ignores bad Authorization header. 
  + 321307 HashSessionManager calls passivation listeners.
  + 321730 SelectChannelEndPoint prints to System.err
-
  + JETTY-912 added per exchange timeout api
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1250 Parallel start of HandlerCollection
+ + JETTY-1256 annotation jars from Orbit
  + Fix jetty-plus.xml for new configuration names
  + Added ignore to Logger interface
  + Improved debug dump

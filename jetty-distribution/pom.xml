@@ -10,11 +10,12 @@
   <packaging>pom</packaging>
   <properties>
     <eclipse-mirror>http://mirror.cc.vt.edu/pub/eclipse/eclipse/downloads/drops</eclipse-mirror>
-    <orbit-url>http://download.eclipse.org/tools/orbit/committers/drops/I20100709085604/bundles</orbit-url>
+    <orbit-url>http://download.eclipse.org/tools/orbit/committers/drops/S20100721061755/bundles</orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
     <eclipse-drop>R-3.6-201006080911</eclipse-drop>
     <eclipse-ecj-version>3.6</eclipse-ecj-version>
     <orbit-javax-activation-version>${javax-activation-version}.0.v201005080500</orbit-javax-activation-version>
+    <orbit-javax-annotation-version>1.0.0.v20100513-0750</orbit-javax-annotation-version>
     <orbit-javax-el-version>2.1.0.v201004190952</orbit-javax-el-version>
     <orbit-javax-mail-glassfish-version>${javax-mail-version}.v201005082020</orbit-javax-mail-glassfish-version>
     <orbit-javax-servlet-version>2.5.0.v200910301333</orbit-javax-servlet-version>
@@ -23,6 +24,7 @@
     <orbit-com-sun-el-version>1.0.0.v201004190952</orbit-com-sun-el-version>
     <orbit-org-apache-jasper-version>2.1.0.v201007080150</orbit-org-apache-jasper-version>
     <orbit-org-apache-taglibs-standard-version>1.2.0.v201004190952</orbit-org-apache-taglibs-standard-version>
+    <orbit-org-objectweb-asm-version>3.1.0.v200803061910</orbit-org-objectweb-asm-version>
   </properties>
   <build>
     <plugins>
@@ -70,6 +72,7 @@
                 <get dest="${orbit-cache}" verbose="true" skipexisting="true">
                   <url url="${orbit-url}/javax.servlet_${orbit-javax-servlet-version}.jar" />
                   <url url="${orbit-url}/javax.activation_${orbit-javax-activation-version}.jar" />
+                  <url url="${orbit-url}/javax.annotation_${orbit-javax-annotation-version}.jar" />
                   <url url="${orbit-url}/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
                   <url url="${orbit-url}/javax.el_${orbit-javax-el-version}.jar" />
                   <url url="${orbit-url}/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" />
@@ -77,6 +80,7 @@
                   <url url="${orbit-url}/com.sun.el_${orbit-com-sun-el-version}.jar" />
                   <url url="${orbit-url}/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />
                   <url url="${orbit-url}/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
+                  <url url="${orbit-url}/org.objectweb.asm_${orbit-org-objectweb-asm-version}.jar" />
                 </get>
 
                 <mkdir dir="${orbit-cache}/${eclipse-drop}" />
@@ -89,6 +93,15 @@
                 <!-- ${jetty.home}/lib/ -->
                 <mkdir dir="${assembly-directory}/lib" />
                 <copy file="${orbit-cache}/javax.servlet_${orbit-javax-servlet-version}.jar" tofile="${assembly-directory}/lib/servlet-api-2.5.jar" />
+
+                <!-- ${jetty.home}/lib/annotations/ -->
+                <mkdir dir="${assembly-directory}/lib/annotations" />
+                <copy todir="${assembly-directory}/lib/annotations">
+                  <fileset dir="${orbit-cache}">
+                    <include name="javax.annotation_${orbit-javax-annotation-version}.jar" />
+                    <include name="org.objectweb.asm_${orbit-org-objectweb-asm-version}.jar" />
+                  </fileset>
+                </copy>
 
                 <!-- ${jetty.home}/lib/jndi/ -->
                 <mkdir dir="${assembly-directory}/lib/jndi" />
