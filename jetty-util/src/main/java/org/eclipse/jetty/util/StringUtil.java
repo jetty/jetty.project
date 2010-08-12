@@ -380,4 +380,109 @@ public class StringUtil
             return s.getBytes();
         }
     }
+    
+    
+    
+    /**
+     * Converts a binary SID to a string SID
+     * 
+     * http://en.wikipedia.org/wiki/Security_Identifier
+     * 
+     * S-1-IdentifierAuthority-SubAuthority1-SubAuthority2-...-SubAuthorityn
+     */
+    public static String sidBytesToString(byte[] sidBytes)
+    {
+        StringBuilder sidString = new StringBuilder();
+        
+        // Identify this as a SID
+        sidString.append("S-");
+        
+        // Add SID revision level (expect 1 but may change someday)
+        sidString.append(Byte.toString(sidBytes[0])).append('-');
+        
+        StringBuilder tmpBuilder = new StringBuilder();
+        
+        // crunch the six bytes of issuing authority value
+        for (int i = 2; i <= 7; ++i)
+        {
+            tmpBuilder.append(Integer.toHexString(sidBytes[i] & 0xFF));
+        }
+        
+        sidString.append(Long.parseLong(tmpBuilder.toString(), 16)); // '-' is in the subauth loop
+   
+        // the number of subAuthorities we need to attach
+        int subAuthorityCount = sidBytes[1];
+
+        // attach each of the subAuthorities
+        for (int i = 0; i < subAuthorityCount; ++i)
+        {
+            int offset = i * 4;
+            tmpBuilder.setLength(0);
+            // these need to be zero padded hex and little endian
+            tmpBuilder.append(String.format("%02X%02X%02X%02X", 
+                    (sidBytes[11 + offset] & 0xFF),
+                    (sidBytes[10 + offset] & 0xFF),
+                    (sidBytes[9 + offset] & 0xFF),
+                    (sidBytes[8 + offset] & 0xFF)));  
+            sidString.append('-').append(Long.parseLong(tmpBuilder.toString(), 16));
+        }
+        
+        return sidString.toString();
+    }
+    
+    /**
+     * Converts a string SID to a binary SID
+     * 
+     * http://en.wikipedia.org/wiki/Security_Identifier
+     * 
+     * S-1-IdentifierAuthority-SubAuthority1-SubAuthority2-...-SubAuthorityn
+     */
+    public static byte[] sidStringToBytes( String sidString )
+    {
+        String[] sidTokens = sidString.split("-");
+        
+        int subAuthorityCount = sidTokens.length - 3; // S-Rev-IdAuth-
+        
+        int byteCount = 0;
+        byte[] sidBytes = new byte[1 + 1 + 6 + (4 * subAuthorityCount)];
+        
+        // the revision byte
+        sidBytes[byteCount++] = (byte)Integer.parseInt(sidTokens[1]);
+
+        // the # of sub authorities byte
+        sidBytes[byteCount++] = (byte)subAuthorityCount;
+
+        // the certAuthority
+        String hexStr = Long.toHexString(Long.parseLong(sidTokens[2]));
+        
+        while( hexStr.length() < 12) // pad to 12 characters
+        {
+            hexStr = "0" + hexStr;
+        }
+
+        // place the certAuthority 6 bytes
+        for ( int i = 0 ; i < hexStr.length(); i = i + 2)
+        {
+            sidBytes[byteCount++] = (byte)Integer.parseInt(hexStr.substring(i, i + 2),16);
+        }
+                
+        
+        for ( int i = 3; i < sidTokens.length ; ++i)
+        {
+            hexStr = Long.toHexString(Long.parseLong(sidTokens[i]));
+            
+            while( hexStr.length() < 8) // pad to 8 characters
+            {
+                hexStr = "0" + hexStr;
+            }     
+            
+            // place the inverted sub authorities, 4 bytes each
+            for ( int j = hexStr.length(); j > 0; j = j - 2)
+            {          
+                sidBytes[byteCount++] = (byte)Integer.parseInt(hexStr.substring(j-2, j),16);
+            }
+        }
+      
+        return sidBytes;
+    }
 }
