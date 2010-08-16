@@ -11,6 +11,7 @@ jetty-7.2-SNAPSHOT
  + 321232 BasicAuthenticator ignores bad Authorization header. 
  + 321307 HashSessionManager calls passivation listeners.
  + 321730 SelectChannelEndPoint prints to System.err
+ + 321735 HttpClient onException called for buffer overflow.
  + 322683 RewriteHandler thread safety
  + JETTY-912 added per exchange timeout api
  + JETTY-1245 Do not use direct buffers with NIO SSL

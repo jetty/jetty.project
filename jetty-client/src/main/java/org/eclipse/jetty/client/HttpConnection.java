@@ -190,14 +190,14 @@ public class HttpConnection implements Connection
                         _exchange.associate(this);
                 }
 
-                if (_exchange.getStatus() == HttpExchange.STATUS_WAITING_FOR_COMMIT)
-                {
-                    no_progress = 0;
-                    commitRequest();
-                }
-
                 try
                 {
+                    if (_exchange.getStatus() == HttpExchange.STATUS_WAITING_FOR_COMMIT)
+                    {
+                        no_progress = 0;
+                        commitRequest();
+                    }
+                    
                     long io = 0;
                     _endp.flush();
 
@@ -284,6 +284,8 @@ public class HttpConnection implements Connection
                     if (e instanceof ThreadDeath)
                         throw (ThreadDeath)e;
 
+                    failed = true;
+                    
                     synchronized (this)
                     {
                         if (_exchange != null)
@@ -296,19 +298,20 @@ public class HttpConnection implements Connection
                                 _exchange.getEventListener().onException(e);
                             }
                         }
+                        else
+                        {
+                            if (e instanceof IOException)
+                                throw (IOException)e;
+
+                            if (e instanceof Error)
+                                throw (Error)e;
+
+                            if (e instanceof RuntimeException)
+                                throw (RuntimeException)e;
+
+                            throw new RuntimeException(e);
+                        }
                     }
-
-                    failed = true;
-                    if (e instanceof IOException)
-                        throw (IOException)e;
-
-                    if (e instanceof Error)
-                        throw (Error)e;
-
-                    if (e instanceof RuntimeException)
-                        throw (RuntimeException)e;
-
-                    throw new RuntimeException(e);
                 }
                 finally
                 {

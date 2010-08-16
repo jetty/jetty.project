@@ -387,395 +387,402 @@ public class HttpGenerator extends AbstractGenerator
 
         boolean has_server = false;
 
-        if (isRequest())
+        try
         {
-            _persistent=true;
-
-            if (_version == HttpVersions.HTTP_0_9_ORDINAL)
+            if (isRequest())
             {
-                _contentLength = HttpTokens.NO_CONTENT;
-                _header.put(_method);
-                _header.put((byte)' ');
-                _header.put(_uri.getBytes("utf-8")); // TODO WRONG!
-                _header.put(HttpTokens.CRLF);
-                _state = STATE_FLUSHING;
-                _noContent=true;
-                return;
-            }
-            else
-            {
-                _header.put(_method);
-                _header.put((byte)' ');
-                _header.put(_uri.getBytes("utf-8")); // TODO WRONG!
-                _header.put((byte)' ');
-                _header.put(_version==HttpVersions.HTTP_1_0_ORDINAL?HttpVersions.HTTP_1_0_BUFFER:HttpVersions.HTTP_1_1_BUFFER);
-                _header.put(HttpTokens.CRLF);
-            }
-        }
-        else
-        {
-            // Responses
+                _persistent=true;
 
-            if (_version == HttpVersions.HTTP_0_9_ORDINAL)
-            {
-                _persistent = false;
-                _contentLength = HttpTokens.EOF_CONTENT;
-                _state = STATE_CONTENT;
-                return;
-            }
-            else
-            {
-                if (_persistent==null)
-                    _persistent= (_version > HttpVersions.HTTP_1_0_ORDINAL);
-
-                // add response line
-                Status status = _status<__status.length?__status[_status]:null;
-
-                if (status==null)
+                if (_version == HttpVersions.HTTP_0_9_ORDINAL)
                 {
-                    _header.put(HttpVersions.HTTP_1_1_BUFFER);
-                    _header.put((byte) ' ');
-                    _header.put((byte) ('0' + _status / 100));
-                    _header.put((byte) ('0' + (_status % 100) / 10));
-                    _header.put((byte) ('0' + (_status % 10)));
-                    _header.put((byte) ' ');
-                    if (_reason==null)
+                    _contentLength = HttpTokens.NO_CONTENT;
+                    _header.put(_method);
+                    _header.put((byte)' ');
+                    _header.put(_uri.getBytes("utf-8")); // TODO WRONG!
+                    _header.put(HttpTokens.CRLF);
+                    _state = STATE_FLUSHING;
+                    _noContent=true;
+                    return;
+                }
+                else
+                {
+                    _header.put(_method);
+                    _header.put((byte)' ');
+                    _header.put(_uri.getBytes("utf-8")); // TODO WRONG!
+                    _header.put((byte)' ');
+                    _header.put(_version==HttpVersions.HTTP_1_0_ORDINAL?HttpVersions.HTTP_1_0_BUFFER:HttpVersions.HTTP_1_1_BUFFER);
+                    _header.put(HttpTokens.CRLF);
+                }
+            }
+            else
+            {
+                // Responses
+
+                if (_version == HttpVersions.HTTP_0_9_ORDINAL)
+                {
+                    _persistent = false;
+                    _contentLength = HttpTokens.EOF_CONTENT;
+                    _state = STATE_CONTENT;
+                    return;
+                }
+                else
+                {
+                    if (_persistent==null)
+                        _persistent= (_version > HttpVersions.HTTP_1_0_ORDINAL);
+
+                    // add response line
+                    Status status = _status<__status.length?__status[_status]:null;
+
+                    if (status==null)
                     {
+                        _header.put(HttpVersions.HTTP_1_1_BUFFER);
+                        _header.put((byte) ' ');
                         _header.put((byte) ('0' + _status / 100));
                         _header.put((byte) ('0' + (_status % 100) / 10));
                         _header.put((byte) ('0' + (_status % 10)));
-                    }
-                    else
-                        _header.put(_reason);
-                    _header.put(HttpTokens.CRLF);
-                }
-                else
-                {
-                    if (_reason==null)
-                        _header.put(status._responseLine);
-                    else
-                    {
-                        _header.put(status._schemeCode);
-                        _header.put(_reason);
-                        _header.put(HttpTokens.CRLF);
-                    }
-                }
-
-                if (_status<200 && _status>=100 )
-                {
-                    _noContent=true;
-                    _content=null;
-                    if (_buffer!=null)
-                        _buffer.clear();
-                    // end the header.
-
-                    if (_status!=101 )
-                    {
-                        _header.put(HttpTokens.CRLF);
-                        _state = STATE_CONTENT;
-                        return;
-                    }
-                }
-                else if (_status==204 || _status==304)
-                {
-                    _noContent=true;
-                    _content=null;
-                    if (_buffer!=null)
-                        _buffer.clear();
-                }
-            }
-        }
-
-        // Add headers
-        if (_status>=200 && _date!=null)
-        {
-            _header.put(HttpHeaders.DATE_BUFFER);
-            _header.put((byte)':');
-            _header.put((byte)' ');
-            _header.put(_date);
-            _header.put(CRLF);
-        }
-
-        // key field values
-        HttpFields.Field content_length = null;
-        HttpFields.Field transfer_encoding = null;
-        boolean keep_alive = false;
-        boolean close=false;
-        boolean content_type=false;
-        StringBuilder connection = null;
-
-        if (fields != null)
-        {
-            int s=fields.size();
-            for (int f=0;f<s;f++)
-            {
-                HttpFields.Field field = fields.getField(f);
-                if (field==null)
-                    continue;
-
-                switch (field.getNameOrdinal())
-                {
-                    case HttpHeaders.CONTENT_LENGTH_ORDINAL:
-                        content_length = field;
-                        _contentLength = field.getLongValue();
-
-                        if (_contentLength < _contentWritten || _last && _contentLength != _contentWritten)
-                            content_length = null;
-
-                        // write the field to the header buffer
-                        field.put(_header);
-                        break;
-
-                    case HttpHeaders.CONTENT_TYPE_ORDINAL:
-                        if (BufferUtil.isPrefix(MimeTypes.MULTIPART_BYTERANGES_BUFFER, field.getValueBuffer())) _contentLength = HttpTokens.SELF_DEFINING_CONTENT;
-
-                        // write the field to the header buffer
-                        content_type=true;
-                        field.put(_header);
-                        break;
-
-                    case HttpHeaders.TRANSFER_ENCODING_ORDINAL:
-                        if (_version == HttpVersions.HTTP_1_1_ORDINAL)
-                            transfer_encoding = field;
-                        // Do NOT add yet!
-                        break;
-
-                    case HttpHeaders.CONNECTION_ORDINAL:
-                        if (isRequest())
-                            field.put(_header);
-
-                        int connection_value = field.getValueOrdinal();
-                        switch (connection_value)
-                        {
-                            case -1:
-                            {
-                                String[] values = field.getValue().split(",");
-                                for  (int i=0;values!=null && i<values.length;i++)
-                                {
-                                    CachedBuffer cb = HttpHeaderValues.CACHE.get(values[i].trim());
-
-                                    if (cb!=null)
-                                    {
-                                        switch(cb.getOrdinal())
-                                        {
-                                            case HttpHeaderValues.CLOSE_ORDINAL:
-                                                close=true;
-                                                if (isResponse())
-                                                    _persistent=false;
-                                                keep_alive=false;
-                                                if (!_persistent && isResponse() && _contentLength == HttpTokens.UNKNOWN_CONTENT)
-                                                    _contentLength = HttpTokens.EOF_CONTENT;
-                                                break;
-
-                                            case HttpHeaderValues.KEEP_ALIVE_ORDINAL:
-                                                if (_version == HttpVersions.HTTP_1_0_ORDINAL)
-                                                {
-                                                    keep_alive = true;
-                                                    if (isResponse())
-                                                        _persistent = true;
-                                                }
-                                                break;
-
-                                            default:
-                                                if (connection==null)
-                                                    connection=new StringBuilder();
-                                                else
-                                                    connection.append(',');
-                                                connection.append(values[i]);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (connection==null)
-                                            connection=new StringBuilder();
-                                        else
-                                            connection.append(',');
-                                        connection.append(values[i]);
-                                    }
-                                }
-
-                                break;
-                            }
-                            case HttpHeaderValues.UPGRADE_ORDINAL:
-                            {
-                                // special case for websocket connection ordering
-                                if (isResponse())
-                                {
-                                    field.put(_header);
-                                    continue;
-                                }
-                            }
-                            case HttpHeaderValues.CLOSE_ORDINAL:
-                            {
-                                close=true;
-                                if (isResponse())
-                                    _persistent=false;
-                                if (!_persistent && isResponse() && _contentLength == HttpTokens.UNKNOWN_CONTENT)
-                                    _contentLength = HttpTokens.EOF_CONTENT;
-                                break;
-                            }
-                            case HttpHeaderValues.KEEP_ALIVE_ORDINAL:
-                            {
-                                if (_version == HttpVersions.HTTP_1_0_ORDINAL)
-                                {
-                                    keep_alive = true;
-                                    if (isResponse())
-                                        _persistent=true;
-                                }
-                                break;
-                            }
-                            default:
-                            {
-                                if (connection==null)
-                                    connection=new StringBuilder();
-                                else
-                                    connection.append(',');
-                                connection.append(field.getValue());
-                            }
-                        }
-
-                        // Do NOT add yet!
-                        break;
-
-                    case HttpHeaders.SERVER_ORDINAL:
-                        if (getSendServerVersion())
-                        {
-                            has_server=true;
-                            field.put(_header);
-                        }
-                        break;
-
-                    default:
-                        // write the field to the header buffer
-                        field.put(_header);
-                }
-            }
-        }
-
-        // Calculate how to end _content and connection, _content length and transfer encoding
-        // settings.
-        // From RFC 2616 4.4:
-        // 1. No body for 1xx, 204, 304 & HEAD response
-        // 2. Force _content-length?
-        // 3. If Transfer-Encoding!=identity && HTTP/1.1 && !HttpConnection==close then chunk
-        // 4. Content-Length
-        // 5. multipart/byteranges
-        // 6. close
-        switch ((int) _contentLength)
-        {
-            case HttpTokens.UNKNOWN_CONTENT:
-                // It may be that we have no _content, or perhaps _content just has not been
-                // written yet?
-
-                // Response known not to have a body
-                if (_contentWritten == 0 && isResponse() && (_status < 200 || _status == 204 || _status == 304))
-                    _contentLength = HttpTokens.NO_CONTENT;
-                else if (_last)
-                {
-                    // we have seen all the _content there is
-                    _contentLength = _contentWritten;
-                    if (content_length == null && (isResponse() || _contentLength>0 || content_type ))
-                    {
-                        // known length but not actually set.
-                        _header.put(HttpHeaders.CONTENT_LENGTH_BUFFER);
-                        _header.put(HttpTokens.COLON);
                         _header.put((byte) ' ');
-                        BufferUtil.putDecLong(_header, _contentLength);
+                        if (_reason==null)
+                        {
+                            _header.put((byte) ('0' + _status / 100));
+                            _header.put((byte) ('0' + (_status % 100) / 10));
+                            _header.put((byte) ('0' + (_status % 10)));
+                        }
+                        else
+                            _header.put(_reason);
                         _header.put(HttpTokens.CRLF);
                     }
-                }
-                else
-                {
-                    // No idea, so we must assume that a body is coming
-                    _contentLength = (!_persistent || _version < HttpVersions.HTTP_1_1_ORDINAL ) ? HttpTokens.EOF_CONTENT : HttpTokens.CHUNKED_CONTENT;
-                    if (isRequest() && _contentLength==HttpTokens.EOF_CONTENT)
+                    else
                     {
-                        _contentLength=HttpTokens.NO_CONTENT;
+                        if (_reason==null)
+                            _header.put(status._responseLine);
+                        else
+                        {
+                            _header.put(status._schemeCode);
+                            _header.put(_reason);
+                            _header.put(HttpTokens.CRLF);
+                        }
+                    }
+
+                    if (_status<200 && _status>=100 )
+                    {
                         _noContent=true;
+                        _content=null;
+                        if (_buffer!=null)
+                            _buffer.clear();
+                        // end the header.
+
+                        if (_status!=101 )
+                        {
+                            _header.put(HttpTokens.CRLF);
+                            _state = STATE_CONTENT;
+                            return;
+                        }
+                    }
+                    else if (_status==204 || _status==304)
+                    {
+                        _noContent=true;
+                        _content=null;
+                        if (_buffer!=null)
+                            _buffer.clear();
                     }
                 }
-                break;
-
-            case HttpTokens.NO_CONTENT:
-                if (content_length == null && isResponse() && _status >= 200 && _status != 204 && _status != 304)
-                    _header.put(CONTENT_LENGTH_0);
-                break;
-
-            case HttpTokens.EOF_CONTENT:
-                _persistent = isRequest();
-                break;
-
-            case HttpTokens.CHUNKED_CONTENT:
-                break;
-
-            default:
-                // TODO - maybe allow forced chunking by setting te ???
-                break;
-        }
-
-        // Add transfer_encoding if needed
-        if (_contentLength == HttpTokens.CHUNKED_CONTENT)
-        {
-            // try to use user supplied encoding as it may have other values.
-            if (transfer_encoding != null && HttpHeaderValues.CHUNKED_ORDINAL != transfer_encoding.getValueOrdinal())
-            {
-                String c = transfer_encoding.getValue();
-                if (c.endsWith(HttpHeaderValues.CHUNKED))
-                    transfer_encoding.put(_header);
-                else
-                    throw new IllegalArgumentException("BAD TE");
             }
-            else
-                _header.put(TRANSFER_ENCODING_CHUNKED);
-        }
 
-        // Handle connection if need be
-        if (_contentLength==HttpTokens.EOF_CONTENT)
-        {
-            keep_alive=false;
-            _persistent=false;
-        }
-
-        if (isResponse())
-        {
-            if (!_persistent && (close || _version > HttpVersions.HTTP_1_0_ORDINAL))
+            // Add headers
+            if (_status>=200 && _date!=null)
             {
-                _header.put(CONNECTION_CLOSE);
-                if (connection!=null)
-                {
-                    _header.setPutIndex(_header.putIndex()-2);
-                    _header.put((byte)',');
-                    _header.put(connection.toString().getBytes());
-                    _header.put(CRLF);
-                }
-            }
-            else if (keep_alive)
-            {
-                _header.put(CONNECTION_KEEP_ALIVE);
-                if (connection!=null)
-                {
-                    _header.setPutIndex(_header.putIndex()-2);
-                    _header.put((byte)',');
-                    _header.put(connection.toString().getBytes());
-                    _header.put(CRLF);
-                }
-            }
-            else if (connection!=null)
-            {
-                _header.put(CONNECTION_);
-                _header.put(connection.toString().getBytes());
+                _header.put(HttpHeaders.DATE_BUFFER);
+                _header.put((byte)':');
+                _header.put((byte)' ');
+                _header.put(_date);
                 _header.put(CRLF);
             }
+
+            // key field values
+            HttpFields.Field content_length = null;
+            HttpFields.Field transfer_encoding = null;
+            boolean keep_alive = false;
+            boolean close=false;
+            boolean content_type=false;
+            StringBuilder connection = null;
+
+            if (fields != null)
+            {
+                int s=fields.size();
+                for (int f=0;f<s;f++)
+                {
+                    HttpFields.Field field = fields.getField(f);
+                    if (field==null)
+                        continue;
+
+                    switch (field.getNameOrdinal())
+                    {
+                        case HttpHeaders.CONTENT_LENGTH_ORDINAL:
+                            content_length = field;
+                            _contentLength = field.getLongValue();
+
+                            if (_contentLength < _contentWritten || _last && _contentLength != _contentWritten)
+                                content_length = null;
+
+                            // write the field to the header buffer
+                            field.put(_header);
+                            break;
+
+                        case HttpHeaders.CONTENT_TYPE_ORDINAL:
+                            if (BufferUtil.isPrefix(MimeTypes.MULTIPART_BYTERANGES_BUFFER, field.getValueBuffer())) _contentLength = HttpTokens.SELF_DEFINING_CONTENT;
+
+                            // write the field to the header buffer
+                            content_type=true;
+                            field.put(_header);
+                            break;
+
+                        case HttpHeaders.TRANSFER_ENCODING_ORDINAL:
+                            if (_version == HttpVersions.HTTP_1_1_ORDINAL)
+                                transfer_encoding = field;
+                            // Do NOT add yet!
+                            break;
+
+                        case HttpHeaders.CONNECTION_ORDINAL:
+                            if (isRequest())
+                                field.put(_header);
+
+                            int connection_value = field.getValueOrdinal();
+                            switch (connection_value)
+                            {
+                                case -1:
+                                {
+                                    String[] values = field.getValue().split(",");
+                                    for  (int i=0;values!=null && i<values.length;i++)
+                                    {
+                                        CachedBuffer cb = HttpHeaderValues.CACHE.get(values[i].trim());
+
+                                        if (cb!=null)
+                                        {
+                                            switch(cb.getOrdinal())
+                                            {
+                                                case HttpHeaderValues.CLOSE_ORDINAL:
+                                                    close=true;
+                                                    if (isResponse())
+                                                        _persistent=false;
+                                                    keep_alive=false;
+                                                    if (!_persistent && isResponse() && _contentLength == HttpTokens.UNKNOWN_CONTENT)
+                                                        _contentLength = HttpTokens.EOF_CONTENT;
+                                                    break;
+
+                                                case HttpHeaderValues.KEEP_ALIVE_ORDINAL:
+                                                    if (_version == HttpVersions.HTTP_1_0_ORDINAL)
+                                                    {
+                                                        keep_alive = true;
+                                                        if (isResponse())
+                                                            _persistent = true;
+                                                    }
+                                                    break;
+
+                                                default:
+                                                    if (connection==null)
+                                                        connection=new StringBuilder();
+                                                    else
+                                                        connection.append(',');
+                                                    connection.append(values[i]);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (connection==null)
+                                                connection=new StringBuilder();
+                                            else
+                                                connection.append(',');
+                                            connection.append(values[i]);
+                                        }
+                                    }
+
+                                    break;
+                                }
+                                case HttpHeaderValues.UPGRADE_ORDINAL:
+                                {
+                                    // special case for websocket connection ordering
+                                    if (isResponse())
+                                    {
+                                        field.put(_header);
+                                        continue;
+                                    }
+                                }
+                                case HttpHeaderValues.CLOSE_ORDINAL:
+                                {
+                                    close=true;
+                                    if (isResponse())
+                                        _persistent=false;
+                                    if (!_persistent && isResponse() && _contentLength == HttpTokens.UNKNOWN_CONTENT)
+                                        _contentLength = HttpTokens.EOF_CONTENT;
+                                    break;
+                                }
+                                case HttpHeaderValues.KEEP_ALIVE_ORDINAL:
+                                {
+                                    if (_version == HttpVersions.HTTP_1_0_ORDINAL)
+                                    {
+                                        keep_alive = true;
+                                        if (isResponse())
+                                            _persistent=true;
+                                    }
+                                    break;
+                                }
+                                default:
+                                {
+                                    if (connection==null)
+                                        connection=new StringBuilder();
+                                    else
+                                        connection.append(',');
+                                    connection.append(field.getValue());
+                                }
+                            }
+
+                            // Do NOT add yet!
+                            break;
+
+                        case HttpHeaders.SERVER_ORDINAL:
+                            if (getSendServerVersion())
+                            {
+                                has_server=true;
+                                field.put(_header);
+                            }
+                            break;
+
+                        default:
+                            // write the field to the header buffer
+                            field.put(_header);
+                    }
+                }
+            }
+
+            // Calculate how to end _content and connection, _content length and transfer encoding
+            // settings.
+            // From RFC 2616 4.4:
+            // 1. No body for 1xx, 204, 304 & HEAD response
+            // 2. Force _content-length?
+            // 3. If Transfer-Encoding!=identity && HTTP/1.1 && !HttpConnection==close then chunk
+            // 4. Content-Length
+            // 5. multipart/byteranges
+            // 6. close
+            switch ((int) _contentLength)
+            {
+                case HttpTokens.UNKNOWN_CONTENT:
+                    // It may be that we have no _content, or perhaps _content just has not been
+                    // written yet?
+
+                    // Response known not to have a body
+                    if (_contentWritten == 0 && isResponse() && (_status < 200 || _status == 204 || _status == 304))
+                        _contentLength = HttpTokens.NO_CONTENT;
+                    else if (_last)
+                    {
+                        // we have seen all the _content there is
+                        _contentLength = _contentWritten;
+                        if (content_length == null && (isResponse() || _contentLength>0 || content_type ))
+                        {
+                            // known length but not actually set.
+                            _header.put(HttpHeaders.CONTENT_LENGTH_BUFFER);
+                            _header.put(HttpTokens.COLON);
+                            _header.put((byte) ' ');
+                            BufferUtil.putDecLong(_header, _contentLength);
+                            _header.put(HttpTokens.CRLF);
+                        }
+                    }
+                    else
+                    {
+                        // No idea, so we must assume that a body is coming
+                        _contentLength = (!_persistent || _version < HttpVersions.HTTP_1_1_ORDINAL ) ? HttpTokens.EOF_CONTENT : HttpTokens.CHUNKED_CONTENT;
+                        if (isRequest() && _contentLength==HttpTokens.EOF_CONTENT)
+                        {
+                            _contentLength=HttpTokens.NO_CONTENT;
+                            _noContent=true;
+                        }
+                    }
+                    break;
+
+                case HttpTokens.NO_CONTENT:
+                    if (content_length == null && isResponse() && _status >= 200 && _status != 204 && _status != 304)
+                        _header.put(CONTENT_LENGTH_0);
+                    break;
+
+                case HttpTokens.EOF_CONTENT:
+                    _persistent = isRequest();
+                    break;
+
+                case HttpTokens.CHUNKED_CONTENT:
+                    break;
+
+                default:
+                    // TODO - maybe allow forced chunking by setting te ???
+                    break;
+            }
+
+            // Add transfer_encoding if needed
+            if (_contentLength == HttpTokens.CHUNKED_CONTENT)
+            {
+                // try to use user supplied encoding as it may have other values.
+                if (transfer_encoding != null && HttpHeaderValues.CHUNKED_ORDINAL != transfer_encoding.getValueOrdinal())
+                {
+                    String c = transfer_encoding.getValue();
+                    if (c.endsWith(HttpHeaderValues.CHUNKED))
+                        transfer_encoding.put(_header);
+                    else
+                        throw new IllegalArgumentException("BAD TE");
+                }
+                else
+                    _header.put(TRANSFER_ENCODING_CHUNKED);
+            }
+
+            // Handle connection if need be
+            if (_contentLength==HttpTokens.EOF_CONTENT)
+            {
+                keep_alive=false;
+                _persistent=false;
+            }
+
+            if (isResponse())
+            {
+                if (!_persistent && (close || _version > HttpVersions.HTTP_1_0_ORDINAL))
+                {
+                    _header.put(CONNECTION_CLOSE);
+                    if (connection!=null)
+                    {
+                        _header.setPutIndex(_header.putIndex()-2);
+                        _header.put((byte)',');
+                        _header.put(connection.toString().getBytes());
+                        _header.put(CRLF);
+                    }
+                }
+                else if (keep_alive)
+                {
+                    _header.put(CONNECTION_KEEP_ALIVE);
+                    if (connection!=null)
+                    {
+                        _header.setPutIndex(_header.putIndex()-2);
+                        _header.put((byte)',');
+                        _header.put(connection.toString().getBytes());
+                        _header.put(CRLF);
+                    }
+                }
+                else if (connection!=null)
+                {
+                    _header.put(CONNECTION_);
+                    _header.put(connection.toString().getBytes());
+                    _header.put(CRLF);
+                }
+            }
+
+            if (!has_server && _status>199 && getSendServerVersion())
+                _header.put(SERVER);
+
+            // end the header.
+            _header.put(HttpTokens.CRLF);
+
+            _state = STATE_CONTENT;
+
         }
-
-        if (!has_server && _status>199 && getSendServerVersion())
-            _header.put(SERVER);
-
-        // end the header.
-        _header.put(HttpTokens.CRLF);
-
-        _state = STATE_CONTENT;
-
+        catch(ArrayIndexOutOfBoundsException e)
+        {
+            throw new RuntimeException("Header>"+_header.capacity(),e);
+        }
     }
 
 
