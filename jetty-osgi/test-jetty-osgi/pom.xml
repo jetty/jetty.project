@@ -13,20 +13,21 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot.test</bundle-symbolic-name>
     <eclipse-mirror>http://mirror.cc.vt.edu/pub/eclipse/eclipse/downloads/drops</eclipse-mirror>
-<!-- <orbit-url>http://download.eclipse.org/tools/orbit/downloads/drops/R20100519200754/bundles</orbit-url> -->
-    <orbit-url>http://download.eclipse.org/tools/orbit/committers/drops/I20100628101947/bundles</orbit-url>
+    <orbit-url>http://download.eclipse.org/tools/orbit/committers/drops/S20100721061755/bundles</orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
     <eclipse-drop>R-3.6-201006080911</eclipse-drop>
     <eclipse-ecj-version>3.6</eclipse-ecj-version>
     <orbit-javax-activation-version>${javax-activation-version}.0.v201005080500</orbit-javax-activation-version>
+    <orbit-javax-annotation-version>1.0.0.v20100513-0750</orbit-javax-annotation-version>
     <orbit-javax-el-version>2.1.0.v201004190952</orbit-javax-el-version>
     <orbit-javax-mail-glassfish-version>${javax-mail-version}.v201005082020</orbit-javax-mail-glassfish-version>
     <orbit-javax-servlet-version>2.5.0.v200910301333</orbit-javax-servlet-version>
     <orbit-javax-servlet-jsp-version>2.1.0.v201004190952</orbit-javax-servlet-jsp-version>
     <orbit-javax-servlet-jsp-jstl-version>1.2.0.v201004190952</orbit-javax-servlet-jsp-jstl-version>
     <orbit-com-sun-el-version>1.0.0.v201004190952</orbit-com-sun-el-version>
-    <orbit-org-apache-jasper-version>2.1.0.v201006280255</orbit-org-apache-jasper-version>
+    <orbit-org-apache-jasper-version>2.1.0.v201007080150</orbit-org-apache-jasper-version>
     <orbit-org-apache-taglibs-standard-version>1.2.0.v201004190952</orbit-org-apache-taglibs-standard-version>
+    <orbit-org-objectweb-asm-version>3.1.0.v200803061910</orbit-org-objectweb-asm-version>
   </properties>
   <dependencies>
     <dependency>
