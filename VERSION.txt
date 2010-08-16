@@ -12,6 +12,7 @@ jetty-7.2-SNAPSHOT
  + 321307 HashSessionManager calls passivation listeners.
  + 321730 SelectChannelEndPoint prints to System.err
  + 321735 HttpClient onException called for buffer overflow.
+ + 322448 Added jetty-dir.css for directory listings
  + 322683 RewriteHandler thread safety
  + JETTY-912 added per exchange timeout api
  + JETTY-1245 Do not use direct buffers with NIO SSL
@@ -29,7 +30,6 @@ jetty-7.1.6.v20100715
  + JETTY-1248 fix parsing of bad multiparts
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1251 Replace then close selector for JVM bugs
-
 
 jetty-7.1.5.v20100705
  + Update ecj to 3.6 Helios release drop

@@ -1,0 +1,26 @@
+body 
+{
+	margin: 10px;
+	padding: 5px;
+}
+
+h1
+{
+	text-shadow: #000000 -1px -1px 1px;
+}
+
+a
+{
+	font-weight: bold;
+	font-style: normal;
+	text-decoration: none;
+	font-size:inherit;
+}
+
+td
+{
+	font-style: italic;
+}
+
+
+

@@ -16,7 +16,6 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Enumeration;
@@ -100,6 +99,9 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *                    servlet context root. Useful for only serving static content out
  *                    of only specific subdirectories.
  *
+ *  stylesheet	      Set with the location of an optional stylesheet that will be used
+ *                    to decorate the directory listing html.
+ *
  *  aliases           If True, aliases of resources are allowed (eg. symbolic
  *                    links and caps variations). May bypass security constraints.
  *
@@ -141,6 +143,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
     private MimeTypes _mimeTypes;
     private String[] _welcomes;
+    private Resource _stylesheet;
     private boolean _useFileMappedBuffer=false;
     private ByteArrayBuffer _cacheControl;
     private String _relativeResourceBase;
@@ -151,7 +154,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     /* ------------------------------------------------------------ */
     @Override
     public void init()
-        throws UnavailableException
+    throws UnavailableException
     {
         _servletContext=getServletContext();
         ContextHandler.Context scontext=ContextHandler.getCurrentContext();
@@ -203,6 +206,29 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 Log.warn(Log.EXCEPTION,e);
                 throw new UnavailableException(e.toString());
             }
+        }
+
+        String css=getInitParameter("stylesheet");
+        try
+        {
+            if(css!=null)
+            {
+                _stylesheet = Resource.newResource(css);
+                if(!_stylesheet.exists())
+                {
+                    Log.warn("!" + css);
+                    _stylesheet = null;
+                }
+            }
+            if(_stylesheet == null)
+            {
+                _stylesheet = Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
+            }
+        }	
+        catch(Exception e)
+        {
+            Log.warn(e.toString());
+            Log.debug(e);
         }
 
         String t=getInitParameter("cacheControl");
@@ -258,9 +284,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     public String getInitParameter(String name)
     {
         String value=getServletContext().getInitParameter("org.eclipse.jetty.servlet.Default."+name);
-	if (value==null)
-	    value=super.getInitParameter(name);
-	return value;
+        if (value==null)
+            value=super.getInitParameter(name);
+        return value;
     }
 
     /* ------------------------------------------------------------ */
@@ -280,7 +306,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     private int getInitInt(String name, int dft)
     {
         String value=getInitParameter(name);
-	if (value==null)
+        if (value==null)
             value=getInitParameter(name);
         if (value!=null && value.length()>0)
             return Integer.parseInt(value);
@@ -296,15 +322,16 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
      * @return The resource to serve.
      */
     public Resource getResource(String pathInContext)
-    {
+    {	
         Resource r=null;
         if (_relativeResourceBase!=null)
             pathInContext=URIUtil.addPaths(_relativeResourceBase,pathInContext);
 
         try
         {
-            if (_resourceBase!=null)
+            if (_resourceBase!=null){
                 r = _resourceBase.addPath(pathInContext);
+            }
             else
             {
                 URL u = _servletContext.getResource(pathInContext);
@@ -318,6 +345,10 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         {
             Log.ignore(e);
         }
+
+        if((r==null || !r.exists()) && pathInContext.endsWith("/jetty-dir.css"))
+            r=_stylesheet;
+
         return r;
     }
 
@@ -325,7 +356,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     @SuppressWarnings("unchecked")
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
-    	throws ServletException, IOException
+    throws ServletException, IOException
     {
         String servletPath=null;
         String pathInfo=null;
@@ -369,7 +400,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         // Find the resource and content
         Resource resource=null;
         HttpContent content=null;
-        
+
         try
         {
             // Try gzipped content first
@@ -436,24 +467,24 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         pathInContext+="?"+q;
                     response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(_servletContext.getContextPath(),pathInContext)));
                 }
-		else
-		{
-		    // ensure we have content
-		    if (content==null)
-			content=new UnCachedContent(resource);
+                else
+                {
+                    // ensure we have content
+                    if (content==null)
+                        content=new UnCachedContent(resource);
 
-		    if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
-		    {
-			if (gzip)
-			{
-			   response.setHeader(HttpHeaders.CONTENT_ENCODING,"gzip");
-			   String mt=_servletContext.getMimeType(pathInContext);
-			   if (mt!=null)
-			       response.setContentType(mt);
-			}
-			sendData(request,response,included.booleanValue(),resource,content,reqRanges);
-		    }
-		}
+                    if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
+                    {
+                        if (gzip)
+                        {
+                            response.setHeader(HttpHeaders.CONTENT_ENCODING,"gzip");
+                            String mt=_servletContext.getMimeType(pathInContext);
+                            if (mt!=null)
+                                response.setContentType(mt);
+                        }
+                        sendData(request,response,included.booleanValue(),resource,content,reqRanges);
+                    }
+                }
             }
             else
             {
@@ -541,7 +572,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     /* ------------------------------------------------------------ */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
-        throws ServletException, IOException
+    throws ServletException, IOException
     {
         doGet(request,response);
     }
@@ -559,11 +590,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     /* ------------------------------------------------------------ */
     @Override
     protected void doOptions(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException
+    throws ServletException, IOException
     {
         resp.setHeader("Allow", "GET,HEAD,POST,OPTIONS");
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Finds a matching welcome file for the supplied {@link Resource}. This will be the first entry in the list of
@@ -595,7 +626,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 Map.Entry entry=_servletHandler.getHolderEntry(welcome_in_context);
                 if (entry!=null && entry.getValue()!=_defaultHolder &&
                         (_welcomeServlets || (_welcomeExactServlets && entry.getKey().equals(welcome_in_context))))
-                        welcome_servlet=welcome_in_context;
+                    welcome_servlet=welcome_in_context;
 
             }
         }
@@ -669,9 +700,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
     /* ------------------------------------------------------------------- */
     protected void sendDirectory(HttpServletRequest request,
-                                 HttpServletResponse response,
-                                 Resource resource,
-                                 String pathInContext)
+            HttpServletResponse response,
+            Resource resource,
+            String pathInContext)
     throws IOException
     {
         if (!_dirAllowed)
@@ -705,11 +736,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
     /* ------------------------------------------------------------ */
     protected void sendData(HttpServletRequest request,
-                            HttpServletResponse response,
-                            boolean include,
-                            Resource resource,
-                            HttpContent content,
-                            Enumeration reqRanges)
+            HttpServletResponse response,
+            boolean include,
+            Resource resource,
+            HttpContent content,
+            Enumeration reqRanges)
     throws IOException
     {
         boolean direct;
@@ -725,8 +756,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             direct=connector instanceof NIOConnector && ((NIOConnector)connector).getUseDirectBuffers() && !(connector instanceof SslConnector);
             content_length=content.getContentLength();
         }
-        
-        
+
+
         // Get the output stream (or writer)
         OutputStream out =null;
         try{out = response.getOutputStream();}
@@ -887,7 +918,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
     /* ------------------------------------------------------------ */
     protected void writeHeaders(HttpServletResponse response,HttpContent content,long count)
-        throws IOException
+    throws IOException
     {
         if (content.getContentType()!=null && response.getContentType()==null)
             response.setContentType(content.getContentType().toString());
@@ -990,7 +1021,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         {
             return null;
         }
-        
+
         /* ------------------------------------------------------------ */
         public Buffer getIndirectBuffer()
         {
