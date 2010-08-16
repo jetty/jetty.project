@@ -34,7 +34,6 @@ import org.eclipse.jetty.util.log.Log;
 public class RuleContainer extends Rule
 {
     protected Rule[] _rules;
-    protected boolean _handled;
     
     protected String _originalPathAttribute;
     protected boolean _rewriteRequestURI=true;
@@ -43,7 +42,8 @@ public class RuleContainer extends Rule
     protected LegacyRule _legacy;
 
     /* ------------------------------------------------------------ */
-    private LegacyRule getLegacyRule()
+    @Deprecated
+    public LegacyRule getLegacyRule()
     {
         if (_legacy==null)
         {
@@ -61,6 +61,7 @@ public class RuleContainer extends Rule
      * 
      * @param legacyRule old style rewrite rule
      */
+    @Deprecated
     public void setLegacyRule(LegacyRule legacyRule)
     {
         _legacy = legacyRule;
@@ -165,54 +166,7 @@ public class RuleContainer extends Rule
     {
         _originalPathAttribute=originalPathAttribte;
     }
-
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated 
-     */
-    public PathMap getRewrite()
-    {
-        return getLegacyRule().getRewrite();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated
-     */
-    public void setRewrite(PathMap rewrite)
-    {
-        getLegacyRule().setRewrite(rewrite);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated
-     */
-    public void addRewriteRule(String pattern, String prefix)
-    {
-        getLegacyRule().addRewriteRule(pattern,prefix);
-    }
-
     
-    /**
-     * @return handled true if one of the rules within the rule container is handling the request 
-     */
-    public boolean isHandled()
-    {
-        return _handled;
-    }
-    
-    /*------------------------------------------------------------ */
-    /**
-     * @param handled true if one of the rules within the rule container is handling the request
-     */
-    public void setHandled(boolean handled)
-    {
-        _handled=handled;
-    }
-    
-
     /**
      * Process the contained rules
      * @param target target field to pass on to the contained rules
@@ -233,8 +187,6 @@ public class RuleContainer extends Rule
      */
     protected String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        _handled=false;
-        
         boolean original_set=_originalPathAttribute==null;
                 
         for (Rule rule : _rules)
@@ -264,7 +216,6 @@ public class RuleContainer extends Rule
                 if (rule.isHandling())
                 {
                     Log.debug("handling {}",rule);
-                    _handled=true;
                     (request instanceof Request?(Request)request:HttpConnection.getCurrentConnection().getRequest()).setHandled(true);
                 }
 
