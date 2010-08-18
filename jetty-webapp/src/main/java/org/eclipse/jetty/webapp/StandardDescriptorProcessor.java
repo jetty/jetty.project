@@ -1189,7 +1189,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 
                 ((WebDescriptor)descriptor).addClassName(className);
 
-                context.addEventListener(listener);
                 Class<? extends EventListener> listenerClass = (Class<? extends EventListener>)context.loadClass(className);
                 listener = newListenerInstance(context,listenerClass);
                 if (!(listener instanceof EventListener))
