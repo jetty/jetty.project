@@ -30,7 +30,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
     static
     {
-        System.setProperty("org.mortbay.io.nio.IDLE_TICK","100");
+        System.setProperty("org.eclipse.jetty.io.nio.IDLE_TICK","100");
     }
     
     
