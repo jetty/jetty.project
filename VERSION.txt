@@ -15,6 +15,7 @@ jetty-7.2-SNAPSHOT
  + 322448 Added jetty-dir.css for directory listings
  + 322575 NPE in HotSwapHandler if old handler null
  + 322683 RewriteHandler thread safety
+ + 323196 org.mortbay properties to org.eclipse
  + JETTY-912 added per exchange timeout api
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors
