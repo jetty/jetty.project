@@ -616,9 +616,15 @@ public class Request implements HttpServletRequest
      */
     public String getLocalName()
     {
+        if (_endp==null)
+            return null;
         if (_dns)
-            return _endp==null?null:_endp.getLocalHost();
-        return _endp==null?null:_endp.getLocalAddr();
+            return _endp.getLocalHost();
+        
+        String local = _endp.getLocalAddr();
+        if (local.indexOf(':')>=0)
+            local="["+local+"]";
+        return local;
     }
 
     /* ------------------------------------------------------------ */
