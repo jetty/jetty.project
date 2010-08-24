@@ -21,6 +21,7 @@
   <modules>
     <module>jetty-osgi-boot</module>
     <module>jetty-osgi-boot-jsp</module>
+    <module>jetty-osgi-boot-logback</module>
     <module>jetty-osgi-boot-warurl</module>
     <module>jetty-osgi-httpservice</module>
     <module>test-jetty-osgi</module>
