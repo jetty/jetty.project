@@ -622,7 +622,7 @@ public class Request implements HttpServletRequest
             return _endp.getLocalHost();
         
         String local = _endp.getLocalAddr();
-        if (local.indexOf(':')>=0)
+        if (local!=null && local.indexOf(':')>=0)
             local="["+local+"]";
         return local;
     }
