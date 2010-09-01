@@ -12,10 +12,8 @@
   <description>Jetty OSGi Integration test</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot.test</bundle-symbolic-name>
-    <eclipse-mirror>http://mirror.cc.vt.edu/pub/eclipse/eclipse/downloads/drops</eclipse-mirror>
-    <orbit-url>http://download.eclipse.org/tools/orbit/committers/drops/S20100721061755/bundles</orbit-url>
+    <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <eclipse-drop>R-3.6-201006080911</eclipse-drop>
     <eclipse-ecj-version>3.6</eclipse-ecj-version>
     <orbit-javax-activation-version>${javax-activation-version}.0.v201005080500</orbit-javax-activation-version>
     <orbit-javax-annotation-version>1.0.0.v20100513-0750</orbit-javax-annotation-version>
@@ -207,20 +205,16 @@
 
                 <mkdir dir="${orbit-cache}" />
                 <get dest="${orbit-cache}" verbose="true" skipexisting="true">
-                  <url url="${orbit-url}/javax.servlet_${orbit-javax-servlet-version}.jar" />
-                  <url url="${orbit-url}/javax.activation_${orbit-javax-activation-version}.jar" />
-                  <url url="${orbit-url}/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
-                  <url url="${orbit-url}/javax.el_${orbit-javax-el-version}.jar" />
-                  <url url="${orbit-url}/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" />
-                  <url url="${orbit-url}/javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" />
-                  <url url="${orbit-url}/com.sun.el_${orbit-com-sun-el-version}.jar" />
-                  <url url="${orbit-url}/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />
-                  <url url="${orbit-url}/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
-                </get>
-
-                <mkdir dir="${orbit-cache}/${eclipse-drop}" />
-                <get dest="${orbit-cache}/${eclipse-drop}" verbose="true" skipexisting="true">
-                  <url url="${eclipse-mirror}/${eclipse-drop}/ecj-${eclipse-ecj-version}.jar" />
+                  <url url="${jetty-orbit-url}/javax.servlet_${orbit-javax-servlet-version}.jar" />
+                  <url url="${jetty-orbit-url}/javax.activation_${orbit-javax-activation-version}.jar" />
+                  <url url="${jetty-orbit-url}/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
+                  <url url="${jetty-orbit-url}/javax.el_${orbit-javax-el-version}.jar" />
+                  <url url="${jetty-orbit-url}/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" />
+                  <url url="${jetty-orbit-url}/javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" />
+                  <url url="${jetty-orbit-url}/com.sun.el_${orbit-com-sun-el-version}.jar" />
+                  <url url="${jetty-orbit-url}/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />
+                  <url url="${jetty-orbit-url}/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
+                  <url url="${jetty-orbit-url}/ecj-${eclipse-ecj-version}.jar" />
                 </get>
 
                 <!-- Step 2: copy the orbit artifact from orbit-cache to the appropriate lib directory -->
@@ -248,10 +242,11 @@
                     <include name="com.sun.el_${orbit-com-sun-el-version}.jar" />
                     <include name="org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />
                     <include name="org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
-                  </fileset>
-                  <fileset dir="${orbit-cache}/${eclipse-drop}">
                     <include name="ecj-${eclipse-ecj-version}.jar" />
                   </fileset>
+                  <!--fileset dir="${orbit-cache}/${eclipse-drop}">
+                    <include name="ecj-${eclipse-ecj-version}.jar" />
+                  </fileset-->
                 </copy>
 
               </tasks>
