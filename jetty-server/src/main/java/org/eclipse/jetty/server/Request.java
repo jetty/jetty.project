@@ -1842,6 +1842,12 @@ public class Request implements HttpServletRequest
     }
     
     
+    /* ------------------------------------------------------------ */
+    /** Merge in a new query string.
+     * The query string is merged with the existing parameters and {@link #setParameters(MultiMap)} and {@link #setQueryString(String)} are called with the result.
+     * The merge is according to the rules of the servlet dispatch forward method.
+     * @param query The query string to merge into the request.
+     */
     public void mergeQueryString(String query)
     {
         // extract parameters from dispatch query
