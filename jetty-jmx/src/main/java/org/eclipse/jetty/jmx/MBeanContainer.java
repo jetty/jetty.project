@@ -180,13 +180,14 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
 
         if (bean!=null)
         {
-            List<Relationship> beanRelations = _relations.getValues(bean);
+            List<?> beanRelations = _relations.getValues(bean);
             if (beanRelations!=null && beanRelations.size()>0)
             {
                 Log.debug("Unregister {}", beanRelations);
-                List<Relationship> removeList = new ArrayList<Relationship>(beanRelations);
-                for (Relationship relation : removeList)
+                List<?> removeList = new ArrayList<Object>(beanRelations);
+                for (Object r : removeList)
                 {
+                    Container.Relationship  relation = (Relationship)r;
                     relation.getContainer().update(relation.getParent(),relation.getChild(),null,relation.getRelationship(),true);
                 }
             }
