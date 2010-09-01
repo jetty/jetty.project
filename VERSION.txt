@@ -18,6 +18,7 @@ jetty-7.2-SNAPSHOT
  + 323196 org.mortbay properties to org.eclipse
  + 323435 MovedContextHandler permanent redirection
  + 323464 IPv6 localhost with no Host header
+ + 324110 Merge async dispatch parameters
  + JETTY-912 added per exchange timeout api
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors

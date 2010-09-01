@@ -218,7 +218,7 @@ public class Dispatcher implements RequestDispatcher
         final String old_query=baseRequest.getQueryString();
         final Attributes old_attr=baseRequest.getAttributes();
         final DispatcherType old_type=baseRequest.getDispatcherType();
-        MultiMap old_params=baseRequest.getParameters();
+        MultiMap<String> old_params=baseRequest.getParameters();
         
         try
         {
@@ -240,77 +240,7 @@ public class Dispatcher implements RequestDispatcher
                         old_params=baseRequest.getParameters();
                     }
                     
-                    // extract parameters from dispatch query
-                    MultiMap parameters=new MultiMap();
-                    UrlEncoded.decodeTo(query,parameters,request.getCharacterEncoding());
-                 
-                    boolean merge_old_query = false;
-
-                    // Have we evaluated parameters
-                    if( old_params == null )
-                    {
-                        // no - so force parameters to be evaluated
-                        baseRequest.getParameterNames();
-                        old_params = baseRequest.getParameters();
-                    }
-                    
-                    // Are there any existing parameters?
-                    if (old_params!=null && old_params.size()>0)
-                    {
-                        // Merge parameters; new parameters of the same name take precedence.
-                        Iterator iter = old_params.entrySet().iterator();
-                        while (iter.hasNext())
-                        {
-                            Map.Entry entry = (Map.Entry)iter.next();
-                            String name=(String)entry.getKey();
-                            
-                            // If the names match, we will need to remake the query string
-                            if (parameters.containsKey(name))
-                                merge_old_query = true;
-
-                            // Add the old values to the new parameter map
-                            Object values=entry.getValue();
-                            for (int i=0;i<LazyList.size(values);i++)
-                                parameters.add(name, LazyList.get(values, i));
-                        }
-                    }
-                    
-                    if (old_query != null && old_query.length()>0)
-                    {
-                        if ( merge_old_query )
-                        {
-                            StringBuilder overridden_query_string = new StringBuilder();
-                            MultiMap overridden_old_query = new MultiMap();
-                            UrlEncoded.decodeTo(old_query,overridden_old_query,request.getCharacterEncoding());
-    
-                            MultiMap overridden_new_query = new MultiMap(); 
-                            UrlEncoded.decodeTo(query,overridden_new_query,request.getCharacterEncoding());
-
-                            Iterator iter = overridden_old_query.entrySet().iterator();
-                            while (iter.hasNext())
-                            {
-                                Map.Entry entry = (Map.Entry)iter.next();
-                                String name=(String)entry.getKey();
-                                if(!overridden_new_query.containsKey(name))
-                                {
-                                    Object values=entry.getValue();
-                                    for (int i=0;i<LazyList.size(values);i++)
-                                    {
-                                        overridden_query_string.append("&").append(name).append("=").append(LazyList.get(values, i));
-                                    }
-                                }
-                            }
-                            
-                            query = query + overridden_query_string;
-                        }
-                        else 
-                        {
-                            query=query+"&"+old_query;
-                        }
-                   }
-
-                    baseRequest.setParameters(parameters);
-                    baseRequest.setQueryString(query);
+                    baseRequest.mergeQueryString(query);
                 }
                 
                 ForwardAttributes attr = new ForwardAttributes(old_attr); 
@@ -334,14 +264,11 @@ public class Dispatcher implements RequestDispatcher
                     attr._requestURI=old_uri;
                     attr._contextPath=old_context_path;
                     attr._servletPath=old_servlet_path;
-                }                
-   
-              
+                }     
                 
                 baseRequest.setRequestURI(_uri);
                 baseRequest.setContextPath(_contextHandler.getContextPath());
                 baseRequest.setAttributes(attr);
-                baseRequest.setQueryString(query);
                 
                 _contextHandler.handle(_path,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
                 

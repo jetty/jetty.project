@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -683,7 +684,7 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the parameters.
      */
-    public MultiMap getParameters()
+    public MultiMap<String> getParameters()
     {
         return _parameters;
     }
@@ -696,7 +697,7 @@ public class Request implements HttpServletRequest
     {
         if (!_paramsExtracted) 
             extractParameters();
-        List vals = _parameters.getValues(name);
+        List<Object> vals = _parameters.getValues(name);
         if (vals==null)
             return null;
         return (String[])vals.toArray(new String[vals.size()]);
@@ -1635,7 +1636,7 @@ public class Request implements HttpServletRequest
     /**
      * @param parameters The parameters to set.
      */
-    public void setParameters(MultiMap parameters)
+    public void setParameters(MultiMap<String> parameters)
     {
         _parameters= (parameters==null)?_baseParameters:parameters;
         if (_paramsExtracted && _parameters==null)
@@ -1840,5 +1841,76 @@ public class Request implements HttpServletRequest
         return (_handled?"[":"(")+getMethod()+" "+_uri+(_handled?"]@":")@")+hashCode()+" "+super.toString();
     }
     
+    
+    public void mergeQueryString(String query)
+    {
+        // extract parameters from dispatch query
+        MultiMap<String> parameters=new MultiMap<String>();
+        UrlEncoded.decodeTo(query,parameters,getCharacterEncoding());
+     
+        boolean merge_old_query = false;
+
+        // Have we evaluated parameters
+        if (!_paramsExtracted) 
+            extractParameters();
+        
+        // Are there any existing parameters?
+        if (_parameters!=null && _parameters.size()>0)
+        {
+            // Merge parameters; new parameters of the same name take precedence.
+            Iterator<Entry<String,Object>> iter = _parameters.entrySet().iterator();
+            while (iter.hasNext())
+            {
+                Map.Entry<String,Object> entry = iter.next();
+                String name=entry.getKey();
+                
+                // If the names match, we will need to remake the query string
+                if (parameters.containsKey(name))
+                    merge_old_query = true;
+
+                // Add the old values to the new parameter map
+                Object values=entry.getValue();
+                for (int i=0;i<LazyList.size(values);i++)
+                    parameters.add(name, LazyList.get(values, i));
+            }
+        }
+        
+        if (_queryString != null && _queryString.length()>0)
+        {
+            if ( merge_old_query )
+            {
+                StringBuilder overridden_query_string = new StringBuilder();
+                MultiMap<String> overridden_old_query = new MultiMap<String>();
+                UrlEncoded.decodeTo(_queryString,overridden_old_query,getCharacterEncoding());
+
+                MultiMap<String> overridden_new_query = new MultiMap<String>(); 
+                UrlEncoded.decodeTo(query,overridden_new_query,getCharacterEncoding());
+
+                Iterator<Entry<String,Object>> iter = overridden_old_query.entrySet().iterator();
+                while (iter.hasNext())
+                {
+                    Map.Entry<String,Object> entry = iter.next();
+                    String name=entry.getKey();
+                    if(!overridden_new_query.containsKey(name))
+                    {
+                        Object values=entry.getValue();
+                        for (int i=0;i<LazyList.size(values);i++)
+                        {
+                            overridden_query_string.append("&").append(name).append("=").append(LazyList.get(values, i));
+                        }
+                    }
+                }
+                
+                query = query + overridden_query_string;
+            }
+            else 
+            {
+                query=query+"&"+_queryString;
+            }
+       }
+
+       setParameters(parameters);
+       setQueryString(query);
+    }
 }
 

@@ -365,12 +365,13 @@ public class Server extends HandlerWrapper implements Attributes
 
         final Request baseRequest=connection.getRequest();
         final String path=state.getPath();
+
         if (path!=null)
         {
             // this is a dispatch with a path
             baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI,baseRequest.getRequestURI());
             baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING,baseRequest.getQueryString());
-            
+
             baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,state.getSuspendedContext().getContextPath());
 
             final String contextPath=state.getServletContext().getContextPath();
@@ -378,9 +379,10 @@ public class Server extends HandlerWrapper implements Attributes
             baseRequest.setUri(uri);
             baseRequest.setRequestURI(null);
             baseRequest.setPathInfo(baseRequest.getRequestURI());
-            baseRequest.setQueryString(uri.getQuery());            
+            if (uri.getQuery()!=null)
+                baseRequest.mergeQueryString(uri.getQuery());    
         }
-        
+
         final String target=baseRequest.getPathInfo();
         final HttpServletRequest request=(HttpServletRequest)async.getRequest();
         final HttpServletResponse response=(HttpServletResponse)async.getResponse();
@@ -393,6 +395,7 @@ public class Server extends HandlerWrapper implements Attributes
         }
         else
             handle(target, baseRequest, request, response);
+
     }
     
     
