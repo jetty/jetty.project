@@ -287,6 +287,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public Resource getResource(String uriInContext) throws MalformedURLException
     {
+        if (uriInContext==null || !uriInContext.startsWith(URIUtil.SLASH))
+            throw new MalformedURLException(uriInContext);
+
         IOException ioe= null;
         Resource resource= null;
         int loop=0;
