@@ -20,6 +20,7 @@ jetty-7.2-SNAPSHOT
  + 323464 IPv6 localhost with no Host header
  + 324110 Merge async dispatch parameters
  + 324158 Durable download or Orbit jars
+ + 324260 Jetty-6 continuations handle complete calls
  + JETTY-912 added per exchange timeout api
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors

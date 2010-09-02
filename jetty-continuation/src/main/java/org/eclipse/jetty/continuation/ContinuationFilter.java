@@ -73,7 +73,6 @@ public class ContinuationFilter implements Filter
     {
         if (_filtered)
         {
-
             Continuation c = (Continuation) request.getAttribute(Continuation.ATTRIBUTE);
             FilteredContinuation fc;
             if (_faux && (c==null || !(c instanceof FauxContinuation)))

@@ -80,18 +80,22 @@ public abstract class ContinuationBase extends TestCase
 
     protected void doSuspendWaitComplete() throws Exception
     {
-        String response=process("suspend=200&complete=10",null);
+        String response=process("suspend=200&complete=50",null);
         assertContains("COMPLETED",response);
+        assertContains("history: initial",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
+        assertNotContains("history: !initial",response);
     }
 
     protected void doSuspendComplete() throws Exception
     {
         String response=process("suspend=200&complete=0",null);
         assertContains("COMPLETED",response);
+        assertContains("history: initial",response);
         assertNotContains("history: onTimeout",response);
         assertContains("history: onComplete",response);
+        assertNotContains("history: !initial",response);
     }
 
     protected void doSuspendWaitResumeSuspendWaitResume() throws Exception
@@ -289,6 +293,7 @@ public abstract class ContinuationBase extends TestCase
             
             if (continuation.isInitial())
             {
+                ((HttpServletResponse)response).addHeader("history","initial");
                 if (read_before>0)
                 {
                     byte[] buf=new byte[read_before];
@@ -384,85 +389,89 @@ public abstract class ContinuationBase extends TestCase
                     response.getOutputStream().println("NORMAL\n");
                 }
             }
-            else if (suspend2_for>=0 && request.getAttribute("2nd")==null)
+            else    
             {
-                request.setAttribute("2nd","cycle");
-
-                if (suspend2_for>0)
-                    continuation.setTimeout(suspend2_for);
-                // continuation.addContinuationListener(__listener);
-                ((HttpServletResponse)response).addHeader("history","suspend");
-                continuation.suspend(response);
-
-                if (complete2_after>0)
+                ((HttpServletResponse)response).addHeader("history","!initial");
+                if (suspend2_for>=0 && request.getAttribute("2nd")==null)
                 {
-                    TimerTask complete = new TimerTask()
+                    request.setAttribute("2nd","cycle");
+
+                    if (suspend2_for>0)
+                        continuation.setTimeout(suspend2_for);
+                    // continuation.addContinuationListener(__listener);
+                    ((HttpServletResponse)response).addHeader("history","suspend");
+                    continuation.suspend(response);
+
+                    if (complete2_after>0)
                     {
-                        @Override
-                        public void run()
+                        TimerTask complete = new TimerTask()
                         {
-                            try
+                            @Override
+                            public void run()
                             {
-                                response.setStatus(200);
-                                response.getOutputStream().println("COMPLETED\n");
-                                continuation.complete();
+                                try
+                                {
+                                    response.setStatus(200);
+                                    response.getOutputStream().println("COMPLETED\n");
+                                    continuation.complete();
+                                }
+                                catch(Exception e)
+                                {
+                                    e.printStackTrace();
+                                }
                             }
-                            catch(Exception e)
-                            {
-                                e.printStackTrace();
-                            }
+                        };
+                        synchronized (_timer)
+                        {
+                            _timer.schedule(complete,complete2_after);
                         }
-                    };
-                    synchronized (_timer)
-                    {
-                        _timer.schedule(complete,complete2_after);
                     }
+                    else if (complete2_after==0)
+                    {
+                        response.setStatus(200);
+                        response.getOutputStream().println("COMPLETED\n");
+                        continuation.complete();
+                    }
+                    else if (resume2_after>0)
+                    {
+                        TimerTask resume = new TimerTask()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                ((HttpServletResponse)response).addHeader("history","resume");
+                                continuation.resume();
+                            }
+                        };
+                        synchronized (_timer)
+                        {
+                            _timer.schedule(resume,resume2_after);
+                        }
+                    }
+                    else if (resume2_after==0)
+                    {
+                        ((HttpServletResponse)response).addHeader("history","resume");
+                        continuation.resume();
+                    }
+                    if (undispatch)
+                        continuation.undispatch();
+                    return;
                 }
-                else if (complete2_after==0)
+                else if (continuation.isExpired())
                 {
                     response.setStatus(200);
-                    response.getOutputStream().println("COMPLETED\n");
-                    continuation.complete();
+                    response.getOutputStream().println("TIMEOUT\n");
                 }
-                else if (resume2_after>0)
+                else if (continuation.isResumed())
                 {
-                    TimerTask resume = new TimerTask()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            ((HttpServletResponse)response).addHeader("history","resume");
-                            continuation.resume();
-                        }
-                    };
-                    synchronized (_timer)
-                    {
-                        _timer.schedule(resume,resume2_after);
-                    }
+                    response.setStatus(200);
+                    response.getOutputStream().println("RESUMED\n");
                 }
-                else if (resume2_after==0)
+                else 
                 {
-                    ((HttpServletResponse)response).addHeader("history","resume");
-                    continuation.resume();
+                    response.setStatus(200);
+                    response.getOutputStream().println("unknown???\n");
                 }
-                if (undispatch)
-                    continuation.undispatch();
-                return;
-            }
-            else if (continuation.isExpired())
-            {
-                response.setStatus(200);
-                response.getOutputStream().println("TIMEOUT\n");
-            }
-            else if (continuation.isResumed())
-            {
-                response.setStatus(200);
-                response.getOutputStream().println("RESUMED\n");
-            }
-            else 
-            {
-                response.setStatus(200);
-                response.getOutputStream().println("unknown???\n");
             }
         }
     }
