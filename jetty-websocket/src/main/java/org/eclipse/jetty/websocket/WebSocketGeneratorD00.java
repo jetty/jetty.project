@@ -28,12 +28,7 @@ public class WebSocketGeneratorD00 implements WebSocketGenerator
         _buffers=buffers;
         _endp=endp;
     }
-
-    public synchronized void addFrame(byte frame,byte[] content, int blockFor) throws IOException
-    {
-        addFrame(frame,content,0,content.length,blockFor);
-    }
-
+    
     public synchronized void addFrame(byte opcode,byte[] content, int offset, int length, int blockFor) throws IOException
     {
         if (_buffer==null)
@@ -163,6 +158,13 @@ public class WebSocketGeneratorD00 implements WebSocketGenerator
     public synchronized boolean isBufferEmpty()
     {
         return _buffer==null || _buffer.length()==0;
+    }
+
+    public void addFragment(boolean more, byte opcode, byte[] content, int offset, int length, int maxIdleTime) throws IOException
+    {
+        if (more)
+            throw new UnsupportedOperationException("fragmented");
+        addFrame(opcode,content,offset,length,maxIdleTime);
     }
     
 }

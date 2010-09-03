@@ -74,5 +74,9 @@ public class WebSocketChatServlet extends WebSocketServlet
             // Log.info(this+" onDisconnect");
             _members.remove(this);
         }
+
+        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
+        {
+        }
     }
 }

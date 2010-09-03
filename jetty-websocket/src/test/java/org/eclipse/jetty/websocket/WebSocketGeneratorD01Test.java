@@ -53,7 +53,9 @@ public class WebSocketGeneratorD01Test
     @Test
     public void testOneBuffer() throws Exception
     {
-        _generator.addFrame((byte)0x84,"Hell\uFF4F W\uFF4Frld".getBytes(StringUtil.__UTF8),0);
+        String string = "Hell\uFF4F W\uFF4Frld";
+        byte[] bytes=string.getBytes(StringUtil.__UTF8);
+        _generator.addFrame((byte)0x84,bytes,0,bytes.length,0);
         _generator.flush();
         assertEquals(0x84,0xff&_out.get());
         assertEquals(15,0xff&_out.get());
@@ -81,7 +83,7 @@ public class WebSocketGeneratorD01Test
         for (int i=0;i<b.length;i++)
             b[i]=(byte)('0'+(i%10));
 
-        _generator.addFrame((byte)0x85,b,0);
+        _generator.addFrame((byte)0x85,b,0,b.length,0);
 
         _generator.flush();
         assertEquals(0x85,0xff&_out.get());

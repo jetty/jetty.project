@@ -117,7 +117,6 @@ public class WebSocketParserD01Test
         string += ". The end.";
         
         byte[] bytes = string.getBytes("UTF-8");
-        System.err.println(Long.toHexString(bytes.length));
         
         in.put((byte)0x00);
         in.put((byte)0x7F);

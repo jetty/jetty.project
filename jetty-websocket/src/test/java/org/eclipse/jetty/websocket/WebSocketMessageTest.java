@@ -147,7 +147,7 @@ public class WebSocketMessageTest
         for (int i = 0; i < 64 * 1024 / text.length(); ++i)
             message.append(text);
         byte[] data = message.toString().getBytes("UTF-8");
-        _serverWebSocket.outbound.sendMessage(WebSocket.LENGTH_FRAME, data);
+        _serverWebSocket.outbound.sendMessage(WebSocket.LENGTH_FRAME, data,0,data.length);
 
         // Length of the message is 65536, so the length will be encoded as 0x84 0x80 0x00
         int frame = input.read();
@@ -192,6 +192,10 @@ public class WebSocketMessageTest
         }
 
         public void onDisconnect()
+        {
+        }
+
+        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
         {
         }
     }

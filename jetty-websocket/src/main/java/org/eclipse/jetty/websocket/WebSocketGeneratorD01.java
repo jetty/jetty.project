@@ -35,8 +35,14 @@ public class WebSocketGeneratorD01 implements WebSocketGenerator
     {
         addFrame(opcode,content,0,content.length,blockFor);
     }
+    
 
     public synchronized void addFrame(byte opcode,byte[] content, int offset, int length, int blockFor) throws IOException
+    {
+        addFragment(false,opcode,content,offset,length,blockFor);
+    }
+
+    public synchronized void addFragment(boolean more, byte opcode, byte[] content, int offset, int length, int blockFor) throws IOException
     {
         if (_buffer==null)
             _buffer=_buffers.getDirectBuffer();
@@ -55,6 +61,8 @@ public class WebSocketGeneratorD01 implements WebSocketGenerator
                 fragment=_buffer.capacity()-10;
                 bufferPut((byte)(0x80|opcode), blockFor);
             }
+            else if (more)
+                bufferPut((byte)(0x80|opcode), blockFor);
             else
                 bufferPut(opcode, blockFor);
 
@@ -178,4 +186,5 @@ public class WebSocketGeneratorD01 implements WebSocketGenerator
     {
         return _buffer==null || _buffer.length()==0;
     }
+
 }

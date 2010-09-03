@@ -126,6 +126,10 @@ public class WebSocketLoadTest
             }
         }
 
+        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
+        {
+        }
+
         public void onMessage(byte frame, byte[] data, int offset, int length)
         {
         }

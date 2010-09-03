@@ -3,10 +3,7 @@ package org.eclipse.jetty.websocket;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.zip.Checksum;
 
-import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.http.security.Credential.MD5;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -14,10 +11,8 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.thread.Timeout;
 
 public class WebSocketConnection implements Connection, WebSocket.Outbound
 {
@@ -51,6 +46,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         _websocket = websocket;
         final WebSocketParser.FrameHandler handler = new WebSocketParser.FrameHandler()
         {
+            boolean _fragmented=false;
             Utf8StringBuilder _utf8 = new Utf8StringBuilder();
             
             public void onFrame(boolean more, byte flags, byte opcode, Buffer buffer)
@@ -62,21 +58,36 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
                     if (opcode==0)
                     {
                         if (more)
+                        {
                             _utf8.append(buffer.array(),buffer.getIndex(),buffer.length());
-                        else if (_utf8.length()==0)
-                            _websocket.onMessage(opcode,buffer.toString("utf-8"));
-                        else
+                            _fragmented=true;
+                        }
+                        else if (_fragmented)
                         {
                             _utf8.append(buffer.array(),buffer.getIndex(),buffer.length());
                             _websocket.onMessage(opcode,_utf8.toString());
                             _utf8.reset();
+                            _fragmented=false;
+                        }
+                        else
+                        {
+                            _websocket.onMessage(opcode,buffer.toString("utf-8"));
                         }
                     }
                     else
                     {
                         if (more)
-                            throw new IllegalStateException("not implemented");
-                        _websocket.onMessage(opcode,array,buffer.getIndex(),buffer.length());
+                        {
+                            _websocket.onFragment(true,opcode,array,buffer.getIndex(),buffer.length());
+                        }
+                        else if (_fragmented)
+                        {
+                            _websocket.onFragment(false,opcode,array,buffer.getIndex(),buffer.length());
+                        }
+                        else
+                        {
+                            _websocket.onMessage(opcode,array,buffer.getIndex(),buffer.length());
+                        }
                     }
                 }
                 catch(ThreadDeath th)
@@ -262,14 +273,17 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         _idle.access(_endp);
     }
 
-    public void sendMessage(byte frame, byte[] content) throws IOException
+    public void sendMessage(byte opcode, byte[] content, int offset, int length) throws IOException
     {
-        sendMessage(frame, content, 0, content.length);
+        _generator.addFrame(opcode,content,offset,length,_endp.getMaxIdleTime());
+        _generator.flush();
+        checkWriteable();
+        _idle.access(_endp);
     }
 
-    public void sendMessage(byte frame, byte[] content, int offset, int length) throws IOException
+    public void sendFragment(boolean more,byte opcode, byte[] content, int offset, int length) throws IOException
     {
-        _generator.addFrame(frame,content,offset,length,_endp.getMaxIdleTime());
+        _generator.addFragment(more,opcode,content,offset,length,_endp.getMaxIdleTime());
         _generator.flush();
         checkWriteable();
         _idle.access(_endp);

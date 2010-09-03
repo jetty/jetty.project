@@ -94,6 +94,10 @@ public class WebSocketUpgradeTest extends TestCase
             public void onMessage(byte frame, byte[] data, int offset, int length)
             {
             }
+
+            public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
+            {
+            }
         };
 
 
@@ -244,6 +248,10 @@ public class WebSocketUpgradeTest extends TestCase
         public void sendMessage(String msg) throws IOException
         {
             _outbound.sendMessage(msg);
+        }
+
+        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
+        {
         }
     }
 }
