@@ -25,6 +25,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -133,6 +134,12 @@ public class Dispatcher implements RequestDispatcher
         Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
         request.removeAttribute(__JSP_FILE); // TODO remove when glassfish 1044 is fixed
         
+        if (!(request instanceof HttpServletRequest))
+            request = new ServletRequestHttpWrapper(request);
+        if (!(response instanceof HttpServletResponse))
+            response = new ServletResponseHttpWrapper(response);
+            
+        
         // TODO - allow stream or writer????
         
         final DispatcherType old_type = baseRequest.getDispatcherType();
@@ -158,7 +165,7 @@ public class Dispatcher implements RequestDispatcher
                     }
                     
                     MultiMap parameters=new MultiMap();
-                    UrlEncoded.decodeTo(query,parameters,request.getCharacterEncoding());
+                    UrlEncoded.decodeTo(query,parameters,baseRequest.getCharacterEncoding());
                     
                     if (old_params!=null && old_params.size()>0)
                     {
@@ -210,6 +217,11 @@ public class Dispatcher implements RequestDispatcher
         response.resetBuffer();
         base_response.fwdReset();
         request.removeAttribute(__JSP_FILE); // TODO remove when glassfish 1044 is fixed
+
+        if (!(request instanceof HttpServletRequest))
+            request = new ServletRequestHttpWrapper(request);
+        if (!(response instanceof HttpServletResponse))
+            response = new ServletResponseHttpWrapper(response);
         
         final String old_uri=baseRequest.getRequestURI();
         final String old_context_path=baseRequest.getContextPath();
