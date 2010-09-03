@@ -258,21 +258,21 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized (this)
         {
-            _resumed=false;
-            _expired=false;
-            
-            if (_event==null || request!=_event.getRequest() || response != _event.getResponse() || context != _event.getServletContext())  
-                _event=new AsyncEventState(context,request,response);
-            else
-            {
-                _event._dispatchContext=null;
-                _event._path=null;
-            }
-            
             switch(_state)
             {
                 case __DISPATCHED:
                 case __REDISPATCHED:
+                    _resumed=false;
+                    _expired=false;
+
+                    if (_event==null || request!=_event.getRequest() || response != _event.getResponse() || context != _event.getServletContext())
+                        _event=new AsyncEventState(context,request,response);
+                    else
+                    {
+                        _event._dispatchContext=null;
+                        _event._path=null;
+                    }
+
                     _state=__ASYNCSTARTED;
                     break;
 
