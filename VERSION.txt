@@ -25,6 +25,7 @@ jetty-7.2-SNAPSHOT
  + 324360 validate input on getResource since loop logic obscures subclass input validation.
  + 324369 Implement draft-ietf-hybi-thewebsocketprotocol-01
  + 324377 Allow dispatch of ServletRequest and ServletResponse
+ + 324379 Change content type after getWriter
  + JETTY-912 added per exchange timeout api
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors

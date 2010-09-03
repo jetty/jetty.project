@@ -85,7 +85,7 @@ public class ResponseTest
         response.setContentType("foo2/bar2");
         assertEquals("foo2/bar2;charset=ISO-8859-1",response.getContentType());
         response.setHeader("name","foo");
-        Enumeration en=response.getHeaders("name");
+        Enumeration<?> en=response.getHeaders("name");
         assertEquals("foo",en.nextElement());
         assertFalse(en.hasMoreElements());
         response.addHeader("name","bar");
@@ -104,6 +104,11 @@ public class ResponseTest
         assertEquals("foo2/bar2;charset=ISO-8859-1",response.getContentType());
 
         response.recycle();
+
+        response.setContentType("text/xml;charset=ISO-8859-7");
+        response.getWriter();
+        response.setContentType("text/html;charset=UTF-8");
+        assertEquals("text/html;charset=ISO-8859-7",response.getContentType());
     }
 
     @Test
