@@ -88,9 +88,10 @@ public class WebSocketFactory
         if (!"HTTP/1.1".equals(request.getProtocol()))
             throw new IllegalStateException("!HTTP/1.1");
                 
+        int draft=request.getIntHeader("Sec-WebSocket-Draft");
         HttpConnection http = HttpConnection.getCurrentConnection();
         ConnectedEndPoint endp = (ConnectedEndPoint)http.getEndPoint();
-        WebSocketConnection connection = new WebSocketConnection(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime);
+        WebSocketConnection connection = new WebSocketConnection(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,draft);
         
         String uri=request.getRequestURI();
 	String query=request.getQueryString();

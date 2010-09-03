@@ -1,5 +1,9 @@
 package org.eclipse.jetty.websocket;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,14 +16,10 @@ import org.eclipse.jetty.util.StringUtil;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 /**
  * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
  */
-public class WebSocketParserTest
+public class WebSocketParserD00Test
 {
     private ByteArrayBuffer _in;
     private Handler _handler;
@@ -31,7 +31,7 @@ public class WebSocketParserTest
         WebSocketBuffers buffers = new WebSocketBuffers(1024);
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         _handler = new Handler();
-        _parser=new WebSocketParser(buffers, endPoint,_handler);
+        _parser=new WebSocketParserD00(buffers, endPoint,_handler);
         _in = new ByteArrayBuffer(2048);
         endPoint.setIn(_in);
     }
@@ -130,13 +130,6 @@ public class WebSocketParserTest
     }
 
 
-    @Test
-    public void testHixieCrypt() throws Exception
-    {
-        assertEquals(155712099,WebSocketParser.hixieCrypt("18x 6]8vM;54 *(5:  {   U1]8  z [  8"));
-        assertEquals(173347027,WebSocketParser.hixieCrypt("1_ tx7X d  <  nw  334J702) 7]o}` 0"));
-    }
-    
     // TODO test:
     // blocking,
     // async
@@ -144,18 +137,13 @@ public class WebSocketParserTest
     // EOF
     // errors
 
-    private class Handler implements WebSocketParser.EventHandler
+    private class Handler implements WebSocketParser.FrameHandler
     {
         public List<String> _data = new ArrayList<String>();
 
-        public void onFrame(byte frame, Buffer buffer)
+        public void onFrame(boolean more, byte flags, byte opcode, Buffer buffer)
         {
             _data.add(buffer.toString(StringUtil.__UTF8));
-        }
-
-        public void onFrame(byte frame, String data)
-        {
-            _data.add(data);
         }
     }
 }

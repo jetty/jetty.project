@@ -119,7 +119,7 @@ public class WebSocketUpgradeTest extends TestCase
             protected Connection onSwitchProtocol(EndPoint endp) throws IOException
             {
                 waitFor(3);
-                WebSocketConnection connection = new WebSocketConnection(clientWS,endp);
+                WebSocketConnection connection = new WebSocketConnection(clientWS,endp,0);
 
                 _results.add("onSwitchProtocol");
                 _results.add(connection);
