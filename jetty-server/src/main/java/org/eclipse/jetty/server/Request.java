@@ -1888,8 +1888,11 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public void login(String username, String password) throws ServletException
     {
-        if (_authentication instanceof Authentication.Deferred)
+        if (_authentication instanceof Authentication.Deferred) {
             _authentication=((Authentication.Deferred)_authentication).login(username,password);
+        } else {
+            throw new ServletException();
+        }
     }
 
     /* ------------------------------------------------------------ */
