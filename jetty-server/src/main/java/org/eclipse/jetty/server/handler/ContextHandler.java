@@ -933,9 +933,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             {
                 if (_requestListeners!=null)
                 {
-                    final int s=LazyList.size(_requestListeners);
                     final ServletRequestEvent sre = new ServletRequestEvent(_scontext,request);
-                    for(int i=0;i<s;i++)
+                    for(int i=LazyList.size(_requestListeners);i-->0;)
                         ((ServletRequestListener)LazyList.get(_requestListeners,i)).requestDestroyed(sre);
                 }
 
