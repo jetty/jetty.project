@@ -1,5 +1,8 @@
 package org.eclipse.jetty.websocket;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.EOFException;
@@ -12,6 +15,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.Connector;
@@ -22,9 +26,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$ $Date$
@@ -123,6 +124,10 @@ public class WebSocketLoadTest
             {
                 outbound.disconnect();
             }
+        }
+
+        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
+        {
         }
 
         public void onMessage(byte frame, byte[] data, int offset, int length)

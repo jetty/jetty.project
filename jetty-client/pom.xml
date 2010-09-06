@@ -71,31 +71,22 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit4-version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
     	<groupId>org.eclipse.jetty</groupId>
     	<artifactId>jetty-servlet</artifactId>
     	<version>${project.version}</version>
     	<scope>test</scope>
     </dependency>
-    <!--
-    <dependency>
-    	<groupId>org.eclipse.jetty</groupId>
-    	<artifactId>jetty-servlet</artifactId>
-    	<version>${project.version}</version>
-    	<type>jar</type>
-    	<scope>test</scope>
-    </dependency>
-    -->
     <dependency>
     	<groupId>org.eclipse.jetty</groupId>
     	<artifactId>jetty-websocket</artifactId>
     	<version>${project.version}</version>
     	<scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit4-version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>

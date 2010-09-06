@@ -46,11 +46,13 @@ public class ContextHandlerCollection extends HandlerCollection
     private volatile PathMap _contextMap;
     private Class<? extends ContextHandler> _contextClass = ContextHandler.class;
     
+    /* ------------------------------------------------------------ */
     public ContextHandlerCollection()
     {
         super(true);
     }
-    
+
+
     /* ------------------------------------------------------------ */
     /**
      * Remap the context paths.

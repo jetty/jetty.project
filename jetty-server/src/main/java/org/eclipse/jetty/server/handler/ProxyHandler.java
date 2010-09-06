@@ -412,13 +412,6 @@ public class ProxyHandler extends HandlerWrapper
     private class Manager extends SelectorManager
     {
         @Override
-        protected SocketChannel acceptChannel(SelectionKey key) throws IOException
-        {
-            // This is a client-side selector manager
-            throw new IllegalStateException();
-        }
-
-        @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey selectionKey) throws IOException
         {
             SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, selectionKey);

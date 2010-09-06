@@ -30,18 +30,13 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * 
  *
  */
-public class JettyWebXmlConfiguration implements Configuration
+public class JettyWebXmlConfiguration extends AbstractConfiguration
 {
     /** The value of this property points to the WEB-INF directory of
-	 * the web-app currently installed.
-	 * it is passed as a property to the jetty-web.xml file */
-	public static final String PROPERTY_THIS_WEB_INF_URL = "this.web-inf.url";
-	
-    public void preConfigure(WebAppContext context) throws Exception
-    {
-        // TODO Auto-generated method stub
-        
-    }
+     * the web-app currently installed.
+     * it is passed as a property to the jetty-web.xml file */
+    public static final String PROPERTY_THIS_WEB_INF_URL = "this.web-inf.url";
+
 
     
     /** 
@@ -49,6 +44,7 @@ public class JettyWebXmlConfiguration implements Configuration
      * Apply web-jetty.xml configuration
      * @see Configuration#configure(WebAppContext)
      */
+    @Override
     public void configure (WebAppContext context) throws Exception
     {
         //cannot configure if the _context is already started
@@ -110,17 +106,4 @@ public class JettyWebXmlConfiguration implements Configuration
     	props.put(PROPERTY_THIS_WEB_INF_URL, web_inf.getURL());
     }
     
-    
-    public void postConfigure(WebAppContext context) throws Exception
-    {
-        // TODO Auto-generated method stub
-        
-    }
-
-
-    public void deconfigure(WebAppContext context) throws Exception
-    {
-        // TODO Auto-generated method stub
-        
-    } 
 }

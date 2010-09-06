@@ -20,7 +20,7 @@ import org.eclipse.jetty.util.resource.Resource;
  *
  *
  */
-public class OverrideDescriptor extends Descriptor
+public class OverrideDescriptor extends WebDescriptor
 {
     public OverrideDescriptor(Resource xml)
     {

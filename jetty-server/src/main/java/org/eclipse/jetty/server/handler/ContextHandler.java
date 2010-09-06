@@ -195,6 +195,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
+    @Override
+    protected void dump(Appendable out,String indent) throws IOException
+    {
+        out.append(toString()).append(isStarted()?" started":" STOPPED").append('\n');
+        out.append(indent).append(" +-").append(String.valueOf(_attributes)).append('\n');
+        out.append(indent).append(" +-").append(String.valueOf(_contextAttributes)).append('\n');
+        dumpHandlers(out,indent);
+    }
+    
+    /* ------------------------------------------------------------ */
     public Context getServletContext()
     {
         return _scontext;
@@ -402,7 +412,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /*
      * @see javax.servlet.ServletContext#getInitParameterNames()
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
     public Enumeration getInitParameterNames()
     {
         return Collections.enumeration(_initParams.keySet());
@@ -435,6 +445,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* ------------------------------------------------------------ */
     /**
      * Set the context event listeners.
+     * @param eventListeners the event listeners
      * @see ServletContextListener
      * @see ServletContextAttributeListener
      * @see ServletRequestListener
@@ -570,7 +581,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         _contextAttributes.clearAttributes();
         try
         {
-
             // Set the classloader
             if (_classLoader!=null)
             {
@@ -578,8 +588,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 old_classloader=current_thread.getContextClassLoader();
                 current_thread.setContextClassLoader(_classLoader);
             }
-
-
+            
             if (_mimeTypes==null)
                 _mimeTypes=new MimeTypes();
 
@@ -1279,7 +1288,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     @Override
     public String toString()
     {
-
         return super.toString()+"@"+Integer.toHexString(hashCode())+getContextPath()+","+getBaseResource();
     }
 

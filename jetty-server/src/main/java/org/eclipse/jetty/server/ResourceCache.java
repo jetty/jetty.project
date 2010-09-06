@@ -50,7 +50,7 @@ public class ResourceCache
     private final ResourceFactory _factory;
     
     private final MimeTypes _mimeTypes;
-    private int _maxCachedFileSize =1024*1024;
+    private int _maxCachedFileSize =4*1024*1024;
     private int _maxCachedFiles=2048;
     private int _maxCacheSize =32*1024*1024;
 
@@ -80,7 +80,6 @@ public class ResourceCache
     {
         return _cachedFiles.get();
     }
-    
     
     /* ------------------------------------------------------------ */
     public int getMaxCachedFileSize()
@@ -169,7 +168,6 @@ public class ResourceCache
         return loaded;
     }
 
-
     /* ------------------------------------------------------------ */
     private Content load(String pathInContext, Resource resource)
         throws IOException
@@ -195,6 +193,7 @@ public class ResourceCache
                     content.invalidate();
                     content=added;
                 }
+                
                 return content;
             }
         }

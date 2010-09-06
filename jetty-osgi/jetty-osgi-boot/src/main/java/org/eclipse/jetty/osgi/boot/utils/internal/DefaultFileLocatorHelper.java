@@ -54,9 +54,6 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * Works with equinox, felix, nuxeo and probably more. Not exactly in the
      * spirit of OSGi but quite necessary to support self-contained webapps and
      * other situations.
-     * <p>
-     * Currently only works with bundles that are not jar.
-     * </p>
      * 
      * @param bundle
      *            The bundle

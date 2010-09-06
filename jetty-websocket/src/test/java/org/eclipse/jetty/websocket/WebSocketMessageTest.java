@@ -1,5 +1,9 @@
 package org.eclipse.jetty.websocket;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -8,6 +12,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.Connector;
@@ -18,10 +23,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$ $Date$
@@ -146,7 +147,7 @@ public class WebSocketMessageTest
         for (int i = 0; i < 64 * 1024 / text.length(); ++i)
             message.append(text);
         byte[] data = message.toString().getBytes("UTF-8");
-        _serverWebSocket.outbound.sendMessage(WebSocket.LENGTH_FRAME, data);
+        _serverWebSocket.outbound.sendMessage(WebSocket.LENGTH_FRAME, data,0,data.length);
 
         // Length of the message is 65536, so the length will be encoded as 0x84 0x80 0x00
         int frame = input.read();
@@ -191,6 +192,10 @@ public class WebSocketMessageTest
         }
 
         public void onDisconnect()
+        {
+        }
+
+        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
         {
         }
     }

@@ -29,18 +29,20 @@ import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.Descriptor.MetaDataComplete;
+import org.eclipse.jetty.webapp.WebDescriptor;
+import org.eclipse.jetty.webapp.WebDescriptor.MetaDataComplete;
 
 /**
  * Configuration for Annotations
  *
  *
  */
-public class AnnotationConfiguration implements Configuration
+public class AnnotationConfiguration extends AbstractConfiguration
 {
     public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";    
     
@@ -48,13 +50,11 @@ public class AnnotationConfiguration implements Configuration
     {
     }
    
-    
+    @Override
     public void configure(WebAppContext context) throws Exception
     {
        boolean metadataComplete = context.getMetaData().isMetaDataComplete();
-      
-       WebAppDecoratorWrapper wrapper = new WebAppDecoratorWrapper(context, context.getDecorator());
-       context.setDecorator(wrapper);
+       context.addDecorator(new AnnotationDecorator(context));   
       
         if (metadataComplete)
         {
@@ -95,18 +95,10 @@ public class AnnotationConfiguration implements Configuration
         }    
     }
 
-
-
-    public void deconfigure(WebAppContext context) throws Exception
+    @Override
+    public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
-        
-    }
-
-
-
-
-    public void postConfigure(WebAppContext context) throws Exception
-    {
+        context.addDecorator(new AnnotationDecorator(context));   
     }
     
 
@@ -358,9 +350,9 @@ public class AnnotationConfiguration implements Configuration
     }
     
     
-    public boolean isMetaDataComplete (Descriptor d)
+    public boolean isMetaDataComplete (WebDescriptor d)
     {
-        return (d!=null && d.getMetaDataComplete() == MetaDataComplete.True);
+        return (d!=null && d.getMetaDataComplete() == WebDescriptor.MetaDataComplete.True);
     }
     
     protected void clearAnnotationList (List<DiscoverableAnnotationHandler> handlers)

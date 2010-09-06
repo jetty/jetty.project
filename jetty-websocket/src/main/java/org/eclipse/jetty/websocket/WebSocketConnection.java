@@ -3,10 +3,7 @@ package org.eclipse.jetty.websocket;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.zip.Checksum;
 
-import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.http.security.Credential.MD5;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -14,9 +11,8 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.thread.Timeout;
 
 public class WebSocketConnection implements Connection, WebSocket.Outbound
 {
@@ -30,13 +26,13 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     String _key2;
     ByteArrayBuffer _hixie;
 
-    public WebSocketConnection(WebSocket websocket, EndPoint endpoint)
+    public WebSocketConnection(WebSocket websocket, EndPoint endpoint,int draft)
         throws IOException
     {
-        this(websocket,endpoint,new WebSocketBuffers(8192),System.currentTimeMillis(),300000);
+        this(websocket,endpoint,new WebSocketBuffers(8192),System.currentTimeMillis(),300000,draft);
     }
     
-    public WebSocketConnection(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime)
+    public WebSocketConnection(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, int draft)
         throws IOException
     {
         // TODO - can we use the endpoint idle mechanism?
@@ -48,32 +44,51 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         
         _timestamp = timestamp;
         _websocket = websocket;
-        _generator = new WebSocketGenerator(buffers, _endp);
-        _parser = new WebSocketParser(buffers, endpoint, new WebSocketParser.EventHandler()
+        final WebSocketParser.FrameHandler handler = new WebSocketParser.FrameHandler()
         {
-            public void onFrame(byte frame, String data)
-            {
-                try
-                {
-                    _websocket.onMessage(frame,data);
-                }
-                catch(ThreadDeath th)
-                {
-                    throw th;
-                }
-                catch(Throwable th)
-                {
-                    Log.warn(th);
-                }
-            }
-
-            public void onFrame(byte frame, Buffer buffer)
+            boolean _fragmented=false;
+            Utf8StringBuilder _utf8 = new Utf8StringBuilder();
+            
+            public void onFrame(boolean more, byte flags, byte opcode, Buffer buffer)
             {
                 try
                 {
                     byte[] array=buffer.array();
-
-                    _websocket.onMessage(frame,array,buffer.getIndex(),buffer.length());
+                    
+                    if (opcode==0)
+                    {
+                        if (more)
+                        {
+                            _utf8.append(buffer.array(),buffer.getIndex(),buffer.length());
+                            _fragmented=true;
+                        }
+                        else if (_fragmented)
+                        {
+                            _utf8.append(buffer.array(),buffer.getIndex(),buffer.length());
+                            _websocket.onMessage(opcode,_utf8.toString());
+                            _utf8.reset();
+                            _fragmented=false;
+                        }
+                        else
+                        {
+                            _websocket.onMessage(opcode,buffer.toString("utf-8"));
+                        }
+                    }
+                    else
+                    {
+                        if (more)
+                        {
+                            _websocket.onFragment(true,opcode,array,buffer.getIndex(),buffer.length());
+                        }
+                        else if (_fragmented)
+                        {
+                            _websocket.onFragment(false,opcode,array,buffer.getIndex(),buffer.length());
+                        }
+                        else
+                        {
+                            _websocket.onMessage(opcode,array,buffer.getIndex(),buffer.length());
+                        }
+                    }
                 }
                 catch(ThreadDeath th)
                 {
@@ -84,7 +99,19 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
                     Log.warn(th);
                 }
             }
-        });
+        };
+
+        // Select the parser/generators to use
+        switch(draft)
+        {
+            case 1:
+                _generator = new WebSocketGeneratorD01(buffers, _endp);
+                _parser = new WebSocketParserD01(buffers, endpoint, handler);
+                break;
+            default:
+                _generator = new WebSocketGeneratorD00(buffers, _endp);
+                _parser = new WebSocketParserD00(buffers, endpoint, handler);
+        }
 
         // TODO should these be AsyncEndPoint checks/calls?
         if (_endp instanceof SelectChannelEndPoint)
@@ -205,9 +232,9 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
 
     private void doTheHixieHixieShake()
     {          
-        byte[] result=WebSocketGenerator.doTheHixieHixieShake(
-                WebSocketParser.hixieCrypt(_key1),
-                WebSocketParser.hixieCrypt(_key2),
+        byte[] result=WebSocketConnection.doTheHixieHixieShake(
+                WebSocketConnection.hixieCrypt(_key1),
+                WebSocketConnection.hixieCrypt(_key2),
                 _hixie.asArray());
         _hixie.clear();
         _hixie.put(result);
@@ -246,14 +273,17 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         _idle.access(_endp);
     }
 
-    public void sendMessage(byte frame, byte[] content) throws IOException
+    public void sendMessage(byte opcode, byte[] content, int offset, int length) throws IOException
     {
-        sendMessage(frame, content, 0, content.length);
+        _generator.addFrame(opcode,content,offset,length,_endp.getMaxIdleTime());
+        _generator.flush();
+        checkWriteable();
+        _idle.access(_endp);
     }
 
-    public void sendMessage(byte frame, byte[] content, int offset, int length) throws IOException
+    public void sendFragment(boolean more,byte opcode, byte[] content, int offset, int length) throws IOException
     {
-        _generator.addFrame(frame,content,offset,length,_endp.getMaxIdleTime());
+        _generator.addFragment(more,opcode,content,offset,length,_endp.getMaxIdleTime());
         _generator.flush();
         checkWriteable();
         _idle.access(_endp);
@@ -282,6 +312,51 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)
             ((AsyncEndPoint)_endp).scheduleWrite();
+    }
+
+    /* ------------------------------------------------------------ */
+    static long hixieCrypt(String key)
+    {
+        // Don't ask me what all this is about.
+        // I think it's pretend secret stuff, kind of
+        // like talking in pig latin!
+        long number=0;
+        int spaces=0;
+        for (char c : key.toCharArray())
+        {
+            if (Character.isDigit(c))
+                number=number*10+(c-'0');
+            else if (c==' ')
+                spaces++;
+        }
+        return number/spaces;
+    }
+
+    public static byte[] doTheHixieHixieShake(long key1,long key2,byte[] key3)
+    {            
+        try
+        {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte [] fodder = new byte[16];
+            
+            fodder[0]=(byte)(0xff&(key1>>24));
+            fodder[1]=(byte)(0xff&(key1>>16));
+            fodder[2]=(byte)(0xff&(key1>>8));
+            fodder[3]=(byte)(0xff&key1);
+            fodder[4]=(byte)(0xff&(key2>>24));
+            fodder[5]=(byte)(0xff&(key2>>16));
+            fodder[6]=(byte)(0xff&(key2>>8));
+            fodder[7]=(byte)(0xff&key2);
+            for (int i=0;i<8;i++)
+                fodder[8+i]=key3[i];
+            md.update(fodder);
+            byte[] result=md.digest();
+            return result;
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            throw new IllegalStateException(e);
+        }
     }
 
     private interface IdleCheck

@@ -5,15 +5,39 @@ jetty-8.0.0.M2-SNAPSHOT
  + 324505 Request.login method must throw ServletException if it cant login
 
 jetty-7.2-SNAPSHOT
- + 320264 dupliate mime entry
+ + 314087 Simplified SelectorManager
  + 319334 Concurrent, sharable ResourceCache
  + 319370 WebAppClassLoader.Context
  + 319444 Two nulls are appended to log statements from ContextHanler$Context 
  + 320073 Reconsile configuration mechanism
  + 320112 Websocket in aggregate jars
  + 320264 Removed duplicate mime.property entries
+ + 320457 Added rfc2045 support to B64Code
+ + 321232 BasicAuthenticator ignores bad Authorization header. 
+ + 321307 HashSessionManager calls passivation listeners.
+ + 321730 SelectChannelEndPoint prints to System.err
+ + 321735 HttpClient onException called for buffer overflow.
+ + 322448 Added jetty-dir.css for directory listings
+ + 322575 NPE in HotSwapHandler if old handler null
+ + 322683 RewriteHandler thread safety
+ + 323196 org.mortbay properties to org.eclipse
+ + 323435 MovedContextHandler permanent redirection
+ + 323464 IPv6 localhost with no Host header
+ + 324110 Merge async dispatch parameters
+ + 324158 Durable download or Orbit jars
+ + 324260 Jetty-6 continuations handle complete calls
+ + 324359 illegal actions on AsyncContext should not change its state.
+ + 324360 validate input on getResource since loop logic obscures subclass input validation.
+ + 324369 Implement draft-ietf-hybi-thewebsocketprotocol-01
+ + 324377 Allow dispatch of ServletRequest and ServletResponse
+ + 324379 Change content type after getWriter
+ + JETTY-912 added per exchange timeout api
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors
+ + JETTY-1250 Parallel start of HandlerCollection
+ + JETTY-1256 annotation jars from Orbit
+ + JETTY-1261 errant listener usage in StandardDescriptorProcessor
+ + Fix jetty-plus.xml for new configuration names
  + Added ignore to Logger interface
  + Improved debug dump
 

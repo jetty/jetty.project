@@ -220,11 +220,9 @@ public class Jetty6Continuation implements ContinuationFilter.FilteredContinuati
                 for (ContinuationListener l: _listeners)
                     l.onTimeout(this);
             }
-
-            return !_completed;
         }
 
-        return true;
+        return !_completed;
     }
 
     /* ------------------------------------------------------------ */

@@ -128,9 +128,7 @@ public abstract class AbstractHandler extends AbstractLifeCycle implements Handl
     /* ------------------------------------------------------------ */
     protected void dump(Appendable out,String indent) throws IOException
     {
-        out.append(toString());
-        out.append(isStarted()?" started":" STOPPED");
-        out.append('\n');
+        out.append(toString()).append(isStarted()?" started":" STOPPED").append('\n');
     }
 
 }

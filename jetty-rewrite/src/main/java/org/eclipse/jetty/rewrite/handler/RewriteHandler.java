@@ -182,6 +182,7 @@ public class RewriteHandler extends HandlerWrapper
      * 
      * @param legacyRule old style rewrite rule
      */
+    @Deprecated
     public void setLegacyRule(LegacyRule legacyRule)
     {
         _rules.setLegacyRule(legacyRule);
@@ -226,7 +227,6 @@ public class RewriteHandler extends HandlerWrapper
     {
         _rules.addRule(rule);
     }
-   
 
     /* ------------------------------------------------------------ */
     /**
@@ -290,36 +290,10 @@ public class RewriteHandler extends HandlerWrapper
 
 
     /* ------------------------------------------------------------ */
-    /**
-     * @deprecated 
-     */
-    public PathMap getRewrite()
-    {
-        return _rules.getRewrite();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated
-     */
-    public void setRewrite(PathMap rewrite)
-    {
-        _rules.setRewrite(rewrite);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated
-     */
-    public void addRewriteRule(String pattern, String prefix)
-    {
-        _rules.addRewriteRule(pattern,prefix);
-    }
-    
-    /* ------------------------------------------------------------ */
     /* (non-Javadoc)
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (isStarted())
@@ -327,10 +301,8 @@ public class RewriteHandler extends HandlerWrapper
             String returned = _rules.matchAndApply(target, request, response);
             target = (returned == null) ? target : returned;
             
-            if (!_rules.isHandled())
-            {
+            if (!baseRequest.isHandled())
                 super.handle(target, baseRequest, request, response);
-            }
         }
     }
     

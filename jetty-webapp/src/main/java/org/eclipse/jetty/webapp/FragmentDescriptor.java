@@ -27,7 +27,7 @@ import org.eclipse.jetty.xml.XmlParser;
  *
  * A web-fragment.xml descriptor.
  */
-public class FragmentDescriptor extends Descriptor
+public class FragmentDescriptor extends WebDescriptor
 {
     public static final String NAMELESS = "@@-NAMELESS-@@"; //prefix for nameless Fragments
     public enum OtherType {None, Before, After};

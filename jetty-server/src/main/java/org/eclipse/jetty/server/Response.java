@@ -855,13 +855,13 @@ public class Response implements HttpServletResponse
                                 }
                                 else
                                 {
-                                    _contentType=_mimeType+"charset="+_characterEncoding;
+                                    _contentType=_mimeType+";charset="+_characterEncoding;
                                     _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
                                 }
                             }
                             else
                             {
-                                _contentType=_mimeType+"charset="+_characterEncoding;
+                                _contentType=_mimeType+";charset="+_characterEncoding;
                                 _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
                             }
                         }

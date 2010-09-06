@@ -68,19 +68,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
     private final SelectorManager _manager = new SelectorManager()
     {
         @Override
-        protected SocketChannel acceptChannel(SelectionKey key) throws IOException
-        {
-            // TODO handle max connections
-            SocketChannel channel = ((ServerSocketChannel)key.channel()).accept();
-            if (channel==null)
-                return null;
-            channel.configureBlocking(false);
-            Socket socket = channel.socket();
-            configure(socket);
-            return channel;
-        }
-
-        @Override
         public boolean dispatch(Runnable task)
         {
             return getThreadPool().dispatch(task);
@@ -212,9 +199,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
                 if (_localPort<=0)
                     throw new IOException("Server channel not bound");
 
-                // Set to non blocking mode
-                _acceptChannel.configureBlocking(false);
-
             }
         }
     }
@@ -287,8 +271,32 @@ public class SelectChannelConnector extends AbstractNIOConnector
         _manager.setLowResourcesMaxIdleTime(getLowResourcesMaxIdleTime());
         _manager.start();
         open();
-        _manager.register(_acceptChannel);
         super.doStart();
+        
+        // start a thread to accept new connections
+        _manager.dispatch(new Runnable()
+        {
+            public void run()
+            {
+                final ServerSocketChannel server=_acceptChannel;
+                while (isRunning() && _acceptChannel==server && server.isOpen())
+                {
+                    try
+                    {
+                        SocketChannel channel = server.accept();
+                        channel.configureBlocking(false);
+                        Socket socket = channel.socket();
+                        configure(socket);
+                        _manager.register(channel);
+                    }
+                    catch(IOException e)
+                    {
+                        Log.ignore(e);
+                    }
+                }
+            }
+        });
+        
     }
 
     /* ------------------------------------------------------------ */

@@ -64,5 +64,12 @@
         <type>jar</type>
         <scope>test</scope>
     </dependency>
+    <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-servlets</artifactId>
+        <version>${project.version}</version>
+        <type>jar</type>
+        <scope>test</scope>
+    </dependency>
   </dependencies>
 </project>

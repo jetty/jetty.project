@@ -26,6 +26,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -116,6 +117,12 @@ public class Dispatcher implements RequestDispatcher
         Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
         request.removeAttribute(__JSP_FILE); // TODO remove when glassfish 1044 is fixed
         
+        if (!(request instanceof HttpServletRequest))
+            request = new ServletRequestHttpWrapper(request);
+        if (!(response instanceof HttpServletResponse))
+            response = new ServletResponseHttpWrapper(response);
+            
+        
         // TODO - allow stream or writer????
         
         final DispatcherType old_type = baseRequest.getDispatcherType();
@@ -141,7 +148,7 @@ public class Dispatcher implements RequestDispatcher
                     }
                     
                     MultiMap parameters=new MultiMap();
-                    UrlEncoded.decodeTo(query,parameters,request.getCharacterEncoding());
+                    UrlEncoded.decodeTo(query,parameters,baseRequest.getCharacterEncoding());
                     
                     if (old_params!=null && old_params.size()>0)
                     {
@@ -193,6 +200,11 @@ public class Dispatcher implements RequestDispatcher
         response.resetBuffer();
         base_response.fwdReset();
         request.removeAttribute(__JSP_FILE); // TODO remove when glassfish 1044 is fixed
+
+        if (!(request instanceof HttpServletRequest))
+            request = new ServletRequestHttpWrapper(request);
+        if (!(response instanceof HttpServletResponse))
+            response = new ServletResponseHttpWrapper(response);
         
         final String old_uri=baseRequest.getRequestURI();
         final String old_context_path=baseRequest.getContextPath();
@@ -201,7 +213,7 @@ public class Dispatcher implements RequestDispatcher
         final String old_query=baseRequest.getQueryString();
         final Attributes old_attr=baseRequest.getAttributes();
         final DispatcherType old_type=baseRequest.getDispatcherType();
-        MultiMap old_params=baseRequest.getParameters();
+        MultiMap<String> old_params=baseRequest.getParameters();
         
         try
         {
@@ -223,77 +235,7 @@ public class Dispatcher implements RequestDispatcher
                         old_params=baseRequest.getParameters();
                     }
                     
-                    // extract parameters from dispatch query
-                    MultiMap parameters=new MultiMap();
-                    UrlEncoded.decodeTo(query,parameters,request.getCharacterEncoding());
-                 
-                    boolean merge_old_query = false;
-
-                    // Have we evaluated parameters
-                    if( old_params == null )
-                    {
-                        // no - so force parameters to be evaluated
-                        baseRequest.getParameterNames();
-                        old_params = baseRequest.getParameters();
-                    }
-                    
-                    // Are there any existing parameters?
-                    if (old_params!=null && old_params.size()>0)
-                    {
-                        // Merge parameters; new parameters of the same name take precedence.
-                        Iterator iter = old_params.entrySet().iterator();
-                        while (iter.hasNext())
-                        {
-                            Map.Entry entry = (Map.Entry)iter.next();
-                            String name=(String)entry.getKey();
-                            
-                            // If the names match, we will need to remake the query string
-                            if (parameters.containsKey(name))
-                                merge_old_query = true;
-
-                            // Add the old values to the new parameter map
-                            Object values=entry.getValue();
-                            for (int i=0;i<LazyList.size(values);i++)
-                                parameters.add(name, LazyList.get(values, i));
-                        }
-                    }
-                    
-                    if (old_query != null && old_query.length()>0)
-                    {
-                        if ( merge_old_query )
-                        {
-                            StringBuilder overridden_query_string = new StringBuilder();
-                            MultiMap overridden_old_query = new MultiMap();
-                            UrlEncoded.decodeTo(old_query,overridden_old_query,request.getCharacterEncoding());
-    
-                            MultiMap overridden_new_query = new MultiMap(); 
-                            UrlEncoded.decodeTo(query,overridden_new_query,request.getCharacterEncoding());
-
-                            Iterator iter = overridden_old_query.entrySet().iterator();
-                            while (iter.hasNext())
-                            {
-                                Map.Entry entry = (Map.Entry)iter.next();
-                                String name=(String)entry.getKey();
-                                if(!overridden_new_query.containsKey(name))
-                                {
-                                    Object values=entry.getValue();
-                                    for (int i=0;i<LazyList.size(values);i++)
-                                    {
-                                        overridden_query_string.append("&").append(name).append("=").append(LazyList.get(values, i));
-                                    }
-                                }
-                            }
-                            
-                            query = query + overridden_query_string;
-                        }
-                        else 
-                        {
-                            query=query+"&"+old_query;
-                        }
-                   }
-
-                    baseRequest.setParameters(parameters);
-                    baseRequest.setQueryString(query);
+                    baseRequest.mergeQueryString(query);
                 }
                 
                 ForwardAttributes attr = new ForwardAttributes(old_attr); 
@@ -317,14 +259,11 @@ public class Dispatcher implements RequestDispatcher
                     attr._requestURI=old_uri;
                     attr._contextPath=old_context_path;
                     attr._servletPath=old_servlet_path;
-                }                
-   
-              
+                }     
                 
                 baseRequest.setRequestURI(_uri);
                 baseRequest.setContextPath(_contextHandler.getContextPath());
                 baseRequest.setAttributes(attr);
-                baseRequest.setQueryString(query);
                 
                 _contextHandler.handle(_path,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
                 

@@ -1,6 +1,11 @@
 package org.eclipse.jetty.websocket;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
+import java.security.MessageDigest;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.io.Buffer;
@@ -9,13 +14,11 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class WebSocketTest
 {
@@ -51,6 +54,44 @@ public class WebSocketTest
         _server.join();
     }
 
+    @Test
+    public void testHixieCrypt() throws Exception
+    {
+        assertEquals(155712099,WebSocketConnection.hixieCrypt("18x 6]8vM;54 *(5:  {   U1]8  z [  8"));
+        assertEquals(173347027,WebSocketConnection.hixieCrypt("1_ tx7X d  <  nw  334J702) 7]o}` 0"));
+    }
+
+    @Test
+    public void testHixie() throws Exception
+    {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        byte[] result;
+        byte[] expected;
+        
+        expected=md.digest(TypeUtil.fromHexString("00000000000000000000000000000000"));
+        result=WebSocketConnection.doTheHixieHixieShake(
+                0 ,0, new byte[8]);
+        assertEquals(TypeUtil.toHexString(expected),TypeUtil.toHexString(result));
+
+        expected=md.digest(TypeUtil.fromHexString("01020304050607080000000000000000"));
+        result=WebSocketConnection.doTheHixieHixieShake(
+                0x01020304,
+                0x05060708,
+                new byte[8]);
+        assertEquals(TypeUtil.toHexString(expected),TypeUtil.toHexString(result));
+        
+        byte[] random = new byte[8];
+        for (int i=0;i<8;i++)
+            random[i]=(byte)(0xff&"Tm[K T2u".charAt(i));
+        result=WebSocketConnection.doTheHixieHixieShake(
+                155712099,173347027,random);
+        StringBuilder b = new StringBuilder();
+
+        for (int i=0;i<16;i++)
+            b.append((char)result[i]);
+        assertEquals("fQJ,fN/4F4!~K~MH",b.toString());
+    }
+    
     @Test
     public void testNoWebSocket() throws Exception
     {
@@ -96,7 +137,6 @@ public class WebSocketTest
         ByteArrayBuffer out = _connector.getResponses(buffer,true);
 
         String response = StringUtil.printable(out.asArray());
-        System.err.println(response);
 
         assertTrue(response.startsWith("HTTP/1.1 101 Web Socket Protocol Handshake"));
         assertTrue(response.contains("Upgrade: WebSocket"));
@@ -139,6 +179,10 @@ public class WebSocketTest
         public void onDisconnect()
         {
             _disconnected=true;
+        }
+
+        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
+        {
         }
     }
 }

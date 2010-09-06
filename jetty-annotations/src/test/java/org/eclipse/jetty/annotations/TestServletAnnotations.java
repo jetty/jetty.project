@@ -23,13 +23,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
-import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.plus.annotation.RunAsCollection;
-import org.eclipse.jetty.plus.webapp.WebAppDecorator;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
-import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Test;
 

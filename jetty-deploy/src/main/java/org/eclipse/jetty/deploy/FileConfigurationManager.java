@@ -44,7 +44,7 @@ public class FileConfigurationManager implements ConfigurationManager
     /**
      * @see org.eclipse.jetty.deploy.ConfigurationManager#getProperties()
      */
-    public Map<String, ?> getProperties()
+    public Map<String, Object> getProperties()
     {
         try
         {
@@ -59,7 +59,7 @@ public class FileConfigurationManager implements ConfigurationManager
 
     private void loadProperties() throws FileNotFoundException, IOException
     {
-        if (_map.isEmpty())
+        if (_map.isEmpty() && _file!=null)
         {
             Properties properties = new Properties();
             properties.load(_file.getInputStream());

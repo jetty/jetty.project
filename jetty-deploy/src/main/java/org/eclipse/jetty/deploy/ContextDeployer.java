@@ -18,7 +18,6 @@ import java.io.FilenameFilter;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.deploy.providers.MonitoredDirAppProvider;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -70,6 +69,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  *                         a configurable interval."
  */
 @SuppressWarnings("unchecked")
+@Deprecated
 public class ContextDeployer extends AbstractLifeCycle
 {
     private int _scanInterval=10;
@@ -81,6 +81,7 @@ public class ContextDeployer extends AbstractLifeCycle
     private ConfigurationManager _configMgr;
     private boolean _recursive = false;
     private AttributesMap _contextAttributes = new AttributesMap();
+    
     
     /* ------------------------------------------------------------ */
     protected class ScannerListener implements Scanner.DiscreteListener
@@ -126,6 +127,7 @@ public class ContextDeployer extends AbstractLifeCycle
      */
     public ContextDeployer() 
     {
+        Log.warn("ContextDeployer is deprecated. Use ContextProvider");
         _scanner=new Scanner();
     }
 

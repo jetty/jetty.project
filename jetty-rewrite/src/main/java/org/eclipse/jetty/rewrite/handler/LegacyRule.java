@@ -38,6 +38,7 @@ public class LegacyRule extends Rule
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         Map.Entry<?,?> rewrite =_rewrite.getMatch(target);

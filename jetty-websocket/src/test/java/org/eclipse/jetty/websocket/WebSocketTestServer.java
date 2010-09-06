@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.Server;
@@ -75,6 +76,10 @@ public class WebSocketTestServer extends Server
         public void onDisconnect()
         {
             _webSockets.remove(this);
+        }
+
+        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
+        {
         }
     }
 

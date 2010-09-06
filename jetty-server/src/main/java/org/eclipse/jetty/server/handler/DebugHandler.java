@@ -56,7 +56,7 @@ public class DebugHandler extends HandlerWrapper
 
         boolean suspend=false;
         boolean retry=false;
-        String name=(String)request.getAttribute("org.mortbay.jetty.thread.name");
+        String name=(String)request.getAttribute("org.eclipse.jetty.thread.name");
         if (name==null)
             name=old_name+":"+baseRequest.getScheme()+"://"+baseRequest.getLocalAddr()+":"+baseRequest.getLocalPort()+baseRequest.getUri();
         else
@@ -104,7 +104,7 @@ public class DebugHandler extends HandlerWrapper
             suspend=baseRequest.getAsyncContinuation().isSuspended();
             if (suspend)
             {
-                request.setAttribute("org.mortbay.jetty.thread.name",name);
+                request.setAttribute("org.eclipse.jetty.thread.name",name);
                 _print.println(d+(ms>99?".":(ms>9?".0":".00"))+ms+":"+name+" SUSPEND");
             }
             else

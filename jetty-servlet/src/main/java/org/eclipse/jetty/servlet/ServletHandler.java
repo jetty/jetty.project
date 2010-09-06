@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.DispatcherType;
@@ -48,6 +47,8 @@ import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServletRequestHttpWrapper;
+import org.eclipse.jetty.server.ServletResponseHttpWrapper;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ScopedHandler;
@@ -128,6 +129,7 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ----------------------------------------------------------------- */
+    @Override
     protected synchronized void doStart()
         throws Exception
     {
@@ -154,6 +156,7 @@ public class ServletHandler extends ScopedHandler
     }   
     
     /* ----------------------------------------------------------------- */
+    @Override
     protected synchronized void doStop()
         throws Exception
     {
@@ -409,6 +412,7 @@ public class ServletHandler extends ScopedHandler
     /* 
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
+    @Override
     public void doHandle(String target, Request baseRequest,HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
     {
@@ -438,19 +442,26 @@ public class ServletHandler extends ScopedHandler
         
         try
         {
-            // Do the filter/handling thang
             if (servlet_holder==null)
             {
                 notFound(request, response);
             }
             else
             {
-                baseRequest.setHandled(true);
+                // unwrap any tunnelling of base Servlet request/responses
+                ServletRequest req = request;
+                if (req instanceof ServletRequestHttpWrapper)
+                    req = ((ServletRequestHttpWrapper)req).getRequest();
+                ServletResponse res = response;
+                if (res instanceof ServletResponseHttpWrapper)
+                    res = ((ServletResponseHttpWrapper)res).getResponse();
 
+                // Do the filter/handling thang
+                baseRequest.setHandled(true);
                 if (chain!=null)
-                    chain.doFilter(request, response);
+                    chain.doFilter(req, res);
                 else 
-                    servlet_holder.handle(baseRequest,request,response);
+                    servlet_holder.handle(baseRequest,req,res);
             }
         }
         catch(EofException e)

@@ -128,11 +128,16 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                 //it overrides this annotation
                 return;
             }
-                
+
             //No injections for this resource in any descriptors, so we can add it
             //Does the injection already exist?
-            
-            Injection injection = ((InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION)).getInjection(name, clazz, field);
+            InjectionCollection injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+            if (injections == null)
+            {
+                injections = new InjectionCollection();
+                _context.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
+            }
+            Injection injection = injections.getInjection(name, clazz, field);
             if (injection == null)
             {
                 //No injection has been specified, add it
@@ -167,7 +172,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                         injection.setTarget(clazz, field, type);
                         injection.setJndiName(name);
                         injection.setMappingName(mappedName);
-                        ((InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION)).add(injection); 
+                        injections.add(injection); 
                         
                         //TODO - an @Resource is equivalent to a resource-ref, resource-env-ref, message-destination 
                         metaData.setOrigin("resource-ref."+name+".injection");
@@ -275,6 +280,11 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             
             //check if an injection has already been setup for this target by web.xml
             InjectionCollection injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+            if (injections == null)
+            {
+                injections = new InjectionCollection();
+                _context.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
+            }
             Injection injection = injections.getInjection(name, clazz, method, paramType);
             if (injection == null)
             {

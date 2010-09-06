@@ -35,10 +35,10 @@ public class MetaData
 {        
     public enum Origin {NotSet, WebXml, WebDefaults, WebOverride, WebFragment, Annotation};
     
-    protected Map<String, OriginInfo> _origins = new HashMap<String,OriginInfo>();
-    protected Descriptor _webDefaultsRoot;
-    protected Descriptor _webXmlRoot;
-    protected Descriptor _webOverrideRoot;
+    protected Map<String, OriginInfo> _origins  =new HashMap<String,OriginInfo>();
+    protected WebDescriptor _webDefaultsRoot;
+    protected WebDescriptor _webXmlRoot;
+    protected WebDescriptor _webOverrideRoot;
     protected boolean _metaDataComplete;
     protected final List<DiscoveredAnnotation> _annotations = new ArrayList<DiscoveredAnnotation>();
     protected final List<DescriptorProcessor> _descriptorProcessors = new ArrayList<DescriptorProcessor>();
@@ -50,7 +50,7 @@ public class MetaData
     protected final List<Resource> _orderedWebInfJars = new ArrayList<Resource>(); 
     protected final List<Resource> _orderedContainerJars = new ArrayList<Resource>();
     protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
-    protected StandardDescriptorProcessor _standardDescriptorProcessor;
+   
  
     
     public static class OriginInfo
@@ -130,9 +130,9 @@ public class MetaData
     public void setWebXml (Resource webXml)
     throws Exception
     {
-        _webXmlRoot = new Descriptor(webXml);
+        _webXmlRoot = new WebDescriptor(webXml);
         _webXmlRoot.parse();
-        _metaDataComplete=_webXmlRoot.getMetaDataComplete() == Descriptor.MetaDataComplete.True;
+        _metaDataComplete=_webXmlRoot.getMetaDataComplete() == WebDescriptor.MetaDataComplete.True;
         
         if (_webXmlRoot.isOrdered())
         {
@@ -257,6 +257,9 @@ public class MetaData
     public void resolve (WebAppContext context)
     throws Exception
     {
+        //Ensure origins is fresh
+        _origins.clear();
+        
         // Set the ordered lib attribute
         if (_ordering != null)
         {
@@ -309,6 +312,7 @@ public class MetaData
                     a.apply();
             }
         }
+        
     }
     
     public boolean isDistributable ()
@@ -329,17 +333,17 @@ public class MetaData
     }
    
     
-    public Descriptor getWebXml ()
+    public WebDescriptor getWebXml ()
     {
         return _webXmlRoot;
     }
     
-    public Descriptor getOverrideWeb ()
+    public WebDescriptor getOverrideWeb ()
     {
         return _webOverrideRoot;
     }
     
-    public Descriptor getWebDefault ()
+    public WebDescriptor getWebDefault ()
     {
         return _webDefaultsRoot;
     }

@@ -106,8 +106,6 @@ public class MovedContextHandler extends ContextHandler
                 url=URIUtil.addPaths(url, request.getPathInfo());
             if (!_discardQuery && request.getQueryString()!=null)
                 url+="?"+request.getQueryString();
-            
-            response.sendRedirect(response.encodeRedirectURL(url));
 
             String path=_newContextURL;
             if (!_discardPathInfo && request.getPathInfo()!=null)

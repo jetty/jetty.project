@@ -15,7 +15,6 @@ package org.eclipse.jetty.webapp;
 import java.io.IOException;
 import java.net.MalformedURLException;
 
-import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.log.Log;
@@ -26,7 +25,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * Configure by parsing default web.xml and web.xml
  * 
  */
-public class WebXmlConfiguration implements Configuration
+public class WebXmlConfiguration extends AbstractConfiguration
 {
     
     /* ------------------------------------------------------------------------------- */
@@ -35,6 +34,7 @@ public class WebXmlConfiguration implements Configuration
      * 
      * 
      */
+    @Override
     public void preConfigure (WebAppContext context) throws Exception
     {
         //parse webdefault.xml
@@ -71,6 +71,7 @@ public class WebXmlConfiguration implements Configuration
      * Process web-default.xml, web.xml, override-web.xml
      * 
      */
+    @Override
     public void configure (WebAppContext context) throws Exception
     {
         // cannot configure if the context is already started
@@ -82,11 +83,7 @@ public class WebXmlConfiguration implements Configuration
 
         context.getMetaData().addDescriptorProcessor(new StandardDescriptorProcessor());
     }
-
-    public void postConfigure(WebAppContext context) throws Exception
-    {
-    }
-
+    
     /* ------------------------------------------------------------------------------- */
     protected Resource findWebXml(WebAppContext context) throws IOException, MalformedURLException
     {
@@ -110,12 +107,12 @@ public class WebXmlConfiguration implements Configuration
 
 
     /* ------------------------------------------------------------------------------- */
+    @Override
     public void deconfigure (WebAppContext context) throws Exception
     {
         // TODO preserve any configuration that pre-existed.
 
         ServletHandler _servletHandler = context.getServletHandler();
-        SecurityHandler _securityHandler = (SecurityHandler)context.getSecurityHandler();
        
         _servletHandler.setFilters(null);
         _servletHandler.setFilterMappings(null);

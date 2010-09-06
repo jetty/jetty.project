@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.URIUtil;
@@ -18,9 +19,9 @@ import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 
-public class WebInfConfiguration implements Configuration
+public class WebInfConfiguration extends AbstractConfiguration
 {
-    public static final String TEMPDIR_CREATED = "org.eclipse.jetty.tmpdirCreated";
+    public static final String TEMPDIR_CONFIGURED = "org.eclipse.jetty.tmpdirConfigured";
     public static final String CONTAINER_JAR_PATTERN = "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern";
     public static final String WEBINF_JAR_PATTERN = "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern";
     
@@ -32,20 +33,20 @@ public class WebInfConfiguration implements Configuration
     
     protected Resource _preUnpackBaseResource;
     
-    
-    
-    
+    @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
+        // Look for a work directory
+        File work = findWorkDirectory(context);
+        if (work != null)
+            makeTempDirectory(work, context, false);
+        
         //Make a temp directory for the webapp if one is not already set
         resolveTempDirectory(context);
         
         //Extract webapp if necessary
         unpack (context);
 
-        File work = findWorkDirectory(context);
-        if (work != null)
-            makeTempDirectory(work, context, false);
         
         //Apply an initial ordering to the jars which governs which will be scanned for META-INF
         //info and annotations. The ordering is based on inclusion patterns.       
@@ -105,14 +106,8 @@ public class WebInfConfiguration implements Configuration
         webInfJarNameMatcher.match(webInfPattern, uris, true); //null is inclusive, no pattern == all jars match 
     }
     
-    
-    
-    public void postConfigure(WebAppContext context) throws Exception
-    {
-        //context.setAttribute(CONTAINER_JAR_RESOURCES, null);
-    }
-    
 
+    @Override
     public void configure(WebAppContext context) throws Exception
     {
         //cannot configure if the context is already started
@@ -150,31 +145,42 @@ public class WebInfConfiguration implements Configuration
             context.setBaseResource(new ResourceCollection(collection));
         }
     }
-    
+
+    @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
         // delete temp directory if we had to create it or if it isn't called work
-        Boolean containerCreated = (Boolean)context.getAttribute(TEMPDIR_CREATED);
+        Boolean tmpdirConfigured = (Boolean)context.getAttribute(TEMPDIR_CONFIGURED);
         
-        if (context.getTempDirectory()!=null && (containerCreated != null && containerCreated.booleanValue()) && !isTempWorkDirectory(context.getTempDirectory()))
+        if (context.getTempDirectory()!=null && (tmpdirConfigured == null || !tmpdirConfigured.booleanValue()) && !isTempWorkDirectory(context.getTempDirectory()))
         {
             IO.delete(context.getTempDirectory());
-            setTempDirectory(null, context);
+            context.setTempDirectory(null);
         }
         
-
-        context.setAttribute(TEMPDIR_CREATED, null);
+        context.setAttribute(TEMPDIR_CONFIGURED, null);
         context.setAttribute(context.TEMPDIR, null);
         
         //reset the base resource back to what it was before we did any unpacking of resources
         context.setBaseResource(_preUnpackBaseResource);
     }
-
-   
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.webapp.AbstractConfiguration#cloneConfigure(org.eclipse.jetty.webapp.WebAppContext, org.eclipse.jetty.webapp.WebAppContext)
+     */
+    @Override
+    public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
+    {
+        File tmpDir=File.createTempFile(WebInfConfiguration.getCanonicalNameForWebAppTmpDir(context),"",template.getTempDirectory().getParentFile());
+        if (tmpDir.exists())
+            tmpDir.delete();
+        tmpDir.mkdir();
+        tmpDir.deleteOnExit();
+        context.setTempDirectory(tmpDir);
+    }
 
- 
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Get a temporary directory in which to unpack the war etc etc.
@@ -213,10 +219,11 @@ public class WebInfConfiguration implements Configuration
      */
     public void resolveTempDirectory (WebAppContext context)
     {
-      //If a tmp directory is already set, we're done
+        //If a tmp directory is already set, we're done
         File tmpDir = context.getTempDirectory();
         if (tmpDir != null && tmpDir.isDirectory() && tmpDir.canWrite())
         {
+            context.setAttribute(TEMPDIR_CONFIGURED, Boolean.TRUE);
             return; // Already have a suitable tmp dir configured
         }
         
@@ -275,7 +282,7 @@ public class WebInfConfiguration implements Configuration
                     tmpDir.delete();
                 tmpDir.mkdir();
                 tmpDir.deleteOnExit();
-                setTempDirectory(tmpDir, context);
+                context.setTempDirectory(tmpDir);
             }
             catch(IOException e)
             {
@@ -347,17 +354,11 @@ public class WebInfConfiguration implements Configuration
                 if(!sentinel.exists())
                     sentinel.mkdir();
             }
-            setTempDirectory(tmpDir, context);
-        }
-    }
 
-    
-    public void setTempDirectory (File tmpDir, WebAppContext context)
-    {
-        context.setAttribute(TEMPDIR_CREATED, Boolean.TRUE);
-        context.setAttribute(context.TEMPDIR,tmpDir);
-        context.setTempDirectory(tmpDir);
-        if(Log.isDebugEnabled())Log.debug("Set temp dir "+tmpDir);
+            if(Log.isDebugEnabled())
+                Log.debug("Set temp dir "+tmpDir);
+            context.setTempDirectory(tmpDir);
+        }
     }
     
     
@@ -527,8 +528,6 @@ public class WebInfConfiguration implements Configuration
         return null;
     }
     
- 
-    
     
     /**
      * Check if the tmpDir itself is called "work", or if the tmpDir
@@ -557,35 +556,40 @@ public class WebInfConfiguration implements Configuration
      *  context and virtual host uniquely identify the webapp
      * @return the canonical name for the webapp temp directory
      */
-    public String getCanonicalNameForWebAppTmpDir (WebAppContext context)
+    public static String getCanonicalNameForWebAppTmpDir (WebAppContext context)
     {
         StringBuffer canonicalName = new StringBuffer();
-        canonicalName.append("Jetty");
+        canonicalName.append("jetty-");
        
         //get the host and the port from the first connector 
-        Connector[] connectors = context.getServer().getConnectors();
-        
-        
-        //Get the host
-        canonicalName.append("_");
-        String host = (connectors==null||connectors[0]==null?"":connectors[0].getHost());
-        if (host == null)
-            host = "0.0.0.0";
-        canonicalName.append(host.replace('.', '_'));
-        
-        //Get the port
-        canonicalName.append("_");
-        //try getting the real port being listened on
-        int port = (connectors==null||connectors[0]==null?0:connectors[0].getLocalPort());
-        //if not available (eg no connectors or connector not started), 
-        //try getting one that was configured.
-        if (port < 0)
-            port = connectors[0].getPort();
-        canonicalName.append(port);
+        Server server=context.getServer();
+        if (server!=null)
+        {
+            Connector[] connectors = context.getServer().getConnectors();
+
+            if (connectors.length>0)
+            {
+                //Get the host
+                String host = (connectors==null||connectors[0]==null?"":connectors[0].getHost());
+                if (host == null)
+                    host = "0.0.0.0";
+                canonicalName.append(host);
+                
+                //Get the port
+                canonicalName.append("-");
+                //try getting the real port being listened on
+                int port = (connectors==null||connectors[0]==null?0:connectors[0].getLocalPort());
+                //if not available (eg no connectors or connector not started), 
+                //try getting one that was configured.
+                if (port < 0)
+                    port = connectors[0].getPort();
+                canonicalName.append(port);
+                canonicalName.append("-");
+            }
+        }
 
        
         //Resource  base
-        canonicalName.append("_");
         try
         {
             Resource resource = context.getBaseResource();
@@ -606,6 +610,7 @@ public class WebInfConfiguration implements Configuration
             //get just the last part which is the filename
             int i = tmp.lastIndexOf("/");
             canonicalName.append(tmp.substring(i+1, tmp.length()));
+            canonicalName.append("-");
         }
         catch (Exception e)
         {
@@ -613,33 +618,28 @@ public class WebInfConfiguration implements Configuration
         }
             
         //Context name
-        canonicalName.append("_");
         String contextPath = context.getContextPath();
         contextPath=contextPath.replace('/','_');
         contextPath=contextPath.replace('\\','_');
         canonicalName.append(contextPath);
         
         //Virtual host (if there is one)
-        canonicalName.append("_");
+        canonicalName.append("-");
         String[] vhosts = context.getVirtualHosts();
         if (vhosts == null || vhosts.length <= 0)
-            canonicalName.append("");
+            canonicalName.append("any");
         else
             canonicalName.append(vhosts[0]);
-        
-        //base36 hash of the whole string for uniqueness
-        String hash = Integer.toString(canonicalName.toString().hashCode(),36);
-        canonicalName.append("_");
-        canonicalName.append(hash);
         
         // sanitize
         for (int i=0;i<canonicalName.length();i++)
         {
             char c=canonicalName.charAt(i);
-            if (!Character.isJavaIdentifierPart(c))
+            if (!Character.isJavaIdentifierPart(c) && "-.".indexOf(c)<0)
                 canonicalName.setCharAt(i,'.');
         }        
-        
+
+        canonicalName.append("-");
         return canonicalName.toString();
     }
     

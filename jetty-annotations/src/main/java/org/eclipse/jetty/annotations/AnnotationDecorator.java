@@ -11,7 +11,7 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.plus.webapp;
+package org.eclipse.jetty.annotations;
 
 import java.util.EventListener;
 
@@ -19,197 +19,140 @@ import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 
-import org.eclipse.jetty.plus.annotation.InjectionCollection;
-import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.plus.annotation.RunAsCollection;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
- * WebAppDecorator
+ * WebAppDecoratorWrapper
  *
  *
  */
-public class WebAppDecorator implements Decorator
+public class AnnotationDecorator implements Decorator
 {
-    private WebAppContext _context;
-    private InjectionCollection _injections;
-    private LifeCycleCallbackCollection _callbacks;
-    private RunAsCollection _runAses;
-
-    public WebAppDecorator (WebAppContext context)
-    {
-        _context = context;
-    }
+    AnnotationIntrospector _introspector = new AnnotationIntrospector();
     
-    
-    
-    public InjectionCollection getInjections()
+    /**
+     * @param context
+     */
+    public AnnotationDecorator(WebAppContext context)
     {
-        return _injections;
+        _introspector.registerHandler(new ResourceAnnotationHandler(context));
+        _introspector.registerHandler(new ResourcesAnnotationHandler(context));
+        _introspector.registerHandler(new RunAsAnnotationHandler(context));
+        _introspector.registerHandler(new PostConstructAnnotationHandler(context));
+        _introspector.registerHandler(new PreDestroyAnnotationHandler(context));
+        _introspector.registerHandler(new DeclareRolesAnnotationHandler(context));
     }
-
-
-
-    public void setInjections(InjectionCollection injections)
-    {
-        _injections = injections;
-    }
-
-
-
-    public LifeCycleCallbackCollection getLifecycleCallbacks()
-    {
-        return _callbacks;
-    }
-
-
-
-    public void setLifecycleCallbacks(LifeCycleCallbackCollection lifecycleCallbacks)
-    {
-        _callbacks = lifecycleCallbacks;
-    }
-
-
-
-    public RunAsCollection getRunAses()
-    {
-        return _runAses;
-    }
-
-
-
-    public void setRunAses(RunAsCollection runAses)
-    {
-        _runAses = runAses;
-    }
-
-
 
     /* ------------------------------------------------------------ */
     /**
+     * @param filter
+     * @throws ServletException
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateFilterHolder(org.eclipse.jetty.servlet.FilterHolder)
      */
-    @Override
     public void decorateFilterHolder(FilterHolder filter) throws ServletException
     {
-        // TODO Auto-generated method stub
-        
     }
     
     /* ------------------------------------------------------------ */
     /**
+     * @param <T>
+     * @param filter
+     * @return
+     * @throws ServletException
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateFilterInstance(javax.servlet.Filter)
      */
-    @Override
     public <T extends Filter> T decorateFilterInstance(T filter) throws ServletException
     {
-        decorate(filter);
+        introspect(filter);
         return filter;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
+     * @param <T>
+     * @param listener
+     * @return
+     * @throws ServletException
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateListenerInstance(java.util.EventListener)
      */
-    @Override
     public <T extends EventListener> T decorateListenerInstance(T listener) throws ServletException
     {
-        decorate(listener);
+        introspect(listener);
         return listener;
     }
 
     /* ------------------------------------------------------------ */
     /**
+     * @param servlet
+     * @throws ServletException
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateServletHolder(org.eclipse.jetty.servlet.ServletHolder)
      */
-    @Override
-    public void decorateServletHolder(ServletHolder holder) throws ServletException
+    public void decorateServletHolder(ServletHolder servlet) throws ServletException
     {
-        decorate(holder);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
+     * @param <T>
+     * @param servlet
+     * @return
+     * @throws ServletException
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateServletInstance(javax.servlet.Servlet)
      */
-    @Override
     public <T extends Servlet> T decorateServletInstance(T servlet) throws ServletException
     {
-        decorate(servlet);
+        introspect(servlet);
         return servlet;
     }
 
     /* ------------------------------------------------------------ */
     /**
+     * @param f
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyFilterInstance(javax.servlet.Filter)
      */
-    @Override
     public void destroyFilterInstance(Filter f)
     {
-        destroy(f);
     }
-
 
     /* ------------------------------------------------------------ */
     /**
+     * @param s
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyServletInstance(javax.servlet.Servlet)
      */
-    @Override
     public void destroyServletInstance(Servlet s)
     {
-        destroy(s);
     }
 
-    /** 
+    
+    
+
+  
+    /* ------------------------------------------------------------ */
+    /**
+     * @param f
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#destroyListenerInstance(java.util.EventListener)
      */
-    @Override
-    public void destroyListenerInstance(EventListener l)
+    public void destroyListenerInstance(EventListener f)
     {
-        destroy(l);
     }
 
-
-    protected void decorate (Object o) 
-    throws ServletException
-    {       
-
-
-        if (_runAses != null)
-            _runAses.setRunAs(o);
-
-        if (_injections != null)
-            _injections.inject(o);
-
-        if (_callbacks != null)
-        {
-            try
-            {
-                _callbacks.callPostConstructCallback(o);
-            }
-            catch (Exception e)
-            {
-                throw new ServletException(e);
-            }
-        }
-    } 
-    
-    protected void destroy (Object o)
+    /**
+     * Look for annotations that can be discovered with introspection:
+     * <ul>
+     * <li> Resource
+     * <li> Resources
+     * <li> PostConstruct
+     * <li> PreDestroy
+     * <li> ServletSecurity?
+     * </ul>
+     * @param o
+     */
+    protected void introspect (Object o)
     {
-        if (_callbacks != null)
-        {
-            try
-            {
-                _callbacks.callPreDestroyCallback(o);
-            }
-            catch (Exception e)
-            {
-                Log.warn("Destroying instance of "+o.getClass(), e);
-            }
-        }
+        _introspector.introspect(o.getClass());
     }
 }

@@ -17,9 +17,15 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import javax.servlet.GenericServlet;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletRequestWrapper;
+import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -130,6 +136,40 @@ public class DispatcherTest
 
         assertEquals(expected, responses);
     }
+    
+    @Test
+    public void testServletForward() throws Exception
+    {
+        _context.addServlet(DispatchServletServlet.class, "/dispatch/*");
+        _context.addServlet(RogerThatServlet.class, "/roger/*");
+
+        String expected=
+            "HTTP/1.1 200 OK\r\n"+
+            "Content-Length: 11\r\n"+
+            "\r\n"+
+            "Roger That!";
+
+        String responses = _connector.getResponses("GET /context/dispatch/test?forward=/roger/that HTTP/1.0\n" + "Host: localhost\n\n");
+
+        assertEquals(expected, responses);
+    }
+    
+    @Test
+    public void testServletInclude() throws Exception
+    {
+        _context.addServlet(DispatchServletServlet.class, "/dispatch/*");
+        _context.addServlet(RogerThatServlet.class, "/roger/*");
+
+        String expected=
+            "HTTP/1.1 200 OK\r\n"+
+            "Content-Length: 11\r\n"+
+            "\r\n"+
+            "Roger That!";
+
+        String responses = _connector.getResponses("GET /context/dispatch/test?include=/roger/that HTTP/1.0\n" + "Host: localhost\n\n");
+
+        assertEquals(expected, responses);
+    }
 
     public static class ForwardServlet extends HttpServlet implements Servlet
     {
@@ -146,9 +186,27 @@ public class DispatcherTest
             dispatcher.forward(request, response);
         }
     }
+    
+    public static class DispatchServletServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            RequestDispatcher dispatcher = null;
+
+            if(request.getParameter("include")!=null)
+                dispatcher = getServletContext().getRequestDispatcher(request.getParameter("include"));
+            else if(request.getParameter("forward")!=null)
+                dispatcher = getServletContext().getRequestDispatcher(request.getParameter("forward"));
+            
+            dispatcher.forward(new ServletRequestWrapper(request), new ServletResponseWrapper(response));
+        }
+    }
+
 
     public static class IncludeServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             RequestDispatcher dispatcher = null;
@@ -162,6 +220,15 @@ public class DispatcherTest
             dispatcher.include(request, response);
         }
     }
+    
+    public static class RogerThatServlet extends GenericServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            res.getWriter().print("Roger That!");
+        }
+    }
 
     public static class AssertForwardServlet extends HttpServlet implements Servlet
     {
@@ -173,9 +240,9 @@ public class DispatcherTest
             assertEquals( null, request.getAttribute(Dispatcher.FORWARD_PATH_INFO));
             assertEquals( "do=assertforward&do=more&test=1", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING) );
 
-            List expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH,
+            List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH,
                     Dispatcher.FORWARD_SERVLET_PATH, Dispatcher.FORWARD_QUERY_STRING);
-            List requestAttributeNames = Collections.list(request.getAttributeNames());
+            List<String> requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
 
             assertEquals(null, request.getPathInfo());

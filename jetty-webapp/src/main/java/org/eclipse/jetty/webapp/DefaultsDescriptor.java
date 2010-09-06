@@ -19,7 +19,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * DefaultsDescriptor
  *
  */
-public class DefaultsDescriptor extends Descriptor
+public class DefaultsDescriptor extends WebDescriptor
 {
     public DefaultsDescriptor(Resource xml)
     {

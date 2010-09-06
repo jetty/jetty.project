@@ -16,6 +16,9 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -52,6 +55,8 @@ public class ResourceHandler extends AbstractHandler
 {
     ContextHandler _context;
     Resource _baseResource;
+    Resource _defaultStylesheet;
+    Resource _stylesheet;
     String[] _welcomeFiles={"index.html"};
     MimeTypes _mimeTypes = new MimeTypes();
     ByteArrayBuffer _cacheControl;
@@ -61,6 +66,7 @@ public class ResourceHandler extends AbstractHandler
     /* ------------------------------------------------------------ */
     public ResourceHandler()
     {
+    	
     }
 
     /* ------------------------------------------------------------ */
@@ -181,6 +187,57 @@ public class ResourceHandler extends AbstractHandler
             throw new IllegalArgumentException(resourceBase);
         }
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the stylesheet as a Resource.
+     */
+    public Resource getStylesheet()
+    {
+    	if(_stylesheet != null)
+    	{
+    	    return _stylesheet;
+    	}
+    	else
+    	{
+    	    if(_defaultStylesheet == null)
+    	    {
+    	        try
+    	        {
+    	            _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-default.css"));
+    	        }
+    	        catch(IOException e)
+    	        {
+    	            Log.warn(e.toString());
+    	            Log.debug(e);
+    	        }	 
+    	    }
+    	    return _defaultStylesheet;
+    	}
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param stylesheet The location of the stylesheet to be used as a String.
+     */
+    public void setStylesheet(String stylesheet)
+    {
+        try
+        {
+            _stylesheet = Resource.newResource(stylesheet);
+            if(!_stylesheet.exists())
+            {
+                Log.warn("unable to find custom stylesheet: " + stylesheet);
+                _stylesheet = null;
+            }
+        }
+    	catch(Exception e)
+    	{
+    		Log.warn(e.toString());
+            Log.debug(e);
+            throw new IllegalArgumentException(stylesheet.toString());
+    	}
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -282,11 +339,19 @@ public class ResourceHandler extends AbstractHandler
                 return;
             skipContentBody = true;
         }
-
-        Resource resource=getResource(request);
-
+        
+        Resource resource = getResource(request);
         if (resource==null || !resource.exists())
-            return;
+        {
+            if (target.endsWith("/jetty-stylesheet.css"))
+            {	
+                response.setContentType("text/css");
+                resource = getStylesheet();
+            }
+            else 
+                return;
+        }
+            
         if (!_aliases && resource.getAlias()!=null)
         {
             Log.info(resource+" aliased to "+resource.getAlias());

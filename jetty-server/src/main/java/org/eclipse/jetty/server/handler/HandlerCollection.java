@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -40,6 +41,7 @@ public class HandlerCollection extends AbstractHandlerContainer
 {
     private final boolean _mutableWhenRunning;
     private volatile Handler[] _handlers;
+    private boolean _parallelStart=true; 
 
     /* ------------------------------------------------------------ */
     public HandlerCollection()
@@ -107,6 +109,29 @@ public class HandlerCollection extends AbstractHandlerContainer
                 
         mex.ifExceptionThrowRuntime();
     }
+    
+
+    
+    /* ------------------------------------------------------------ */
+    /** Get the parrallelStart.
+     * @return true if the contained handlers are started in parallel.
+     */
+    public boolean isParallelStart()
+    {
+        return _parallelStart;
+    }
+
+
+
+    /* ------------------------------------------------------------ */
+    /** Set the parallelStart.
+     * @param parallelStart If true, contained handlers are started in parallel.
+     */
+    public void setParallelStart(boolean parallelStart)
+    {
+        this._parallelStart = parallelStart;
+    }
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -158,11 +183,38 @@ public class HandlerCollection extends AbstractHandlerContainer
     @Override
     protected void doStart() throws Exception
     {
-        MultiException mex=new MultiException();
+        final MultiException mex=new MultiException();
         if (_handlers!=null)
         {
-            for (int i=0;i<_handlers.length;i++)
-                try{_handlers[i].start();}catch(Throwable e){mex.add(e);}
+            if (_parallelStart)
+            {
+                final CountDownLatch latch = new CountDownLatch(_handlers.length);
+                for (int i=0;i<_handlers.length;i++)
+                {
+                    final int h=i;
+                    getServer().getThreadPool().dispatch(
+                            new Runnable()
+                            {
+                                public void run()
+                                {
+                                    try{_handlers[h].start();}
+                                    catch(Throwable e){mex.add(e);}
+                                    finally{latch.countDown();}
+                                }
+                            }
+                    );
+
+                }
+                latch.await();
+            }
+            else
+            {
+                for (int i=0;i<_handlers.length;i++)
+                {
+                    try{_handlers[i].start();}
+                    catch(Throwable e){mex.add(e);}
+                }
+            }
         }
         super.doStart();
         mex.ifExceptionThrow();

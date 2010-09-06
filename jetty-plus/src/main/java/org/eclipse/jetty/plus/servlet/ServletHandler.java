@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.plus.servlet;
 
-import javax.servlet.Filter;
-import javax.servlet.Servlet;
-
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 

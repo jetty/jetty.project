@@ -80,8 +80,11 @@ public class HotSwapHandler extends AbstractHandlerContainer
 
             _handler = handler;
             
-            if (isStarted())
+            // if there is an old handler and it was started, stop it
+            if (old_handler != null && isStarted())
+            {
                 old_handler.stop();
+            }
 
         }
         catch(RuntimeException e)

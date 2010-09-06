@@ -484,7 +484,8 @@ public abstract class Resource
         String title = "Directory: "+deTag(decodedBase);
 
         StringBuilder buf=new StringBuilder(4096);
-        buf.append("<HTML><HEAD><TITLE>");
+        buf.append("<HTML><HEAD>");
+        buf.append("<LINK HREF=\"").append("jetty-dir.css").append("\" REL=\"stylesheet\" TYPE=\"text/css\"/><TITLE>");
         buf.append(title);
         buf.append("</TITLE></HEAD><BODY>\n<H1>");
         buf.append(title);

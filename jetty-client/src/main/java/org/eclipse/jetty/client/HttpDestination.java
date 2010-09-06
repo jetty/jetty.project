@@ -12,9 +12,9 @@
 // ========================================================================
 package org.eclipse.jetty.client;
 
-
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,9 +25,12 @@ import org.eclipse.jetty.client.security.Authentication;
 import org.eclipse.jetty.client.security.SecurityListener;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
 
 /**
@@ -307,7 +310,7 @@ public class HttpDestination
         }
     }
 
-    public void onNewConnection(HttpConnection connection) throws IOException
+    public void onNewConnection(final HttpConnection connection) throws IOException
     {
         HttpConnection q_connection = null;
 
@@ -328,8 +331,20 @@ public class HttpDestination
             }
             else
             {
-                HttpExchange ex = _queue.removeFirst();
-                send(connection, ex);
+                EndPoint endPoint = connection.getEndPoint();
+                if (isProxied() && endPoint instanceof SelectConnector.ProxySelectChannelEndPoint)
+                {
+                    SelectConnector.ProxySelectChannelEndPoint proxyEndPoint = (SelectConnector.ProxySelectChannelEndPoint)endPoint;
+                    HttpExchange exchange = _queue.peekFirst();
+                    ConnectExchange connect = new ConnectExchange(getAddress(), proxyEndPoint, exchange);
+                    connect.setAddress(getProxy());
+                    send(connection, connect);
+                }
+                else
+                {
+                    HttpExchange exchange = _queue.removeFirst();
+                    send(connection, exchange);
+                }
             }
         }
 
@@ -578,6 +593,43 @@ public class HttpDestination
             {
                 connection.close();
             }
+        }
+    }
+
+    private class ConnectExchange extends ContentExchange
+    {
+        private final SelectConnector.ProxySelectChannelEndPoint proxyEndPoint;
+        private final HttpExchange exchange;
+
+        public ConnectExchange(Address serverAddress, SelectConnector.ProxySelectChannelEndPoint proxyEndPoint, HttpExchange exchange)
+        {
+            this.proxyEndPoint = proxyEndPoint;
+            this.exchange = exchange;
+            setMethod(HttpMethods.CONNECT);
+            String serverHostAndPort = serverAddress.toString();
+            setURI(serverHostAndPort);
+            addRequestHeader(HttpHeaders.HOST, serverHostAndPort);
+            addRequestHeader(HttpHeaders.PROXY_CONNECTION, "keep-alive");
+            addRequestHeader(HttpHeaders.USER_AGENT, "Jetty-Client");
+        }
+
+        @Override
+        protected void onResponseComplete() throws IOException
+        {
+            if (getResponseStatus() == HttpStatus.OK_200)
+            {
+                proxyEndPoint.upgrade();
+            }
+            else
+            {
+                onConnectionFailed(new ConnectException(exchange.getAddress().toString()));
+            }
+        }
+
+        @Override
+        protected void onConnectionFailed(Throwable x)
+        {
+            HttpDestination.this.onConnectionFailed(x);
         }
     }
 }

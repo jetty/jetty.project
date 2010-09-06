@@ -242,6 +242,11 @@ public class HttpClient extends HttpBuffers implements Attributes
     {
         _timeoutQ.schedule(task);
     }
+    
+    public void schedule(Timeout.Task task, long timeout)
+    {
+        _timeoutQ.schedule(task, timeout);
+    }
 
     /* ------------------------------------------------------------ */
     public void scheduleIdle(Timeout.Task task)

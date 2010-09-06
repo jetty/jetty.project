@@ -24,6 +24,9 @@ public interface Configuration
 
     /* ------------------------------------------------------------------------------- */
     /** Set up for configuration.
+     * <p>
+     * Typically this step discovers configuration resources
+     * @param context The context to configure
      * @throws Exception
      */
     public void preConfigure (WebAppContext context) throws Exception;
@@ -31,6 +34,10 @@ public interface Configuration
     
     /* ------------------------------------------------------------------------------- */
     /** Configure WebApp.
+     * <p>
+     * Typically this step applies the discovered configuration resources to
+     * either the {@link WebAppContext} or the associated {@link MetaData}.
+     * @param context The context to configure
      * @throws Exception
      */
     public void configure (WebAppContext context) throws Exception;
@@ -38,6 +45,7 @@ public interface Configuration
     
     /* ------------------------------------------------------------------------------- */
     /** Clear down after configuration.
+     * @param context The context to configure
      * @throws Exception
      */
     public void postConfigure (WebAppContext context) throws Exception;
@@ -46,9 +54,20 @@ public interface Configuration
     /** DeConfigure WebApp.
      * This method is called to undo all configuration done. This is
      * called to allow the context to work correctly over a stop/start cycle
+     * @param context The context to configure
      * @throws Exception
      */
     public void deconfigure (WebAppContext context) throws Exception;
     
-    
+
+    /* ------------------------------------------------------------------------------- */
+    /** Clone configuration instance.
+     * <p>
+     * Configure an instance of a WebAppContext, based on a template WebAppContext that 
+     * has previously been configured by this Configuration.
+     * @param template The template context
+     * @param context The context to configure
+     * @throws Exception
+     */
+    public void cloneConfigure (WebAppContext template, WebAppContext context) throws Exception;
 }

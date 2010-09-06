@@ -67,7 +67,13 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
                                         
                     PostConstructCallback callback = new PostConstructCallback();
                     callback.setTarget(clazz.getName(), m.getName());
-                    ((LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION)).add(callback);
+                    LifeCycleCallbackCollection lifecycles = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
+                    if (lifecycles == null)
+                    {
+                        lifecycles = new LifeCycleCallbackCollection();
+                        _context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION,lifecycles);
+                    }
+                    lifecycles.add(callback);
                 }
             }
         }

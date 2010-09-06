@@ -539,10 +539,6 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                     ((HttpSessionListener)LazyList.get(_sessionListeners,i)).sessionCreated(event);
             }
         }
-        else
-        {
-            session.didActivate();
-        }
     }
 
     /* ------------------------------------------------------------ */
@@ -631,11 +627,6 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                 HttpSessionEvent event=new HttpSessionEvent(session);
                 for (int i=LazyList.size(_sessionListeners); i-->0;)
                     ((HttpSessionListener)LazyList.get(_sessionListeners,i)).sessionDestroyed(event);
-            }
-            
-            if (!invalidate)
-            {
-                session.willPassivate();
             }
         }
     }

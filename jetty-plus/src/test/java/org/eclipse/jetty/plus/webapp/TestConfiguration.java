@@ -29,14 +29,6 @@ import static org.junit.Assert.assertNotNull;
 
 public class TestConfiguration
 {
-    public class MyWebAppContext extends WebAppContext
-    {
-        public String toString()
-        {
-            return this.getClass().getName()+"@"+super.hashCode();
-        }
-    }
-
     @Test
     public void testIt () throws Exception
     {
@@ -48,7 +40,7 @@ public class TestConfiguration
 
             Server server = new Server();
 
-            WebAppContext wac = new MyWebAppContext();
+            WebAppContext wac = new WebAppContext();
             wac.setServer(server);
             wac.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), wac));
             

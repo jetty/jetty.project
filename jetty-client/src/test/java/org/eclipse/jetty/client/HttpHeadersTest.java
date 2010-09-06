@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -108,6 +109,47 @@ public class HttpHeadersTest
 
             assertEquals(HttpHeadersTest.CONTENT,content);
             assertEquals("Jetty-Client/7.0",_handler.headers.get("User-Agent"));
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+    
+    @Test
+    public void testHttpHeadersSize() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        httpClient.start();
+        try
+        {
+            String requestUrl = "http://localhost:" + _port + "/header";
+
+            ContentExchange exchange = new ContentExchange()
+            {
+                @Override
+                protected void onException(Throwable x)
+                {
+                    // suppress exception
+                    Log.ignore(x);
+                }
+            };
+            exchange.setURL(requestUrl);
+            exchange.setMethod(HttpMethods.GET);
+
+            for (int i = 0; i < 4; i++)
+            {
+                for (int j = 0; j < 1024; j++)
+                {
+                    exchange.addRequestHeader("header" + i + "-" + j,"v");
+                }
+            }
+
+            httpClient.send(exchange);
+
+            int state = exchange.waitForDone();
+            assertEquals(HttpExchange.STATUS_EXCEPTED, state);
         }
         finally
         {
