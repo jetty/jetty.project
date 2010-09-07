@@ -42,6 +42,7 @@ import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
@@ -839,15 +840,19 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             _accessed=_created;
             _lastAccessed=_created;
             _requests=1;
+            Log.debug("new session & id "+_nodeId+" "+_clusterId);
         }
 
         /* ------------------------------------------------------------- */
-        protected Session(long created, String clusterId)
+        protected Session(long created, long accessed, String clusterId)
         {
             _created=created;
             _clusterId=clusterId;
             _nodeId=_sessionIdManager.getNodeId(_clusterId,null);
-            _accessed=_created;
+            _accessed=accessed;
+            _lastAccessed=accessed;
+            _requests=1;
+            Log.debug("new session "+_nodeId+" "+_clusterId);
         }
 
         /* ------------------------------------------------------------- */
@@ -995,19 +1000,19 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             {
                 if (!_invalid) 
                 {
-                    if (_maxIdleMs>0 && _lastAccessed + _maxIdleMs < time) 
+                    _newSession=false;
+                    _lastAccessed=_accessed;
+                    _accessed=time;
+                
+                    if (_maxIdleMs>0 && _lastAccessed>0 && _lastAccessed + _maxIdleMs < time) 
                     {
                         invalidate();
                     }
-                    else 
+                    else
                     {
-                        _newSession=false;
-                        _lastAccessed=_accessed;
-                        _accessed=time;
                         _requests++;
                     }
                 }
-
             }
         }
 
@@ -1055,6 +1060,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         {
             try
             {
+                Log.debug("invalidate ",_clusterId);
                 // Notify listeners and unbind values
                 if (_invalid)
                     throw new IllegalStateException();

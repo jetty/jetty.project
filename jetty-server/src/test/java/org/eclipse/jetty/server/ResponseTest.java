@@ -424,7 +424,7 @@ public class ResponseTest
     {
         public TestSession(AbstractSessionManager abstractSessionManager, String id)
         {
-            abstractSessionManager.super(System.currentTimeMillis(), id);
+            abstractSessionManager.super(System.currentTimeMillis(),System.currentTimeMillis(), id);
         }
 
         public Object getAttribute(String name)

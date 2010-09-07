@@ -25,6 +25,9 @@ import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpMethods;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 
 /**
  * AbstractLastAccessTimeTest
@@ -40,18 +43,18 @@ public abstract class AbstractLastAccessTimeTest
 
         String contextPath = "";
         String servletMapping = "/server";
-        int port1 = random.nextInt(50000) + 10000;
         int maxInactivePeriod = 8;
         int scavengePeriod = 2;
-        AbstractTestServer server1 = createServer(port1, maxInactivePeriod, scavengePeriod);
+        AbstractTestServer server1 = createServer(0, maxInactivePeriod, scavengePeriod);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         server1.start();
+        int port1=server1.getPort();
         try
         {
-            int port2 = random.nextInt(50000) + 10000;
-            AbstractTestServer server2 = createServer(port2, maxInactivePeriod, scavengePeriod);
+            AbstractTestServer server2 = createServer(0, maxInactivePeriod, scavengePeriod);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
             server2.start();
+            int port2=server2.getPort();
             try
             {
                 HttpClient client = new HttpClient();
@@ -65,9 +68,9 @@ public abstract class AbstractLastAccessTimeTest
                     exchange1.setURL("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
                     client.send(exchange1);
                     exchange1.waitForDone();
-                    assert exchange1.getResponseStatus() == HttpServletResponse.SC_OK;
+                    assertEquals(HttpServletResponse.SC_OK, exchange1.getResponseStatus());
                     String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
-                    assert sessionCookie != null;
+                    assertTrue( sessionCookie != null );
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
@@ -85,8 +88,11 @@ public abstract class AbstractLastAccessTimeTest
                         exchange2.getRequestFields().add("Cookie", sessionCookie);
                         client.send(exchange2);
                         exchange2.waitForDone();
-                        assert exchange2.getResponseStatus() == HttpServletResponse.SC_OK;
-
+                        assertEquals(HttpServletResponse.SC_OK , exchange2.getResponseStatus());
+                        String setCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
+                        if (setCookie!=null)                    
+                            sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+                        
                         Thread.sleep(requestInterval);
                     }
 
@@ -103,7 +109,9 @@ public abstract class AbstractLastAccessTimeTest
                     exchange1.getRequestFields().add("Cookie", sessionCookie);
                     client.send(exchange1);
                     exchange1.waitForDone();
-                    assert exchange1.getResponseStatus() == HttpServletResponse.SC_OK;
+                    assertEquals(HttpServletResponse.SC_OK, exchange1.getResponseStatus());
+                    
+                    // TODO shouldn't the session be expired????
                 }
                 finally
                 {
