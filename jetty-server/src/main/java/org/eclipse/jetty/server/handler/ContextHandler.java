@@ -709,6 +709,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             case __SHUTDOWN:
                 return false;
             case __UNAVAILABLE:
+                baseRequest.setHandled(true);
                 response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 return false;
             default:
@@ -924,6 +925,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         catch(HttpException e)
         {
             Log.debug(e);
+            baseRequest.setHandled(true);
             response.sendError(e.getStatus(), e.getReason());
         }
         finally
