@@ -992,10 +992,21 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         {
             synchronized(this)
             {
-                _newSession=false;
-                _lastAccessed=_accessed;
-                _accessed=time;
-                _requests++;
+                if (!_invalid) 
+                {
+                    if (_lastAccessed + _maxIdleMs < time) 
+                    {
+                        invalidate();
+                    }
+                    else
+                    {
+                        _newSession=false;
+                        _lastAccessed=_accessed;
+                        _accessed=time;
+                        _requests++;
+                    }
+                }
+
             }
         }
 
