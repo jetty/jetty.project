@@ -824,7 +824,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         protected long _lastAccessed;
         protected boolean _invalid;
         protected boolean _doInvalidate;
-        protected long _maxIdleMs=_dftMaxIdleSecs*1000;
+        protected long _maxIdleMs=_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000:-1;
         protected boolean _newSession;
         protected Map _values;
         protected int _requests;
@@ -837,6 +837,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             _clusterId=_sessionIdManager.newSessionId(request,_created);
             _nodeId=_sessionIdManager.getNodeId(_clusterId,request);
             _accessed=_created;
+            _lastAccessed=_created;
             _requests=1;
         }
 
@@ -994,11 +995,11 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             {
                 if (!_invalid) 
                 {
-                    if (_lastAccessed + _maxIdleMs < time) 
+                    if (_maxIdleMs>0 && _lastAccessed + _maxIdleMs < time) 
                     {
                         invalidate();
                     }
-                    else
+                    else 
                     {
                         _newSession=false;
                         _lastAccessed=_accessed;
