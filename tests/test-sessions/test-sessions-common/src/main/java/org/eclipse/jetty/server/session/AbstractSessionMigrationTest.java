@@ -27,6 +27,8 @@ import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpMethods;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractSessionMigrationTest
@@ -66,9 +68,9 @@ public abstract class AbstractSessionMigrationTest
                     exchange1.setURL("http://localhost:" + port1 + contextPath + servletMapping + "?action=set&value=" + value);
                     client.send(exchange1);
                     exchange1.waitForDone();
-                    assert exchange1.getResponseStatus() == HttpServletResponse.SC_OK;
+                    assertEquals(HttpServletResponse.SC_OK,exchange1.getResponseStatus());
                     String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
-                    assert sessionCookie != null;
+                    assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
@@ -80,10 +82,9 @@ public abstract class AbstractSessionMigrationTest
                     exchange2.getRequestFields().add("Cookie", sessionCookie);
                     client.send(exchange2);
                     exchange2.waitForDone();
-                    assert exchange2.getResponseStatus() == HttpServletResponse.SC_OK;
+                    assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
                     String response = exchange2.getResponseContent();
-                    assert response.trim().equals(String.valueOf(value));
-                }
+                    assertEquals(response.trim(),String.valueOf(value));               }
                 finally
                 {
                     client.stop();

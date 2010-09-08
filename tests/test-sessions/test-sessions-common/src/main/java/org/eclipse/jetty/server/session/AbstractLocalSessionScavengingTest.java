@@ -163,7 +163,7 @@ public abstract class AbstractLocalSessionScavengingTest
             else if ("check".equals(action))
             {
                 HttpSession session = request.getSession(false);
-                assert session == null;
+                assertTrue(session == null);
             }
         }
     }

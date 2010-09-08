@@ -54,9 +54,9 @@ public class WebAppObjectInSessionServlet extends HttpServlet
                 Object staticAttribute = session.getAttribute("staticAttribute");
                 Assert.assertTrue(staticAttribute instanceof TestSharedStatic);
 //                Object objectAttribute = session.getAttribute("objectAttribute");
-//                assert objectAttribute instanceof TestSharedNonStatic;
+//                assertTrue(objectAttribute instanceof TestSharedNonStatic);
 //                Object sessionAttribute = session.getAttribute("sessionAttribute");
-//                assert sessionAttribute instanceof HttpSession;
+//                assertTrue(sessionAttribute instanceof HttpSession);
             }
         }
         catch (Exception e)
