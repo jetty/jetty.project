@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
@@ -375,22 +376,22 @@ public class Config
      * 
      * NOTE: the default classpath will be prepended, and the '*' classpath will be appended.
      * 
-     * @param sectionIds
+     * @param optionIds
      *            the list of section ids to fetch
      * @return the {@link Classpath} representing combination all of the selected sectionIds, combined with the default
      *         section id, and '*' special id.
      */
-    public Classpath getCombinedClasspath(Collection<String> sectionIds)
+    public Classpath getCombinedClasspath(Collection<String> optionIds)
     {
         Classpath cp = new Classpath();
 
         cp.overlay(_classpaths.get(DEFAULT_SECTION));
-        for (String sectionId : sectionIds)
+        for (String optionId : optionIds)
         {
-            Classpath otherCp = _classpaths.get(sectionId);
+            Classpath otherCp = _classpaths.get(optionId);
             if (otherCp == null)
             {
-                throw new IllegalArgumentException("No such OPTIONS: " + sectionId);
+                throw new IllegalArgumentException("No such OPTIONS: " + optionId);
             }
             cp.overlay(otherCp);
         }
@@ -403,6 +404,11 @@ public class Config
         return _classname;
     }
 
+    public Map<String,String> getProperties()
+    {
+        return Collections.unmodifiableMap(_properties);
+    }
+    
     public String getProperty(String name)
     {
         if ("version".equalsIgnoreCase(name))
@@ -455,7 +461,7 @@ public class Config
         return _xml;
     }
 
-    private boolean isAvailable(List<String> sections, String classname)
+    private boolean isAvailable(List<String> options, String classname)
     {
         // Try default/parent class loader first.
         try
@@ -472,12 +478,12 @@ public class Config
             debug("ClassNotFoundException (parent class loader): " + classname);
         }
 
-        // Try section classloaders instead
+        // Try option classloaders instead
         ClassLoader loader;
         Classpath classpath;
-        for (String sectionId : sections)
+        for (String optionId : options)
         {
-            classpath = _classpaths.get(sectionId);
+            classpath = _classpaths.get(optionId);
             if (classpath == null)
             {
                 // skip, no classpath
@@ -497,7 +503,7 @@ public class Config
             }
             catch (ClassNotFoundException e)
             {
-                debug("ClassNotFoundException (section class loader: " + sectionId + "): " + classname);
+                debug("ClassNotFoundException (section class loader: " + optionId + "): " + classname);
             }
         }
         return false;
@@ -534,6 +540,8 @@ public class Config
         }
     }
 
+    /**
+     */
     public void parse(Reader reader) throws IOException
     {
         BufferedReader buf = null;
@@ -542,8 +550,8 @@ public class Config
         {
             buf = new BufferedReader(reader);
 
-            List<String> sections = new ArrayList<String>();
-            sections.add(DEFAULT_SECTION);
+            List<String> options = new ArrayList<String>();
+            options.add(DEFAULT_SECTION);
             _classpaths.put(DEFAULT_SECTION,new Classpath());
             Version java_version = new Version(System.getProperty("java.version"));
             Version ver = new Version();
@@ -564,32 +572,33 @@ public class Config
                     String identifier = trim.substring(1,trim.length() - 1);
 
                     // Normal case: section identifier (possibly separated by commas)
-                    sections = Arrays.asList(identifier.split(","));
-                    List<String> section_ids=new ArrayList<String>();
+                    options = Arrays.asList(identifier.split(","));
+                    List<String> option_ids=new ArrayList<String>();
                     
                     // Ensure section classpaths exist
-                    for (String sectionId : sections)
+                    for (String optionId : options)
                     {
-                        if (sectionId.charAt(0) == '=')
+                        if (optionId.charAt(0) == '=')
                             continue;
 
-                        if (!_classpaths.containsKey(sectionId))
-                            _classpaths.put(sectionId,new Classpath());
+                        if (!_classpaths.containsKey(optionId))
+                            _classpaths.put(optionId,new Classpath());
                         
-                        section_ids.add(sectionId);
+                        if (!option_ids.contains(optionId))
+                            option_ids.add(optionId);
                     }
                     
 
                     // Process Dynamic
-                    for (String sectionId : sections)
+                    for (String optionId : options)
                     {
-                        if (sectionId.charAt(0) != '=')
+                        if (optionId.charAt(0) != '=')
                             continue;
                         
-                        section_ids = processDynamicSectionIdentifier(sectionId.substring(1),section_ids);
+                        option_ids = processDynamicSectionIdentifier(optionId.substring(1),option_ids);
                     }
                     
-                    sections = section_ids;
+                    options = option_ids;
                     
                     continue;
                 }
@@ -635,7 +644,7 @@ public class Config
                         else if (condition.equals("available"))
                         {
                             String class_to_check = st.nextToken();
-                            eval = isAvailable(sections,class_to_check);
+                            eval = isAvailable(options,class_to_check);
                         }
                         else if (condition.equals("exists"))
                         {
@@ -732,7 +741,7 @@ public class Config
                     {
                         // directory of JAR files - only add jars and zips within the directory
                         File dir = new File(fixPath(file.substring(0,file.length() - 1)));
-                        addJars(sections,dir,false);
+                        addJars(options,dir,false);
                         continue;
                     }
 
@@ -741,7 +750,7 @@ public class Config
                     {
                         //directory hierarchy of jar files - recursively add all jars and zips in the hierarchy
                         File dir = new File(fixPath(file.substring(0,file.length() - 2)));
-                        addJars(sections,dir,true);
+                        addJars(options,dir,true);
                         continue;
                     }
 
@@ -751,7 +760,7 @@ public class Config
                         // class directory
                         File cd = new File(fixPath(file));
                         String d = cd.getCanonicalPath();
-                        boolean added = addClasspathComponent(sections,d);
+                        boolean added = addClasspathComponent(options,d);
                         debug((added?"  CLASSPATH+=":"  !") + d);
                         continue;
                     }
@@ -788,7 +797,7 @@ public class Config
                         if (cn != null && cn.length() > 0)
                         {
                             debug("  PATH=" + cn);
-                            addClasspathPath(sections,cn);
+                            addClasspathPath(options,cn);
                         }
                         continue;
                     }
@@ -811,10 +820,10 @@ public class Config
                     if (f.exists())
                     {
                         String d = f.getCanonicalPath();
-                        boolean added = addClasspathComponent(sections,d);
+                        boolean added = addClasspathComponent(options,d);
                         if (!added)
                         {
-                            added = addClasspathPath(sections,expand(subject));
+                            added = addClasspathPath(options,expand(subject));
                         }
                         debug((added?"  CLASSPATH+=":"  !") + d);
                     }
@@ -959,11 +968,10 @@ public class Config
 
     public void addActiveOption(String option)
     {
-        if (!_activeOptions.contains(option))
-        {
-            _activeOptions.add(option);
-        }
+        _activeOptions.add(option); 
         _properties.put("OPTIONS",join(_activeOptions,","));
+
+        System.err.println("OPTIONS="+_activeOptions);
     }
 
     public Set<String> getActiveOptions()
@@ -976,11 +984,10 @@ public class Config
         _activeOptions.remove(option);
         _properties.put("OPTIONS",join(_activeOptions,","));
     }
-
+    
     private String join(Collection<?> coll, String delim)
     {
         StringBuffer buf = new StringBuffer();
-
         Iterator<?> i = coll.iterator();
         boolean hasNext = i.hasNext();
         while (hasNext)
@@ -993,4 +1000,5 @@ public class Config
 
         return buf.toString();
     }
+
 }
