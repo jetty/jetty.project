@@ -368,9 +368,9 @@ public class HashSessionManager extends AbstractSessionManager
     }
     
     /* ------------------------------------------------------------ */
-    protected AbstractSessionManager.Session newSession(long created, String clusterId)
+    protected AbstractSessionManager.Session newSession(long created, long accessed, String clusterId)
     {
-        return new Session(created,clusterId);
+        return new Session(created,accessed, clusterId);
     }
     
     /* ------------------------------------------------------------ */
@@ -503,7 +503,7 @@ public class HashSessionManager extends AbstractSessionManager
         //boolean isNew = in.readBoolean();
         int requests = in.readInt();
         
-        Session session = (Session)newSession(created, clusterId);
+        Session session = (Session)newSession(created, System.currentTimeMillis(), clusterId);
         session._cookieSet = cookieSet;
         session._lastAccessed = lastAccessed;
         
@@ -546,9 +546,9 @@ public class HashSessionManager extends AbstractSessionManager
         }
 
         /* ------------------------------------------------------------- */
-        protected Session(long created, String clusterId)
+        protected Session(long created, long accessed, String clusterId)
         {
-            super(created, clusterId);
+            super(created, accessed, clusterId);
         }
         
         /* ------------------------------------------------------------- */

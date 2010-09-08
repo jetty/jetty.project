@@ -276,9 +276,9 @@ public class JDBCSessionManager extends AbstractSessionManager
           * Session restored in database.
           * @param data
           */
-         protected Session (SessionData data)
+         protected Session (long accessed, SessionData data)
          {
-             super(data.getCreated(), data.getId());
+             super(data.getCreated(), accessed, data.getId());
              _data=data;
              _data.setMaxIdleMs(_dftMaxIdleSecs*1000);
              _values=data.getAttributeMap();
@@ -485,13 +485,29 @@ public class JDBCSessionManager extends AbstractSessionManager
                 //sessions to the same node, changing only iff that node fails. 
                 SessionData data = null;
                 long now = System.currentTimeMillis();
-                if (Log.isDebugEnabled()) Log.debug("now="+now+
-                        " lastSaved="+(session==null?0:session._data._lastSaved)+
-                        " interval="+(_saveIntervalSec * 1000)+
-                        " difference="+(now - (session==null?0:session._data._lastSaved)));
+                if (Log.isDebugEnabled()) 
+                {
+                    if (session==null)
+                        Log.debug("now="+now+
+                                " lastSaved="+(session==null?0:session._data._lastSaved)+
+                                " interval="+(_saveIntervalSec * 1000));
+                    else
+                        Log.debug("now="+now+
+                                " lastSaved="+(session==null?0:session._data._lastSaved)+
+                                " interval="+(_saveIntervalSec * 1000)+
+                                " lastNode="+session._data.getLastNode()+
+                                " thisNode="+getIdManager().getWorkerName()+
+                                " difference="+(now - session._data._lastSaved));
+                }
                 
                 if (session==null || ((now - session._data._lastSaved) >= (_saveIntervalSec * 1000)))
                 {       
+                    Log.debug("no session ",idInCluster);
+                    data = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
+                }
+                else if ((now - session._data._lastSaved) >= (_saveIntervalSec * 1000))
+                {
+                    Log.debug("old session",idInCluster);
                     data = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
                 }
                 else
@@ -503,12 +519,12 @@ public class JDBCSessionManager extends AbstractSessionManager
                 {
                     if (!data.getLastNode().equals(getIdManager().getWorkerName()) || session==null)
                     {
-                        
                         //if the session in the database has not already expired
-                        if (data._expiryTime > System.currentTimeMillis())
+                        if (data._expiryTime > now)
                         {
+                            Log.debug("expired session",idInCluster);
                             //session last used on a different node, or we don't have it in memory
-                            session = new Session(data);
+                            session = new Session(now,data);
                             _sessions.put(idInCluster, session);
                             session.didActivate();
                             //TODO is this the best way to do this? Or do this on the way out using

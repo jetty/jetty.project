@@ -27,6 +27,8 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -65,9 +67,9 @@ public abstract class AbstractClientCrossContextSessionTest
                 exchangeA.setURL("http://localhost:" + port + contextA + servletMapping);
                 client.send(exchangeA);
                 exchangeA.waitForDone();
-                assert exchangeA.getResponseStatus() == HttpServletResponse.SC_OK;
+                assertEquals(HttpServletResponse.SC_OK,exchangeA.getResponseStatus());
                 String sessionCookie = exchangeA.getResponseFields().getStringField("Set-Cookie");
-                assert sessionCookie != null;
+                assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
@@ -78,7 +80,7 @@ public abstract class AbstractClientCrossContextSessionTest
                 exchangeB.getRequestFields().add("Cookie", sessionCookie);
                 client.send(exchangeB);
                 exchangeB.waitForDone();
-                assert exchangeB.getResponseStatus() == HttpServletResponse.SC_OK;
+                assertEquals(HttpServletResponse.SC_OK,exchangeB.getResponseStatus());
             }
             finally
             {
@@ -104,7 +106,7 @@ public abstract class AbstractClientCrossContextSessionTest
 
             // Check that we don't see things put in session by contextB
             Object objectB = session.getAttribute("B");
-            assert objectB == null;
+            assertTrue(objectB == null);
             System.out.println("A: session.getAttributeNames() = " + Collections.list(session.getAttributeNames()));
         }
     }
@@ -122,7 +124,7 @@ public abstract class AbstractClientCrossContextSessionTest
 
             // Check that we don't see things put in session by contextA
             Object objectA = session.getAttribute("A");
-            assert objectA == null;
+            assertTrue(objectA == null);
             System.out.println("B: session.getAttributeNames() = " + Collections.list(session.getAttributeNames()));
         }
     }

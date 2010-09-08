@@ -55,17 +55,22 @@ public class JdbcTestServer extends AbstractTestServer
         return new SessionHandler(sessionManager);
     }
 
+    static int __workers=0;
+    
     /** 
      * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionIdManager()
      */
     @Override
-    public SessionIdManager newSessionIdManager()
+    public  SessionIdManager newSessionIdManager()
     {
-        JDBCSessionIdManager idManager = new JDBCSessionIdManager(_server);
-        idManager.setScavengeInterval(_scavengePeriod);
-        idManager.setWorkerName(String.valueOf(System.currentTimeMillis()));
-        idManager.setDriverInfo(DRIVER_CLASS, CONNECTION_URL);
-        return idManager;
+        synchronized(JdbcTestServer.class)
+        {
+            JDBCSessionIdManager idManager = new JDBCSessionIdManager(_server);
+            idManager.setScavengeInterval(_scavengePeriod);
+            idManager.setWorkerName("w"+(__workers++));
+            idManager.setDriverInfo(DRIVER_CLASS, CONNECTION_URL);
+            return idManager;
+        }
     }
 
     /** 

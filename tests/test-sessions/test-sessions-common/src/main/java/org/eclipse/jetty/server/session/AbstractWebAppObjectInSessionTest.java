@@ -27,6 +27,8 @@ import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractWebAppObjectInSessionTest
@@ -126,9 +128,9 @@ public abstract class AbstractWebAppObjectInSessionTest
                     exchange1.setURL("http://localhost:" + port1 + contextPath + servletMapping + "?action=set");
                     client.send(exchange1);
                     exchange1.waitForDone();
-                    assert exchange1.getResponseStatus() == HttpServletResponse.SC_OK : exchange1.getResponseStatus();
+                    assertEquals( HttpServletResponse.SC_OK, exchange1.getResponseStatus());
                     String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
-                    assert sessionCookie != null;
+                    assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
@@ -139,7 +141,8 @@ public abstract class AbstractWebAppObjectInSessionTest
                     exchange2.getRequestFields().add("Cookie", sessionCookie);
                     client.send(exchange2);
                     exchange2.waitForDone();
-                    assert exchange2.getResponseStatus() == HttpServletResponse.SC_OK;
+                    
+                    assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
                 }
                 finally
                 {

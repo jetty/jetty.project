@@ -30,6 +30,8 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractServerCrossContextSessionTest
@@ -67,7 +69,7 @@ public abstract class AbstractServerCrossContextSessionTest
                 exchange.setURL("http://localhost:" + port + contextA + servletMapping);
                 client.send(exchange);
                 exchange.waitForDone();
-                assert exchange.getResponseStatus() == HttpServletResponse.SC_OK;
+                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
             }
             finally
             {
@@ -100,7 +102,7 @@ public abstract class AbstractServerCrossContextSessionTest
 
             // Check that we don't see things put in session by contextB
             Object objectB = session.getAttribute("B");
-            assert objectB == null;
+            assertTrue(objectB == null);
             System.out.println("A: session.getAttributeNames() = " + Collections.list(session.getAttributeNames()));
         }
     }
@@ -115,7 +117,7 @@ public abstract class AbstractServerCrossContextSessionTest
 
             // Be sure nothing from contextA is present
             Object objectA = session.getAttribute("A");
-            assert objectA == null;
+            assertTrue(objectA == null);
 
             // Add something, so in contextA we can check if it is visible (it must not).
             session.setAttribute("B", "B");

@@ -26,6 +26,8 @@ import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpMethods;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -58,7 +60,7 @@ public abstract class AbstractReentrantRequestSessionTest
                 exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);
                 client.send(exchange);
                 exchange.waitForDone();
-                assert exchange.getResponseStatus() == HttpServletResponse.SC_OK;
+                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
             }
             finally
             {
@@ -106,7 +108,7 @@ public abstract class AbstractReentrantRequestSessionTest
                         exchange.setURL("http://localhost:" + port + path + "?action=none");
                         client.send(exchange);
                         exchange.waitForDone();
-                        assert exchange.getResponseStatus() == HttpServletResponse.SC_OK;
+                        assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
                     }
                     finally
                     {

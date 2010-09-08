@@ -31,6 +31,8 @@ import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpMethods;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -78,9 +80,9 @@ public abstract class AbstractLightLoadTest
                         exchange1.setURL( urls[0] + "?action=init" );
                         client.send( exchange1 );
                         exchange1.waitForDone();
-                        assert exchange1.getResponseStatus() == HttpServletResponse.SC_OK;
+                        assertEquals(HttpServletResponse.SC_OK,exchange1.getResponseStatus());
                         String sessionCookie = exchange1.getResponseFields().getStringField( "Set-Cookie" );
-                        assert sessionCookie != null;
+                        assertTrue(sessionCookie != null);
                         // Mangle the cookie, replacing Path with $Path, etc.
                         sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
@@ -116,10 +118,10 @@ public abstract class AbstractLightLoadTest
                         exchange2.getRequestFields().add( "Cookie", sessionCookie );
                         client.send( exchange2 );
                         exchange2.waitForDone();
-                        assert exchange2.getResponseStatus() == HttpServletResponse.SC_OK;
+                        assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
                         String response = exchange2.getResponseContent();
                         System.out.println( "get = " + response );
-                        assert response.trim().equals( String.valueOf( clientsCount * requestsCount ) );
+                        assertEquals(response.trim(), String.valueOf( clientsCount * requestsCount ) );
                     }
                     finally
                     {
@@ -192,7 +194,7 @@ public abstract class AbstractLightLoadTest
                     exchange.getRequestFields().add( "Cookie", sessionCookie );
                     client.send( exchange );
                     exchange.waitForDone();
-                    assert exchange.getResponseStatus() == HttpServletResponse.SC_OK;
+                    assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
                 }
 
                 // Wait for all workers to be done

@@ -27,6 +27,8 @@ import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpMethods;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -61,14 +63,14 @@ public abstract class AbstractImmortalSessionTest
                 exchange.setURL("http://localhost:" + port + contextPath + servletMapping + "?action=set&value=" + value);
                 client.send(exchange);
                 exchange.waitForDone();
-                assert exchange.getResponseStatus() == HttpServletResponse.SC_OK;
+                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
                 String sessionCookie = exchange.getResponseFields().getStringField("Set-Cookie");
-                assert sessionCookie != null;
+                assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                 String response = exchange.getResponseContent();
-                assert response.trim().equals(String.valueOf(value));
+                assertEquals(response.trim(),String.valueOf(value));
 
                 // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
                 Thread.sleep(scavengePeriod * 2500L);
@@ -80,9 +82,9 @@ public abstract class AbstractImmortalSessionTest
                 exchange.getRequestFields().add("Cookie", sessionCookie);
                 client.send(exchange);
                 exchange.waitForDone();
-                assert exchange.getResponseStatus() == HttpServletResponse.SC_OK;
+                assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
                 response = exchange.getResponseContent();
-                assert response.trim().equals(String.valueOf(value));
+                assertEquals(response.trim(),String.valueOf(value));
             }
             finally
             {

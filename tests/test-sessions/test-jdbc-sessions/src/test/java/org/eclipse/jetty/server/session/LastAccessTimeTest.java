@@ -12,6 +12,7 @@
 // ========================================================================
 package org.eclipse.jetty.server.session;
 
+import org.eclipse.jetty.util.log.Log;
 import org.junit.Test;
 
 /**
@@ -27,6 +28,7 @@ public class LastAccessTimeTest extends AbstractLastAccessTimeTest
     @Test
     public void testLastAccessTime() throws Exception
     {
+        // Log.getLog().setDebugEnabled(true);
         super.testLastAccessTime();
     }
 }

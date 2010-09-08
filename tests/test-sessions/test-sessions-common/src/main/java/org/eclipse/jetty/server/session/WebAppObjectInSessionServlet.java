@@ -22,6 +22,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.junit.Assert;
+
 
 /**
  * WebAppObjectInSessionServlet
@@ -50,16 +52,18 @@ public class WebAppObjectInSessionServlet extends HttpServlet
             {
                 HttpSession session = request.getSession(false);
                 Object staticAttribute = session.getAttribute("staticAttribute");
-                assert staticAttribute instanceof TestSharedStatic;
+                Assert.assertTrue(staticAttribute instanceof TestSharedStatic);
 //                Object objectAttribute = session.getAttribute("objectAttribute");
-//                assert objectAttribute instanceof TestSharedNonStatic;
+//                assertTrue(objectAttribute instanceof TestSharedNonStatic);
 //                Object sessionAttribute = session.getAttribute("sessionAttribute");
-//                assert sessionAttribute instanceof HttpSession;
+//                assertTrue(sessionAttribute instanceof HttpSession);
             }
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            // e.printStackTrace();
+            httpServletResponse.sendError(500,e.toString());
+            throw new ServletException(e);
         }
     }
 
