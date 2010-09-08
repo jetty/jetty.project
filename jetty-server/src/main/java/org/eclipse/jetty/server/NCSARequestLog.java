@@ -68,8 +68,6 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     private transient DateCache _logDateCache;
     private transient PathMap _ignorePathMap;
     private transient Writer _writer;
-    private transient ArrayList _buffers;
-    private transient char[] _copy;
 
     /* ------------------------------------------------------------ */
     /**
@@ -448,9 +446,6 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
      */
     public void log(Request request, Response response)
     {
-        if (!isStarted())
-            return;
-
         try
         {
             if (_ignorePathMap != null && _ignorePathMap.getMatch(request.getRequestURI()) != null)
@@ -459,14 +454,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             if (_fileOut == null)
                 return;
 
-            Utf8StringBuilder u8buf;
-            StringBuilder buf;
-            synchronized(_writer)
-            {
-                int size=_buffers.size();
-                u8buf = size==0?new Utf8StringBuilder(160):(Utf8StringBuilder)_buffers.remove(size-1);
-                buf = u8buf.getStringBuilder();
-            }
+            StringBuilder buf= new StringBuilder(256);
 
             if (_logServer)
             {
@@ -500,9 +488,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             buf.append("] \"");
             buf.append(request.getMethod());
             buf.append(' ');
-
-            request.getUri().writeTo(u8buf);
-
+            buf.append(request.getUri().toString());
             buf.append(' ');
             buf.append(request.getProtocol());
             buf.append("\" ");
@@ -541,76 +527,56 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             else
                 buf.append(" - ");
 
-            if (!_extended && !_logCookies && !_logLatency)
-	    {
-                synchronized(_writer)
-		{
-                    buf.append(StringUtil.__LINE_SEPARATOR);
-                    int l=buf.length();
-                    if (l>_copy.length)
-                        l=_copy.length;
-                    buf.getChars(0,l,_copy,0);
-                    _writer.write(_copy,0,l);
-                    _writer.flush();
-                    u8buf.reset();
-                    _buffers.add(u8buf);
+            
+            if (_extended)
+                logExtended(request, response, buf);
+
+            if (_logCookies)
+            {
+                Cookie[] cookies = request.getCookies();
+                if (cookies == null || cookies.length == 0)
+                    buf.append(" -");
+                else
+                {
+                    buf.append(" \"");
+                    for (int i = 0; i < cookies.length; i++)
+                    {
+                        if (i != 0)
+                            buf.append(';');
+                        buf.append(cookies[i].getName());
+                        buf.append('=');
+                        buf.append(cookies[i].getValue());
+                    }
+                    buf.append('\"');
                 }
             }
-            else
+
+            if (_logDispatch || _logLatency)
             {
-                synchronized(_writer)
-                {
-                    int l=buf.length();
-                    if (l>_copy.length)
-                        l=_copy.length;
-                    buf.getChars(0,l,_copy,0);
-                    _writer.write(_copy,0,l);
-                    u8buf.reset();
-                    _buffers.add(u8buf);
+                long now = System.currentTimeMillis();
 
-                    // TODO do outside synchronized scope
-                    if (_extended)
-                        logExtended(request, response, _writer);
-
-                    // TODO do outside synchronized scope
-                    if (_logCookies)
-                    {
-                        Cookie[] cookies = request.getCookies();
-                        if (cookies == null || cookies.length == 0)
-                            _writer.write(" -");
-                        else
-                        {
-                            _writer.write(" \"");
-                            for (int i = 0; i < cookies.length; i++)
-                            {
-                                if (i != 0)
-                                    _writer.write(';');
-                                _writer.write(cookies[i].getName());
-                                _writer.write('=');
-                                _writer.write(cookies[i].getValue());
-                            }
-                            _writer.write('\"');
-                        }
-                    }
-                    
-                    final long now = System.currentTimeMillis();
-                    final long start = request.getTimeStamp();
-                    final long dispatch = request.getDispatchTime();
-                    if (_logDispatch)
-                    {   
-                        _writer.write(' ');
-                        _writer.write(Long.toString(now - (dispatch==0 ? start:dispatch)));
-                    }
-
-                    if (_logLatency)
-                    {
-                        _writer.write(' ');
-                        _writer.write(Long.toString(now - start));
-                    }
-
-                    _writer.write(StringUtil.__LINE_SEPARATOR);
-                    _writer.flush();
+                if (_logDispatch)
+                {   
+                    long d = request.getDispatchTime();
+                    buf.append(' ');
+                    buf.append(now - (d==0 ? request.getTimeStamp():d));
                 }
+
+                if (_logLatency)
+                {
+                    buf.append(' ');
+                    buf.append(now - request.getTimeStamp());
+                }
+            }
+
+            buf.append(StringUtil.__LINE_SEPARATOR);
+            String log = buf.toString();
+            synchronized(this)
+            {
+                if (_writer==null)
+                    return;
+                _writer.write(log);
+                _writer.flush();
             }
         }
         catch (IOException e)
@@ -626,31 +592,31 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
      * 
      * @param request request object
      * @param response response object
-     * @param writer log file writer
+     * @param b StringBuilder to write to
      * @throws IOException
      */
     protected void logExtended(Request request,
                                Response response,
-                               Writer writer) throws IOException
+                               StringBuilder b) throws IOException
     {
         String referer = request.getHeader(HttpHeaders.REFERER);
         if (referer == null)
-            writer.write("\"-\" ");
+            b.append("\"-\" ");
         else
         {
-            writer.write('"');
-            writer.write(referer);
-            writer.write("\" ");
+            b.append('"');
+            b.append(referer);
+            b.append("\" ");
         }
 
         String agent = request.getHeader(HttpHeaders.USER_AGENT);
         if (agent == null)
-            writer.write("\"-\" ");
+            b.append("\"-\" ");
         else
         {
-            writer.write('"');
-            writer.write(agent);
-            writer.write('"');
+            b.append('"');
+            b.append(agent);
+            b.append('"');
         }
     }
 
@@ -690,8 +656,6 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             _ignorePathMap = null;
 
         _writer = new OutputStreamWriter(_out);
-        _buffers = new ArrayList();
-        _copy = new char[1024];
         super.doStart();
     }
 
@@ -704,32 +668,33 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
     @Override
     protected void doStop() throws Exception
     {
-        super.doStop();
-        try
+        synchronized (this)
         {
-            if (_writer != null)
-                _writer.flush();
-        }
-        catch (IOException e)
-        {
-            Log.ignore(e);
-        }
-        if (_out != null && _closeOut)
+            super.doStop();
             try
             {
-                _out.close();
+                if (_writer != null)
+                    _writer.flush();
             }
             catch (IOException e)
             {
                 Log.ignore(e);
             }
+            if (_out != null && _closeOut)
+                try
+                {
+                    _out.close();
+                }
+                catch (IOException e)
+                {
+                    Log.ignore(e);
+                }
 
-        _out = null;
-        _fileOut = null;
-        _closeOut = false;
-        _logDateCache = null;
-        _writer = null;
-        _buffers = null;
-        _copy = null;
+            _out = null;
+            _fileOut = null;
+            _closeOut = false;
+            _logDateCache = null;
+            _writer = null;
+        }
     }
 }
