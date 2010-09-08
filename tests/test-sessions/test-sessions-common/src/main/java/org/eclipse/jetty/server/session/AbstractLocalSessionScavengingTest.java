@@ -27,6 +27,8 @@ import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SessionManager;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractLocalSessionScavengingTest
@@ -82,9 +84,9 @@ public abstract class AbstractLocalSessionScavengingTest
                     exchange1.setURL(urls[0] + "?action=init");
                     client.send(exchange1);
                     exchange1.waitForDone();
-                    assert exchange1.getResponseStatus() == HttpServletResponse.SC_OK;
+                    assertEquals(HttpServletResponse.SC_OK,exchange1.getResponseStatus());
                     String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
-                    assert sessionCookie != null;
+                    assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
@@ -95,7 +97,7 @@ public abstract class AbstractLocalSessionScavengingTest
                     exchange2.getRequestFields().add("Cookie", sessionCookie);
                     client.send(exchange2);
                     exchange2.waitForDone();
-                    assert exchange2.getResponseStatus() == HttpServletResponse.SC_OK;
+                    assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
                     
                     
                     // Wait for the scavenger to run on node1, waiting 2.5 times the scavenger period
@@ -107,7 +109,7 @@ public abstract class AbstractLocalSessionScavengingTest
                     exchange1.setURL(urls[0] + "?action=check");
                     client.send(exchange1);
                     exchange1.waitForDone();
-                    assert exchange1.getResponseStatus() == HttpServletResponse.SC_OK;
+                    assertEquals(HttpServletResponse.SC_OK,exchange1.getResponseStatus());
 
 
                     // Wait for the scavenger to run on node2, waiting 2 times the scavenger period
@@ -120,7 +122,7 @@ public abstract class AbstractLocalSessionScavengingTest
                     exchange2.setURL(urls[1] + "?action=check");
                     client.send(exchange2);
                     exchange2.waitForDone();
-                    assert exchange2.getResponseStatus() == HttpServletResponse.SC_OK;
+                    assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
                 }
                 finally
                 {
