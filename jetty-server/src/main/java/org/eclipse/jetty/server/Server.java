@@ -666,9 +666,11 @@ public class Server extends HandlerWrapper implements Attributes
     protected void dump(Appendable out,String indent) throws IOException
     {
         out.append(toString()).append(isStarted()?" started":" STOPPED").append('\n');
-        for (Connector c : _connectors)
-            out.append(" +-").append(String.valueOf(c)).append('\n');
-        out.append(" +-").append(String.valueOf(_threadPool)).append('\n');
+        if (_connectors != null)
+            for (Connector c : _connectors)
+                out.append(" +-").append(String.valueOf(c)).append('\n');
+        if (_threadPool != null)
+            out.append(" +-").append(String.valueOf(_threadPool)).append('\n');
         dumpHandlers(out,indent);
     }
 

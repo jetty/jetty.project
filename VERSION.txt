@@ -28,6 +28,8 @@ jetty-7.2-SNAPSHOT
  + 324379 Change content type after getWriter
  + 324501 Fire RequestListener.requestDestroyed in last-to-first order.
  + 324601 Check session expiry on access
+ + 324811 NPE in Server.dump
+ + 324812 restore WebAppContext constructor used by geronimo integration
  + JETTY-912 added per exchange timeout api
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors
