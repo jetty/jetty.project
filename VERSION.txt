@@ -3,6 +3,7 @@ jetty-8.0.0.M2-SNAPSHOT
  + 321068 JSF2 fails to initialize
  + 324493 Registration init parameter handling null check, setInitParameters additive
  + 324505 Request.login method must throw ServletException if it cant login
+ + 324872 allow disabling listener restriction from using *Registration interfaces
 
 jetty-7.2-SNAPSHOT
  + 314087 Simplified SelectorManager

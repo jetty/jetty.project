@@ -78,7 +78,8 @@ public class ServletContextHandler extends ContextHandler
     protected int _options;
     protected JspConfigDescriptor _jspConfig;
     protected Object _restrictedContextListeners;
-    
+    private boolean _restrictListeners = true;
+
     /* ------------------------------------------------------------ */
     public ServletContextHandler()
     {
@@ -334,10 +335,17 @@ public class ServletContextHandler extends ContextHandler
     
     public void restrictEventListener (EventListener e)
     {
-        if (e instanceof ServletContextListener)
+        if (_restrictListeners && e instanceof ServletContextListener)
             _restrictedContextListeners = LazyList.add(_restrictedContextListeners, e);
     }
-    
+
+    public boolean isRestrictListeners() {
+        return _restrictListeners;
+    }
+
+    public void setRestrictListeners(boolean restrictListeners) {
+        this._restrictListeners = restrictListeners;
+    }
 
     public void callContextInitialized(ServletContextListener l, ServletContextEvent e)
     {
