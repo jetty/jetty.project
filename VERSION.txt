@@ -39,6 +39,7 @@ jetty-7.2-SNAPSHOT
  + JETTY-1261 errant listener usage in StandardDescriptorProcessor
  + JETTY-1263 JDBCSessionIdManager table creation fails on Oracle
  + JETTY-1269 Improve log multithreadedness
+ + JETTY-1270 Websocket closed endp protection
  + JETTY-1271 handled unavailable exception
  + Fix jetty-plus.xml for new configuration names
  + Added ignore to Logger interface
