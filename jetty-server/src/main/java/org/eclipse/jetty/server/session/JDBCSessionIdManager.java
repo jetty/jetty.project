@@ -498,10 +498,10 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             {
                 //table does not exist, so create it
                 String blobType = _dbAdaptor.getBlobType();
-                _createSessionTable = "create table "+_sessionTable+" (rowId varchar(120), sessionId varchar(120), "+
+                _createSessionTable = "create table "+_sessionTable+" (srowId varchar(120), sessionId varchar(120), "+
                                            " contextPath varchar(60), virtualHost varchar(60), lastNode varchar(60), accessTime bigint, "+
                                            " lastAccessTime bigint, createTime bigint, cookieTime bigint, "+
-                                           " lastSavedTime bigint, expiryTime bigint, map "+blobType+", primary key(rowId))";
+                                           " lastSavedTime bigint, expiryTime bigint, map "+blobType+", primary key(srowId))";
                 connection.createStatement().executeUpdate(_createSessionTable);
             }
             

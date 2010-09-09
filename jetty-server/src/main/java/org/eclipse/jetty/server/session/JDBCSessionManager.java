@@ -807,23 +807,23 @@ public class JDBCSessionManager extends AbstractSessionManager
     protected void prepareTables ()
     {
         __insertSession = "insert into "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                          " (rowId, sessionId, contextPath, virtualHost, lastNode, accessTime, lastAccessTime, createTime, cookieTime, lastSavedTime, expiryTime, map) "+
+                          " (srowId, sessionId, contextPath, virtualHost, lastNode, accessTime, lastAccessTime, createTime, cookieTime, lastSavedTime, expiryTime, map) "+
                           " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         __deleteSession = "delete from "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                          " where rowId = ?";
+                          " where srowId = ?";
 
         __selectSession = "select * from "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
                           " where sessionId = ? and contextPath = ? and virtualHost = ?";
 
         __updateSession = "update "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                          " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, map = ? where rowId = ?";
+                          " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, map = ? where srowId = ?";
 
         __updateSessionNode = "update "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                              " set lastNode = ? where rowId = ?";
+                              " set lastNode = ? where srowId = ?";
 
         __updateSessionAccessTime = "update "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                                    " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ? where rowId = ?";
+                                    " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ? where srowId = ?";
     }
     
     /**
@@ -848,7 +848,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             if (result.next())
             {
                data = new SessionData(id);
-               data.setRowId(result.getString("rowId"));
+               data.setRowId(result.getString("srowId"));
                data.setCookieSet(result.getLong("cookieTime"));
                data.setLastAccessed(result.getLong("lastAccessTime"));
                data.setAccessed (result.getLong("accessTime"));
