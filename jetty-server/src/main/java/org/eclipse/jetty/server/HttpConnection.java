@@ -1162,7 +1162,7 @@ public class HttpConnection implements Connection
             if (_closed)
                 throw new IOException("Closed");
 
-            if (super._generator.getContentWritten() > 0)
+            if (super._generator.isContentWritten())
                 throw new IllegalStateException("!empty");
 
             // Convert HTTP content to contentl

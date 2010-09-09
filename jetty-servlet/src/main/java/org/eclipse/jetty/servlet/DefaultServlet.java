@@ -41,6 +41,7 @@ import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.InclusiveByteRange;
 import org.eclipse.jetty.server.ResourceCache;
 import org.eclipse.jetty.server.Response;
@@ -772,8 +773,13 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             }
             else
             {
+                // has a filter already written to the response?
+                boolean written = out instanceof HttpOutput 
+                    ? !((HttpOutput)out).isWritten() 
+                    : HttpConnection.getCurrentConnection().getGenerator().isContentWritten();
+                
                 // See if a direct methods can be used?
-                if (out instanceof HttpConnection.Output && content!=null)
+                if (content!=null && !written && out instanceof HttpOutput)
                 {
                     if (response instanceof Response)
                     {
@@ -798,7 +804,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 else 
                 {
                     // Write headers normally
-                    writeHeaders(response,content,content_length);
+                    writeHeaders(response,content,written?-1:content_length);
 
                     // Write content normally
                     Buffer buffer = (content==null)?null:content.getIndirectBuffer();

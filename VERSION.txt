@@ -28,6 +28,7 @@ jetty-7.2-SNAPSHOT
  + 324379 Change content type after getWriter
  + 324501 Fire RequestListener.requestDestroyed in last-to-first order.
  + 324601 Check session expiry on access
+ + 324679 Allow filter to write before static content
  + 324811 NPE in Server.dump
  + 324812 restore WebAppContext constructor used by geronimo integration
  + JETTY-912 added per exchange timeout api

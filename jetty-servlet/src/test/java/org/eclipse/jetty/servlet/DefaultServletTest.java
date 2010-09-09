@@ -4,6 +4,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+
 import junit.framework.AssertionFailedError;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -498,6 +505,56 @@ public class DefaultServletTest
         assertTrue(body.endsWith(boundary+"--\r\n"));
     }
 
+    @Test
+    public void testFiltered() throws Exception
+    {
+        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
+        prepareEmptyTestDir(testDir);
+        File resBase = new File(testDir, "docroot");
+        assertTrue(resBase.mkdirs());
+        File file0 = new File(resBase, "data0.txt");
+        createFile(file0, "Hello Text 0");
+
+        String resBasePath = resBase.getAbsolutePath();
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class,"/");
+        defholder.setInitParameter("dirAllowed","false");
+        defholder.setInitParameter("redirectWelcome","false");
+        defholder.setInitParameter("welcomeServlets","false");
+        defholder.setInitParameter("gzip","false");
+        defholder.setInitParameter("resourceBase",resBasePath);
+
+        ServletHolder jspholder = context.addServlet(NoJspServlet.class,"*.jsp");
+
+        String response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
+        assertResponseContains("Content-Length: 12",response);
+        assertResponseNotContains("Extra Info",response);
+        
+        context.addFilter(AddingFilter.class,"/*",0);
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
+        System.err.println(response);
+        assertResponseContains("Content-Length: 24",response);
+        assertResponseContains("Extra Info",response);
+        assertResponseNotContains("Content-Length: 12",response);
+    }
+
+    public static class AddingFilter implements Filter
+    {
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+        }
+
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            response.getOutputStream().println("Extra Info");
+            chain.doFilter(request,response);
+        }
+
+        public void destroy()
+        {
+        }
+    }
+    
     private void createFile(File file, String str) throws IOException
     {
         FileOutputStream out = null;
