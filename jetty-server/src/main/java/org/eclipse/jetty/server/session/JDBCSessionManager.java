@@ -71,6 +71,7 @@ public class JDBCSessionManager extends AbstractSessionManager
     protected  String __updateSession;  
     protected  String __updateSessionNode; 
     protected  String __updateSessionAccessTime;
+    protected  String __sessionTableRowId;
     
     private ConcurrentHashMap _sessions;
     protected long _saveIntervalSec = 60; //only persist changes to session access times every 60 secs
@@ -806,24 +807,26 @@ public class JDBCSessionManager extends AbstractSessionManager
  
     protected void prepareTables ()
     {
+        __sessionTableRowId = ((JDBCSessionIdManager)_sessionIdManager)._sessionTableRowId;
+        
         __insertSession = "insert into "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                          " (srowId, sessionId, contextPath, virtualHost, lastNode, accessTime, lastAccessTime, createTime, cookieTime, lastSavedTime, expiryTime, map) "+
+                          " ("+__sessionTableRowId+", sessionId, contextPath, virtualHost, lastNode, accessTime, lastAccessTime, createTime, cookieTime, lastSavedTime, expiryTime, map) "+
                           " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         __deleteSession = "delete from "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                          " where srowId = ?";
+                          " where "+__sessionTableRowId+" = ?";
 
         __selectSession = "select * from "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
                           " where sessionId = ? and contextPath = ? and virtualHost = ?";
 
         __updateSession = "update "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                          " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, map = ? where srowId = ?";
+                          " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, map = ? where "+__sessionTableRowId+" = ?";
 
         __updateSessionNode = "update "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                              " set lastNode = ? where srowId = ?";
+                              " set lastNode = ? where "+__sessionTableRowId+" = ?";
 
         __updateSessionAccessTime = "update "+((JDBCSessionIdManager)_sessionIdManager)._sessionTable+
-                                    " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ? where srowId = ?";
+                                    " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ? where "+__sessionTableRowId+" = ?";
     }
     
     /**
@@ -848,7 +851,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             if (result.next())
             {
                data = new SessionData(id);
-               data.setRowId(result.getString("srowId"));
+               data.setRowId(result.getString(__sessionTableRowId));
                data.setCookieSet(result.getLong("cookieTime"));
                data.setLastAccessed(result.getLong("lastAccessTime"));
                data.setAccessed (result.getLong("accessTime"));
