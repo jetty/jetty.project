@@ -524,21 +524,27 @@ public class DefaultServletTest
         defholder.setInitParameter("gzip","false");
         defholder.setInitParameter("resourceBase",resBasePath);
 
-        ServletHolder jspholder = context.addServlet(NoJspServlet.class,"*.jsp");
-
         String response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 12",response);
         assertResponseNotContains("Extra Info",response);
         
-        context.addFilter(AddingFilter.class,"/*",0);
+        context.addFilter(OutputFilter.class,"/*",0);
         response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
-        System.err.println(response);
-        assertResponseContains("Content-Length: 24",response);
+        assertResponseContains("Content-Length: 2",response); // 20 something long
+        assertResponseContains("Extra Info",response);
+        assertResponseNotContains("Content-Length: 12",response);
+        
+        context.getServletHandler().setFilterMappings(new FilterMapping[]{});
+        context.getServletHandler().setFilters(new FilterHolder[]{});
+
+        context.addFilter(WriterFilter.class,"/*",0);
+        response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
+        assertResponseContains("Content-Length: 2",response); // 20 something long
         assertResponseContains("Extra Info",response);
         assertResponseNotContains("Content-Length: 12",response);
     }
 
-    public static class AddingFilter implements Filter
+    public static class OutputFilter implements Filter
     {
         public void init(FilterConfig filterConfig) throws ServletException
         {
@@ -547,6 +553,23 @@ public class DefaultServletTest
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             response.getOutputStream().println("Extra Info");
+            chain.doFilter(request,response);
+        }
+
+        public void destroy()
+        {
+        }
+    }
+
+    public static class WriterFilter implements Filter
+    {
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+        }
+
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            response.getWriter().println("Extra Info");
             chain.doFilter(request,response);
         }
 

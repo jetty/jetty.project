@@ -761,8 +761,21 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
         // Get the output stream (or writer)
         OutputStream out =null;
-        try{out = response.getOutputStream();}
-        catch(IllegalStateException e) {out = new WriterOutputStream(response.getWriter());}
+        boolean written;
+        try
+        {
+            out = response.getOutputStream();
+
+            // has a filter already written to the response?
+            written = out instanceof HttpOutput 
+                ? !((HttpOutput)out).isWritten() 
+                : HttpConnection.getCurrentConnection().getGenerator().isContentWritten();
+        }
+        catch(IllegalStateException e) 
+        {
+            out = new WriterOutputStream(response.getWriter());
+            written=true; // there may be data in writer buffer, so assume written
+        }
 
         if ( reqRanges == null || !reqRanges.hasMoreElements() || content_length<0)
         {
@@ -773,10 +786,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             }
             else
             {
-                // has a filter already written to the response?
-                boolean written = out instanceof HttpOutput 
-                    ? !((HttpOutput)out).isWritten() 
-                    : HttpConnection.getCurrentConnection().getGenerator().isContentWritten();
                 
                 // See if a direct methods can be used?
                 if (content!=null && !written && out instanceof HttpOutput)
