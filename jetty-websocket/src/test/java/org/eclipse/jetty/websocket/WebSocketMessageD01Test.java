@@ -182,9 +182,68 @@ public class WebSocketMessageD01Test
         lookFor("sent on connect",input);
         
         assertTrue(_serverWebSocket.awaitDisconnected(5000));
-        
+
+        try
+        {
+            _serverWebSocket.outbound.sendMessage("Don't send");
+            assertTrue(false);
+        }
+        catch(IOException e)
+        {
+            assertTrue(true);
+        }
     }
 
+    @Test
+    public void testClose() throws Exception
+    {
+        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+        output.write(
+                ("GET /test HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Upgrade: WebSocket\r\n" +
+                "Connection: Upgrade\r\n" +
+                "Sec-WebSocket-Draft: 1\r\n" +
+                "Sec-WebSocket-Protocol: onConnect\r\n" +
+                "Sec-WebSocket-Key1: 4 @1  46546xW%0l 1 5\r\n" +
+                "Sec-WebSocket-Key2: 12998 5 Y3 1  .P00\r\n" +
+                "\r\n"+
+                "^n:ds[4U").getBytes("ISO-8859-1"));
+        output.flush();
+
+        // Make sure the read times out if there are problems with the implementation
+        socket.setSoTimeout(1000);
+
+        InputStream input = socket.getInputStream();
+        
+        lookFor("HTTP/1.1 101 WebSocket Protocol Handshake\r\n",input);
+        skipTo("\r\n\r\n",input);
+
+        assertTrue(_serverWebSocket.awaitConnected(1000));
+        assertNotNull(_serverWebSocket.outbound);
+        
+        lookFor("8jKS'y:G*Co,Wxa-",input);
+        assertEquals(0x00,input.read());
+        assertEquals(0x0f,input.read());
+        lookFor("sent on connect",input);
+        socket.close();
+        
+        assertTrue(_serverWebSocket.awaitDisconnected(500));
+        
+
+        try
+        {
+            _serverWebSocket.outbound.sendMessage("Don't send");
+            assertTrue(false);
+        }
+        catch(IOException e)
+        {
+            assertTrue(true);
+        }
+        
+        
+    }
     private void lookFor(String string,InputStream in)
         throws IOException
     {
