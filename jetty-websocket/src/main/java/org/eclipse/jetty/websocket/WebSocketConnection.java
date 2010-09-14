@@ -187,7 +187,8 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
                         break;
                     }
                 }
-                
+
+                _websocket.onConnect(this);
                 return this;
             }
             

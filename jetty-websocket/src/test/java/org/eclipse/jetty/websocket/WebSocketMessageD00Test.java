@@ -6,6 +6,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -27,7 +29,7 @@ import org.junit.Test;
 /**
  * @version $Revision$ $Date$
  */
-public class WebSocketMessageTest
+public class WebSocketMessageD00Test
 {
     private static Server _server;
     private static Connector _connector;
@@ -44,7 +46,9 @@ public class WebSocketMessageTest
             @Override
             protected WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
             {
-                return _serverWebSocket = new TestWebSocket();
+                _serverWebSocket = new TestWebSocket();
+                _serverWebSocket.onConnect=("onConnect".equals(protocol));
+                return _serverWebSocket;
             }
         };
         wsHandler.setHandler(new DefaultHandler());
@@ -69,7 +73,10 @@ public class WebSocketMessageTest
                 "Host: localhost\r\n" +
                 "Upgrade: WebSocket\r\n" +
                 "Connection: Upgrade\r\n" +
-                "\r\n").getBytes("ISO-8859-1"));
+                "Sec-WebSocket-Key1: 4 @1  46546xW%0l 1 5\r\n" +
+                "Sec-WebSocket-Key2: 12998 5 Y3 1  .P00\r\n" +
+                "\r\n"+
+                "^n:ds[4U").getBytes("ISO-8859-1"));
         output.flush();
 
         // Make sure the read times out if there are problems with the implementation
@@ -78,16 +85,31 @@ public class WebSocketMessageTest
         InputStream input = socket.getInputStream();
         BufferedReader reader = new BufferedReader(new InputStreamReader(input, "ISO-8859-1"));
         String responseLine = reader.readLine();
-        assertTrue(responseLine.startsWith("HTTP/1.1 101 Web Socket Protocol Handshake"));
+        assertTrue(responseLine.startsWith("HTTP/1.1 101 WebSocket Protocol Handshake"));
         // Read until we find an empty line, which signals the end of the http response
         String line;
         while ((line = reader.readLine()) != null)
             if (line.length() == 0)
                 break;
-
+        
         assertTrue(_serverWebSocket.awaitConnected(1000));
         assertNotNull(_serverWebSocket.outbound);
-
+        
+        // read the hixie bytes
+        char[] hixie=new char[16]; // should be bytes, but we know this example is all ascii
+        int h=16;
+        int o=0;
+        do 
+        {
+            int l=reader.read(hixie,o,h);
+            if (l<0)
+                break;
+            h-=l;
+            o+=l;
+        }
+        while (h>0);
+        assertEquals("8jKS'y:G*Co,Wxa-",new String(hixie,0,16));
+        
         // Server sends a big message
         StringBuilder message = new StringBuilder();
         String text = "0123456789ABCDEF";
@@ -113,7 +135,7 @@ public class WebSocketMessageTest
     }
 
     @Test
-    public void testServerSendBigBinaryMessage() throws Exception
+    public void testServerSendOnConnect() throws Exception
     {
         Socket socket = new Socket("localhost", _connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
@@ -122,59 +144,105 @@ public class WebSocketMessageTest
                 "Host: localhost\r\n" +
                 "Upgrade: WebSocket\r\n" +
                 "Connection: Upgrade\r\n" +
-                "\r\n").getBytes("ISO-8859-1"));
+                "Sec-WebSocket-Protocol: onConnect\r\n" +
+                "Sec-WebSocket-Key1: 4 @1  46546xW%0l 1 5\r\n" +
+                "Sec-WebSocket-Key2: 12998 5 Y3 1  .P00\r\n" +
+                "\r\n"+
+                "^n:ds[4U").getBytes("ISO-8859-1"));
         output.flush();
 
         // Make sure the read times out if there are problems with the implementation
         socket.setSoTimeout(1000);
 
         InputStream input = socket.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input, "ISO-8859-1"));
-        String responseLine = reader.readLine();
-        assertTrue(responseLine.startsWith("HTTP/1.1 101 Web Socket Protocol Handshake"));
-        // Read until we find an empty line, which signals the end of the http response
-        String line;
-        while ((line = reader.readLine()) != null)
-            if (line.length() == 0)
+        
+        String looking_for="HTTP/1.1 101 WebSocket Protocol Handshake\r\n";
+
+        while(true)
+        {
+            int b = input.read();
+            if (b<0)
+                throw new EOFException();
+
+            assertEquals((int)looking_for.charAt(0),b);
+            if (looking_for.length()==1)
                 break;
+            looking_for=looking_for.substring(1);
+        }
+
+        String skipping_for="\r\n\r\n";
+        int state=0;
+
+        while(true)
+        {
+            int b = input.read();
+            if (b<0)
+                throw new EOFException();
+
+            if (b==skipping_for.charAt(state))
+            {
+                state++;
+                if (state==skipping_for.length())
+                    break;
+            }
+            else
+                state=0;
+        }
+        
 
         assertTrue(_serverWebSocket.awaitConnected(1000));
         assertNotNull(_serverWebSocket.outbound);
-
-        // Server sends a big message
-        StringBuilder message = new StringBuilder();
-        String text = "0123456789ABCDEF";
-        for (int i = 0; i < 64 * 1024 / text.length(); ++i)
-            message.append(text);
-        byte[] data = message.toString().getBytes("UTF-8");
-        _serverWebSocket.outbound.sendMessage(WebSocket.LENGTH_FRAME, data,0,data.length);
-
-        // Length of the message is 65536, so the length will be encoded as 0x84 0x80 0x00
-        int frame = input.read();
-        assertEquals(0x80, frame);
-        int length1 = input.read();
-        assertEquals(0x84, length1);
-        int length2 = input.read();
-        assertEquals(0x80, length2);
-        int length3 = input.read();
-        assertEquals(0x00, length3);
-        int read = 0;
-        while (read < data.length)
+        
+        looking_for="8jKS'y:G*Co,Wxa-";
+        while(true)
         {
             int b = input.read();
-            assertTrue(b != -1);
-            ++read;
+            if (b<0)
+                throw new EOFException();
+
+            assertEquals((int)looking_for.charAt(0),b);
+            if (looking_for.length()==1)
+                break;
+            looking_for=looking_for.substring(1);
         }
+        
+        assertEquals(0x00,input.read());
+        looking_for="sent on connect";
+        while(true)
+        {
+            int b = input.read();
+            if (b<0)
+                throw new EOFException();
+
+            assertEquals((int)looking_for.charAt(0),b);
+            if (looking_for.length()==1)
+                break;
+            looking_for=looking_for.substring(1);
+        }
+        assertEquals(0xff,input.read());
     }
+
 
     private static class TestWebSocket implements WebSocket
     {
+        boolean onConnect=false;
         private final CountDownLatch latch = new CountDownLatch(1);
         private volatile Outbound outbound;
 
         public void onConnect(Outbound outbound)
         {
             this.outbound = outbound;
+            if (onConnect)
+            {
+                try
+                {
+                    outbound.sendMessage("sent on connect");
+                }
+                catch(IOException e)
+                {
+                    e.printStackTrace();
+                }
+            }
             latch.countDown();
         }
 
