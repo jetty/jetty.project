@@ -51,6 +51,7 @@ public class WebSocketMessageD01Test
                 return _serverWebSocket;
             }
         };
+        wsHandler.setMaxIdleTime(1000);
         wsHandler.setHandler(new DefaultHandler());
         _server.setHandler(wsHandler);
         _server.start();
@@ -146,6 +147,44 @@ public class WebSocketMessageD01Test
         lookFor("sent on connect",input);
     }
 
+    @Test
+    public void testIdle() throws Exception
+    {
+        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+        output.write(
+                ("GET /test HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Upgrade: WebSocket\r\n" +
+                "Connection: Upgrade\r\n" +
+                "Sec-WebSocket-Draft: 1\r\n" +
+                "Sec-WebSocket-Protocol: onConnect\r\n" +
+                "Sec-WebSocket-Key1: 4 @1  46546xW%0l 1 5\r\n" +
+                "Sec-WebSocket-Key2: 12998 5 Y3 1  .P00\r\n" +
+                "\r\n"+
+                "^n:ds[4U").getBytes("ISO-8859-1"));
+        output.flush();
+
+        // Make sure the read times out if there are problems with the implementation
+        socket.setSoTimeout(1000);
+
+        InputStream input = socket.getInputStream();
+        
+        lookFor("HTTP/1.1 101 WebSocket Protocol Handshake\r\n",input);
+        skipTo("\r\n\r\n",input);
+
+        assertTrue(_serverWebSocket.awaitConnected(1000));
+        assertNotNull(_serverWebSocket.outbound);
+        
+        lookFor("8jKS'y:G*Co,Wxa-",input);
+        assertEquals(0x00,input.read());
+        assertEquals(0x0f,input.read());
+        lookFor("sent on connect",input);
+        
+        assertTrue(_serverWebSocket.awaitDisconnected(5000));
+        
+    }
+
     private void lookFor(String string,InputStream in)
         throws IOException
     {
@@ -188,7 +227,8 @@ public class WebSocketMessageD01Test
     private static class TestWebSocket implements WebSocket
     {
         boolean onConnect=false;
-        private final CountDownLatch latch = new CountDownLatch(1);
+        private final CountDownLatch connected = new CountDownLatch(1);
+        private final CountDownLatch disconnected = new CountDownLatch(1);
         private volatile Outbound outbound;
 
         public void onConnect(Outbound outbound)
@@ -205,12 +245,17 @@ public class WebSocketMessageD01Test
                     e.printStackTrace();
                 }
             }
-            latch.countDown();
+            connected.countDown();
         }
 
         private boolean awaitConnected(long time) throws InterruptedException
         {
-            return latch.await(time, TimeUnit.MILLISECONDS);
+            return connected.await(time, TimeUnit.MILLISECONDS);
+        }
+
+        private boolean awaitDisconnected(long time) throws InterruptedException
+        {
+            return disconnected.await(time, TimeUnit.MILLISECONDS);
         }
 
         public void onMessage(byte frame, String data)
@@ -223,6 +268,7 @@ public class WebSocketMessageD01Test
 
         public void onDisconnect()
         {
+            disconnected.countDown();
         }
 
         public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)

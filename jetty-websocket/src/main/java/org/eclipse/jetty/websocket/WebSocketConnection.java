@@ -228,9 +228,6 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
                 _idle.access(_endp);
                 checkWriteable();
             }
-            else
-                // TODO - not really the best way
-                _websocket.onDisconnect();
         }
         return this;
     }
@@ -258,6 +255,11 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     public boolean isSuspended()
     {
         return false;
+    }
+
+    public void closed()
+    {
+        _websocket.onDisconnect();
     }
 
     public long getTimeStamp()

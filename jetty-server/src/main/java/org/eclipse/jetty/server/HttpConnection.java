@@ -806,6 +806,11 @@ public class HttpConnection implements Connection
     }
 
     /* ------------------------------------------------------------ */
+    public void closed()
+    {
+    }
+    
+    /* ------------------------------------------------------------ */
     public boolean isExpecting100Continues()
     {
         return _expect100Continue;

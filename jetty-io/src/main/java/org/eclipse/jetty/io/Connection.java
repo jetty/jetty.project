@@ -42,4 +42,6 @@ public interface Connection
 
     boolean isIdle();
     boolean isSuspended();
+
+    void closed();
 }

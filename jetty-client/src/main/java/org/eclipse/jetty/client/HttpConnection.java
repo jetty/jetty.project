@@ -431,6 +431,10 @@ public class HttpConnection implements Connection
         return false;
     }
 
+    public void closed()
+    {
+    }
+
     public EndPoint getEndPoint()
     {
         return _endp;

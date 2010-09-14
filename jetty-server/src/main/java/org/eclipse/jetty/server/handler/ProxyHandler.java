@@ -548,6 +548,10 @@ public class ProxyHandler extends HandlerWrapper
         {
             return false;
         }
+        
+        public void closed()
+        {
+        }
 
         public void ready()
         {
@@ -686,6 +690,10 @@ public class ProxyHandler extends HandlerWrapper
         public boolean isSuspended()
         {
             return false;
+        }
+        
+        public void closed()
+        {
         }
 
         public void setConnection(ProxyToServerConnection connection)
