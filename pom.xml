@@ -21,7 +21,7 @@
     <junit-version>3.8.2</junit-version>
     <junit4-version>4.8.1</junit4-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <slf4j-version>1.5.10</slf4j-version>
+    <slf4j-version>1.5.11</slf4j-version>
     <build-support-version>1.0</build-support-version>
   </properties>
   <scm>
