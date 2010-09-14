@@ -31,6 +31,7 @@ jetty-7.2-SNAPSHOT
  + 324679 Allow filter to write before static content
  + 324811 NPE in Server.dump
  + 324812 restore WebAppContext constructor used by geronimo integration
+ + 325072 include to DefaultServlet of missing file throws FileNotFoundException
  + JETTY-912 added per exchange timeout api
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors

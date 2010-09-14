@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -457,7 +458,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
             // Handle resource
             if (resource==null || !resource.exists())
-                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                if (included) {
+                    throw new FileNotFoundException("Nothing at " + pathInContext);
+                } else {
+                    response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                }
             else if (!resource.isDirectory())
             {
                 if (endsWithSlash && _contextHandler.isAliases() && pathInContext.length()>1)
