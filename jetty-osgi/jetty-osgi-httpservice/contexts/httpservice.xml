@@ -15,6 +15,10 @@
     Hugues Malphettes - initial API and implementation
 -->
 <Configure class="org.eclipse.jetty.servlet.ServletContextHandler">
+<!-- this configures the servlet session manager -->
+  <Set name="SessionHandler">
+    <New class="org.eclipse.jetty.server.session.SessionHandler"/>
+  </Set>
 <!-- this servlet provides the OSGi HTTP Service once it is initialized -->
   <Call name="addServlet">
     <Arg>org.eclipse.jetty.osgi.httpservice.HttpServiceServletX</Arg>
