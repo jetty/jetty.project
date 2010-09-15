@@ -14,12 +14,14 @@ package org.eclipse.jetty.servlets;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -40,7 +42,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
-import org.apache.commons.codec.binary.Base64InputStream;
+import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -221,10 +223,15 @@ public class MultiPartFilter implements Filter
                         }   
                     }
                     else
+                    {
                         out=new ByteArrayOutputStream();
-
+                    }
+                    
+                    
                     if ("base64".equalsIgnoreCase(content_transfer_encoding))
-                        in = new Base64InputStream(in);
+                    {
+                        in = new Base64InputStream(in);   
+                    }
                     else if ("quoted-printable".equalsIgnoreCase(content_transfer_encoding))
                     {
                         in = new FilterInputStream(in)
@@ -502,5 +509,38 @@ public class MultiPartFilter implements Filter
         {
             _encoding=enc;
         }
+    }
+    
+    private static class Base64InputStream extends InputStream
+    {
+        BufferedReader _in;
+        String _line;
+        byte[] _buffer;
+        int _pos;
+        
+        public Base64InputStream (InputStream in)
+        {
+            _in = new BufferedReader(new InputStreamReader(in));
+        }
+
+        @Override
+        public int read() throws IOException
+        {
+            if (_buffer==null || _pos>= _buffer.length)
+            {
+                _line = _in.readLine();
+                if (_line==null)
+                    return -1;
+                if (_line.startsWith("--"))
+                    _buffer=(_line+"\r\n").getBytes();
+                else if (_line.length()==0)
+                    _buffer="\r\n".getBytes();
+                else
+                    _buffer=B64Code.decode(_line);
+                
+                _pos=0;
+            }
+            return _buffer[_pos++];
+        } 
     }
 }
