@@ -70,12 +70,13 @@ public class TestJettyOSGiBootWithJsp
     		PaxRunnerOptions.vmOption("-D" + OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS + 
     				"=etc/jetty.xml;" + testrealm.getAbsolutePath()),
 
-    		mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject(),
+    	    mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject(),
             mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot-jsp" ).versionAsInProject(),
 
             mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-websocket" ).versionAsInProject(),
             mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-servlets" ).versionAsInProject(),  
             mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "test-jetty-webapp" ).classifier("webbundle").versionAsInProject(),
+            mavenBundle().groupId( "commons-codec" ).artifactId( "commons-codec" ).versionAsInProject(),
             //the jsp bundles downloaded from eclipse orbit website and the ecj jar.
 //            CoreOptions.provision( PaxRunnerOptions.scanDir( "jasper" ) ),
             CoreOptions.provision( PaxRunnerOptions.scanDir( "target/distribution/lib/jsp" ) )
