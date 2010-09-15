@@ -17,7 +17,9 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -38,6 +40,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
+import org.apache.commons.codec.binary.Base64InputStream;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -95,7 +98,7 @@ public class MultiPartFilter implements Filter
             return;
         }
         
-        BufferedInputStream in = new BufferedInputStream(request.getInputStream());
+        InputStream in = new BufferedInputStream(request.getInputStream());
         String content_type=srequest.getContentType();
         
         // TODO - handle encodings
@@ -127,6 +130,7 @@ public class MultiPartFilter implements Filter
             // Read each part
             boolean lastPart=false;
             String content_disposition=null;
+            String content_transfer_encoding=null;
             
             outer:while(!lastPart)
             {
@@ -150,6 +154,8 @@ public class MultiPartFilter implements Filter
                         String value=line.substring(c+1,line.length()).trim();
                         if(key.equals("content-disposition"))
                             content_disposition=value;
+                        else if(key.equals("content-transfer-encoding"))
+                        	content_transfer_encoding=value;
                     }
                 }
                 // Extract content-disposition
@@ -212,12 +218,37 @@ public class MultiPartFilter implements Filter
                                 request.setAttribute(FILES,files);
                             }
                             files.add(file);
-                        }
-                        
+                        }   
                     }
                     else
                         out=new ByteArrayOutputStream();
-                    
+
+                    if ("base64".equalsIgnoreCase(content_transfer_encoding))
+                        in = new Base64InputStream(in);
+                    else if ("quoted-printable".equalsIgnoreCase(content_transfer_encoding))
+                    {
+                        in = new FilterInputStream(in)
+                        {
+                            @Override
+                            public int read() throws IOException
+                            {
+                                int c = in.read();
+                                if (c >= 0 && c == '=')
+                                {
+                                    int hi = in.read();
+                                    int lo = in.read();
+                                    if (hi < 0 || lo < 0)
+                                    {
+                                        throw new IOException("Unexpected end to quoted-printable byte");
+                                    }
+                                    char[] chars = new char[] { (char)hi, (char)lo };
+                                    c = Integer.parseInt(new String(chars),16);
+                                }
+                                return c;
+                            }
+                        };
+                    }
+
                     int state=-2;
                     int c;
                     boolean cr=false;
