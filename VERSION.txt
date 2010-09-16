@@ -34,6 +34,7 @@ jetty-7.2-SNAPSHOT
  + 325072 include to DefaultServlet of missing file throws FileNotFoundException
  + 325105 websocket ondisconnect fixed
  + 325128 websocket send during onConnect
+ + 325468 Clean work webapp dir before unpack
  + JETTY-912 added per exchange timeout api
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors
