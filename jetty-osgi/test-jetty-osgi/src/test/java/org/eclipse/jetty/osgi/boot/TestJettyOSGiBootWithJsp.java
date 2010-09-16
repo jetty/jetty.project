@@ -70,7 +70,7 @@ public class TestJettyOSGiBootWithJsp
     		PaxRunnerOptions.vmOption("-D" + OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS + 
     				"=etc/jetty.xml;" + testrealm.getAbsolutePath()),
 
-    		mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject(),
+    	    mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject(),
             mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot-jsp" ).versionAsInProject(),
 
             mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-websocket" ).versionAsInProject(),

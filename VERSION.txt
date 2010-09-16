@@ -5,7 +5,7 @@ jetty-8.0.0.M2-SNAPSHOT
  + 324505 Request.login method must throw ServletException if it cant login
  + 324872 allow disabling listener restriction from using *Registration interfaces
 
-jetty-7.2-SNAPSHOT
+from jetty-7.2-SNAPSHOT
  + 314087 Simplified SelectorManager
  + 319334 Concurrent, sharable ResourceCache
  + 319370 WebAppClassLoader.Context
@@ -34,13 +34,21 @@ jetty-7.2-SNAPSHOT
  + 324379 Change content type after getWriter
  + 324501 Fire RequestListener.requestDestroyed in last-to-first order.
  + 324601 Check session expiry on access
+ + 324679 Allow filter to write before static content
+ + 324811 NPE in Server.dump
+ + 324812 restore WebAppContext constructor used by geronimo integration
+ + 325072 include to DefaultServlet of missing file throws FileNotFoundException
+ + 325105 websocket ondisconnect fixed
+ + 325128 websocket send during onConnect
  + JETTY-912 added per exchange timeout api
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1250 Parallel start of HandlerCollection
  + JETTY-1256 annotation jars from Orbit
  + JETTY-1261 errant listener usage in StandardDescriptorProcessor
+ + JETTY-1263 JDBCSessionIdManager table creation fails on Oracle
  + JETTY-1269 Improve log multithreadedness
+ + JETTY-1270 Websocket closed endp protection
  + JETTY-1271 handled unavailable exception
  + Fix jetty-plus.xml for new configuration names
  + Added ignore to Logger interface

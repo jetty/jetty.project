@@ -1,5 +1,6 @@
 package org.eclipse.jetty.websocket;
 
+import java.io.IOError;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -24,7 +25,7 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     final WebSocket _websocket;
     String _key1;
     String _key2;
-    ByteArrayBuffer _hixie;
+    ByteArrayBuffer _hixieBytes;
 
     public WebSocketConnection(WebSocket websocket, EndPoint endpoint,int draft)
         throws IOException
@@ -141,63 +142,59 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     {
         _key1=key1;
         _key2=key2;
-        _hixie=new IndirectNIOBuffer(16);
+        _hixieBytes=new IndirectNIOBuffer(16);
     }
 
     public Connection handle() throws IOException
     {
-        boolean progress=true;
-
         try
         {
             // handle stupid hixie random bytes
-            if (_hixie!=null)
+            if (_hixieBytes!=null)
             { 
-                while(progress)
+                
+                // take any available bytes from the parser buffer, which may have already been read
+                Buffer buffer=_parser.getBuffer();
+                if (buffer!=null && buffer.length()>0)
                 {
-                    // take bytes from the parser buffer.
-                    Buffer buffer=_parser.getBuffer();
-                    if (buffer!=null && buffer.length()>0)
-                    {
-                        int l=buffer.length();
-                        if (l>8)
-                            l=8;
-                        _hixie.put(buffer.peek(buffer.getIndex(),l));
-                        buffer.skip(l);
-                        progress=true;
-                    }
-                    
-                    // do we have enough?
-                    if (_hixie.length()<8)
-                    {
-                        // no, then let's fill
-                        int filled=_endp.fill(_hixie);
-                        progress |= filled>0;
-
-                        if (filled<0)
-                        {
-                            _endp.close();
-                            break;
-                        }
-                    }
-                    
+                    int l=buffer.length();
+                    if (l>(8-_hixieBytes.length()))
+                        l=8-_hixieBytes.length();
+                    _hixieBytes.put(buffer.peek(buffer.getIndex(),l));
+                    buffer.skip(l);
+                }
+                
+                // while we are not blocked
+                while(_endp.isOpen())
+                {
                     // do we now have enough
-                    if (_hixie.length()==8)
+                    if (_hixieBytes.length()==8)
                     {
                         // we have the silly random bytes
                         // so let's work out the stupid 16 byte reply.
                         doTheHixieHixieShake();
-                        _endp.flush(_hixie);
-                        _hixie=null;
+                        _endp.flush(_hixieBytes);
+                        _hixieBytes=null;
                         _endp.flush();
                         break;
                     }
+
+                    // no, then let's fill
+                    int filled=_endp.fill(_hixieBytes);
+                    if (filled<0)
+                    {
+                        _endp.close();
+                        break;
+                    }
                 }
-                
+
+                _websocket.onConnect(this);
                 return this;
             }
             
             // handle the framing protocol
+            boolean progress=true;
+
             while (progress)
             {
                 int flushed=_generator.flush();
@@ -214,6 +211,14 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         }
         catch(IOException e)
         {
+            try
+            {
+                _endp.close();
+            }
+            catch(IOException e2)
+            {
+                Log.ignore(e2);
+            }
             throw e;
         }
         finally
@@ -223,9 +228,6 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
                 _idle.access(_endp);
                 checkWriteable();
             }
-            else
-                // TODO - not really the best way
-                _websocket.onDisconnect();
         }
         return this;
     }
@@ -235,9 +237,9 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         byte[] result=WebSocketConnection.doTheHixieHixieShake(
                 WebSocketConnection.hixieCrypt(_key1),
                 WebSocketConnection.hixieCrypt(_key2),
-                _hixie.asArray());
-        _hixie.clear();
-        _hixie.put(result);
+                _hixieBytes.asArray());
+        _hixieBytes.clear();
+        _hixieBytes.put(result);
     }
     
     public boolean isOpen()
@@ -253,6 +255,11 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
     public boolean isSuspended()
     {
         return false;
+    }
+
+    public void closed()
+    {
+        _websocket.onDisconnect();
     }
 
     public long getTimeStamp()

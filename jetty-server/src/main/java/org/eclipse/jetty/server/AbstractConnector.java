@@ -1026,12 +1026,13 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     protected void connectionClosed(Connection connection)
     {
+        connection.closed();
+
         if (_statsStartedAt.get() == -1)
             return;
 
         long duration = System.currentTimeMillis() - connection.getTimeStamp();
         int requests = (connection instanceof HttpConnection)?((HttpConnection)connection).getRequests():0;
-
         _requestStats.set(requests);
         _connectionStats.decrement();
         _connectionDurationStats.set(duration);

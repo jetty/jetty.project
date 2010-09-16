@@ -20,7 +20,7 @@
     <junit-version>3.8.2</junit-version>
     <junit4-version>4.8.1</junit4-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <slf4j-version>1.5.10</slf4j-version>
+    <slf4j-version>1.5.11</slf4j-version>
     <servlet.spec.groupId>org.mortbay.jetty</servlet.spec.groupId>
     <servlet.spec.artifactId>servlet-api</servlet.spec.artifactId>
     <servlet.spec.version>3.0.20100224</servlet.spec.version>

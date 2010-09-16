@@ -13,6 +13,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
 {
     private WebSocketFactory _websocket;
     private int _bufferSize=8192;
+    private int _maxIdleTime=-1;
     
     
     /* ------------------------------------------------------------ */
@@ -34,6 +35,26 @@ public abstract class WebSocketHandler extends HandlerWrapper
     }
 
     /* ------------------------------------------------------------ */
+    /** Get the maxIdleTime.
+     * @return the maxIdleTime
+     */
+    public int getMaxIdleTime()
+    {
+        return (int)(_websocket==null?_maxIdleTime:_websocket.getMaxIdleTime());
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the maxIdleTime.
+     * @param maxIdleTime the maxIdleTime to set
+     */
+    public void setMaxIdleTime(int maxIdleTime)
+    {
+        _maxIdleTime = maxIdleTime;
+        if (_websocket!=null)
+            _websocket.setMaxIdleTime(maxIdleTime);
+    }
+
+    /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStart()
      */
@@ -41,6 +62,8 @@ public abstract class WebSocketHandler extends HandlerWrapper
     protected void doStart() throws Exception
     {
         _websocket=new WebSocketFactory(_bufferSize);
+        if (_maxIdleTime>=0)
+            _websocket.setMaxIdleTime(_maxIdleTime);
         super.doStart();
     }
 
@@ -61,7 +84,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
     {
         if ("WebSocket".equals(request.getHeader("Upgrade")))
         {
-            String protocol=request.getHeader("WebSocket-Protocol");
+            String protocol=request.getHeader(request.getHeader("Sec-WebSocket-Key1")!=null?"Sec-WebSocket-Protocol":"WebSocket-Protocol");
             WebSocket websocket=doWebSocketConnect(request,protocol);
 
             String host=request.getHeader("Host");
@@ -78,13 +101,15 @@ public abstract class WebSocketHandler extends HandlerWrapper
             super.handle(target,baseRequest,request,response);
         }
     }
-
+    
+    /* ------------------------------------------------------------ */
     protected String checkOrigin(HttpServletRequest request, String host, String origin)
     {
         if (origin==null)
             origin=host;
         return origin;
     }
+    /* ------------------------------------------------------------ */
 
     abstract protected WebSocket doWebSocketConnect(HttpServletRequest request,String protocol);
     

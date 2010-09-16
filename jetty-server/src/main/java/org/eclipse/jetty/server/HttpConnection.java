@@ -813,6 +813,11 @@ public class HttpConnection implements Connection
     }
 
     /* ------------------------------------------------------------ */
+    public void closed()
+    {
+    }
+    
+    /* ------------------------------------------------------------ */
     public boolean isExpecting100Continues()
     {
         return _expect100Continue;
@@ -1169,7 +1174,7 @@ public class HttpConnection implements Connection
             if (_closed)
                 throw new IOException("Closed");
 
-            if (super._generator.getContentWritten() > 0)
+            if (super._generator.isContentWritten())
                 throw new IllegalStateException("!empty");
 
             // Convert HTTP content to contentl

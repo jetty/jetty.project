@@ -68,7 +68,7 @@ public class WebSocketGeneratorD01 implements WebSocketGenerator
 
             if (fragment>0xffff)
             {
-                bufferPut((byte)127, blockFor);
+                bufferPut((byte)0x7f, blockFor);
                 bufferPut((byte)((fragment>>56)&0x7f), blockFor);
                 bufferPut((byte)((fragment>>48)&0xff), blockFor);
                 bufferPut((byte)((fragment>>40)&0xff), blockFor);

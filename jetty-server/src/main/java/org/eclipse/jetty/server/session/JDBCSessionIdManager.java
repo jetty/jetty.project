@@ -60,6 +60,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     protected String _jndiName;
     protected String _sessionIdTable = "JettySessionIds";
     protected String _sessionTable = "JettySessions";
+    protected String _sessionTableRowId = "rowId";
+    
     protected Timer _timer; //scavenge timer
     protected TimerTask _task; //scavenge task
     protected long _lastScavengeTime;
@@ -122,6 +124,11 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 return identifier.toUpperCase();
             
             return identifier;
+        }
+        
+        public String getDBName ()
+        {
+            return _dbName;
         }
         
         public String getBlobType ()
@@ -423,7 +430,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         }
         super.doStop();
     }
-    
+  
     /**
      * Get a connection from the driver or datasource.
      * 
@@ -481,6 +488,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             connection.setAutoCommit(true);
             DatabaseMetaData metaData = connection.getMetaData();
             _dbAdaptor = new DatabaseAdaptor(metaData);
+            _sessionTableRowId = (_dbAdaptor.getDBName() != null && _dbAdaptor.getDBName().contains("oracle") ? "srowId":_sessionTableRowId);
 
             //checking for table existence is case-sensitive, but table creation is not
             String tableName = _dbAdaptor.convertIdentifier(_sessionIdTable);
@@ -498,10 +506,10 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             {
                 //table does not exist, so create it
                 String blobType = _dbAdaptor.getBlobType();
-                _createSessionTable = "create table "+_sessionTable+" (rowId varchar(120), sessionId varchar(120), "+
+                _createSessionTable = "create table "+_sessionTable+" ("+_sessionTableRowId+" varchar(120), sessionId varchar(120), "+
                                            " contextPath varchar(60), virtualHost varchar(60), lastNode varchar(60), accessTime bigint, "+
                                            " lastAccessTime bigint, createTime bigint, cookieTime bigint, "+
-                                           " lastSavedTime bigint, expiryTime bigint, map "+blobType+", primary key(rowId))";
+                                           " lastSavedTime bigint, expiryTime bigint, map "+blobType+", primary key("+_sessionTableRowId+"))";
                 connection.createStatement().executeUpdate(_createSessionTable);
             }
             

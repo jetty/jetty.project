@@ -54,6 +54,12 @@ public class HttpOutput extends ServletOutputStream
         _generator=generator;
         _maxIdleTime=maxIdleTime;
     }
+
+    /* ------------------------------------------------------------ */
+    public boolean isWritten()
+    {
+        return _generator.isContentWritten();
+    }
     
     /* ------------------------------------------------------------ */
     /*

@@ -129,7 +129,10 @@ public class WebSocketFactory
         connection.fill(((HttpParser)http.getParser()).getHeaderBuffer());
         connection.fill(((HttpParser)http.getParser()).getBodyBuffer());
 
-        websocket.onConnect(connection);
+        // connect here for -75, but in connection for -76 onwards
+        if (key1==null)
+            websocket.onConnect(connection);
+        
         request.setAttribute("org.eclipse.jetty.io.Connection",connection);
      }
 }

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -41,6 +42,7 @@ import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.InclusiveByteRange;
 import org.eclipse.jetty.server.ResourceCache;
 import org.eclipse.jetty.server.Response;
@@ -456,7 +458,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
             // Handle resource
             if (resource==null || !resource.exists())
-                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                if (included) {
+                    throw new FileNotFoundException("Nothing at " + pathInContext);
+                } else {
+                    response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                }
             else if (!resource.isDirectory())
             {
                 if (endsWithSlash && _contextHandler.isAliases() && pathInContext.length()>1)
@@ -760,8 +766,21 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
         // Get the output stream (or writer)
         OutputStream out =null;
-        try{out = response.getOutputStream();}
-        catch(IllegalStateException e) {out = new WriterOutputStream(response.getWriter());}
+        boolean written;
+        try
+        {
+            out = response.getOutputStream();
+
+            // has a filter already written to the response?
+            written = out instanceof HttpOutput 
+                ? !((HttpOutput)out).isWritten() 
+                : HttpConnection.getCurrentConnection().getGenerator().isContentWritten();
+        }
+        catch(IllegalStateException e) 
+        {
+            out = new WriterOutputStream(response.getWriter());
+            written=true; // there may be data in writer buffer, so assume written
+        }
 
         if ( reqRanges == null || !reqRanges.hasMoreElements() || content_length<0)
         {
@@ -772,8 +791,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             }
             else
             {
+                
                 // See if a direct methods can be used?
-                if (out instanceof HttpConnection.Output && content!=null)
+                if (content!=null && !written && out instanceof HttpOutput)
                 {
                     if (response instanceof Response)
                     {
@@ -798,7 +818,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 else 
                 {
                     // Write headers normally
-                    writeHeaders(response,content,content_length);
+                    writeHeaders(response,content,written?-1:content_length);
 
                     // Write content normally
                     Buffer buffer = (content==null)?null:content.getIndirectBuffer();

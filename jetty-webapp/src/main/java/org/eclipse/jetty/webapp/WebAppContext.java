@@ -205,6 +205,25 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
+
+    /**
+     * This constructor is used in the geronimo integration.
+     *
+     * @param sessionHandler SessionHandler for this web app
+     * @param securityHandler SecurityHandler for this web app
+     * @param servletHandler ServletHandler for this web app
+     * @param errorHandler ErrorHandler for this web app
+     */
+    public WebAppContext(SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler) {
+        super(null, sessionHandler, securityHandler, servletHandler, errorHandler);
+        _scontext = new Context();
+        setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
+        //Make a new MetaData to hold descriptor and annotation metadata
+        _metadata = new MetaData();
+
+    }
+
+    /* ------------------------------------------------------------ */
     /**
      * Configure this WebAppContext from a shared WebAppContext as template.
      * <p>The MetaData is reused from the template.
