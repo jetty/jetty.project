@@ -21,6 +21,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -134,7 +135,6 @@ public class WebSocketMessageD01Test
         socket.setSoTimeout(1000);
 
         InputStream input = socket.getInputStream();
-        
         lookFor("HTTP/1.1 101 WebSocket Protocol Handshake\r\n",input);
         skipTo("\r\n\r\n",input);
 

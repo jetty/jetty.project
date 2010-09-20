@@ -1,6 +1,18 @@
+// ========================================================================
+// Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+// The Eclipse Public License is available at 
+// http://www.eclipse.org/legal/epl-v10.html
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
+// You may elect to redistribute this code under either of these licenses. 
+// ========================================================================
+
 package org.eclipse.jetty.websocket;
 
-import java.io.IOError;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -12,7 +24,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 
 public class WebSocketConnection implements Connection, WebSocket.Outbound
@@ -45,73 +56,17 @@ public class WebSocketConnection implements Connection, WebSocket.Outbound
         
         _timestamp = timestamp;
         _websocket = websocket;
-        final WebSocketParser.FrameHandler handler = new WebSocketParser.FrameHandler()
-        {
-            boolean _fragmented=false;
-            Utf8StringBuilder _utf8 = new Utf8StringBuilder();
-            
-            public void onFrame(boolean more, byte flags, byte opcode, Buffer buffer)
-            {
-                try
-                {
-                    byte[] array=buffer.array();
-                    
-                    if (opcode==0)
-                    {
-                        if (more)
-                        {
-                            _utf8.append(buffer.array(),buffer.getIndex(),buffer.length());
-                            _fragmented=true;
-                        }
-                        else if (_fragmented)
-                        {
-                            _utf8.append(buffer.array(),buffer.getIndex(),buffer.length());
-                            _websocket.onMessage(opcode,_utf8.toString());
-                            _utf8.reset();
-                            _fragmented=false;
-                        }
-                        else
-                        {
-                            _websocket.onMessage(opcode,buffer.toString("utf-8"));
-                        }
-                    }
-                    else
-                    {
-                        if (more)
-                        {
-                            _websocket.onFragment(true,opcode,array,buffer.getIndex(),buffer.length());
-                        }
-                        else if (_fragmented)
-                        {
-                            _websocket.onFragment(false,opcode,array,buffer.getIndex(),buffer.length());
-                        }
-                        else
-                        {
-                            _websocket.onMessage(opcode,array,buffer.getIndex(),buffer.length());
-                        }
-                    }
-                }
-                catch(ThreadDeath th)
-                {
-                    throw th;
-                }
-                catch(Throwable th)
-                {
-                    Log.warn(th);
-                }
-            }
-        };
 
         // Select the parser/generators to use
         switch(draft)
         {
             case 1:
                 _generator = new WebSocketGeneratorD01(buffers, _endp);
-                _parser = new WebSocketParserD01(buffers, endpoint, handler);
+                _parser = new WebSocketParserD01(buffers, endpoint, new FrameHandlerD1(this,_websocket));
                 break;
             default:
                 _generator = new WebSocketGeneratorD00(buffers, _endp);
-                _parser = new WebSocketParserD00(buffers, endpoint, handler);
+                _parser = new WebSocketParserD00(buffers, endpoint, new FrameHandlerD0(_websocket));
         }
 
         // TODO should these be AsyncEndPoint checks/calls?
