@@ -28,13 +28,18 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
+import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.Authentication.User;
+import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -60,6 +65,7 @@ public class FormAuthenticator extends LoginAuthenticator
     public final static String __FORM_ERROR_PAGE="org.eclipse.jetty.security.form_error_page";
     public final static String __FORM_DISPATCH="org.eclipse.jetty.security.dispatch";
     public final static String __J_URI = "org.eclipse.jetty.security.form_URI";
+    public final static String __J_POST = "org.eclipse.jetty.security.form_POST";
     public final static String __J_SECURITY_CHECK = "/j_security_check";
     public final static String __J_USERNAME = "j_username";
     public final static String __J_PASSWORD = "j_password";
@@ -180,7 +186,6 @@ public class FormAuthenticator extends LoginAuthenticator
                     synchronized(session)
                     {
                         nuri = (String) session.getAttribute(__J_URI);
-                        session.removeAttribute(__J_URI);
                     }
                     
                     if (nuri == null || nuri.length() == 0)
@@ -228,10 +233,39 @@ public class FormAuthenticator extends LoginAuthenticator
                 if (authentication instanceof Authentication.User && 
                     _loginService!=null &&
                     !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
+                {
                 
                     session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
+                }
                 else
+                {
+                    String j_uri=(String)session.getAttribute(__J_URI);
+                    if (j_uri!=null)
+                    {
+                        MultiMap<String> j_post = (MultiMap<String>)session.getAttribute(__J_POST);
+                        if (j_post!=null)
+                        {
+                            StringBuffer buf = request.getRequestURL();
+                            if (request.getQueryString() != null)
+                                buf.append("?").append(request.getQueryString());
+
+                            if (j_uri.equals(buf.toString()))
+                            {
+                                // This is a retry of an original POST request
+                                // so restore method and parameters
+
+                                session.removeAttribute(__J_POST);                        
+                                Request base_request = (req instanceof Request)?(Request)req:HttpConnection.getCurrentConnection().getRequest();
+                                base_request.setMethod(HttpMethods.POST);
+                                base_request.setParameters(j_post);
+                            }
+                        }
+                        else
+                            session.removeAttribute(__J_URI);
+                            
+                    }
                     return authentication;
+                }
             }
 
             // if we can't send challenge
@@ -241,13 +275,20 @@ public class FormAuthenticator extends LoginAuthenticator
             // remember the current URI
             synchronized (session)
             {
-                // TODO is this right?
+                // But only if it is not set already
                 if (session.getAttribute(__J_URI)==null)
                 {
                     StringBuffer buf = request.getRequestURL();
                     if (request.getQueryString() != null)
                         buf.append("?").append(request.getQueryString());
                     session.setAttribute(__J_URI, buf.toString());
+                    
+                    if (MimeTypes.FORM_ENCODED.equalsIgnoreCase(req.getContentType()) && HttpMethods.POST.equals(request.getMethod()))
+                    {
+                        Request base_request = (req instanceof Request)?(Request)req:HttpConnection.getCurrentConnection().getRequest();
+                        base_request.extractParameters();                        
+                        session.setAttribute(__J_POST, new MultiMap<String>(base_request.getParameters()));
+                    }
                 }
             }
             
