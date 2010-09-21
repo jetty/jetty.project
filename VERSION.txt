@@ -43,6 +43,7 @@ jetty-7.2-SNAPSHOT
  + JETTY-1256 annotation jars from Orbit
  + JETTY-1261 errant listener usage in StandardDescriptorProcessor
  + JETTY-1263 JDBCSessionIdManager table creation fails on Oracle
+ + JETTY-1265 Reason field option in client response
  + JETTY-1266 Destroy sessions before filters/servlets
  + JETTY-1268 Form Auth saves POST data
  + JETTY-1269 Improve log multithreadedness
