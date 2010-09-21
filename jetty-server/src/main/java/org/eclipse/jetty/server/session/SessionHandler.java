@@ -120,8 +120,8 @@ public class SessionHandler extends ScopedHandler
     @Override
     protected void doStop() throws Exception
     {
-        super.doStop();
         _sessionManager.stop();
+        super.doStop();
     }
 
     
