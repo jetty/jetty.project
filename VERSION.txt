@@ -40,7 +40,7 @@ jetty-7.2-SNAPSHOT
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1250 Parallel start of HandlerCollection
  + JETTY-1252 Handle more multipart transfer encodings
- + JETTY-1256 annotation jars from Orbit
+ + JETTY-1256 annotation and jta jars from Orbit
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session
  + JETTY-1261 errant listener usage in StandardDescriptorProcessor
  + JETTY-1263 JDBCSessionIdManager table creation fails on Oracle
