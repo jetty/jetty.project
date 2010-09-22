@@ -36,9 +36,29 @@
   </Call>
   -->
 
+
   <!-- =========================================================== -->
-  <!-- Configurations for WebAppContexts                           -->
-  <!-- Sequence of configurations to enable Plus features.         -->
+  <!-- Enabling plus feature.                                      -->
+  <!-- Choose one of the following methods. NOTE that by default   -->
+  <!-- the last method (enabled for all webapps on this Server) is -->
+  <!-- enabled.                                                    -->
+  <!--                                                             -->
+  <!-- For a single webapp:                                        -->
+  <!-- Use a context xml file to call                              -->
+  <!--  setConfigurationClasses(plusConfig).                       -->
+  <!--                                                             -->
+  <!-- For all webapps in a directory:                             -->
+  <!-- Uncomment the section entitled  "Apply plusConfig to all    -->
+  <!-- webapps in webapps-plus".                                   -->
+  <!--                                                             -->
+  <!-- For all webapps deployed via this Server instance:          -->
+  <!-- Uncomment the section entitled "Apply plusConfig to all     -->
+  <!-- webapps for this Server". NOTE: this is the default.        -->
+  <!-- =========================================================== -->
+  
+
+  <!-- =========================================================== -->
+  <!-- Sequence of configurations to defining Plus features.       -->
   <!-- =========================================================== -->
   <Array id="plusConfig" type="java.lang.String">
     <Item>org.eclipse.jetty.webapp.WebInfConfiguration</Item>
@@ -53,11 +73,12 @@
   </Array>
 
   <!-- =========================================================== -->
-  <!-- Deploy all webapps in webapps-plus                          -->
+  <!-- Apply plusConfig to all webapps in webapps-plus             -->
   <!-- =========================================================== -->
   <!-- Uncomment the following to set up a deployer that will      -->
   <!-- deploy webapps from a directory called webapps-plus. Note   -->
   <!-- that you will need to create this directory first!          -->
+  <!--
   <Ref id="DeploymentManager">
       <Call name="addAppProvider">
         <Arg>
@@ -73,5 +94,17 @@
         </Arg>
       </Call>
   </Ref>
+  -->
+
+  <!-- =========================================================== -->
+  <!-- Apply plusConfig to all webapps for this Server             -->
+  <!-- =========================================================== -->
+    <Call name="setAttribute">
+      <Arg>org.eclipse.jetty.webapp.configuration</Arg>
+      <Arg>
+          <Ref id="plusConfig"/>
+      </Arg>
+    </Call>
+
 </Configure>
 

@@ -429,6 +429,53 @@ public class HttpParserTest
         assertTrue(messageCompleted);
     }
 
+
+    @Test
+    public void testResponseParse3() throws Exception
+    {
+        StringEndPoint io=new StringEndPoint();
+        io.setInput(
+        "HTTP/1.1 200\015\012"
+        + "Content-Length: 10\015\012"
+        + "Content-Type: text/plain\015\012"
+        + "\015\012"
+        + "0123456789\015\012");
+        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser(buffers,io, handler);
+        parser.parse();
+        assertEquals("HTTP/1.1", f0);
+        assertEquals("200", f1);
+        assertEquals(null, f2);
+        assertEquals(_content.length(), 10);
+        assertTrue(headerCompleted);
+        assertTrue(messageCompleted);
+    }
+    @Test
+    public void testResponseParse4() throws Exception
+    {
+        StringEndPoint io=new StringEndPoint();
+        io.setInput(
+        "HTTP/1.1 200 \015\012"
+        + "Content-Length: 10\015\012"
+        + "Content-Type: text/plain\015\012"
+        + "\015\012"
+        + "0123456789\015\012");
+        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser(buffers,io, handler);
+        parser.parse();
+        assertEquals("HTTP/1.1", f0);
+        assertEquals("200", f1);
+        assertEquals(null, f2);
+        assertEquals(_content.length(), 10);
+        assertTrue(headerCompleted);
+        assertTrue(messageCompleted);
+    }
     private String _content;
     private String f0;
     private String f1;
@@ -509,7 +556,7 @@ public class HttpParserTest
             request=false;
             f0 = version.toString();
             f1 = Integer.toString(status);
-            f2 = reason.toString();
+            f2 = reason==null?null:reason.toString();
 
             fields=new HttpFields();
             hdr= new String[9];

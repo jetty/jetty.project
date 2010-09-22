@@ -174,7 +174,9 @@ public class WebInfConfiguration extends AbstractConfiguration
     {
         File tmpDir=File.createTempFile(WebInfConfiguration.getCanonicalNameForWebAppTmpDir(context),"",template.getTempDirectory().getParentFile());
         if (tmpDir.exists())
-            tmpDir.delete();
+        {
+            IO.delete(tmpDir);
+        }
         tmpDir.mkdir();
         tmpDir.deleteOnExit();
         context.setTempDirectory(tmpDir);
@@ -279,7 +281,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 // Last resort
                 tmpDir=File.createTempFile("JettyContext","");
                 if (tmpDir.exists())
-                    tmpDir.delete();
+                    IO.delete(tmpDir);
                 tmpDir.mkdir();
                 tmpDir.deleteOnExit();
                 context.setTempDirectory(tmpDir);
@@ -337,7 +339,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                     String old=tmpDir.toString();
                     tmpDir=File.createTempFile(temp+"_","");
                     if (tmpDir.exists())
-                        tmpDir.delete();
+                        IO.delete(tmpDir);
                     Log.warn("Can't reuse "+old+", using "+tmpDir);
                 } 
             }
@@ -442,7 +444,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                         //only extract if the war file is newer
                         if (web_app.lastModified() > extractedWebAppDir.lastModified())
                         {
-                            extractedWebAppDir.delete();
+                            IO.delete(extractedWebAppDir);
                             extractedWebAppDir.mkdir();
                             Log.info("Extract " + web_app + " to " + extractedWebAppDir);
                             Resource jar_web_app = JarResource.newJarResource(web_app);
@@ -460,7 +462,6 @@ public class WebInfConfiguration extends AbstractConfiguration
                 throw new java.io.FileNotFoundException(war);
             }
         
-            
             context.setBaseResource(web_app);
             
             if (Log.isDebugEnabled())
@@ -479,7 +480,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         {       
             File extractedWebInfDir= new File(context.getTempDirectory(), "webinf");
             if (extractedWebInfDir.exists())
-                extractedWebInfDir.delete();
+                IO.delete(extractedWebInfDir);
             extractedWebInfDir.mkdir();
             Resource web_inf_lib = web_inf.addPath("lib/");
             File webInfDir=new File(extractedWebInfDir,"WEB-INF");
@@ -488,6 +489,8 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (web_inf_lib.exists())
             {
                 File webInfLibDir = new File(webInfDir, "lib");
+                if (webInfLibDir.exists())
+                    IO.delete(webInfLibDir);
                 webInfLibDir.mkdir();
 
                 Log.info("Copying WEB-INF/lib " + web_inf_lib + " to " + webInfLibDir);
@@ -498,6 +501,8 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (web_inf_classes.exists())
             {
                 File webInfClassesDir = new File(webInfDir, "classes");
+                if (webInfClassesDir.exists())
+                    IO.delete(webInfClassesDir);
                 webInfClassesDir.mkdir();
                 Log.info("Copying WEB-INF/classes from "+web_inf_classes+" to "+webInfClassesDir.getAbsolutePath());
                 web_inf_classes.copyTo(webInfClassesDir);

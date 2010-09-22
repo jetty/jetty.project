@@ -378,11 +378,15 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
             for (int i=0; contexts!=null && i<contexts.length; i++)
             {
-                SessionManager manager = ((SessionHandler)((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class)).getSessionManager();
-                        
-                if (manager instanceof JDBCSessionManager)
+                SessionHandler sessionHandler = (SessionHandler)((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
+                if (sessionHandler != null) 
                 {
-                    ((JDBCSessionManager)manager).invalidateSession(id);
+                    SessionManager manager = sessionHandler.getSessionManager();
+
+                    if (manager != null && manager instanceof JDBCSessionManager)
+                    {
+                        ((JDBCSessionManager)manager).invalidateSession(id);
+                    }
                 }
             }
         }

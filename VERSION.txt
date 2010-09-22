@@ -40,16 +40,22 @@ from jetty-7.2-SNAPSHOT
  + 325072 include to DefaultServlet of missing file throws FileNotFoundException
  + 325105 websocket ondisconnect fixed
  + 325128 websocket send during onConnect
+ + 325468 Clean work webapp dir before unpack
  + JETTY-912 added per exchange timeout api
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1250 Parallel start of HandlerCollection
- + JETTY-1256 annotation jars from Orbit
+ + JETTY-1256 annotation and jta jars from Orbit
+ + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session
  + JETTY-1261 errant listener usage in StandardDescriptorProcessor
  + JETTY-1263 JDBCSessionIdManager table creation fails on Oracle
+ + JETTY-1265 Reason field option in client response
+ + JETTY-1266 Destroy sessions before filters/servlets
+ + JETTY-1268 Form Auth saves POST data
  + JETTY-1269 Improve log multithreadedness
  + JETTY-1270 Websocket closed endp protection
  + JETTY-1271 handled unavailable exception
+ + JETTY-1297 Make jetty-plus.xml enable plus features for all webapps by default
  + Fix jetty-plus.xml for new configuration names
  + Added ignore to Logger interface
  + Improved debug dump

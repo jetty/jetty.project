@@ -51,6 +51,14 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>
             _map=new HashMap<K, Object>(map);
     }
     
+    public MultiMap(MultiMap<K> map)
+    {
+        if (map._cmap!=null)
+            _map=_cmap=new ConcurrentHashMap<K, Object>(map._cmap);
+        else
+            _map=new HashMap<K,Object>(map._map);
+    }
+    
     public MultiMap(int capacity)
     {
         _map=new HashMap<K, Object>(capacity);
@@ -289,6 +297,12 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>
         return map;
     }
 
+    @Override
+    public String toString()
+    {
+        return _cmap==null?_map.toString():_cmap.toString();
+    }
+    
     public void clear()
     {
         _map.clear();
@@ -375,6 +389,4 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>
             throw new UnsupportedOperationException();
         return _cmap.replace(key,value);
     }
-    
-    
 }

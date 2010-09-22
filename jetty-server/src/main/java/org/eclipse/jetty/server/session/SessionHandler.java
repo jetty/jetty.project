@@ -124,8 +124,9 @@ public class SessionHandler extends ScopedHandler
     @Override
     protected void doStop() throws Exception
     {
-        super.doStop();
+        // Destroy sessions before destroying servlets/filters see JETTY-1266
         _sessionManager.stop();
+        super.doStop();
     }
 
     

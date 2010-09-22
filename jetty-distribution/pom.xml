@@ -17,6 +17,7 @@
     <orbit-javax-el-version>2.1.0.v201004190952</orbit-javax-el-version>
     <orbit-javax-mail-glassfish-version>${javax-mail-version}.v201005082020</orbit-javax-mail-glassfish-version>
     <orbit-org-objectweb-asm-version>3.1.0.v200803061910</orbit-org-objectweb-asm-version>
+    <orbit-javax-transaction-version>1.1.1.v201004190952</orbit-javax-transaction-version>
   </properties>
   <build>
     <plugins>
@@ -66,6 +67,7 @@
                   <url url="${jetty-orbit-url}/javax.annotation_${orbit-javax-annotation-version}.jar" />
                   <url url="${jetty-orbit-url}/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
                   <url url="${jetty-orbit-url}/org.objectweb.asm_${orbit-org-objectweb-asm-version}.jar" />
+                  <url url="${jetty-orbit-url}/javax.transaction_${orbit-javax-transaction-version}.jar" />
                   <url url="${jetty-orbit-url}/ecj-${eclipse-ecj-version}.jar" />
                 </get>
 
@@ -89,6 +91,14 @@
                   <fileset dir="${orbit-cache}">
                     <include name="javax.activation_${orbit-javax-activation-version}.jar" />
                     <include name="javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
+                  </fileset>
+                </copy>
+
+               <!-- ${jetty.home}/lib/jta/ -->
+                <mkdir dir="${assembly-directory}/lib/jta" />
+                <copy todir="${assembly-directory}/lib/jta">
+                  <fileset dir="${orbit-cache}">
+                    <include name="javax.transaction_${orbit-javax-transaction-version}.jar" />
                   </fileset>
                 </copy>
 

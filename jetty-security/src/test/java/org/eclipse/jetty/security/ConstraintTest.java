@@ -338,6 +338,75 @@ public class ConstraintTest
     }
 
     @Test
+    public void testFormPostRedirect() throws Exception
+    {
+        _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
+        _security.setStrict(false);
+        _server.start();
+
+        String response;
+
+        response = _connector.getResponses("GET /ctx/noauth/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+
+        response = _connector.getResponses("GET /ctx/forbid/info HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 403 Forbidden"));
+
+        response = _connector.getResponses("POST /ctx/auth/info HTTP/1.0\r\n"+
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: 27\r\n" +
+                "\r\n" +
+                "test_parameter=test_value\r\n");
+        assertTrue(response.indexOf(" 302 Found") > 0);
+        assertTrue(response.indexOf("/ctx/testLoginPage") > 0);
+        String session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
+
+        response = _connector.getResponses("GET /ctx/testLoginPage HTTP/1.0\r\n"+
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertTrue(response.indexOf(" 200 OK") > 0);
+        assertTrue(response.indexOf("URI=/ctx/testLoginPage") > 0);
+
+        response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: 31\r\n" +
+                "\r\n" +
+        "j_username=user&j_password=wrong\r\n");
+        assertTrue(response.indexOf("Location") > 0);
+
+        response = _connector.getResponses("POST /ctx/j_security_check HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Content-Length: 35\r\n" +
+                "\r\n" +
+                "j_username=user&j_password=password\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 302 "));
+        assertTrue(response.indexOf("Location") > 0);
+        assertTrue(response.indexOf("/ctx/auth/info") > 0);
+
+        // sneak in other request
+        response = _connector.getResponses("GET /ctx/auth/other HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertTrue(!response.contains("test_value"));
+
+        // retry post as GET
+        response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertTrue(response.contains("test_value"));
+
+        response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
+                "Cookie: JSESSIONID=" + session + "\r\n" +
+                "\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 403"));
+        assertTrue(response.indexOf("!role") > 0);
+    }
+    
+    @Test
     public void testFormNoCookies() throws Exception
     {
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage","/testErrorPage",false));
@@ -745,6 +814,8 @@ public class ConstraintTest
                 response.getWriter().println("URI="+request.getRequestURI());
                 String user = request.getRemoteUser();
                 response.getWriter().println("user="+user);
+                if (request.getParameter("test_parameter")!=null)
+                    response.getWriter().println(request.getParameter("test_parameter"));
             }
             else
                 response.sendError(500);
