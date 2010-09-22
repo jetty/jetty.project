@@ -42,6 +42,7 @@ from jetty-7.2-SNAPSHOT
  + 325128 websocket send during onConnect
  + 325468 Clean work webapp dir before unpack
  + JETTY-912 added per exchange timeout api
+ + JETTY-1063 Plugin problems with spaces in classpath resource references
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1250 Parallel start of HandlerCollection

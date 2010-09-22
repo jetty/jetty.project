@@ -3,6 +3,7 @@ package org.eclipse.jetty.webapp;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -74,7 +75,15 @@ public class WebInfConfiguration extends AbstractConfiguration
                 int i=0;
                 for (URL u : urls)
                 {
-                    containerUris[i++] = u.toURI();
+                    try 
+                    {
+                        containerUris[i] = u.toURI();
+                    }
+                    catch (URISyntaxException e)
+                    {
+                        containerUris[i] = new URI(u.toString().replaceAll(" ", "%20"));
+                    }  
+                    i++;
                 }
                 containerJarNameMatcher.match(containerPattern, containerUris, false);
             }
