@@ -16,11 +16,13 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.DispatcherType;
@@ -30,8 +32,10 @@ import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRegistration;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletSecurityElement;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -84,6 +88,7 @@ public class ServletHandler extends ScopedHandler
     private int _maxFilterChainsCacheSize=1000;
     private boolean _startWithUnavailable=true;
     private IdentityService _identityService;
+    private SecurityHandler _securityHandler;
     
     private ServletHolder[] _servlets;
     private ServletMapping[] _servletMappings;
@@ -138,9 +143,9 @@ public class ServletHandler extends ScopedHandler
 
         if (_contextHandler!=null)
         {
-            SecurityHandler security_handler = (SecurityHandler)_contextHandler.getChildHandlerByClass(SecurityHandler.class);
-            if (security_handler!=null)
-                _identityService=security_handler.getIdentityService();
+            _securityHandler = (SecurityHandler)_contextHandler.getChildHandlerByClass(SecurityHandler.class);
+            if (_securityHandler!=null)
+                _identityService=_securityHandler.getIdentityService();
         }
         
         updateNameMappings();
@@ -816,7 +821,14 @@ public class ServletHandler extends ScopedHandler
     {
         setServletMappings((ServletMapping[])LazyList.addToArray(getServletMappings(), mapping, ServletMapping.class));
     }
-    
+
+    public Set<String>  setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement) {
+        if (_contextHandler != null) {
+            return _contextHandler.setServletSecurity(registration, servletSecurityElement);
+        }
+        return Collections.emptySet();
+    }
+
     /* ------------------------------------------------------------ */
     /** 
      * @see #newFilterHolder(Class)
@@ -907,7 +919,7 @@ public class ServletHandler extends ScopedHandler
      * @param pathSpec
      * @param dispatches
      * @return the filter holder created
-     * @deprecated use {@link #addFilterWithMapping(Class, String, int)} instead
+     * @deprecated use {@link #addFilterWithMapping(Class, String, EnumSet<DispatcherType>)} instead
      */
     public FilterHolder addFilter (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
@@ -1150,7 +1162,6 @@ public class ServletHandler extends ScopedHandler
         _servlets=holders;
         updateNameMappings();
     }
-
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

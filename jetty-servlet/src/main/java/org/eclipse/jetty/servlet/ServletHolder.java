@@ -663,7 +663,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         @Override
         public Set<String> setServletSecurity(ServletSecurityElement securityElement) 
         {
-            return null;
+            return _servletHandler.setServletSecurity(this, securityElement);
         }
     }
     

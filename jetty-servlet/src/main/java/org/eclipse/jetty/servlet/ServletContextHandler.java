@@ -34,6 +34,7 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
+import javax.servlet.ServletSecurityElement;
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
 import javax.servlet.descriptor.JspConfigDescriptor;
@@ -331,6 +332,36 @@ public class ServletContextHandler extends ContextHandler
     {
         return getServletHandler().addFilterWithMapping(filterClass,pathSpec,dispatches);
     }
+
+    /**
+     * delegate for ServletContext.declareRole method
+     * @param roleNames role names to add
+     */
+    protected void addRoles(String... roleNames) {
+        //Get a reference to the SecurityHandler, which must be ConstraintAware
+        if (_securityHandler != null && _securityHandler instanceof ConstraintAware)
+        {
+            HashSet<String> union = new HashSet<String>();
+            Set<String> existing = ((ConstraintAware)_securityHandler).getRoles();
+            if (existing != null)
+                union.addAll(existing);
+            union.addAll(Arrays.asList(roleNames));
+            ((ConstraintSecurityHandler)_securityHandler).setRoles(union);
+        }
+    }
+
+    /**
+     * Delegate for ServletRegistration.Dynamic.setServletSecurity method
+     * @param registration ServletRegistration.Dynamic instance that setServletSecurity was called on
+     * @param servletSecurityElement new security info
+     * @return the set of exact URL mappings currently associated with the registration that are also present in the web.xml
+     * security constratins and thus will be unaffected by this call.
+     */
+    public Set<String> setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement)
+    {
+        return Collections.emptySet();
+    }
+
 
     
     public void restrictEventListener (EventListener e)
@@ -819,18 +850,11 @@ public class ServletContextHandler extends ContextHandler
                 throw new IllegalStateException();
             if (!_enabled)
                 throw new UnsupportedOperationException();
-           
-            //Get a reference to the SecurityHandler, which must be ConstraintAware
-            if (_securityHandler != null && _securityHandler instanceof ConstraintAware)
-            {
-                HashSet<String> union = new HashSet<String>();
-                Set<String> existing = ((ConstraintAware)_securityHandler).getRoles();
-                if (existing != null)
-                    union.addAll(existing);
-                union.addAll(Arrays.asList(roleNames));
-                ((ConstraintSecurityHandler)_securityHandler).setRoles(union);
-            }
+            addRoles(roleNames);
+
+
         }
+
     }
     
     
