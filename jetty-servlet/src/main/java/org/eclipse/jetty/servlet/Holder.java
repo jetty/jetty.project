@@ -358,7 +358,7 @@ public class Holder<T> extends AbstractLifeCycle
                 return clash;
             Holder.this.getInitParameters().putAll(initParameters);
             return Collections.emptySet();
-        };
+        }
         
         
     }
