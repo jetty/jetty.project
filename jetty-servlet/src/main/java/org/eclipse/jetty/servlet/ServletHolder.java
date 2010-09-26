@@ -614,13 +614,16 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             ServletMapping[] mappings =_servletHandler.getServletMappings();
             List<String> patterns=new ArrayList<String>();
-            for (ServletMapping mapping : mappings)
+            if (mappings!=null)
             {
-                if (!mapping.getServletName().equals(getName()))
-                    continue;
-                String[] specs=mapping.getPathSpecs();
-                if (specs!=null && specs.length>0)
-                    patterns.addAll(Arrays.asList(specs));
+                for (ServletMapping mapping : mappings)
+                {
+                    if (!mapping.getServletName().equals(getName()))
+                        continue;
+                    String[] specs=mapping.getPathSpecs();
+                    if (specs!=null && specs.length>0)
+                        patterns.addAll(Arrays.asList(specs));
+                }
             }
             return patterns;
         }

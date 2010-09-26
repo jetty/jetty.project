@@ -334,6 +334,15 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /**
+     * notification that a ServletRegistration has been created so we can track the annotations
+     * @param holder new holder created through the api.
+     * @return the ServletRegistration.Dynamic
+     */
+    protected ServletRegistration.Dynamic dynamicHolderAdded(ServletHolder holder) {
+        return holder.getRegistration();
+    }
+
+    /**
      * delegate for ServletContext.declareRole method
      * @param roleNames role names to add
      */
@@ -579,7 +588,7 @@ public class ServletContextHandler extends ContextHandler
             holder.setName(servletName);
             holder.setHeldClass(servletClass);
             handler.addServlet(holder);
-            return holder.getRegistration();
+            return dynamicHolderAdded(holder);
         }
 
         /* ------------------------------------------------------------ */
@@ -600,7 +609,7 @@ public class ServletContextHandler extends ContextHandler
             holder.setName(servletName);
             holder.setClassName(className);
             handler.addServlet(holder);
-            return holder.getRegistration();
+            return dynamicHolderAdded(holder);
         }
 
         /* ------------------------------------------------------------ */
@@ -618,7 +627,7 @@ public class ServletContextHandler extends ContextHandler
             holder.setName(servletName);
             holder.setServlet(servlet);
             handler.addServlet(holder);
-            return holder.getRegistration();
+            return dynamicHolderAdded(holder);
         }
 
         /* ------------------------------------------------------------ */
@@ -856,8 +865,9 @@ public class ServletContextHandler extends ContextHandler
         }
 
     }
-    
-    
+
+
+
     /* ------------------------------------------------------------ */
     /** Interface to decorate loaded classes.
      */
