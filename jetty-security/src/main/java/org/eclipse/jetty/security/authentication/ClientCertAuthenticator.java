@@ -75,7 +75,10 @@ public class ClientCertAuthenticator extends LoginAuthenticator
 
                     UserIdentity user = _loginService.login(username,credential);
                     if (user!=null)
+                    {
+                        renewSessionOnAuthentication(request,response);
                         return new UserAuthentication(this,user);
+                    }
                 }
             }
                 

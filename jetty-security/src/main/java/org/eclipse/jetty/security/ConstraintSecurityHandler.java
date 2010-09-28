@@ -29,7 +29,10 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.StringMap;
 
 /* ------------------------------------------------------------ */
@@ -45,6 +48,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     private final Set<String> _roles = new CopyOnWriteArraySet<String>();
     private final PathMap _constraintMap = new PathMap();
     private boolean _strict = true;
+    private SessionHandler _sessionHandler;
 
     
     /* ------------------------------------------------------------ */
@@ -93,13 +97,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
     
     /* ------------------------------------------------------------ */
-    @Deprecated
-    public void setConstraintMappings(ConstraintMapping[] constraintMappings)
-    {
-        setConstraintMappings(Arrays.asList(constraintMappings),null);
-    }
-    
-    /* ------------------------------------------------------------ */
     /**
      * Process the constraints following the combining rules in Servlet 3.0 EA
      * spec section 13.7.1 Note that much of the logic is in the RoleInfo class.
@@ -111,14 +108,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     public void setConstraintMappings(List<ConstraintMapping> constraintMappings)
     {
         setConstraintMappings(constraintMappings,null);
-    }
-
-    
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public void setConstraintMappings(ConstraintMapping[] constraintMappings, Set<String> roles)
-    {
-        setConstraintMappings(Arrays.asList(constraintMappings),roles);
     }
     
     /* ------------------------------------------------------------ */
@@ -226,6 +215,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 processContraintMapping(mapping);
             }
         }
+        
+        if (ContextHandler.getCurrentContext()!=null)
+            _sessionHandler = ContextHandler.getCurrentContext().getContextHandler().getNestedHandlerByClass(SessionHandler.class);
+        
         super.doStart();
     }
 

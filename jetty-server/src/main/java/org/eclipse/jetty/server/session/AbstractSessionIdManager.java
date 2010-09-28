@@ -90,20 +90,23 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     {
         synchronized (this)
         {
-            // A requested session ID can only be used if it is in use already.
-            String requested_id=request.getRequestedSessionId();
-            if (requested_id!=null)
+            if (request!=null)
             {
-                String cluster_id=getClusterId(requested_id);
-                if (idInUse(cluster_id))
-                    return cluster_id;
-            }
-          
-            // Else reuse any new session ID already defined for this request.
-            String new_id=(String)request.getAttribute(__NEW_SESSION_ID);
-            if (new_id!=null&&idInUse(new_id))
-                return new_id;
+                // A requested session ID can only be used if it is in use already.
+                String requested_id=request.getRequestedSessionId();
+                if (requested_id!=null)
+                {
+                    String cluster_id=getClusterId(requested_id);
+                    if (idInUse(cluster_id))
+                        return cluster_id;
+                }
 
+                // Else reuse any new session ID already defined for this request.
+                String new_id=(String)request.getAttribute(__NEW_SESSION_ID);
+                if (new_id!=null&&idInUse(new_id))
+                    return new_id;
+            }
+            
             // pick a new unique ID!
             String id=null;
             while (id==null||id.length()==0||idInUse(id))
@@ -167,4 +170,6 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         }
         _random.setSeed(_random.nextLong()^System.currentTimeMillis()^hashCode()^Runtime.getRuntime().freeMemory()); 
     }
+    
+    
 }

@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /* ------------------------------------------------------------ */
@@ -144,5 +145,22 @@ public class HandlerWrapper extends AbstractHandlerContainer
         return expandHandler(_handler,list,byClass);
     }
 
+    /* ------------------------------------------------------------ */
+    public <H extends Handler> H getNestedHandlerByClass(Class<H> byclass)
+    {
+        HandlerWrapper h=this;
+        while (h!=null)
+        {
+            if (byclass.isInstance(h))
+                return (H)h;
+            Handler w = h.getHandler();
+            if (w instanceof HandlerWrapper)
+                h=(HandlerWrapper)w;
+            else break;
+        }
+        return null;
+        
+    }
+    
    
 }

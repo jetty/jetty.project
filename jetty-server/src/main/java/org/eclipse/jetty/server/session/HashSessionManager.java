@@ -51,7 +51,7 @@ public class HashSessionManager extends AbstractSessionManager
     private int _scavengePeriodMs=30000;
     private int _savePeriodMs=0; //don't do period saves by default
     private TimerTask _saveTask;
-    protected Map _sessions;
+    protected Map<String,HashedSession> _sessions;
     private File _storeDir;
     private boolean _lazyLoad=false;
     private boolean _sessionsLoaded=false;
@@ -69,7 +69,7 @@ public class HashSessionManager extends AbstractSessionManager
     @Override
     public void doStart() throws Exception
     {
-        _sessions=new ConcurrentHashMap(); // TODO: use syncronizedMap for JDK 1.4
+        _sessions=new ConcurrentHashMap<String,HashedSession>(); 
         super.doStart();
 
         _timer=new Timer("HashSessionScavenger-"+__id++, true);
@@ -160,7 +160,6 @@ public class HashSessionManager extends AbstractSessionManager
     /* ------------------------------------------------------------ */
     public void setSavePeriod (int seconds)
     {
-        int oldSavePeriod = _savePeriodMs;
         int period = (seconds * 1000);
         if (period < 0)
             period=0;
@@ -278,9 +277,9 @@ public class HashSessionManager extends AbstractSessionManager
             synchronized (HashSessionManager.this)
             {
                 // For each session
-                for (Iterator i=_sessions.values().iterator(); i.hasNext();)
+                for (Iterator<HashedSession> i=_sessions.values().iterator(); i.hasNext();)
                 {
-                    Session session=(Session)i.next();
+                    HashedSession session=i.next();
                     long idleTime=session._maxIdleMs;
                     if (idleTime>0&&session._accessed+idleTime<now)
                     {
@@ -294,7 +293,7 @@ public class HashSessionManager extends AbstractSessionManager
             for (int i=LazyList.size(stale); i-->0;)
             {
                 // check it has not been accessed in the meantime
-                Session session=(Session)LazyList.get(stale,i);
+                HashedSession session=(HashedSession)LazyList.get(stale,i);
                 long idleTime=session._maxIdleMs;
                 if (idleTime>0&&session._accessed+idleTime<System.currentTimeMillis())
                 {
@@ -319,7 +318,7 @@ public class HashSessionManager extends AbstractSessionManager
     @Override
     protected void addSession(AbstractSessionManager.Session session)
     {
-        _sessions.put(session.getClusterId(),session);
+        _sessions.put(session.getClusterId(),(HashedSession)session);
     }
     
     /* ------------------------------------------------------------ */
@@ -336,10 +335,10 @@ public class HashSessionManager extends AbstractSessionManager
             Log.warn(e);
         }
         
-        if (_sessions==null)
+        Map<String,HashedSession> sessions=_sessions;
+        if (sessions==null)
             return null;
-
-        return (Session)_sessions.get(idInCluster);
+        return sessions.get(idInCluster);
     }
 
     /* ------------------------------------------------------------ */
@@ -347,10 +346,10 @@ public class HashSessionManager extends AbstractSessionManager
     protected void invalidateSessions()
     {
         // Invalidate all sessions to cause unbind events
-        ArrayList sessions=new ArrayList(_sessions.values());
-        for (Iterator i=sessions.iterator(); i.hasNext();)
+        ArrayList<HashedSession> sessions=new ArrayList<HashedSession>(_sessions.values());
+        for (Iterator<HashedSession> i=sessions.iterator(); i.hasNext();)
         {
-            Session session=(Session)i.next();
+            HashedSession session=(HashedSession)i.next();
             session.invalidate();
         }
         _sessions.clear();
@@ -361,13 +360,13 @@ public class HashSessionManager extends AbstractSessionManager
     @Override
     protected AbstractSessionManager.Session newSession(HttpServletRequest request)
     {
-        return new Session(request);
+        return new HashedSession(request);
     }
     
     /* ------------------------------------------------------------ */
     protected AbstractSessionManager.Session newSession(long created, long accessed, String clusterId)
     {
-        return new Session(created,accessed, clusterId);
+        return new HashedSession(created,accessed, clusterId);
     }
     
     /* ------------------------------------------------------------ */
@@ -422,7 +421,7 @@ public class HashSessionManager extends AbstractSessionManager
             try
             {
                 FileInputStream in = new FileInputStream(files[i]);           
-                Session session = restoreSession(in);
+                HashedSession session = restoreSession(in);
                 in.close();          
                 addSession(session, false);
                 session.didActivate();
@@ -453,12 +452,12 @@ public class HashSessionManager extends AbstractSessionManager
  
         synchronized (this)
         {
-            Iterator itor = _sessions.entrySet().iterator();
+            Iterator<Map.Entry<String, HashedSession>> itor = _sessions.entrySet().iterator();
             while (itor.hasNext())
             {
-                Map.Entry entry = (Map.Entry)itor.next();
+                Map.Entry<String,HashedSession> entry = itor.next();
                 String id = (String)entry.getKey();
-                Session session = (Session)entry.getValue();
+                HashedSession session = (HashedSession)entry.getValue();
                 try
                 {
                     File file = new File (_storeDir, id);
@@ -480,7 +479,7 @@ public class HashSessionManager extends AbstractSessionManager
     }
 
     /* ------------------------------------------------------------ */
-    public Session restoreSession (InputStream is) throws Exception
+    public HashedSession restoreSession (InputStream is) throws Exception
     {
         /*
          * Take care of this class's fields first by calling 
@@ -500,14 +499,14 @@ public class HashSessionManager extends AbstractSessionManager
         //boolean isNew = in.readBoolean();
         int requests = in.readInt();
         
-        Session session = (Session)newSession(created, System.currentTimeMillis(), clusterId);
+        HashedSession session = (HashedSession)newSession(created, System.currentTimeMillis(), clusterId);
         session._cookieSet = cookieSet;
         session._lastAccessed = lastAccessed;
         
         int size = in.readInt();
         if (size > 0)
         {
-            ArrayList keys = new ArrayList();
+            ArrayList<String> keys = new ArrayList<String>();
             for (int i=0; i<size; i++)
             {
                 String key = in.readUTF();
@@ -517,7 +516,7 @@ public class HashSessionManager extends AbstractSessionManager
             for (int i=0;i<size;i++)
             {
                 Object value = ois.readObject();
-                session.setAttribute((String)keys.get(i),value);
+                session.setAttribute(keys.get(i),value);
             }
             ois.close();
         }
@@ -531,19 +530,19 @@ public class HashSessionManager extends AbstractSessionManager
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    protected class Session extends AbstractSessionManager.Session
+    protected class HashedSession extends Session
     {
         /* ------------------------------------------------------------ */
         private static final long serialVersionUID=-2134521374206116367L;
         
         /* ------------------------------------------------------------- */
-        protected Session(HttpServletRequest request)
+        protected HashedSession(HttpServletRequest request)
         {
             super(request);
         }
 
         /* ------------------------------------------------------------- */
-        protected Session(long created, long accessed, String clusterId)
+        protected HashedSession(long created, long accessed, String clusterId)
         {
             super(created, accessed, clusterId);
         }

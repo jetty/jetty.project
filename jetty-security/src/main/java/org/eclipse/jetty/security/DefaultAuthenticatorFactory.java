@@ -16,7 +16,7 @@ package org.eclipse.jetty.security;
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.http.security.Constraint;
-import org.eclipse.jetty.security.Authenticator.Configuration;
+import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.ClientCertAuthenticator;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
@@ -26,7 +26,7 @@ import org.eclipse.jetty.server.Server;
 /* ------------------------------------------------------------ */
 /**
  * The Default Authenticator Factory.
- * Uses the {@link Configuration#getAuthMethod()} to select an {@link Authenticator} from: <ul>
+ * Uses the {@link AuthConfiguration#getAuthMethod()} to select an {@link Authenticator} from: <ul>
  * <li>{@link org.eclipse.jetty.security.authentication.BasicAuthenticator}</li>
  * <li>{@link org.eclipse.jetty.security.authentication.DigestAuthenticator}</li>
  * <li>{@link org.eclipse.jetty.security.authentication.FormAuthenticator}</li>
@@ -48,7 +48,7 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
 {
     LoginService _loginService;
     
-    public Authenticator getAuthenticator(Server server, ServletContext context, Configuration configuration, IdentityService identityService, LoginService loginService)
+    public Authenticator getAuthenticator(Server server, ServletContext context, AuthConfiguration configuration, IdentityService identityService, LoginService loginService)
     {
         String auth=configuration.getAuthMethod();
         Authenticator authenticator=null;

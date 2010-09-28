@@ -50,7 +50,7 @@ import org.eclipse.jetty.util.log.Log;
  * values in the SecurityHandler init parameters, are copied.  
  * 
  */
-public abstract class SecurityHandler extends HandlerWrapper implements Authenticator.Configuration
+public abstract class SecurityHandler extends HandlerWrapper implements Authenticator.AuthConfiguration
 {
     /* ------------------------------------------------------------ */
     private boolean _checkWelcomeFiles = false;
@@ -62,6 +62,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private LoginService _loginService;
     private boolean _loginServiceShared;
     private IdentityService _identityService;
+    private boolean _renewSession=true;
 
     /* ------------------------------------------------------------ */
     protected SecurityHandler()
@@ -370,6 +371,26 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             default:
                 return false;
         }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
+     */
+    public boolean isSessionRenewedOnAuthentication()
+    {
+        return _renewSession;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Set renew the session on Authentication.
+     * <p>
+     * If set to true, then on authentication, the session associated with a reqeuest is invalidated and replaced with a new session.
+     * @see org.eclipse.jetty.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
+     */
+    public void setSessionRenewedOnAuthentication(boolean renew)
+    {
+        _renewSession=renew;
     }
     
     /* ------------------------------------------------------------ */

@@ -67,7 +67,7 @@ public class JaspiAuthenticator implements Authenticator
     }
 
 
-    public void setConfiguration(Configuration configuration)
+    public void setConfiguration(AuthConfiguration configuration)
     {
     }
     

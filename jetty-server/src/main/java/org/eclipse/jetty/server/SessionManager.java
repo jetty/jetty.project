@@ -17,6 +17,7 @@ import java.util.EventListener;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -28,6 +29,10 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * Session Manager.
  * The API required to manage sessions for a servlet context.
  *
+ */
+
+/* ------------------------------------------------------------ */
+/**
  */
 public interface SessionManager extends LifeCycle
 {
@@ -336,4 +341,5 @@ public interface SessionManager extends LifeCycle
      * @param remote True if absolute URLs are check for remoteness before being session encoded.
      */
     public void setCheckingRemoteSessionIdEncoding(boolean remote);
+
 }

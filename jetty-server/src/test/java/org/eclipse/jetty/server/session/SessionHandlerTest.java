@@ -12,6 +12,7 @@ import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -582,6 +583,10 @@ public class SessionHandlerTest
         public void setCheckingRemoteSessionIdEncoding(boolean remote)
         {
             _checkRemote=remote;
+        }
+
+        public void changeSessionIdOnAuthentication(HttpServletRequest request, HttpServletResponse response)
+        {
         }
     }
 }
