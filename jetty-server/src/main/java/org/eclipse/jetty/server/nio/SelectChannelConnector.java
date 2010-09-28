@@ -270,7 +270,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
         _manager.setLowResourcesConnections(getLowResourcesConnections());
         _manager.setLowResourcesMaxIdleTime(getLowResourcesMaxIdleTime());
         _manager.start();
-        open();
+        
         super.doStart();
         
         // start a thread to accept new connections
