@@ -970,8 +970,6 @@ public class Config
     {
         _activeOptions.add(option); 
         _properties.put("OPTIONS",join(_activeOptions,","));
-
-        System.err.println("OPTIONS="+_activeOptions);
     }
 
     public Set<String> getActiveOptions()
