@@ -51,8 +51,9 @@ jetty-7.2-SNAPSHOT
  + JETTY-1269 Improve log multithreadedness
  + JETTY-1270 Websocket closed endp protection
  + JETTY-1271 handled unavailable exception
+ + JETTY-1279 Make jetty-plus.xml enable plus features for all webapps by default
  + JETTY-1281 Create new session after authentication
- + JETTY-1297 Make jetty-plus.xml enable plus features for all webapps by default
+ + JETTY-1283 JSONPojoConvertorFactory can turn off fromJSON
  + Fix jetty-plus.xml for new configuration names
  + Added ignore to Logger interface
  + Improved debug dump
