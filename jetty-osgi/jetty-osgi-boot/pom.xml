@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>7.2.0-SNAPSHOT</version>
+    <version>7.2.0.RC0</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -97,10 +97,10 @@
                         <phase>process-resources</phase> 
                         <configuration> 
                             <tasks>
-                                <delete file="target/classes/META-INF/MANIFEST.MF"/>
+                                <delete file="target/classes/META-INF/MANIFEST.MF" />
                                 <copy todir="target/classes/jettyhome"> 
                                     <fileset dir="jettyhome"> 
-                                        <exclude name="**/*.log"/> 
+                                        <exclude name="**/*.log" /> 
                                     </fileset> 
                                 </copy> 
                             </tasks> 
