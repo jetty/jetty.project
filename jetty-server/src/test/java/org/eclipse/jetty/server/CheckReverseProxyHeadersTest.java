@@ -22,6 +22,8 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 /**
  *
@@ -43,6 +45,8 @@ public class CheckReverseProxyHeadersTest
                 assertEquals("10.20.30.40", request.getRemoteAddr());
                 assertEquals("10.20.30.40", request.getRemoteHost());
                 assertEquals("example.com", request.getHeader("Host"));
+                assertEquals("http",request.getScheme());
+                assertFalse(request.isSecure());
             }
         });
 
@@ -50,7 +54,8 @@ public class CheckReverseProxyHeadersTest
         testRequest("Host: localhost:8080\n" +
                     "X-Forwarded-For: 10.20.30.40\n" +
                     "X-Forwarded-Host: example.com:81\n" +
-                    "X-Forwarded-Server: example.com", new RequestValidator()
+                    "X-Forwarded-Server: example.com\n"+
+                    "X-Forwarded-Proto: https", new RequestValidator()
         {
             public void validate(HttpServletRequest request)
             {
@@ -59,6 +64,8 @@ public class CheckReverseProxyHeadersTest
                 assertEquals("10.20.30.40", request.getRemoteAddr());
                 assertEquals("10.20.30.40", request.getRemoteHost());
                 assertEquals("example.com:81", request.getHeader("Host"));
+                assertEquals("https",request.getScheme());
+                assertTrue(request.isSecure());
             }
         });
 
@@ -66,15 +73,18 @@ public class CheckReverseProxyHeadersTest
         testRequest("Host: localhost:8080\n" +
                     "X-Forwarded-For: 10.20.30.40, 10.0.0.1\n" +
                     "X-Forwarded-Host: example.com, rp.example.com:82\n" +
-                    "X-Forwarded-Server: example.com, rp.example.com", new RequestValidator()
+                    "X-Forwarded-Server: example.com, rp.example.com\n"+
+                    "X-Forwarded-Proto: https, http", new RequestValidator()
         {
             public void validate(HttpServletRequest request)
             {
                 assertEquals("example.com", request.getServerName());
-                assertEquals(80, request.getServerPort());
+                assertEquals(443, request.getServerPort());
                 assertEquals("10.20.30.40", request.getRemoteAddr());
                 assertEquals("10.20.30.40", request.getRemoteHost());
                 assertEquals("example.com", request.getHeader("Host"));
+                assertEquals("https",request.getScheme());
+                assertTrue(request.isSecure());
             }
         });
     }

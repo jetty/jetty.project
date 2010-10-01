@@ -24,6 +24,7 @@ import javax.servlet.ServletRequest;
 import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -72,6 +73,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     private String _forwardedHostHeader = "X-Forwarded-Host"; 
     private String _forwardedServerHeader = "X-Forwarded-Server"; 
     private String _forwardedForHeader = "X-Forwarded-For"; 
+    private String _forwardedProtoHeader = "X-Forwarded-Proto"; 
     private boolean _reuseAddress = true;
 
     protected int _maxIdleTime = 200000;
@@ -460,6 +462,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         String forwardedHost = getLeftMostValue(httpFields.getStringField(getForwardedHostHeader()));
         String forwardedServer = getLeftMostValue(httpFields.getStringField(getForwardedServerHeader()));
         String forwardedFor = getLeftMostValue(httpFields.getStringField(getForwardedForHeader()));
+        String forwardedProto = getLeftMostValue(httpFields.getStringField(getForwardedProtoHeader()));
 
         if (_hostHeader != null)
         {
@@ -501,6 +504,11 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
             }
 
             request.setRemoteHost(inetAddress == null?forwardedFor:inetAddress.getHostName());
+        }
+        
+        if (forwardedProto != null)
+        {
+            request.setScheme(forwardedProto);
         }
     }
 
@@ -577,13 +585,11 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /*
-     * @see
-     * org.eclipse.jetty.server.Connector#isConfidential(org.eclipse.jetty.server
-     * .Request)
+     * @see org.eclipse.jetty.server.Connector#isConfidential(org.eclipse.jetty.server.Request)
      */
     public boolean isConfidential(Request request)
     {
-        return false;
+        return _forwarded && request.getScheme().equalsIgnoreCase(HttpSchemes.HTTPS);
     }
 
     /* ------------------------------------------------------------ */
@@ -660,11 +666,17 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * Set reverse proxy handling
+     * Set reverse proxy handling.
+     * If set to true, then the X-Forwarded headers (or the headers set in their place) 
+     * are looked for to set the request protocol, host, server and client ip.
      * 
      * @param check
      *            true if this connector is checking the
      *            x-forwarded-for/host/server headers
+     * @set {@link #setForwardedForHeader(String)}
+     * @set {@link #setForwardedHostHeader(String)}
+     * @set {@link #setForwardedProtoHeader(String)}
+     * @set {@link #setForwardedServerHeader(String))}
      */
     public void setForwarded(boolean check)
     {
@@ -695,6 +707,10 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
+    /*
+     * 
+     * @see #setForwarded(boolean)
+     */
     public String getForwardedHostHeader()
     {
         return _forwardedHostHeader;
@@ -704,6 +720,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /**
      * @param forwardedHostHeader
      *            The header name for forwarded hosts (default x-forwarded-host)
+     * @see #setForwarded(boolean)
      */
     public void setForwardedHostHeader(String forwardedHostHeader)
     {
@@ -711,6 +728,10 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @return the header name for forwarded server.
+     * @see #setForwarded(boolean)
+     */
     public String getForwardedServerHeader()
     {
         return _forwardedServerHeader;
@@ -721,6 +742,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
      * @param forwardedServerHeader
      *            The header name for forwarded server (default
      *            x-forwarded-server)
+     * @see #setForwarded(boolean)
      */
     public void setForwardedServerHeader(String forwardedServerHeader)
     {
@@ -728,6 +750,9 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see #setForwarded(boolean)
+     */
     public String getForwardedForHeader()
     {
         return _forwardedForHeader;
@@ -737,10 +762,31 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /**
      * @param forwardedRemoteAddressHeader
      *            The header name for forwarded for (default x-forwarded-for)
+     * @see #setForwarded(boolean)
      */
     public void setForwardedForHeader(String forwardedRemoteAddressHeader)
     {
         _forwardedForHeader = forwardedRemoteAddressHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the forwardedProtoHeader.
+     * @return the forwardedProtoHeader (default X-Forwarded-For)
+     * @see #setForwarded(boolean)
+     */
+    public String getForwardedProtoHeader()
+    {
+        return _forwardedProtoHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the forwardedProtoHeader.
+     * @param forwardedProtoHeader the forwardedProtoHeader to set (default X-Forwarded-For)
+     * @see #setForwarded(boolean)
+     */
+    public void setForwardedProtoHeader(String forwardedProtoHeader)
+    {
+        _forwardedProtoHeader = forwardedProtoHeader;
     }
 
     /* ------------------------------------------------------------ */

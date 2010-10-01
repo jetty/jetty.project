@@ -124,8 +124,8 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Override
     public void customize(EndPoint endpoint, Request request) throws IOException
     {
-        super.customize(endpoint,request);
         request.setScheme(HttpSchemes.HTTPS);
+        super.customize(endpoint,request);
 
         SslSelectChannelEndPoint sslHttpChannelEndpoint=(SslSelectChannelEndPoint)endpoint;
         SSLEngine sslEngine=sslHttpChannelEndpoint.getSSLEngine();
