@@ -268,16 +268,6 @@
                   <includes>**</includes>
                   <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
-                <!--artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-project</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>javadoc</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/apidocs</outputDirectory>
-                </artifactItem-->
               </artifactItems>
             </configuration>
           </execution>
@@ -546,8 +536,8 @@
           <additionalJOption>-J-Xmx256m</additionalJOption>
           <dependencySourceExcludes>
             <dependencySourceExclude>asm:*</dependencySourceExclude>
-            <dependencySourceExclude>com.sun:*</dependencySourceExclude>
-            <dependencySourceExclude>javax:*</dependencySourceExclude>
+            <dependencySourceExclude>com.sun.mail:*</dependencySourceExclude>
+            <dependencySourceExclude>javax.mail:*</dependencySourceExclude>
           </dependencySourceExcludes>
           <reportOutputDirectory>${assembly-directory}</reportOutputDirectory>
           <destDir>javadoc</destDir>
