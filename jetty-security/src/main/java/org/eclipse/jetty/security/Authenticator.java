@@ -85,8 +85,21 @@ public interface Authenticator
     {
         String getAuthMethod();
         String getRealmName();
-        String getInitParameter(String key);
+        
+        /** Get a SecurityHandler init parameter
+         * @see SecurityHandler#getInitParameter(String)
+         * @param param parameter name
+         * @return Parameter value or null
+         */
+        String getInitParameter(String param);
+        
+        /* ------------------------------------------------------------ */
+        /** Get a SecurityHandler init parameter names
+         * @see SecurityHandler#getInitParameterNames()
+         * @return Set of parameter names
+         */
         Set<String> getInitParameterNames();
+        
         LoginService getLoginService();
         IdentityService getIdentityService();
         boolean isSessionRenewedOnAuthentication();

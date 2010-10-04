@@ -25,6 +25,8 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.http.security.Credential;
+import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
@@ -38,6 +40,9 @@ import org.eclipse.jetty.util.log.Log;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
+ * 
+ * The nonce max age can be set with the {@link SecurityHandler#setInitParameter(String, String)} 
+ * using the name "maxNonceAge"
  */
 public class DigestAuthenticator extends LoginAuthenticator
 {
@@ -48,6 +53,20 @@ public class DigestAuthenticator extends LoginAuthenticator
     public DigestAuthenticator()
     {
         super();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.security.authentication.LoginAuthenticator#setConfiguration(org.eclipse.jetty.security.Authenticator.AuthConfiguration)
+     */
+    @Override
+    public void setConfiguration(AuthConfiguration configuration)
+    {
+        super.setConfiguration(configuration);
+        
+        String mna=configuration.getInitParameter("maxNonceAge");
+        if (mna!=null)
+            _maxNonceAge=Long.valueOf(mna);
     }
 
     public String getAuthMethod()
