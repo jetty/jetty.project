@@ -1,3 +1,7 @@
+jetty-7.2.0.RC1-SNAPSHOT 
+
+ + 289540 added javadoc into distribution
+
 jetty-7.2.0.RC0 1 Oct 2010
  + 314087 Simplified SelectorManager
  + 319334 Concurrent, sharable ResourceCache
