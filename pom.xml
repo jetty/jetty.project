@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>15</version>
+    <version>16-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
@@ -237,8 +237,9 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.7</version>
         <configuration>
-          <additionalJOption>-J-Xmx128m</additionalJOption>
+          <additionalJOption>-J-Xmx256m</additionalJOption>
         </configuration>
       </plugin>
       <plugin>

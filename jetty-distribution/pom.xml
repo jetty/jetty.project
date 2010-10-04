@@ -268,6 +268,16 @@
                   <includes>**</includes>
                   <outputDirectory>${assembly-directory}</outputDirectory>
                 </artifactItem>
+                <!--artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-project</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>javadoc</classifier>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly-directory}/apidocs</outputDirectory>
+                </artifactItem-->
               </artifactItems>
             </configuration>
           </execution>
@@ -527,6 +537,30 @@
         <configuration>
           <skip>true</skip>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <includeDependencySources>true</includeDependencySources>
+          <additionalJOption>-J-Xmx256m</additionalJOption>
+          <dependencySourceExcludes>
+            <dependencySourceExclude>asm:*</dependencySourceExclude>
+            <dependencySourceExclude>com.sun:*</dependencySourceExclude>
+            <dependencySourceExclude>javax:*</dependencySourceExclude>
+          </dependencySourceExcludes>
+          <reportOutputDirectory>${assembly-directory}</reportOutputDirectory>
+          <destDir>javadoc</destDir>
+        </configuration>
+        <executions>
+          <execution>
+            <id>distribution-docs</id>
+            <goals>
+              <goal>javadoc</goal>
+            </goals>
+            <phase>process-sources</phase>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
