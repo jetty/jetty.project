@@ -1,6 +1,7 @@
 jetty-7.2.0.RC1-SNAPSHOT 
  + 289540 added javadoc into distribution
  + 297154 add source distribution artifact
+ + 323985 Xmlconfiguration pulls start.jar config properties
  + 326734 Configure Digest maxNonceAge with Security handler init param
 
 jetty-7.2.0.RC0 1 Oct 2010

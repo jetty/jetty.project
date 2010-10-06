@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ConfigTest
@@ -92,6 +93,12 @@ public class ConfigTest
         File src = new File(System.getProperty("user.dir"),"src");
         File test = new File(src,"test");
         return new File(test,"resources");
+    }
+    
+    @Before
+    public void reset()
+    {
+        Config.clearProperties();
     }
 
     /*
