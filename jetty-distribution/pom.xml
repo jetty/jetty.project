@@ -500,6 +500,7 @@
         <configuration>
           <descriptors>
             <descriptor>src/main/assembly/jetty-assembly.xml</descriptor>
+            <descriptor>src/main/assembly/jetty-src.xml</descriptor>        
           </descriptors>
           <tarLongFileMode>gnu</tarLongFileMode>
         </configuration>
@@ -547,6 +548,26 @@
             <id>distribution-docs</id>
             <goals>
               <goal>javadoc</goal>
+            </goals>
+            <phase>process-sources</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- 
+       export the jetty directory which is then bundled via the jetty-src.xml assembly descriptor
+       -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-scm-plugin</artifactId>
+        <version>1.4</version>
+        <configuration>
+          <connectionUrl>${project.parent.scm.connection}</connectionUrl>
+        </configuration>
+        <executions>
+          <execution>
+            <id>distribution-source</id>
+            <goals>
+              <goal>export</goal>
             </goals>
             <phase>process-sources</phase>
           </execution>
@@ -627,35 +648,4 @@
       <version>${project.version}</version>
     </dependency>
   </dependencies>
-  <profiles>
-    <profile>
-      <id>release</id>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <version>2.1</version>
-            <executions>
-              <execution>
-                <id>unpack-source</id>
-                <phase>generate-sources</phase>
-                <goals>
-                  <goal>unpack-dependencies</goal>
-                </goals>
-                <configuration>
-                  <classifier>sources</classifier>
-                  <includes>**/*</includes>
-                  <excludes>META-INF/**</excludes>
-                  <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-                  <outputDirectory>${project.build.directory}/sources</outputDirectory>
-                  <overWriteReleases>true</overWriteReleases>
-                  <overWriteSnapshots>true</overWriteSnapshots>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>
