@@ -3,6 +3,7 @@ jetty-7.2.0.RC1-SNAPSHOT
  + 297154 add source distribution artifact
  + 323985 Xmlconfiguration pulls start.jar config properties
  + 326734 Configure Digest maxNonceAge with Security handler init param
+ + 327109 Fixed AJP handling of empty packets
 
 jetty-7.2.0.RC0 1 Oct 2010
  + 314087 Simplified SelectorManager
