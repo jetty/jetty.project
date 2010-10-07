@@ -500,7 +500,6 @@
         <configuration>
           <descriptors>
             <descriptor>src/main/assembly/jetty-assembly.xml</descriptor>
-            <descriptor>src/main/assembly/jetty-src.xml</descriptor>        
           </descriptors>
           <tarLongFileMode>gnu</tarLongFileMode>
         </configuration>
@@ -528,50 +527,6 @@
         <configuration>
           <skip>true</skip>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <includeDependencySources>true</includeDependencySources>
-          <additionalJOption>-J-Xmx256m</additionalJOption>
-          <dependencySourceExcludes>
-            <dependencySourceExclude>asm:*</dependencySourceExclude>
-            <dependencySourceExclude>com.sun.mail:*</dependencySourceExclude>
-            <dependencySourceExclude>javax.mail:*</dependencySourceExclude>
-          </dependencySourceExcludes>
-          <reportOutputDirectory>${assembly-directory}</reportOutputDirectory>
-          <destDir>javadoc</destDir>
-        </configuration>
-        <executions>
-          <execution>
-            <id>distribution-docs</id>
-            <goals>
-              <goal>javadoc</goal>
-            </goals>
-            <phase>process-sources</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <!-- 
-       export the jetty directory which is then bundled via the jetty-src.xml assembly descriptor
-       -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-scm-plugin</artifactId>
-        <version>1.4</version>
-        <configuration>
-          <connectionUrl>${project.parent.scm.connection}</connectionUrl>
-        </configuration>
-        <executions>
-          <execution>
-            <id>distribution-source</id>
-            <goals>
-              <goal>export</goal>
-            </goals>
-            <phase>process-sources</phase>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
@@ -648,4 +603,75 @@
       <version>${project.version}</version>
     </dependency>
   </dependencies>
+  <profiles>
+    <profile>
+      <id>eclipse-release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <includeDependencySources>true</includeDependencySources>
+              <additionalJOption>-J-Xmx256m</additionalJOption>
+              <dependencySourceExcludes>
+                <dependencySourceExclude>asm:*</dependencySourceExclude>
+                <dependencySourceExclude>com.sun.mail:*</dependencySourceExclude>
+                <dependencySourceExclude>javax.mail:*</dependencySourceExclude>
+              </dependencySourceExcludes>
+              <reportOutputDirectory>${assembly-directory}</reportOutputDirectory>
+              <destDir>javadoc</destDir>
+            </configuration>
+            <executions>
+              <execution>
+                <id>distribution-docs</id>
+                <goals>
+                  <goal>javadoc</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- export the jetty directory which is then bundled via the jetty-src.xml 
+            assembly descriptor -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-scm-plugin</artifactId>
+            <version>1.4</version>
+            <configuration>
+              <connectionUrl>${project.parent.scm.connection}</connectionUrl>
+            </configuration>
+            <executions>
+              <execution>
+                <id>distribution-source</id>
+                <goals>
+                  <goal>export</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/jetty-assembly.xml</descriptor>
+                <descriptor>src/main/assembly/jetty-src.xml</descriptor>
+              </descriptors>
+              <tarLongFileMode>gnu</tarLongFileMode>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
