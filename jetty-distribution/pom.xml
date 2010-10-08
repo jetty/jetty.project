@@ -608,6 +608,15 @@
       <id>eclipse-release</id>
       <build>
         <plugins>
+          <!-- 
+          leverages new includeDependencySources which pulls all the sources
+          and generates the javadoc off of them yielding a javadoc setup
+          for the entire distribution
+          
+          this step can take over 10 minutes as it spawns additional javadoc
+          plugin calls which is why it has been moved to strictly release 
+          process execution  (requires 2.7+ version)
+           -->
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
@@ -632,8 +641,10 @@
               </execution>
             </executions>
           </plugin>
-          <!-- export the jetty directory which is then bundled via the jetty-src.xml 
-            assembly descriptor -->
+          <!-- 
+          svn export the jetty directory which is then bundled via the jetty-src.xml 
+          assembly descriptor to create a source distribution archive
+           -->
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-scm-plugin</artifactId>
@@ -651,6 +662,9 @@
               </execution>
             </executions>
           </plugin>
+          <!-- 
+          Adds in the additional jetty-src assembly descriptor to the release process
+           -->
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-assembly-plugin</artifactId>
