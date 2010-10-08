@@ -9,7 +9,7 @@
   <artifactId>jetty-project</artifactId>
   <version>7.2.0.RC1-SNAPSHOT</version>
   <name>Jetty :: Project</name>
-  <url>${jetty.url}</url>
+  <url>${jetty.url}</url>  
   <packaging>pom</packaging>
   <properties>
     <felix.bundle.version>2.0.0</felix.bundle.version>
