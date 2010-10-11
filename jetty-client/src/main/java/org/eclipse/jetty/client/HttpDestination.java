@@ -335,7 +335,7 @@ public class HttpDestination
                 if (isProxied() && endPoint instanceof SelectConnector.ProxySelectChannelEndPoint)
                 {
                     SelectConnector.ProxySelectChannelEndPoint proxyEndPoint = (SelectConnector.ProxySelectChannelEndPoint)endPoint;
-                    HttpExchange exchange = _queue.peekFirst();
+                    HttpExchange exchange = _queue.get(0);
                     ConnectExchange connect = new ConnectExchange(getAddress(), proxyEndPoint, exchange);
                     connect.setAddress(getProxy());
                     send(connection, connect);

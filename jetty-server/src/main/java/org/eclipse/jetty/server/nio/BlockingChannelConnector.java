@@ -32,6 +32,7 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.ChannelEndPoint;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.log.Log;
 
 
@@ -50,7 +51,7 @@ import org.eclipse.jetty.util.log.Log;
 public class BlockingChannelConnector extends AbstractNIOConnector 
 {
     private transient ServerSocketChannel _acceptChannel;
-    private final Set<BlockingChannelEndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<BlockingChannelEndPoint,Boolean>());
+    private final Set<BlockingChannelEndPoint> _endpoints = new ConcurrentHashSet<BlockingChannelEndPoint>();
     
     
     /* ------------------------------------------------------------ */
