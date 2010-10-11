@@ -4,6 +4,7 @@ jetty-8.0.0.M2-SNAPSHOT
  + 324493 Registration init parameter handling null check, setInitParameters additive
  + 324505 Request.login method must throw ServletException if it cant login
  + 324872 allow disabling listener restriction from using *Registration interfaces
+ + 327416 Change meaning of @HandlesTypes in line with latest interpretation by JSR315
 
 from jetty-7.2-SNAPSHOT
  + 314087 Simplified SelectorManager

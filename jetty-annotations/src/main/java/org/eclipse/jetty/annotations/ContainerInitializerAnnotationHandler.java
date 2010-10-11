@@ -25,9 +25,11 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 
 /**
- * HandlesTypesAnnotationHandler
+ * ContainerInitializerAnnotationHandler
  *
- * 
+ *  Discovers classes that contain the specified annotation, either at class or
+ *  method level. The specified annotation is derived from an @HandlesTypes on
+ *  a ServletContainerInitializer class. 
  */
 public class ContainerInitializerAnnotationHandler implements DiscoverableAnnotationHandler
 {
@@ -59,7 +61,7 @@ public class ContainerInitializerAnnotationHandler implements DiscoverableAnnota
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
                              List<Value> values)
     {
-       //not valid on methods
+       _initializer.addAnnotatedTypeName(className);
     }
 
 }
