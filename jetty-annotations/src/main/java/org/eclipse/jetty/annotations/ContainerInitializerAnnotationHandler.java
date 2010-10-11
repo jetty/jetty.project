@@ -55,7 +55,7 @@ public class ContainerInitializerAnnotationHandler implements DiscoverableAnnota
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
                             List<Value> values)
     {
-        //Not valid on fields
+       _initializer.addAnnotatedTypeName(className);
     }
 
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
