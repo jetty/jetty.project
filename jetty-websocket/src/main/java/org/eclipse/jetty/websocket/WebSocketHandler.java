@@ -97,15 +97,15 @@ public abstract class WebSocketHandler extends HandlerWrapper
     {
         if ("WebSocket".equals(request.getHeader("Upgrade")))
         {
-            String protocol=request.getHeader(request.getHeader("Sec-WebSocket-Key1")!=null?"Sec-WebSocket-Protocol":"WebSocket-Protocol");
-            WebSocket websocket=doWebSocketConnect(request,protocol);
+            String subprotocol=request.getHeader(request.getHeader("Sec-WebSocket-Key1")!=null?"Sec-WebSocket-Protocol":"WebSocket-Protocol");
+            WebSocket websocket=doWebSocketConnect(request,subprotocol);
 
             String host=request.getHeader("Host");
             String origin=request.getHeader("Origin");
             origin=checkOrigin(request,host,origin);
 
             if (websocket!=null)
-                _websocket.upgrade(request,response,websocket,origin,protocol);
+                _websocket.upgrade(request,response,websocket,origin,subprotocol);
             else
                 response.sendError(503);
         }

@@ -2,6 +2,7 @@ jetty-7.2.0.RC1-SNAPSHOT
  + 289540 added javadoc into distribution
  + 297154 add source distribution artifact
  + 323985 Xmlconfiguration pulls start.jar config properties
+ + 324369 Improved handling of multiple versions of draft-ietf-hybi-thewebsocketprotocol
  + 326734 Configure Digest maxNonceAge with Security handler init param
  + 327109 Fixed AJP handling of empty packets
  + 327183 Allow better configurability of HttpClient for TLS/SSL

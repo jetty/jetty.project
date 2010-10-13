@@ -29,7 +29,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.websocket.WebSocket;
-import org.eclipse.jetty.websocket.WebSocketConnection;
+import org.eclipse.jetty.websocket.WebSocketConnectionD00;
 import org.eclipse.jetty.websocket.WebSocketHandler;
 
 /**
@@ -123,7 +123,7 @@ public class WebSocketUpgradeTest extends TestCase
             protected Connection onSwitchProtocol(EndPoint endp) throws IOException
             {
                 waitFor(3);
-                WebSocketConnection connection = new WebSocketConnection(clientWS,endp,0);
+                WebSocketConnectionD00 connection = new WebSocketConnectionD00(clientWS,endp,0);
 
                 _results.add("onSwitchProtocol");
                 _results.add(connection);
@@ -164,7 +164,7 @@ public class WebSocketUpgradeTest extends TestCase
         assertEquals(new Integer(101), _results.poll(1,TimeUnit.SECONDS));
 
         assertEquals("onSwitchProtocol", _results.poll(1,TimeUnit.SECONDS));
-        WebSocketConnection client_conn=(WebSocketConnection)_results.poll(1,TimeUnit.SECONDS);
+        WebSocketConnectionD00 client_conn=(WebSocketConnectionD00)_results.poll(1,TimeUnit.SECONDS);
 
         assertEquals("clientWS.onConnect", _results.poll(1,TimeUnit.SECONDS));
         assertEquals(client_conn, _results.poll(1,TimeUnit.SECONDS));

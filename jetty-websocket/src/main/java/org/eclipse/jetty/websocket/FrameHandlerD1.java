@@ -22,12 +22,12 @@ final class FrameHandlerD1 implements WebSocketParser.FrameHandler
     public final static byte PING=1;
     public final static byte PONG=1;
 
-    final WebSocketConnection _connection;
+    final WebSocketConnectionD00 _connection;
     final WebSocket _websocket;
     final Utf8StringBuilder _utf8 = new Utf8StringBuilder();
     boolean _fragmented=false;
 
-    FrameHandlerD1(WebSocketConnection connection, WebSocket websocket)
+    FrameHandlerD1(WebSocketConnectionD00 connection, WebSocket websocket)
     {
         _connection=connection;
         _websocket=websocket;
