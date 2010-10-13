@@ -7,6 +7,7 @@ jetty-7.2.0.RC1-SNAPSHOT
  + 327109 Fixed AJP handling of empty packets
  + 327183 Allow better configurability of HttpClient for TLS/SSL
  + 327469 removed needless java6 dependencies
+ + 327562 Implement all X-Forwarded headers in ProxyServlet
  + JETTY-1288 Info statement when atypical classloader set on WebAppContext
 
 jetty-7.2.0.RC0 1 Oct 2010

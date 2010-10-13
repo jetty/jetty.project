@@ -77,6 +77,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * <li>whiteList - comma-separated list of allowed proxy destinations
  * <li>blackList - comma-separated list of forbidden proxy destinations
  * </ul>
+ * 
+ * @see org.eclipse.jetty.server.handler.ConnectHandler
  */
 public class ProxyServlet implements Servlet
 {
@@ -471,8 +473,16 @@ public class ProxyServlet implements Servlet
                 // Proxy headers
                 exchange.setRequestHeader("Via","1.1 (jetty)");
                 if (!xForwardedFor)
+                {
                     exchange.addRequestHeader("X-Forwarded-For",
                             request.getRemoteAddr());
+                    exchange.addRequestHeader("X-Forwarded-Proto",
+                            request.getScheme());
+                    exchange.addRequestHeader("X-Forwarded-Host",
+                            request.getServerName());
+                    exchange.addRequestHeader("X-Forwarded-Server",
+                            request.getLocalName());
+                }
 
                 if (hasContent)
                     exchange.setRequestContentSource(in);

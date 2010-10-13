@@ -19,7 +19,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.ProxyHandler;
+import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.junit.After;
@@ -62,7 +62,7 @@ public class ProxyTunnellingTest
         proxy = new Server();
         proxyConnector = new SelectChannelConnector();
         proxy.addConnector(proxyConnector);
-        ProxyHandler proxyHandler = new ProxyHandler();
+        ConnectHandler proxyHandler = new ConnectHandler();
         proxy.setHandler(proxyHandler);
         proxy.start();
     }
