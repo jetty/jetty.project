@@ -30,7 +30,6 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -45,6 +44,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
@@ -167,7 +167,7 @@ public class MultiPartFilter implements Filter
                     throw new IOException("Missing content-disposition");
                 }
                 
-                StringTokenizer tok=new StringTokenizer(content_disposition,";");
+                QuotedStringTokenizer tok=new QuotedStringTokenizer(content_disposition,";");
                 String name=null;
                 String filename=null;
                 while(tok.hasMoreTokens())
@@ -368,21 +368,7 @@ public class MultiPartFilter implements Filter
     /* ------------------------------------------------------------ */
     private String value(String nameEqualsValue)
     {
-        String value=nameEqualsValue.substring(nameEqualsValue.indexOf('=')+1).trim();
-        int i=value.indexOf(';');
-        if(i>0)
-            value=value.substring(0,i);
-        if(value.startsWith("\""))
-        {
-            value=value.substring(1,value.indexOf('"',1));
-        }
-        else
-        {
-            i=value.indexOf(' ');
-            if(i>0)
-                value=value.substring(0,i);
-        }
-        return value;
+        return nameEqualsValue.substring(nameEqualsValue.indexOf('=')+1).trim();
     }
 
     /* ------------------------------------------------------------------------------- */

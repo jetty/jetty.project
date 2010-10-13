@@ -128,6 +128,37 @@ public class MultipartFilterTest
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
 
+    @Test
+    public void testEncodedPost() throws Exception
+    {
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/dump");
+        
+        String boundary="XyXyXy";
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        
+        
+        String content = "--" + boundary + "\r\n"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"Diplomsko Delo Lektorirano KON&#268;NA.doc\"\r\n"+
+        "Content-Type: application/octet-stream\r\n\r\n"+
+        "How now brown cow."+
+        "\r\n--" + boundary + "--\r\n\r\n";
+        
+        request.setContent(content);
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        assertTrue(response.getContent().indexOf("brown cow")>=0);
+    }
+
     /*
      * Test multipart with parts encoded in base64 (RFC1521 section 5)
      */
