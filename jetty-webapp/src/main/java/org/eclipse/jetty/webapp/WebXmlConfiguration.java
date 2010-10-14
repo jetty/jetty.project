@@ -14,6 +14,7 @@ package org.eclipse.jetty.webapp;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.List;
 
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
@@ -31,8 +32,6 @@ public class WebXmlConfiguration extends AbstractConfiguration
     /* ------------------------------------------------------------------------------- */
     /**
      * 
-     * 
-     * 
      */
     @Override
     public void preConfigure (WebAppContext context) throws Exception
@@ -45,7 +44,6 @@ public class WebXmlConfiguration extends AbstractConfiguration
             if (dftResource == null) 
                 dftResource = context.newResource(defaultsDescriptor);
             context.getMetaData().setDefaults (dftResource);
-           
         }
         
         //parse, but don't process web.xml
@@ -56,13 +54,15 @@ public class WebXmlConfiguration extends AbstractConfiguration
         }
         
         //parse but don't process override-web.xml
-        String overrideDescriptor = context.getOverrideDescriptor();
-        if (overrideDescriptor != null && overrideDescriptor.length() > 0)
+        for (String overrideDescriptor : context.getOverrideDescriptors())
         {
-            Resource orideResource = Resource.newSystemResource(overrideDescriptor);
-            if (orideResource == null) 
-                orideResource = context.newResource(overrideDescriptor);
-            context.getMetaData().setOverride(orideResource);
+            if (overrideDescriptor != null && overrideDescriptor.length() > 0)
+            {
+                Resource orideResource = Resource.newSystemResource(overrideDescriptor);
+                if (orideResource == null) 
+                    orideResource = context.newResource(overrideDescriptor);
+                context.getMetaData().addOverride(orideResource);
+            }
         }
     }
 

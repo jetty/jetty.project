@@ -40,7 +40,7 @@ public class MetaData
     protected Map<String, OriginInfo> _origins  =new HashMap<String,OriginInfo>();
     protected WebDescriptor _webDefaultsRoot;
     protected WebDescriptor _webXmlRoot;
-    protected WebDescriptor _webOverrideRoot;
+    protected final List<WebDescriptor> _webOverrideRoots=new ArrayList<WebDescriptor>();
     protected boolean _metaDataComplete;
     protected final List<DiscoveredAnnotation> _annotations = new ArrayList<DiscoveredAnnotation>();
     protected final List<DescriptorProcessor> _descriptorProcessors = new ArrayList<DescriptorProcessor>();
@@ -152,14 +152,14 @@ public class MetaData
         }    
     }
     
-    public void setOverride (Resource override)
+    public void addOverride (Resource override)
     throws Exception
     {
-        _webOverrideRoot = new OverrideDescriptor(override);
-        _webOverrideRoot.setValidating(false);
-        _webOverrideRoot.parse();
+        OverrideDescriptor webOverrideRoot = new OverrideDescriptor(override);
+        webOverrideRoot.setValidating(false);
+        webOverrideRoot.parse();
         
-        switch(_webOverrideRoot.getMetaDataComplete())
+        switch(webOverrideRoot.getMetaDataComplete())
         {
             case True:
                 _metaDataComplete=true;
@@ -171,12 +171,12 @@ public class MetaData
                 break;
         }
         
-        if (_webOverrideRoot.isOrdered())
+        if (webOverrideRoot.isOrdered())
         {
             if (_ordering == null)
                 _ordering = new Ordering.AbsoluteOrdering(this);
 
-            List<String> order = _webOverrideRoot.getOrdering();
+            List<String> order = webOverrideRoot.getOrdering();
             for (String s:order)
             {
                 if (s.equalsIgnoreCase("others"))
@@ -185,6 +185,7 @@ public class MetaData
                     ((Ordering.AbsoluteOrdering)_ordering).add(s);
             }
         }   
+        _webOverrideRoots.add(webOverrideRoot);
     }
     
     
@@ -281,7 +282,8 @@ public class MetaData
         {
             p.process(context,getWebDefault());
             p.process(context,getWebXml());
-            p.process(context,getOverrideWeb());
+            for (WebDescriptor wd : getOverrideWebs())   
+                p.process(context,wd);
         }
         
         for (DiscoveredAnnotation a:_annotations)
@@ -314,9 +316,11 @@ public class MetaData
     {
         boolean distributable = (
                 (_webDefaultsRoot != null && _webDefaultsRoot.isDistributable()) 
-                || (_webXmlRoot != null && _webXmlRoot.isDistributable())
-                || (_webOverrideRoot != null && _webOverrideRoot.isDistributable()));
-
+                || (_webXmlRoot != null && _webXmlRoot.isDistributable()));
+        
+        for (WebDescriptor d : _webOverrideRoots)
+            distributable&=d.isDistributable();
+        
         List<Resource> orderedResources = getOrderedWebInfJars();
         for (Resource r: orderedResources)
         {  
@@ -333,9 +337,9 @@ public class MetaData
         return _webXmlRoot;
     }
     
-    public WebDescriptor getOverrideWeb ()
+    public List<WebDescriptor> getOverrideWebs ()
     {
-        return _webOverrideRoot;
+        return _webOverrideRoots;
     }
     
     public WebDescriptor getWebDefault ()
