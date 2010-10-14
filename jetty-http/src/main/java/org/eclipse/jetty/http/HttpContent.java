@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
@@ -34,4 +35,76 @@ public interface HttpContent
     long getContentLength();
     InputStream getInputStream() throws IOException;
     void release();
+    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    public class ResourceAsHttpContent implements HttpContent
+    {
+        final Resource _resource;
+        final MimeTypes _mimeTypes;
+
+        public ResourceAsHttpContent(final Resource resource, final MimeTypes mimeTypes)
+        {
+            _resource=resource;
+            _mimeTypes=mimeTypes;
+        }
+
+        /* ------------------------------------------------------------ */
+        public Buffer getContentType()
+        {
+            return _mimeTypes.getMimeByExtension(_resource.toString());
+        }
+
+        /* ------------------------------------------------------------ */
+        public Buffer getLastModified()
+        {
+            return null;
+        }
+
+        /* ------------------------------------------------------------ */
+        public Buffer getDirectBuffer()
+        {
+            return null;
+        }
+
+        /* ------------------------------------------------------------ */
+        public Buffer getIndirectBuffer()
+        {
+            try
+            {
+                ByteArrayBuffer buffer = new ByteArrayBuffer((int)_resource.length());
+                buffer.readFrom(_resource.getInputStream(),(int)_resource.length());
+                return buffer;
+            }
+            catch(IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /* ------------------------------------------------------------ */
+        public long getContentLength()
+        {
+            return _resource.length();
+        }
+
+        /* ------------------------------------------------------------ */
+        public InputStream getInputStream() throws IOException
+        {
+            return _resource.getInputStream();
+        }
+
+        /* ------------------------------------------------------------ */
+        public Resource getResource()
+        {
+            return _resource;
+        }
+
+        /* ------------------------------------------------------------ */
+        public void release()
+        {
+            _resource.release();
+        }
+    }
 }

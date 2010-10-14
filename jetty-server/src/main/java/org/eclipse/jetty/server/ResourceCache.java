@@ -48,6 +48,7 @@ public class ResourceCache
     private final AtomicInteger _cachedFiles;
     private final boolean  _useFileMappedBuffer;
     private final ResourceFactory _factory;
+    private final ResourceCache _parent;
     
     private final MimeTypes _mimeTypes;
     private int _maxCachedFileSize =4*1024*1024;
@@ -59,7 +60,7 @@ public class ResourceCache
      * @param mimeTypes Mimetype to use for meta data
      * @param fileMappedBuffers True if file mapped buffers can be used for DirectBuffers
      */
-    public ResourceCache(ResourceFactory factory, MimeTypes mimeTypes,boolean fileMappedBuffers)
+    public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes,boolean fileMappedBuffers)
     {
         _factory = factory;
         _cache=new ConcurrentHashMap<String,Content>();
@@ -67,6 +68,7 @@ public class ResourceCache
         _cachedFiles=new AtomicInteger();
         _useFileMappedBuffer=fileMappedBuffers;
         _mimeTypes=mimeTypes;
+        _parent=parent;
     }
 
     /* ------------------------------------------------------------ */
@@ -148,37 +150,62 @@ public class ResourceCache
      * Get either a valid entry object or create a new one if possible.
      *
      * @param pathInContext The key into the cache
-     * @return The entry matching <code>pathInContext</code>, or a new entry if no matching entry was found
+     * @return The entry matching <code>pathInContext</code>, or a new entry 
+     * if no matching entry was found. If the content exists but is not cachable, 
+     * then a {@link HttpContent.ResourceAsHttpContent} instance is return. If 
+     * the resource does not exist, then null is returned.
      * @throws IOException Problem loading the resource
      */
-    public Content lookup(String pathInContext)
+    public HttpContent lookup(String pathInContext)
         throws IOException
     {
-        Content content=null;
-
-        // Look up cache operations
-        content = _cache.get(pathInContext);
-        
-        if (content!=null && content.isValid())
+        // Is the content in this cache?
+        Content content =_cache.get(pathInContext);
+        if (content!=null && (content).isValid())
             return content;
        
+        // try loading the content from our factory.
         Resource resource=_factory.getResource(pathInContext);
-        Content loaded = load(pathInContext,resource);
-
-        return loaded;
+        HttpContent loaded = load(pathInContext,resource);
+        if (loaded!=null)
+            return loaded;
+        
+        // Is the content in the parent cache?
+        if (_parent!=null)
+        {
+            HttpContent httpContent=_parent.lookup(pathInContext);
+            if (httpContent!=null)
+                return httpContent;
+        }
+        
+        return null;
     }
-
+    
     /* ------------------------------------------------------------ */
-    private Content load(String pathInContext, Resource resource)
+    /**
+     * @param resource
+     * @return True if the resource is cacheable. The default implementation tests the cache sizes.
+     */
+    protected boolean isCacheable(Resource resource)
+    {
+        long len = resource.length();
+
+        // Will it fit in the cache?
+        return  (len>0 && len<_maxCachedFileSize && len<_maxCacheSize);
+    }
+    
+    /* ------------------------------------------------------------ */
+    private HttpContent load(String pathInContext, Resource resource)
         throws IOException
     {
         Content content=null;
+        
         if (resource!=null && resource.exists() && !resource.isDirectory())
         {
             long len = resource.length();
             
             // Will it fit in the cache?
-            if (len>0 && len<_maxCachedFileSize && len<_maxCacheSize)
+            if (isCacheable(resource))
             {   
                 // Create the Content (to increment the cache sizes before adding the content 
                 content = new Content(pathInContext,resource);
@@ -196,9 +223,9 @@ public class ResourceCache
                 
                 return content;
             }
+            return new HttpContent.ResourceAsHttpContent(resource,_mimeTypes);
         }
-
-        return null; 
+        return null;
     }
     
     /* ------------------------------------------------------------ */
@@ -237,22 +264,6 @@ public class ResourceCache
                     content.invalidate();
             }
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Remember a Resource Miss!
-     * @param pathInContext Path the cache resource at
-     * @param resource The resource to cache.
-     */
-    public void miss(String pathInContext, Resource resource)
-    {
-        if (_maxCachedFiles>0 && _cachedFiles.get()>=_maxCachedFiles)
-            return;
-
-        // check that somebody else did not fill this spot.
-        Miss miss = new Miss(pathInContext,resource);
-        if (_cache.putIfAbsent(pathInContext,miss)!=null)
-            miss.invalidate();
     }
     
     /* ------------------------------------------------------------ */
@@ -341,6 +352,12 @@ public class ResourceCache
         public boolean isCached()
         {
             return _key!=null;
+        }
+        
+        /* ------------------------------------------------------------ */
+        public boolean isMiss()
+        {
+            return false;
         }
 
         /* ------------------------------------------------------------ */
@@ -453,34 +470,6 @@ public class ResourceCache
         public String toString()
         {
             return "{"+_resource+","+_contentType+","+_lastModifiedBytes+"}";
-        }
-        
-        
-    }
-    
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /** MetaData associated with a context Resource.
-     */
-    public class Miss extends Content
-    {
-        Miss(String pathInContext,Resource resource)
-        {
-            super(pathInContext,resource);
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        boolean isValid()
-        {
-            if (_resource.exists())
-            {
-                if (this==_cache.remove(_key))
-                    invalidate();
-                return false;
-            }
-            return true;
-        }
+        }   
     }
 }
