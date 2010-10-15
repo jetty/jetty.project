@@ -5,11 +5,14 @@
   </formats>
   <fileSets>
     <fileSet>
-      <directory>${basedir}/target/export</directory>
+      <directory>${basedir}/../</directory>
       <outputDirectory></outputDirectory>
       <includes>
-        <include>**</include>
+        <include>**/**</include>
       </includes>
+      <excludes>
+        <exclude>**/target/**</exclude>
+      </excludes>
     </fileSet>
   </fileSets>
 </assembly>
