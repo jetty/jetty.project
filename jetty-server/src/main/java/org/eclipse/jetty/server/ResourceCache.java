@@ -200,32 +200,31 @@ public class ResourceCache
     {
         Content content=null;
         
-        if (resource!=null && resource.exists() && !resource.isDirectory())
-        {
-            long len = resource.length();
-            
-            // Will it fit in the cache?
-            if (isCacheable(resource))
-            {   
-                // Create the Content (to increment the cache sizes before adding the content 
-                content = new Content(pathInContext,resource);
-                
-                // reduce the cache to an acceptable size.
-                shrinkCache();
-                
-                // Add it to the cache.
-                Content added = _cache.putIfAbsent(pathInContext,content);
-                if (added!=null)
-                {
-                    content.invalidate();
-                    content=added;
-                }
-                
-                return content;
+        if (resource==null || !resource.exists())
+            return null;
+        
+        // Will it fit in the cache?
+        if (!resource.isDirectory() && isCacheable(resource))
+        {   
+            // Create the Content (to increment the cache sizes before adding the content 
+            content = new Content(pathInContext,resource);
+
+            // reduce the cache to an acceptable size.
+            shrinkCache();
+
+            // Add it to the cache.
+            Content added = _cache.putIfAbsent(pathInContext,content);
+            if (added!=null)
+            {
+                content.invalidate();
+                content=added;
             }
-            return new HttpContent.ResourceAsHttpContent(resource,_mimeTypes);
+
+            return content;
         }
-        return null;
+        
+        return new HttpContent.ResourceAsHttpContent(resource,_mimeTypes);
+        
     }
     
     /* ------------------------------------------------------------ */
