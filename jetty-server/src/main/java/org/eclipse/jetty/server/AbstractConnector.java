@@ -336,6 +336,8 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
      */
     public void setAcceptors(int acceptors)
     {
+        if (acceptors > 2*Runtime.getRuntime().availableProcessors())
+            Log.warn("Acceptors should be <=2*availableProcessors: "+this);
         _acceptors = acceptors;
     }
 
