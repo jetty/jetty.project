@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.security;
 
+import java.io.Serializable;
 import java.security.Principal;
 
 import javax.security.auth.Subject;
@@ -25,9 +26,11 @@ import org.eclipse.jetty.server.UserIdentity;
  * The default implementation of UserIdentity.
  *
  */
-public class DefaultUserIdentity implements UserIdentity
+public class DefaultUserIdentity implements UserIdentity, Serializable
 {
-    private final Subject _subject;
+	private static final long serialVersionUID = 2418992006515454163L;
+	
+	private final Subject _subject;
     private final Principal _userPrincipal;
     private final String[] _roles;
     

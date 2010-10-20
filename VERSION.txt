@@ -1,6 +1,7 @@
 
  + 328199 Ensure blocking connectors always close socket
  + 328205 Improved SelectManager stopping
+ + 328273 Added serializable to default user identity
 
 jetty-7.2.0.v20101020 20 October 2010
  + 289540 added javadoc into distribution
