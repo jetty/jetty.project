@@ -42,18 +42,18 @@ public interface HttpContent
     public class ResourceAsHttpContent implements HttpContent
     {
         final Resource _resource;
-        final MimeTypes _mimeTypes;
+        final Buffer _mimeType;
 
-        public ResourceAsHttpContent(final Resource resource, final MimeTypes mimeTypes)
+        public ResourceAsHttpContent(final Resource resource, final Buffer mimeType)
         {
             _resource=resource;
-            _mimeTypes=mimeTypes;
+            _mimeType=mimeType;
         }
 
         /* ------------------------------------------------------------ */
         public Buffer getContentType()
         {
-            return _mimeTypes.getMimeByExtension(_resource.toString());
+            return _mimeType;
         }
 
         /* ------------------------------------------------------------ */

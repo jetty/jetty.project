@@ -498,6 +498,11 @@ public class ConnectHandler extends HandlerWrapper
                 }
                 return this;
             }
+            catch (ClosedChannelException x)
+            {
+                _logger.debug(x);
+                throw x;
+            }
             catch (IOException x)
             {
                 _logger.warn("ProxyToServer: Unexpected exception", x);

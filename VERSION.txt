@@ -1,3 +1,4 @@
+
 jetty-7.2.0.v20101020 20 October 2010
  + 289540 added javadoc into distribution
  + 297154 add source distribution artifact
@@ -10,6 +11,9 @@ jetty-7.2.0.v20101020 20 October 2010
  + 327562 Implement all X-Forwarded headers in ProxyServlet
  + 327601 Multipart Filter handles quoted tokens
  + 327725 Nested ResourceCaches
+ + 328199 Ensure blocking connectors always close socket
+ + 328205 Improved SelectManager stopping
+ + 328273 Added serializable to default user identity
  + JETTY-1288 Info statement when atypical classloader set on WebAppContext
  + JETTY-1289 LRU cache for filter chains
 
@@ -1312,7 +1316,6 @@ jetty-6.1.8 28 February 2008
  + JETTY-513 Terracotta session replication does not work when the initial page on each server does not set any attributes
  + JETTY-515 Timer is missing scavenging Task in HashSessionManager
 
-
 jetty-6.1.7 - 22 December 2007
  + Added BayeuxService
  + Added JSON.Convertor and non static JSON instances
@@ -1323,7 +1326,7 @@ jetty-6.1.7 - 22 December 2007
  + jetty-6.1 branch created from 6.1.6 and r593 of jetty-contrib trunk
  + Optimizations and improvements of Cometd, more pooled objects
  + Update java5 patch
- + JETTY-386 CERT-553235. backout fix and replaced with ContextHandler.setCompactPath(boolean)
+ + JETTY-386 CERT-553235 backout fix and replaced with ContextHandler.setCompactPath(boolean)
  + JETTY-467 allow URL rewriting to be disabled.
  + JETTY-468 unique holder names for addServletWithMapping
  + JETTY-474 Fixed case sensitivity issue with HttpFields
@@ -1386,8 +1389,8 @@ jetty-6.1.6rc0 - 3 October 2007
  + Removal of unneeded dependencies from management, maven-plugin, naming &  plus poms
  + Adding setUsername,setGroupname to setuid and mavenizing native build
  + UTF-8 for bayeux client
- + CVE-2007-5615 CERT21284 Added protection for response splitting with bad headers.
- + Cached user agents strings in the /org/eclipse/jetty/useragents resource
+ + CVE-2007-5615 Added protection for response splitting with bad headers.
+ + Cached user agents strings in the /org/mortbay/jetty/useragents resource
  + Make default time format for RequestLog match NCSA default
  + Use terracotta repo for build; make jetty a terracotta module
  + Fix patch for java5 to include cometd module
@@ -1420,7 +1423,7 @@ jetty-6.1.5 - 19 Jul 2007
  + Fixed reset of reason
  + JETTY-392 - updated LikeJettyXml example
 
-jetty-6.1.5rc0 - 15 Jul 2007
+jetty-6.1.5rc0 - 15 Jul 200
  + update terracotta session clustering to terracotta 2.4
  + SetUID option to only open connectors before setUID.
  + Protect SslSelectChannelConnector from exceptions during close
@@ -1730,7 +1733,7 @@ jetty-6.1.0rc0 - 8 December 2006
  + JETTY-184 cometd connect non blocking
  + Support for RFC2518 102-processing response
  + JETTY-123 fix improved
- + Added org.eclipse.thread.concurrent.ThreadPool
+ + Added org.mortbay.thread.concurrent.ThreadPool
  + Added extras/gwt
  + Fixed idle timeout
  + JETTY-189 ProxyConnection
@@ -1935,7 +1938,7 @@ jetty-6.0.0rc4 - 5 September 2006
 jetty-6.0.0rc3 - 1 September 2006
  + pulled 6.0.0 branch
  + turn URLConnection caching off when searching for tlds [JETTY-103]
- + Move MailSessionReference to org.eclipse.naming.factories
+ + Move MailSessionReference to org.mortbay.naming.factories
  + Less verbose handling of BadResources from bad URLs
  + Avoid double error handling of Bad requests
  + don't warn for content length on head requests
@@ -1971,7 +1974,7 @@ jetty-6.0.0rc1 - 16 August 2006
  + removed support for lowResources from SelectChannelConnector
  + added start of cometd implementation (JSON only)
  + added start of grizzly connector
- + removed org.eclipse. from context system classes configuration
+ + removed org.mortbay. from context system classes configuration
  + -DSTOP.PORT must be specified.
  + moved optional modules to extras
  + fixed bug that caused Response.setStatus to ignore the provided message
@@ -2034,7 +2037,7 @@ jetty-6.0.0beta16 - 12/5/2006
  + replace backwards compativle API in UrlEncoded
 
 jetty-6.0.0beta15 - 11/5/2006
- + Added Server attribute org.eclipse.jetty.Request.maxFormContentSize
+ + Added Server attribute org.mortbay.jetty.Request.maxFormContentSize
  + Renamed NotFoundHandler to DefaultHandler
  + Added automatic scan of all WEB-INF/jetty-*.xml files for plugin
  + Added <scanTargets> parameter to allow other locations to scan for plugin
@@ -2173,7 +2176,7 @@ Jetty-6.0.0Beta5
 Jetty-6.0.0Beta4
  + System property support in plugin
  + CVE-2006-2758 Fixed JSP visibility security issue.
- + Improved jetty-web.xml access to org.eclipse classes.
+ + Improved jetty-web.xml access to org.mortbay classes.
  + Jasper 5.5.12
 
 Jetty-6.0.0Beta3
@@ -2260,7 +2263,7 @@ Jetty-5.1.9 - 7 December 2005
  + Fixed wantClientAuth(false) overriding netClientAuth(true)
 
 Jetty-6.0.0betaX -
- + See http://jetty.eclipse.org/jetty6 for 6.0 releases
+ + See http://jetty.mortbay.org/jetty6 for 6.0 releases
 
 Jetty-5.1.8 - 7 December 2005
  + Fixed space in URL issued created in 5.1.6
@@ -2273,13 +2276,13 @@ Jetty-5.1.7rc0 - 6 December 2005
  + protect from NPE in dispatcher getValues
  + Updated to 2.6.2 xerces
  + JSP file servlet mappings copy JspServlet init params.
- + Prefix servlet context logs with org.eclipse.jetty.context
+ + Prefix servlet context logs with org.mortbay.jetty.context
  + better support for URI character encodings
  + use commons logging jar instead of api jar.
 
 Jetty-5.1.6 - 18 November 2005
  + CVE-2006-2758 Fixed JSP visibility security issue.
- + Improved jetty-web.xml access to org.eclipse classes.
+ + Improved jetty-web.xml access to org.mortbay classes.
 
 Jetty-5.1.5 - 10 November 2005
  + Improved shutdown hook
@@ -2595,7 +2598,7 @@ Jetty-5.0.beta0 - 22 November 2003
  + PathMap uses own Map.Entry impl for IBM JVMs
  + Use ${jetty.home}/work or WEB-INF/work for temp directories if present
  + Protect ThreadPool.run() from interrupted exceptions
- + Added org.eclipse.http.ErrorHandler for error pages.
+ + Added org.mortbay.http.ErrorHandler for error pages.
  + Fixed init race in HttpFields cache
  + Allow per listener handlers
  + Added MsieSslHandler to handle browsers that don't grok persistent SSL (msie 5)
@@ -2610,7 +2613,7 @@ Jetty-4.2.15rc0 - 22 November 2003
  + Race in HttpFields cache
  + Use ${jetty.home}/work or WEB-INF/work for temp directories if present
  + Protect ThreadPool.run() from interrupted exceptions
- + Added org.eclipse.http.ErrorHandler for error pages.
+ + Added org.mortbay.http.ErrorHandler for error pages.
  + JsseListener checks UserAgent for browsers that can't grok persistent SSL (msie5)
  + Removed the CMR/CMP distributed session implementation
 
@@ -2690,7 +2693,7 @@ Jetty-5.0.alpha0 - 16 Jul 2003
 
 Jetty-4.2.12 - 12 August 2003
  + Restore max inactive interval for session manager
- + Removed protection of org.eclipse.http attributes
+ + Removed protection of org.mortbay.http attributes
  + Fixed parameter ordering for a forward request.
  + Fixed up HTAccessHandler
  + Improved error messages from ProxyHandler
@@ -2740,7 +2743,7 @@ Jetty-4.2.10pre1 - 2 June 2003
  + Deprecated forced chunking.
  + Form authentication remembers URL over 403
  + ProxyHandler has improved test for request content
- + Removed support of org.eclipse.http.User role.
+ + Removed support of org.mortbay.http.User role.
  + Fixed problem with shared session for inter context dispatching.
 
 Jetty-4.2.10pre0 - 5 May 2003
@@ -2873,10 +2876,10 @@ Jetty-4.2.3 - 2 December 2002
  + Updated bat scripts
  + Added PKCS12Import class to import PKCS12 key directly
  + removed old HttpContext.setDirAllowed()
- + added main() to org.eclipse.http.Version
+ + added main() to org.mortbay.http.Version
  + Check form authentication config for leading /
  + Cleaner servlet stop to avoid extra synchronization on handle
- + org.eclipse.http.HttpContext.FileClassPathAttribute
+ + org.mortbay.http.HttpContext.FileClassPathAttribute
 
 Jetty-4.2.2 - 20 November 2002
  + Fixed sendRedirect for non http URLS
@@ -2986,7 +2989,7 @@ Jetty-4.1.1 - 30 September 2002
  + Fixed client scripting vulnerability with jasper2.
  + Merged LimitedNCSARequestLog into NCSARequestLog
  + Fixed space in resource name handling for jdk1.4
- + Moved launcher/src to src/org/eclipse/start
+ + Moved launcher/src to src/org/mortbay/start
  + Fixed infinite recursion in JDBCUserRealm
  + Avoid setting sotimeout for optimization.
  + String comparison of If-Modified-Since headers.
@@ -3285,7 +3288,7 @@ Jetty-4.0.B2 - 25 Feb 2002
  + Start ServletHandler as part of the FilterHandler start.
  + Simplified addWebApplication
  + Added String constructor to XmlConfiguration.
- + Added org.eclipse.http.JDBCUserRealm
+ + Added org.mortbay.http.JDBCUserRealm
  + Init classloader for JspServlet
  + Slightly more agressive eating unused input from non persistent connection.
 
@@ -3435,7 +3438,7 @@ change to UserPrinciple and UserRealm.
  + Fixed binary files in CVS
  + Fixed Virtual hosts to case insensitive.
  + PathMap spec separator changed from ',' to ':'. May be set with
-org.eclipse.http.PathMap.separators system property.
+org.mortbay.http.PathMap.separators system property.
  + Correct dispatch to error pages with javax attributes set.
 
 Jetty-3.1.2 - 13 Oct 2001
@@ -3486,7 +3489,7 @@ Jetty-3.1.0 - 21 Sep 2001
 
 Jetty-3.1.rc9 - 02 Sep 2001
  + Added bin/orgPackage.sh script to change package names.
- + Changed to org.eclipse domain names.
+ + Changed to org.mortbay domain names.
  + Form auth login and error pages relative to context path.
  + Fixed handling of rel form authentication URLs
  + Added support for Nonblocking listener.
@@ -3738,7 +3741,7 @@ improved WriterLogSink.
  + ThreadedServer.forceStop() now makes a connection to itself to handle non-premptive close.
  + Double null lock checks use ThreadPool.__nullLockChecks.
  + Split Debug servlet out of Admin Servlet.
- + Added Com.eclipse.HTTP.Handler.Servlet.Context.LogSink attribute
+ + Added Com.mortbay.HTTP.Handler.Servlet.Context.LogSink attribute
 to Servlet Context. If set, it is used in preference to the system log.
 
 Jetty-3.0.0.rc6 - 20 Nov 2000
@@ -3764,7 +3767,7 @@ Jetty-3.0.0.rc6 - 20 Nov 2000
  + Session cookies are given context path
  + Put extra server and servlet info in header.
  + Version details in header can be suppressed with System property
-java.com.eclipse.HTTP.Version.paranoid
+java.com.mortbay.HTTP.Version.paranoid
  + Prevent reloading dynamic servlets at different paths.
  + Implemented resource aliases in HandlerContext - used by Servlet Context
  + Map tablib configuration to resource aliases.
@@ -3807,7 +3810,7 @@ Jetty-3.0.0.rc3 - 5 Nov 2000
  + upgraded build.xml to ant v1.2
  + Set MaxReadTimeMs in all examples
  + Further clean up of the connection close actions
- + Moved unused classes from com.eclipse.Util to com.eclipse.Tools in
+ + Moved unused classes from com.mortbay.Util to com.mortbay.Tools in
 new distribution package.
  + Handle mime suffixes containing dots.
  + Added gz tgz tar.gz .z mime mappings.
@@ -3838,7 +3841,7 @@ Jetty-3.0.0.rc1 - 22 Oct 2000
  + Added Multipart request and response classes from Jetty2
  + Moved and simplified ServletLoader to ContextLoader.
  + Initialize JSP with classloader.
- + All attributes in javax. java. and com.eclipse. name spaces to be set.
+ + All attributes in javax. java. and com.mortbay. name spaces to be set.
  + Partial handling of 0.9 requests.
  + removed Thread.destroy() calls.
  + Cleaned up exception handling.
@@ -3928,7 +3931,7 @@ only partially validating, but small and lightweight
 Jetty-2.4.6 - 16th Aug 2000
  + Turn Linger off before closing sockets, to allow restart.
  + JsseListener & SunJsseListener added and documented
- + com.eclipse.Util.KeyPairTool added to handle openSSL SSL keys.
+ + com.mortbay.Util.KeyPairTool added to handle openSSL SSL keys.
  + Minor changes to compile with jikes.
  + Added passive mode methods to FTP
 
@@ -4029,7 +4032,7 @@ Jetty-3.0.A9 - 7 May 2000
 
 Jetty-3.0.A8 4th May 2000
  + Servlet2_1 class loading re-acrchitected. See README.
- + Moved Sevlet2_1 handler to com.eclipse.Servlet2_1
+ + Moved Sevlet2_1 handler to com.mortbay.Servlet2_1
  + addCookie takes an int maxAge rather than a expires date.
  + Added LogSink extensible log architecture.
  + Code.ignore only outputs when debug is verbose.
@@ -4173,7 +4176,7 @@ specification (ie. /exact, /prefix/*, *.extention & default ).
 
 Jetty-3.0.A0 - 9 Oct 1999
  + Started fresh repository in CVS
- + Moved com.eclipse.Base classes to com.eclipse.Util
+ + Moved com.mortbay.Base classes to com.mortbay.Util
  + Cleanup of UrlEncoded, using 1.2 Collections.
  + Cleanup of URI, using 1.2 Collections.
  + Extended URI to handle absolute URLs
@@ -4271,7 +4274,7 @@ Jetty-2.2.4 - 2 Aug 1999
 Jetty-2.2.3 - 27 July 1999
  + Fixed parser bug in HtmlFilter
  + Made setInitialize public in ServletHolder
- + Improved performance of com.eclipse.HTML.Heading
+ + Improved performance of com.mortbay.HTML.Heading
  + Added stop call to HttpServer, used by Exit Servlet.
  + Simplified JDBC connection handling so that it works
 with Java1.2 - albeit less efficiently.
@@ -4284,12 +4287,12 @@ from being written.
  + Implemented getResourceAsStream in FileJarServletLoader
  + Fixed bug with CLASSPATH in FileJarServletLoader after attempt
 to load from a jar.
- + Fixed bug in com.eclipse.Util.IO with thread routines.
+ + Fixed bug in com.mortbay.Util.IO with thread routines.
  + Moved more test harnesses out of classes.
  + File handler passes through not allowed options for
 non existant files.
  + NotFoundHandler can repond with SC_METHOD_NOT_ALLOWED.
- + Improved com.eclipse.Base.Log handling of different JVMs
+ + Improved com.mortbay.Base.Log handling of different JVMs
  + Minor fixes to README
 
 Jetty-2.2.1 - 18 July 1999
@@ -4302,7 +4305,7 @@ Jetty-2.2.1 - 18 July 1999
 circumstances
  + Handle continuation lines in HttpHeader.
  + HtmlFilter resets last-modified and content-length headers.
- + Implemented com.eclipse.Util.IO as a ThreadPool
+ + Implemented com.mortbay.Util.IO as a ThreadPool
  + Decoupled ExceptionHandler configuration from Handler stacks.
 Old config style will produce warning and Default behavior.
 See new config file format for changes.
@@ -4326,7 +4329,7 @@ Jetty-2.2.Beta4 - 29 June 1999
  + Added getGlobalProperty to Jetty.Server and used this to
 configure default page type.
  + Updated README.txt
- + Restructured com.eclipse.Jetty.Server for better clarity and
+ + Restructured com.mortbay.Jetty.Server for better clarity and
 documentation.
  + Added comments to configuration files.
  + Made ServerSocket and accept call generic in ThreadedServer for
@@ -4361,7 +4364,7 @@ be restarted in same virtual machine.
 
 Jetty-2.2.Beta2 - 12 June 1999
  + Added all write methods to HttpOutputStream$SwitchOutputStream
- + Added com.eclipse.Jetty.Server.shutdown() for gentler shutdown
+ + Added com.mortbay.Jetty.Server.shutdown() for gentler shutdown
 of server. Called from Exit servlet
  + HttpRequest.getParameterNames() no longer alters the order
 returned by getQueryString().
@@ -4406,7 +4409,7 @@ times
 servlet to be initialized when loaded.
  + LogHandler changed to support only a single outfile and optional
 append.
- + Included contributed com.eclipse.Jetty.StressTester class
+ + Included contributed com.mortbay.Jetty.StressTester class
  + Token effort to keep test files out of the jar
  + Removed support for STF
 
@@ -4455,7 +4458,7 @@ Jetty-2.1.5 - 15 April 1999
  + Session URL encoding fixed for relative URLs.
  + Reduced session memory overhead of sessions
  + Form parameters protected against multiple decodes when redirected.
- + Added setType methods to com.eclipse.FTP.Ftp
+ + Added setType methods to com.mortbay.FTP.Ftp
  + Fixed bugs with invalid sessions
  + Page factory requires response for session encoding
  + Moved SessionHandler to front of stacks
@@ -4463,7 +4466,7 @@ Jetty-2.1.5 - 15 April 1999
 required.
  + Instrumented most of the demo to support URL session encoding.
  + Implemented HttpRequest.getReader()
- + Servlet log has been diverted to com.eclipse.Base.Log.event()
+ + Servlet log has been diverted to com.mortbay.Base.Log.event()
 Thus debug does not need to be turned on to see servlet logs.
  + Fixed alignment bug in TableForm
  + Removed RFCs from package
@@ -4496,7 +4499,7 @@ Jetty-2.1.2 - 9 March 1999
 Jetty-2.1.1 - 5 March 1999
  + Reduced number of calls to getRemoteHost for optimization
  + Faster version of HttpInputStream.readLine().
- + com.eclipse.Base.DateCache class added and used to speed date handling.
+ + com.mortbay.Base.DateCache class added and used to speed date handling.
  + Handle '.' in configured paths (temp fix until PropertyTrees)
  + Fast char buffer handling in HttpInputStream
  + Faster version of HttpHeader.read()
@@ -4508,7 +4511,7 @@ Jetty-2.1.0 - 22 February 1999
  + PropertyTrees (see new Demo page)
  + ServletDispatch (see new Demo page)
  + image/jpg -> image/jpeg
- + Deprecated com.eclipse.Util.STF
+ + Deprecated com.mortbay.Util.STF
  + getServlet methods return null.
 
 Jetty-2.1.B1 - 13 February 1999
@@ -4522,14 +4525,14 @@ Jetty-2.1.B1 - 13 February 1999
  + Improved handling of File.separator in FileHandler.
  + Implemented RequestDispatcher (NOT Tested!).
  + Implemented getResource and getResourceAsStream (NOT Tested!).
- + Replace package com.eclipse.Util.Gateway with
-class  com.eclipse.Util.InetGateway
+ + Replace package com.mortbay.Util.Gateway with
+class  com.mortbay.Util.InetGateway
 
 Jetty-2.1.B0 - 30 January 1999
  + Uses JSDK2.1 API, but not all methods implemented.
  + Added support for PUT, MOVE, DELETE in FileHandler
  + FileHandler now sets content length.
- + Added plug gateway classes com.eclipse.Util.Gateway
+ + Added plug gateway classes com.mortbay.Util.Gateway
  + Fixed command line bug with SimpleServletConfig
  + Minor changes to support MS J++ and its non standard
 language extensions - MMMmmm should have left it unchanged!
@@ -4550,10 +4553,10 @@ Jetty-2.0.3 - 13 November 1998
  + Limit threads in ThreadedServer and low priority listener option
 greatly improve performance under worse case loads.
  + Fix bug with index files for Jetty.Server. Previously servers
-configured with com.eclipse.Jetty.Server would not handle
+configured with com.mortbay.Jetty.Server would not handle
 index.html files.  Need to make this configurable in the prp file.
- + Fixed errors in README file: com.eclipse.Jetty.Server was called
-com.eclipse.HTTP.Server
+ + Fixed errors in README file: com.mortbay.Jetty.Server was called
+com.mortbay.HTTP.Server
 
 Jetty-2.0.2 - 1 November 1998
  + Use JETTY_HOME rather than MORTBAY_HOME for build environment
@@ -4575,10 +4578,10 @@ Jetty-2.0.Beta3 - 29 Sep 1998
  + Send 301 for directories without trailing / in FileHandler
  + Ignore exception from HttpListener
  + Properly implemented multiple listening addresses
- + Added com.eclipse.Jetty.Server (see README.Jetty)
- + Demo converted to an instance of com.eclipse.Jetty.Server
+ + Added com.mortbay.Jetty.Server (see README.Jetty)
+ + Demo converted to an instance of com.mortbay.Jetty.Server
  + Fixed Log Handler again.
- + Added com.eclipse.HTTP.MultiPartRequest to handle file uploads
+ + Added com.mortbay.HTTP.MultiPartRequest to handle file uploads
 
 Jetty-2.0Beta2 - July 1998
  + Fixed Log Handler for HTTP/1.1
@@ -4588,8 +4591,8 @@ Jetty-2.0Beta1 - June 1998
  + Improved performance of Code.debug() calls, significantly
 in the case of non matching debug patterns.
  + Fixed bug with calls to service during initialization of servlet
- + Provided addSection on com.eclipse.HTML.Page
- + Provided reset on com.eclipse.HTML.Composite.
+ + Provided addSection on com.mortbay.HTML.Page
+ + Provided reset on com.mortbay.HTML.Composite.
  + Proxy demo in different server instance
  + Handle full URLs in HTTP requests (to some extent)
  + Improved performance with special asciiToLowerCase
@@ -4608,14 +4611,14 @@ Jetty-2.0Alpha2 - May 1998
 
 Jetty-1.3.5 May 1998
  + Fixed socket inet bug in FTP
- + Debug triggers added to com.eclipse.Base.Code
+ + Debug triggers added to com.mortbay.Base.Code
  + Added date format to Log
  + Correct handling of multiple parameters
 
 Jetty-2.0Alpha1 Wed 8 April 1998
  + Fixed forward bug with no port number
  + Removed HttpRequestHeader class
- + Debug triggers added to com.eclipse.Base.Code
+ + Debug triggers added to com.mortbay.Base.Code
  + Handle HTTP/1.1 Host: header
  + Correct formatting of Date HTTP headers
  + HttpTests test harness
@@ -4671,15 +4674,13 @@ Jetty-1.1.1
  + Improved documentation
 
 Jetty-1.1
- + Improved connection caching in java.eclipse.JDBC
- + Moved HttpCode to com.eclipse.Util
+ + Improved connection caching in java.mortbay.JDBC
+ + Moved HttpCode to com.mortbay.Util
 
 Jetty-1.0.1
  + Bug fixes
 
 Jetty-1.0
- + First release in com.eclipse package structure
+ + First release in com.mortbay package structure
  + Included Util, JDBC, HTML, HTTP, Jetty
-
-
 

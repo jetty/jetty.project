@@ -89,37 +89,35 @@ public class PropertyUserStoreTest
 		final List<String> users = new ArrayList<String>();
 		
 		PropertyUserStore store = new PropertyUserStore();
-		store.setRefreshInterval(2);
+		store.setRefreshInterval(1);
 		store.setConfig(testFile);
 		
-		store.registerUserListener(new PropertyUserStore.UserListener() {
-			
-			public void update(String username, Credential credential, String[] roleArray) 
-			{
-				if ( !users.contains(username))
-				{
-					users.add(username);
-					userCount.getAndIncrement();
-				}
-			}
-			
-			public void remove(String username) 
-			{
-				
-			}
+		store.registerUserListener(new PropertyUserStore.UserListener() 
+		{
+		    public void update(String username, Credential credential, String[] roleArray) 
+		    {
+		        if ( !users.contains(username))
+		        {
+		            users.add(username);
+		            userCount.getAndIncrement();
+		        }
+		    }
+
+		    public void remove(String username) 
+		    {
+
+		    }
 		});
 				
 		store.start();
-
 		Assert.assertEquals(3, userCount.get());
-	
-		store.start();
 				
-		Thread.sleep(2000);
-		
+		Thread.sleep(1100);
+                Assert.assertEquals(3, userCount.get());
+                
 		writeAdditionalUser(testFile);
 		
-		Thread.sleep(2000);
+		Thread.sleep(2200);
 		
 		Assert.assertEquals(4, userCount.get());
 		Assert.assertTrue(users.contains("skip"));		

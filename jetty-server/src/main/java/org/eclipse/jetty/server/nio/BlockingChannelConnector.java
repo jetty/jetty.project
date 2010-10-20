@@ -314,6 +314,16 @@ public class BlockingChannelConnector extends AbstractNIOConnector
             {
                 connectionClosed(_connection);
                 _endpoints.remove(this);
+                
+                // ensure it really is closed and not just shutdown.
+                try
+                {
+                    _socket.close();
+                }
+                catch(IOException e)
+                {
+                    Log.ignore(e);
+                }
             }
         }
     }

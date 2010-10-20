@@ -462,7 +462,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 {
                     // ensure we have content
                     if (content==null)
-                        content=new HttpContent.ResourceAsHttpContent(resource,_mimeTypes);
+                        content=new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()));
 
                     if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
                     {
@@ -532,7 +532,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 }
                 else
                 {
-                    content=new HttpContent.ResourceAsHttpContent(resource,_mimeTypes);
+                    content=new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()));
                     if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
                         sendDirectory(request,response,resource,pathInContext);
                 }
