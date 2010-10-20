@@ -23,6 +23,9 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
@@ -417,6 +420,10 @@ public abstract class SelectorManager extends AbstractLifeCycle
                             key.attach(endpoint);
                             endpoint.schedule();
                         }
+                        else if (change instanceof Closer)
+                        {
+                            ((Closer)change).close();
+                        }
                         else if (change instanceof Runnable)
                         {
                             dispatch((Runnable)change);
@@ -777,41 +784,33 @@ public abstract class SelectorManager extends AbstractLifeCycle
         /* ------------------------------------------------------------ */
         void stop() throws Exception
         {
-            boolean selecting=true;
-            while(selecting)
+            final CountDownLatch closed = new CountDownLatch(1);
+            
+            // Create runnable to close all end points
+            Closer close = new Closer()
             {
-                wakeup();
-                selecting=_selecting!=null;
-            }
-
-            for (SelectionKey key:_selector.keys())
-            {
-                if (key==null)
-                    continue;
-                Object att=key.attachment();
-                if (att instanceof EndPoint)
+                public void close()
                 {
-                    EndPoint endpoint = (EndPoint)att;
                     try
                     {
-                        endpoint.close();
+                        super.close();
                     }
-                    catch(IOException e)
+                    finally
                     {
-                        Log.ignore(e);
-                    }
+                        closed.countDown();
+                    } 
                 }
-            }
+            };
+            
+            // Try to get the selector to run the close as a change
+            addChange(close);
+
+            // if it has not been called, call it directly
+            if (!closed.await(1,TimeUnit.SECONDS))
+                close.close();   
             
             synchronized (this)
             {
-                selecting=_selecting!=null;
-                while(selecting)
-                {
-                    wakeup();
-                    selecting=_selecting!=null;
-                }
-                
                 _timeout.cancelAll();
                 try
                 {
@@ -841,6 +840,31 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 }
             }
         }
+
+        private class Closer
+        {
+            public void close()
+            {
+                for (SelectionKey key:_selector.keys())
+                {
+                    if (key==null)
+                        continue;
+                    Object att=key.attachment();
+                    if (att instanceof EndPoint)
+                    {
+                        EndPoint endpoint = (EndPoint)att;
+                        try
+                        {
+                            endpoint.close();
+                        }
+                        catch(IOException e)
+                        {
+                            Log.ignore(e);
+                        }
+                    }
+                }
+            }   
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -856,4 +880,5 @@ public abstract class SelectorManager extends AbstractLifeCycle
             _attachment = attachment;
         }
     }
+    
 }
