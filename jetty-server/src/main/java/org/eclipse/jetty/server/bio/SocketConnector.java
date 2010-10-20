@@ -266,6 +266,16 @@ public class SocketConnector extends AbstractConnector
                 {
                     _connections.remove(this);
                 }
+
+                // ensure it really is closed and not just shutdown.
+                try
+                {
+                    _socket.close();
+                }
+                catch(IOException e)
+                {
+                    Log.ignore(e);
+                }
             }
         }
     }
