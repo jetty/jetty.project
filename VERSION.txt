@@ -1,8 +1,4 @@
 
- + 328199 Ensure blocking connectors always close socket
- + 328205 Improved SelectManager stopping
- + 328273 Added serializable to default user identity
-
 jetty-7.2.0.v20101020 20 October 2010
  + 289540 added javadoc into distribution
  + 297154 add source distribution artifact
@@ -15,6 +11,9 @@ jetty-7.2.0.v20101020 20 October 2010
  + 327562 Implement all X-Forwarded headers in ProxyServlet
  + 327601 Multipart Filter handles quoted tokens
  + 327725 Nested ResourceCaches
+ + 328199 Ensure blocking connectors always close socket
+ + 328205 Improved SelectManager stopping
+ + 328273 Added serializable to default user identity
  + JETTY-1288 Info statement when atypical classloader set on WebAppContext
  + JETTY-1289 LRU cache for filter chains
 
