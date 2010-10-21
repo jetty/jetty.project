@@ -148,7 +148,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                     if (user!=null)
                     {
                         renewSessionOnAuthentication(request,response);
-                        return new UserAuthentication(this,user);
+                        return new UserAuthentication(getAuthMethod(),user);
                     }
                 }
                 else if (n == 0) 
@@ -274,6 +274,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
     private static class Digest extends Credential
     {
+        private static final long serialVersionUID = -2484639019549527724L;
         String method = null;
         String username = null;
         String realm = null;
@@ -291,6 +292,7 @@ public class DigestAuthenticator extends LoginAuthenticator
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public boolean check(Object credentials)
         {
             if (credentials instanceof char[])

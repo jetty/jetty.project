@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,12 +30,14 @@ import java.util.concurrent.ConcurrentMap;
  * that operate on multi valued items. 
  * <P>
  * Implemented as a map of LazyList values
+ * @param <K> The key type of the map.
  *
  * @see LazyList
  * 
  */
-public class MultiMap<K> implements ConcurrentMap<K,Object>
+public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
 {
+    private static final long serialVersionUID = -6878723138353851005L;
     Map<K,Object> _map;
     ConcurrentMap<K, Object> _cmap;
 

@@ -26,11 +26,9 @@ import org.eclipse.jetty.server.UserIdentity;
  * The default implementation of UserIdentity.
  *
  */
-public class DefaultUserIdentity implements UserIdentity, Serializable
-{
-	private static final long serialVersionUID = 2418992006515454163L;
-	
-	private final Subject _subject;
+public class DefaultUserIdentity implements UserIdentity
+{    
+    private final Subject _subject;
     private final Principal _userPrincipal;
     private final String[] _roles;
     
@@ -62,9 +60,9 @@ public class DefaultUserIdentity implements UserIdentity, Serializable
         return false;
     }
 
+    @Override
     public String toString()
     {
         return DefaultUserIdentity.class.getSimpleName()+"('"+_userPrincipal+"')";
     }
-    
 }

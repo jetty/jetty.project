@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.SessionManager;
 
 public abstract class LoginAuthenticator implements Authenticator
 {
+    public final static String SESSION_SECURED="org.eclipse.jetty.security.secured";
     protected final DeferredAuthentication _deferred=new DeferredAuthentication(this);
     protected LoginService _loginService;
     protected IdentityService _identityService;
@@ -62,7 +63,7 @@ public abstract class LoginAuthenticator implements Authenticator
     protected HttpSession renewSessionOnAuthentication(HttpServletRequest request, HttpServletResponse response)
     {
         HttpSession httpSession = request.getSession(false);
-        if (_renewSession && httpSession!=null && httpSession.getAttribute("org.eclipse.jetty.security.secured")==null)
+        if (_renewSession && httpSession!=null && httpSession.getAttribute(SESSION_SECURED)==null)
         {
             synchronized (this)
             {
@@ -75,7 +76,7 @@ public abstract class LoginAuthenticator implements Authenticator
                 }
                 httpSession.invalidate();
                 httpSession = request.getSession(true);
-                httpSession.setAttribute("org.eclipse.jetty.security.secured",Boolean.TRUE);
+                httpSession.setAttribute(SESSION_SECURED,Boolean.TRUE);
                 for (Map.Entry<String, Object> entry: attributes.entrySet())
                     httpSession.setAttribute(entry.getKey(),entry.getValue());
             }

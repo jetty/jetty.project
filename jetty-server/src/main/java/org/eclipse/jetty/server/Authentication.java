@@ -30,8 +30,6 @@ import javax.servlet.http.HttpServletResponse;
  */
 public interface Authentication
 {
-
-
     /* ------------------------------------------------------------ */
     /** A successful Authentication with User information.
      */
@@ -40,7 +38,7 @@ public interface Authentication
         String getAuthMethod();
         UserIdentity getUserIdentity(); 
         boolean isUserInRole(UserIdentity.Scope scope,String role);
-        void logout(); 
+        void logout();
     }
     
     /* ------------------------------------------------------------ */

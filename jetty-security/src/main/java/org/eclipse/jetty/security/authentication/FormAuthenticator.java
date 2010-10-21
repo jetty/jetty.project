@@ -199,9 +199,9 @@ public class FormAuthenticator extends LoginAuthenticator
                     response.setContentLength(0);   
                     response.sendRedirect(response.encodeRedirectURL(nuri));
 
-                    Authentication cached=new SessionAuthentication(session,this,user);
+                    Authentication cached=new SessionAuthentication(getAuthMethod(),user,password);
                     session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
-                    return new FormAuthentication(this,user);
+                    return new FormAuthentication(getAuthMethod(),user);
                 }
                 
                 // not authenticated
@@ -436,13 +436,19 @@ public class FormAuthenticator extends LoginAuthenticator
         }
     }
     
+    /* ------------------------------------------------------------ */
+    /** This Authentication represents a just completed Form authentication.
+     * Subsequent requests from the same user are authenticated by the presents 
+     * of a {@link SessionAuthentication} instance in their session.
+     */
     public static class FormAuthentication extends UserAuthentication implements Authentication.ResponseSent
     {
-        public FormAuthentication(Authenticator authenticator, UserIdentity userIdentity)
+        public FormAuthentication(String method, UserIdentity userIdentity)
         {
-            super(authenticator,userIdentity);
+            super(method,userIdentity);
         }
         
+        @Override
         public String toString()
         {
             return "Form"+super.toString();

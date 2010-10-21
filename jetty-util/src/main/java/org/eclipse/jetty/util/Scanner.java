@@ -129,12 +129,12 @@ public class Scanner
         return (_scanDirs==null?null:(File)_scanDirs.get(0));
     }
 
-    public void setScanDirs (List dirs)
+    public void setScanDirs (List<File> dirs)
     {
         _scanDirs = dirs;
     }
     
-    public List getScanDirs ()
+    public List<File> getScanDirs ()
     {
         return _scanDirs;
     }

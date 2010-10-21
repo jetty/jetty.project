@@ -145,7 +145,7 @@ public class JaspiAuthenticator implements Authenticator
                     String[] groups = groupPrincipalCallback == null ? null : groupPrincipalCallback.getGroups();
                     userIdentity = _identityService.newUserIdentity(clientSubject, principal, groups);
                 }
-                return new UserAuthentication(this, userIdentity);
+                return new UserAuthentication(getAuthMethod(), userIdentity);
             }
             if (authStatus == AuthStatus.SEND_SUCCESS)
             {

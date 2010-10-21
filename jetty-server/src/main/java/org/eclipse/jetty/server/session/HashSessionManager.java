@@ -414,26 +414,39 @@ public class HashSessionManager extends AbstractSessionManager
             Log.warn ("Unable to restore Sessions: Cannot read from Session storage directory "+_storeDir.getAbsolutePath());
             return;
         }
-
-        File[] files = _storeDir.listFiles();
-        for (int i=0;files!=null&&i<files.length;i++)
-        {
-            try
-            {
-                FileInputStream in = new FileInputStream(files[i]);           
-                HashedSession session = restoreSession(in);
-                in.close();          
-                addSession(session, false);
-                session.didActivate();
-                files[i].delete();
-            }
-            catch (Exception e)
-            {
-                Log.warn("Problem restoring session "+files[i].getName(), e);
-            }
-        }
         
-         _sessionsLoaded = true;
+        
+        Runnable restore = new Runnable()
+        {
+            public void run()
+            {
+
+                File[] files = _storeDir.listFiles();
+                for (int i=0;files!=null&&i<files.length;i++)
+                {
+                    try
+                    {
+                        FileInputStream in = new FileInputStream(files[i]);           
+                        HashedSession session = restoreSession(in);
+                        in.close();          
+                        addSession(session, false);
+                        session.didActivate();
+                        files[i].delete();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.warn("Problem restoring session "+files[i].getName(), e);
+                    }
+                }
+
+                _sessionsLoaded = true;
+            }
+        };
+        
+        if (_context==null)
+            restore.run();
+        else
+            _context.getContextHandler().handle(restore);
     }
 
     /* ------------------------------------------------------------ */
@@ -449,33 +462,43 @@ public class HashSessionManager extends AbstractSessionManager
             Log.warn ("Unable to save Sessions: Session persistence storage directory "+_storeDir.getAbsolutePath()+ " is not writeable");
             return;
         }
- 
-        synchronized (this)
+
+        Runnable save = new Runnable()
         {
-            Iterator<Map.Entry<String, HashedSession>> itor = _sessions.entrySet().iterator();
-            while (itor.hasNext())
+            public void run()
             {
-                Map.Entry<String,HashedSession> entry = itor.next();
-                String id = (String)entry.getKey();
-                HashedSession session = (HashedSession)entry.getValue();
-                try
+                synchronized (HashSessionManager.this)
                 {
-                    File file = new File (_storeDir, id);
-                    if (file.exists())
-                        file.delete();
-                    file.createNewFile();
-                    FileOutputStream fos = new FileOutputStream (file);
-                    session.willPassivate();
-                    session.save(fos);
-                        session.didActivate();
-                    fos.close();
-                }
-                catch (Exception e)
-                {
-                    Log.warn("Problem persisting session "+id, e);
+                    Iterator<Map.Entry<String, HashedSession>> itor = _sessions.entrySet().iterator();
+                    while (itor.hasNext())
+                    {
+                        Map.Entry<String,HashedSession> entry = itor.next();
+                        String id = (String)entry.getKey();
+                        HashedSession session = (HashedSession)entry.getValue();
+                        try
+                        {
+                            File file = new File (_storeDir, id);
+                            if (file.exists())
+                                file.delete();
+                            file.createNewFile();
+                            FileOutputStream fos = new FileOutputStream (file);
+                            session.willPassivate();
+                            session.save(fos);
+                            session.didActivate();
+                            fos.close();
+                        }
+                        catch (Exception e)
+                        {
+                            Log.warn("Problem persisting session "+id, e);
+                        }
+                    }
                 }
             }
-        }
+        };
+        if (_context==null)
+            save.run();
+        else
+            _context.getContextHandler().handle(save);
     }
 
     /* ------------------------------------------------------------ */
@@ -628,7 +651,15 @@ public class HashSessionManager extends AbstractSessionManager
                 ObjectOutputStream oos = new ObjectOutputStream(out);
                 while (itor.hasNext())
                 {
-                    oos.writeObject(itor.next());
+                    Object o = itor.next();
+                    try
+                    {
+                        oos.writeObject(o);
+                    }
+                    catch(Exception e)
+                    {
+                        Log.warn("Failed to save "+o+" of type "+o.getClass()+" for "+getId(),e);
+                    }
                 }
                 oos.close();
             }

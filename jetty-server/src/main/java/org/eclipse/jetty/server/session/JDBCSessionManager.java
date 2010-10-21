@@ -261,7 +261,6 @@ public class JDBCSessionManager extends AbstractSessionManager
          */
         protected Session (HttpServletRequest request)
         {
-         
             super(request);   
             _data = new SessionData(_clusterId);
             _data.setMaxIdleMs(_dftMaxIdleSecs*1000);

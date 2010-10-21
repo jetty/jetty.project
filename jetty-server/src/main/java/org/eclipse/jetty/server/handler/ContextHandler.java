@@ -90,8 +90,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
     /* ------------------------------------------------------------ */
     /** Get the current ServletContext implementation.
-     * This call is only valid during a call to doStart and is available to
-     * nested handlers to access the context.
      *
      * @return ServletContext implementation
      */
@@ -839,6 +837,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
             // Update the paths
             baseRequest.setContext(_scontext);
+            __context.set(_scontext);
             if (!DispatcherType.INCLUDE.equals(dispatch) && target.startsWith("/"))
             {
                 if (_contextPath.length()==1)
@@ -872,6 +871,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
                 // reset the context and servlet path.
                 baseRequest.setContext(old_context);
+                __context.set(old_context);
                 baseRequest.setContextPath(old_context_path);
                 baseRequest.setServletPath(old_servlet_path);
                 baseRequest.setPathInfo(old_path_info);
@@ -956,8 +956,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         ClassLoader old_classloader=null;
         Thread current_thread=null;
+        Context old_context=null;
         try
         {
+            old_context=__context.get();
+            __context.set(_scontext);
+            
             // Set the classloader
             if (_classLoader!=null)
             {
@@ -970,6 +974,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
         finally
         {
+            __context.set(old_context);
             if (old_classloader!=null)
             {
                 current_thread.setContextClassLoader(old_classloader);

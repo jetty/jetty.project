@@ -30,13 +30,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * Abstract for AppProviders that monitor context files. The context file
- * enables adminsitrators to customize the configuration of a WebAppContext or a
- * ContextHandler without chaging files inside the packaged application.
- * <p>
- * When the context file is changed, the corresponding application is
- * redeployed.
- * </p>
  */
 public abstract class ScanningAppProvider extends AbstractLifeCycle implements AppProvider
 {

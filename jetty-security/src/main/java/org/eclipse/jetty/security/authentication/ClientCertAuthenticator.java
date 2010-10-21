@@ -77,7 +77,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
                     if (user!=null)
                     {
                         renewSessionOnAuthentication(request,response);
-                        return new UserAuthentication(this,user);
+                        return new UserAuthentication(getAuthMethod(),user);
                     }
                 }
             }

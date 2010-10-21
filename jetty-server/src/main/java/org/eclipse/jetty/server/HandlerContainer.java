@@ -48,5 +48,5 @@ public interface HandlerContainer extends LifeCycle
      * @param byclass
      * @return first handler of all handlers contained by this handler and it's children of the passed type.
      */
-    public Handler getChildHandlerByClass(Class<?> byclass);
+    public <T extends Handler> T getChildHandlerByClass(Class<T> byclass);
 }
