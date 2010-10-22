@@ -658,6 +658,9 @@ public class HttpConnection implements Connection
                     // send the body anyway, or close.  So we no longer need to
                     // do anything special here.
                     _expect100Continue = false;
+                    
+                    if (!_response.isCommitted())
+                        _generator.setPersistent(false);
                 }
 
                 if(_endp.isOpen())

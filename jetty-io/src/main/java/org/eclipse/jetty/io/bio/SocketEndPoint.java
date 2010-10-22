@@ -21,7 +21,6 @@ import java.net.Socket;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
- * 
  *
  * To change the template for this generated type comment go to
  * Window - Preferences - Java - Code Generation - Code and Comments

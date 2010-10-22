@@ -290,6 +290,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
                     }
                     
                     _connection = _connection.handle();
+                    
                 }
             }
             catch (EofException e)
@@ -315,10 +316,24 @@ public class BlockingChannelConnector extends AbstractNIOConnector
                 connectionClosed(_connection);
                 _endpoints.remove(this);
                 
-                // ensure it really is closed and not just shutdown.
+                // wait for client to close, but if not, close ourselves.
                 try
                 {
-                    _socket.close();
+                    if (!_socket.isClosed())
+                    {
+                        long timestamp=System.currentTimeMillis();
+                        int max_idle=getMaxIdleTime(); 
+
+                        _socket.setSoTimeout(getMaxIdleTime());
+                        int c=0;
+                        do
+                        {
+                            c = _socket.getInputStream().read();
+                        }
+                        while (c>=0 && (System.currentTimeMillis()-timestamp)<max_idle);
+                        if (!_socket.isClosed())
+                            _socket.close();
+                    }
                 }
                 catch(IOException e)
                 {

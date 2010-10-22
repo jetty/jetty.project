@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.nio.BlockingChannelConnector;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
@@ -87,6 +88,13 @@ public class TestServer
         connector2.setMaxIdleTime(30000);
         connector2.setConfidentialPort(8443);
         server.addConnector(connector2);
+        
+        // Setup Connectors
+        BlockingChannelConnector connector3 = new BlockingChannelConnector();
+        connector3.setPort(8083);
+        connector3.setMaxIdleTime(30000);
+        connector3.setConfidentialPort(8443);
+        server.addConnector(connector3);
 
         SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
         ssl_connector.setPort(8443);

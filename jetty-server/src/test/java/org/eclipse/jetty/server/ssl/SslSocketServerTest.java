@@ -66,5 +66,5 @@ public class SslSocketServerTest extends HttpServerTestBase
     {
         // TODO this test uses URL, so noop for now
     }
-    
+
 }

@@ -721,8 +721,11 @@ public abstract class RFC2616BaseTest
 
         response.assertStatusOK("8.2.3 expect 100");
     }
+    
+    
     /**
      * Test Message Transmission Requirements -- Acceptable bad client behavior, Expect 100 with body content.
+     * @throws Exception failure
      * 
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
@@ -749,10 +752,15 @@ public abstract class RFC2616BaseTest
 
         List<HttpResponseTester> responses = http.requests(req3);
         
+        System.err.println(responses);
+        
         response=responses.get(0);
+        System.err.println(response.getRawResponse());
+        
         response.assertStatus("8.2.3 ignored no 100",302);
         
         response=responses.get(1);
+        System.err.println(response.getRawResponse());
         response.assertStatus("8.2.3 ignored no 100",200);
         response.assertBody("87654321\n");
     }

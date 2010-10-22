@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.Locale;
 
 import javax.servlet.ServletOutputStream;
@@ -39,7 +38,6 @@ import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -63,15 +61,6 @@ public class Response implements HttpServletResponse
      * {@link #addHeader(String, String)}.
      */
     public final static String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
-
-    private static final PrintWriter __nullPrintWriter;
-    private static final ServletOutputStream __nullServletOut;
-
-    static
-    {
-        __nullPrintWriter = new PrintWriter(IO.getNullWriter());
-        __nullServletOut = new NullOutput();
-    }
 
     private final HttpConnection _connection;
     private int _status=SC_OK;
@@ -472,20 +461,25 @@ public class Response implements HttpServletResponse
      */
     public void setHeader(String name, String value)
     {
-        if (_connection.isIncluding())
+        if (HttpHeaders.CONTENT_TYPE.equalsIgnoreCase(name))
+            setContentType(value);
+        else
         {
-            if (name.startsWith(SET_INCLUDE_HEADER_PREFIX))
-                name=name.substring(SET_INCLUDE_HEADER_PREFIX.length());
-            else
-                return;
-        }
-        _connection.getResponseFields().put(name, value);
-        if (HttpHeaders.CONTENT_LENGTH.equalsIgnoreCase(name))
-        {
-            if (value==null)
-                _connection._generator.setContentLength(-1);
-            else
-                _connection._generator.setContentLength(Long.parseLong(value));
+            if (_connection.isIncluding())
+            {
+                if (name.startsWith(SET_INCLUDE_HEADER_PREFIX))
+                    name=name.substring(SET_INCLUDE_HEADER_PREFIX.length());
+                else
+                    return;
+            }
+            _connection.getResponseFields().put(name, value);
+            if (HttpHeaders.CONTENT_LENGTH.equalsIgnoreCase(name))
+            {
+                if (value==null)
+                    _connection._generator.setContentLength(-1);
+                else
+                    _connection._generator.setContentLength(Long.parseLong(value));
+            }
         }
     }
 
