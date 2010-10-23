@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @version $Revision$ $Date$
  */
-public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
+public class ConnectHandlerConnectTest extends AbstractProxyHandlerTest
 {
     @BeforeClass
     public static void init() throws Exception

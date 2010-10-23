@@ -32,7 +32,7 @@ import static org.junit.Assert.assertFalse;
 /**
  * @version $Revision$ $Date$
  */
-public class ProxyHandlerConnectSSLTest extends AbstractProxyHandlerTest
+public class ConnectHandlerConnectSSLTest extends AbstractProxyHandlerTest
 {
     @BeforeClass
     public static void init() throws Exception
