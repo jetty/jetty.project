@@ -3,6 +3,7 @@
  + 328205 Improved SelectManager stopping
  + 328306 Serialization of FormAuthentication
  + 328332 Response.getContentType works with setHeader
+ + 328523 Fixed overloaded setters in AppProvider
 
 jetty-7.2.0.v20101020 20 October 2010
  + 289540 added javadoc into distribution

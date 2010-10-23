@@ -176,9 +176,22 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public Resource getMonitoredDir()
     {
         return _monitoredDir;
+    }
+
+    /* ------------------------------------------------------------ */
+    public Resource getMonitoredDirResource()
+    {
+        return _monitoredDir;
+    }
+
+    /* ------------------------------------------------------------ */
+    public String getMonitoredDirName()
+    {
+        return _monitoredDir.toString();
     }
 
     /* ------------------------------------------------------------ */
@@ -200,22 +213,35 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setMonitoredDir(Resource dir)
+    {
+        setMonitoredDirResource(dir);
+    }
 
-    public void setMonitoredDir(Resource contextsDir)
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setMonitoredDir(String dir)
+    {
+        setMonitoredDirName(dir);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setMonitoredDirResource(Resource contextsDir)
     {
         _monitoredDir = contextsDir;
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param dir
      *            Directory to scan for context descriptors or war files
      */
-    public void setMonitoredDir(String dir)
+    public void setMonitoredDirName(String dir)
     {
         try
         {
-            _monitoredDir = Resource.newResource(dir);
+            setMonitoredDirResource(Resource.newResource(dir));
         }
         catch (Exception e)
         {
