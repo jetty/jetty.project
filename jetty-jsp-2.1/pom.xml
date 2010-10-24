@@ -8,6 +8,9 @@
   <artifactId>jetty-jsp-2.1</artifactId>
   <name>Jetty :: Jetty JSP Additions</name>
   <description>Additions to Jasper implementation from Glassfish</description>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.jsp-2.1</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>
