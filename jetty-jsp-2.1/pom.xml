@@ -28,7 +28,7 @@
 	<configuration>
 	    <instructions>
 		<Import-Package>
-		    com.sun.org.apache.commons.logging;version="[2.1,3)";split=glassfish,
+		    com.sun.org.apache.commons.logging;version="[2.1,3)";glassfish="split",
 		    *
 		</Import-Package>
 		<Export-Package>org.eclipse.jetty*</Export-Package>
