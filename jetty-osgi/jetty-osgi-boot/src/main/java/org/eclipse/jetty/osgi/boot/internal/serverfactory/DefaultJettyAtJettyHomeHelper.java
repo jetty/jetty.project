@@ -25,6 +25,7 @@ import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.log.Log;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
@@ -135,7 +136,7 @@ public class DefaultJettyAtJettyHomeHelper {
 			String configURLs = jettyHome != null ? getJettyConfigurationURLs(jettyHome) : getJettyConfigurationURLs(jettyHomeBundle);
 			properties.put(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS, configURLs);
 
-			System.err.println("Configuring the default jetty server with " + configURLs);
+			Log.info("Configuring the default jetty server with " + configURLs);
 			
 			//these properties usually are the ones passed to this type of configuration.
 			setProperty(properties,SYS_PROP_JETTY_HOME,System.getProperty(SYS_PROP_JETTY_HOME));

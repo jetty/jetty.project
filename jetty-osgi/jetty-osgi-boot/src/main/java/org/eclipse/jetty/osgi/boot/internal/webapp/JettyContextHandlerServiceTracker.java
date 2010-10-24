@@ -362,7 +362,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
     		managedServerName = OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME;
     	}
     	ServerInstanceWrapper wrapper = _registry.getServerInstanceWrapper(managedServerName);
-    	System.err.println("Returning " + managedServerName + "  = " + wrapper);
+    	//System.err.println("Returning " + managedServerName + "  = " + wrapper);
     	return wrapper;
     }
     
