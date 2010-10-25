@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -50,7 +51,7 @@ import org.eclipse.jetty.util.log.Log;
  * values in the SecurityHandler init parameters, are copied.  
  * 
  */
-public abstract class SecurityHandler extends HandlerWrapper implements Authenticator.Configuration
+public abstract class SecurityHandler extends HandlerWrapper implements Authenticator.AuthConfiguration
 {
     /* ------------------------------------------------------------ */
     private boolean _checkWelcomeFiles = false;
@@ -62,6 +63,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private LoginService _loginService;
     private boolean _loginServiceShared;
     private IdentityService _identityService;
+    private boolean _renewSession=true;
 
     /* ------------------------------------------------------------ */
     protected SecurityHandler()
@@ -373,11 +375,32 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
+     */
+    public boolean isSessionRenewedOnAuthentication()
+    {
+        return _renewSession;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Set renew the session on Authentication.
+     * <p>
+     * If set to true, then on authentication, the session associated with a reqeuest is invalidated and replaced with a new session.
+     * @see org.eclipse.jetty.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
+     */
+    public void setSessionRenewedOnAuthentication(boolean renew)
+    {
+        _renewSession=renew;
+    }
+    
+    /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.server.Handler#handle(java.lang.String,
      *      javax.servlet.http.HttpServletRequest,
      *      javax.servlet.http.HttpServletResponse, int)
      */
+    @Override
     public void handle(String pathInContext, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         final Response base_response = baseRequest.getResponse();
@@ -495,6 +518,36 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
 
     /* ------------------------------------------------------------ */
+    public static SecurityHandler getCurrentSecurityHandler()
+    {
+        Context context = ContextHandler.getCurrentContext();
+        if (context==null)
+            return null;
+        
+        SecurityHandler security = context.getContextHandler().getChildHandlerByClass(SecurityHandler.class);
+        return security;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void logout(Authentication.User user)
+    {
+        Log.debug("logout {}",user);
+        LoginService login_service=getLoginService();
+        if (login_service!=null)
+        {
+            login_service.logout(user.getUserIdentity());
+        }
+        
+        IdentityService identity_service=getIdentityService();
+        if (identity_service!=null)
+        {
+            // TODO recover previous from threadlocal (or similar)
+            Object previous=null;
+            identity_service.disassociate(previous);
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
     protected abstract Object prepareConstraintInfo(String pathInContext, Request request);
 
     /* ------------------------------------------------------------ */
@@ -517,6 +570,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             return null;
         }
 
+        @Override
         public String toString()
         {
             return "NOT CHECKED";
@@ -538,6 +592,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             return null;
         }
 
+        @Override
         public String toString()
         {
             return "No User";
@@ -561,11 +616,11 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             return "Nobody";
         }
 
+        @Override
         public String toString()
         {
             return getName();
         }
     };
-
 
 }

@@ -27,7 +27,6 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -40,6 +39,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.Part;
+
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
@@ -199,21 +199,7 @@ public class MultiPartFilter implements Filter
     /* ------------------------------------------------------------ */
     private String value(String nameEqualsValue)
     {
-        String value=nameEqualsValue.substring(nameEqualsValue.indexOf('=')+1).trim();
-        int i=value.indexOf(';');
-        if(i>0)
-            value=value.substring(0,i);
-        if(value.startsWith("\""))
-        {
-            value=value.substring(1,value.indexOf('"',1));
-        }
-        else
-        {
-            i=value.indexOf(' ');
-            if(i>0)
-                value=value.substring(0,i);
-        }
-        return value;
+        return nameEqualsValue.substring(nameEqualsValue.indexOf('=')+1).trim();
     }
 
     /* ------------------------------------------------------------------------------- */

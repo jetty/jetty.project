@@ -607,6 +607,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         @Override
         public void shutdownOutput() throws IOException
         {
+            close();
         }
         
         @Override

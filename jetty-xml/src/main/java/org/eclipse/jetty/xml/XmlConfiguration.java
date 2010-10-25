@@ -987,7 +987,34 @@ public class XmlConfiguration
                 try
                 {
 
-                    Properties properties = new Properties();
+                    Properties properties=null;
+                    
+                    // Look for properties from start.jar
+                    try
+                    {
+                        Class<?> config = XmlConfiguration.class.getClassLoader().loadClass("org.eclipse.jetty.start.Config");
+                        properties=(Properties)config.getMethod("getProperties").invoke(null);
+                        Log.debug("org.eclipse.jetty.start.Config properties = {}",properties);
+                    }
+                    catch(NoClassDefFoundError e)
+                    {
+                        Log.ignore(e);
+                    }
+                    catch(ClassNotFoundException e)
+                    {
+                        Log.ignore(e);
+                    }
+                    catch(Exception e)
+                    {
+                        Log.warn(e);
+                    }
+                    
+                    
+                    // If no start.config properties, use clean slate
+                    if (properties==null)
+                        properties = new Properties();
+                    
+                    // For all arguments, load properties or parse XMLs 
                     XmlConfiguration last = null;
                     Object[] obj = new Object[args.length];
                     for ( int i = 0; i < args.length; i++ )
@@ -1009,6 +1036,7 @@ public class XmlConfiguration
                         }
                     }
 
+                    // For all objects created by XmlConfigurations, start them if they are lifecycles.
                     for ( int i = 0; i < args.length; i++ )
                     {
                         if ( obj[i] instanceof LifeCycle )

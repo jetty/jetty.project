@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
@@ -25,11 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
@@ -101,22 +101,22 @@ public class HttpClient extends HttpBuffers implements Attributes
     private int _maxRedirects = 20;
     private LinkedList<String> _registeredListeners;
 
-    // TODO clean up and add getters/setters to some of this maybe
     private String _keyStoreLocation;
+    private InputStream _keyStoreInputStream;
     private String _keyStoreType = "JKS";
     private String _keyStorePassword;
     private String _keyManagerAlgorithm = (Security.getProperty("ssl.KeyManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.KeyManagerFactory.algorithm"));
     private String _keyManagerPassword;
     private String _trustStoreLocation;
+    private InputStream _trustStoreInputStream;
     private String _trustStoreType = "JKS";
     private String _trustStorePassword;
     private String _trustManagerAlgorithm = (Security.getProperty("ssl.TrustManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.TrustManagerFactory.algorithm"));
-
-    private SSLContext _sslContext;
-
     private String _protocol = "TLS";
     private String _provider;
     private String _secureRandomAlgorithm;
+
+    private SSLContext _sslContext;
 
     private RealmResolver _realmResolver;
 
@@ -242,7 +242,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     {
         _timeoutQ.schedule(task);
     }
-    
+
     public void schedule(Timeout.Task task, long timeout)
     {
         _timeoutQ.schedule(task, timeout);
@@ -271,7 +271,7 @@ public class HttpClient extends HttpBuffers implements Attributes
 
     /* ------------------------------------------------------------ */
     /** Set a RealmResolver for client Authentication.
-     * If a realmResolver is set, then the HttpDestinations created by 
+     * If a realmResolver is set, then the HttpDestinations created by
      * this client will instantiate a {@link SecurityListener} so that
      * BASIC and DIGEST authentication can be performed.
      * @param resolver
@@ -318,7 +318,7 @@ public class HttpClient extends HttpBuffers implements Attributes
         }
         _registeredListeners.add(listenerClass);
     }
-    
+
     /* ------------------------------------------------------------ */
     public LinkedList<String> getRegisteredListeners()
     {
@@ -532,70 +532,82 @@ public class HttpClient extends HttpBuffers implements Attributes
      */
     protected SSLContext getSSLContext() throws IOException
     {
-    	if (_sslContext == null)
-    	{
-			if (_keyStoreLocation == null)
-			{
-				_sslContext = getLooseSSLContext();
-			}
-			else
-			{
-				_sslContext = getStrictSSLContext();
-			}
-		}
-    	return _sslContext;
+        if (_sslContext == null)
+        {
+            if (_keyStoreInputStream == null && _keyStoreLocation == null)
+            {
+                _sslContext = getLooseSSLContext();
+            }
+            else
+            {
+                _sslContext = getStrictSSLContext();
+            }
+        }
+        return _sslContext;
     }
 
     protected SSLContext getStrictSSLContext() throws IOException
     {
-
         try
         {
-            if (_trustStoreLocation == null)
+            if (_trustStoreInputStream == null && _trustStoreLocation == null)
             {
                 _trustStoreLocation = _keyStoreLocation;
+                _trustStoreInputStream = _keyStoreInputStream;
                 _trustStoreType = _keyStoreType;
             }
 
-            KeyManager[] keyManagers = null;
-            InputStream keystoreInputStream = null;
+            InputStream keyStoreInputStream = null;
+            InputStream trustStoreInputStream = null;
 
-            keystoreInputStream = Resource.newResource(_keyStoreLocation).getInputStream();
+            // It's the same stream and we cannot read it twice, so we read it once in memory
+            if (_keyStoreInputStream != null && _keyStoreInputStream == _trustStoreInputStream)
+            {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                byte[] buffer = new byte[1024];
+                int read;
+                while ((read = _keyStoreInputStream.read(buffer)) >= 0)
+                    baos.write(buffer, 0, read);
+                _keyStoreInputStream.close();
+
+                keyStoreInputStream = new ByteArrayInputStream(baos.toByteArray());
+                trustStoreInputStream = new ByteArrayInputStream(baos.toByteArray());
+            }
+
+            if (keyStoreInputStream == null)
+                keyStoreInputStream = _keyStoreInputStream == null ? Resource.newResource(_keyStoreLocation).getInputStream() : _keyStoreInputStream;
             KeyStore keyStore = KeyStore.getInstance(_keyStoreType);
-            keyStore.load(keystoreInputStream, _keyStorePassword == null ? null : _keyStorePassword.toString().toCharArray());
+            keyStore.load(keyStoreInputStream, _keyStorePassword == null ? null : _keyStorePassword.toCharArray());
+            keyStoreInputStream.close();
 
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(_keyManagerAlgorithm);
-            keyManagerFactory.init(keyStore, _keyManagerPassword == null ? null : _keyManagerPassword.toString().toCharArray());
-            keyManagers = keyManagerFactory.getKeyManagers();
+            keyManagerFactory.init(keyStore, _keyManagerPassword == null ? null : _keyManagerPassword.toCharArray());
+            KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
 
-            TrustManager[] trustManagers = null;
-            InputStream truststoreInputStream = null;
-
-            truststoreInputStream = Resource.newResource(_trustStoreLocation).getInputStream();
+            if (trustStoreInputStream == null)
+                trustStoreInputStream = _trustStoreInputStream == null ? Resource.newResource(_trustStoreLocation).getInputStream() : _trustStoreInputStream;
             KeyStore trustStore = KeyStore.getInstance(_trustStoreType);
-            trustStore.load(truststoreInputStream, _trustStorePassword == null ? null : _trustStorePassword.toString().toCharArray());
+            trustStore.load(trustStoreInputStream, _trustStorePassword == null ? null : _trustStorePassword.toCharArray());
+            trustStoreInputStream.close();
 
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(_trustManagerAlgorithm);
             trustManagerFactory.init(trustStore);
-            trustManagers = trustManagerFactory.getTrustManagers();
+            TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
 
             SecureRandom secureRandom = _secureRandomAlgorithm == null ? null : SecureRandom.getInstance(_secureRandomAlgorithm);
             SSLContext context = _provider == null ? SSLContext.getInstance(_protocol) : SSLContext.getInstance(_protocol, _provider);
             context.init(keyManagers, trustManagers, secureRandom);
             return context;
         }
-        catch (Exception e)
+        catch (Exception x)
         {
-            e.printStackTrace();
-            throw new IOException("error generating ssl context for " + _keyStoreLocation + " " + e.getMessage());
+            throw (IOException)new IOException("Error generating SSLContext for keystore " + _keyStoreLocation).initCause(x);
         }
     }
 
     protected SSLContext getLooseSSLContext() throws IOException
     {
-
-        // Create a trust manager that does not validate certificate
-        // chains
+        // Create a trust manager that does not validate certificate chains
         TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager()
         {
             public java.security.cert.X509Certificate[] getAcceptedIssuers()
@@ -612,26 +624,16 @@ public class HttpClient extends HttpBuffers implements Attributes
             }
         }};
 
-        HostnameVerifier hostnameVerifier = new HostnameVerifier()
-        {
-            public boolean verify(String urlHostName, SSLSession session)
-            {
-                Log.warn("Warning: URL Host: " + urlHostName + " vs." + session.getPeerHost());
-                return true;
-            }
-        };
-
         // Install the all-trusting trust manager
         try
         {
-            // TODO real trust manager
-            SSLContext sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            SSLContext sslContext = SSLContext.getInstance(_protocol);
+            sslContext.init(null, trustAllCerts, null);
             return sslContext;
         }
-        catch (Exception e)
+        catch (Exception x)
         {
-            throw new IOException("issue ignoring certs");
+            throw (IOException)new IOException("Error generating loose SSLContext").initCause(x);
         }
     }
 
@@ -785,6 +787,16 @@ public class HttpClient extends HttpBuffers implements Attributes
         this._trustStoreLocation = trustStoreLocation;
     }
 
+    public InputStream getTrustStoreInputStream()
+    {
+        return _trustStoreInputStream;
+    }
+
+    public void setTrustStoreInputStream(InputStream trustStoreInputStream)
+    {
+        this._trustStoreInputStream = trustStoreInputStream;
+    }
+
     /* ------------------------------------------------------------ */
     public String getKeyStoreLocation()
     {
@@ -795,6 +807,16 @@ public class HttpClient extends HttpBuffers implements Attributes
     public void setKeyStoreLocation(String keyStoreLocation)
     {
         this._keyStoreLocation = keyStoreLocation;
+    }
+
+    public InputStream getKeyStoreInputStream()
+    {
+        return _keyStoreInputStream;
+    }
+
+    public void setKeyStoreInputStream(InputStream keyStoreInputStream)
+    {
+        this._keyStoreInputStream = keyStoreInputStream;
     }
 
     /* ------------------------------------------------------------ */
@@ -814,28 +836,88 @@ public class HttpClient extends HttpBuffers implements Attributes
     {
         this._trustStorePassword = new Password(trustStorePassword).toString();
     }
-    
+
     /* ------------------------------------------------------------ */
     public String getKeyStoreType()
     {
         return this._keyStoreType;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setKeyStoreType(String keyStoreType)
     {
         this._keyStoreType = keyStoreType;
     }
-    
+
     /* ------------------------------------------------------------ */
     public String getTrustStoreType()
     {
         return this._trustStoreType;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setTrustStoreType(String trustStoreType)
     {
         this._trustStoreType = trustStoreType;
+    }
+
+    /* ------------------------------------------------------------ */
+    public String getKeyManagerAlgorithm()
+    {
+        return _keyManagerAlgorithm;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setKeyManagerAlgorithm(String keyManagerAlgorithm)
+    {
+        this._keyManagerAlgorithm = keyManagerAlgorithm;
+    }
+
+    /* ------------------------------------------------------------ */
+    public String getTrustManagerAlgorithm()
+    {
+        return _trustManagerAlgorithm;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setTrustManagerAlgorithm(String trustManagerAlgorithm)
+    {
+        this._trustManagerAlgorithm = trustManagerAlgorithm;
+    }
+
+    /* ------------------------------------------------------------ */
+    public String getProtocol()
+    {
+        return _protocol;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setProtocol(String protocol)
+    {
+        this._protocol = protocol;
+    }
+
+    /* ------------------------------------------------------------ */
+    public String getProvider()
+    {
+        return _provider;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setProvider(String provider)
+    {
+        this._provider = provider;
+    }
+
+    /* ------------------------------------------------------------ */
+    public String getSecureRandomAlgorithm()
+    {
+        return _secureRandomAlgorithm;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setSecureRandomAlgorithm(String secureRandomAlgorithm)
+    {
+        this._secureRandomAlgorithm = secureRandomAlgorithm;
     }
 }

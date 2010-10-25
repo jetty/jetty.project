@@ -839,5 +839,9 @@ public class SessionHandlerTest
         {
             _checkRemote=remote;
         }
+
+        public void changeSessionIdOnAuthentication(HttpServletRequest request, HttpServletResponse response)
+        {
+        }
     }
 }

@@ -14,53 +14,121 @@
 
 package org.eclipse.jetty.security.authentication;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
+import javax.servlet.http.HttpSessionBindingListener;
+import javax.servlet.http.HttpSessionEvent;
 
 import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.UserAuthentication;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.server.UserIdentity.Scope;
+import org.eclipse.jetty.util.log.Log;
 
-public class SessionAuthentication extends UserAuthentication implements HttpSessionAttributeListener, Serializable
+public class SessionAuthentication implements Authentication.User, Serializable, HttpSessionActivationListener, HttpSessionBindingListener
 {
     private static final long serialVersionUID = -4643200685888258706L;
 
+    
+
     public final static String __J_AUTHENTICATED="org.eclipse.jetty.security.UserIdentity";
+
+    private final String _method;
+    private final String _name;
+    private final Object _credentials;
     
-    HttpSession _session;
+    private transient UserIdentity _userIdentity;
+    private transient HttpSession _session;
     
-    public SessionAuthentication(HttpSession session,Authenticator authenticator, UserIdentity userIdentity)
+    public SessionAuthentication(String method, UserIdentity userIdentity, Object credentials)
     {
-        super(authenticator,userIdentity);
-        _session=session;
+        _method = method;
+        _userIdentity = userIdentity;
+        _name=_userIdentity.getUserPrincipal().getName();
+        _credentials=credentials;
     }
 
-    public void attributeAdded(HttpSessionBindingEvent event)
+    public String getAuthMethod()
     {
+        return _method;
     }
 
-    public void attributeRemoved(HttpSessionBindingEvent event)
+    public UserIdentity getUserIdentity()
     {
-        super.logout();
-    }
-    
-    public void attributeReplaced(HttpSessionBindingEvent event)
-    {
-        if (event.getValue()==null)
-            super.logout();
+        return _userIdentity;
     }
 
-    public void logout() 
-    {    
-        _session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
+    public boolean isUserInRole(Scope scope, String role)
+    {
+        return _userIdentity.isUserInRole(role, scope);
+    }
+
+    private void readObject(ObjectInputStream stream) 
+        throws IOException, ClassNotFoundException 
+    {
+        stream.defaultReadObject();
+        
+        SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
+        if (security==null)
+            throw new IllegalStateException("!SecurityHandler");
+        LoginService login_service=security.getLoginService();
+        if (login_service==null)
+            throw new IllegalStateException("!LoginService");
+        
+        _userIdentity=login_service.login(_name,_credentials);
+        Log.debug("Deserialized and relogged in {}",this);
     }
     
+    public void logout()
+    {
+        if (_session!=null && _session.getAttribute(__J_AUTHENTICATED)!=null)
+            _session.removeAttribute(__J_AUTHENTICATED);
+        else 
+            doLogout();
+    }
+    
+    private void doLogout()
+    {
+        SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
+        if (security!=null)
+            security.logout(this);
+        if (_session!=null)
+            _session.removeAttribute(LoginAuthenticator.SESSION_SECURED);
+    }
+        
+    @Override
     public String toString()
     {
         return "Session"+super.toString();
+    }
+
+    public void sessionWillPassivate(HttpSessionEvent se)
+    {
+    }
+
+    public void sessionDidActivate(HttpSessionEvent se)
+    {
+        if (_session==null)
+            _session=se.getSession();
+    }
+
+    public void valueBound(HttpSessionBindingEvent event)
+    {
+    }
+
+    public void valueUnbound(HttpSessionBindingEvent event)
+    {
+        doLogout();
     }
     
 }

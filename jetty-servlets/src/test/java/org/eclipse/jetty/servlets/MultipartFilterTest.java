@@ -131,6 +131,108 @@ public class MultipartFilterTest
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
 
+    @Test
+    public void testEncodedPost() throws Exception
+    {
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/dump");
+        
+        String boundary="XyXyXy";
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        
+        
+        String content = "--" + boundary + "\r\n"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"Diplomsko Delo Lektorirano KON&#268;NA.doc\"\r\n"+
+        "Content-Type: application/octet-stream\r\n\r\n"+
+        "How now brown cow."+
+        "\r\n--" + boundary + "--\r\n\r\n";
+        
+        request.setContent(content);
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        assertTrue(response.getContent().indexOf("brown cow")>=0);
+    }
+
+    /*
+     * Test multipart with parts encoded in base64 (RFC1521 section 5)
+     */
+    @Test
+    public void testPostWithContentTransferEncodingBase64() throws Exception {
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/dump");
+        
+        String boundary="XyXyXy";
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        
+        // part content is "How now brown cow." run through a base64 encoder
+        String content = "--" + boundary + "\r\n"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"+
+        "Content-Transfer-Encoding: base64\r\n"+
+        "Content-Type: application/octet-stream\r\n\r\n"+
+        "SG93IG5vdyBicm93biBjb3cuCg=="+
+        "\r\n--" + boundary + "--\r\n\r\n";
+        
+        request.setContent(content);
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        assertTrue(response.getContent().indexOf("brown cow")>=0);
+    }
+
+    /*
+     * Test multipart with parts encoded in quoted-printable (RFC1521 section 5)
+     */
+    @Test
+    public void testPostWithContentTransferEncodingQuotedPrintable() throws Exception {
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/dump");
+        
+        String boundary="XyXyXy";
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        
+        /*
+         * Part content is "How now brown cow." run through Apache Commons Codec
+         * quoted printable encoding.
+         */
+        String content = "--" + boundary + "\r\n"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"+
+        "Content-Transfer-Encoding: quoted-printable\r\n"+
+        "Content-Type: application/octet-stream\r\n\r\n"+
+        "=48=6F=77=20=6E=6F=77=20=62=72=6F=77=6E=20=63=6F=77=2E"+
+        "\r\n--" + boundary + "--\r\n\r\n";
+        
+        request.setContent(content);
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        assertTrue(response.getContent().indexOf("brown cow")>=0);
+    }
+
     public static class DumpServlet extends HttpServlet
     {
         /* ------------------------------------------------------------ */

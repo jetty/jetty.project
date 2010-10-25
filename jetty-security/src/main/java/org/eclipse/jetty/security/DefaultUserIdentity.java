@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.security;
 
+import java.io.Serializable;
 import java.security.Principal;
 
 import javax.security.auth.Subject;
@@ -26,7 +27,7 @@ import org.eclipse.jetty.server.UserIdentity;
  *
  */
 public class DefaultUserIdentity implements UserIdentity
-{
+{    
     private final Subject _subject;
     private final Principal _userPrincipal;
     private final String[] _roles;
@@ -59,9 +60,9 @@ public class DefaultUserIdentity implements UserIdentity
         return false;
     }
 
+    @Override
     public String toString()
     {
         return DefaultUserIdentity.class.getSimpleName()+"('"+_userPrincipal+"')";
     }
-    
 }

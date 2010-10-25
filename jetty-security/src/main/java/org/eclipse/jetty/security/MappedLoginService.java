@@ -15,6 +15,7 @@
 package org.eclipse.jetty.security;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.security.Principal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,6 +26,7 @@ import javax.security.auth.Subject;
 import org.eclipse.jetty.http.security.Credential;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
 
 
 
@@ -110,6 +112,7 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
+    @Override
     protected void doStart() throws Exception
     {
         loadUsers();
@@ -117,12 +120,20 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     protected void doStop() throws Exception
     {
         super.doStop();
     }
+
+    /* ------------------------------------------------------------ */
+    public void logout(UserIdentity identity)
+    {   
+        Log.debug("logout {}",identity);
+    }
     
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return this.getClass().getSimpleName()+"["+_name+"]";
@@ -159,9 +170,9 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
     
     /* ------------------------------------------------------------ */
     /** Put user into realm.
-     * @param userName
-     * @param credential
-     * @param roles
+     * @param userName The user to add
+     * @param credential The users Credentials
+     * @param roles The users roles
      * @return UserIdentity
      */
     public synchronized UserIdentity putUser(String userName, Credential credential, String[] roles)
@@ -218,7 +229,7 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
                 
         return false;
     }
-    
+
     /* ------------------------------------------------------------ */
     protected abstract UserIdentity loadUser(String username);
     
@@ -229,7 +240,7 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public interface UserPrincipal extends Principal
+    public interface UserPrincipal extends Principal,Serializable
     {
         boolean authenticate(Object credentials);
         public boolean isAuthenticated();
@@ -238,24 +249,27 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public class RolePrincipal implements Principal
+    public static class RolePrincipal implements Principal,Serializable
     {
-        private final String _name;
+        private static final long serialVersionUID = 2998397924051854402L;
+        private final String _roleName;
         public RolePrincipal(String name)
         {
-            _name=name;
+            _roleName=name;
         }
         public String getName()
         {
-            return _name;
+            return _roleName;
         }
     }
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public static class Anonymous implements UserPrincipal
+    public static class Anonymous implements UserPrincipal,Serializable
     {
+        private static final long serialVersionUID = 1097640442553284845L;
+
         public boolean isAuthenticated()
         {
             return false;
@@ -276,8 +290,9 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public static class KnownUser implements UserPrincipal
+    public static class KnownUser implements UserPrincipal,Serializable
     {
+        private static final long serialVersionUID = -6226920753748399662L;
         private final String _name;
         private final Credential _credential;
         
@@ -307,6 +322,7 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
         }
 
         /* -------------------------------------------------------- */
+        @Override
         public String toString()
         {
             return _name;

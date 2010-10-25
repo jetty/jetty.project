@@ -315,6 +315,9 @@ public class DefaultServletTest
         defholder.setInitParameter("welcomeServlets","false");
         defholder.setInitParameter("gzip","false");
         defholder.setInitParameter("resourceBase",resBasePath);
+        defholder.setInitParameter("maxCacheSize","1024000");
+        defholder.setInitParameter("maxCachedFileSize","512000");
+        defholder.setInitParameter("maxCachedFiles","100");
 
         ServletHolder jspholder = context.addServlet(NoJspServlet.class,"*.jsp");
 

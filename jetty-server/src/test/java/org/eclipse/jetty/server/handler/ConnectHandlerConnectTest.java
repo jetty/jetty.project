@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @version $Revision$ $Date$
  */
-public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
+public class ConnectHandlerConnectTest extends AbstractProxyHandlerTest
 {
     @BeforeClass
     public static void init() throws Exception
@@ -401,7 +401,7 @@ public class ProxyHandlerConnectTest extends AbstractProxyHandlerTest
 
         // Replace the default ProxyHandler with a subclass to test context information passing
         stopProxy();
-        proxy.setHandler(new ProxyHandler()
+        proxy.setHandler(new ConnectHandler()
         {
             @Override
             protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address) throws ServletException, IOException

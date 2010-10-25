@@ -31,7 +31,7 @@ import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.DefaultAuthenticatorFactory;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.Authenticator.Configuration;
+import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 
@@ -80,7 +80,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
     }
 
     /* ------------------------------------------------------------ */
-    public Authenticator getAuthenticator(Server server, ServletContext context, Configuration configuration, IdentityService identityService, LoginService loginService)
+    public Authenticator getAuthenticator(Server server, ServletContext context, AuthConfiguration configuration, IdentityService identityService, LoginService loginService)
     {
         Authenticator authenticator=null;
         try 

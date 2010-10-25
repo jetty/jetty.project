@@ -42,6 +42,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ThreadLocalBuffers;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
+import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
@@ -124,8 +125,8 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Override
     public void customize(EndPoint endpoint, Request request) throws IOException
     {
-        super.customize(endpoint,request);
         request.setScheme(HttpSchemes.HTTPS);
+        super.customize(endpoint,request);
 
         SslSelectChannelEndPoint sslHttpChannelEndpoint=(SslSelectChannelEndPoint)endpoint;
         SSLEngine sslEngine=sslHttpChannelEndpoint.getSSLEngine();
@@ -601,14 +602,16 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
             @Override
             protected Buffer newBuffer(int size)
             {
-                // TODO indirect?
-                return new DirectNIOBuffer(size);
+                if (getUseDirectBuffers())
+                    return new DirectNIOBuffer(size);
+                return new IndirectNIOBuffer(size);
             }
             @Override
             protected Buffer newHeader(int size)
             {
-                // TODO indirect?
-                return new DirectNIOBuffer(size);
+                if (getUseDirectBuffers())
+                    return new DirectNIOBuffer(size);
+                return new IndirectNIOBuffer(size);
             }
             @Override
             protected boolean isHeader(Buffer buffer)

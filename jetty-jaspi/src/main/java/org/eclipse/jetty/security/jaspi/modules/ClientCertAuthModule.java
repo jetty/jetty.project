@@ -25,9 +25,9 @@ import javax.security.auth.message.MessageInfo;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.http.security.Password;
+import org.eclipse.jetty.util.B64Code;
 
 /**
  * @deprecated use *ServerAuthentication

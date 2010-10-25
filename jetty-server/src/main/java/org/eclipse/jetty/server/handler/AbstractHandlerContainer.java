@@ -48,13 +48,13 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     }
     
     /* ------------------------------------------------------------ */
-    public Handler getChildHandlerByClass(Class<?> byclass)
+    public <T extends Handler> T getChildHandlerByClass(Class<T> byclass)
     {
         // TODO this can be more efficient?
         Object list = expandChildren(null,byclass);
         if (list==null)
             return null;
-        return LazyList.get(list, 0);
+        return (T)LazyList.get(list, 0);
     }
     
     /* ------------------------------------------------------------ */

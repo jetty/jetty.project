@@ -610,8 +610,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         }
         catch (Throwable t)
         {
-            System.err.println("Unable to set 'this.bundle.install' " + " for the bundle " + bundle.getSymbolicName());
-            t.printStackTrace();
+            __logger.warn("Unable to set 'this.bundle.install' " + " for the bundle " + bundle.getSymbolicName(), t);
         }
     }
 

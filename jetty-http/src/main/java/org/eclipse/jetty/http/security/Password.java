@@ -48,6 +48,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Password extends Credential
 {
+    private static final long serialVersionUID = 5062906681431569445L;
+
     public static final String __OBFUSCATE = "OBF:";
 
     private String _pw;

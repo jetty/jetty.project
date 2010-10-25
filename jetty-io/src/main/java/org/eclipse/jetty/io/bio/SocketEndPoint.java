@@ -19,10 +19,8 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
 
 /**
- * 
  *
  * To change the template for this generated type comment go to
  * Window - Preferences - Java - Code Generation - Code and Comments
@@ -32,7 +30,8 @@ public class SocketEndPoint extends StreamEndPoint
     final Socket _socket;
     final InetSocketAddress _local;
     final InetSocketAddress _remote;
-
+    
+    /* ------------------------------------------------------------ */
     /**
      * 
      */
@@ -46,6 +45,7 @@ public class SocketEndPoint extends StreamEndPoint
         super.setMaxIdleTime(_socket.getSoTimeout());
     }
     
+    /* ------------------------------------------------------------ */
     /**
      * 
      */
@@ -59,7 +59,8 @@ public class SocketEndPoint extends StreamEndPoint
         _socket.setSoTimeout(maxIdleTime>0?maxIdleTime:0);
         super.setMaxIdleTime(maxIdleTime);
     }
-
+    
+    /* ------------------------------------------------------------ */
     /* (non-Javadoc)
      * @see org.eclipse.io.BufferIO#isClosed()
      */
@@ -68,8 +69,6 @@ public class SocketEndPoint extends StreamEndPoint
     {
         return super.isOpen() && _socket!=null && !_socket.isClosed() && !_socket.isInputShutdown() && !_socket.isOutputShutdown();
     }
-
-
 
     /* ------------------------------------------------------------ */
     /*
@@ -82,6 +81,7 @@ public class SocketEndPoint extends StreamEndPoint
             _socket.shutdownOutput();
     }
     
+    /* ------------------------------------------------------------ */
     /* (non-Javadoc)
      * @see org.eclipse.io.BufferIO#close()
      */

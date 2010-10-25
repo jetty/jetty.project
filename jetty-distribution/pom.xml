@@ -576,35 +576,89 @@
       <version>${project.version}</version>
     </dependency>
   </dependencies>
-  <!-- profiles>
+  <profiles>
     <profile>
-      <id>release</id>
+      <id>eclipse-release</id>
       <build>
         <plugins>
+          <!-- 
+          leverages new includeDependencySources which pulls all the sources
+          and generates the javadoc off of them yielding a javadoc setup
+          for the entire distribution
+          
+          this step can take over 10 minutes as it spawns additional javadoc
+          plugin calls which is why it has been moved to strictly release 
+          process execution  (requires 2.7+ version)
+           -->
           <plugin>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <version>2.1</version>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <includeDependencySources>true</includeDependencySources>
+              <additionalJOption>-J-Xmx256m</additionalJOption>
+              <dependencySourceExcludes>
+                <dependencySourceExclude>asm:*</dependencySourceExclude>
+                <dependencySourceExclude>com.sun.mail:*</dependencySourceExclude>
+                <dependencySourceExclude>javax.mail:*</dependencySourceExclude>
+              </dependencySourceExcludes>
+              <reportOutputDirectory>${assembly-directory}</reportOutputDirectory>
+              <destDir>javadoc</destDir>
+            </configuration>
             <executions>
               <execution>
-                <id>unpack-source</id>
-                <phase>generate-sources</phase>
+                <id>distribution-docs</id>
                 <goals>
-                  <goal>unpack-dependencies</goal>
+                  <goal>javadoc</goal>
                 </goals>
-                <configuration>
-                  <classifier>sources</classifier>
-                  <includes>**/*</includes>
-                  <excludes>META-INF/**</excludes>
-                  <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-                  <outputDirectory>${project.build.directory}/sources</outputDirectory>
-                  <overWriteReleases>true</overWriteReleases>
-                  <overWriteSnapshots>true</overWriteSnapshots>
-                </configuration>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- 
+          svn export the jetty directory which is then bundled via the jetty-src.xml 
+          assembly descriptor to create a source distribution archive
+           -->
+          <!--plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-scm-plugin</artifactId>
+            <version>1.4</version>
+            <configuration>
+              <connectionUrl>${project.parent.scm.connection}</connectionUrl>
+            </configuration>
+            <executions>
+              <execution>
+                <id>distribution-source</id>
+                <goals>
+                  <goal>export</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin-->
+          <!-- 
+          Adds in the additional jetty-src assembly descriptor to the release process
+           -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/jetty-assembly.xml</descriptor>
+                <descriptor>src/main/assembly/jetty-src.xml</descriptor>
+              </descriptors>
+              <tarLongFileMode>gnu</tarLongFileMode>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
               </execution>
             </executions>
           </plugin>
         </plugins>
       </build>
     </profile>
-  </profiles -->
+  </profiles>
 </project>

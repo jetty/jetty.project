@@ -1,20 +1,17 @@
 <assembly>
   <id>src</id>
   <formats>
-    <format>tar.gz</format>
-    <format>tar.bz2</format>
     <format>zip</format>
   </formats>
   <fileSets>
     <fileSet>
-      <directory>${basedir}/target/dist-src</directory>
+      <directory>${basedir}/../</directory>
       <outputDirectory></outputDirectory>
       <includes>
-        <include>**</include>
+        <include>**/**</include>
       </includes>
       <excludes>
         <exclude>**/target/**</exclude>
-        <exclude>**/.svn/**</exclude>
       </excludes>
     </fileSet>
   </fileSets>

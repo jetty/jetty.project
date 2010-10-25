@@ -30,6 +30,8 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Exchanger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.HttpServletRequest;
@@ -263,7 +265,6 @@ public class JDBCSessionManager extends AbstractSessionManager
          */
         protected Session (HttpServletRequest request)
         {
-         
             super(request);   
             _data = new SessionData(_clusterId);
             _data.setMaxIdleMs(_dftMaxIdleSecs*1000);
@@ -837,49 +838,72 @@ public class JDBCSessionManager extends AbstractSessionManager
      * @return the session data that was loaded
      * @throws Exception
      */
-    protected SessionData loadSession (String id, String canonicalContextPath, String vhost)
+    protected SessionData loadSession (final String id, final String canonicalContextPath, final String vhost)
     throws Exception
     {
-        SessionData data = null;
-        Connection connection = getConnection();
-        PreparedStatement statement = null;
-        try
+        final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
+        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        Runnable load = new Runnable()
         {
-            statement = connection.prepareStatement(__selectSession);
-            statement.setString(1, id);
-            statement.setString(2, canonicalContextPath);
-            statement.setString(3, vhost);
-            ResultSet result = statement.executeQuery();
-            if (result.next())
+            public void run()
             {
-               data = new SessionData(id);
-               data.setRowId(result.getString(__sessionTableRowId));
-               data.setCookieSet(result.getLong("cookieTime"));
-               data.setLastAccessed(result.getLong("lastAccessTime"));
-               data.setAccessed (result.getLong("accessTime"));
-               data.setCreated(result.getLong("createTime"));
-               data.setLastNode(result.getString("lastNode"));
-               data.setLastSaved(result.getLong("lastSavedTime"));
-               data.setExpiryTime(result.getLong("expiryTime"));
-               data.setCanonicalContext(result.getString("contextPath"));
-               data.setVirtualHost(result.getString("virtualHost"));
+                SessionData data = null;
+                Connection connection=null;
+                PreparedStatement statement = null;
+                try
+                {   
+                    connection = getConnection();
+                    statement = connection.prepareStatement(__selectSession);
+                    statement.setString(1, id);
+                    statement.setString(2, canonicalContextPath);
+                    statement.setString(3, vhost);
+                    ResultSet result = statement.executeQuery();
+                    if (result.next())
+                    {
+                        data = new SessionData(id);
+                        data.setRowId(result.getString(__sessionTableRowId));
+                        data.setCookieSet(result.getLong("cookieTime"));
+                        data.setLastAccessed(result.getLong("lastAccessTime"));
+                        data.setAccessed (result.getLong("accessTime"));
+                        data.setCreated(result.getLong("createTime"));
+                        data.setLastNode(result.getString("lastNode"));
+                        data.setLastSaved(result.getLong("lastSavedTime"));
+                        data.setExpiryTime(result.getLong("expiryTime"));
+                        data.setCanonicalContext(result.getString("contextPath"));
+                        data.setVirtualHost(result.getString("virtualHost"));
 
-               InputStream is = ((JDBCSessionIdManager)getIdManager())._dbAdaptor.getBlobInputStream(result, "map");
-               ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream (is);
-               Object o = ois.readObject();
-               data.setAttributeMap((ConcurrentHashMap)o);
-               ois.close();
-               
-               if (Log.isDebugEnabled())
-                   Log.debug("LOADED session "+data);
+                        InputStream is = ((JDBCSessionIdManager)getIdManager())._dbAdaptor.getBlobInputStream(result, "map");
+                        ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream (is);
+                        Object o = ois.readObject();
+                        data.setAttributeMap((ConcurrentHashMap)o);
+                        ois.close();
+
+                        if (Log.isDebugEnabled())
+                            Log.debug("LOADED session "+data);
+                    }
+                    reference.set(data);
+                }
+                catch (Exception e)
+                {
+                    exception.set(e);
+                }
+                finally
+                {
+                    if (connection!=null)
+                    {
+                        try { connection.close();}
+                        catch(Exception e) { Log.warn(e); }
+                    }
+                }  
             }
-            return data;
-        }   
-        finally
-        {
-            if (connection!=null)
-                connection.close();
-        }
+        };
+        
+        if (_context==null)
+            load.run();
+        else
+            _context.getContextHandler().handle(load);
+        
+        return reference.get();
     }
     
     /**

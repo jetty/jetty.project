@@ -27,7 +27,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
@@ -41,6 +40,8 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -268,6 +269,7 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 302 "));
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("/ctx/auth/info") > 0);
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -324,6 +326,7 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 302 "));
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("/ctx/auth/info") > 0);
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -384,6 +387,7 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 302 "));
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("/ctx/auth/info") > 0);
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
         // sneak in other request
         response = _connector.getResponses("GET /ctx/auth/other HTTP/1.0\r\n" +
@@ -447,6 +451,7 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 302 "));
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("/ctx/auth/info") > 0);
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
         response = _connector.getResponses("GET /ctx/auth/info;jsessionid="+session+";other HTTP/1.0\r\n" +
                 "\r\n");
@@ -562,6 +567,7 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 302 "));
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("/ctx/auth/info") > 0);
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -592,6 +598,7 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 302 "));
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("/ctx/auth/info") > 0);
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -621,6 +628,7 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 302 "));
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("/ctx/auth/info") > 0);
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -670,6 +678,7 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 302 "));
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("/ctx/auth/info") > 0);
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -700,6 +709,7 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 302 "));
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("/ctx/auth/info") > 0);
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
@@ -730,7 +740,7 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 302 "));
         assertTrue(response.indexOf("Location") > 0);
         assertTrue(response.indexOf("/ctx/auth/info") > 0);
-
+        session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf(";Path=/ctx"));
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
                 "Cookie: JSESSIONID=" + session + "\r\n" +

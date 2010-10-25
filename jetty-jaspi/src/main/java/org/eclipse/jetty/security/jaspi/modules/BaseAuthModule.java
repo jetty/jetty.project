@@ -32,12 +32,12 @@ import javax.security.auth.message.module.ServerAuthModule;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Credential;
 import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
 import org.eclipse.jetty.security.jaspi.JaspiMessageInfo;
 import org.eclipse.jetty.security.jaspi.callback.CredentialValidationCallback;
+import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 
 /**

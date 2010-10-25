@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http.security;
 
+import java.io.Serializable;
 import java.security.MessageDigest;
 
 import org.eclipse.jetty.util.StringUtil;
@@ -34,8 +35,10 @@ import org.eclipse.jetty.util.log.Log;
  * @see Password
  * 
  */
-public abstract class Credential
+public abstract class Credential implements Serializable
 {
+    private static final long serialVersionUID = -7760551052768181572L;
+
     /* ------------------------------------------------------------ */
     /**
      * Check a credential
@@ -71,6 +74,8 @@ public abstract class Credential
      */
     public static class Crypt extends Credential
     {
+        private static final long serialVersionUID = -2027792997664744210L;
+
         public static final String __TYPE = "CRYPT:";
 
         private final String _cooked;
@@ -104,6 +109,8 @@ public abstract class Credential
      */
     public static class MD5 extends Credential
     {
+        private static final long serialVersionUID = 5533846540822684240L;
+
         public static final String __TYPE = "MD5:";
 
         public static final Object __md5Lock = new Object();

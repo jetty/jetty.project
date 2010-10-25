@@ -32,6 +32,7 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.ChannelEndPoint;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.log.Log;
 
 
@@ -50,7 +51,7 @@ import org.eclipse.jetty.util.log.Log;
 public class BlockingChannelConnector extends AbstractNIOConnector 
 {
     private transient ServerSocketChannel _acceptChannel;
-    private final Set<BlockingChannelEndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<BlockingChannelEndPoint,Boolean>());
+    private final Set<BlockingChannelEndPoint> _endpoints = new ConcurrentHashSet<BlockingChannelEndPoint>();
     
     
     /* ------------------------------------------------------------ */
@@ -289,6 +290,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
                     }
                     
                     _connection = _connection.handle();
+                    
                 }
             }
             catch (EofException e)
@@ -313,6 +315,30 @@ public class BlockingChannelConnector extends AbstractNIOConnector
             {
                 connectionClosed(_connection);
                 _endpoints.remove(this);
+                
+                // wait for client to close, but if not, close ourselves.
+                try
+                {
+                    if (!_socket.isClosed())
+                    {
+                        long timestamp=System.currentTimeMillis();
+                        int max_idle=getMaxIdleTime(); 
+
+                        _socket.setSoTimeout(getMaxIdleTime());
+                        int c=0;
+                        do
+                        {
+                            c = _socket.getInputStream().read();
+                        }
+                        while (c>=0 && (System.currentTimeMillis()-timestamp)<max_idle);
+                        if (!_socket.isClosed())
+                            _socket.close();
+                    }
+                }
+                catch(IOException e)
+                {
+                    Log.ignore(e);
+                }
             }
         }
     }

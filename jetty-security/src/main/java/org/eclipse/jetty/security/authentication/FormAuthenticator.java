@@ -93,10 +93,10 @@ public class FormAuthenticator extends LoginAuthenticator
     
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.security.authentication.LoginAuthenticator#setConfiguration(org.eclipse.jetty.security.Authenticator.Configuration)
+     * @see org.eclipse.jetty.security.authentication.LoginAuthenticator#setConfiguration(org.eclipse.jetty.security.Authenticator.AuthConfiguration)
      */
     @Override
-    public void setConfiguration(Configuration configuration)
+    public void setConfiguration(AuthConfiguration configuration)
     {
         super.setConfiguration(configuration);
         String login=configuration.getInitParameter(FormAuthenticator.__FORM_LOGIN_PAGE);
@@ -181,6 +181,8 @@ public class FormAuthenticator extends LoginAuthenticator
                 UserIdentity user = _loginService.login(username,password);
                 if (user!=null)
                 {
+                    session=renewSessionOnAuthentication(request,response);
+                    
                     // Redirect to original request
                     String nuri;
                     synchronized(session)
@@ -197,9 +199,9 @@ public class FormAuthenticator extends LoginAuthenticator
                     response.setContentLength(0);   
                     response.sendRedirect(response.encodeRedirectURL(nuri));
 
-                    Authentication cached=new SessionAuthentication(session,this,user);
+                    Authentication cached=new SessionAuthentication(getAuthMethod(),user,password);
                     session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
-                    return new FormAuthentication(this,user);
+                    return new FormAuthentication(getAuthMethod(),user);
                 }
                 
                 // not authenticated
@@ -434,13 +436,19 @@ public class FormAuthenticator extends LoginAuthenticator
         }
     }
     
+    /* ------------------------------------------------------------ */
+    /** This Authentication represents a just completed Form authentication.
+     * Subsequent requests from the same user are authenticated by the presents 
+     * of a {@link SessionAuthentication} instance in their session.
+     */
     public static class FormAuthentication extends UserAuthentication implements Authentication.ResponseSent
     {
-        public FormAuthentication(Authenticator authenticator, UserIdentity userIdentity)
+        public FormAuthentication(String method, UserIdentity userIdentity)
         {
-            super(authenticator,userIdentity);
+            super(method,userIdentity);
         }
         
+        @Override
         public String toString()
         {
             return "Form"+super.toString();

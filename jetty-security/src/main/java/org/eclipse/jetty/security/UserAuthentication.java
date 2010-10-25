@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.security;
 
+import java.io.Serializable;
+
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
@@ -24,18 +26,18 @@ import org.eclipse.jetty.server.UserIdentity.Scope;
  */
 public class UserAuthentication implements Authentication.User
 {
-    private final Authenticator _authenticator;
+    private final String _method;
     private final UserIdentity _userIdentity;
 
-    public UserAuthentication(Authenticator authenticator, UserIdentity userIdentity)
+    public UserAuthentication(String method, UserIdentity userIdentity)
     {
-        _authenticator = authenticator;
-        _userIdentity=userIdentity;
+        _method = method;
+        _userIdentity = userIdentity;
     }
-
+    
     public String getAuthMethod()
     {
-        return _authenticator.getAuthMethod();
+        return _method;
     }
 
     public UserIdentity getUserIdentity()
@@ -48,20 +50,16 @@ public class UserAuthentication implements Authentication.User
         return _userIdentity.isUserInRole(role, scope);
     }
     
-    public void logout() 
-    {    
-        final Authenticator authenticator = _authenticator;
-        if (authenticator instanceof LoginAuthenticator)
-        {
-            IdentityService id_service=((LoginAuthenticator)authenticator).getLoginService().getIdentityService();
-            if (id_service!=null)
-                id_service.disassociate(null); // TODO provide the previous value
-        }
-    }
-    
     @Override
     public String toString()
     {
-        return "{Auth,"+getAuthMethod()+","+_userIdentity+"}";
+        return "{User,"+getAuthMethod()+","+_userIdentity+"}";
+    }
+
+    public void logout()
+    {
+        SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
+        if (security!=null)
+            security.logout(this);
     }
 }

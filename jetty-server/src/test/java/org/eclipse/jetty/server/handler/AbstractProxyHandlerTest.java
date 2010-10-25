@@ -42,7 +42,7 @@ public abstract class AbstractProxyHandlerTest
         proxy = new Server();
         proxyConnector = new SelectChannelConnector();
         proxy.addConnector(proxyConnector);
-        proxy.setHandler(new ProxyHandler());
+        proxy.setHandler(new ConnectHandler());
         proxy.start();
     }
 

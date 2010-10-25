@@ -97,10 +97,10 @@
                         <phase>process-resources</phase> 
                         <configuration> 
                             <tasks>
-                                <delete file="target/classes/META-INF/MANIFEST.MF"/>
+                                <delete file="target/classes/META-INF/MANIFEST.MF" />
                                 <copy todir="target/classes/jettyhome"> 
                                     <fileset dir="jettyhome"> 
-                                        <exclude name="**/*.log"/> 
+                                        <exclude name="**/*.log" /> 
                                     </fileset> 
                                 </copy> 
                             </tasks> 

@@ -79,6 +79,9 @@ public class ResponseTest
 
         assertEquals(null,response.getContentType());
 
+        response.setHeader("Content-Type","text/something");
+        assertEquals("text/something",response.getContentType());
+        
         response.setContentType("foo/bar");
         assertEquals("foo/bar",response.getContentType());
         response.getWriter();

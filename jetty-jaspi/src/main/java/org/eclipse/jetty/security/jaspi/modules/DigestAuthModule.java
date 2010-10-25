@@ -28,9 +28,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.http.security.Credential;
+import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -260,22 +260,16 @@ public class DigestAuthModule extends BaseAuthModule
 
     private static class Digest extends Credential
     {
+        private static final long serialVersionUID = -1866670896275159116L;
+
         String method = null;
-
         String username = null;
-
         String realm = null;
-
         String nonce = null;
-
         String nc = null;
-
         String cnonce = null;
-
         String qop = null;
-
         String uri = null;
-
         String response = null;
 
         /* ------------------------------------------------------------ */
@@ -285,6 +279,7 @@ public class DigestAuthModule extends BaseAuthModule
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public boolean check(Object credentials)
         {
             String password = (credentials instanceof String) ? (String) credentials : credentials.toString();
@@ -348,6 +343,7 @@ public class DigestAuthModule extends BaseAuthModule
             return false;
         }
 
+        @Override
         public String toString()
         {
             return username + "," + response;

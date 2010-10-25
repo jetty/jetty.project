@@ -15,14 +15,17 @@ package org.eclipse.jetty.util;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.HashMap;
@@ -355,6 +358,7 @@ public class MultiPartInputStream
         boolean lastPart=false;
         String contentDisposition=null;
         String contentType=null;
+        String contentTransferEncoding=null;
         outer:while(!lastPart)
         {
             MultiMap<String> headers = new MultiMap<String>();
@@ -385,6 +389,9 @@ public class MultiPartInputStream
                         contentDisposition=value;
                     if (key.equalsIgnoreCase("content-type"))
                         contentType = value;
+                    if(key.equals("content-transfer-encoding"))
+                        contentTransferEncoding=value;
+
                 }
             }
 
@@ -395,7 +402,7 @@ public class MultiPartInputStream
                 throw new IOException("Missing content-disposition");
             }
 
-            StringTokenizer tok=new StringTokenizer(contentDisposition,";");
+            QuotedStringTokenizer tok=new QuotedStringTokenizer(contentDisposition,";");
             String name=null;
             String filename=null;
             while(tok.hasMoreTokens())
@@ -425,6 +432,36 @@ public class MultiPartInputStream
                 continue;
             }
 
+            if ("base64".equalsIgnoreCase(contentTransferEncoding))
+            {
+                _in = new Base64InputStream(_in);
+            }
+            else if ("quoted-printable".equalsIgnoreCase(contentTransferEncoding))
+            {
+                _in = new FilterInputStream(_in)
+                {
+                    @Override
+                    public int read() throws IOException
+                    {
+                        int c = in.read();
+                        if (c >= 0 && c == '=')
+                        {
+                            int hi = in.read();
+                            int lo = in.read();
+                            if (hi < 0 || lo < 0)
+                            {
+                                throw new IOException("Unexpected end to quoted-printable byte");
+                            }
+                            char[] chars = new char[] { (char)hi, (char)lo };
+                            c = Integer.parseInt(new String(chars),16);
+                        }
+                        return c;
+                    }
+                };
+            }
+
+            
+            
             //Have a new Part
             MultiPart part = new MultiPart(name, filename);
             part.setHeaders(headers);
@@ -541,5 +578,37 @@ public class MultiPartInputStream
         }
         return value;
     }
+    
+    private static class Base64InputStream extends InputStream
+    {
+        BufferedReader _in;
+        String _line;
+        byte[] _buffer;
+        int _pos;
 
+        public Base64InputStream (InputStream in)
+        {
+            _in = new BufferedReader(new InputStreamReader(in));
+        }
+
+        @Override
+        public int read() throws IOException
+        {
+            if (_buffer==null || _pos>= _buffer.length)
+            {
+                _line = _in.readLine();
+                if (_line==null)
+                    return -1;
+                if (_line.startsWith("--"))
+                    _buffer=(_line+"\r\n").getBytes();
+                else if (_line.length()==0)
+                    _buffer="\r\n".getBytes();
+                else
+                    _buffer=B64Code.decode(_line);
+
+                _pos=0;
+            }
+            return _buffer[_pos++];
+        }
+    }
 }

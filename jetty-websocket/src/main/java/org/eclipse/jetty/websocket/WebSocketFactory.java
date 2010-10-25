@@ -89,11 +89,11 @@ public class WebSocketFactory
      * @param response The response to upgrade
      * @param websocket The websocket handler implementation to use
      * @param origin The origin of the websocket connection
-     * @param protocol The protocol
+     * @param subprotocol The protocol
      * @throws UpgradeConnectionException Thrown to upgrade the connection
      * @throws IOException
      */
-    public void upgrade(HttpServletRequest request,HttpServletResponse response, WebSocket websocket, String origin, String protocol)
+    public void upgrade(HttpServletRequest request,HttpServletResponse response, WebSocket websocket, String origin, String subprotocol)
      throws IOException
      {
         if (!"WebSocket".equals(request.getHeader("Upgrade")))
@@ -104,48 +104,23 @@ public class WebSocketFactory
         int draft=request.getIntHeader("Sec-WebSocket-Draft");
         HttpConnection http = HttpConnection.getCurrentConnection();
         ConnectedEndPoint endp = (ConnectedEndPoint)http.getEndPoint();
-        WebSocketConnection connection = new WebSocketConnection(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,draft);
         
-        String uri=request.getRequestURI();
-	String query=request.getQueryString();
-	if (query!=null && query.length()>0)
-	    uri+="?"+query;
-        String host=request.getHeader("Host");
-        
-        String key1 = request.getHeader("Sec-WebSocket-Key1");
-        if (key1!=null)
+        final WebSocketConnection connection;
+        switch(draft)
         {
-            String key2 = request.getHeader("Sec-WebSocket-Key2");
-            connection.setHixieKeys(key1,key2);
-
-            response.setHeader("Upgrade","WebSocket");
-            response.addHeader("Connection","Upgrade");
-            response.addHeader("Sec-WebSocket-Origin",origin);
-            response.addHeader("Sec-WebSocket-Location",(request.isSecure()?"wss://":"ws://")+host+uri);
-            if (protocol!=null)
-                response.addHeader("Sec-WebSocket-Protocol",protocol);
-            response.sendError(101,"WebSocket Protocol Handshake");
-        }
-        else
-        {
-            response.setHeader("Upgrade","WebSocket");
-            response.addHeader("Connection","Upgrade");
-            response.addHeader("WebSocket-Origin",origin);
-            response.addHeader("WebSocket-Location",(request.isSecure()?"wss://":"ws://")+host+uri);
-            if (protocol!=null)
-                response.addHeader("WebSocket-Protocol",protocol);
-            response.sendError(101,"Web Socket Protocol Handshake");
+            default:
+                connection=new WebSocketConnectionD00(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,draft);
         }
         
+        // Let the connection finish processing the handshake
+        connection.handshake(request,response, origin, subprotocol);
         response.flushBuffer();
 
-        connection.fill(((HttpParser)http.getParser()).getHeaderBuffer());
-        connection.fill(((HttpParser)http.getParser()).getBodyBuffer());
+        // Give the connection any unused data from the HTTP connection.
+        connection.fillBuffersFrom(((HttpParser)http.getParser()).getHeaderBuffer());
+        connection.fillBuffersFrom(((HttpParser)http.getParser()).getBodyBuffer());
 
-        // connect here for -75, but in connection for -76 onwards
-        if (key1==null)
-            websocket.onConnect(connection);
-        
+        // Tell jetty about the new connection 
         request.setAttribute("org.eclipse.jetty.io.Connection",connection);
      }
 }

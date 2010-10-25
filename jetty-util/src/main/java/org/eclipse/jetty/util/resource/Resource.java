@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Log;
 /** 
  * Abstract resource class.
  */
-public abstract class Resource
+public abstract class Resource implements ResourceFactory
 {
     public static boolean __defaultUseCaches = true;
     volatile Object _associate;
@@ -428,7 +428,26 @@ public abstract class Resource
      */
     public abstract Resource addPath(String path)
         throws IOException,MalformedURLException;
-    
+
+    /* ------------------------------------------------------------ */
+    /** Get a resource from withing this resource.
+     * <p>
+     * This method is essentially an alias for {@link #addPath(String)}, but without checked exceptions.
+     * This method satisfied the {@link ResourceFactory} interface.
+     * @see org.eclipse.jetty.util.resource.ResourceFactory#getResource(java.lang.String)
+     */
+    public Resource getResource(String path)
+    {
+        try
+        {
+            return addPath(path);
+        }
+        catch(Exception e)
+        {
+            Log.debug(e);
+            return null;
+        }
+    }
 
     /* ------------------------------------------------------------ */
     /** Encode according to this resource type.

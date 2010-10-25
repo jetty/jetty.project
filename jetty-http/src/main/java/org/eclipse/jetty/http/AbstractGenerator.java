@@ -260,7 +260,7 @@ public abstract class AbstractGenerator implements Generator
         ?_persistent.booleanValue()
         :(isRequest()?true:_version>HttpVersions.HTTP_1_0_ORDINAL);
     }
-
+    
     /* ------------------------------------------------------------ */
     public void setPersistent(boolean persistent)
     {

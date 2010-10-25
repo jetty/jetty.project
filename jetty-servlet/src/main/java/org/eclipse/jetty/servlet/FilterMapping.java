@@ -25,13 +25,13 @@ import org.eclipse.jetty.server.Handler;
 public class FilterMapping
 {
     /** Dispatch types */
-    private static final int DEFAULT=0;
-    private static final int REQUEST=1;
-    private static final int FORWARD=2;
-    private static final int INCLUDE=4;
-    private static final int ERROR=8;
-    private static final int ASYNC=16;
-    private static final int ALL=31;
+    public static final int DEFAULT=0;
+    public static final int REQUEST=1;
+    public static final int FORWARD=2;
+    public static final int INCLUDE=4;
+    public static final int ERROR=8;
+    public static final int ASYNC=16;
+    public static final int ALL=31;
     
 
     /* ------------------------------------------------------------ */

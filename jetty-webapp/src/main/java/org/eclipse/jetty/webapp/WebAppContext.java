@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.PermissionCollection;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -118,7 +120,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private Configuration[] _configurations;
     private String _defaultsDescriptor=WEB_DEFAULTS_XML;
     private String _descriptor=null;
-    private String _overrideDescriptor=null;
+    private final List<String> _overrideDescriptors = new ArrayList<String>();
     private boolean _distributable=false;
     private boolean _extractWAR=true;
     private boolean _copyDir=false;
@@ -338,6 +340,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setClassLoader(ClassLoader classLoader)
     {
         super.setClassLoader(classLoader);
+        
+//        if ( !(classLoader instanceof WebAppClassLoader) )
+//        {
+//            Log.info("NOTE: detected a classloader which is not an instance of WebAppClassLoader being set on WebAppContext, some typical class and resource locations may be missing on: " + toString() );
+//        }
+        
         if (classLoader!=null && classLoader instanceof WebAppClassLoader && getDisplayName()!=null)
             ((WebAppClassLoader)classLoader).setName(getDisplayName());
     }
@@ -572,10 +580,23 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * The override descriptor is a web.xml format file that is applied to the context after the standard WEB-INF/web.xml
      * @return Returns the Override Descriptor.
+     * @deprecated use {@link #getOverrideDescriptors()}
      */
     public String getOverrideDescriptor()
     {
-        return _overrideDescriptor;
+        if (_overrideDescriptors.size()!=1)
+            return null;
+        return _overrideDescriptors.get(0);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * An override descriptor is a web.xml format file that is applied to the context after the standard WEB-INF/web.xml
+     * @return Returns the Override Descriptor list
+     */
+    public List<String> getOverrideDescriptors()
+    {
+        return Collections.unmodifiableList(_overrideDescriptors);
     }
     
     /* ------------------------------------------------------------ */
@@ -835,10 +856,23 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * The override descriptor is a web.xml format file that is applied to the context after the standard WEB-INF/web.xml
      * @param overrideDescriptor The overrideDescritpor to set.
+     * @deprecated use {@link #setOverrideDescriptors(List)}
      */
     public void setOverrideDescriptor(String overrideDescriptor)
     {
-        _overrideDescriptor = overrideDescriptor;
+        _overrideDescriptors.clear();
+        _overrideDescriptors.add(overrideDescriptor);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * The override descriptor is a web.xml format file that is applied to the context after the standard WEB-INF/web.xml
+     * @param overrideDescriptor The overrideDescritpor to set.
+     */
+    public void setOverrideDescriptors(List<String> overrideDescriptors)
+    {
+        _overrideDescriptors.clear();
+        _overrideDescriptors.addAll(overrideDescriptors);
     }
 
     /* ------------------------------------------------------------ */

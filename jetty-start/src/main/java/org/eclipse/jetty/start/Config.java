@@ -138,6 +138,10 @@ import java.util.TreeSet;
  * <p>
  * The tag '*' is always appended to the options, so any section with the * tag is always applied.
  * </p>
+ * 
+ * <p>
+ * The property map maintained by this class is static and shared between all instances in the same classloader
+ * </p>
  */
 public class Config
 {
@@ -168,10 +172,14 @@ public class Config
 
     private static final String _version;
     private static boolean DEBUG = false;
+    private static final Map<String, String> __properties = new HashMap<String, String>();
     private final Map<String, Classpath> _classpaths = new HashMap<String, Classpath>();
     private final List<String> _xml = new ArrayList<String>();
     private final Set<String> _policies = new HashSet<String>();
     private String _classname = null;
+
+    private int argCount = 0;
+    
     private final Set<String> _activeOptions = new TreeSet<String>(new Comparator<String>()
     {
         // Make sure "*" is always at the end of the list
@@ -188,8 +196,6 @@ public class Config
             return o1.compareTo(o2);
         }
     });
-    private final Map<String, String> _properties = new HashMap<String, String>();
-    private int argCount = 0;
 
     private boolean addClasspathComponent(List<String> sections, String component)
     {
@@ -404,23 +410,31 @@ public class Config
         return _classname;
     }
 
-    public Map<String,String> getProperties()
+    public static void clearProperties()
     {
-        return Collections.unmodifiableMap(_properties);
+        __properties.clear();
     }
     
-    public String getProperty(String name)
+    public static Properties getProperties()
+    {
+        Properties properties = new Properties();
+        for (String key : __properties.keySet())
+            properties.put(key,__properties.get(key));
+        return properties;
+    }
+    
+    public static String getProperty(String name)
     {
         if ("version".equalsIgnoreCase(name))
             return _version;
 
-        return _properties.get(name);
+        return __properties.get(name);
     }
 
-    public String getProperty(String name, String dftValue)
+    public static String getProperty(String name, String dftValue)
     {
-        if (_properties.containsKey(name))
-            return _properties.get(name);
+        if (__properties.containsKey(name))
+            return __properties.get(name);
         return dftValue;
     }
 
@@ -451,8 +465,8 @@ public class Config
     {
         if ("version".equalsIgnoreCase(name))
             return _version;
-        if (_properties.containsKey(name))
-            return _properties.get(name);
+        if (__properties.containsKey(name))
+            return __properties.get(name);
         return System.getProperty(name);
     }
 
@@ -945,7 +959,7 @@ public class Config
                 addActiveOption(id);
             }
         }
-        _properties.put(name,value);
+        __properties.put(name,value);
     }
 
     public Policy getPolicyInstance(ClassLoader cl) throws ClassNotFoundException, SecurityException, NoSuchMethodException, IllegalArgumentException,
@@ -954,7 +968,7 @@ public class Config
         Class<?> jettyPolicy = cl.loadClass("org.eclipse.jetty.policy.JettyPolicy");
         Constructor<?> c = jettyPolicy.getConstructor(new Class[]
                                                                 { Set.class, Map.class });
-        Object policyClass = c.newInstance(_policies,_properties);
+        Object policyClass = c.newInstance(_policies,__properties);
 
         if (policyClass instanceof Policy)
         {
@@ -969,9 +983,7 @@ public class Config
     public void addActiveOption(String option)
     {
         _activeOptions.add(option); 
-        _properties.put("OPTIONS",join(_activeOptions,","));
-
-        System.err.println("OPTIONS="+_activeOptions);
+        __properties.put("OPTIONS",join(_activeOptions,","));
     }
 
     public Set<String> getActiveOptions()
@@ -982,7 +994,7 @@ public class Config
     public void removeActiveOption(String option)
     {
         _activeOptions.remove(option);
-        _properties.put("OPTIONS",join(_activeOptions,","));
+        __properties.put("OPTIONS",join(_activeOptions,","));
     }
     
     private String join(Collection<?> coll, String delim)

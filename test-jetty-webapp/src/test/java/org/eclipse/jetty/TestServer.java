@@ -14,19 +14,29 @@
 package org.eclipse.jetty;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.swing.text.WrappedPlainView;
 
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NCSARequestLog;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.nio.BlockingChannelConnector;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -78,6 +88,13 @@ public class TestServer
         connector2.setMaxIdleTime(30000);
         connector2.setConfidentialPort(8443);
         server.addConnector(connector2);
+        
+        // Setup Connectors
+        BlockingChannelConnector connector3 = new BlockingChannelConnector();
+        connector3.setPort(8083);
+        connector3.setMaxIdleTime(30000);
+        connector3.setConfidentialPort(8443);
+        server.addConnector(connector3);
 
         SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
         ssl_connector.setPort(8443);
@@ -93,7 +110,12 @@ public class TestServer
         RequestLogHandler requestLogHandler = new RequestLogHandler();
         handlers.setHandlers(new Handler[]
         { contexts, new DefaultHandler(), requestLogHandler });
-        server.setHandler(handlers);
+        
+        // Add restart handler to test the ability to save sessions and restart
+        RestartHandler restart = new RestartHandler();
+        restart.setHandler(handlers);
+        
+        server.setHandler(restart);
 
         
         // Setup deployers
@@ -115,11 +137,55 @@ public class TestServer
         webapp.setParentLoaderPriority(true);
         webapp.setResourceBase("./src/main/webapp");
         webapp.setAttribute("testAttribute","testValue");
+        File sessiondir=File.createTempFile("sessions",null);
+        if (sessiondir.exists())
+            sessiondir.delete();
+        sessiondir.mkdir();
+        sessiondir.deleteOnExit();
+        ((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setStoreDirectory(sessiondir);
+        ((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setSavePeriod(10);
         
         contexts.addHandler(webapp);
         
         server.start();
         server.join();
+    }
+    
+    private static class RestartHandler extends HandlerWrapper
+    {
+
+        /* ------------------------------------------------------------ */
+        /**
+         * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+         */
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            super.handle(target,baseRequest,request,response);
+            if (Boolean.valueOf(request.getParameter("restart")))
+            {
+                final Server server=getServer();
+                
+                new Thread()
+                {
+                    public void run()
+                    {
+                        try
+                        {
+                            Thread.sleep(100);
+                            server.stop();
+                            Thread.sleep(100);
+                            server.start();
+                        }
+                        catch(Exception e)
+                        {
+                            Log.warn(e);
+                        }
+                    }
+                }.start();
+            }
+        }
+        
     }
 
 }

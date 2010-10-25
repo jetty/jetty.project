@@ -266,6 +266,30 @@ public class SocketConnector extends AbstractConnector
                 {
                     _connections.remove(this);
                 }
+
+                // wait for client to close, but if not, close ourselves.
+                try
+                {
+                    if (!_socket.isClosed())
+                    {
+                        long timestamp=System.currentTimeMillis();
+                        int max_idle=getMaxIdleTime(); 
+
+                        _socket.setSoTimeout(getMaxIdleTime());
+                        int c=0;
+                        do
+                        {
+                            c = _socket.getInputStream().read();
+                        }
+                        while (c>=0 && (System.currentTimeMillis()-timestamp)<max_idle);
+                        if (!_socket.isClosed())
+                            _socket.close();
+                    }
+                }
+                catch(IOException e)
+                {
+                    Log.ignore(e);
+                }
             }
         }
     }

@@ -257,7 +257,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         {
             if (_cache==null && max_cached_files>0)
             {
-                _cache= new ResourceCache(this,_mimeTypes,_useFileMappedBuffer);
+                _cache= new ResourceCache(null,this,_mimeTypes,_useFileMappedBuffer);
 
                 if (max_cache_size>0)
                     _cache.setMaxCacheSize(max_cache_size);
@@ -355,7 +355,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     }
 
     /* ------------------------------------------------------------ */
-    @SuppressWarnings("unchecked")
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException
@@ -417,21 +416,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 else
                 {
                     content=_cache.lookup(pathInContextGz);
-
-                    if (content!=null)
-                        resource=content.getResource();
-                    else if (!(content instanceof ResourceCache.Miss))
-                        resource=getResource(pathInContextGz);
+                    resource=(content==null)?null:content.getResource();
                 }
 
-                if (resource==null || !resource.exists()|| resource.isDirectory())
+                if (resource==null || !resource.exists() || resource.isDirectory())
                 {
-                    if (_cache!=null && content==null)
-                    {
-                        String real_path=_servletContext.getRealPath(pathInContextGz);
-                        if (real_path!=null)
-                            _cache.miss(pathInContextGz,_contextHandler.newResource(real_path));
-                    }
                     gzip=false;
                     pathInContextGz=null;
                 }
@@ -445,11 +434,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 else
                 {
                     content=_cache.lookup(pathInContext);
-
-                    if (content!=null)
-                        resource=content.getResource();
-                    else
-                        resource=getResource(pathInContext);
+                    resource=content==null?null:content.getResource();
                 }
             }
 
@@ -458,11 +443,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
             // Handle resource
             if (resource==null || !resource.exists())
-                if (included) {
-                    throw new FileNotFoundException("Nothing at " + pathInContext);
-                } else {
-                    response.sendError(HttpServletResponse.SC_NOT_FOUND);
-                }
+            {
+                if (included) 
+                    throw new FileNotFoundException("!" + pathInContext);
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            }
             else if (!resource.isDirectory())
             {
                 if (endsWithSlash && _contextHandler.isAliases() && pathInContext.length()>1)
@@ -477,7 +462,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 {
                     // ensure we have content
                     if (content==null)
-                        content=new UnCachedContent(resource);
+                        content=new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()));
 
                     if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
                     {
@@ -547,7 +532,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 }
                 else
                 {
-                    content=new UnCachedContent(resource);
+                    content=new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()));
                     if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
                         sendDirectory(request,response,resource,pathInContext);
                 }
@@ -1012,66 +997,4 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         super.destroy();
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private class UnCachedContent implements HttpContent
-    {
-        Resource _resource;
-
-        UnCachedContent(Resource resource)
-        {
-            _resource=resource;
-        }
-
-        /* ------------------------------------------------------------ */
-        public Buffer getContentType()
-        {
-            return _mimeTypes.getMimeByExtension(_resource.toString());
-        }
-
-        /* ------------------------------------------------------------ */
-        public Buffer getLastModified()
-        {
-            return null;
-        }
-
-        /* ------------------------------------------------------------ */
-        public Buffer getDirectBuffer()
-        {
-            return null;
-        }
-
-        /* ------------------------------------------------------------ */
-        public Buffer getIndirectBuffer()
-        {
-            return null;
-        }
-
-        /* ------------------------------------------------------------ */
-        public long getContentLength()
-        {
-            return _resource.length();
-        }
-
-        /* ------------------------------------------------------------ */
-        public InputStream getInputStream() throws IOException
-        {
-            return _resource.getInputStream();
-        }
-
-        /* ------------------------------------------------------------ */
-        public Resource getResource()
-        {
-            return _resource;
-        }
-
-        /* ------------------------------------------------------------ */
-        public void release()
-        {
-            _resource.release();
-            _resource=null;
-        }
-
-    }
 }

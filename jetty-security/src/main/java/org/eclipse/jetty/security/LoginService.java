@@ -61,4 +61,7 @@ public interface LoginService
      * @param service the IdentityService associated with this Login Service.
      */
     void setIdentityService(IdentityService service);
+    
+    void logout(UserIdentity user);
+
 }

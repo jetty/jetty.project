@@ -47,6 +47,7 @@ public class SslSelectChannelServerTest extends HttpServerTestBase
         connector.setKeyPassword("keypwd");
         connector.setTruststore(keystorePath);
         connector.setTrustPassword("storepwd");
+        connector.setUseDirectBuffers(true);
         startServer(connector);
         
 
@@ -66,5 +67,11 @@ public class SslSelectChannelServerTest extends HttpServerTestBase
     {
         // TODO this test uses URL, so noop for now
     }
-    
+
+    @Test
+    @Override
+    public void testBlockedClient() throws Exception
+    {
+    }
+   
 }

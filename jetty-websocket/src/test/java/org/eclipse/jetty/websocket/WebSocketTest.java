@@ -57,8 +57,8 @@ public class WebSocketTest
     @Test
     public void testHixieCrypt() throws Exception
     {
-        assertEquals(155712099,WebSocketConnection.hixieCrypt("18x 6]8vM;54 *(5:  {   U1]8  z [  8"));
-        assertEquals(173347027,WebSocketConnection.hixieCrypt("1_ tx7X d  <  nw  334J702) 7]o}` 0"));
+        assertEquals(155712099,WebSocketConnectionD00.hixieCrypt("18x 6]8vM;54 *(5:  {   U1]8  z [  8"));
+        assertEquals(173347027,WebSocketConnectionD00.hixieCrypt("1_ tx7X d  <  nw  334J702) 7]o}` 0"));
     }
 
     @Test
@@ -69,12 +69,12 @@ public class WebSocketTest
         byte[] expected;
         
         expected=md.digest(TypeUtil.fromHexString("00000000000000000000000000000000"));
-        result=WebSocketConnection.doTheHixieHixieShake(
+        result=WebSocketConnectionD00.doTheHixieHixieShake(
                 0 ,0, new byte[8]);
         assertEquals(TypeUtil.toHexString(expected),TypeUtil.toHexString(result));
 
         expected=md.digest(TypeUtil.fromHexString("01020304050607080000000000000000"));
-        result=WebSocketConnection.doTheHixieHixieShake(
+        result=WebSocketConnectionD00.doTheHixieHixieShake(
                 0x01020304,
                 0x05060708,
                 new byte[8]);
@@ -83,7 +83,7 @@ public class WebSocketTest
         byte[] random = new byte[8];
         for (int i=0;i<8;i++)
             random[i]=(byte)(0xff&"Tm[K T2u".charAt(i));
-        result=WebSocketConnection.doTheHixieHixieShake(
+        result=WebSocketConnectionD00.doTheHixieHixieShake(
                 155712099,173347027,random);
         StringBuilder b = new StringBuilder();
 

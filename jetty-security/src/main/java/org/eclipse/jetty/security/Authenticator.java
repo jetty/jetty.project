@@ -22,6 +22,7 @@ import javax.servlet.ServletResponse;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Authentication.User;
+import org.eclipse.jetty.server.SessionManager;
 
 /**
  * Authenticator Interface
@@ -40,7 +41,7 @@ public interface Authenticator
      * Configure the Authenticator
      * @param configuration
      */
-    void setConfiguration(Configuration configuration);
+    void setConfiguration(AuthConfiguration configuration);
     
     /* ------------------------------------------------------------ */
     /**
@@ -80,24 +81,38 @@ public interface Authenticator
     /** 
      * Authenticator Configuration
      */
-    interface Configuration
+    interface AuthConfiguration
     {
         String getAuthMethod();
         String getRealmName();
-        String getInitParameter(String key);
+        
+        /** Get a SecurityHandler init parameter
+         * @see SecurityHandler#getInitParameter(String)
+         * @param param parameter name
+         * @return Parameter value or null
+         */
+        String getInitParameter(String param);
+        
+        /* ------------------------------------------------------------ */
+        /** Get a SecurityHandler init parameter names
+         * @see SecurityHandler#getInitParameterNames()
+         * @return Set of parameter names
+         */
         Set<String> getInitParameterNames();
+        
         LoginService getLoginService();
         IdentityService getIdentityService();
+        boolean isSessionRenewedOnAuthentication();
     }
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /** 
-     * Authenticator Facotory
+     * Authenticator Factory
      */
     interface Factory
     {
-        Authenticator getAuthenticator(Server server, ServletContext context, Configuration configuration, IdentityService identityService, LoginService loginService);
+        Authenticator getAuthenticator(Server server, ServletContext context, AuthConfiguration configuration, IdentityService identityService, LoginService loginService);
     }
 }

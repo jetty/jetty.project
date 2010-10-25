@@ -3,13 +3,13 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>15</version>
+    <version>16</version>
   </parent>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
   <version>8.0.0.M2-SNAPSHOT</version>
   <name>Jetty :: Project</name>
-  <url>${jetty.url}</url>
+  <url>${jetty.url}</url>  
   <packaging>pom</packaging>
   <properties>
     <felix.bundle.version>2.0.0</felix.bundle.version>
@@ -239,8 +239,9 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.7</version>
         <configuration>
-          <additionalJOption>-J-Xmx128m</additionalJOption>
+          <additionalJOption>-J-Xmx256m</additionalJOption>
         </configuration>
       </plugin>
       <plugin>

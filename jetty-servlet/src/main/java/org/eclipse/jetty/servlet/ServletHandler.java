@@ -20,10 +20,13 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -85,7 +88,7 @@ public class ServletHandler extends ScopedHandler
     private FilterHolder[] _filters;
     private FilterMapping[] _filterMappings;
     private boolean _filterChainsCached=true;
-    private int _maxFilterChainsCacheSize=1000;
+    private int _maxFilterChainsCacheSize=512;
     private boolean _startWithUnavailable=true;
     private IdentityService _identityService;
     private SecurityHandler _securityHandler;
@@ -100,7 +103,8 @@ public class ServletHandler extends ScopedHandler
     private final Map<String,ServletHolder> _servletNameMap=new HashMap<String,ServletHolder>();
     private PathMap _servletPathMap;
     
-    protected ConcurrentHashMap<String,FilterChain> _chainCache[];
+    protected final ConcurrentMap<String,FilterChain> _chainCache[] = new ConcurrentMap[FilterMapping.ALL];
+    protected final Queue<String>[] _chainLRU = new Queue[FilterMapping.ALL];
 
 
     /* ------------------------------------------------------------ */
@@ -152,7 +156,19 @@ public class ServletHandler extends ScopedHandler
         updateMappings();
         
         if(_filterChainsCached)
-            _chainCache= new ConcurrentHashMap[]{null,new ConcurrentHashMap(),new ConcurrentHashMap(),null,new ConcurrentHashMap(),null,null,null,new ConcurrentHashMap(),null,null,null,null,null,null,null,new ConcurrentHashMap()};
+        {
+            _chainCache[FilterMapping.REQUEST]=new ConcurrentHashMap<String,FilterChain>();
+            _chainCache[FilterMapping.FORWARD]=new ConcurrentHashMap<String,FilterChain>();
+            _chainCache[FilterMapping.INCLUDE]=new ConcurrentHashMap<String,FilterChain>();
+            _chainCache[FilterMapping.ERROR]=new ConcurrentHashMap<String,FilterChain>();
+            _chainCache[FilterMapping.ASYNC]=new ConcurrentHashMap<String,FilterChain>();
+            
+            _chainLRU[FilterMapping.REQUEST]=new ConcurrentLinkedQueue<String>();
+            _chainLRU[FilterMapping.FORWARD]=new ConcurrentLinkedQueue<String>();
+            _chainLRU[FilterMapping.INCLUDE]=new ConcurrentLinkedQueue<String>();
+            _chainLRU[FilterMapping.ERROR]=new ConcurrentLinkedQueue<String>();
+            _chainLRU[FilterMapping.ASYNC]=new ConcurrentLinkedQueue<String>();
+        }
 
         super.doStart();
         
@@ -189,7 +205,6 @@ public class ServletHandler extends ScopedHandler
         _filterNameMappings=null;
         
         _servletPathMap=null;
-        _chainCache=null;
     }
 
     /* ------------------------------------------------------------ */
@@ -410,7 +425,6 @@ public class ServletHandler extends ScopedHandler
                 baseRequest.setPathInfo(old_path_info); 
             }
         }
-        
     }
     
     /* ------------------------------------------------------------ */
@@ -626,19 +640,57 @@ public class ServletHandler extends ScopedHandler
         if (filters==null)
             return null;
         
+        
         FilterChain chain = null;
         if (_filterChainsCached)
         {
-        	if (LazyList.size(filters) > 0)
-        		chain= new CachedChain(filters, servletHolder);
-        	if (_maxFilterChainsCacheSize>0 && _chainCache[dispatch].size()>_maxFilterChainsCacheSize)
-        		_chainCache[dispatch].clear();
-        	_chainCache[dispatch].put(key,chain);
+            if (LazyList.size(filters) > 0)
+                chain= new CachedChain(filters, servletHolder);
+
+            final Map<String,FilterChain> cache=_chainCache[dispatch];
+            final Queue<String> lru=_chainLRU[dispatch];
+
+        	// Do we have too many cached chains?
+        	while (_maxFilterChainsCacheSize>0 && cache.size()>=_maxFilterChainsCacheSize)
+        	{
+        	    // The LRU list is not atomic with the cache map, so be prepared to invalidate if 
+        	    // a key is not found to delete.
+        	    // Delete by LRU (where U==created)
+        	    String k=lru.poll();
+        	    if (k==null)
+        	    {
+        	        cache.clear();
+        	        break;
+        	    }
+        	    cache.remove(k);
+        	}
+        	
+        	cache.put(key,chain);
+        	lru.add(key);
         }
         else if (LazyList.size(filters) > 0)
             chain = new Chain(baseRequest,filters, servletHolder);
     
         return chain;
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void invalidateChainsCache()
+    {
+        if (_chainLRU[FilterMapping.REQUEST]!=null)
+        {
+            _chainLRU[FilterMapping.REQUEST].clear();
+            _chainLRU[FilterMapping.FORWARD].clear();
+            _chainLRU[FilterMapping.INCLUDE].clear();
+            _chainLRU[FilterMapping.ERROR].clear();
+            _chainLRU[FilterMapping.ASYNC].clear();
+
+            _chainCache[FilterMapping.REQUEST].clear();
+            _chainCache[FilterMapping.FORWARD].clear();
+            _chainCache[FilterMapping.INCLUDE].clear();
+            _chainCache[FilterMapping.ERROR].clear();
+            _chainCache[FilterMapping.ASYNC].clear();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -1128,6 +1180,7 @@ public class ServletHandler extends ScopedHandler
             getServer().getContainer().update(this,_filterMappings,filterMappings,"filterMapping",true);
         _filterMappings = filterMappings;
         updateMappings();
+        invalidateChainsCache();
     }
     
     /* ------------------------------------------------------------ */
@@ -1137,6 +1190,7 @@ public class ServletHandler extends ScopedHandler
             getServer().getContainer().update(this,_filters,holders,"filter",true);
         _filters=holders;
         updateNameMappings();
+        invalidateChainsCache();
     }
     
     /* ------------------------------------------------------------ */
@@ -1149,6 +1203,7 @@ public class ServletHandler extends ScopedHandler
             getServer().getContainer().update(this,_servletMappings,servletMappings,"servletMapping",true);
         _servletMappings = servletMappings;
         updateMappings();
+        invalidateChainsCache();
     }
     
     /* ------------------------------------------------------------ */
@@ -1161,6 +1216,7 @@ public class ServletHandler extends ScopedHandler
             getServer().getContainer().update(this,_servlets,holders,"servlet",true);
         _servlets=holders;
         updateNameMappings();
+        invalidateChainsCache();
     }
 
     /* ------------------------------------------------------------ */
