@@ -18,7 +18,6 @@ import java.util.Random;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
