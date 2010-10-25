@@ -52,6 +52,7 @@ public class MultiPartInputStream
     protected MultiMap _map;
     protected Map<String, Part> _parts;
     protected File _tmpDir;
+    protected File _contextTmpDir;
  
     
     
@@ -283,14 +284,18 @@ public class MultiPartInputStream
      * @param in Request input stream 
      * @param contentType Content-Type header
      * @param config MultipartConfigElement 
+     * @param contextTmpDir javax.servlet.context.tempdir
      */
-    public MultiPartInputStream (InputStream in, String contentType, MultipartConfigElement config)
+    public MultiPartInputStream (InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
         _in = new BufferedInputStream(in);
        _contentType = contentType;
        _config = config;
+       _contextTmpDir = contextTmpDir;
+       if (_contextTmpDir == null)
+           _contextTmpDir = new File (System.getProperty(System.getProperty("java.io.tmpdir")));
        if (_config == null)
-           _config = __DEFAULT_MULTIPART_CONFIG;
+           _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
     }
 
     
@@ -335,13 +340,22 @@ public class MultiPartInputStream
             return;
  
         //sort out the location to which to write the files
-        String location = __DEFAULT_MULTIPART_CONFIG.getLocation();
-        location = ("".equals(_config.getLocation())? location : _config.getLocation());
-
-        _tmpDir = new File(location);
+        
+        if (_config.getLocation() == null)
+            _tmpDir = _contextTmpDir;
+        else if ("".equals(_config.getLocation()))
+            _tmpDir = _contextTmpDir;
+        else
+        {
+            File f = new File (_config.getLocation());
+            if (f.isAbsolute())
+                _tmpDir = f;
+            else
+                _tmpDir = new File (_contextTmpDir, _config.getLocation());
+        }
+      
         if (!_tmpDir.exists())
             _tmpDir.mkdirs();
-
 
         String boundary="--"+value(_contentType.substring(_contentType.indexOf("boundary=")));
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);

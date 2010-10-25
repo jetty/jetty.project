@@ -128,7 +128,7 @@ public class MultiPartFilter implements Filter
         String content_type=srequest.getContentType();
         
         MultipartConfigElement config = new MultipartConfigElement(tempdir.getCanonicalPath(), _maxFileSize, _maxRequestSize, _fileOutputBuffer);
-        MultiPartInputStream mpis = new MultiPartInputStream(in, content_type, config);
+        MultiPartInputStream mpis = new MultiPartInputStream(in, content_type, config, tempdir);
         
 
         try

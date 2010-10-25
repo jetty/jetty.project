@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -1875,8 +1876,11 @@ public class Request implements HttpServletRequest
             return null;
         
         if (_multiPartInputStream == null)
-            _multiPartInputStream = new MultiPartInputStream(getInputStream(), getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT));
-        
+        { 
+            _multiPartInputStream = new MultiPartInputStream(getInputStream(), 
+                                                             getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT), 
+                                                             (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+        }
         return _multiPartInputStream.getPart(name);
     }
 
@@ -1887,8 +1891,11 @@ public class Request implements HttpServletRequest
             return Collections.emptyList();
         
         if (_multiPartInputStream == null)
-            _multiPartInputStream = new MultiPartInputStream(getInputStream(), getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT));
-        
+        {
+            _multiPartInputStream = new MultiPartInputStream(getInputStream(), 
+                                                             getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT), 
+                                                             (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+        }
         return _multiPartInputStream.getParts();
     }
 

@@ -54,7 +54,8 @@ public class MultiPartInputStreamTest extends TestCase
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);  
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
                                                              "Content-type: text/plain",
-                                                             config);
+                                                             config,
+                                                             new File(_dirname));
         assertTrue(mpis.getParts().isEmpty());     
     }
     
@@ -64,7 +65,8 @@ public class MultiPartInputStreamTest extends TestCase
         MultipartConfigElement config = new MultipartConfigElement(_dirname);
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
                                                              _contentType,
-                                                             config);
+                                                             config,
+                                                             new File(_dirname));
         Collection<Part> parts = mpis.getParts();
         assertFalse(parts.isEmpty());
     }
@@ -75,7 +77,8 @@ public class MultiPartInputStreamTest extends TestCase
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 60, 100, 50);  
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
                                                             _contentType,
-                                                             config);
+                                                             config,
+                                                             new File(_dirname));
         
         try
         {
@@ -94,7 +97,8 @@ public class MultiPartInputStreamTest extends TestCase
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 40, 1024, 30);  
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()), 
                                                             _contentType,
-                                                             config);
+                                                             config,
+                                                             new File(_dirname));
         
         try
         {
@@ -114,7 +118,8 @@ public class MultiPartInputStreamTest extends TestCase
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);  
         MultiPartInputStream mpis = new MultiPartInputStream(new ByteArrayInputStream(_multi.getBytes()),
                                                              _contentType,
-                                                             config);
+                                                             config,
+                                                             new File(_dirname));
         
         Collection<Part> parts = mpis.getParts();
         assertEquals(2, parts.size());
