@@ -37,7 +37,6 @@ import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.IterativeDescriptorProcessor;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.MetaData.Origin;
 import org.eclipse.jetty.xml.XmlParser;
 
@@ -205,6 +204,19 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * jetty.xml file name of the resource has to be exactly the same as the
      * name in web.xml deployment descriptor, but it shouldn't have to be
      * 
+     * Maintenance update 3.0a to spec:
+     *   Update Section 8.2.3.h.ii with the following -  If a resource reference 
+     *   element is specified in two fragments, while absent from the main web.xml, 
+     *   and all the attributes and child elements of the resource reference element 
+     *   are identical, the resource reference will be merged  into the main web.xml. 
+     *   It is considered an error if a resource reference element has the same name 
+     *   specified in two fragments, while absent from the main web.xml and the attributes 
+     *   and child elements are not identical in the two fragments. For example, if two 
+     *   web fragments declare a <resource-ref> with the same <resource-ref-name> element 
+     *   but the type in one is specified as javax.sql.DataSource while the type in the 
+     *   other is that of a java mail resource, then an error must be reported and the 
+     *   application MUST fail to deploy.
+     * 
      * @param node
      * @throws Exception
      */
@@ -272,8 +284,42 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             }
             case WebFragment:
             { 
-                //ServletSpec p.75. No declaration of resource-ref in web xml, but in multiple web-fragments. Error.
-                throw new IllegalStateException("Conflicting resource-ref "+jndiName+" in "+descriptor.getResource());
+                Descriptor otherFragment = context.getMetaData().getOriginDescriptor("resource-ref."+jndiName);
+                XmlParser.Node otherFragmentRoot = otherFragment.getRoot();
+                Iterator iter = otherFragmentRoot.iterator();
+                XmlParser.Node otherNode = null;
+                while (iter.hasNext() && otherNode == null)
+                {
+                    Object obj = iter.next();
+                    if (!(obj instanceof XmlParser.Node)) continue;
+                    XmlParser.Node n = (XmlParser.Node)obj;
+                    if ("resource-ref".equals(n.getTag()) && jndiName.equals(n.getString("res-ref-name",false,true)))
+                        otherNode = n;
+                }
+                
+                //If declared in another web-fragment
+                if (otherNode != null)
+                {
+                    //declarations of the resource-ref must be the same in both fragment descriptors
+                    String otherType = otherNode.getString("res-type", false, true);
+                    String otherAuth = otherNode.getString("res-auth", false, true);
+                    String otherShared = otherNode.getString("res-sharing-scope", false, true);
+                    
+                    //otherType, otherAuth and otherShared must be the same as type, auth, shared
+                    type = (type == null?"":type);
+                    otherType = (otherType == null?"":otherType);
+                    auth = (auth == null?"":auth);
+                    otherAuth = (otherAuth == null?"":otherAuth);
+                    shared = (shared == null?"":shared);
+                    otherShared = (otherShared == null?"":otherShared);
+                    
+                    //ServletSpec p.75. No declaration of resource-ref in web xml, but different in multiple web-fragments. Error.
+                    if (!type.equals(otherType) || !auth.equals(otherAuth) || !shared.equals(otherShared))
+                        throw new IllegalStateException("Conflicting resource-ref "+jndiName+" in "+descriptor.getResource());
+                    
+                    //TODO get clarification from jsr315 if injection-targets should be merged
+                }
+                
             }
         }
       
@@ -345,13 +391,38 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             }
             case WebFragment:
             {
-                //ServletSpec p.75. No declaration of resource-env-ref in web xml, but in multiple web-fragments. Error.
-                throw new IllegalStateException("Conflicting resource-env-ref "+jndiName+" in "+descriptor.getResource()); 
+                Descriptor otherFragment = context.getMetaData().getOriginDescriptor("resource-env-ref."+jndiName);
+                XmlParser.Node otherFragmentRoot = otherFragment.getRoot();
+                Iterator iter = otherFragmentRoot.iterator();
+                XmlParser.Node otherNode = null;
+                while (iter.hasNext() && otherNode == null)
+                {
+                    Object obj = iter.next();
+                    if (!(obj instanceof XmlParser.Node)) continue;
+                    XmlParser.Node n = (XmlParser.Node)obj;
+                    if ("resource-env-ref".equals(n.getTag()) && jndiName.equals(n.getString("resource-env-ref-name",false,true)))
+                        otherNode = n;
+                }
+                if (otherNode != null)
+                {
+                    //declarations of the resource-ref must be the same in both fragment descriptors
+                    String otherType = otherNode.getString("resource-env-ref-type", false, true);
+
+                    //types must be the same
+                    type = (type == null?"":type);
+                    otherType = (otherType == null?"":otherType);
+
+                    //ServletSpec p.75. No declaration of resource-ref in web xml, but different in multiple web-fragments. Error.
+                    if (!type.equals(otherType))
+                        throw new IllegalStateException("Conflicting resource-env-ref "+jndiName+" in "+descriptor.getResource());   
+                    
+                    //TODO get clarification from jsr315 if injection-targets should be merged
+                }
             }
         }
     }
-    
-    
+
+
     /**
      * Common Annotations Spec section 2.3:
      *   message-destination-ref is for:
@@ -413,8 +484,30 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             }
             case WebFragment:
             {
-              //ServletSpec p.75. No declaration of message-destination-ref in web xml, but in multiple web-fragments. Error.
-                throw new IllegalStateException("Conflicting message-destination-ref "+jndiName+" in "+descriptor.getResource());  
+                Descriptor otherFragment = context.getMetaData().getOriginDescriptor("message-destination-ref."+jndiName);
+                XmlParser.Node otherFragmentRoot = otherFragment.getRoot();
+                Iterator iter = otherFragmentRoot.iterator();
+                XmlParser.Node otherNode = null;
+                while (iter.hasNext() && otherNode == null)
+                {
+                    Object obj = iter.next();
+                    if (!(obj instanceof XmlParser.Node)) continue;
+                    XmlParser.Node n = (XmlParser.Node)obj;
+                    if ("message-destination-ref".equals(n.getTag()) && jndiName.equals(n.getString("message-destination-ref-name",false,true)))
+                        otherNode = n;
+                }
+                if (otherNode != null)
+                {
+                    String otherType = node.getString("message-destination-type",false,true);
+                    String otherUsage = node.getString("message-destination-usage",false,true);
+
+                    type = (type==null?"":type);
+                    usage = (usage==null?"":usage);
+                    if (!type.equals(otherType) || !usage.equalsIgnoreCase(otherUsage))
+                        throw new IllegalStateException("Conflicting message-destination-ref "+jndiName+" in "+descriptor.getResource());
+                    
+                    //TODO get clarification from jsr315 if injection-targets should be merged
+                }
             }
         }
 
@@ -423,8 +516,6 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
     
 
     /**
-     * 
-     * TODO
      * If web.xml has at least 1 post-construct, then all post-constructs in fragments
      * are ignored. Otherwise, post-constructs from fragments are merged.
      * post-construct is the name of a class and method to call after all

@@ -67,11 +67,12 @@ public class MetaData
                 throw new IllegalArgumentException("No descriptor");
             if (d instanceof FragmentDescriptor)
                 origin = Origin.WebFragment;
-            if (d instanceof OverrideDescriptor)
+            else if (d instanceof OverrideDescriptor)
                 origin =  Origin.WebOverride;
-            if (d instanceof DefaultsDescriptor)
+            else if (d instanceof DefaultsDescriptor)
                 origin =  Origin.WebDefaults;
-            origin = Origin.WebXml;
+            else
+                origin = Origin.WebXml;
         }
         
         public OriginInfo (String n)
