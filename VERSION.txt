@@ -6,6 +6,7 @@ jetty-8.0.0.M2-SNAPSHOT
  + 324872 allow disabling listener restriction from using *Registration interfaces
  + 327416 Change meaning of @HandlesTypes in line with latest interpretation by JSR315
  + 327489 Change meaning of @MultipartConfig to match servlet spec 3.0 maintenance release 3.0a
+ + 328008 Handle update to Servlet Spec 3 Section 8.2.3.h.ii
 
 from jetty-7.2-SNAPSHOT
  + 328306 Serialization of FormAuthentication
