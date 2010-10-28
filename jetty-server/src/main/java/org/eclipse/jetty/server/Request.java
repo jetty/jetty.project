@@ -227,7 +227,7 @@ public class Request implements HttpServletRequest
         {
             content_type = HttpFields.valueParameters(content_type, null);
             
-            if (MimeTypes.FORM_ENCODED.equalsIgnoreCase(content_type) &&
+            if (MimeTypes.FORM_ENCODED.equalsIgnoreCase(content_type) && _inputState==__NONE &&
                     (HttpMethods.POST.equals(getMethod()) || HttpMethods.PUT.equals(getMethod())))
             {
                 int content_length = getContentLength();
