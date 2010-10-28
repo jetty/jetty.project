@@ -8,10 +8,18 @@ jetty-8.0.0.M2-SNAPSHOT
  + 327489 Change meaning of @MultipartConfig to match servlet spec 3.0 maintenance release 3.0a
  + 328008 Handle update to Servlet Spec 3 Section 8.2.3.h.ii
 
-from jetty-7.2-SNAPSHOT
+jetty-7.2.1-SNAPSHOT
+ + 328199 Ensure blocking connectors always close socket
+ + 328205 Improved SelectManager stopping
  + 328306 Serialization of FormAuthentication
  + 328332 Response.getContentType works with setHeader
  + 328523 Fixed overloaded setters in AppProvider
+ + 328008 Handle update to Servlet Spec 3 Section 8.2.3.h.ii
+ + 328778 Improved javadoc for secure session cookies
+ + 328782 allow per connection max idle time to be set
+ + 328885 web overrides do not override
+ + JETTY-1291 Extract query parameters even if POST content consumed
+ + JETTY-1295 Contexts mixed up when hot-deploying on virtual hosts
 
 jetty-7.2.0.v20101020 20 October 2010
  + 289540 added javadoc into distribution

@@ -42,6 +42,7 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -495,6 +496,35 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     public void setRefreshCookieAge(int ageInSeconds)
     {
         _refreshCookieAge=ageInSeconds;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set if the session manager should use SecureCookies.
+     * A secure cookie will only be sent by a browser on a secure (https) connection to 
+     * avoid the concern of cookies being intercepted on non secure channels.
+     * For the cookie to be issued as secure, the {@link ServletRequest#isSecure()} method must return true.
+     * If SSL offload is used, then the {@link AbstractConnector#customize(org.eclipse.jetty.io.EndPoint, Request)
+     * method can be used to force the request to be https, or the {@link AbstractConnector#setForwarded(boolean)}
+     * can be set to true, so that the X-Forwarded-Proto header is respected.
+     * <p>
+     * If secure session cookies are used, then a session may not be shared between http and https requests.
+     * 
+     * @param secureCookies If true, use secure cookies.
+     */
+    public void setSecureCookies(boolean secureCookies)
+    {
+        _secureCookies=secureCookies;
+    }
+
+    public void setSessionCookie(String cookieName)
+    {
+        _sessionCookie=cookieName;
+    }
+
+    public void setSessionDomain(String domain)
+    {
+        _sessionDomain=domain;
     }
 
     /* ------------------------------------------------------------ */

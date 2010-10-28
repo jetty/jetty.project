@@ -40,6 +40,7 @@ import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.Holder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.LazyList;
@@ -178,7 +179,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             holder.setName(servlet_name);
             context.getServletHandler().addServlet(holder);
         }
-        ServletRegistration.Dynamic registration = holder.getRegistration();
 
         // init params  
         Iterator iParamsIter = node.iterator("init-param");
@@ -196,7 +196,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     //init-param not already set, so set it
                     
-                    registration.setInitParameter(pname, pvalue); 
+                    holder.setInitParameter(pname, pvalue); 
                     context.getMetaData().setOrigin(servlet_name+".servlet.init-param."+pname, descriptor);
                     break;
                 }
@@ -208,7 +208,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     //otherwise just ignore it
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
-                        registration.setInitParameter(pname, pvalue); 
+                        holder.setInitParameter(pname, pvalue); 
                         context.getMetaData().setOrigin(servlet_name+".servlet.init-param."+pname, descriptor);
                     }
                     break;
@@ -216,7 +216,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 case WebFragment:
                 {
                     //previously set by a web-fragment, make sure that the value matches, otherwise its an error
-                    if (!registration.getInitParameter(pname).equals(pvalue))
+                    if (!holder.getInitParameter(pname).equals(pvalue))
                         throw new IllegalStateException("Mismatching init-param "+pname+"="+pvalue+" in "+descriptor.getResource());
                     break;
                 }
@@ -243,19 +243,19 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 Log.info("NO JSP Support for {}, did not find {}", context.getContextPath(), servlet_class);
                 jspServletClass = servlet_class = "org.eclipse.jetty.servlet.NoJspServlet";
             }
-            if (registration.getInitParameter("scratchdir") == null)
+            if (holder.getInitParameter("scratchdir") == null)
             {
                 File tmp = context.getTempDirectory();
                 File scratch = new File(tmp, "jsp");
                 if (!scratch.exists()) scratch.mkdir();
-                registration.setInitParameter("scratchdir", scratch.getAbsolutePath());
+                holder.setInitParameter("scratchdir", scratch.getAbsolutePath());
 
-                if ("?".equals(registration.getInitParameter("classpath")))
+                if ("?".equals(holder.getInitParameter("classpath")))
                 {
                     String classpath = context.getClassPath();
                     Log.debug("classpath=" + classpath);
                     if (classpath != null) 
-                        registration.setInitParameter("classpath", classpath);
+                        holder.setInitParameter("classpath", classpath);
                 }
             }
 
@@ -263,7 +263,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             /* Set the webapp's classpath for Jasper */
             context.setAttribute("org.apache.catalina.jsp_classpath", context.getClassPath());
             /* Set the system classpath for Jasper */
-            registration.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context));        
+            holder.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context));        
         }
         
         //Set the servlet-class
@@ -341,7 +341,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 case NotSet:
                 {
                     //not already set, so set it now
-                    registration.setLoadOnStartup(order);
+                    holder.setInitOrder(order);
                     context.getMetaData().setOrigin(servlet_name+".servlet.load-on-startup", descriptor);
                     break;
                 }
@@ -352,7 +352,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     //if it was already set by a web xml descriptor and we're parsing another web xml descriptor, then override it
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
-                        registration.setLoadOnStartup(order);
+                        holder.setInitOrder(order);
                         context.getMetaData().setOrigin(servlet_name+".servlet.load-on-startup", descriptor);
                     }
                     break;
@@ -426,7 +426,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case NotSet:
                     {
                         //run-as not set, so set it
-                        registration.setRunAsRole(roleName);
+                        holder.setRunAsRole(roleName);
                         context.getMetaData().setOrigin(servlet_name+".servlet.run-as", descriptor);
                         break;
                     }
@@ -437,7 +437,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         //run-as was set by a web xml, only allow it to be changed if we're currently parsing another web xml(override/default)
                         if (!(descriptor instanceof FragmentDescriptor))
                         {
-                            registration.setRunAsRole(roleName);
+                            holder.setRunAsRole(roleName);
                             context.getMetaData().setOrigin(servlet_name+".servlet.run-as", descriptor);
                         }
                         break;
@@ -445,7 +445,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //run-as was set by another fragment, this fragment must show the same value
-                        if (!registration.getRunAsRole().equals(roleName))
+                        if (!holder.getRunAsRole().equals(roleName))
                             throw new IllegalStateException("Conflicting run-as role "+roleName+" for servlet "+servlet_name+" in "+descriptor.getResource());
                         break;
                     }    
@@ -463,7 +463,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 case NotSet:
                 {
                     //set it
-                    registration.setAsyncSupported(val);
+                    holder.setAsyncSupported(val);
                     context.getMetaData().setOrigin(servlet_name+".servlet.async-supported", descriptor);
                     break;
                 }
@@ -474,7 +474,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     //async-supported set by previous web xml descriptor, only allow override if we're parsing another web descriptor(web.xml/web-override.xml/web-default.xml)
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
-                        registration.setAsyncSupported(val);
+                        holder.setAsyncSupported(val);
                         context.getMetaData().setOrigin(servlet_name+".servlet.async-supported", descriptor);  
                     }             
                     break;
@@ -548,7 +548,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 case NotSet:
                 {
                     //hasn't been set, so set it
-                    registration.setMultipartConfig(element);
+                    holder.getRegistration().setMultipartConfig(element);
                     context.getMetaData().setOrigin(servlet_name+".servlet.multipart-config", descriptor);
                     break;
                 }
@@ -559,7 +559,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     //was set in a web xml, only allow changes if we're parsing another web xml (web.xml/web-default.xml/web-override.xml)
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
-                        registration.setMultipartConfig(element);
+                        holder.getRegistration().setMultipartConfig(element);
                         context.getMetaData().setOrigin(servlet_name+".servlet.multipart-config", descriptor);  
                     }
                     break;
@@ -567,7 +567,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 case WebFragment:
                 {
                     //another fragment set the value, this fragment's values must match exactly or it is an error
-                    MultipartConfigElement cfg = ((ServletHolder.Registration)registration).getMultipartConfig();
+                    MultipartConfigElement cfg = ((ServletHolder.Registration)holder.getRegistration()).getMultipartConfig();
                     
                     if (cfg.getMaxFileSize() != element.getMaxFileSize())
                         throw new IllegalStateException("Conflicting multipart-config max-file-size for servlet "+servlet_name+" in "+descriptor.getResource());

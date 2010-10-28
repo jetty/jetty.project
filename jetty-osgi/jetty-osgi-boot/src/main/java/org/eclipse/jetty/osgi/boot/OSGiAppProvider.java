@@ -120,7 +120,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     public ContextHandler createContextHandler(App app) throws Exception
     {
         // return pre-created Context
-        if (app.getContextId() != null)
+        if (app.getContextHandler() != null)
         {
             return app.getContextHandler();
         }

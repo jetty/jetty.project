@@ -33,6 +33,10 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * 
  * 
  */
+/**
+ * @author gregw
+ *
+ */
 public interface Connector extends LifeCycle
 { 
     /* ------------------------------------------------------------ */
@@ -226,7 +230,14 @@ public interface Connector extends LifeCycle
     int getLocalPort();
     
     /* ------------------------------------------------------------ */
+    /**
+     * @return Max Idle time for connections in milliseconds
+     */
     int getMaxIdleTime();
+    
+    /**
+     * @param ms Max Idle time for connections in milliseconds
+     */
     void setMaxIdleTime(int ms);
     
     /* ------------------------------------------------------------ */

@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
@@ -432,6 +431,13 @@ public abstract class SelectorManager extends AbstractLifeCycle
                             throw new IllegalArgumentException(change.toString());
                     }
                     catch (Exception e)
+                    {
+                        if (isRunning())
+                            Log.warn(e);
+                        else
+                            Log.debug(e);
+                    }
+                    catch (Error e)
                     {
                         if (isRunning())
                             Log.warn(e);
