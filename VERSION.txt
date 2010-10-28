@@ -5,6 +5,7 @@
  + 328332 Response.getContentType works with setHeader
  + 328523 Fixed overloaded setters in AppProvider
  + 328008 Handle update to Servlet Spec 3 Section 8.2.3.h.ii
+ + 328782 allow per connection max idle time to be set
  + 328885 web overrides do not override
 
 jetty-7.2.0.v20101020 20 October 2010

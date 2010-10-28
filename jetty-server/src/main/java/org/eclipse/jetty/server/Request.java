@@ -303,6 +303,9 @@ public class Request implements HttpServletRequest
      */
     public Object getAttribute(String name)
     {
+        if ("org.eclipse.jetty.io.EndPoint.maxIdleTime".equalsIgnoreCase(name))
+            return new Long(getConnection().getEndPoint().getMaxIdleTime());
+        
         Object attr=(_attributes==null)?null:_attributes.getAttribute(name);
         if (attr==null && Continuation.ATTRIBUTE.equals(name))
             return _async;
@@ -1431,48 +1434,64 @@ public class Request implements HttpServletRequest
      * Set a request attribute.
      * if the attribute name is "org.eclipse.jetty.server.server.Request.queryEncoding" then
      * the value is also passed in a call to {@link #setQueryEncoding}.
-     *
+     * <p>
      * if the attribute name is "org.eclipse.jetty.server.server.ResponseBuffer", then
      * the response buffer is flushed with @{link #flushResponseBuffer}
-     *
+     * <p>
+     * if the attribute name is "org.eclipse.jetty.io.EndPoint.maxIdleTime", then the 
+     * value is passed to the associated {@link EndPoint#setMaxIdleTime}.
      * @see javax.servlet.ServletRequest#setAttribute(java.lang.String, java.lang.Object)
      */
     public void setAttribute(String name, Object value)
     {
         Object old_value=_attributes==null?null:_attributes.getAttribute(name);
         
-        if ("org.eclipse.jetty.server.Request.queryEncoding".equals(name))
-            setQueryEncoding(value==null?null:value.toString());
-        else if("org.eclipse.jetty.server.sendContent".equals(name))
+        if (name.startsWith("org.eclipse.jetty."))
         {
-            try 
+            if ("org.eclipse.jetty.server.Request.queryEncoding".equals(name))
+                setQueryEncoding(value==null?null:value.toString());
+            else if("org.eclipse.jetty.server.sendContent".equals(name))
             {
-                ((HttpConnection.Output)getServletResponse().getOutputStream()).sendContent(value); 
-            } 
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-        else if("org.eclipse.jetty.server.ResponseBuffer".equals(name))
-        {
-            try
-            {
-                final ByteBuffer byteBuffer=(ByteBuffer)value;
-                synchronized (byteBuffer)
+                try 
                 {
-                    NIOBuffer buffer = byteBuffer.isDirect()
-                        ?new DirectNIOBuffer(byteBuffer,true)
-                        :new IndirectNIOBuffer(byteBuffer,true);
-                    ((HttpConnection.Output)getServletResponse().getOutputStream()).sendResponse(buffer);
+                    ((HttpConnection.Output)getServletResponse().getOutputStream()).sendContent(value); 
+                } 
+                catch (IOException e)
+                {
+                    throw new RuntimeException(e);
                 }
             }
-            catch (IOException e)
+            else if("org.eclipse.jetty.server.ResponseBuffer".equals(name))
             {
-                throw new RuntimeException(e);
+                try
+                {
+                    final ByteBuffer byteBuffer=(ByteBuffer)value;
+                    synchronized (byteBuffer)
+                    {
+                        NIOBuffer buffer = byteBuffer.isDirect()
+                        ?new DirectNIOBuffer(byteBuffer,true)
+                        :new IndirectNIOBuffer(byteBuffer,true);
+                        ((HttpConnection.Output)getServletResponse().getOutputStream()).sendResponse(buffer);
+                    }
+                }
+                catch (IOException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+            else if ("org.eclipse.jetty.io.EndPoint.maxIdleTime".equalsIgnoreCase(name))
+            {
+                try
+                {
+                    getConnection().getEndPoint().setMaxIdleTime(Integer.valueOf(value.toString()));
+                }
+                catch(IOException e)
+                {
+                    throw new RuntimeException(e);
+                }
             }
         }
-
+        
         if (_attributes==null)
             _attributes=new AttributesMap();
         _attributes.setAttribute(name, value);

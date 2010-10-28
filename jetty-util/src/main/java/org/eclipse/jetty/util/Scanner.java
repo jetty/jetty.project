@@ -24,9 +24,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.jetty.util.log.Log;
 
@@ -43,17 +46,17 @@ public class Scanner
 {
     private static int __scannerId=0;
     private int _scanInterval;
-    private final List _listeners = Collections.synchronizedList(new ArrayList());
-    private final Map _prevScan = new HashMap();
-    private final Map _currentScan = new HashMap();
+    private final List<Listener> _listeners = new ArrayList<Listener>();
+    private final Map<String,Long> _prevScan = new HashMap<String,Long> ();
+    private final Map<String,Long> _currentScan = new HashMap<String,Long> ();
     private FilenameFilter _filter;
-    private List<File> _scanDirs;
+    private final List<File> _scanDirs = new ArrayList<File>();
     private volatile boolean _running = false;
     private boolean _reportExisting = true;
     private boolean _reportDirs = true;
     private Timer _timer;
     private TimerTask _task;
-    private boolean _recursive=true;
+    private int _scanDepth=0;
 
 
     /**
@@ -76,7 +79,7 @@ public class Scanner
     
     public interface BulkListener extends Listener
     {
-        public void filesChanged (List filenames) throws Exception;
+        public void filesChanged (List<String> filenames) throws Exception;
     }
 
 
@@ -114,7 +117,7 @@ public class Scanner
     @Deprecated
     public void setScanDir (File dir)
     {
-        _scanDirs = new ArrayList();
+        _scanDirs.clear(); 
         _scanDirs.add(dir);
     }
 
@@ -131,23 +134,53 @@ public class Scanner
 
     public void setScanDirs (List<File> dirs)
     {
-        _scanDirs = dirs;
+        _scanDirs.clear(); 
+        _scanDirs.addAll(dirs);
     }
     
     public List<File> getScanDirs ()
     {
-        return _scanDirs;
+        return Collections.unmodifiableList(_scanDirs);
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @param recursive True if scanning is recursive
+     * @deprecated Use {@link #setScanDepth()}
+     */
     public void setRecursive (boolean recursive)
     {
-        _recursive=recursive;
+        _scanDepth=recursive?-1:0;
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if scanning is fully recursive
+     * @deprecated Use {@link #getScanDepth()}
+     */
     public boolean getRecursive ()
     {
-        return _recursive;
+        return _scanDepth==-1;
     }
+    
+    /* ------------------------------------------------------------ */
+    /** Get the scanDepth.
+     * @return the scanDepth
+     */
+    public int getScanDepth()
+    {
+        return _scanDepth;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the scanDepth.
+     * @param scanDepth the scanDepth to set
+     */
+    public void setScanDepth(int scanDepth)
+    {
+        _scanDepth = scanDepth;
+    }
+
     /**
      * Apply a filter to files found in the scan directory.
      * Only files matching the filter will be reported as added/changed/removed.
@@ -334,15 +367,15 @@ public class Scanner
      * @param currentScan the info from the most recent pass
      * @param oldScan info from the previous pass
      */
-    public void reportDifferences (Map currentScan, Map oldScan) 
+    public void reportDifferences (Map<String,Long> currentScan, Map<String,Long> oldScan) 
     {
-        List bulkChanges = new ArrayList();
+        List<String> bulkChanges = new ArrayList<String>();
         
-        Set oldScanKeys = new HashSet(oldScan.keySet());
-        Iterator itor = currentScan.entrySet().iterator();
+        Set<String> oldScanKeys = new HashSet<String>(oldScan.keySet());
+        Iterator<Entry<String, Long>> itor = currentScan.entrySet().iterator();
         while (itor.hasNext())
         {
-            Map.Entry entry = (Map.Entry)itor.next();
+            Map.Entry<String, Long> entry = itor.next();
             if (!oldScanKeys.contains(entry.getKey()))
             {
                 Log.debug("File added: "+entry.getKey());
@@ -363,7 +396,7 @@ public class Scanner
         if (!oldScanKeys.isEmpty())
         {
 
-            Iterator keyItor = oldScanKeys.iterator();
+            Iterator<String> keyItor = oldScanKeys.iterator();
             while (keyItor.hasNext())
             {
                 String filename = (String)keyItor.next();
@@ -384,7 +417,7 @@ public class Scanner
      * @param f file or directory
      * @param scanInfoMap map of filenames to last modified times
      */
-    private void scanFile (File f, Map scanInfoMap, int depth)
+    private void scanFile (File f, Map<String,Long> scanInfoMap, int depth)
     {
         try
         {
@@ -401,7 +434,8 @@ public class Scanner
                 }
             }
             
-            if (f.isDirectory() && (_recursive || _scanDirs.contains(f)))
+            // If it is a directory, scan if it is a known directory or the depth is OK.
+            if (f.isDirectory() && (depth<_scanDepth || _scanDepth==-1 || _scanDirs.contains(f)))
             {
                 File[] files = f.listFiles();
                 for (int i=0;i<files.length;i++)
@@ -426,10 +460,10 @@ public class Scanner
      */
     private void reportAddition (String filename)
     {
-        Iterator itor = _listeners.iterator();
+        Iterator<Listener> itor = _listeners.iterator();
         while (itor.hasNext())
         {
-            Object l = itor.next();
+            Listener l = itor.next();
             try
             {
                 if (l instanceof DiscreteListener)
@@ -453,7 +487,7 @@ public class Scanner
      */
     private void reportRemoval (String filename)
     {
-        Iterator itor = _listeners.iterator();
+        Iterator<Listener> itor = _listeners.iterator();
         while (itor.hasNext())
         {
             Object l = itor.next();
@@ -480,10 +514,10 @@ public class Scanner
      */
     private void reportChange (String filename)
     {
-        Iterator itor = _listeners.iterator();
+        Iterator<Listener> itor = _listeners.iterator();
         while (itor.hasNext())
         {
-            Object l = itor.next();
+            Listener l = itor.next();
             try
             {
                 if (l instanceof DiscreteListener)
@@ -500,12 +534,12 @@ public class Scanner
         }
     }
     
-    private void reportBulkChanges (List filenames)
+    private void reportBulkChanges (List<String> filenames)
     {
-        Iterator itor = _listeners.iterator();
+        Iterator<Listener> itor = _listeners.iterator();
         while (itor.hasNext())
         {
-            Object l = itor.next();
+            Listener l = itor.next();
             try
             {
                 if (l instanceof BulkListener)
