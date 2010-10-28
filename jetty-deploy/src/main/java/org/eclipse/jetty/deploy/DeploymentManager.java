@@ -232,6 +232,7 @@ public class DeploymentManager extends AbstractLifeCycle
         super.doStop();
     }
 
+    /*
     private AppEntry findAppByContextId(String contextId)
     {
         if (contextId == null)
@@ -248,6 +249,7 @@ public class DeploymentManager extends AbstractLifeCycle
         }
         return null;
     }
+    */
 
     private AppEntry findAppByOriginId(String originId)
     {
@@ -266,6 +268,7 @@ public class DeploymentManager extends AbstractLifeCycle
         return null;
     }
 
+    /*
     public App getAppByContextId(String contextId)
     {
         AppEntry entry = findAppByContextId(contextId);
@@ -275,7 +278,8 @@ public class DeploymentManager extends AbstractLifeCycle
         }
         return entry.app;
     }
-
+   */
+    
     public App getAppByOriginId(String originId)
     {
         AppEntry entry = findAppByOriginId(originId);
@@ -329,7 +333,7 @@ public class DeploymentManager extends AbstractLifeCycle
             return ret;
         }
 
-        String contextId = app.getContextId();
+        String contextId = app.getContextPath();
         if (contextId == null)
         {
             // No context? Likely not deployed or started yet.
@@ -345,7 +349,7 @@ public class DeploymentManager extends AbstractLifeCycle
                 continue;
             }
 
-            if (contextId.equals(entry.app.getContextId()))
+            if (contextId.equals(entry.app.getContextPath()))
             {
                 ret.add(entry.app);
             }
@@ -449,15 +453,12 @@ public class DeploymentManager extends AbstractLifeCycle
      */
     public void requestAppGoal(App app, String nodeName)
     {
-        AppEntry appentry = findAppByContextId(app.getContextId());
-        if (appentry == null)
-        {
-            appentry = findAppByOriginId(app.getOriginId());
+        AppEntry appentry = findAppByOriginId(app.getOriginId());
             if (appentry == null)
             {
                 throw new IllegalStateException("App not being tracked by Deployment Manager: " + app);
             }
-        }
+        
         requestAppGoal(appentry,nodeName);
     }
 
@@ -516,14 +517,10 @@ public class DeploymentManager extends AbstractLifeCycle
      */
     public void requestAppGoal(String appId, String nodeName)
     {
-        AppEntry appentry = findAppByContextId(appId);
+        AppEntry appentry = findAppByOriginId(appId);
         if (appentry == null)
         {
-            appentry = findAppByOriginId(appId);
-            if (appentry == null)
-            {
-                throw new IllegalStateException("App not being tracked by Deployment Manager: " + appId);
-            }
+            throw new IllegalStateException("App not being tracked by Deployment Manager: " + appId);
         }
         requestAppGoal(appentry,nodeName);
     }

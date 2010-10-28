@@ -36,7 +36,7 @@ public class App
      *            the origin ID (The ID that the {@link AppProvider} knows
      *            about)
      * @see App#getOriginId()
-     * @see App#getContextId()
+     * @see App#getContextPath()
      */
     public App(DeploymentManager manager, AppProvider provider, String originId)
     {
@@ -52,7 +52,7 @@ public class App
      *            the origin ID (The ID that the {@link AppProvider} knows
      *            about)
      * @see App#getOriginId()
-     * @see App#getContextId()
+     * @see App#getContextPath()
      * @param context
      *            Some implementations of AppProvider might have to use an
      *            already created ContextHandler.
@@ -109,13 +109,31 @@ public class App
         return _context;
     }
 
+    
     /**
-     * The unique id of the {@link App} relating to how it is installed on the
+     * The context path {@link App} relating to how it is installed on the
      * jetty server side.
      * 
-     * @return the generated Id for the App.
+     * NOTE that although the method name indicates that this is a unique
+     * identifier, it is not, as many contexts may have the same contextPath,
+     * yet different virtual hosts.
+     * 
+     * @deprecated Use getContextPath instead.
+     * @return the context path for the App
      */
     public String getContextId()
+    {
+        return getContextPath();
+    }
+    
+    
+    /**
+     * The context path {@link App} relating to how it is installed on the
+     * jetty server side.
+     * 
+     * @return the contextPath for the App
+     */
+    public String getContextPath()
     {
         if (this._context == null)
         {
@@ -123,6 +141,7 @@ public class App
         }
         return this._context.getContextPath();
     }
+
 
     /**
      * The origin of this {@link App} as specified by the {@link AppProvider}
