@@ -438,6 +438,13 @@ public abstract class SelectorManager extends AbstractLifeCycle
                         else
                             Log.debug(e);
                     }
+                    catch (Error e)
+                    {
+                        if (isRunning())
+                            Log.warn(e);
+                        else
+                            Log.debug(e);
+                    }
                 }
 
 

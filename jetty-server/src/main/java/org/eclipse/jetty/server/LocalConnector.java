@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
@@ -27,6 +28,11 @@ import org.eclipse.jetty.util.log.Log;
 public class LocalConnector extends AbstractConnector
 {
     private final BlockingQueue<Request> requests = new LinkedBlockingQueue<Request>();
+    
+    public LocalConnector()
+    {
+        setMaxIdleTime(30000);
+    }
 
     public Object getConnection()
     {
@@ -49,7 +55,7 @@ public class LocalConnector extends AbstractConnector
         CountDownLatch latch = new CountDownLatch(1);
         Request request = new Request(requestsBuffer, keepOpen, latch);
         requests.add(request);
-        latch.await();
+        latch.await(getMaxIdleTime(),TimeUnit.MILLISECONDS);
         return request.getResponsesBuffer();
     }
 
