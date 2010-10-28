@@ -36,6 +36,7 @@ public class FilterHolder extends Holder<Filter>
     /* ------------------------------------------------------------ */
     private transient Filter _filter;
     private transient Config _config;
+    private transient FilterRegistration.Dynamic _registration;
     
     /* ---------------------------------------------------------------- */
     /** Constructor 
@@ -158,7 +159,9 @@ public class FilterHolder extends Holder<Filter>
     /* ------------------------------------------------------------ */
     public FilterRegistration.Dynamic getRegistration()
     {
-        return new Registration();
+        if (_registration == null)
+            _registration = new Registration();
+        return _registration;
     }
     
     /* ------------------------------------------------------------ */

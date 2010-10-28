@@ -62,6 +62,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private String _runAsRole;
     private RunAsToken _runAsToken;
     private IdentityService _identityService;
+    private ServletRegistration.Dynamic _registration;
     
     
     private transient Servlet _servlet;
@@ -635,7 +636,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     
     public ServletRegistration.Dynamic getRegistration()
     {
-        return new Registration();
+        if (_registration == null)
+            _registration =  new Registration();
+        return _registration;
     }
     
     /* -------------------------------------------------------- */
