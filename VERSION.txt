@@ -9,6 +9,7 @@ jetty-7.2.1-SNAPSHOT
  + 328778 Improved javadoc for secure session cookies
  + 328782 allow per connection max idle time to be set
  + 328885 web overrides do not override
+ + 329180 Spin check for Selector to stop
  + JETTY-748 Prevent race close of socket by old acceptor threads
  + JETTY-1291 Extract query parameters even if POST content consumed
  + JETTY-1295 Contexts mixed up when hot-deploying on virtual hosts
