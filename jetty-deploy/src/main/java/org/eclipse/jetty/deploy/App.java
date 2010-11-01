@@ -17,7 +17,6 @@ package org.eclipse.jetty.deploy;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.AttributesMap;
-import org.omg.CORBA.portable.ApplicationException;
 
 /**
  * The information about an App that is managed by the {@link DeploymentManager}
