@@ -306,14 +306,6 @@ public class HashSessionManager extends AbstractSessionManager
                 Log.debug(e);
             }
             
-            // Since Hashtable enumeration is not safe over deletes,
-            // we build a list of stale sessions, then go back and invalidate
-            // them
-            Object stale=null;
-
-            // For the list of sessions to idle
-            Object idle=null;
-
             // For each session
             long now=System.currentTimeMillis();
             for (Iterator<HashedSession> i=_sessions.values().iterator(); i.hasNext();)
@@ -391,7 +383,7 @@ public class HashSessionManager extends AbstractSessionManager
         ArrayList<HashedSession> sessions=new ArrayList<HashedSession>(_sessions.values());
         for (Iterator<HashedSession> i=sessions.iterator(); i.hasNext();)
         {
-            HashedSession session=(HashedSession)i.next();
+            HashedSession session=i.next();
             session.invalidate();
         }
         _sessions.clear();
@@ -499,8 +491,8 @@ public class HashSessionManager extends AbstractSessionManager
             HashedSession session = entry.getValue();
             synchronized(session)
             {
-                // No point saving a session that has been idled
-                if (!session.isIdled())
+                // No point saving a session that has been idled or has had a previous save failure
+                if (!session.isIdled() && !session.isSaveFailed())
                 {
                     File file = null;
                     FileOutputStream fos = null;
@@ -518,6 +510,8 @@ public class HashSessionManager extends AbstractSessionManager
                     }
                     catch (Exception e)
                     {
+                        session.saveFailed();
+
                         Log.warn("Problem persisting session "+id, e);
 
                         if (fos != null)
@@ -589,7 +583,14 @@ public class HashSessionManager extends AbstractSessionManager
         /** Whether the session has been saved because it has been deemed idle; 
          * in which case its attribute map will have been saved and cleared. */
         private transient boolean _idled = false;
-        
+ 
+        /** Whether there has already been an attempt to save this session
+         * which has failed.  If there has, there will be no more save attempts
+         * for this session.  This is to stop the logs being flooded with errors
+         * due to serialization failures that are most likely caused by user
+         * data stored in the session that is not serializable. */
+        private transient boolean _saveFailed = false;
+ 
         /* ------------------------------------------------------------- */
         protected HashedSession(HttpServletRequest request)
         {
@@ -740,7 +741,8 @@ public class HashSessionManager extends AbstractSessionManager
          */
         public synchronized void idle()
         {
-            if (!isIdled())
+            // Only idle the session if not already idled and no previous save/idle has failed
+            if (!isIdled() && !_saveFailed)
             {
                 if (Log.isDebugEnabled())
                     Log.debug("Idling " + super.getId());
@@ -765,6 +767,8 @@ public class HashSessionManager extends AbstractSessionManager
                 }
                 catch (Exception e)
                 {
+                    saveFailed(); // We won't try again for this session
+
                     Log.warn("Problem idling session " + super.getId(), e);
 
                     if (fos != null)
@@ -783,6 +787,18 @@ public class HashSessionManager extends AbstractSessionManager
         public boolean isIdled()
         {
           return _idled;
+        }
+
+        /* ------------------------------------------------------------ */
+        public boolean isSaveFailed()
+        {
+          return _saveFailed;
+        }
+        
+        /* ------------------------------------------------------------ */
+        public void saveFailed()
+        {
+          _saveFailed = true;
         }
 
     }
