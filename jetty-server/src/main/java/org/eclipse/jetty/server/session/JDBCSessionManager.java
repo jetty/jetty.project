@@ -25,6 +25,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -92,7 +93,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         private long _maxIdleMs;
         private long _cookieSet;
         private long _created;
-        private Map _attributes;
+        private Map<String,Object> _attributes;
         private String _lastNode;
         private String _canonicalContext;
         private long _lastSaved;
@@ -104,7 +105,16 @@ public class JDBCSessionManager extends AbstractSessionManager
             _id=sessionId;
             _created=System.currentTimeMillis();
             _accessed = _created;
-            _attributes = new ConcurrentHashMap();
+            _attributes = new HashMap<String,Object>();
+            _lastNode = getIdManager().getWorkerName();
+        }
+        
+        public SessionData (String sessionId,Map<String,Object> attributes)
+        {
+            _id=sessionId;
+            _created=System.currentTimeMillis();
+            _accessed = _created;
+            _attributes = attributes;
             _lastNode = getIdManager().getWorkerName();
         }
 
@@ -174,12 +184,12 @@ public class JDBCSessionManager extends AbstractSessionManager
             return _rowId;
         }
         
-        protected synchronized Map getAttributeMap ()
+        protected synchronized Map<String,Object> getAttributeMap ()
         {
             return _attributes;
         }
         
-        protected synchronized void setAttributeMap (ConcurrentHashMap map)
+        protected synchronized void setAttributeMap (Map<String,Object> map)
         {
             _attributes = map;
         } 
@@ -253,6 +263,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      */
     public class Session extends AbstractSessionManager.Session
     {
+        private static final long serialVersionUID = 5208464051134226143L;
         private final SessionData _data;
         private boolean _dirty=false;
 
@@ -264,12 +275,11 @@ public class JDBCSessionManager extends AbstractSessionManager
         protected Session (HttpServletRequest request)
         {
             super(request);   
-            _data = new SessionData(_clusterId);
+            _data = new SessionData(_clusterId,_attributes);
             _data.setMaxIdleMs(_dftMaxIdleSecs*1000);
             _data.setCanonicalContext(canonicalize(_context.getContextPath()));
             _data.setVirtualHost(getVirtualHost(_context));
             _data.setExpiryTime(_maxIdleMs < 0 ? 0 : (System.currentTimeMillis() + _maxIdleMs));
-            _values=_data.getAttributeMap();
         }
 
         /**
@@ -281,13 +291,8 @@ public class JDBCSessionManager extends AbstractSessionManager
              super(data.getCreated(), accessed, data.getId());
              _data=data;
              _data.setMaxIdleMs(_dftMaxIdleSecs*1000);
-             _values=data.getAttributeMap();
-         }
-        
-         @Override
-        protected Map newAttributeMap()
-         {
-             return _data.getAttributeMap();
+             _attributes.putAll(_data.getAttributeMap());
+             _data.setAttributeMap(_attributes);
          }
          
          @Override
@@ -651,21 +656,21 @@ public class JDBCSessionManager extends AbstractSessionManager
      * @see org.eclipse.jetty.server.session.AbstractSessionManager#removeSession(java.lang.String)
      */
     @Override
-    protected void removeSession(String idInCluster)
+    protected boolean removeSession(String idInCluster)
     {
-        Session session = null;
         synchronized (this)
-        {
-            session = (Session)_sessions.remove(idInCluster);
-        }
-        try
-        {
-            if (session != null)
-                deleteSession(session._data);
-        }
-        catch (Exception e)
-        {
-            Log.warn("Problem deleting session id="+idInCluster, e);
+        {       
+            Session session = (Session)_sessions.remove(idInCluster);
+            try
+            {
+                if (session != null)
+                    deleteSession(session._data);
+            }
+            catch (Exception e)
+            {
+                Log.warn("Problem deleting session id="+idInCluster, e);
+            }
+            return session!=null;
         }
     }
 
@@ -839,8 +844,8 @@ public class JDBCSessionManager extends AbstractSessionManager
     protected SessionData loadSession (final String id, final String canonicalContextPath, final String vhost)
     throws Exception
     {
-        final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
-        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        final AtomicReference<SessionData> _reference = new AtomicReference<SessionData>();
+        final AtomicReference<Exception> _exception = new AtomicReference<Exception>();
         Runnable load = new Runnable()
         {
             public void run()
@@ -873,17 +878,17 @@ public class JDBCSessionManager extends AbstractSessionManager
                         InputStream is = ((JDBCSessionIdManager)getIdManager())._dbAdaptor.getBlobInputStream(result, "map");
                         ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream (is);
                         Object o = ois.readObject();
-                        data.setAttributeMap((ConcurrentHashMap)o);
+                        data.setAttributeMap((Map<String,Object>)o);
                         ois.close();
 
                         if (Log.isDebugEnabled())
                             Log.debug("LOADED session "+data);
                     }
-                    reference.set(data);
+                    _reference.set(data);
                 }
                 catch (Exception e)
                 {
-                    exception.set(e);
+                    _exception.set(e);
                 }
                 finally
                 {
@@ -901,7 +906,10 @@ public class JDBCSessionManager extends AbstractSessionManager
         else
             _context.getContextHandler().handle(load);
         
-        return reference.get();
+        if (_exception.get()!=null)
+            throw _exception.get();
+        
+        return _reference.get();
     }
     
     /**

@@ -28,7 +28,6 @@ import java.util.Map;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
@@ -40,7 +39,6 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.AbstractConnector;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
@@ -234,14 +232,10 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     {
         String cluster_id = getIdManager().getClusterId(nodeId);
 
-        synchronized (this)
-        {
-            Session session = getSession(cluster_id);
-
-            if (session!=null && !session.getNodeId().equals(nodeId))
-                session.setIdChanged(true);
-            return session;
-        }
+        Session session = getSession(cluster_id);
+        if (session!=null && !session.getNodeId().equals(nodeId))
+            session.setIdChanged(true);
+        return session;
     }
 
     /* ------------------------------------------------------------ */
@@ -603,14 +597,10 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      */
     protected void addSession(Session session, boolean created)
     {
-        //noinspection SynchronizeOnNonFinalField
         synchronized (_sessionIdManager)
         {
             _sessionIdManager.addSession(session);
-            synchronized (this)
-            {
-                addSession(session);
-            }
+            addSession(session);
         }
 
         if (created)
@@ -643,7 +633,6 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      * @return the new session
      */
     protected abstract Session newSession(HttpServletRequest request);
-
 
 
     /* ------------------------------------------------------------ */
@@ -685,17 +674,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     public void removeSession(Session session, boolean invalidate)
     {
         // Remove session from context and global maps
-        boolean removed = false;
-        
-        synchronized (this)
-        {
-            //take this session out of the map of sessions for this context
-            if (getSession(session.getClusterId()) != null)
-            {
-                removed = true;
-                removeSession(session.getClusterId());
-            }
-        }
+        boolean removed = removeSession(session.getClusterId());
         
         if (removed)
         {
@@ -717,7 +696,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
-    protected abstract void removeSession(String idInCluster);
+    protected abstract boolean removeSession(String idInCluster);
     
     /* ------------------------------------------------------------ */
     /**
@@ -833,6 +812,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     {
         protected final String _clusterId; // ID unique within cluster
         protected final String _nodeId;    // ID unique within node
+        protected final Map<String,Object> _attributes=new HashMap<String, Object>();
         protected boolean _idChanged;
         protected final long _created;
         protected long _cookieSet;
@@ -842,7 +822,6 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         protected boolean _doInvalidate;
         protected long _maxIdleMs=_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000:-1;
         protected boolean _newSession;
-        protected Map _values;
         protected int _requests;
 
         /* ------------------------------------------------------------- */
@@ -869,42 +848,42 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             _requests=1;
             Log.debug("new session "+_nodeId+" "+_clusterId);
         }
-
+        
+        /* ------------------------------------------------------------- */
+        /**
+         * @return True is the session is invalid or passivated.
+         */
+        protected boolean isNotAvailable()
+        {
+            return _invalid;
+        }
+        
         /* ------------------------------------------------------------- */
         public Session getSession()
         {
             return this;
         }
 
-        /* ------------------------------------------------------------- */
-        protected void initValues()
-        {
-            _values=newAttributeMap();
-        }
-
         /* ------------------------------------------------------------ */
         public Object getAttribute(String name)
         {
-            synchronized (this)
+            synchronized (Session.this)
             {
-                if (_invalid)
+                if (isNotAvailable())
                     throw new IllegalStateException();
 
-                if (null == _values)
-                    return null;
-
-                return _values.get(name);
+                return _attributes.get(name);
             }
         }
 
         /* ------------------------------------------------------------ */
         public Enumeration getAttributeNames()
         {
-            synchronized (this)
+            synchronized (Session.this)
             {
-                if (_invalid)
+                if (isNotAvailable())
                     throw new IllegalStateException();
-                List names=_values==null?Collections.EMPTY_LIST:new ArrayList(_values.keySet());
+                List names=_attributes==null?Collections.EMPTY_LIST:new ArrayList(_attributes.keySet());
                 return Collections.enumeration(names);
             }
         }
@@ -918,7 +897,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         /* ------------------------------------------------------------- */
         public long getCreationTime() throws IllegalStateException
         {
-            if (_invalid)
+            if (isNotAvailable())
                 throw new IllegalStateException();
             return _created;
         }
@@ -944,7 +923,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         /* ------------------------------------------------------------- */
         public long getLastAccessedTime() throws IllegalStateException
         {
-            if (_invalid)
+            if (isNotAvailable())
                 throw new IllegalStateException();
             return _lastAccessed;
         }
@@ -952,7 +931,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         /* ------------------------------------------------------------- */
         public int getMaxInactiveInterval()
         {
-            if (_invalid)
+            if (isNotAvailable())
                 throw new IllegalStateException();
             return (int)(_maxIdleMs/1000);
         }
@@ -973,7 +952,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         @Deprecated
         public HttpSessionContext getSessionContext() throws IllegalStateException
         {
-            if (_invalid)
+            if (isNotAvailable())
                 throw new IllegalStateException();
             return __nullSessionContext;
         }
@@ -997,21 +976,21 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         @Deprecated
         public String[] getValueNames() throws IllegalStateException
         {
-            synchronized(this)
+            synchronized(Session.this)
             {
-                if (_invalid)
+                if (isNotAvailable())
                     throw new IllegalStateException();
-                if (_values==null)
+                if (_attributes==null)
                     return new String[0];
-                String[] a=new String[_values.size()];
-                return (String[])_values.keySet().toArray(a);
+                String[] a=new String[_attributes.size()];
+                return (String[])_attributes.keySet().toArray(a);
             }
         }
 
         /* ------------------------------------------------------------ */
         protected void access(long time)
         {
-            synchronized(this)
+            synchronized(Session.this)
             {
                 if (!_invalid) 
                 {
@@ -1034,7 +1013,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         /* ------------------------------------------------------------ */
         protected void complete()
         {
-            synchronized(this)
+            synchronized(Session.this)
             {
                 _requests--;
                 if (_doInvalidate && _requests<=0  )
@@ -1050,7 +1029,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             removeSession(this,true);
 
             // Notify listeners and unbind values
-            synchronized (this)
+            synchronized (Session.this)
             {
                 if (!_invalid)
                 {
@@ -1077,15 +1056,15 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             {
                 Log.debug("invalidate ",_clusterId);
                 // Notify listeners and unbind values
-                if (_invalid)
+                if (isNotAvailable())
                     throw new IllegalStateException();
 
-                while (_values!=null && _values.size()>0)
+                while (_attributes!=null && _attributes.size()>0)
                 {
                     ArrayList keys;
-                    synchronized (this)
+                    synchronized (Session.this)
                     {
-                        keys=new ArrayList(_values.keySet());
+                        keys=new ArrayList(_attributes.keySet());
                     }
 
                     Iterator iter=keys.iterator();
@@ -1094,9 +1073,9 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                         String key=(String)iter.next();
 
                         Object value;
-                        synchronized (this)
+                        synchronized (Session.this)
                         {
-                            value=_values.remove(key);
+                            value=_attributes.remove(key);
                         }
                         unbindValue(key,value);
 
@@ -1126,7 +1105,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         /* ------------------------------------------------------------- */
         public boolean isNew() throws IllegalStateException
         {
-            if (_invalid)
+            if (isNotAvailable())
                 throw new IllegalStateException();
             return _newSession;
         }
@@ -1146,14 +1125,14 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         public void removeAttribute(String name)
         {
             Object old;
-            synchronized(this)
+            synchronized(Session.this)
             {
-                if (_invalid)
+                if (isNotAvailable())
                     throw new IllegalStateException();
-                if (_values==null)
+                if (_attributes==null)
                     return;
 
-                old=_values.remove(name);
+                old=_attributes.remove(name);
             }
 
             if (old!=null)
@@ -1184,22 +1163,20 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         /* ------------------------------------------------------------ */
         public void setAttribute(String name, Object value)
         {
-            Object old_value;
-            if (value==null)
+            Object old_value=null;
+            synchronized (Session.this)
             {
-                removeAttribute(name);
-                return;
-            }
+                if (value==null)
+                {
+                    removeAttribute(name);
+                    return;
+                }
 
-            synchronized(this)
-            {
-                if (_invalid)
+                if (isNotAvailable())
                     throw new IllegalStateException();
-                if (_values==null)
-                    _values=newAttributeMap();
-                old_value=_values.put(name,value);
+                old_value=_attributes.put(name,value);
             }
-
+            
             if (old_value==null || !value.equals(old_value))
             {
                 unbindValue(name,old_value);
@@ -1255,9 +1232,6 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             return !_invalid;
         }
 
-        /* ------------------------------------------------------------ */
-        protected abstract Map newAttributeMap();
-
         /* ------------------------------------------------------------- */
         protected void cookieSet()
         {
@@ -1275,10 +1249,10 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         /* ------------------------------------------------------------- */
         protected void willPassivate()
         {
-            synchronized(this)
+            synchronized(Session.this)
             {
                 HttpSessionEvent event = new HttpSessionEvent(this);
-                for (Iterator iter = _values.values().iterator(); iter.hasNext();)
+                for (Iterator iter = _attributes.values().iterator(); iter.hasNext();)
                 {
                     Object value = iter.next();
                     if (value instanceof HttpSessionActivationListener)
@@ -1293,10 +1267,10 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         /* ------------------------------------------------------------- */
         protected void didActivate()
         {
-            synchronized(this)
+            synchronized(Session.this)
             {
                 HttpSessionEvent event = new HttpSessionEvent(this);
-                for (Iterator iter = _values.values().iterator(); iter.hasNext();)
+                for (Iterator iter = _attributes.values().iterator(); iter.hasNext();)
                 {
                     Object value = iter.next();
                     if (value instanceof HttpSessionActivationListener)

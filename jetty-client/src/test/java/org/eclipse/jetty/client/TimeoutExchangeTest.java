@@ -144,9 +144,9 @@ public class TimeoutExchangeTest extends TestCase
         // delay = 1000 ms
         _httpClient.send(httpExchange);
 
-        httpExchange.getDoneLatch().await(1100,TimeUnit.MILLISECONDS);
+        httpExchange.getDoneLatch().await(1200,TimeUnit.MILLISECONDS);
         // we should not get a timeout - the server sleeps for 700 ms
-        // while we wait for 1000 ms
+        // while we wait for 1200 ms
         Assert.assertFalse(httpExchange.isTimeoutOccurred());
         Assert.assertTrue(httpExchange.isResponseReceived());
     }
