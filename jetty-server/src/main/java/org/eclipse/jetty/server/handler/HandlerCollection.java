@@ -41,7 +41,7 @@ public class HandlerCollection extends AbstractHandlerContainer
 {
     private final boolean _mutableWhenRunning;
     private volatile Handler[] _handlers;
-    private boolean _parallelStart=true; 
+    private boolean _parallelStart=false; 
 
     /* ------------------------------------------------------------ */
     public HandlerCollection()
@@ -189,6 +189,7 @@ public class HandlerCollection extends AbstractHandlerContainer
             if (_parallelStart)
             {
                 final CountDownLatch latch = new CountDownLatch(_handlers.length);
+                final ClassLoader loader = Thread.currentThread().getContextClassLoader();
                 for (int i=0;i<_handlers.length;i++)
                 {
                     final int h=i;
@@ -197,13 +198,24 @@ public class HandlerCollection extends AbstractHandlerContainer
                             {
                                 public void run()
                                 {
-                                    try{_handlers[h].start();}
-                                    catch(Throwable e){mex.add(e);}
-                                    finally{latch.countDown();}
+                                    ClassLoader orig = Thread.currentThread().getContextClassLoader();
+                                    try
+                                    {
+                                        Thread.currentThread().setContextClassLoader(loader);
+                                        _handlers[h].start();
+                                    }
+                                    catch(Throwable e)
+                                    {
+                                        mex.add(e);
+                                    }
+                                    finally
+                                    {
+                                        Thread.currentThread().setContextClassLoader(orig);
+                                        latch.countDown();
+                                    }
                                 }
                             }
                     );
-
                 }
                 latch.await();
             }
