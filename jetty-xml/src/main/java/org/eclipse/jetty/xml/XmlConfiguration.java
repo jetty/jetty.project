@@ -68,8 +68,8 @@ public class XmlConfiguration
     /* ------------------------------------------------------------ */
     private static XmlParser __parser;
     private XmlParser.Node _config;
-    private Map _idMap = new HashMap();
-    private Map _propertyMap = new HashMap();
+    private final Map<String,Object> _idMap = new HashMap<String,Object>();
+    private final Map<String,String> _propertyMap = new HashMap<String,String>();
 
     /* ------------------------------------------------------------ */
     private synchronized static void initParser() throws IOException
@@ -156,25 +156,33 @@ public class XmlConfiguration
     }
 
     /* ------------------------------------------------------------ */
-    public Map getIdMap()
+    public Map<String,Object> getIdMap()
     {
         return _idMap;
     }
     
     /* ------------------------------------------------------------ */
-    public void setIdMap(Map map)
+    /**
+     * @deprecated use {@link #getIdMap()}.put(...)
+     */
+    public void setIdMap(Map<String,Object> map)
     {
-        _idMap=map;
+        _idMap.clear();
+        _idMap.putAll(map);
     }
 
     /* ------------------------------------------------------------ */
-    public void setProperties (Map map)
+    /**
+     * @deprecated use {@link #getProperties()}.put(...)
+     */
+    public void setProperties (Map<String,String> map)
     {
-        _propertyMap = map;
+        _propertyMap.clear();
+        _propertyMap.putAll(map);
     }
 
     /* ------------------------------------------------------------ */
-    public Map getProperties ()
+    public Map<String,String> getProperties ()
     {
         return _propertyMap;
     }
@@ -465,7 +473,7 @@ public class XmlConfiguration
     {
         if (!(obj instanceof Map))
                 throw new IllegalArgumentException("Object for put is not a Map: " + obj);
-        Map map = (Map) obj;
+        Map<Object,Object> map = (Map<Object,Object>) obj;
 
         String name = node.getAttribute("name");
         Object value = value(obj, node);
@@ -735,7 +743,7 @@ public class XmlConfiguration
     {
         String id = node.getAttribute("id");
 
-        Map map = new HashMap();
+        Map<Object,Object> map = new HashMap<Object,Object>();
         if (id != null) _idMap.put(id, map);
 
         for (int i = 0; i < node.size(); i++)
@@ -892,7 +900,7 @@ public class XmlConfiguration
 
         if ("String".equals(type) || "java.lang.String".equals(type)) return value.toString();
 
-        Class pClass = TypeUtil.fromName(type);
+        Class<?> pClass = TypeUtil.fromName(type);
         if (pClass != null) return TypeUtil.valueOf(pClass, value.toString());
 
         if ("URL".equals(type) || "java.net.URL".equals(type))
@@ -1009,7 +1017,6 @@ public class XmlConfiguration
                         Log.warn(e);
                     }
                     
-                    
                     // If no start.config properties, use clean slate
                     if (properties==null)
                         properties = new Properties();
@@ -1030,7 +1037,12 @@ public class XmlConfiguration
                             if ( last != null )
                                 configuration.getIdMap().putAll( last.getIdMap() );
                             if ( properties.size() > 0 )
-                                configuration.setProperties( properties );
+                            {
+                                Map<String,String> props = new HashMap<String,String>();
+                                for (Object key:properties.keySet())
+                                    props.put(key.toString(),String.valueOf(properties.get(key)));
+                                configuration.setProperties( props );
+                            }
                             obj[i] = configuration.configure();
                             last = configuration;
                         }

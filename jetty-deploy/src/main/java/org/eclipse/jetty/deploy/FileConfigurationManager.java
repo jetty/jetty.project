@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.resource.Resource;
 public class FileConfigurationManager implements ConfigurationManager
 {
     private Resource _file;
-    private Map<String,Object> _map = new HashMap<String,Object>();
+    private Map<String,String> _map = new HashMap<String,String>();
 
     public FileConfigurationManager()
     {
@@ -44,7 +44,7 @@ public class FileConfigurationManager implements ConfigurationManager
     /**
      * @see org.eclipse.jetty.deploy.ConfigurationManager#getProperties()
      */
-    public Map<String, Object> getProperties()
+    public Map<String, String> getProperties()
     {
         try
         {
@@ -64,7 +64,7 @@ public class FileConfigurationManager implements ConfigurationManager
             Properties properties = new Properties();
             properties.load(_file.getInputStream());
             for (Map.Entry<Object, Object> entry : properties.entrySet())
-                _map.put(entry.getKey().toString(),entry.getValue());
+                _map.put(entry.getKey().toString(),String.valueOf(entry.getValue()));
         }
     }
 }

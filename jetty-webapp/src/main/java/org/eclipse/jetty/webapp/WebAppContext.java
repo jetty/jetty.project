@@ -867,12 +867,22 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     /**
      * The override descriptor is a web.xml format file that is applied to the context after the standard WEB-INF/web.xml
-     * @param overrideDescriptor The overrideDescritpor to set.
+     * @param overrideDescriptor The overrideDescriptors (file or URL) to set.
      */
     public void setOverrideDescriptors(List<String> overrideDescriptors)
     {
         _overrideDescriptors.clear();
         _overrideDescriptors.addAll(overrideDescriptors);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * The override descriptor is a web.xml format file that is applied to the context after the standard WEB-INF/web.xml
+     * @param overrideDescriptor The overrideDescriptor (file or URL) to add.
+     */
+    public void addOverrideDescriptor(String overrideDescriptor)
+    {
+        _overrideDescriptors.add(overrideDescriptor);
     }
 
     /* ------------------------------------------------------------ */
