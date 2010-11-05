@@ -48,4 +48,3 @@ Require-Bundle: org.eclipse.jetty.ajp;bundle-version="[7.0,8)";resolution:=optio
  org.eclipse.jetty.xml;bundle-version="[7.0,8)"
 Export-Package: org.eclipse.jetty.osgi.boot,
  org.eclipse.jetty.osgi.boot.utils
-Bundle-ActivationPolicy: lazy
