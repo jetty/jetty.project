@@ -167,7 +167,7 @@ public class ContextHandlerTest
         handler.setAttribute("ccc","333");
         handler.getServletContext().setAttribute("ddd","444");
         assertEquals("111",handler.getServletContext().getAttribute("aaa"));
-        assertEquals(null,handler.getServletContext().getAttribute("bbb"));
+        assertEquals("222",handler.getServletContext().getAttribute("bbb"));
         handler.getServletContext().setAttribute("bbb","222");
         assertEquals("333",handler.getServletContext().getAttribute("ccc"));
         assertEquals("444",handler.getServletContext().getAttribute("ddd"));
