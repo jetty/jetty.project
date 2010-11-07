@@ -478,54 +478,57 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
         
         
-        
+
         // Do we need to extract WEB-INF/lib?
-        Resource web_inf= web_app.addPath("WEB-INF/");
-       
-        if (web_inf instanceof ResourceCollection ||
-            web_inf.exists() && 
-            web_inf.isDirectory() && 
-            (web_inf.getFile()==null || !web_inf.getFile().isDirectory()))
-        {       
-            File extractedWebInfDir= new File(context.getTempDirectory(), "webinf");
-            if (extractedWebInfDir.exists())
-                IO.delete(extractedWebInfDir);
-            extractedWebInfDir.mkdir();
-            Resource web_inf_lib = web_inf.addPath("lib/");
-            File webInfDir=new File(extractedWebInfDir,"WEB-INF");
-            webInfDir.mkdir();
-            
-            if (web_inf_lib.exists())
-            {
-                File webInfLibDir = new File(webInfDir, "lib");
-                if (webInfLibDir.exists())
-                    IO.delete(webInfLibDir);
-                webInfLibDir.mkdir();
+        if (context.isCopyWebInf())
+        {
+            Resource web_inf= web_app.addPath("WEB-INF/");
 
-                Log.info("Copying WEB-INF/lib " + web_inf_lib + " to " + webInfLibDir);
-                web_inf_lib.copyTo(webInfLibDir);
-            }
+            if (web_inf instanceof ResourceCollection ||
+                    web_inf.exists() && 
+                    web_inf.isDirectory() && 
+                    (web_inf.getFile()==null || !web_inf.getFile().isDirectory()))
+            {       
+                File extractedWebInfDir= new File(context.getTempDirectory(), "webinf");
+                if (extractedWebInfDir.exists())
+                    IO.delete(extractedWebInfDir);
+                extractedWebInfDir.mkdir();
+                Resource web_inf_lib = web_inf.addPath("lib/");
+                File webInfDir=new File(extractedWebInfDir,"WEB-INF");
+                webInfDir.mkdir();
 
-            Resource web_inf_classes = web_inf.addPath("classes/");
-            if (web_inf_classes.exists())
-            {
-                File webInfClassesDir = new File(webInfDir, "classes");
-                if (webInfClassesDir.exists())
-                    IO.delete(webInfClassesDir);
-                webInfClassesDir.mkdir();
-                Log.info("Copying WEB-INF/classes from "+web_inf_classes+" to "+webInfClassesDir.getAbsolutePath());
-                web_inf_classes.copyTo(webInfClassesDir);
-            }
-            
-            web_inf=Resource.newResource(extractedWebInfDir.getCanonicalPath());
-            
-            ResourceCollection rc = new ResourceCollection(new Resource[]{web_inf,web_app});
-            
-            if (Log.isDebugEnabled())
-                Log.debug("context.resourcebase = "+rc);
-            
-            context.setBaseResource(rc);
-        }       
+                if (web_inf_lib.exists())
+                {
+                    File webInfLibDir = new File(webInfDir, "lib");
+                    if (webInfLibDir.exists())
+                        IO.delete(webInfLibDir);
+                    webInfLibDir.mkdir();
+
+                    Log.info("Copying WEB-INF/lib " + web_inf_lib + " to " + webInfLibDir);
+                    web_inf_lib.copyTo(webInfLibDir);
+                }
+
+                Resource web_inf_classes = web_inf.addPath("classes/");
+                if (web_inf_classes.exists())
+                {
+                    File webInfClassesDir = new File(webInfDir, "classes");
+                    if (webInfClassesDir.exists())
+                        IO.delete(webInfClassesDir);
+                    webInfClassesDir.mkdir();
+                    Log.info("Copying WEB-INF/classes from "+web_inf_classes+" to "+webInfClassesDir.getAbsolutePath());
+                    web_inf_classes.copyTo(webInfClassesDir);
+                }
+
+                web_inf=Resource.newResource(extractedWebInfDir.getCanonicalPath());
+
+                ResourceCollection rc = new ResourceCollection(web_inf,web_app);
+
+                if (Log.isDebugEnabled())
+                    Log.debug("context.resourcebase = "+rc);
+
+                context.setBaseResource(rc);
+            }   
+        }
     }
     
     

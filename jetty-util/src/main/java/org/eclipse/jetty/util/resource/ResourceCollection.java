@@ -22,6 +22,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.URIUtil;
@@ -38,49 +39,25 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class ResourceCollection extends Resource
 {
-    
-    private Resource[] _resources;
-    
-    public ResourceCollection()
-    {
-        
-    }
-    
+    private final Resource[] _resources;
+
     /* ------------------------------------------------------------ */
-    public ResourceCollection(Resource[] resources)
+    public ResourceCollection(Resource... resources)
     {
-        setResources(resources);
-    }
-    
-    /* ------------------------------------------------------------ */
-    public ResourceCollection(String[] resources)
-    {
-        setResources(resources);
-    }
-    
-    /* ------------------------------------------------------------ */
-    public ResourceCollection(String csvResources)
-    {
-        setResources(csvResources);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * 
-     * @param resources Resource array
-     */
-    public void setResources(Resource[] resources)
-    {
-        if(_resources!=null)
-            throw new IllegalStateException("*resources* already set.");
-        
-        if(resources==null)
-            throw new IllegalArgumentException("*resources* must not be null.");
-        
-        if(resources.length==0)
-            throw new IllegalArgumentException("arg *resources* must be one or more resources.");
-        
-        _resources = resources;
+        List<Resource> list = new ArrayList<Resource>();
+        for (Resource r : resources)
+        {
+            if (r==null)
+                continue;
+            if (r instanceof ResourceCollection)
+            {
+                for (Resource r2 : ((ResourceCollection)r).getResources())
+                    list.add(r2);
+            }
+            else
+                list.add(r);
+        }
+        _resources = list.toArray(new Resource[list.size()]);
         for(Resource r : _resources)
         {
             if(!r.exists() || !r.isDirectory())
@@ -88,22 +65,10 @@ public class ResourceCollection extends Resource
         }
     }
     
+    
     /* ------------------------------------------------------------ */
-    /**
-     * 
-     * @param resources String array
-     */
-    public void setResources(String[] resources)
+    public ResourceCollection(String[] resources)
     {
-        if(_resources!=null)
-            throw new IllegalStateException("*resources* already set.");
-        
-        if(resources==null)
-            throw new IllegalArgumentException("*resources* must not be null.");
-        
-        if(resources.length==0)
-            throw new IllegalArgumentException("arg *resources* must be one or more resources.");
-        
         _resources = new Resource[resources.length];
         try
         {
@@ -125,18 +90,8 @@ public class ResourceCollection extends Resource
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * 
-     * @param csvResources Comma separated values
-     */
-    public void setResources(String csvResources)
+    public ResourceCollection(String csvResources)
     {
-        if(_resources!=null)
-            throw new IllegalStateException("*resources* already set.");
-        
-        if(csvResources==null)
-            throw new IllegalArgumentException("*csvResources* must not be null.");
-        
         StringTokenizer tokenizer = new StringTokenizer(csvResources, ",;");
         int len = tokenizer.countTokens();
         if(len==0)
@@ -158,15 +113,6 @@ public class ResourceCollection extends Resource
         }
     }
     
-    /* ------------------------------------------------------------ */
-    /**
-     * 
-     * @param csvResources Comma separated values
-     */
-    public void setResourcesAsCSV(String csvResources)
-    {
-        setResources(csvResources);
-    }
     
     /* ------------------------------------------------------------ */
     /**

@@ -46,27 +46,33 @@ public class ResourceCache
     private final ConcurrentMap<String,Content> _cache;
     private final AtomicInteger _cachedSize;
     private final AtomicInteger _cachedFiles;
-    private final boolean  _useFileMappedBuffer;
     private final ResourceFactory _factory;
     private final ResourceCache _parent;
-    
     private final MimeTypes _mimeTypes;
+
+    private boolean  _useFileMappedBuffer=true;
     private int _maxCachedFileSize =4*1024*1024;
     private int _maxCachedFiles=2048;
     private int _maxCacheSize =32*1024*1024;
 
     /* ------------------------------------------------------------ */
+    public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes,boolean useFileMappedBuffer)
+    {
+        this(parent,factory,mimeTypes);
+        setUseFileMappedBuffer(useFileMappedBuffer);
+    }
+    
+    /* ------------------------------------------------------------ */
     /** Constructor.
      * @param mimeTypes Mimetype to use for meta data
      * @param fileMappedBuffers True if file mapped buffers can be used for DirectBuffers
      */
-    public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes,boolean fileMappedBuffers)
+    public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes)
     {
         _factory = factory;
         _cache=new ConcurrentHashMap<String,Content>();
         _cachedSize=new AtomicInteger();
         _cachedFiles=new AtomicInteger();
-        _useFileMappedBuffer=fileMappedBuffers;
         _mimeTypes=mimeTypes;
         _parent=parent;
     }
@@ -127,7 +133,19 @@ public class ResourceCache
         _maxCachedFiles = maxCachedFiles;
         shrinkCache();
     }
-    
+
+    /* ------------------------------------------------------------ */
+    public boolean isUseFileMappedBuffer()
+    {
+        return _useFileMappedBuffer;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setUseFileMappedBuffer(boolean useFileMappedBuffer)
+    {
+        _useFileMappedBuffer = useFileMappedBuffer;
+    }
+
     /* ------------------------------------------------------------ */
     public void flushCache()
     {

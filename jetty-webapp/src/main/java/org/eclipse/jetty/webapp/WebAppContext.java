@@ -124,6 +124,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _distributable=false;
     private boolean _extractWAR=true;
     private boolean _copyDir=false;
+    private boolean _copyWebInf=true; // TODO change to false?
     private boolean _logUrlOnStart =false;
     private boolean _parentLoaderPriority= Boolean.getBoolean("org.eclipse.jetty.server.webapp.parentLoaderPriority");
     private PermissionCollection _permissions;
@@ -754,13 +755,22 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     /**
-     * @return True if the webdir is copied (to allow hot replacement of jars)
+     * @return True if the webdir is copied (to allow hot replacement of jars on windows)
      */
     public boolean isCopyWebDir()
     {
         return _copyDir;
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if the web-inf lib and classes directories are copied (to allow hot replacement of jars on windows)
+     */
+    public boolean isCopyWebInf()
+    {
+        return _copyWebInf;
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * @return True if the classloader should delegate first to the parent 
@@ -960,12 +970,20 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     
     /* ------------------------------------------------------------ */
     /**
-     * 
      * @param copy True if the webdir is copied (to allow hot replacement of jars)
      */
     public void setCopyWebDir(boolean copy)
     {
         _copyDir = copy;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param copyWebInf True if the web-inf lib and classes directories are copied (to allow hot replacement of jars on windows)
+     */
+    public void setCopyWebInf(boolean copyWebInf)
+    {
+        _copyWebInf = copyWebInf;
     }
 
     /* ------------------------------------------------------------ */
