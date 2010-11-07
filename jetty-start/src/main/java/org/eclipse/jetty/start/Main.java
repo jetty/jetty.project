@@ -548,8 +548,6 @@ public class Main
             System.err.println("classloader.parent=" + cl.getParent());
             System.err.println("properties="+_config.getProperties());
         }
-
-        System.err.println("properties="+_config.getProperties());
         
         // Show the usage information and return
         if (_showUsage)
