@@ -12,6 +12,7 @@ jetty-7.2.1-SNAPSHOT
  + 328988 Idle saving of session values
  + 329180 Spin check for Selector to stop
  + 329410 Enforce XmlConfiguration properties as Map<String,String>
+ + 329642 Concurrent modification exception in Deployment Manager
  + JETTY-748 Prevent race close of socket by old acceptor threads
  + JETTY-1291 Extract query parameters even if POST content consumed
  + JETTY-1295 Contexts mixed up when hot-deploying on virtual hosts

@@ -24,6 +24,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.jetty.deploy.bindings.StandardDeployer;
 import org.eclipse.jetty.deploy.bindings.StandardStarter;
@@ -110,7 +112,7 @@ public class DeploymentManager extends AbstractLifeCycle
 
     private final List<AppProvider> _providers = new ArrayList<AppProvider>();
     private final AppLifeCycle _lifecycle = new AppLifeCycle();
-    private final List<AppEntry> _apps = new LinkedList<AppEntry>();
+    private final Queue<AppEntry> _apps = new ConcurrentLinkedQueue<AppEntry>();
     private AttributesMap _contextAttributes = new AttributesMap();
     private ContextHandlerCollection _contexts;
     private boolean _useStandardBindings = true;
@@ -231,25 +233,6 @@ public class DeploymentManager extends AbstractLifeCycle
         }
         super.doStop();
     }
-
-    /*
-    private AppEntry findAppByContextId(String contextId)
-    {
-        if (contextId == null)
-        {
-            return null;
-        }
-
-        for (AppEntry entry : _apps)
-        {
-            if (contextId.equals(entry.app.getContextId()))
-            {
-                return entry;
-            }
-        }
-        return null;
-    }
-    */
 
     private AppEntry findAppByOriginId(String originId)
     {
@@ -405,7 +388,7 @@ public class DeploymentManager extends AbstractLifeCycle
      */
     public void removeApp(App app)
     {
-        ListIterator<AppEntry> it = _apps.listIterator();
+        Iterator<AppEntry> it = _apps.iterator();
         while (it.hasNext())
         {
             AppEntry entry = it.next();
