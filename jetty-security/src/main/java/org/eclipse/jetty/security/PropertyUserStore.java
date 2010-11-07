@@ -21,19 +21,16 @@ import org.eclipse.jetty.util.resource.Resource;
 /**
  * PropertyUserStore
  * 
- * This class monitors a property file of the format mentioned below and 
- * notifies registered listeners of the changes to the the given file.
+ * This class monitors a property file of the format mentioned below and notifies registered listeners of the changes to the the given file.
  * 
  * <PRE>
  *  username: password [,rolename ...]
  * </PRE>
  * 
- * Passwords may be clear text, obfuscated or checksummed. The class
- * com.eclipse.Util.Password should be used to generate obfuscated passwords or
- * password checksums.
+ * Passwords may be clear text, obfuscated or checksummed. The class com.eclipse.Util.Password should be used to generate obfuscated passwords or password
+ * checksums.
  * 
- * If DIGEST Authentication is used, the password must be in a recoverable
- * format, either plain text or OBF:.
+ * If DIGEST Authentication is used, the password must be in a recoverable format, either plain text or OBF:.
  */
 public class PropertyUserStore extends AbstractLifeCycle
 {
@@ -42,10 +39,10 @@ public class PropertyUserStore extends AbstractLifeCycle
     private Scanner _scanner;
     private int _refreshInterval = 0;// default is not to reload
 
-    private boolean _firstLoad = true; // true if first load, false from that point on 
-    private final List<String> _knownUsers=new ArrayList<String>();
+    private boolean _firstLoad = true; // true if first load, false from that point on
+    private final List<String> _knownUsers = new ArrayList<String>();
     private List<UserListener> _listeners;
-    
+
     /* ------------------------------------------------------------ */
     public String getConfig()
     {
@@ -55,24 +52,23 @@ public class PropertyUserStore extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     public void setConfig(String config)
     {
-        _config=config;
+        _config = config;
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * returns the resource associated with the configured properties
-     * file, creating it if necessary 
+     * returns the resource associated with the configured properties file, creating it if necessary
      */
     public Resource getConfigResource() throws IOException
     {
-    	if ( _configResource == null )
-    	{
-    		_configResource = Resource.newResource(_config);
-    	}
-    	
+        if (_configResource == null)
+        {
+            _configResource = Resource.newResource(_config);
+        }
+
         return _configResource;
-    } 
-    
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * sets the refresh interval (in seconds)
@@ -84,36 +80,36 @@ public class PropertyUserStore extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * refresh interval in seconds for how often the properties
-     * file should be checked for changes
+     * refresh interval in seconds for how often the properties file should be checked for changes
      */
     public int getRefreshInterval()
     {
         return _refreshInterval;
     }
-    
-    
+
     /* ------------------------------------------------------------ */
     private void loadUsers() throws IOException
-    {        
-        if (_config==null)
+    {
+        if (_config == null)
             return;
-               
-        if (Log.isDebugEnabled()) Log.debug("Load " + this + " from " + _config);
+
+        if (Log.isDebugEnabled())
+            Log.debug("Load " + this + " from " + _config);
         Properties properties = new Properties();
-        properties.load(getConfigResource().getInputStream());
+        if (getConfigResource().exists())
+            properties.load(getConfigResource().getInputStream());
         Set<String> known = new HashSet<String>();
 
         for (Map.Entry<Object, Object> entry : properties.entrySet())
         {
-            String username = ((String) entry.getKey()).trim();
-            String credentials = ((String) entry.getValue()).trim();
+            String username = ((String)entry.getKey()).trim();
+            String credentials = ((String)entry.getValue()).trim();
             String roles = null;
             int c = credentials.indexOf(',');
             if (c > 0)
             {
                 roles = credentials.substring(c + 1).trim();
-                credentials = credentials.substring(0, c).trim();
+                credentials = credentials.substring(0,c).trim();
             }
 
             if (username != null && username.length() > 0 && credentials != null && credentials.length() > 0)
@@ -152,29 +148,25 @@ public class PropertyUserStore extends AbstractLifeCycle
             _knownUsers.addAll(known);
 
         }
-        
-        /* 
+
+        /*
          * set initial load to false as there should be no more initial loads
          */
         _firstLoad = false;
     }
-    
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * Depending on the value of the refresh interval, this method will either
-     * start up a scanner thread that will monitor the properties file
-     * for changes after it has initially loaded it.  Otherwise the users
-     * will be loaded and there will be no active monitoring thread so changes
-     * will not be detected.
+     * Depending on the value of the refresh interval, this method will either start up a scanner thread that will monitor the properties file for changes after
+     * it has initially loaded it. Otherwise the users will be loaded and there will be no active monitoring thread so changes will not be detected.
      * 
      * 
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
     protected void doStart() throws Exception
-    {    	
+    {
         super.doStart();
-        
+
         if (getRefreshInterval() > 0)
         {
             _scanner = new Scanner();
@@ -186,12 +178,12 @@ public class PropertyUserStore extends AbstractLifeCycle
             {
                 public boolean accept(File dir, String name)
                 {
-                    File f = new File(dir, name);
+                    File f = new File(dir,name);
                     try
                     {
                         if (f.compareTo(getConfigResource().getFile()) == 0)
                         {
-                        	return true;
+                            return true;
                         }
                     }
                     catch (IOException e)
@@ -203,18 +195,20 @@ public class PropertyUserStore extends AbstractLifeCycle
                 }
 
             });
-                         
+
             _scanner.addListener(new BulkListener()
             {
                 public void filesChanged(List filenames) throws Exception
                 {
-                    if (filenames == null) return;
-                    if (filenames.isEmpty()) return;
-					if (filenames.size() == 1 && filenames.get(0).equals(getConfigResource().getFile().getAbsolutePath())) 
-					{					
-						loadUsers();
-					}
-				}
+                    if (filenames == null)
+                        return;
+                    if (filenames.isEmpty())
+                        return;
+                    if (filenames.size() == 1 && filenames.get(0).equals(getConfigResource().getFile().getAbsolutePath()))
+                    {
+                        loadUsers();
+                    }
+                }
 
                 public String toString()
                 {
@@ -222,14 +216,14 @@ public class PropertyUserStore extends AbstractLifeCycle
                 }
 
             });
-            
+
             _scanner.setReportExistingFilesOnStartup(true);
             _scanner.setRecursive(false);
             _scanner.start();
         }
         else
         {
-        	loadUsers();
+            loadUsers();
         }
     }
 
@@ -240,10 +234,11 @@ public class PropertyUserStore extends AbstractLifeCycle
     protected void doStop() throws Exception
     {
         super.doStop();
-        if (_scanner != null) _scanner.stop();
+        if (_scanner != null)
+            _scanner.stop();
         _scanner = null;
     }
-    
+
     /**
      * Notifies the registered listeners of potential updates to a user
      * 
@@ -255,13 +250,13 @@ public class PropertyUserStore extends AbstractLifeCycle
     {
         if (_listeners != null)
         {
-            for ( Iterator<UserListener> i = _listeners.iterator();i.hasNext();)
+            for (Iterator<UserListener> i = _listeners.iterator(); i.hasNext();)
             {
                 i.next().update(username,credential,roleArray);
             }
         }
     }
-    
+
     /**
      * notifies the registered listeners that a user has been removed.
      * 
@@ -271,14 +266,14 @@ public class PropertyUserStore extends AbstractLifeCycle
     {
         if (_listeners != null)
         {
-            for ( Iterator<UserListener> i = _listeners.iterator();i.hasNext();)
+            for (Iterator<UserListener> i = _listeners.iterator(); i.hasNext();)
             {
                 i.next().remove(username);
             }
         }
     }
-    
-    /** 
+
+    /**
      * registers a listener to be notified of the contents of the property file
      */
     public void registerUserListener(UserListener listener)
@@ -295,8 +290,8 @@ public class PropertyUserStore extends AbstractLifeCycle
      */
     public interface UserListener
     {
-        public void update(String username, Credential credential, String[] roleArray );
-        
+        public void update(String username, Credential credential, String[] roleArray);
+
         public void remove(String username);
     }
 }
