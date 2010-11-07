@@ -249,8 +249,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 throw new UnavailableException("resourceCache specified with resource bases");
             _cache=(ResourceCache)_servletContext.getAttribute(resourceCache);
 
-            if (_cache==null)
-                Log.debug("Could not find resourceCache "+resourceCache);
+            Log.debug("Cache {}={}",resourceCache,_cache);
         }
 
         try
