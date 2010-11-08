@@ -157,7 +157,6 @@ public class ContextHandlerTest
     {
         ContextHandler handler = new ContextHandler();
         handler.setAttribute("aaa","111");
-        handler.getServletContext().setAttribute("bbb","222");
         assertEquals("111",handler.getServletContext().getAttribute("aaa"));
         assertEquals(null,handler.getAttribute("bbb"));
 
