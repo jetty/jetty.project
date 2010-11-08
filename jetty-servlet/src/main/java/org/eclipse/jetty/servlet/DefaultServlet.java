@@ -757,7 +757,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
             // has a filter already written to the response?
             written = out instanceof HttpOutput 
-                ? !((HttpOutput)out).isWritten() 
+                ? ((HttpOutput)out).isWritten() 
                 : HttpConnection.getCurrentConnection().getGenerator().isContentWritten();
         }
         catch(IllegalStateException e) 

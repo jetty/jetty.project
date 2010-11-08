@@ -1,5 +1,6 @@
 
 jetty-7.2.1-SNAPSHOT
+ + 324679 Fixed dedection of write before static content
  + 328199 Ensure blocking connectors always close socket
  + 328205 Improved SelectManager stopping
  + 328306 Serialization of FormAuthentication
