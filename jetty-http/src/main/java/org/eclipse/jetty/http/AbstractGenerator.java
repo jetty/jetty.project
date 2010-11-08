@@ -381,9 +381,15 @@ public abstract class AbstractGenerator implements Generator
 
         return _content!=null && _content.length()>0;
     }
+
+    /* ------------------------------------------------------------ */
+    public boolean isWritten()
+    {
+        return _contentWritten>0;
+    }
     
     /* ------------------------------------------------------------ */
-    public boolean isContentWritten()
+    public boolean isAllContentWritten()
     {
         return _contentLength>=0 && _contentWritten>=_contentLength;
     }

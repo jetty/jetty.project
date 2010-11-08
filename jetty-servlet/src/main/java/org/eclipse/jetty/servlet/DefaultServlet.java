@@ -758,14 +758,14 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             // has a filter already written to the response?
             written = out instanceof HttpOutput 
                 ? ((HttpOutput)out).isWritten() 
-                : HttpConnection.getCurrentConnection().getGenerator().isContentWritten();
+                : HttpConnection.getCurrentConnection().getGenerator().isWritten();
         }
         catch(IllegalStateException e) 
         {
             out = new WriterOutputStream(response.getWriter());
             written=true; // there may be data in writer buffer, so assume written
         }
-
+        
         if ( reqRanges == null || !reqRanges.hasMoreElements() || content_length<0)
         {
             //  if there were no ranges, send entire entity
@@ -775,7 +775,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             }
             else
             {
-                
                 // See if a direct methods can be used?
                 if (content!=null && !written && out instanceof HttpOutput)
                 {

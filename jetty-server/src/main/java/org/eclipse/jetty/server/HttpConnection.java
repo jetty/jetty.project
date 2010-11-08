@@ -1119,7 +1119,7 @@ public class HttpConnection implements Connection
         @Override
         public void close() throws IOException
         {
-            if (_closed)
+            if (isClosed())
                 return;
 
             if (!isIncluding() && !super._generator.isCommitted())
@@ -1150,7 +1150,7 @@ public class HttpConnection implements Connection
         @Override
         public void print(String s) throws IOException
         {
-            if (_closed)
+            if (isClosed())
                 throw new IOException("Closed");
             PrintWriter writer=getPrintWriter(null);
             writer.print(s);
@@ -1167,10 +1167,10 @@ public class HttpConnection implements Connection
         {
             Resource resource=null;
 
-            if (_closed)
+            if (isClosed())
                 throw new IOException("Closed");
 
-            if (super._generator.isContentWritten())
+            if (super._generator.isWritten())
                 throw new IllegalStateException("!empty");
 
             // Convert HTTP content to contentl

@@ -747,7 +747,7 @@ public class Response implements HttpServletResponse
         if (len>=0)
         {
             _connection.getResponseFields().putLongField(HttpHeaders.CONTENT_LENGTH, len);
-            if (_connection._generator.isContentWritten())
+            if (_connection._generator.isAllContentWritten())
             {
                 if (_outputState==WRITER)
                     _writer.close();
