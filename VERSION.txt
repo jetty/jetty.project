@@ -18,6 +18,7 @@ jetty-7.2.1-SNAPSHOT
  + JETTY-748 Prevent race close of socket by old acceptor threads
  + JETTY-1291 Extract query parameters even if POST content consumed
  + JETTY-1295 Contexts mixed up when hot-deploying on virtual hosts
+ + JETTY-1297 Make ServletContext.getContext(String) virtual host aware
 
 jetty-7.2.0.v20101020 20 October 2010
  + 289540 added javadoc into distribution

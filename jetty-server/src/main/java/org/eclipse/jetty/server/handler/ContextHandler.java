@@ -19,12 +19,14 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -1443,8 +1445,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
          */
         public ServletContext getContext(String uripath)
         {
-            ContextHandler context=null;
+            List<ContextHandler>  contexts=new ArrayList<ContextHandler>();
             Handler[] handlers = getServer().getChildHandlersByClass(ContextHandler.class);
+            String matched_path=null;
+            
             for (int i=0;i<handlers.length;i++)
             {
                 if (handlers[i]==null || !handlers[i].isStarted())
@@ -1454,13 +1458,50 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 
                 if (uripath.equals(context_path) || (uripath.startsWith(context_path)&&uripath.charAt(context_path.length())=='/') || "/".equals(context_path))
                 {
-                    if (context==null || context_path.length()>context.getContextPath().length())
-                        context=ch;
+                    if (matched_path==null || context_path.length()>matched_path.length())
+                    {
+                        contexts.clear();
+                        matched_path=context_path;
+                    }
+                    
+                    if (matched_path.equals(context_path))
+                        contexts.add(ch);
                 }
             }
 
-            if (context!=null)
-                return context._scontext;
+            switch (contexts.size())
+            {
+                case 0: return null;
+
+                case 1: 
+                    return contexts.get(0)._scontext;
+
+                default:
+                    // Multiple contexts
+                    // Does this context match?
+                    if (contexts.contains(ContextHandler.this))
+                    {
+                        return _scontext;
+                    }
+
+                    // Are there matching virtual hosts?
+                    if (getVirtualHosts()!=null && getVirtualHosts().length>0)
+                    {
+                        for (ContextHandler ch : contexts)
+                        {
+                            if (ch.getVirtualHosts()!=null && ch.getVirtualHosts().length>0)
+                            {
+                                for (String h1 : getVirtualHosts())
+                                    for (String h2 : ch.getVirtualHosts())
+                                        if (h1.equals(h2))
+                                        {
+                                            return ch._scontext;
+                                        }
+                            }
+                        }
+                    }
+            }
+
             return null;
         }
 

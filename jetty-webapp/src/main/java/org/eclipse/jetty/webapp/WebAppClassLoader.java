@@ -431,8 +431,6 @@ public class WebAppClassLoader extends URLClassLoader
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        if (Log.isDebugEnabled())
-            return "WebAppClassLoader@" + _name + "(" + LazyList.array2List(getURLs()) + ") / " + _parent;
         return "WebAppClassLoader@" + _name;
     }
 }

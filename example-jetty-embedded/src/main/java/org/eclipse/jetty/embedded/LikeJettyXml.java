@@ -107,6 +107,7 @@ public class LikeJettyXml
         server.addBean(context_provider);
         deployer.addAppProvider(context_provider);
 
+        /*
         WebAppProvider webapp_provider = new WebAppProvider();
         webapp_provider.setMonitoredDir(jetty_home + "/webapps");
         webapp_provider.setParentLoaderPriority(false);
@@ -115,7 +116,8 @@ public class LikeJettyXml
         webapp_provider.setDefaultsDescriptor(jetty_home + "/etc/webdefault.xml");
         webapp_provider.setContextXmlDir(jetty_home + "/contexts");
         deployer.addAppProvider(webapp_provider);
-
+*/
+        
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
         login.setConfig(jetty_home + "/etc/realm.properties");
