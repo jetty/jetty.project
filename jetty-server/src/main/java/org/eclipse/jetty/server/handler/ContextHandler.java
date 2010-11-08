@@ -554,7 +554,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         Thread current_thread=null;
         Context old_context=null;
 
-        _contextAttributes.clearAttributes();
         try
         {
             // Set the classloader
