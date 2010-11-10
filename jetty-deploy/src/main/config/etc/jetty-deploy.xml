@@ -24,6 +24,24 @@
             <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
             <Arg>.*/jsp-api-[^/]*\.jar$|.*/jsp-[^/]*\.jar$</Arg>
           </Call>
+          
+          
+          <!-- Add a customize step to the deployment lifecycle -->
+          <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class 
+          <Call name="insertLifeCycleNode">
+            <Arg>deployed</Arg>
+            <Arg>starting</Arg>
+            <Arg>customise</Arg>
+          </Call>
+          <Call name="addLifeCycleBinding">
+            <Arg>
+              <New class="org.eclipse.jetty.deploy.bindings.DebugBinding">
+                <Arg>customise</Arg>
+              </New>
+            </Arg>
+          </Call>
+          -->
+          
         </New>
       </Arg>
     </Call>
