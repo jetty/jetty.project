@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
@@ -985,9 +986,11 @@ public class XmlConfiguration
      * @param args array of property and xml configuration filenames or {@link Resource}s.
      */
     @SuppressWarnings( "unchecked" )
-    public static void main( final String[] args )
+    public static void main( final String[] args ) throws Exception
     {
 
+        final AtomicReference<Throwable> exception = new AtomicReference<Throwable>();
+        
         AccessController.doPrivileged( new PrivilegedAction()
         {
             public Object run()
@@ -1062,14 +1065,30 @@ public class XmlConfiguration
                 catch (AccessControlException ace)
                 {
                     ace.printStackTrace(System.err);
+                    exception.set(ace);
                 }
                 catch ( Exception e )
                 {
-                    Log.warn( Log.EXCEPTION, e );
+                    Log.debug( Log.EXCEPTION, e );
+                    exception.set(e);
                 }
                 return null;
             }
         } );
+        
+        Throwable th=exception.get();
+        if (th!=null)
+        {
+            if (th instanceof Exception)
+                throw (Exception)th;
+            else if (th instanceof Error)
+                throw (Error)th;
+            else if (th instanceof RuntimeException)
+                throw (RuntimeException)th;
+            else if (th instanceof ThreadDeath)
+                throw (ThreadDeath)th;
+            throw new Error(th);
+        }
     }
     
 }
