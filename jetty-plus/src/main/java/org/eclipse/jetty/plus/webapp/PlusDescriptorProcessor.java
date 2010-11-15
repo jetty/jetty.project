@@ -316,9 +316,11 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     //ServletSpec p.75. No declaration of resource-ref in web xml, but different in multiple web-fragments. Error.
                     if (!type.equals(otherType) || !auth.equals(otherAuth) || !shared.equals(otherShared))
                         throw new IllegalStateException("Conflicting resource-ref "+jndiName+" in "+descriptor.getResource());
-                    
-                    //TODO get clarification from jsr315 if injection-targets should be merged
+                    //same in multiple web-fragments, merge the injections
+                    addInjections(context, descriptor, node, jndiName, TypeUtil.fromName(type));
                 }
+                else
+                    throw new IllegalStateException("resource-ref."+jndiName+" not found in declaring descriptor "+otherFragment);
                 
             }
         }
@@ -416,8 +418,11 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!type.equals(otherType))
                         throw new IllegalStateException("Conflicting resource-env-ref "+jndiName+" in "+descriptor.getResource());   
                     
-                    //TODO get clarification from jsr315 if injection-targets should be merged
+                    //same in multiple web-fragments, merge the injections
+                    addInjections(context, descriptor, node, jndiName, TypeUtil.fromName(type));
                 }
+                else
+                    throw new IllegalStateException("resource-env-ref."+jndiName+" not found in declaring descriptor "+otherFragment);
             }
         }
     }
@@ -506,8 +511,11 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     if (!type.equals(otherType) || !usage.equalsIgnoreCase(otherUsage))
                         throw new IllegalStateException("Conflicting message-destination-ref "+jndiName+" in "+descriptor.getResource());
                     
-                    //TODO get clarification from jsr315 if injection-targets should be merged
+                    //same in multiple web-fragments, merge the injections
+                    addInjections(context, descriptor, node, jndiName, TypeUtil.fromName(type));
                 }
+                else
+                    throw new IllegalStateException("message-destination-ref."+jndiName+" not found in declaring descriptor "+otherFragment);
             }
         }
 
