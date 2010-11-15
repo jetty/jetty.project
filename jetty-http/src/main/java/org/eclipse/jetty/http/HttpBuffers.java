@@ -69,9 +69,9 @@ public abstract class HttpBuffers extends AbstractLifeCycle
     public HttpBuffers()
     {
         super();
-        _requestBuffers.setBufferSize(8*1024);
+        _requestBuffers.setBufferSize(12*1024);
         _requestBuffers.setHeaderSize(6*1024);
-        _responseBuffers.setBufferSize(12*1024);
+        _responseBuffers.setBufferSize(32*1024);
         _responseBuffers.setHeaderSize(6*1024);
     }
 

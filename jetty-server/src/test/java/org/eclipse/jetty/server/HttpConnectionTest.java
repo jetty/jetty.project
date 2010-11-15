@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -148,31 +149,39 @@ public class HttpConnectionTest
     @Test
     public void testBad() throws Exception
     {
-        String response=connector.getResponses("GET & HTTP/1.1\n"+
-                "Host: localhost\n"+
-                "\015\012");
-        checkContains(response,0,"HTTP/1.1 400");
+        try
+        {
+            ((StdErrLog)Log.getLog()).setHideStacks(true);
 
-        response=connector.getResponses("GET http://localhost:WRONG/ HTTP/1.1\n"+
-                "Host: localhost\n"+
-                "\015\012");
-        checkContains(response,0,"HTTP/1.1 400");
+            String response=connector.getResponses("GET & HTTP/1.1\n"+
+                    "Host: localhost\n"+
+            "\015\012");
+            checkContains(response,0,"HTTP/1.1 400");
 
-        response=connector.getResponses("GET /foo/bar%1 HTTP/1.1\n"+
-                "Host: localhost\n"+
-                "\015\012");
-        checkContains(response,0,"HTTP/1.1 400");
+            response=connector.getResponses("GET http://localhost:WRONG/ HTTP/1.1\n"+
+                    "Host: localhost\n"+
+            "\015\012");
+            checkContains(response,0,"HTTP/1.1 400");
 
-        response=connector.getResponses("GET /foo/bar%c0%00 HTTP/1.1\n"+
-                "Host: localhost\n"+
-                "\015\012");
-        checkContains(response,0,"pathInfo=/foo/bar?");
+            response=connector.getResponses("GET /bad/encoding%1 HTTP/1.1\n"+
+                    "Host: localhost\n"+
+            "\015\012");
+            checkContains(response,0,"HTTP/1.1 400");
 
-        response=connector.getResponses("GET /foo/bar%c1 HTTP/1.1\n"+
-                "Host: localhost\n"+
-                "\015\012");
-        checkContains(response,0,"HTTP/1.1 400");
+            response=connector.getResponses("GET /foo/bar%c0%00 HTTP/1.1\n"+
+                    "Host: localhost\n"+
+            "\015\012");
+            checkContains(response,0,"pathInfo=/foo/bar?");
 
+            response=connector.getResponses("GET /bad/utf8%c1 HTTP/1.1\n"+
+                    "Host: localhost\n"+
+            "\015\012");
+            checkContains(response,0,"HTTP/1.1 400");
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLog()).setHideStacks(false);
+        }
     }
 
     @Test

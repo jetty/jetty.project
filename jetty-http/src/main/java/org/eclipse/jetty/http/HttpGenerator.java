@@ -184,10 +184,8 @@ public class HttpGenerator extends AbstractGenerator
             content.clear();
             _content=null;
         }
-        else if (_endp != null && _buffer == null && content.length() > 0 && _last)
+        else if (_endp != null && (_buffer==null || _buffer.length()==0) && _content.length() > 0 && (_last || isCommitted() && _content.length()>1024))
         {
-            // TODO - use bypass in more cases.
-            // Make _content a direct buffer
             _bypass = true;
         }
         else if (!_bufferChunked)
@@ -851,7 +849,8 @@ public class HttpGenerator extends AbstractGenerator
                     len = _endp.flush(_header);
                     break;
                 case 3:
-                    throw new IllegalStateException(); // should never happen!
+                    len = _endp.flush(_buffer, _content, null);
+                    break;
                 case 2:
                     len = _endp.flush(_buffer);
                     break;
@@ -882,13 +881,13 @@ public class HttpGenerator extends AbstractGenerator
                             {
                                 _buffer.put(_content);
                                 _content.clear();
-                                _content = null;
+                                _content=null;
                             }
                         }
                     }
 
                     // Are we completely finished for now?
-                    if (!_needCRLF && !_needEOC && (_content == null || _content.length() == 0))
+                    if (!_needCRLF && !_needEOC && (_content==null || _content.length()==0))
                     {
                         if (_state == STATE_FLUSHING)
                             _state = STATE_END;
@@ -899,7 +898,7 @@ public class HttpGenerator extends AbstractGenerator
                         // Try to prepare more to write.
                         prepareBuffers();
                 }
-            }
+            }            
 
             if (len > 0)
                 total+=len;
@@ -920,57 +919,80 @@ public class HttpGenerator extends AbstractGenerator
         if (!_bufferChunked)
         {
             // Refill buffer if possible
-            if (_content != null && _content.length() > 0 && _buffer != null && _buffer.space() > 0)
+            if (!_bypass && _content != null && _content.length() > 0 && _buffer != null && _buffer.space() > 0)
             {
                 int len = _buffer.put(_content);
                 _content.skip(len);
                 if (_content.length() == 0)
                     _content = null;
             }
-
+            
             // Chunk buffer if need be
             if (_contentLength == HttpTokens.CHUNKED_CONTENT)
             {
-                int size = _buffer == null ? 0 : _buffer.length();
-                if (size > 0)
+                if ((_buffer==null||_buffer.length()==0) && _content!=null)
                 {
-                    // Prepare a chunk!
+                    // this is a bypass write
+                    int size = _content.length();
                     _bufferChunked = true;
 
-                    // Did we leave space at the start of the buffer.
-                    //noinspection ConstantConditions
-                    if (_buffer.getIndex() == CHUNK_SPACE)
+                    // if we need CRLF add this to header
+                    if (_needCRLF)
                     {
-                        // Oh yes, goodie! let's use it then!
-                        _buffer.poke(_buffer.getIndex() - 2, HttpTokens.CRLF, 0, 2);
-                        _buffer.setGetIndex(_buffer.getIndex() - 2);
-                        BufferUtil.prependHexInt(_buffer, size);
+                        if (_header.length() > 0) throw new IllegalStateException("EOC");
+                        _header.put(HttpTokens.CRLF);
+                        _needCRLF = false;
+                    }
+                    // Add the chunk size to the header
+                    BufferUtil.putHexInt(_header, size);
+                    _header.put(HttpTokens.CRLF);
+                    
+                    // Need a CRLF after the content
+                    _needCRLF=true;
+                }
+                else if (_buffer!=null)
+                {
+                    int size = _buffer.length();
+                    if (size > 0)
+                    {
+                        // Prepare a chunk!
+                        _bufferChunked = true;
 
-                        if (_needCRLF)
+                        // Did we leave space at the start of the buffer.
+                        //noinspection ConstantConditions
+                        if (_buffer.getIndex() == CHUNK_SPACE)
                         {
+                            // Oh yes, goodie! let's use it then!
                             _buffer.poke(_buffer.getIndex() - 2, HttpTokens.CRLF, 0, 2);
                             _buffer.setGetIndex(_buffer.getIndex() - 2);
-                            _needCRLF = false;
-                        }
-                    }
-                    else
-                    {
-                        // No space so lets use the header buffer.
-                        if (_needCRLF)
-                        {
-                            if (_header.length() > 0) throw new IllegalStateException("EOC");
-                            _header.put(HttpTokens.CRLF);
-                            _needCRLF = false;
-                        }
-                        BufferUtil.putHexInt(_header, size);
-                        _header.put(HttpTokens.CRLF);
-                    }
+                            BufferUtil.prependHexInt(_buffer, size);
 
-                    // Add end chunk trailer.
-                    if (_buffer.space() >= 2)
-                        _buffer.put(HttpTokens.CRLF);
-                    else
-                        _needCRLF = true;
+                            if (_needCRLF)
+                            {
+                                _buffer.poke(_buffer.getIndex() - 2, HttpTokens.CRLF, 0, 2);
+                                _buffer.setGetIndex(_buffer.getIndex() - 2);
+                                _needCRLF = false;
+                            }
+                        }
+                        else
+                        {
+                            // No space so lets use the header buffer.
+                            if (_needCRLF)
+                            {
+                                if (_header.length() > 0) throw new IllegalStateException("EOC");
+                                _header.put(HttpTokens.CRLF);
+                                _needCRLF = false;
+                            }
+                            BufferUtil.putHexInt(_header, size);
+                            _header.put(HttpTokens.CRLF);
+                        }
+
+                        // Add end chunk trailer.
+                        if (_buffer.space() >= 2)
+                            _buffer.put(HttpTokens.CRLF);
+                        else
+                            _needCRLF = true;
+                    }
                 }
 
                 // If we need EOC and everything written

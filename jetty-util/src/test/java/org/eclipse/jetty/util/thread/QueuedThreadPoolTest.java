@@ -123,7 +123,7 @@ public class QueuedThreadPoolTest
         Thread.sleep(1100);
         int threads=tp.getThreads();
         assertTrue(threads<10);
-        Thread.sleep(1100);
+        Thread.sleep(2000);
         assertTrue(tp.getThreads()<threads);
         
         for (int i=9;i<jobs.length;i++)

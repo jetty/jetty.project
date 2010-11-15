@@ -32,11 +32,15 @@ import java.util.Arrays;
 import java.util.Random;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import junit.framework.Assert;
+
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Test;
 
 /**
@@ -212,7 +216,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                 // Read the response
                 String response=readResponse(client);
-
+                
                 // Check the response
                 assertEquals("response "+i,RESPONSE2,response);
             }
@@ -435,6 +439,137 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             client.close();
         }
     }
+    
+
+    @Test
+    public void testBigBlocks() throws Exception
+    {
+        configureServer(new BigBlockHandler());
+
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        client.setSoTimeout(10000);
+        try
+        {
+            OutputStream os=client.getOutputStream();
+            BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+
+            os.write((
+                    "GET / HTTP/1.1\r\n"+
+                    "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                    "\r\n"+
+                    "GET / HTTP/1.1\r\n"+
+                    "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                    "connection: close\r\n"+
+                    "\r\n"
+            ).getBytes());
+            os.flush();
+            
+            // read the chunked response header
+            boolean chunked=false;
+            boolean closed=false;
+            while(true)
+            {
+                String line=in.readLine();
+                if (line==null || line.length()==0)
+                    break;
+             
+                chunked|="Transfer-Encoding: chunked".equals(line);
+                closed|="Connection: close".equals(line);
+            }
+            Assert.assertTrue(chunked);
+            Assert.assertFalse(closed);
+            
+            // Read the chunks
+            int max=Integer.MIN_VALUE;
+            while(true)
+            {
+                String chunk=in.readLine();
+                String line=in.readLine();
+                if (line.length()==0)
+                    break;
+                int len=line.length();
+                Assert.assertEquals(Integer.valueOf(chunk,16).intValue(),len);
+                if (max<len)
+                    max=len;
+            }
+            
+            // Check that a direct content buffer was used as a chunk
+            Assert.assertEquals(1024*1024,max);
+            
+            // read and check the times are < 900ms
+            String[] times=in.readLine().split(",");
+            for (String t:times)
+                Assert.assertTrue(Integer.valueOf(t).intValue()<900);
+            
+            // read the EOF chunk
+            String end=in.readLine();
+            Assert.assertEquals("0",end);
+            end=in.readLine();
+            Assert.assertEquals(0,end.length());
+            
+
+            // read the non-chunked response header
+            chunked=false;
+            closed=false;
+            while(true)
+            {
+                String line=in.readLine();
+                if (line==null || line.length()==0)
+                    break;
+             
+                chunked|="Transfer-Encoding: chunked".equals(line);
+                closed|="Connection: close".equals(line);
+            }
+            Assert.assertFalse(chunked);
+            Assert.assertTrue(closed);
+            
+            String bigline = in.readLine();
+            Assert.assertEquals(10*1024*1024,bigline.length());
+
+            // read and check the times are < 900ms
+            times=in.readLine().split(",");
+            for (String t:times)
+                Assert.assertTrue(Integer.valueOf(t).intValue()<900);
+            
+            // check close
+            Assert.assertTrue(in.readLine()==null);
+        }
+        finally
+        {
+            client.close();
+        }
+    }
+
+    protected static class BigBlockHandler extends AbstractHandler
+    {
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            byte[] buf = new byte[1024*1024];
+            for (int i=0;i<buf.length;i++)
+                buf[i]=(byte)("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_".charAt(i%63));
+            
+            baseRequest.setHandled(true);
+            response.setStatus(200);
+            response.setContentType("text/plain");
+            ServletOutputStream out=response.getOutputStream();
+            long[] times=new long[10];
+            for (int i=0;i<times.length;i++)
+            {
+                long start=System.currentTimeMillis();
+                out.write(buf);
+                long end=System.currentTimeMillis();
+                times[i]=end-start;
+            }
+            out.println();
+            for (long t : times)
+            {
+                out.print(t);
+                out.print(",");
+            }
+            out.close();
+        }
+    }
+    
 
     @Test
     public void testPipeline() throws Exception
@@ -791,5 +926,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         os.flush();
         Thread.sleep(PAUSE);
     }
+
 
 }
