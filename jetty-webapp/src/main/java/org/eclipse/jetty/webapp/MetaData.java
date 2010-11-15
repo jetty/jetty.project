@@ -50,9 +50,12 @@ public class MetaData
     protected final List<Resource> _orderedWebInfJars = new ArrayList<Resource>(); 
     protected final List<Resource> _orderedContainerJars = new ArrayList<Resource>();
     protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
+    protected boolean allowDuplicateFragmentNames = false;
    
  
     
+  
+
     public static class OriginInfo
     {   
         protected String name;
@@ -209,7 +212,15 @@ public class MetaData
         descriptor.parse();
         
         if (descriptor.getName() != null)
-            _webFragmentNameMap.put(descriptor.getName(), descriptor);
+        {
+            Descriptor existing = _webFragmentNameMap.get(descriptor.getName());
+            if (existing != null && !isAllowDuplicateFragmentNames())
+            {
+                throw new IllegalStateException("Duplicate fragment name: "+descriptor.getName()+" for "+existing.getResource()+" and "+descriptor.getResource());
+            }
+            else
+                _webFragmentNameMap.put(descriptor.getName(), descriptor);
+        }
 
         //If web.xml has specified an absolute ordering, ignore any relative ordering in the fragment
         if (_ordering != null && _ordering.isAbsolute())
@@ -476,5 +487,14 @@ public class MetaData
     public void addContainerJar(Resource jar)
     {
         _orderedContainerJars.add(jar);
+    }
+    public boolean isAllowDuplicateFragmentNames()
+    {
+        return allowDuplicateFragmentNames;
+    }
+
+    public void setAllowDuplicateFragmentNames(boolean allowDuplicateFragmentNames)
+    {
+        this.allowDuplicateFragmentNames = allowDuplicateFragmentNames;
     }
 }

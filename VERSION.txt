@@ -7,6 +7,7 @@ jetty-8.0.0.M2-SNAPSHOT
  + 327416 Change meaning of @HandlesTypes in line with latest interpretation by JSR315
  + 327489 Change meaning of @MultipartConfig to match servlet spec 3.0 maintenance release 3.0a
  + 328008 Handle update to Servlet Spec 3 Section 8.2.3.h.ii
+ + 330188 Reject web-fragment.xml with same <name> as another already loaded one
  + Update to jetty-7.2.1.v20101111
 
 jetty-7.2.1.v20101111 11 November 2010
