@@ -53,7 +53,7 @@ import org.eclipse.jetty.xml.XmlParser;
 /**
  * StandardDescriptorProcessor
  *
- *
+ * Process a web.xml, web-defaults.xml, web-overrides.xml, web-fragment.xml.
  */
 public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 {
@@ -109,6 +109,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
     }
     
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     public void visitContextParam (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String name = node.getString("param-name", false, true);
@@ -152,6 +157,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     
 
     /* ------------------------------------------------------------ */
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitDisplayName(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //Servlet Spec 3.0 p. 74 Ignore from web-fragments
@@ -162,6 +172,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
     
+    
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitServlet(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String id = node.getAttribute("id");
@@ -583,31 +599,61 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             } 
         }
     }
+    
+    
 
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitServletMapping(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //Servlet Spec 3.0, p74
         //servlet-mappings are always additive, whether from web xml descriptors (web.xml/web-default.xml/web-override.xml) or web-fragments.
-        String servlet_name = node.getString("servlet-name", false, true);
-        ServletMapping mapping = new ServletMapping();
-        mapping.setServletName(servlet_name);
+        //Maintenance update 3.0a to spec:
+        //  Updated 8.2.3.g.v to say <servlet-mapping> elements are additive across web-fragments. 
+        //  <servlet-mapping> declared in web.xml overrides the mapping for the servlet specified in the web-fragment.xml
 
-        if (context.getMetaData().getOrigin(servlet_name+".servlet.mappings") == Origin.NotSet)
-            context.getMetaData().setOrigin(servlet_name+".servlet.mappings", descriptor);
+        String servlet_name = node.getString("servlet-name", false, true); 
+        Origin origin = context.getMetaData().getOrigin(servlet_name+".servlet.mappings");
         
-        List<String> paths = new ArrayList<String>();
-        Iterator<XmlParser.Node> iter = node.iterator("url-pattern");
-        while (iter.hasNext())
+        switch (origin)
         {
-            String p = iter.next().toString(false, true);
-            p = normalizePattern(p);
-            paths.add(p);
-        }
-        mapping.setPathSpecs((String[]) paths.toArray(new String[paths.size()]));
-        context.getServletHandler().addServletMapping(mapping);
+            case NotSet:
+            {
+                //no servlet mappings
+                context.getMetaData().setOrigin(servlet_name+".servlet.mappings", descriptor);
+                addServletMapping(servlet_name, node, context);
+                break;
+            }
+            case WebXml:
+            case WebDefaults:
+            case WebOverride:
+            {
+                //previously set by a web xml descriptor, if we're parsing another web xml descriptor allow override
+                //otherwise just ignore it
+                if (!(descriptor instanceof FragmentDescriptor))
+                {
+                   addServletMapping(servlet_name, node, context);
+                }
+                break;
+            }
+            case WebFragment:
+            {
+                //mappings previously set by another web-fragment, so merge in this web-fragment's mappings
+                addServletMapping(servlet_name, node, context);
+                break;
+            }
+        }        
     }
     
     
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitSessionConfig(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         XmlParser.Node tNode = node.get("session-timeout");
@@ -894,6 +940,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
     
+    
+    
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitMimeMapping(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String extension = node.getString("extension", false, true);
@@ -935,6 +988,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
     
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitWelcomeFileList(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         Origin o = context.getMetaData().getOrigin("welcome-file-list");
@@ -978,6 +1036,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
     
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitLocaleEncodingList(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         Iterator<XmlParser.Node> iter = node.iterator("locale-encoding-mapping");
@@ -1023,6 +1086,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitErrorPage(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String error = node.getString("error-code", false, true);
@@ -1076,6 +1144,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
        
     }
     
+    /**
+     * @param context
+     * @param node
+     */
     protected void addWelcomeFiles(WebAppContext context, XmlParser.Node node)
     {
         Iterator<XmlParser.Node> iter = node.iterator("welcome-file");
@@ -1089,6 +1161,79 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
     
+    
+    /**
+     * @param servletName
+     * @param node
+     * @param context
+     */
+    protected void addServletMapping (String servletName, XmlParser.Node node, WebAppContext context)
+    {
+        ServletMapping mapping = new ServletMapping();
+        mapping.setServletName(servletName);
+        
+        List<String> paths = new ArrayList<String>();
+        Iterator<XmlParser.Node> iter = node.iterator("url-pattern");
+        while (iter.hasNext())
+        {
+            String p = iter.next().toString(false, true);
+            p = normalizePattern(p);
+            paths.add(p);
+        }
+        mapping.setPathSpecs((String[]) paths.toArray(new String[paths.size()]));
+        context.getServletHandler().addServletMapping(mapping);
+    }
+    
+    /**
+     * @param filterName
+     * @param node
+     * @param context
+     */
+    protected void addFilterMapping (String filterName, XmlParser.Node node, WebAppContext context)
+    {
+        FilterMapping mapping = new FilterMapping();
+        mapping.setFilterName(filterName);
+
+        List<String> paths = new ArrayList<String>();
+        Iterator<XmlParser.Node>  iter = node.iterator("url-pattern");
+        while (iter.hasNext())
+        {
+            String p = iter.next().toString(false, true);
+            p = normalizePattern(p);
+            paths.add(p);
+        }
+        mapping.setPathSpecs((String[]) paths.toArray(new String[paths.size()]));
+
+        List<String> names = new ArrayList<String>();
+        iter = node.iterator("servlet-name");
+        while (iter.hasNext())
+        {
+            String n = ((XmlParser.Node) iter.next()).toString(false, true);
+            names.add(n);
+        }
+        mapping.setServletNames((String[]) names.toArray(new String[names.size()]));
+
+        
+        List<DispatcherType> dispatches = new ArrayList<DispatcherType>();
+        iter=node.iterator("dispatcher");
+        while(iter.hasNext())
+        {
+            String d=((XmlParser.Node)iter.next()).toString(false,true);
+            dispatches.add(FilterMapping.dispatch(d));
+        }
+        
+        if (dispatches.size()>0)
+            mapping.setDispatcherTypes(EnumSet.copyOf(dispatches));
+
+        context.getServletHandler().addFilterMapping(mapping);
+    }
+    
+    
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitTagLib(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //Additive across web.xml and web-fragment.xml
@@ -1098,6 +1243,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         context.setResourceAlias(uri, location);
     }
     
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitJspConfig(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {  
         for (int i = 0; i < node.size(); i++)
@@ -1143,6 +1293,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
     
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitSecurityConstraint(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         Constraint scBase = new Constraint();
@@ -1228,6 +1383,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
     
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     * @throws Exception
+     */
     protected void visitLoginConfig(WebAppContext context, Descriptor descriptor, XmlParser.Node node) throws Exception
     {
         //ServletSpec 3.0 p74 says elements present 0/1 time if specified in web.xml take
@@ -1388,6 +1549,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
     
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitSecurityRole(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //ServletSpec 3.0, p74 elements with multiplicity >1 are additive when merged
@@ -1397,6 +1563,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     }
     
     
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitFilter(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String name = node.getString("filter-name", false, true);
@@ -1526,52 +1697,58 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         
     }
 
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitFilterMapping(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //Servlet Spec 3.0, p74
         //filter-mappings are always additive, whether from web xml descriptors (web.xml/web-default.xml/web-override.xml) or web-fragments.
+        //Maintenance update 3.0a to spec:
+        //  Updated 8.2.3.g.v to say <servlet-mapping> elements are additive across web-fragments. 
+      
         
         String filter_name = node.getString("filter-name", false, true);
-
-        FilterMapping mapping = new FilterMapping();
-
-        mapping.setFilterName(filter_name);
-
-        List<String> paths = new ArrayList<String>();
-        Iterator<XmlParser.Node>  iter = node.iterator("url-pattern");
-        while (iter.hasNext())
-        {
-            String p = iter.next().toString(false, true);
-            p = normalizePattern(p);
-            paths.add(p);
-        }
-        mapping.setPathSpecs((String[]) paths.toArray(new String[paths.size()]));
-
-        List<String> names = new ArrayList<String>();
-        iter = node.iterator("servlet-name");
-        while (iter.hasNext())
-        {
-            String n = ((XmlParser.Node) iter.next()).toString(false, true);
-            names.add(n);
-        }
-        mapping.setServletNames((String[]) names.toArray(new String[names.size()]));
-
         
-        List<DispatcherType> dispatches = new ArrayList<DispatcherType>();
-        iter=node.iterator("dispatcher");
-        while(iter.hasNext())
-        {
-            String d=((XmlParser.Node)iter.next()).toString(false,true);
-            dispatches.add(FilterMapping.dispatch(d));
-        }
+        Origin origin = context.getMetaData().getOrigin(filter_name+".filter.mappings");
         
-        if (dispatches.size()>0)
-            mapping.setDispatcherTypes(EnumSet.copyOf(dispatches));
-
-        context.getServletHandler().addFilterMapping(mapping);
+        switch (origin)
+        {
+            case NotSet:
+            {
+                //no filtermappings for this filter yet defined
+                context.getMetaData().setOrigin(filter_name+".filter.mappings", descriptor);
+                addFilterMapping(filter_name, node, context);
+                break;
+            }
+            case WebDefaults:
+            case WebOverride:
+            case WebXml:
+            {
+                //filter mappings defined in a web xml file. If we're processing a fragment, we ignore filter mappings.
+                if (!(descriptor instanceof FragmentDescriptor))
+                {
+                   addFilterMapping(filter_name, node, context);
+                }
+                break;
+            }
+            case WebFragment:
+            {
+                //filter mappings first defined in a web-fragment, allow other fragments to add
+                addFilterMapping(filter_name, node, context);
+                break;
+            }
+        }
     }
 
     
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitListener(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String className = node.getString("listener-class", false, true);
@@ -1613,6 +1790,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
     
+    /**
+     * @param context
+     * @param descriptor
+     * @param node
+     */
     protected void visitDistributable(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         // the element has no content, so its simple presence
@@ -1621,6 +1803,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         ((WebDescriptor)descriptor).setDistributable(true);
     }
     
+    /**
+     * @param context
+     * @param clazz
+     * @return
+     * @throws ServletException
+     * @throws InstantiationException
+     * @throws IllegalAccessException
+     */
     protected EventListener newListenerInstance(WebAppContext context,Class<? extends EventListener> clazz) throws ServletException, InstantiationException, IllegalAccessException
     {
         try
@@ -1638,6 +1828,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
     
+    /**
+     * @param p
+     * @return
+     */
     protected String normalizePattern(String p)
     {
         if (p != null && p.length() > 0 && !p.startsWith("/") && !p.startsWith("*")) return "/" + p;
