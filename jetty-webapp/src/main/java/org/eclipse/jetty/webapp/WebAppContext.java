@@ -139,7 +139,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _configurationDiscovered=true;
     private boolean _configurationClassesSet=false;
     private boolean _configurationsSet=false;
+    private boolean _allowDuplicateFragmentNames = false;
     
+  
     private MetaData _metadata;
 
     public static WebAppContext getCurrentWebAppContext()
@@ -245,7 +247,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _configurations = new Configuration[]{new CloneConfiguration(template)};
 
         // TODO we need some better way to work out what attributes should be copied at this stage.
-        
+        setAllowDuplicateFragmentNames(template.isAllowDuplicateFragmentNames());
         setAliases(template.isAliases());
         setBaseResource(template.getBaseResource());
         setClassLoader(template.getClassLoader()); 
@@ -488,6 +490,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         try
         {
+            if (_metadata != null)
+                _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
             preConfigure();
             super.doStart();
             postConfigure();
@@ -1146,6 +1150,21 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 setConfigurationClasses(serverConfigs);
         }
     }
+    
+    
+    /* ------------------------------------------------------------ */
+    public boolean isAllowDuplicateFragmentNames()
+    {
+        return _allowDuplicateFragmentNames;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    public void setAllowDuplicateFragmentNames(boolean allowDuplicateFragmentNames)
+    {
+        _allowDuplicateFragmentNames = allowDuplicateFragmentNames;
+    }
+
 
     /* ------------------------------------------------------------ */
     @Override

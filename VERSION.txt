@@ -1,3 +1,7 @@
+jetty-7.2.2-SNAPSHOT
+ + 330188 Reject web-fragment.xml with same <name> as another already loaded one
+ + 330208 Support new wording on servlet-mapping and filter-mapping merging from servlet3.0a
+
 jetty-7.2.1.v20101111 11 November 2010
  + 324679 Fixed dedection of write before static content
  + 328199 Ensure blocking connectors always close socket
