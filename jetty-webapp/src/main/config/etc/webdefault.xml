@@ -127,7 +127,7 @@
     </init-param>
     <init-param>
       <param-name>maxCachedFileSize</param-name>
-      <param-value>10000000</param-value>
+      <param-value>200000000</param-value>
     </init-param>
     <init-param>
       <param-name>maxCachedFiles</param-name>

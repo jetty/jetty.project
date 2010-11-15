@@ -77,15 +77,7 @@ public class Main
     public static void main(String[] args)
     {
         Main main = new Main();
-        try
-        {
-            main.parseCommandLine(args);
-        }
-        catch (Throwable t)
-        {
-            t.printStackTrace(System.err);
-            System.exit(ERR_UNKNOWN);
-        }
+        main.parseCommandLine(args);
     }
 
     public void parseCommandLine(String[] args)
@@ -186,7 +178,7 @@ public class Main
                         // Output about error is lost in majority of cases.
                         System.err.println("Unable to create: " + startLog.getAbsolutePath());
                         // Toss a unique exit code indicating this failure.
-                        System.exit(ERR_LOGGING);
+                        usageExit(ERR_LOGGING);
                     }
 
                     if (!startLog.canWrite())
@@ -194,7 +186,7 @@ public class Main
                         // Output about error is lost in majority of cases.
                         System.err.println("Unable to write to: " + startLog.getAbsolutePath());
                         // Toss a unique exit code indicating this failure.
-                        System.exit(ERR_LOGGING);
+                        usageExit(ERR_LOGGING);
                     }
                     PrintStream logger = new PrintStream(new FileOutputStream(startLog,false));
                     System.setOut(logger);
@@ -272,7 +264,7 @@ public class Main
                 if (xmls.contains(arg))
                 {
                     System.out.println("WARN: Argument '"+arg+"' specified multiple times. Check start.ini?");
-                    System.out.println("Use java -jar start.jar --help for usage information.");
+                    System.out.println("Use \"java -jar start.jar --help\" for more information.");
                 }
                 xmls.add(arg);
             }
@@ -281,9 +273,7 @@ public class Main
         }
         catch (Throwable t)
         {
-            t.printStackTrace(System.err);
-            System.out.println("Use java -jar start.jar --help for usage information.");
-            System.exit(ERR_UNKNOWN);
+            usageExit(t,ERR_UNKNOWN);
         }
     }
 
@@ -294,7 +284,7 @@ public class Main
     {
         String jettyHome=System.getProperty("jetty.home");
         File startIniFile = ini==null?((jettyHome!=null)?  new File(jettyHome,"start.ini"):new File("start.ini")):new File(ini);
-        if (!startIniFile.exists() || !startIniFile.canRead())
+        if (!startIniFile.exists())
         {
             if (ini != null)
             {
@@ -326,8 +316,7 @@ public class Main
         }
         catch (IOException e)
         {
-            e.printStackTrace(System.err);
-            System.exit(ERR_UNKNOWN);
+            usageExit(e,ERR_UNKNOWN);
         }
         finally
         {
@@ -345,9 +334,8 @@ public class Main
 
         if (usageStream == null)
         {
-            System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
             System.err.println("ERROR: detailed usage resource unavailable");
-            System.exit(EXIT_USAGE);
+            usageExit(EXIT_USAGE);
         }
 
         BufferedReader buf = null;
@@ -438,7 +426,7 @@ public class Main
         }
         catch (IOException e)
         {
-            e.printStackTrace(System.err);
+            usageExit(e,EXIT_USAGE);
         }
         finally
         {
@@ -474,9 +462,7 @@ public class Main
 
             if (invoked_class == null)
             {
-                System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
-                System.err.println("       java -jar start.jar --help  # for more information");
-                System.exit(ERR_INVOKE_MAIN);
+                usageExit(ERR_INVOKE_MAIN);
                 return;
             }
         }
@@ -548,8 +534,6 @@ public class Main
             System.err.println("classloader.parent=" + cl.getParent());
             System.err.println("properties="+_config.getProperties());
         }
-
-        System.err.println("properties="+_config.getProperties());
         
         // Show the usage information and return
         if (_showUsage)
@@ -635,8 +619,7 @@ public class Main
         }
         catch (Exception e)
         {
-            e.printStackTrace(System.err);
-            System.exit(ERR_INVOKE_MAIN);
+            usageExit(e,ERR_INVOKE_MAIN);
         }
     }
 
@@ -952,8 +935,7 @@ public class Main
         }
         catch (Exception e)
         {
-            e.printStackTrace(System.err);
-            System.exit(ERR_SECURITY);
+            usageExit(e,ERR_SECURITY);
         }
     }
 
@@ -987,8 +969,7 @@ public class Main
         }
         catch (Exception e)
         {
-            e.printStackTrace(System.err);
-            System.exit(ERR_UNKNOWN);
+            usageExit(e,ERR_UNKNOWN);
         }
         finally
         {
@@ -1042,8 +1023,7 @@ public class Main
         }
         catch (Exception e)
         {
-            e.printStackTrace();
-            System.exit(ERR_UNKNOWN);
+            usageExit(e,ERR_UNKNOWN);
             return null; // never executed (just here to satisfy javac compiler)
         }
         finally
@@ -1117,13 +1097,28 @@ public class Main
         }
         catch (ConnectException e)
         {
-            System.err.println("ERROR: Not running!");
-            System.exit(ERR_NOT_STOPPED);
+            usageExit(e,ERR_NOT_STOPPED);
         }
         catch (Exception e)
         {
-            e.printStackTrace(System.err);
-            System.exit(ERR_UNKNOWN);
+            usageExit(e,ERR_UNKNOWN);
         }
+    }
+    
+
+    static void usageExit(Throwable t, int exit)
+    {
+        t.printStackTrace(System.err);
+        System.err.println();
+        System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
+        System.err.println("       java -jar start.jar --help  # for more information");
+        System.exit(exit);
+    }
+    static void usageExit(int exit)
+    {
+        System.err.println();
+        System.err.println("Usage: java -jar start.jar [options] [properties] [configs]");
+        System.err.println("       java -jar start.jar --help  # for more information");
+        System.exit(exit);
     }
 }

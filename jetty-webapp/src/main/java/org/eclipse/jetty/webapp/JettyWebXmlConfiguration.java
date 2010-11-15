@@ -97,13 +97,15 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
      */
     private void setupXmlConfiguration(XmlConfiguration jetty_config, Resource web_inf)
     {
-    	Map<Object,Object> props = jetty_config.getProperties();
+    	Map<String,String> props = jetty_config.getProperties();
     	if (props == null)
     	{
-    		props = new HashMap<Object, Object>();
+    		props = new HashMap<String, String>();
     		jetty_config.setProperties(props);
     	}
-    	props.put(PROPERTY_THIS_WEB_INF_URL, web_inf.getURL());
+    	
+    	// TODO - should this be an id rather than a property?
+    	props.put(PROPERTY_THIS_WEB_INF_URL, String.valueOf(web_inf.getURL()));
     }
     
 }

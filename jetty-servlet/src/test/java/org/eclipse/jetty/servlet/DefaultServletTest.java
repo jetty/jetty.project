@@ -532,7 +532,7 @@ public class DefaultServletTest
         String response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 12",response);
         assertResponseNotContains("Extra Info",response);
-        
+
         context.addFilter(OutputFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 2",response); // 20 something long

@@ -107,7 +107,7 @@ public class MultiPartInputStream
       
         protected void write (int b)
         throws IOException, ServletException
-        {           
+        {      
             if (MultiPartInputStream.this._config.getMaxFileSize() > 0 && _size + 1 > MultiPartInputStream.this._config.getMaxFileSize())
                 throw new ServletException ("Multipart Mime part "+_name+" exceeds max filesize");
             

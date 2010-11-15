@@ -248,27 +248,27 @@ public class ServerInstanceWrapper {
     	{
     		return;
     	}
-    	Map<Object,Object> id_map = new HashMap<Object,Object>();
+    	Map<String,Object> id_map = new HashMap<String,Object>();
         id_map.put("Server",server);
-        Map<Object,Object> properties = new HashMap<Object,Object>();
-        Enumeration en = props.keys();
+        Map<String,String> properties = new HashMap<String,String>();
+        Enumeration<Object> en = props.keys();
         while (en.hasMoreElements())
         {
-        	Object key = en.nextElement();
-        	Object value = props.get(key);
-        	properties.put(key, value);
+            Object key = en.nextElement();
+            Object value = props.get(key);
+            properties.put(String.valueOf(key), String.valueOf(value));
         }
 
         for (URL jettyConfiguration : jettyConfigurations)
         {
-        	InputStream is = null;
+            InputStream is = null;
             try
             {
                 // Execute a Jetty configuration file
             	is = jettyConfiguration.openStream();
                 XmlConfiguration config = new XmlConfiguration(is);
-                config.setIdMap(id_map);
-                config.setProperties(properties);
+                config.getIdMap().putAll(id_map);
+                config.getProperties().putAll(properties);
                 config.configure();
                 id_map=config.getIdMap();
             }

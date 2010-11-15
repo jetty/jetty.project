@@ -419,10 +419,6 @@ public abstract class SelectorManager extends AbstractLifeCycle
                             key.attach(endpoint);
                             endpoint.schedule();
                         }
-                        else if (change instanceof Closer)
-                        {
-                            ((Closer)change).close();
-                        }
                         else if (change instanceof Runnable)
                         {
                             dispatch((Runnable)change);
@@ -790,33 +786,44 @@ public abstract class SelectorManager extends AbstractLifeCycle
         /* ------------------------------------------------------------ */
         void stop() throws Exception
         {
-            final CountDownLatch closed = new CountDownLatch(1);
-            
-            // Create runnable to close all end points
-            Closer close = new Closer()
+            // Spin for a while waiting for selector to complete 
+            // to avoid unneccessary closed channel exceptions
+            try
             {
-                public void close()
+                for (int i=0;i<100 && _selecting!=null;i++)
                 {
-                    try
-                    {
-                        super.close();
-                    }
-                    finally
-                    {
-                        closed.countDown();
-                    } 
+                    wakeup();
+                    Thread.sleep(1);
                 }
-            };
-            
-            // Try to get the selector to run the close as a change
-            addChange(close);
+            }
+            catch(Exception e)
+            {
+                Log.ignore(e);
+            }
 
-            // if it has not been called, call it directly
-            if (!closed.await(1,TimeUnit.SECONDS))
-                close.close();   
-            
+            // close endpoints and selector
             synchronized (this)
             {
+                for (SelectionKey key:_selector.keys())
+                {
+                    if (key==null)
+                        continue;
+                    Object att=key.attachment();
+                    if (att instanceof EndPoint)
+                    {
+                        EndPoint endpoint = (EndPoint)att;
+                        try
+                        {
+                            endpoint.close();
+                        }
+                        catch(IOException e)
+                        {
+                            Log.ignore(e);
+                        }
+                    }
+                }
+            
+            
                 _timeout.cancelAll();
                 try
                 {
@@ -847,30 +854,6 @@ public abstract class SelectorManager extends AbstractLifeCycle
             }
         }
 
-        private class Closer
-        {
-            public void close()
-            {
-                for (SelectionKey key:_selector.keys())
-                {
-                    if (key==null)
-                        continue;
-                    Object att=key.attachment();
-                    if (att instanceof EndPoint)
-                    {
-                        EndPoint endpoint = (EndPoint)att;
-                        try
-                        {
-                            endpoint.close();
-                        }
-                        catch(IOException e)
-                        {
-                            Log.ignore(e);
-                        }
-                    }
-                }
-            }   
-        }
     }
 
     /* ------------------------------------------------------------ */

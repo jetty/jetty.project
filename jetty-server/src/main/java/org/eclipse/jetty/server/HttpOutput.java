@@ -39,7 +39,7 @@ public class HttpOutput extends ServletOutputStream
     protected final AbstractGenerator _generator;
     protected final long _maxIdleTime;
     protected final ByteArrayBuffer _buf = new ByteArrayBuffer(AbstractGenerator.NO_BYTES);
-    protected boolean _closed;
+    private boolean _closed;
     
     // These are held here for reuse by Writer
     String _characterEncoding;
@@ -58,7 +58,7 @@ public class HttpOutput extends ServletOutputStream
     /* ------------------------------------------------------------ */
     public boolean isWritten()
     {
-        return _generator.isContentWritten();
+        return _generator.getContentWritten()>0;
     }
     
     /* ------------------------------------------------------------ */
@@ -69,6 +69,12 @@ public class HttpOutput extends ServletOutputStream
     public void close() throws IOException
     {
         _closed=true;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public boolean isClosed()
+    {
+        return _closed;
     }
     
     /* ------------------------------------------------------------ */
@@ -132,7 +138,7 @@ public class HttpOutput extends ServletOutputStream
             // Buffers are full so flush.
             flush();
        
-        if (_generator.isContentWritten())
+        if (_generator.isAllContentWritten())
         {
             flush();
             close();
@@ -164,7 +170,7 @@ public class HttpOutput extends ServletOutputStream
         if (_generator.isBufferFull())
             flush();
         
-        if (_generator.isContentWritten())
+        if (_generator.isAllContentWritten())
         {
             flush();
             close();

@@ -66,7 +66,6 @@ public class DefaultJettyAtJettyHomeHelper {
      */
     public static final String SYS_PROP_JETTY_PORT_SSL = "jetty.port.ssl";
 	
-
     /**
      * Called by the JettyBootStrapActivator.
      * If the system property jetty.home is defined and points to a folder,
@@ -93,15 +92,19 @@ public class DefaultJettyAtJettyHomeHelper {
     	Bundle jettyHomeBundle = null;
     	if (jettyHomeSysProp != null)
     	{
+    		//bug 329621
+    		if (jettyHomeSysProp.startsWith("\"") && jettyHomeSysProp.endsWith("\"")) {
+    			jettyHomeSysProp = jettyHomeSysProp.substring(1, jettyHomeSysProp.length() - 1);
+    		}
     		if (jettyHomeBundleSysProp != null)
     		{
-    			System.err.println("WARN: both the jetty.home property and the jetty.home.bundle property are defined."
+    			Log.warn("Both the jetty.home property and the jetty.home.bundle property are defined."
     					+ " jetty.home.bundle is not taken into account.");
     		}
     		jettyHome = new File(jettyHomeSysProp);
     		if (!jettyHome.exists() || !jettyHome.isDirectory())
     		{
-    			System.err.println("Unable to locate the jetty.home folder " + jettyHomeSysProp);
+    			Log.warn("Unable to locate the jetty.home folder " + jettyHomeSysProp);
     			return;
     		}
     	}
@@ -117,14 +120,14 @@ public class DefaultJettyAtJettyHomeHelper {
     		}
     		if (jettyHomeBundle == null)
     		{
-    			System.err.println("Unable to find the jetty.home.bundle named " + jettyHomeSysProp);
+    			Log.warn("Unable to find the jetty.home.bundle named " + jettyHomeSysProp);
     			return;
     		}
     		
     	}
     	if (jettyHome == null && jettyHomeBundle == null)
     	{
-    		System.err.println("No default jetty started.");
+    		Log.warn("No default jetty started.");
     		return;
     	}
 		try

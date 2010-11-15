@@ -436,7 +436,6 @@ public class HttpConnectionTest
                 "\015\012"
              );
 
-            System.err.println(response);
             offset = checkContains(response, offset, "HTTP/1.1 500");
         }
         catch(Exception e)

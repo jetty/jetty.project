@@ -146,7 +146,7 @@ public class Scanner
     /* ------------------------------------------------------------ */
     /**
      * @param recursive True if scanning is recursive
-     * @deprecated Use {@link #setScanDepth()}
+     * @see  #setScanDepth()
      */
     public void setRecursive (boolean recursive)
     {
@@ -155,8 +155,8 @@ public class Scanner
     
     /* ------------------------------------------------------------ */
     /**
-     * @return True if scanning is fully recursive
-     * @deprecated Use {@link #getScanDepth()}
+     * @return True if scanning is fully recursive (scandepth==-1)
+     * @see #getScanDepth()
      */
     public boolean getRecursive ()
     {

@@ -7,8 +7,10 @@ jetty-8.0.0.M2-SNAPSHOT
  + 327416 Change meaning of @HandlesTypes in line with latest interpretation by JSR315
  + 327489 Change meaning of @MultipartConfig to match servlet spec 3.0 maintenance release 3.0a
  + 328008 Handle update to Servlet Spec 3 Section 8.2.3.h.ii
+ + Update to jetty-7.2.1.v20101111
 
-jetty-7.2.1-SNAPSHOT
+jetty-7.2.1.v20101111 11 November 2010
+ + 324679 Fixed dedection of write before static content
  + 328199 Ensure blocking connectors always close socket
  + 328205 Improved SelectManager stopping
  + 328306 Serialization of FormAuthentication
@@ -18,8 +20,16 @@ jetty-7.2.1-SNAPSHOT
  + 328778 Improved javadoc for secure session cookies
  + 328782 allow per connection max idle time to be set
  + 328885 web overrides do not override
+ + 328988 Idle saving of session values
+ + 329180 Spin check for Selector to stop
+ + 329410 Enforce XmlConfiguration properties as Map<String,String>
+ + 329602 only clear ServletContext attributes on doStop
+ + 329642 Concurrent modification exception in Deployment Manager
+ + 329643 Improved deployment of resource collections
+ + JETTY-748 Prevent race close of socket by old acceptor threads
  + JETTY-1291 Extract query parameters even if POST content consumed
  + JETTY-1295 Contexts mixed up when hot-deploying on virtual hosts
+ + JETTY-1297 Make ServletContext.getContext(String) virtual host aware
 
 jetty-7.2.0.v20101020 20 October 2010
  + 289540 added javadoc into distribution

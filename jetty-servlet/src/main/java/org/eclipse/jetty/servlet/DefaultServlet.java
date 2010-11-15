@@ -249,8 +249,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 throw new UnavailableException("resourceCache specified with resource bases");
             _cache=(ResourceCache)_servletContext.getAttribute(resourceCache);
 
-            if (_cache==null)
-                Log.debug("Could not find resourceCache "+resourceCache);
+            Log.debug("Cache {}={}",resourceCache,_cache);
         }
 
         try
@@ -758,15 +757,15 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
             // has a filter already written to the response?
             written = out instanceof HttpOutput 
-                ? !((HttpOutput)out).isWritten() 
-                : HttpConnection.getCurrentConnection().getGenerator().isContentWritten();
+                ? ((HttpOutput)out).isWritten() 
+                : HttpConnection.getCurrentConnection().getGenerator().isWritten();
         }
         catch(IllegalStateException e) 
         {
             out = new WriterOutputStream(response.getWriter());
             written=true; // there may be data in writer buffer, so assume written
         }
-
+        
         if ( reqRanges == null || !reqRanges.hasMoreElements() || content_length<0)
         {
             //  if there were no ranges, send entire entity
@@ -776,7 +775,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             }
             else
             {
-                
                 // See if a direct methods can be used?
                 if (content!=null && !written && out instanceof HttpOutput)
                 {

@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -52,15 +53,13 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  * context classloader will be used.  If that is null then the 
  * classloader that loaded this class is used as the parent.
  * 
- * 
  */
 public class WebAppClassLoader extends URLClassLoader 
 {
+    private final Context _context;
+    private final ClassLoader _parent;
+    private final Set<String> _extensions=new HashSet<String>();
     private String _name=String.valueOf(hashCode());
-    private Context _context;
-    private ClassLoader _parent;
-    private HashSet<String> _extensions;
-    
     
     /* ------------------------------------------------------------ */
     /** The Context in which the classloader operates.
@@ -142,10 +141,10 @@ public class WebAppClassLoader extends URLClassLoader
         if (_parent==null)
             throw new IllegalArgumentException("no parent classloader!");
         
-        _extensions = new HashSet<String>();
         _extensions.add(".jar");
         _extensions.add(".zip");
         
+        // TODO remove this system property
         String extensions = System.getProperty(WebAppClassLoader.class.getName() + ".extensions");
         if(extensions!=null)
         {
@@ -222,25 +221,22 @@ public class WebAppClassLoader extends URLClassLoader
             if (Log.isDebugEnabled())
                 Log.debug("Path resource=" + resource);
 
-            // Resolve file path if possible
-            File file= resource.getFile();
-            if (file != null)
-            {
-                URL url= resource.getURL();
-                addURL(url);
-            }
+            // Add the resource
+            if (resource.isDirectory() && resource instanceof ResourceCollection)
+                addClassPath(resource);
             else
             {
-                // Add resource or expand jar/
-                if (!resource.isDirectory() && file == null)
-                {
-                    throw new IllegalArgumentException("!file: "+resource);
-                }
-                else
+                // Resolve file path if possible
+                File file= resource.getFile();
+                if (file != null)
                 {
                     URL url= resource.getURL();
                     addURL(url);
                 }
+                else if (resource.isDirectory())
+                    addURL(resource.getURL());
+                else
+                    throw new IllegalArgumentException("!file: "+resource);
             }
         }
     }
@@ -286,12 +282,6 @@ public class WebAppClassLoader extends URLClassLoader
             }
         }
     }
-    /* ------------------------------------------------------------ */
-    public void destroy()
-    {
-        this._parent=null;
-    }
-    
 
     /* ------------------------------------------------------------ */
     public PermissionCollection getPermissions(CodeSource cs)
@@ -307,7 +297,6 @@ public class WebAppClassLoader extends URLClassLoader
     {
         boolean system_class=_context.isSystemClass(name);
         boolean server_class=_context.isServerClass(name);
-        
         
         List<URL> from_parent = toList(server_class?null:_parent.getResources(name));
         List<URL> from_webapp = toList((system_class&&!from_parent.isEmpty())?null:this.findResources(name));
@@ -442,9 +431,6 @@ public class WebAppClassLoader extends URLClassLoader
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        if (Log.isDebugEnabled())
-            return "WebAppClassLoader@" + _name + "(" + LazyList.array2List(getURLs()) + ") / " + _parent;
         return "WebAppClassLoader@" + _name;
     }
-    
 }

@@ -185,4 +185,35 @@ public class WebSocketTest
         {
         }
     }
+    
+
+    /* draft 03 nonce proposal
+    public static void main(String[] arg) throws Exception
+    {
+        String cnonce="A23F2BCA452DDE01";
+        byte[] cnb = TypeUtil.fromHexString(cnonce);
+        
+        String snonce="15F0D2278BCD457F";
+        byte[] snb = TypeUtil.fromHexString(snonce);
+        
+        
+        MessageDigest md=MessageDigest.getInstance("MD5");
+        md.update(cnb);
+        md.update("WebSocket".getBytes("ASCII"));
+        md.update(snb);
+        
+        byte[] digest = md.digest();
+        
+        System.err.println(TypeUtil.toHexString(digest));
+        
+        md.reset();
+        md.update(snb);
+        md.update("WebSocket".getBytes("ASCII"));
+        md.update(cnb);
+        digest = md.digest();
+        
+        System.err.println(TypeUtil.toHexString(digest));
+        
+    }
+    */
 }

@@ -64,7 +64,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
     private int _lowResourcesConnections;
     private int _lowResourcesMaxIdleTime;
     private int _localPort=-1;
-    private Throwable _closedBy;
 
     private final SelectorManager _manager = new SelectorManager()
     {
@@ -142,7 +141,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
                 _acceptChannel.close();
             _acceptChannel = null;
             _localPort=-2;
-            _closedBy=new Throwable();
         }
     }
 
@@ -176,8 +174,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
     {
         synchronized(this)
         {
-            if (_localPort<0)
-                Log.warn("Closed By",_closedBy);
             return _localPort;
         }
     }

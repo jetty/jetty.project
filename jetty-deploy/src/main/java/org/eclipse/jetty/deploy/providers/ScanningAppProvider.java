@@ -213,14 +213,18 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     }
 
     /* ------------------------------------------------------------ */
-    @Deprecated
+    /**
+     * @deprecated use {@link #setMonitoredDirResource(Resource)}
+     */
     public void setMonitoredDir(Resource dir)
     {
         setMonitoredDirResource(dir);
     }
 
     /* ------------------------------------------------------------ */
-    @Deprecated
+    /** 
+     * @deprecated use {@link #setMonitoredDirName(String)}
+     */
     public void setMonitoredDir(String dir)
     {
         setMonitoredDirName(dir);

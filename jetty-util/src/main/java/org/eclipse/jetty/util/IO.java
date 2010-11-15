@@ -44,7 +44,7 @@ public class IO
         CRLF_BYTES    = {(byte)'\015',(byte)'\012'};
 
     /* ------------------------------------------------------------------- */
-    public static int bufferSize = 2*8192;
+    public static int bufferSize = 64*1024;
     
     /* ------------------------------------------------------------------- */
     // TODO get rid of this singleton!
