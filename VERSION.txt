@@ -24,6 +24,31 @@ jetty-7.2.1.v20101111 11 November 2010
  + JETTY-1295 Contexts mixed up when hot-deploying on virtual hosts
  + JETTY-1297 Make ServletContext.getContext(String) virtual host aware
 
+Jetty-6.1.26 10 November 2010
+ + JETTY-748 Prevent race close of socket by old acceptor threads
+ + JETTY-1239 HTAccessHandler [allow from 127.0.0.1] does not work
+ + JETTY-1291 Extract query parameters even if POST content consumed
+ + JETTY-1293 Avoid usage of String.split
+ + JETTY-1296 Always clear changes list in selectManager
+
+Jetty-6.1.26.RC0 20 October 2010
+ + JETTY-547 Improved usage of shutdownOutput before close.
+ + JETTY-912 add per exchange timeout
+ + JETTY-1051 offer jetty.skip flag for maven plugin
+ + JETTY-1096 exclude maven and plexus classes from jetty plugin
+ + JETTY-1248 Infinite loop creating temp MultiPart files
+ + JETTY-1264 Idle timer deadlock
+ + JETTY-1271 Handle unavailable request
+ + JETTY-1278 J2se6 SPI filter handling fix
+ + JETTY-1283 Allow JSONPojoConvertorFactory to set fromJSON
+ + JETTY-1287 rewrite handler thread safe issue resolved
+ + JETTY-1288 info when atypical classloader set to WebAppContext
+ + JETTY-1289 MRU cache for filter chains
+ + JETTY-1292 close input streams after keystore.load()
+ + 325468 Clean work webapp dir before unpack
+ + 327109 Fixed AJP handling of empty packets
+ + 327562 Implement all X-Forwarded headers in ProxyServlet
+
 jetty-7.2.0.v20101020 20 October 2010
  + 289540 added javadoc into distribution
  + 297154 add source distribution artifact
@@ -132,6 +157,17 @@ jetty-7.1.5.v20100705
  + 316909 CNFE: org.xml.sax.SAXException on org.eclipse.jetty.osgi.boot start with jsp fragment
  + 317231 Ability to configure jetty with a fragment bundle that contains etc/jetty.xml
  + 319060 Support web-bundles that are not expanded (bundle is zipped)
+
+Jetty-6.1.25 26 July 2010
+ + Jetty-6 is now in maintenance mode.
+ + JETTY-1212 Long content lengths
+ + JETTY-1214 Avoid ISE when scavenging invalid session
+ + JETTY-1223 DefaultServlet: NPE when setting relativeResourceBase and resourceBase is not set
+ + JETTY-1226 javax.activation needs to be listed in the system classes
+ + JETTY-1237 Remember local/remote details of endpoint
+ + JETTY-1251 protected against closed selector
+ + COMETD-112 if two threads create the same channel, then create events may occur after subscribe events
+ + 320264 Removed duplicate mime.property entries
 
 jetty-7.1.4.v20100610
  + 298551 SslSocketConnector does not need keystore stream
