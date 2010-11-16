@@ -63,7 +63,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         assertEquals(-1, is.read());
 
         Assert.assertTrue(System.currentTimeMillis()-start>200);
-        Assert.assertTrue(System.currentTimeMillis()-start<1000);
+        Assert.assertTrue(System.currentTimeMillis()-start<5000);
     }
     
 
