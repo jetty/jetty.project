@@ -16,7 +16,12 @@ package org.eclipse.jetty.util.thread;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import junit.framework.Assert;
 
 import org.junit.Test;
 
@@ -24,56 +29,70 @@ import org.junit.Test;
 public class QueuedThreadPoolTest
 {
     final AtomicInteger _jobs=new AtomicInteger();
-    volatile long _sleep=100;
     
     class RunningJob implements Runnable
     {
-        public volatile boolean _running=true;
+        private final CountDownLatch _latch = new CountDownLatch(3);
         public void run()
         {
             try 
             {
-                while(_running)
-                    Thread.sleep(_sleep);
+                _latch.countDown();
+                while(_latch.getCount()>=2)
+                    Thread.sleep(10);
             }
             catch(Exception e)
             {
                 e.printStackTrace();
             }
-      
-            _jobs.incrementAndGet();
+            finally
+            {
+                _jobs.incrementAndGet();
+                _latch.countDown();
+            }
+        }
+        
+        public void stop() throws InterruptedException
+        {
+            if (_latch.getCount()<=1)
+                throw new IllegalStateException();
+            _latch.countDown();
+            if (!_latch.await(10,TimeUnit.SECONDS))
+                throw new IllegalStateException(); 
         }
     };   
-    
     
     
     @Test
     public void testThreadPool() throws Exception
     {        
-        _sleep=100;
         QueuedThreadPool tp= new QueuedThreadPool();
         tp.setMinThreads(5);
         tp.setMaxThreads(10);
-        tp.setMaxIdleTimeMs(500);
+        tp.setMaxIdleTimeMs(1000);
         tp.setThreadsPriority(Thread.NORM_PRIORITY-1);
 
         tp.start();
-        Thread.sleep(100);
-        assertEquals(5,tp.getThreads());
-        assertEquals(5,tp.getIdleThreads());
+        
+        waitForThreads(tp,5);
+        waitForIdle(tp,5);
+        
         Thread.sleep(1000);
-        assertEquals(5,tp.getThreads());
-        assertEquals(5,tp.getIdleThreads());
+        waitForThreads(tp,5);
+        waitForIdle(tp,5);
         
         RunningJob job=new RunningJob();
         tp.dispatch(job);
+        waitForIdle(tp,4);
+        waitForThreads(tp,5);
+
+        job.stop();
+        waitForIdle(tp,5);
+        waitForThreads(tp,5);
+        
         Thread.sleep(200);
-        assertEquals(5,tp.getThreads());
-        assertEquals(4,tp.getIdleThreads());
-        job._running=false;
-        Thread.sleep(200);
-        assertEquals(5,tp.getThreads());
-        assertEquals(5,tp.getIdleThreads());
+        waitForIdle(tp,5);
+        waitForThreads(tp,5);
 
         RunningJob[] jobs = new RunningJob[5];
         for (int i=0;i<jobs.length;i++)
@@ -81,32 +100,25 @@ public class QueuedThreadPoolTest
             jobs[i]=new RunningJob();
             tp.dispatch(jobs[i]);
         }
-        Thread.sleep(200);
-        assertEquals(5,tp.getThreads());
-        Thread.sleep(1000);
-        assertEquals(5,tp.getThreads());
+        waitForIdle(tp,0);
+        waitForThreads(tp,5);
         
         job=new RunningJob();
         tp.dispatch(job);
-        assertEquals(6,tp.getThreads());
+        waitForThreads(tp,6);
         
-        job._running=false;
-        Thread.sleep(1000);
-        assertEquals(5,tp.getThreads());
+        job.stop();
+        waitForThreads(tp,5);
         
-        jobs[0]._running=false;
-        Thread.sleep(1000);
-
-        assertEquals(5,tp.getThreads());
-        assertEquals(1,tp.getIdleThreads());
+        jobs[0].stop();
+        waitForIdle(tp,1);
+        waitForThreads(tp,5);
         
         for (int i=1;i<jobs.length;i++)
-            jobs[i]._running=false;
+            jobs[i].stop();
 
-        Thread.sleep(1000);
-
-        assertEquals(5,tp.getThreads());
-        
+        waitForIdle(tp,5);
+        waitForThreads(tp,5);
         
         jobs = new RunningJob[15];
         for (int i=0;i<jobs.length;i++)
@@ -114,35 +126,29 @@ public class QueuedThreadPoolTest
             jobs[i]=new RunningJob();
             tp.dispatch(jobs[i]);
         }
-        assertEquals(10,tp.getThreads());
-        Thread.sleep(100);
-        assertEquals(0,tp.getIdleThreads());
-
+        waitForIdle(tp,0);
+        waitForThreads(tp,10);
         for (int i=0;i<9;i++)
-            jobs[i]._running=false;
-        Thread.sleep(1100);
-        int threads=tp.getThreads();
-        assertTrue(threads<10);
-        Thread.sleep(2000);
-        assertTrue(tp.getThreads()<threads);
+            jobs[i].stop();
+        waitForThreads(tp,9);
         
         for (int i=9;i<jobs.length;i++)
-            jobs[i]._running=false;
-        Thread.sleep(500);
-
+            jobs[i].stop();
+        waitForIdle(tp,5);
         tp.stop();
     }
 
     @Test
     public void testShrink() throws Exception
     {
+        final AtomicInteger sleep = new AtomicInteger(100);
         Runnable job = new Runnable()
         {
             public void run()
             {
                 try 
                 {
-                    Thread.sleep(_sleep);
+                    Thread.sleep(sleep.get());
                 }
                 catch(Exception e)
                 {
@@ -159,40 +165,31 @@ public class QueuedThreadPoolTest
         tp.setThreadsPriority(Thread.NORM_PRIORITY-1);
         
         tp.start();
-        Thread.sleep(100);
-        assertEquals(2,tp.getThreads());
-        assertEquals(2,tp.getIdleThreads());
-        _sleep=200;
+        waitForIdle(tp,2);
+        waitForThreads(tp,2);
+        
+        sleep.set(200);
         tp.dispatch(job);
         tp.dispatch(job);
         for (int i=0;i<20;i++)
             tp.dispatch(job);
-        Thread.sleep(100);
-        assertEquals(10,tp.getThreads());
-        assertEquals(0,tp.getIdleThreads());
+
+        waitForThreads(tp,10);
+        waitForIdle(tp,0);
         
-        _sleep=5;
+        sleep.set(5);
         for (int i=0;i<500;i++)
         {
             tp.dispatch(job);
             Thread.sleep(10);
-            if (i%100==0)
-            {
-                System.err.println(i+" threads="+tp.getThreads()+" idle="+tp.getIdleThreads());
-            }
         }
-        System.err.println("500 threads="+tp.getThreads()+" idle="+tp.getIdleThreads());
-        Thread.sleep(100);
-        System.err.println("600 threads="+tp.getThreads()+" idle="+tp.getIdleThreads());
-        assertEquals(2,tp.getThreads());
-        assertEquals(2,tp.getIdleThreads());
-        
+        waitForThreads(tp,2);
+        waitForIdle(tp,2);
     }
 
     @Test
     public void testMaxStopTime() throws Exception
     {
-        _sleep=100;
         QueuedThreadPool tp= new QueuedThreadPool();
         tp.setMaxStopTimeMs(500);
         tp.start();
@@ -213,5 +210,37 @@ public class QueuedThreadPoolTest
         assertTrue(afterStop - beforeStop < 1000);
     }
 
+
+    private void waitForIdle(QueuedThreadPool tp, int idle)
+    {
+        long now=System.currentTimeMillis();
+        long start=now;
+        while (tp.getIdleThreads()!=idle && (now-start)<10000)
+        {
+            try
+            {
+                Thread.sleep(10);
+            }
+            catch(InterruptedException e)
+            {}
+        }
+        Assert.assertEquals(idle,tp.getIdleThreads());
+    }
+
+    private void waitForThreads(QueuedThreadPool tp, int threads)
+    {
+        long now=System.currentTimeMillis();
+        long start=now;
+        while (tp.getThreads()!=threads && (now-start)<10000)
+        {
+            try
+            {
+                Thread.sleep(10);
+            }
+            catch(InterruptedException e)
+            {}
+        }
+        Assert.assertEquals(threads,tp.getThreads());
+    }
 
 }
