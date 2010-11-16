@@ -27,8 +27,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -49,8 +51,7 @@ public class MultiPartInputStream
     protected InputStream _in;
     protected MultipartConfigElement _config;
     protected String _contentType;
-    protected MultiMap _map;
-    protected Map<String, Part> _parts;
+    protected MultiMap<String> _parts;
     protected File _tmpDir;
     protected File _contextTmpDir;
  
@@ -304,7 +305,14 @@ public class MultiPartInputStream
     throws IOException, ServletException
     {
         parse();
-        return _parts.values();
+        Collection<Object> values = _parts.values();
+        List<Part> parts = new ArrayList<Part>();
+        for (Object o: values)
+        {
+            List<Part> asList = LazyList.getList(o, false);
+            parts.addAll(asList);
+        }
+        return parts;
     }
     
     
@@ -312,15 +320,7 @@ public class MultiPartInputStream
     throws IOException, ServletException
     {
         parse();
-        return _parts.get(name);
-    }
-    
-    
-    public MultiMap getMap ()
-    throws IOException, ServletException
-    {
-        parse();
-        return _map;
+        return (Part)_parts.getValue(name, 0);
     }
     
     
@@ -333,7 +333,7 @@ public class MultiPartInputStream
         
         //initialize
         long total = 0; //keep running total of size of bytes read from input and throw an exception if exceeds MultipartConfigElement._maxRequestSize              
-        _parts = new HashMap<String, Part>();
+        _parts = new MultiMap<String>();
 
         //if its not a multipart request, don't parse it
         if (_contentType == null || !_contentType.startsWith("multipart/form-data"))
@@ -480,7 +480,7 @@ public class MultiPartInputStream
             MultiPart part = new MultiPart(name, filename);
             part.setHeaders(headers);
             part.setContentType(contentType);
-            _parts.put(name, part);
+            _parts.add(name, part);
 
             part.open();
 

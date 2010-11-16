@@ -9,6 +9,7 @@ jetty-8.0.0.M2-SNAPSHOT
  + 328008 Handle update to Servlet Spec 3 Section 8.2.3.h.ii
  + 330188 Reject web-fragment.xml with same <name> as another already loaded one
  + 330208 Support new wording on servlet-mapping and filter-mapping merging from servlet3.0a
+ + 330292 request.getParts() returns only one part when the name is the same
  + Update to jetty-7.2.1.v20101111
 
 jetty-7.2.1.v20101111 11 November 2010
