@@ -1,4 +1,4 @@
-jetty-8.0.0.M2-SNAPSHOT
+jetty-8.0.0.M2 16 November 2010
  + 320073 Reconsile configuration mechanism
  + 321068 JSF2 fails to initialize
  + 324493 Registration init parameter handling null check, setInitParameters additive
