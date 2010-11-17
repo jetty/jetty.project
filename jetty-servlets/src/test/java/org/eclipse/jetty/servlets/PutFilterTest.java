@@ -18,6 +18,10 @@ import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -51,6 +55,7 @@ public class PutFilterTest
         tester.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
         FilterHolder holder = tester.addFilter(PutFilter.class,"/*",0);
         holder.setInitParameter("delAllowed","true");
+        holder.setInitParameter("putAtomic","true");
         tester.start();
     }
 
@@ -58,6 +63,7 @@ public class PutFilterTest
     public void tearDown() throws Exception
     {
         tester.stop();
+        IO.delete(_dir);
     }
 
     @Test
@@ -233,9 +239,29 @@ public class PutFilterTest
     }
 
     @Test
-    public void testHandleOptions()
+    public void testHandleOptions() throws Exception
     {
-        // TODO implement
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+
+        // test PUT1
+        request.setMethod("OPTIONS");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/file.txt");
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        
+        Set<String> options = new HashSet<String>();
+        options.addAll(Arrays.asList(response.getHeader("Allow").split(" *, *")));
+              
+        assertTrue(options.contains("GET"));
+        assertTrue(options.contains("POST"));
+        assertTrue(options.contains("PUT"));
+        assertTrue(options.contains("MOVE"));
+
     }
 
     @Test
