@@ -541,6 +541,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 _configurations[i].deconfigure(this);
             
             _configurations=null;
+            if (_metadata != null)
+                _metadata.clear();
             
         }
         finally
