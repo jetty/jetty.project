@@ -220,6 +220,16 @@ public class TagLibConfiguration extends AbstractConfiguration
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
+        try
+        {
+            Class jsp_page = Loader.loadClass(WebXmlConfiguration.class,"javax.servlet.jsp.JspPage");
+        }
+        catch (Exception e)
+        {
+            //no jsp available, don't parse TLDs
+            return;
+        }
+
         Set tlds = new HashSet();
 
         // Find tld's from web.xml
@@ -297,7 +307,8 @@ public class TagLibConfiguration extends AbstractConfiguration
     {         
         if (_processor == null)
         {
-            Log.warn("No TldProcessor configured, skipping tld processing");
+            if (Log.isDebugEnabled())
+                Log.debug("No TldProcessor configured, skipping tld processing");
             return;
         }
 

@@ -2,6 +2,7 @@ jetty-7.2.2-SNAPSHOT
  + 330210 Improve performance of writing large bytes arrays
  + 330208 Support new wording on servlet-mapping and filter-mapping merging from servlet3.0a
  + 330188 Reject web-fragment.xml with same <name> as another already loaded one
+ + 330229 Jetty tries to parse META-INF/*.tld when jsp-api is not on classpath, causing DTD entity resoluton to fail
 
 jetty-7.2.1.v20101111 11 November 2010
  + 324679 Fixed dedection of write before static content
