@@ -32,33 +32,31 @@ import java.net.Socket;
  */
 public class Monitor extends Thread
 {
-    private int _port;
-    private String _key;
+    private Process _process;
+    private final int _port;
+    private final String _key;
 
     ServerSocket _socket;
     
     Monitor(int port,String key)
     {
-        _port=port;
-        _key=key;
-        
         try
         {
-            if(_port<0)
+            if(port<0)
                 return;
             setDaemon(true);
 	    setName("StopMonitor");
-            _socket=new ServerSocket(_port,1,InetAddress.getByName("127.0.0.1"));
-            if (_port==0)
+            _socket=new ServerSocket(port,1,InetAddress.getByName("127.0.0.1"));
+            if (port==0)
             {
-                _port=_socket.getLocalPort();
-                System.out.println(_port);
+                port=_socket.getLocalPort();
+                System.out.println(port);
             }
             
-            if (_key==null)
+            if (key==null)
             {
-                _key=Long.toString((long)(Long.MAX_VALUE*Math.random()+this.hashCode()+System.currentTimeMillis()),36);
-                System.out.println("STOP.KEY="+_key);
+                key=Long.toString((long)(Long.MAX_VALUE*Math.random()+this.hashCode()+System.currentTimeMillis()),36);
+                System.out.println("STOP.KEY="+key);
             }
         }
         catch(Exception e)
@@ -66,10 +64,26 @@ public class Monitor extends Thread
             Config.debug(e);
             System.err.println(e.toString());
         }
+        finally
+        {
+            _port=port;
+            _key=key;
+        }
+        
         if (_socket!=null)
             this.start();
         else
             System.err.println("WARN: Not listening on monitor port: "+_port);
+    }
+    
+    public Process getProcess()
+    {
+        return _process;
+    }
+    
+    public void setProcess(Process process)
+    {
+        _process = process;
     }
     
     @Override
@@ -93,6 +107,8 @@ public class Monitor extends Thread
                 {
                     try {socket.close();}catch(Exception e){e.printStackTrace();}
                     try {_socket.close();}catch(Exception e){e.printStackTrace();}
+                    if (_process!=null)
+                        _process.destroy();
                     System.exit(0);
                 }
                 else if ("status".equals(cmd))
@@ -115,14 +131,6 @@ public class Monitor extends Thread
                 socket=null;
             }
         }
-    }
-
-    /** Start a Monitor.
-     * This static method starts a monitor that listens for admin requests.
-     */
-    public static void monitor(int port,String key)
-    {
-        new Monitor(port,key);
     }
  
 }

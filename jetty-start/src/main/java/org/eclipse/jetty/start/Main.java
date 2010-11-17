@@ -497,7 +497,10 @@ public class Main
     public void start(List<String> xmls) throws FileNotFoundException, IOException, InterruptedException
     {
         // Setup Start / Stop Monitoring
-        startMonitor();
+        int port = Integer.parseInt(_config.getProperty("STOP.PORT",System.getProperty("STOP.PORT","-1")));
+        String key = _config.getProperty("STOP.KEY",System.getProperty("STOP.KEY",null));
+        Monitor monitor=new Monitor(port,key);
+        
 
         // Load potential Config (start.config)
         List<String> configuredXmls = loadConfig(xmls);
@@ -570,7 +573,7 @@ public class Main
             return;
         }
         
-        // Show Command Line to execute Jetty
+        // execute Jetty in another JVM
         if (_exec)
         {
             String cmd = buildCommandLine(classpath,configuredXmls);
@@ -578,6 +581,7 @@ public class Main
             copyInThread(process.getErrorStream(),System.err);
             copyInThread(process.getInputStream(),System.out);
             copyInThread(System.in,process.getOutputStream());
+            monitor.setProcess(process);
             process.waitFor();
             return;
         }
@@ -641,7 +645,7 @@ public class Main
                 }
                 catch(IOException e)
                 {
-                    e.printStackTrace();
+                    // e.printStackTrace();
                 }
             }
             
@@ -1054,13 +1058,6 @@ public class Main
         return cfgstream;
     }
 
-    private void startMonitor()
-    {
-        int port = Integer.parseInt(_config.getProperty("STOP.PORT",System.getProperty("STOP.PORT","-1")));
-        String key = _config.getProperty("STOP.KEY",System.getProperty("STOP.KEY",null));
-
-        Monitor.monitor(port,key);
-    }
 
     /**
      * Stop a running jetty instance.
