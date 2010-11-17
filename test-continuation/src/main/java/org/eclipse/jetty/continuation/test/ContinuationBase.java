@@ -249,6 +249,7 @@ public abstract class ContinuationBase extends TestCase
         catch(Exception e)
         {
             System.err.println("failed on port "+port);
+            e.printStackTrace();
             throw e;
         }
         return response;

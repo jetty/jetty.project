@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
+import javax.net.ssl.SSLException;
+
 import junit.framework.Assert;
 
 import org.eclipse.jetty.util.IO;
@@ -82,6 +84,10 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             IO.toString(is);
             assertEquals(-1, is.read());
+        }
+        catch(SSLException e)
+        {
+            
         }
         catch(Exception e)
         {

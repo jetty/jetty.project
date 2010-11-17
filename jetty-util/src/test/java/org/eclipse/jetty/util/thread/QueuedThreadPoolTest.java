@@ -30,14 +30,15 @@ public class QueuedThreadPoolTest
     
     class RunningJob implements Runnable
     {
-        private final CountDownLatch _latch = new CountDownLatch(3);
+        private final CountDownLatch _run = new CountDownLatch(1);
+        private final CountDownLatch _stopping = new CountDownLatch(1);
+        private final CountDownLatch _stopped = new CountDownLatch(1);
         public void run()
         {
             try 
             {
-                _latch.countDown();
-                while(_latch.getCount()>=2)
-                    Thread.sleep(10);
+                _run.countDown();
+                _stopping.await();
             }
             catch(Exception e)
             {
@@ -46,16 +47,15 @@ public class QueuedThreadPoolTest
             finally
             {
                 _jobs.incrementAndGet();
-                _latch.countDown();
+                _stopped.countDown();
             }
         }
         
         public void stop() throws InterruptedException
         {
-            if (_latch.getCount()<=1)
-                throw new IllegalStateException();
-            _latch.countDown();
-            if (!_latch.await(10,TimeUnit.SECONDS))
+            _run.await(10,TimeUnit.SECONDS);
+            _stopping.countDown();
+            if (!_stopped.await(10,TimeUnit.SECONDS))
                 throw new IllegalStateException(); 
         }
     };   
