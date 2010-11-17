@@ -85,9 +85,9 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
         catch(Exception e)
         {
-            // SSL throws
+            e.printStackTrace();
         }
-        Assert.assertTrue(System.currentTimeMillis()-start<200);
+        Assert.assertTrue(System.currentTimeMillis()-start<5000);
         
         
     }  

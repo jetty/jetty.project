@@ -177,7 +177,7 @@ public class TimeoutTest
                 public void run()
                 {
                     // count how many threads were started (should == LOOP)
-                    count.incrementAndGet( 0 );
+                    int once = (int) 10 + count.incrementAndGet( 0 )%50;
                     
                     // create a task for this thread
                     Timeout.Task task = new Timeout.Task()
@@ -196,8 +196,6 @@ public class TimeoutTest
                     // But once it will wait and the task will expire
                     
                     
-                    int once = (int)( 10+(System.currentTimeMillis() % 50));
-                    
                     // do the looping until we are stopped
                     int loop=0;
                     while (running.get())
@@ -210,7 +208,6 @@ public class TimeoutTest
                             if (loop++==once)
                             { 
                                 // THIS loop is the one time we wait longer than the delay
-                                
                                 count.incrementAndGet( 1 );  
                                 delay=200;
                                 wait=1000;

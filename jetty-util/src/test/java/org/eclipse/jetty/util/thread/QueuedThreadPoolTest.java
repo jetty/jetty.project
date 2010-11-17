@@ -236,7 +236,8 @@ public class QueuedThreadPoolTest
                 Thread.sleep(10);
             }
             catch(InterruptedException e)
-            {}
+            {} 
+            now=System.currentTimeMillis();
         }
         Assert.assertEquals(threads,tp.getThreads());
     }
