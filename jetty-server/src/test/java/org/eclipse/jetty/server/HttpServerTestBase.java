@@ -494,12 +494,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
             
             // Check that a direct content buffer was used as a chunk
-            Assert.assertEquals(1024*1024,max);
+            Assert.assertEquals(128*1024,max);
             
-            // read and check the times are < 900ms
+            // read and check the times are < 999ms
             String[] times=in.readLine().split(",");
             for (String t:times)
-                Assert.assertTrue(Integer.valueOf(t).intValue()<900);
+                Assert.assertTrue(Integer.valueOf(t).intValue()<999);
             
             // read the EOF chunk
             String end=in.readLine();
@@ -524,12 +524,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             Assert.assertTrue(closed);
             
             String bigline = in.readLine();
-            Assert.assertEquals(10*1024*1024,bigline.length());
+            Assert.assertEquals(10*128*1024,bigline.length());
 
-            // read and check the times are < 900ms
+            // read and check the times are < 999ms
             times=in.readLine().split(",");
             for (String t:times)
-                Assert.assertTrue(Integer.valueOf(t).intValue()<900);
+                Assert.assertTrue(Integer.valueOf(t).intValue()<999);
             
             // check close
             Assert.assertTrue(in.readLine()==null);
@@ -544,7 +544,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            byte[] buf = new byte[1024*1024];
+            byte[] buf = new byte[128*1024];
             for (int i=0;i<buf.length;i++)
                 buf[i]=(byte)("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_".charAt(i%63));
             
