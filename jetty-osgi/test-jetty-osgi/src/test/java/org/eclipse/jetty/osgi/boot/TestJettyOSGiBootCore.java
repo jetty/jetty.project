@@ -67,7 +67,7 @@ public class TestJettyOSGiBootCore
     {
         return Arrays.asList(options(
                 //get the jetty home config from the osgi boot bundle.
-                PaxRunnerOptions.vmOptions("-D" + DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME_BUNDLE + "=org.eclipse.jetty.osgi.boot"),
+                PaxRunnerOptions.vmOptions("-D" + DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME_BUNDLE + "=org.eclipse.jetty.osgi.boot -Djetty.port=9876"),
                 
                // CoreOptions.equinox(),
                 
@@ -169,7 +169,7 @@ public class TestJettyOSGiBootCore
             client.start();
             
             ContentExchange getExchange = new ContentExchange();
-            getExchange.setURL("http://localhost:8080/greetings");
+            getExchange.setURL("http://localhost:9876/greetings");
             getExchange.setMethod(HttpMethods.GET);
      
             client.send(getExchange);

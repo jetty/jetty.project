@@ -68,7 +68,8 @@ public class TestJettyOSGiBootWithJsp
 //            PaxRunnerOptions.vmOption( "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5006" ),
     			
     		PaxRunnerOptions.vmOption("-D" + OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS + 
-    				"=etc/jetty.xml;" + testrealm.getAbsolutePath()),
+    				"=etc/jetty.xml;" + testrealm.getAbsolutePath()+
+    				" -Djetty.port=9876"),
 
     	    mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject(),
             mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot-jsp" ).versionAsInProject(),
@@ -118,7 +119,7 @@ public class TestJettyOSGiBootWithJsp
             client.start();
             
             ContentExchange getExchange = new ContentExchange();
-            getExchange.setURL("http://localhost:8080/jsp/dump.jsp");
+            getExchange.setURL("http://localhost:9876/jsp/dump.jsp");
             getExchange.setMethod(HttpMethods.GET);
      
             client.send(getExchange);
