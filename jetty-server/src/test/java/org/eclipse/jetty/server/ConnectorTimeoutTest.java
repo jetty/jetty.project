@@ -57,6 +57,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 "content-length: "+contentB.length+"\r\n"+
         "\r\n").getBytes("utf-8"));
         os.write(contentB);
+        os.flush();
 
         long start = System.currentTimeMillis();
         String in = IO.toString(is);

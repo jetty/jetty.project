@@ -67,9 +67,8 @@ public class TestJettyOSGiBootWithJsp
                 // this just adds all what you write here to java vm argumenents of the (new) osgi process.
 //            PaxRunnerOptions.vmOption( "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5006" ),
     			
-    		PaxRunnerOptions.vmOption("-D" + OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS + 
-    				"=etc/jetty.xml;" + testrealm.getAbsolutePath()+
-    				" -Djetty.port=9876"),
+    		PaxRunnerOptions.vmOption("-Djetty.port=9876 -D" + OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS + 
+    				"=etc/jetty.xml;" + testrealm.getAbsolutePath()),
 
     	    mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject(),
             mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot-jsp" ).versionAsInProject(),

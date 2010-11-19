@@ -101,6 +101,8 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *                    servlet context root. Useful for only serving static content out
  *                    of only specific subdirectories.
  *
+ *  pathInfoOnly      If true, only the path info will be applied to the resourceBase 
+ *                        
  *  stylesheet	      Set with the location of an optional stylesheet that will be used
  *                    to decorate the directory listing html.
  *
@@ -135,10 +137,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
     private boolean _acceptRanges=true;
     private boolean _dirAllowed=true;
-    private boolean _welcomeServlets=true;
+    private boolean _welcomeServlets=false;
     private boolean _welcomeExactServlets=false;
     private boolean _redirectWelcome=false;
     private boolean _gzip=true;
+    private boolean _pathInfoOnly=false;
 
     private Resource _resourceBase;
     private ResourceCache _cache;
@@ -175,6 +178,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         _dirAllowed=getInitBoolean("dirAllowed",_dirAllowed);
         _redirectWelcome=getInitBoolean("redirectWelcome",_redirectWelcome);
         _gzip=getInitBoolean("gzip",_gzip);
+        _pathInfoOnly=getInitBoolean("pathInfoOnly",_pathInfoOnly);
 
         if ("exact".equals(getInitParameter("welcomeServlets")))
         {
@@ -383,10 +387,10 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             if (!hasDefinedRange(reqRanges))
                 reqRanges = null;
         }
-
-        String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
+        
+        String pathInContext=_pathInfoOnly?pathInfo:URIUtil.addPaths(servletPath,pathInfo);
         boolean endsWithSlash=pathInContext.endsWith(URIUtil.SLASH);
-
+        
         // Can we gzip this request?
         String pathInContextGz=null;
         boolean gzip=false;
@@ -503,6 +507,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 // else look for a welcome file
                 else if (null!=(welcome=getWelcomeFile(pathInContext)))
                 {
+                    Log.debug("welcome={}",welcome);
                     if (_redirectWelcome)
                     {
                         // Redirect to the index

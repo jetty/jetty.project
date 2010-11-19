@@ -67,7 +67,7 @@ public class TestJettyOSGiBootCore
     {
         return Arrays.asList(options(
                 //get the jetty home config from the osgi boot bundle.
-                PaxRunnerOptions.vmOptions("-D" + DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME_BUNDLE + "=org.eclipse.jetty.osgi.boot -Djetty.port=9876"),
+                PaxRunnerOptions.vmOptions("-Djetty.port=9876 -D" + DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME_BUNDLE + "=org.eclipse.jetty.osgi.boot"),
                 
                // CoreOptions.equinox(),
                 
