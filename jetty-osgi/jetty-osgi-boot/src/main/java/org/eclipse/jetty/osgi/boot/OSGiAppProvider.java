@@ -17,6 +17,7 @@ package org.eclipse.jetty.osgi.boot;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.Map.Entry;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
@@ -49,7 +50,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     private boolean _parentLoaderPriority = false;
     private String _defaultsDescriptor;
     private String _tldBundles;
-
+    
     /**
      * When a context file corresponds to a deployed bundle and is changed we
      * reload the corresponding bundle.
@@ -90,6 +91,29 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         return null;
     }
 
+    /**
+     * Reading the display name of a webapp is really not sufficient for indexing the various
+     * deployed ContextHandlers.
+     * 
+     * @param context
+     * @return
+     */
+    private String getContextHandlerAppName(ContextHandler context) {
+        String appName = context.getDisplayName();
+        if (appName == null || appName.length() == 0  || getDeployedApps().containsKey(appName)) {
+        	if (context instanceof WebAppContext)
+        	{
+        		appName = ((WebAppContext)context).getContextPath();
+        		if (getDeployedApps().containsKey(appName)) {
+            		appName = "noDisplayName"+context.getClass().getSimpleName()+context.hashCode();
+            	}
+        	} else {
+        		appName = "noDisplayName"+context.getClass().getSimpleName()+context.hashCode();
+        	}
+        }
+        return appName;
+    }
+    
     /**
      * Default OSGiAppProvider consutructed when none are defined in the
      * jetty.xml configuration.
@@ -168,7 +192,8 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
 
         // wrap context as an App
         App app = new App(getDeploymentManager(),this,originId,context);
-        getDeployedApps().put(context.getDisplayName(),app);
+        String appName = getContextHandlerAppName(context);
+        getDeployedApps().put(appName,app);
         getDeploymentManager().addApp(app);
     }
     
@@ -199,7 +224,23 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
 
     public void removeContext(ContextHandler context) throws Exception
     {
+    	String appName = getContextHandlerAppName(context);
         App app = getDeployedApps().remove(context.getDisplayName());
+        if (app == null) {
+        	//try harder to undeploy this context handler.
+        	//see bug https://bugs.eclipse.org/bugs/show_bug.cgi?id=330098
+        	appName = null;
+        	for (Entry<String,App> deployedApp : getDeployedApps().entrySet()) {
+        		if (deployedApp.getValue().getContextHandler() == context) {
+        			app = deployedApp.getValue();
+        			appName = deployedApp.getKey();
+        			break;
+        		}
+        	}
+        	if (appName != null) {
+        		getDeployedApps().remove(appName);
+        	}
+        }
         if (app != null)
         {
             getDeploymentManager().removeApp(app);
