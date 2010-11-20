@@ -61,9 +61,6 @@ public class Ajp13SocketConnector extends SocketConnector
         super.customize(endpoint,request);
         if (request.isSecure())
             request.setScheme(HttpSchemes.HTTPS);
-        
-        System.err.println("Customize "+endpoint+" "+request);
-        
     }
 
     /* ------------------------------------------------------------ */

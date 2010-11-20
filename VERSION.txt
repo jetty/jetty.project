@@ -7,6 +7,7 @@ jetty-7.2.2-SNAPSHOT
  + 330417 Atomic PUT in PutFilter
  + 330419 Reloading webapp duplicates StandardDescriptorProcessor 
  + 330686 OSGi: Make org.eclipse.jetty.jsp-2.1 a fragment of org.apache.jasper.glassfish
+ + 330732 Removed System.err debugging
 
 jetty-7.2.1.v20101111 11 November 2010
  + 324679 Fixed dedection of write before static content
