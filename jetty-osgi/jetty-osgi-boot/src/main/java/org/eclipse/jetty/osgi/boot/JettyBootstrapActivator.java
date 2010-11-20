@@ -209,7 +209,7 @@ public class JettyBootstrapActivator implements BundleActivator
     public static void registerWebapplication(Bundle contributor, String webappFolderPath, String contextPath) throws Exception
     {
         WebAppContext contextHandler = new WebAppContext();
-        Properties dic = new Properties();
+        Dictionary dic = new Hashtable();
         dic.put(OSGiWebappConstants.SERVICE_PROP_WAR,webappFolderPath);
         dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH,contextPath);
         contributor.getBundleContext().registerService(ContextHandler.class.getName(),contextHandler,dic);
