@@ -379,7 +379,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         else
         {
             included = Boolean.FALSE;
-            servletPath = request.getServletPath();
+            servletPath = _pathInfoOnly?"/":request.getServletPath();
             pathInfo = request.getPathInfo();
 
             // Is this a Range request?
@@ -388,7 +388,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 reqRanges = null;
         }
         
-        String pathInContext=_pathInfoOnly?pathInfo:URIUtil.addPaths(servletPath,pathInfo);
+        String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
         boolean endsWithSlash=pathInContext.endsWith(URIUtil.SLASH);
         
         // Can we gzip this request?
