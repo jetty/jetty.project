@@ -60,23 +60,6 @@ public abstract class AbstractHandler extends AbstractLifeCycle implements Handl
     }
 
     /* ------------------------------------------------------------ */
-    @Override
-    public String toString()
-    {
-        StringBuilder b=new StringBuilder();
-        String s=super.toString();
-        b.append(s,s.lastIndexOf('.')+1,s.length());
-        ContextHandler.Context ctx = ContextHandler.getCurrentContext();
-        if (ctx!=null && ctx.getContextPath()!=null && !(this instanceof ContextHandler))
-        {
-            b.append('@');
-            b.append(ctx.getContextPath());
-            
-        }
-        return b.toString();
-    }
-
-    /* ------------------------------------------------------------ */
     public void setServer(Server server)
     {
         Server old_server=_server;

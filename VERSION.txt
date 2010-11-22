@@ -9,6 +9,7 @@ jetty-7.2.2-SNAPSHOT
  + 330686 OSGi: Make org.eclipse.jetty.jsp-2.1 a fragment of org.apache.jasper.glassfish
  + 330732 Removed System.err debugging
  + 330764 Command line properties passed to start.jar --exec
+ + JETTY-1297 Improved matching of vhosts so that a vhost match has priority
 
 jetty-7.2.1.v20101111 11 November 2010
  + 324679 Fixed dedection of write before static content
