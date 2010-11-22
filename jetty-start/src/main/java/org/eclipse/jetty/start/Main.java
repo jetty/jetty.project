@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 
@@ -681,7 +682,7 @@ public class Main
         throw new FileNotFoundException("Unable to find XML Config: " + xmlFilename);
     }
 
-    private String buildCommandLine(Classpath classpath, List<String> xmls)
+    private String buildCommandLine(Classpath classpath, List<String> xmls) throws IOException
     {
         StringBuilder cmd = new StringBuilder();
         cmd.append(findJavaBin());
@@ -697,6 +698,18 @@ public class Main
         }
         cmd.append("   -cp ").append(classpath.toString());
         cmd.append("   ").append(_config.getMainClassname());
+        
+        // Check if we need to pass properties as a file
+        Properties properties = Config.getProperties();
+        if (properties.size()>0) 
+        {
+            File prop_file = File.createTempFile("start",".properties");
+            if (!_dryRun)
+                prop_file.deleteOnExit();
+            properties.store(new FileOutputStream(prop_file),"start.jar properties");
+            cmd.append(" ").append(prop_file.getAbsolutePath());
+        }
+        
         for (String xml : xmls)
         {
             cmd.append(' ').append(xml);
