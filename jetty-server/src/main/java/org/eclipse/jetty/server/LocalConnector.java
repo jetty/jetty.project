@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.log.Log;
 
 public class LocalConnector extends AbstractConnector
 {
-    private final BlockingQueue<Request> requests = new LinkedBlockingQueue<Request>();
+    private final BlockingQueue<Request> _requests = new LinkedBlockingQueue<Request>();
     
     public LocalConnector()
     {
@@ -47,14 +47,14 @@ public class LocalConnector extends AbstractConnector
     public String getResponses(String requests, boolean keepOpen) throws Exception
     {
         ByteArrayBuffer result = getResponses(new ByteArrayBuffer(requests, StringUtil.__ISO_8859_1), keepOpen);
-        return result.toString(StringUtil.__ISO_8859_1);
+        return result==null?null:result.toString(StringUtil.__ISO_8859_1);
     }
 
     public ByteArrayBuffer getResponses(ByteArrayBuffer requestsBuffer, boolean keepOpen) throws Exception
     {
         CountDownLatch latch = new CountDownLatch(1);
         Request request = new Request(requestsBuffer, keepOpen, latch);
-        requests.add(request);
+        _requests.add(request);
         latch.await(getMaxIdleTime(),TimeUnit.MILLISECONDS);
         return request.getResponsesBuffer();
     }
@@ -62,7 +62,7 @@ public class LocalConnector extends AbstractConnector
     @Override
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
-        Request request = requests.take();
+        Request request = _requests.take();
         getThreadPool().dispatch(request);
     }
 
@@ -82,75 +82,81 @@ public class LocalConnector extends AbstractConnector
     public void executeRequest(String rawRequest) throws IOException
     {
         Request request = new Request(new ByteArrayBuffer(rawRequest, "UTF-8"), true, null);
-        requests.add(request);
+        _requests.add(request);
     }
 
     private class Request implements Runnable
     {
-        private final ByteArrayBuffer requestsBuffer;
-        private final boolean keepOpen;
-        private final CountDownLatch latch;
-        private volatile ByteArrayBuffer responsesBuffer;
+        private final ByteArrayBuffer _requestsBuffer;
+        private final boolean _keepOpen;
+        private final CountDownLatch _latch;
+        private volatile ByteArrayBuffer _responsesBuffer;
 
         private Request(ByteArrayBuffer requestsBuffer, boolean keepOpen, CountDownLatch latch)
         {
-            this.requestsBuffer = requestsBuffer;
-            this.keepOpen = keepOpen;
-            this.latch = latch;
+            _requestsBuffer = requestsBuffer;
+            _keepOpen = keepOpen;
+            _latch = latch;
         }
 
         public void run()
         {
-            ByteArrayEndPoint endPoint = new ByteArrayEndPoint(requestsBuffer.asArray(), 1024)
-            {
-                @Override
-                public void setConnection(Connection connection)
-                {
-                    connectionUpgraded(getConnection(),connection);
-                    super.setConnection(connection);
-                }
-            };
-            
-            endPoint.setGrowOutput(true);
-            HttpConnection connection = new HttpConnection(LocalConnector.this, endPoint, getServer());
-            endPoint.setConnection(connection);
-            connectionOpened(connection);
-            
-            boolean leaveOpen = keepOpen;
             try
             {
-                while (endPoint.getIn().length() > 0 && endPoint.isOpen())
+                ByteArrayEndPoint endPoint = new ByteArrayEndPoint(_requestsBuffer.asArray(), 1024)
                 {
-                    while (true)
+                    @Override
+                    public void setConnection(Connection connection)
                     {
-                        final Connection con = endPoint.getConnection();
-                        final Connection next = con.handle();
-                        if (next!=con)
-                        {  
-                            endPoint.setConnection(next);
-                            continue;
+                        connectionUpgraded(getConnection(),connection);
+                        super.setConnection(connection);
+                    }
+                };
+
+                endPoint.setGrowOutput(true);
+                HttpConnection connection = new HttpConnection(LocalConnector.this, endPoint, getServer());
+                endPoint.setConnection(connection);
+                connectionOpened(connection);
+
+                boolean leaveOpen = _keepOpen;
+                try
+                {
+                    while (endPoint.getIn().length() > 0 && endPoint.isOpen())
+                    {
+                        while (true)
+                        {
+                            final Connection con = endPoint.getConnection();
+                            final Connection next = con.handle();
+                            if (next!=con)
+                            {  
+                                endPoint.setConnection(next);
+                                continue;
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
-            }
-            catch (Exception x)
-            {
-                leaveOpen = false;
+                catch (Exception x)
+                {
+                    leaveOpen = false;
+                }
+                finally
+                {
+                    if (!leaveOpen)
+                        connectionClosed(connection);
+                    _responsesBuffer = endPoint.getOut();
+                }
             }
             finally
             {
-                if (!leaveOpen)
-                    connectionClosed(connection);
-                responsesBuffer = endPoint.getOut();
-                if (latch != null)
-                    latch.countDown();
+                if (_latch != null)
+                    _latch.countDown();
             }
         }
 
         public ByteArrayBuffer getResponsesBuffer()
         {
-            return responsesBuffer;
+            return _responsesBuffer;
         }
     }
 }
