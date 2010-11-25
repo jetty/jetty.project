@@ -82,7 +82,7 @@ public interface HttpContent
         {
             try
             {
-                if (_maxBuffer<_resource.length())
+                if (_resource.length()<=0 || _maxBuffer<_resource.length())
                     return null;
                 ByteArrayBuffer buffer = new ByteArrayBuffer((int)_resource.length());
                 buffer.readFrom(_resource.getInputStream(),(int)_resource.length());

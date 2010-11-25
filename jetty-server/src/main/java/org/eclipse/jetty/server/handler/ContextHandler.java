@@ -401,6 +401,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
     /* ------------------------------------------------------------ */
     /*
+     */
+    public String setInitParameter(String name,String value)
+    {
+        return _initParams.put(name,value);
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
      * @see javax.servlet.ServletContext#getInitParameterNames()
      */
     @SuppressWarnings("rawtypes")
