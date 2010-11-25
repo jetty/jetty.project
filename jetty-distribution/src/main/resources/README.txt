@@ -52,6 +52,10 @@ To run with extra configuration file(s) appended, eg SSL
 
   java -jar start.jar etc/jetty-ssl.xml
 
+To run with properties 
+
+  java -jar start.jar jetty.port=8081
+
 To run with extra configuration file(s) prepended, eg logging & jmx
 
   java -jar start.jar --pre=etc/jetty-logging.xml --pre=etc/jetty-jmx.xml 
