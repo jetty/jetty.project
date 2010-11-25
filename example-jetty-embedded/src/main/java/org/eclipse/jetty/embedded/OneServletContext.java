@@ -27,6 +27,12 @@ public class OneServletContext
         context.setContextPath("/");
         server.setHandler(context);
 
+        // Server content from tmp
+        ServletHolder holder = context.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class,"/tmp/*");
+        holder.setInitParameter("resourceBase","/tmp");
+        holder.setInitParameter("pathInfoOnly","true");
+        
+        // Serve some hello world servlets
         context.addServlet(new ServletHolder(new HelloServlet()),"/*");
         context.addServlet(new ServletHolder(new HelloServlet("Buongiorno Mondo")),"/it/*");
         context.addServlet(new ServletHolder(new HelloServlet("Bonjour le Monde")),"/fr/*");

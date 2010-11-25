@@ -389,7 +389,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
         
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
-        boolean endsWithSlash=pathInContext.endsWith(URIUtil.SLASH);
+        boolean endsWithSlash=request.getRequestURI().endsWith(URIUtil.SLASH);
         
         // Can we gzip this request?
         String pathInContextGz=null;
@@ -465,7 +465,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 {
                     // ensure we have content
                     if (content==null)
-                        content=new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()));
+                        content=new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),response.getBufferSize());
 
                     if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
                     {
