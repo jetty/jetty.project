@@ -389,7 +389,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
         
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
-        boolean endsWithSlash=request.getRequestURI().endsWith(URIUtil.SLASH);
+        boolean endsWithSlash=(pathInfo==null?request.getServletPath():pathInfo).endsWith(URIUtil.SLASH);
         
         // Can we gzip this request?
         String pathInContextGz=null;
