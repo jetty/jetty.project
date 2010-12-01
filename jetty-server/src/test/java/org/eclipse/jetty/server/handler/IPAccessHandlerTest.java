@@ -38,7 +38,6 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -107,7 +106,7 @@ public class IPAccessHandlerTest
         _handler.setBlack(_black.split(";",-1));
         
         String request = "GET " + _uri + " HTTP/1.1\n" + "Host: "+ _host + "\n\n";
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("127.0.0.1", _connector.getLocalPort());
         socket.setSoTimeout(5000);
         try
         {
