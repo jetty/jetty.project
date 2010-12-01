@@ -186,9 +186,9 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
      */
     public void setMaxThreads(int maxThreads)
     {
-        if (isStarted() && maxThreads<_minThreads)
-            throw new IllegalArgumentException("!minThreads<maxThreads");
         _maxThreads=maxThreads;
+        if (_minThreads>_maxThreads)
+            _minThreads=_maxThreads;
     }
 
     /* ------------------------------------------------------------ */
@@ -199,9 +199,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
      */
     public void setMinThreads(int minThreads)
     {
-        if (isStarted() && (minThreads<=0 || minThreads>_maxThreads))
-            throw new IllegalArgumentException("!0<=minThreads<maxThreads");
         _minThreads=minThreads;
+
+        if (_minThreads>_maxThreads)
+            _maxThreads=_minThreads;
         
         int threads=_threadsStarted.get();
         while (isStarted() && threads<_minThreads)
@@ -386,11 +387,11 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
     
     /* ------------------------------------------------------------ */
     /**
-     * @return True if the pool is at maxThreads and there are more queued jobs than idle threads
+     * @return True if the pool is at maxThreads and there are not more idle threads than queued jobs
      */
     public boolean isLowOnThreads()
     {
-        return _threadsStarted.get()==_maxThreads && _jobs.size()>_threadsIdle.get();
+        return _threadsStarted.get()==_maxThreads && _jobs.size()>=_threadsIdle.get();
     }
 
     /* ------------------------------------------------------------ */
