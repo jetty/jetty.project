@@ -13,20 +13,15 @@
 
 package org.eclipse.jetty.util.resource;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 
-import junit.framework.TestCase;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import org.eclipse.jetty.util.IO;
 import org.junit.Test;
-import org.junit.BeforeClass;
-import org.junit.AfterClass;
 
 public class ResourceCollectionTest
 {
@@ -97,6 +92,7 @@ public class ResourceCollectionTest
         assertEquals("2 - two", getContent(r, "2.txt"));
         assertEquals("3 - three", getContent(r, "3.txt")); 
         
+        IO.delete(dest);
     }
     
     static String getContent(Resource r, String path) throws Exception
