@@ -374,13 +374,9 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
             _acceptorThread = new Thread[getAcceptors()];
 
             for (int i = 0; i < _acceptorThread.length; i++)
-            {
-                if (!_threadPool.dispatch(new Acceptor(i)))
-                {
-                    Log.warn("insufficient maxThreads configured for {}",this);
-                    break;
-                }
-            }
+                _threadPool.dispatch(new Acceptor(i));
+            if (_threadPool.isLowOnThreads())
+                Log.warn("insufficient threads configured for {}",this);
         }
 
         Log.info("Started {}",this);
