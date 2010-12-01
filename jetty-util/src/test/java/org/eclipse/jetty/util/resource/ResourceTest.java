@@ -22,10 +22,9 @@ import java.io.File;
 import java.io.FilePermission;
 import java.io.FilenameFilter;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.util.jar.JarInputStream;
-
-import junit.framework.TestSuite;
 
 import org.eclipse.jetty.util.IO;
 import org.junit.BeforeClass;
@@ -111,7 +110,8 @@ public class ResourceTest
         
         File file = new File(__userDir);
         file=new File(file.getCanonicalPath());
-        __userURL=file.toURL();
+        URI uri = file.toURI();
+        __userURL=uri.toURL();
         
         __userURL = new URL(__userURL.toString() + "src/test/java/org/eclipse/jetty/util/resource/");
 		FilePermission perm = (FilePermission) __userURL.openConnection().getPermission();
@@ -228,6 +228,8 @@ public class ResourceTest
         Resource r =Resource.newResource("/tmp/a file with,spe#ials/");
         assertTrue(r.getURL().toString().indexOf("a%20file%20with,spe%23ials")>0);
         assertTrue(r.getFile().toString().indexOf("a file with,spe#ials")>0);
+        r.delete();
+        assertFalse("File should have been deleted.",r.exists());
     }
 
     /* ------------------------------------------------------------ */
@@ -314,7 +316,10 @@ public class ResourceTest
             }
         };
         assertEquals(1, dest.listFiles(currentDirectoryFilenameFilter).length);
-        assertEquals(0, dest.getParentFile().listFiles(currentDirectoryFilenameFilter).length);        
+        assertEquals(0, dest.getParentFile().listFiles(currentDirectoryFilenameFilter).length);
+        
+        IO.delete(dest);
+        assertFalse(dest.exists());
     }
     
     /**

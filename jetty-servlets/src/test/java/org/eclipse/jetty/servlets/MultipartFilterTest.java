@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.servlets;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.net.URL;
-import java.util.Enumeration;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -34,9 +33,6 @@ import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class MultipartFilterTest
 {
@@ -56,7 +52,8 @@ public class MultipartFilterTest
         tester.setContextPath("/context");
         tester.setResourceBase(_dir.getCanonicalPath());
         tester.addServlet(DumpServlet.class, "/");
-        tester.addFilter(MultiPartFilter.class,"/*",FilterMapping.DEFAULT);
+        FilterHolder multipartFilter = tester.addFilter(MultiPartFilter.class,"/*",FilterMapping.DEFAULT);
+        multipartFilter.setInitParameter("deleteFiles", "true");
         tester.start();
     }
 
@@ -232,7 +229,9 @@ public class MultipartFilterTest
 
     public static class DumpServlet extends HttpServlet
     {
-        /* ------------------------------------------------------------ */
+		private static final long serialVersionUID = 201012011130L;
+
+		/* ------------------------------------------------------------ */
         /**
          * @see javax.servlet.http.HttpServlet#doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
          */
