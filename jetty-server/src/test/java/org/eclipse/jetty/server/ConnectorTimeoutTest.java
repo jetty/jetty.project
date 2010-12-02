@@ -37,7 +37,38 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     
     
     @Test
-    public void testSelectConnectorMaxIdleWithRequest() throws Exception
+    public void testSelectConnectorMaxIdleWithRequest10() throws Exception
+    {  
+        configureServer(new HelloWorldHandler());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        client.setSoTimeout(10000);
+
+        assertFalse(client.isClosed());
+        
+        OutputStream os=client.getOutputStream();
+        InputStream is=client.getInputStream();
+
+        String content="Wibble";
+        byte[] contentB=content.getBytes("utf-8");
+        os.write((
+                "GET / HTTP/1.0\r\n"+
+                "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                "connection: keep-alive\r\n"+
+        "\r\n").getBytes("utf-8"));
+        os.flush();
+
+        long start = System.currentTimeMillis();
+        String in = IO.toString(is);
+         
+        Thread.sleep(300);
+        assertEquals(-1, is.read());
+
+        Assert.assertTrue(System.currentTimeMillis()-start>200);
+        Assert.assertTrue(System.currentTimeMillis()-start<5000);
+    }
+
+    @Test
+    public void testSelectConnectorMaxIdleWithRequest11() throws Exception
     {  
         configureServer(new EchoHandler());
         Socket client=newSocket(HOST,_connector.getLocalPort());

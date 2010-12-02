@@ -112,6 +112,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
      */
     public SelectChannelConnector()
     {
+        _manager.setMaxIdleTime(getMaxIdleTime());
     }
 
     /* ------------------------------------------------------------ */

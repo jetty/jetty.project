@@ -665,9 +665,6 @@ public class HttpConnection implements Connection
 
                 if(_endp.isOpen())
                 {
-                    if (_generator.isPersistent())
-                        _connector.persist(_endp);
-
                     if (error)
                         _endp.close();
                     else
@@ -675,6 +672,8 @@ public class HttpConnection implements Connection
                         if (!_response.isCommitted() && !_request.isHandled())
                             _response.sendError(HttpServletResponse.SC_NOT_FOUND);
                         _response.complete();
+                        if (_generator.isPersistent())
+                            _connector.persist(_endp);
                     }
                 }
                 else
