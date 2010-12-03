@@ -1,3 +1,4 @@
+ + 331703 Fixed failing OSGI test TestJettyOSGiBootWithJsp.java on MacOSX
  + 331567 IPAccessHandlerTest failed on MacOS fix
  + 328789 Clean up tmp files from test harnesses
  + 331230 Fixed low thread warnings when acceptors>threadpool

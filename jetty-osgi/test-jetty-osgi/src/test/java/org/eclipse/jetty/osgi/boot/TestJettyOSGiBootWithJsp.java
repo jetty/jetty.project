@@ -27,6 +27,7 @@ import junit.framework.Assert;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
@@ -118,12 +119,13 @@ public class TestJettyOSGiBootWithJsp
             client.start();
             
             ContentExchange getExchange = new ContentExchange();
-            getExchange.setURL("http://localhost:9876/jsp/dump.jsp");
+            getExchange.setURL("http://127.0.0.1:9876/jsp/dump.jsp");
             getExchange.setMethod(HttpMethods.GET);
      
             client.send(getExchange);
             int state = getExchange.waitForDone();
-     
+            Assert.assertEquals("state should be done", HttpExchange.STATUS_COMPLETED, state);
+            
             String content = null;
             int responseStatus = getExchange.getResponseStatus();
             Assert.assertEquals(HttpStatus.OK_200, responseStatus);
