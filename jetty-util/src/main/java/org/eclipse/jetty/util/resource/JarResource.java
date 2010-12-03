@@ -125,6 +125,9 @@ public class JarResource extends URLResource
     public void copyTo(File directory)
         throws IOException
     {
+        if (!exists())
+            return;
+        
         if(Log.isDebugEnabled())Log.debug("Extract "+this+" to "+directory);
         
         String urlString = this.getURL().toExternalForm().trim();
@@ -150,6 +153,10 @@ public class JarResource extends URLResource
             String entryName = entry.getName();
             if ((subEntryName != null) && (entryName.startsWith(subEntryName)))
             { 
+                // is the subentry really a dir?
+                if (!subEntryIsDir && subEntryName.length()+1==entryName.length() && entryName.endsWith("/"))
+                        subEntryIsDir=true;
+                
                 //if there is a particular subEntry that we are looking for, only
                 //extract it.
                 if (subEntryIsDir)

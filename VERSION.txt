@@ -3,6 +3,7 @@
  + 328789 Clean up tmp files from test harnesses
  + 331230 Fixed low thread warnings when acceptors>threadpool
  + 331461 Fixed idle timeout for unflushed HTTP/1.0
+ + JETTY-1307 Check that JarFileResource directories end with /
 
 jetty-7.2.2.v20101201 1 December 2010
  + 330210 Improve performance of writing large bytes arrays

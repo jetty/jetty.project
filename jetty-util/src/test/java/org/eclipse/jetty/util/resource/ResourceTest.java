@@ -24,6 +24,9 @@ import java.io.FilenameFilter;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.jar.JarInputStream;
 
 import org.eclipse.jetty.util.IO;
@@ -33,7 +36,6 @@ import org.junit.Test;
 
 public class ResourceTest
 {
-
     public static String __userDir = System.getProperty("basedir", ".");
     public static URL __userURL=null;
     private static String __relDir="";
@@ -237,13 +239,58 @@ public class ResourceTest
     public void testJarFile()
     throws Exception
     {
-      
         String s = "jar:"+__userURL+"TestData/test.zip!/subdir/";
         Resource r = Resource.newResource(s);
-        InputStream is = r.getInputStream();        
-        JarInputStream jin = new JarInputStream(is);
-        assertNotNull(is);
-        assertNotNull(jin);
+        
+        Set entries = new HashSet(Arrays.asList(r.list()));
+        assertEquals(3,entries.size());
+        assertTrue(entries.contains("alphabet"));
+        assertTrue(entries.contains("numbers"));
+        assertTrue(entries.contains("subsubdir/"));
+
+        File extract = File.createTempFile("extract", null);
+        if (extract.exists())
+            extract.delete();
+        extract.mkdir();
+        extract.deleteOnExit();
+
+        r.copyTo(extract);
+        
+        Resource e = Resource.newResource(extract.getAbsolutePath());
+        
+        entries = new HashSet(Arrays.asList(e.list()));
+        assertEquals(3,entries.size());
+        assertTrue(entries.contains("alphabet"));
+        assertTrue(entries.contains("numbers"));
+        assertTrue(entries.contains("subsubdir/"));
+        IO.delete(extract);
+
+        s = "jar:"+__userURL+"TestData/test.zip!/subdir/subsubdir/";
+        r = Resource.newResource(s);
+        
+        entries = new HashSet(Arrays.asList(r.list()));
+        assertEquals(2,entries.size());
+        assertTrue(entries.contains("alphabet"));
+        assertTrue(entries.contains("numbers"));
+
+        extract = File.createTempFile("extract", null);
+        if (extract.exists())
+            extract.delete();
+        extract.mkdir();
+        extract.deleteOnExit();
+
+        r.copyTo(extract);
+        
+        e = Resource.newResource(extract.getAbsolutePath());
+        
+        entries = new HashSet(Arrays.asList(e.list()));
+        assertEquals(2,entries.size());
+        assertTrue(entries.contains("alphabet"));
+        assertTrue(entries.contains("numbers"));
+        IO.delete(extract);
+        
+        
+        
     }
     
     @Test

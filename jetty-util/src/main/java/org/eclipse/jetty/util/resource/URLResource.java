@@ -26,13 +26,10 @@ import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
 /** Abstract resource class.
- *
- * 
- * 
  */
 public class URLResource extends Resource
 {
-    protected final URL _url;
+    protected URL _url;
     protected String _urlString;
     
     protected URLConnection _connection;
