@@ -1,6 +1,5 @@
+jetty-7.2.2.v20101205 5 December 2010
  + JETTY-1308 327109 (re)fixed AJP handling of empty packets
-
-jetty-7.2.2.v20101203 3 December 2010
  + 331703 Fixed failing OSGI test TestJettyOSGiBootWithJsp.java on MacOSX
  + 331567 IPAccessHandlerTest failed on MacOS fix
  + 328789 Clean up tmp files from test harnesses
