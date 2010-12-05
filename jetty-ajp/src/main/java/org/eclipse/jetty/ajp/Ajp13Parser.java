@@ -36,8 +36,7 @@ public class Ajp13Parser implements Parser
     private final static int STATE_START = -1;
     private final static int STATE_END = 0;
     private final static int STATE_AJP13CHUNK_START = 1;
-    private final static int STATE_AJP13CHUNK_START_AFTER_LENGTH = 2;
-    private final static int STATE_AJP13CHUNK = 3;
+    private final static int STATE_AJP13CHUNK = 2;
 
     private int _state = STATE_START;
     private long _contentLength;
@@ -227,6 +226,7 @@ public class Ajp13Parser implements Parser
         return filled;
     }
     
+    volatile int _seq=0;
     /* ------------------------------------------------------------------------------- */
     public long parseNext() throws IOException
     {
@@ -294,7 +294,7 @@ public class Ajp13Parser implements Parser
             int attr_type = 0;
 
             byte packetType = Ajp13RequestPacket.getByte(_buffer);
-
+            
             switch (packetType)
             {
                 case Ajp13Packet.FORWARD_REQUEST_ORDINAL:
@@ -365,7 +365,6 @@ public class Ajp13Parser implements Parser
             attr_type = Ajp13RequestPacket.getByte(_buffer) & 0xff;
             while (attr_type != 0xFF)
             {
-
                 switch (attr_type)
                 {
                     // XXX How does this plug into the web
@@ -469,11 +468,6 @@ public class Ajp13Parser implements Parser
                 attr_type = Ajp13RequestPacket.getByte(_buffer) & 0xff;
             }
 
-
-
-
-
-
             _contentPosition = 0;
             switch ((int) _contentLength)
             {
@@ -512,7 +506,6 @@ public class Ajp13Parser implements Parser
             }
         }
 
-
         Buffer chunk;
 
         while (_state>STATE_END)
@@ -520,12 +513,12 @@ public class Ajp13Parser implements Parser
             switch (_state)
             {
                 case STATE_AJP13CHUNK_START:
-                    if (_buffer.length()<4)
+                    if (_buffer.length()<6)
                     {
                         if (total_filled<0) 
                             total_filled=0;
                         total_filled+=fill();
-                        if (_buffer.length()<4)
+                        if (_buffer.length()<6)
                             return total_filled;
                     }
                     int _magic=Ajp13RequestPacket.getInt(_buffer);
@@ -535,28 +528,17 @@ public class Ajp13Parser implements Parser
                                 +Integer.toHexString(Ajp13RequestHeaders.MAGIC)+" "+this);
                     }
                     _chunkPosition=0;
-                    int rawChunkLength=Ajp13RequestPacket.getInt(_buffer);
-                    _chunkLength = rawChunkLength - 2;
-                    if (rawChunkLength==0 || _chunkLength==0)
+                    _chunkLength=Ajp13RequestPacket.getInt(_buffer)-2;
+                    Ajp13RequestPacket.getInt(_buffer);
+                    if (_chunkLength==0)
                     {
                         _state=STATE_END;
                          _generator.gotBody();
                         _handler.messageComplete(_contentPosition);
                         return total_filled;
                     }
-                    _state=STATE_AJP13CHUNK_START_AFTER_LENGTH;
-
-                case STATE_AJP13CHUNK_START_AFTER_LENGTH:
-                    if (_buffer.length() < 2)
-                    {
-                        if (total_filled < 0)
-                            total_filled = 0;
-                        total_filled += fill();
-                        if (_buffer.length() < 2)
-                            return total_filled;
-                    }
-                    Ajp13RequestPacket.getInt(_buffer);
-                    _state = STATE_AJP13CHUNK;
+                    _state=STATE_AJP13CHUNK;
+                    break;
 
                 case STATE_AJP13CHUNK:
                     if (_buffer.length()<_chunkLength)
@@ -569,7 +551,7 @@ public class Ajp13Parser implements Parser
                     }
 
                     int remaining=_chunkLength-_chunkPosition;
-
+                    
                     if (remaining==0)
                     {
                         _state=STATE_AJP13CHUNK_START;
@@ -591,6 +573,7 @@ public class Ajp13Parser implements Parser
                     }
 
                     chunk=Ajp13RequestPacket.get(_buffer,remaining);
+                    
                     _contentPosition+=chunk.length();
                     _chunkPosition+=chunk.length();
                     _contentView.update(chunk);
@@ -620,7 +603,7 @@ public class Ajp13Parser implements Parser
             }
 
         }
-
+        
         return total_filled;
     }
 
@@ -836,7 +819,7 @@ public class Ajp13Parser implements Parser
         {
             if (_content.length() > 0)
                 return true;
-            if (_parser.isState(Ajp13Parser.STATE_END))
+            if (_parser.isState(Ajp13Parser.STATE_END) || _parser.isState(Ajp13Parser.STATE_START))
                 return false;
 
             // Handle simple end points.

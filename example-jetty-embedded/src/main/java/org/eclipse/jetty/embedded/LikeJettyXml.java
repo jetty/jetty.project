@@ -15,6 +15,7 @@ package org.eclipse.jetty.embedded;
 
 import java.lang.management.ManagementFactory;
 
+import org.eclipse.jetty.ajp.Ajp13SocketConnector;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
@@ -85,6 +86,10 @@ public class LikeJettyXml
                 });
         server.addConnector(ssl_connector);
 
+        Ajp13SocketConnector ajp = new Ajp13SocketConnector();
+        ajp.setPort(8009);
+        server.addConnector(ajp);
+        
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         RequestLogHandler requestLogHandler = new RequestLogHandler();

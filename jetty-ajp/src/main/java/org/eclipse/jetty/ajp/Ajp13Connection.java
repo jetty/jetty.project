@@ -72,11 +72,8 @@ public class Ajp13Connection extends HttpConnection
 
     private class RequestHandler implements Ajp13Parser.EventHandler
     {
-        boolean _delayedHandling = false;
-
         public void startForwardRequest() throws IOException
         {
-            _delayedHandling = false;
             _uri.clear();
 	    
             ((Ajp13Request) _request).setSslSecure(false);
@@ -225,14 +222,7 @@ public class Ajp13Connection extends HttpConnection
 
         public void headerComplete() throws IOException
         {
-            if (((Ajp13Parser) _parser).getContentLength() <= 0)
-            {
-                handleRequest();
-            }
-            else
-            {
-                _delayedHandling = true;
-            }
+            handleRequest();
         }
 
         public void messageComplete(long contextLength) throws IOException
@@ -241,11 +231,6 @@ public class Ajp13Connection extends HttpConnection
 
         public void content(Buffer ref) throws IOException
         {
-            if (_delayedHandling)
-            {
-                _delayedHandling = false;
-                handleRequest();
-            }
         }
 
     }

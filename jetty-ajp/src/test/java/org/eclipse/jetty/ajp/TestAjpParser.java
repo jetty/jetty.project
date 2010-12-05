@@ -475,127 +475,129 @@ public class TestAjpParser
 
     private static class EH implements Ajp13Parser.EventHandler
     {
+        final boolean debug=false;
+        
         public void content(Buffer ref) throws IOException
         {
-            // System.err.println(ref);
+            if (debug) System.err.println(ref);
         }
 
         public void headerComplete() throws IOException
         {
-            // System.err.println("--");
+            if (debug) System.err.println("--");
         }
 
         public void messageComplete(long contextLength) throws IOException
         {
-            // System.err.println("==");
+            if (debug) System.err.println("==");
         }
 
         public void parsedHeader(Buffer name, Buffer value) throws IOException
         {
-            // System.err.println(name+": "+value);
+            if (debug) System.err.println(name+": "+value);
         }
 
         public void parsedMethod(Buffer method) throws IOException
         {
-            // System.err.println(method);
+            if (debug) System.err.println(method);
         }
 
         public void parsedProtocol(Buffer protocol) throws IOException
         {
-            // System.err.println(protocol);
+            if (debug) System.err.println(protocol);
 
         }
 
         public void parsedQueryString(Buffer value) throws IOException
         {
-            // System.err.println("?"+value);
+            if (debug) System.err.println("?"+value);
         }
 
         public void parsedRemoteAddr(Buffer addr) throws IOException
         {
-            // System.err.println("addr="+addr);
+            if (debug) System.err.println("addr="+addr);
 
         }
 
         public void parsedRemoteHost(Buffer host) throws IOException
         {
-            // System.err.println("host="+host);
+            if (debug) System.err.println("host="+host);
 
         }
 
         public void parsedRequestAttribute(String key, Buffer value) throws IOException
         {
-            // System.err.println(key+":: "+value);
+            if (debug) System.err.println(key+":: "+value);
         }
 
         public void parsedServerName(Buffer name) throws IOException
         {
-            // System.err.println("Server:: "+name);
+            if (debug) System.err.println("Server:: "+name);
         }
 
         public void parsedServerPort(int port) throws IOException
         {
-            // System.err.println("Port:: "+port);
+            if (debug) System.err.println("Port:: "+port);
         }
 
         public void parsedSslSecure(boolean secure) throws IOException
         {
-            // System.err.println("Secure:: "+secure);
+            if (debug) System.err.println("Secure:: "+secure);
         }
 
         public void parsedUri(Buffer uri) throws IOException
         {
-            // System.err.println(uri);
+            if (debug) System.err.println("URI:: "+uri);
         }
 
         public void startForwardRequest() throws IOException
         {
-            // System.err.println("..");
+            if (debug) System.err.println("..");
         }
 
         public void parsedAuthorizationType(Buffer authType) throws IOException
         {
-            //To change body of implemented methods use File | Settings | File Templates.
+            if (debug) System.err.println("auth:: "+authType);
         }
 
         public void parsedRemoteUser(Buffer remoteUser) throws IOException
         {
-            //To change body of implemented methods use File | Settings | File Templates.
+            if (debug) System.err.println("user:: "+remoteUser);
         }
 
         public void parsedServletPath(Buffer servletPath) throws IOException
         {
-            //To change body of implemented methods use File | Settings | File Templates.
+            if (debug) System.err.println("servletPath:: "+servletPath);
         }
 
         public void parsedContextPath(Buffer context) throws IOException
         {
-            //To change body of implemented methods use File | Settings | File Templates.
+            if (debug) System.err.println("Context:: "+context);
         }
 
         public void parsedSslCert(Buffer sslCert) throws IOException
         {
-            //To change body of implemented methods use File | Settings | File Templates.
+            if (debug) System.err.println("sslCert:: "+sslCert);
         }
 
         public void parsedSslCipher(Buffer sslCipher) throws IOException
         {
-            //To change body of implemented methods use File | Settings | File Templates.
+            if (debug) System.err.println("sslCipher:: "+sslCipher);
         }
 
         public void parsedSslSession(Buffer sslSession) throws IOException
         {
-            //To change body of implemented methods use File | Settings | File Templates.
+            if (debug) System.err.println("sslSession:: "+sslSession);
         }
 
         public void parsedSslKeySize(int keySize) throws IOException
         {
-            // System.err.println(key+":: "+value);
+            if (debug) System.err.println("sslkeysize:: "+keySize);
         }
 
         public void parsedRequestAttribute(String key, int value) throws IOException
         {
-            // System.err.println(key+":: "+value);
+            if (debug) System.err.println(key+":: "+value);
         }
     }
 }
