@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.2.3-SNAPSHOT</version>
+    <version>7.2.2.v20101205</version>
   </parent>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-policy</artifactId>
