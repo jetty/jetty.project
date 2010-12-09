@@ -64,12 +64,10 @@ public class ContextProvider extends ScanningAppProvider
         if (resource.exists() && FileID.isXmlFile(file))
         {
             XmlConfiguration xmlc = new XmlConfiguration(resource.getURL());
-            Map<String,String> props = new HashMap<String,String>();
             
             xmlc.getIdMap().put("Server",getDeploymentManager().getServer());
             if (getConfigurationManager() != null)
-                props.putAll(getConfigurationManager().getProperties());
-            xmlc.setProperties(props);
+                xmlc.getProperties().putAll(getConfigurationManager().getProperties());
             return (ContextHandler)xmlc.configure();
         }
         

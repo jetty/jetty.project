@@ -37,7 +37,7 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
     public static void init() throws Exception
     {   
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
-        connector.setMaxIdleTime(250); //250 msec max idle
+        connector.setMaxIdleTime(MAX_IDLE_TIME); //250 msec max idle
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
         connector.setKeystore(keystorePath);
         connector.setPassword("storepwd");

@@ -78,7 +78,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                     if(Log.isDebugEnabled())
                         Log.debug("Configure: "+jetty);
                     XmlConfiguration jetty_config=new XmlConfiguration(jetty.getURL());
-                    setupXmlConfiguration(jetty_config, web_inf);
+                    setupXmlConfiguration(context,jetty_config, web_inf);
                     jetty_config.configure(context);
                 }
                 finally
@@ -89,6 +89,16 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
             }
         }
     }
+
+    /**
+     * Configures some well-known properties before the XmlConfiguration reads
+     * the configuration.
+     * @param jetty_config The configuration object.
+     */
+    private void setupXmlConfiguration(WebAppContext context, XmlConfiguration jetty_config, Resource web_inf)
+    {
+        setupXmlConfiguration(jetty_config,web_inf);
+    }
     
     /**
      * Configures some well-known properties before the XmlConfiguration reads
@@ -98,13 +108,6 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     private void setupXmlConfiguration(XmlConfiguration jetty_config, Resource web_inf)
     {
     	Map<String,String> props = jetty_config.getProperties();
-    	if (props == null)
-    	{
-    		props = new HashMap<String, String>();
-    		jetty_config.setProperties(props);
-    	}
-    	
-    	// TODO - should this be an id rather than a property?
     	props.put(PROPERTY_THIS_WEB_INF_URL, String.valueOf(web_inf.getURL()));
     }
     
