@@ -356,7 +356,14 @@ public class Scanner
             File dir = itor.next();
             
             if ((dir != null) && (dir.exists()))
-                scanFile(dir, _currentScan,0);
+                try
+                {
+                    scanFile(dir.getCanonicalFile(), _currentScan,0);
+                }
+                catch (IOException e)
+                {
+                    Log.warn("Error scanning files.", e);
+                }
         }
     }
 
