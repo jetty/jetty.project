@@ -229,9 +229,9 @@ public class MultipartFilterTest
 
     public static class DumpServlet extends HttpServlet
     {
-		private static final long serialVersionUID = 201012011130L;
+        private static final long serialVersionUID = 201012011130L;
 
-		/* ------------------------------------------------------------ */
+        /* ------------------------------------------------------------ */
         /**
          * @see javax.servlet.http.HttpServlet#doPost(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
          */

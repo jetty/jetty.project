@@ -24,7 +24,7 @@ import javax.naming.NameParser;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -38,7 +38,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class NamingUtil 
 {
-
+    public final static Logger __log=org.eclipse.jetty.util.log.Log.getLogger("jndi");
+    
     /* ------------------------------------------------------------ */
     /**
      * Bind an object to a context ensuring all sub-contexts 
@@ -66,21 +67,22 @@ public class NamingUtil
             try
             {
                 subCtx = (Context)subCtx.lookup (name.get(i));
-                if(Log.isDebugEnabled())Log.debug("Subcontext "+name.get(i)+" already exists");
+                if(__log.isDebugEnabled())
+                    __log.debug("Subcontext "+name.get(i)+" already exists");
             }
             catch (NameNotFoundException e)
             {
                 subCtx = subCtx.createSubcontext(name.get(i));
-                if(Log.isDebugEnabled())Log.debug("Subcontext "+name.get(i)+" created");
+                if(__log.isDebugEnabled())
+                    __log.debug("Subcontext "+name.get(i)+" created");
             }
         }
 
         subCtx.rebind (name.get(name.size() - 1), obj);
-        if(Log.isDebugEnabled())Log.debug("Bound object to "+name.get(name.size() - 1));
+        if(__log.isDebugEnabled())
+            __log.debug("Bound object to "+name.get(name.size() - 1));
         return subCtx;
-       
     } 
-    
     
     public static void unbind (Context ctx)
     throws NamingException

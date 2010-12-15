@@ -28,12 +28,13 @@ import javax.naming.NameParser;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.util.log.Logger;
 
 
 public class NamingEntryUtil
 {
- 
+    private static Logger __log = NamingUtil.__log;
     
     /**
      * Link a name in a webapp's java:/comp/evn namespace to a pre-existing
@@ -176,7 +177,7 @@ public class NamingEntryUtil
         }
         catch (NamingException e)
         {
-            Log.warn(e);
+            __log.warn(e);
             return null;
         }
     }
@@ -228,7 +229,7 @@ public class NamingEntryUtil
         }
         catch (NameNotFoundException e)
         {
-            Log.debug("No entries of type "+clazz.getName()+" in context="+context);
+            __log.debug("No entries of type "+clazz.getName()+" in context="+context);
         }
 
         return list;

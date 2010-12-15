@@ -24,7 +24,7 @@ import javax.naming.NameParser;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.jndi.local.localContextRoot;
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /*------------------------------------------------*/    
@@ -39,6 +39,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class InitialContextFactory implements javax.naming.spi.InitialContextFactory
 {
+    private static Logger __log = NamingUtil.__log;
+    
     public static class DefaultParser implements NameParser
     { 
         static Properties syntax = new Properties();   
@@ -69,10 +71,10 @@ public class InitialContextFactory implements javax.naming.spi.InitialContextFac
      */
     public Context getInitialContext(Hashtable env) 
     {
-        Log.debug("InitialContextFactory.getInitialContext()");
+        __log.debug("InitialContextFactory.getInitialContext()");
 
         Context ctx = new localContextRoot(env);
-        if(Log.isDebugEnabled())Log.debug("Created initial context delegate for local namespace:"+ctx);
+        if(__log.isDebugEnabled())__log.debug("Created initial context delegate for local namespace:"+ctx);
 
         return ctx;
     }

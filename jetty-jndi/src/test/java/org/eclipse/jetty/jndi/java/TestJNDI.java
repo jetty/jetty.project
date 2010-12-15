@@ -31,6 +31,8 @@ import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 
 import org.eclipse.jetty.jndi.NamingContext;
+import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.util.log.Log;
 import org.junit.Test;
 
@@ -43,6 +45,11 @@ import static org.junit.Assert.fail;
  */
 public class TestJNDI
 {
+    static
+    {
+        // NamingUtil.__log.setDebugEnabled(true);    
+    }
+    
     public static class MyObjectFactory implements ObjectFactory
     {
         public static String myString = "xxx";
@@ -51,6 +58,7 @@ public class TestJNDI
         {
             return myString;
         }
+        
     }
 
     @Test
@@ -239,6 +247,9 @@ public class TestJNDI
                 //expected failure to modify immutable context
             }
 
+            System.err.println("java:"+javaRootURLContext.getRoot().dump());
+            System.err.println("local:"+localContextRoot.getRoot().dump());
+            
             //test what happens when you close an initial context that was used
             initCtx.close();
         }
