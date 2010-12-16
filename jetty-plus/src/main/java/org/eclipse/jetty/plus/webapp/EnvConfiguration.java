@@ -23,7 +23,9 @@ import javax.naming.Name;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
+import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
@@ -128,8 +130,8 @@ public class EnvConfiguration extends AbstractConfiguration
         //unbind any NamingEntries that were configured in this webapp's name space
         try
         {
-            Context scopeContext = NamingEntryUtil.getContextForScope(context);
-            scopeContext.destroySubcontext(NamingEntry.__contextName);
+            NamingContext scopeContext = (NamingContext)NamingEntryUtil.getContextForScope(context);
+            scopeContext.getParent().destroySubcontext(scopeContext.getName());
         }
         catch (NameNotFoundException e)
         {

@@ -36,8 +36,7 @@ import org.eclipse.jetty.jndi.NamingContext;
 public class localContextRoot implements Context
 {
     private static final NamingContext __root = new NamingContext();
-
-    private final Hashtable _env;
+    private final Hashtable<String,Object> _env;
 
     // make a root for the static namespace local:
     static

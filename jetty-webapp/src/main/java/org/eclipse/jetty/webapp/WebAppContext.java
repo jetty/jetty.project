@@ -1075,7 +1075,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         if (dir!=null && ( !dir.exists() || !dir.isDirectory() || !dir.canWrite()))
             throw new IllegalArgumentException("Bad temp directory: "+dir);
-
+        
+        try
+        {
+            dir=dir.getCanonicalFile();
+        }
+        catch(Exception e)
+        {
+            Log.warn(e);
+        }
         _tmpDir=dir;
         setAttribute(TEMPDIR,_tmpDir);
     }

@@ -42,7 +42,7 @@ public class TestNamingEntryUtil
     {
         public String toString()
         {
-            return this.getClass().getName()+"@"+super.hashCode();
+            return this.getClass().getName()+"@"+Long.toHexString(super.hashCode());
         }
     }
 

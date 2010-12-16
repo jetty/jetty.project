@@ -185,7 +185,6 @@ public class NamingEntryUtil
     public static Context getContextForScope(Object scope)
     throws NamingException
     {
-
         InitialContext ic = new InitialContext();
         NameParser parser = ic.getNameParser("");
         Name name = parser.parse("");
@@ -240,7 +239,7 @@ public class NamingEntryUtil
         if (scope==null)
             return "";
 
-        String str = scope.getClass().getName()+"@"+scope.hashCode();
+        String str = scope.getClass().getName()+"@"+Long.toHexString(scope.hashCode());
         str=str.replace('/', '_').replace(' ', '_');
         return str;
     }

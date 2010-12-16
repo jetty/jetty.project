@@ -136,6 +136,9 @@ public class LikeJettyXml
         server.setSendServerVersion(true);
 
         server.start();
+        
+        System.err.println(server.dump());
+        
         server.join();
     }
 

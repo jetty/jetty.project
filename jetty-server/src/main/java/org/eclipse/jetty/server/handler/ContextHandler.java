@@ -190,8 +190,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     protected void dump(Appendable out,String indent) throws IOException
     {
         out.append(toString()).append(isStarted()?" started":" STOPPED").append('\n');
-        out.append(indent).append(" +-").append(String.valueOf(_attributes)).append('\n');
-        out.append(indent).append(" +-").append(String.valueOf(_contextAttributes)).append('\n');
+        if (Log.isDebugEnabled())
+        {
+            out.append(indent).append(" +-").append(String.valueOf(_attributes)).append('\n');
+            out.append(indent).append(" +-").append(String.valueOf(_contextAttributes)).append('\n');
+        }
         dumpHandlers(out,indent);
     }
     

@@ -1487,7 +1487,8 @@ public class ServletHandler extends ScopedHandler
                 out.append(indent);
                 out.append(" +-");
                 out.append(String.valueOf(f.toString()));
-                out.append(String.valueOf(f.getFilterHolder().getInitParameters()));
+                if (Log.isDebugEnabled())
+                    out.append(String.valueOf(f.getFilterHolder().getInitParameters()));
                 out.append('\n');
             }
         }
@@ -1501,7 +1502,7 @@ public class ServletHandler extends ScopedHandler
                 out.append(" +-");
                 out.append(String.valueOf(m));
                 ServletHolder h = getServlet(m.getServletName());
-                if (h!=null)
+                if (h!=null && Log.isDebugEnabled())
                     out.append(String.valueOf(h.getInitParameters()));
                 out.append('\n');
             }
@@ -1516,7 +1517,8 @@ public class ServletHandler extends ScopedHandler
                 out.append(indent);
                 out.append(" +-[]==>");
                 out.append(h.getName());
-                out.append(String.valueOf(h.getInitParameters()));
+                if (Log.isDebugEnabled())
+                    out.append(String.valueOf(h.getInitParameters()));
                 out.append('\n');
             }
         }
