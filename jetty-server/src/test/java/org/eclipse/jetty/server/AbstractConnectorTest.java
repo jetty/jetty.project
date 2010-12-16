@@ -91,8 +91,8 @@ public class AbstractConnectorTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
+                try{Thread.sleep(1);} catch(Exception e){}
                 baseRequest.setHandled(true);
-
                 PrintWriter out = response.getWriter();
                 out.write("Server response\n");
                 out.close();
