@@ -1078,7 +1078,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         
         try
         {
-            dir=dir.getCanonicalFile();
+            if (dir!=null)
+                dir=dir.getCanonicalFile();
         }
         catch(Exception e)
         {

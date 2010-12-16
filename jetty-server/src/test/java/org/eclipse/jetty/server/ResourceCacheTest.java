@@ -141,43 +141,43 @@ public class ResourceCacheTest
         assertEquals(80,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());
 
-        Thread.sleep(2);
+        Thread.sleep(200);
         
         content=cache.lookup(names[1]);
         assertEquals(90,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
 
-        Thread.sleep(2);
+        Thread.sleep(200);
         
         content=cache.lookup(names[2]);
         assertEquals(30,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
 
-        Thread.sleep(2);
+        Thread.sleep(200);
         
         content=cache.lookup(names[3]);
         assertEquals(60,cache.getCachedSize());
         assertEquals(3,cache.getCachedFiles());
 
-        Thread.sleep(2);
+        Thread.sleep(200);
         
         content=cache.lookup(names[4]);
         assertEquals(90,cache.getCachedSize());
         assertEquals(3,cache.getCachedFiles());
 
-        Thread.sleep(2);
+        Thread.sleep(200);
         
         content=cache.lookup(names[5]);
         assertEquals(90,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
 
-        Thread.sleep(2);
+        Thread.sleep(200);
         
         content=cache.lookup(names[6]);
         assertEquals(60,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());
 
-        Thread.sleep(2);
+        Thread.sleep(200);
         
         FileOutputStream out = new FileOutputStream(files[6]);
         out.write(' ');
@@ -186,37 +186,37 @@ public class ResourceCacheTest
         assertEquals(70,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());
 
-        Thread.sleep(2);
+        Thread.sleep(200);
         
         content=cache.lookup(names[6]);
         assertEquals(71,cache.getCachedSize());
         assertEquals(2,cache.getCachedFiles());
 
-        Thread.sleep(2);
+        Thread.sleep(200);
         
         content=cache.lookup(names[0]);
         assertEquals(72,cache.getCachedSize());
         assertEquals(3,cache.getCachedFiles());
 
-        Thread.sleep(2);
+        Thread.sleep(200);
         
         content=cache.lookup(names[1]);
         assertEquals(82,cache.getCachedSize());
         assertEquals(4,cache.getCachedFiles());
 
-        Thread.sleep(2);
+        Thread.sleep(200);
         
         content=cache.lookup(names[2]);
         assertEquals(32,cache.getCachedSize());
         assertEquals(4,cache.getCachedFiles());
 
-        Thread.sleep(2);
+        Thread.sleep(200);
         
         content=cache.lookup(names[3]);
         assertEquals(61,cache.getCachedSize());
         assertEquals(4,cache.getCachedFiles());
 
-        Thread.sleep(2);
+        Thread.sleep(200);
         
         cache.flushCache();
         assertEquals(0,cache.getCachedSize());
