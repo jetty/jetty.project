@@ -65,7 +65,7 @@ public class AnnotationIntrospector
             //process the whole inheritance hierarchy for the class
             while (c!=null && (!c.equals(Object.class)))
             {
-                doHandle(clazz);
+                doHandle(c);
                 if (!_introspectAncestors)
                     break;
                 
