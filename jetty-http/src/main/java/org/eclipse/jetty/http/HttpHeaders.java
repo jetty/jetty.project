@@ -36,7 +36,8 @@ public class HttpHeaders extends BufferCache
         TRANSFER_ENCODING= "Transfer-Encoding",
         UPGRADE= "Upgrade",
         VIA= "Via",
-        WARNING= "Warning";
+        WARNING= "Warning",
+        NEGOTIATE= "Negotiate";
 
     /* ------------------------------------------------------------ */
     /** Entity Fields.

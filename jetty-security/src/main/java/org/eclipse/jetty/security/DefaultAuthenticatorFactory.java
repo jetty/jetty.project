@@ -21,6 +21,7 @@ import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.ClientCertAuthenticator;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.security.authentication.SpnegoAuthenticator;
 import org.eclipse.jetty.server.Server;
 
 /* ------------------------------------------------------------ */
@@ -59,6 +60,8 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
             authenticator=new DigestAuthenticator();
         else if (Constraint.__FORM_AUTH.equalsIgnoreCase(auth))
             authenticator=new FormAuthenticator();
+        else if ( Constraint.__SPNEGO_AUTH.equalsIgnoreCase(auth) )
+            authenticator = new SpnegoAuthenticator();
         if (Constraint.__CERT_AUTH.equalsIgnoreCase(auth)||Constraint.__CERT_AUTH2.equalsIgnoreCase(auth))
             authenticator=new ClientCertAuthenticator();
         

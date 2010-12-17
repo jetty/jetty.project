@@ -1,0 +1,115 @@
+This setup will enable you to authenticate a user via spnego into your 
+webapp.
+
+To run with spengo enabled the following command line options are required:
+
+-Djava.security.krb5.conf=/path/to/jetty/etc/krb5.ini
+-Djava.security.auth.login.config=/path/to/jetty/etc/spnego.conf 
+-Djavax.security.auth.useSubjectCredsOnly=false
+
+The easiest place to put these lines are in the start.ini file.
+
+For debugging the spengo authentication the following options are helpful:
+
+Dorg.eclipse.jetty.util.log.DEBUG=true
+-Dsun.security.spnego.debug=all 
+
+
+Spengo Authentication is enabled in the webapp with the following setup.
+
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>Secure Area</web-resource-name>
+      <url-pattern>/secure/me/*</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>MORTBAY.ORG</role-name>  <-- this is the domain that the user is a member of
+    </auth-constraint>
+  </security-constraint>
+
+  <login-config>
+    <auth-method>SPNEGO</auth-method>
+    <realm-name>Test Realm</realm-name>
+    (optionally to add custom error page)
+    <spnego-login-config>
+      <spengo-error-page>/loginError.html?param=foo</spnego-error-page>
+    </spnego-login-config>
+  </login-config>
+   
+A corresponding UserRealm needs to be created either programmatically if 
+embedded, via the jetty.xml or in a context file for the webapp.
+
+(in the jetty.xml)
+
+   <Call name="addBean">
+      <Arg>
+        <New class="org.eclipse.jetty.security.SpnegoLoginService">
+          <Set name="name">Test Realm</Set>
+          <Set name="config"><Property name="jetty.home" default="."/>/etc/spnego.properties</Set>
+        </New>
+      </Arg>
+    </Call>
+
+(context file)
+  <Get name="securityHandler">
+    <Set name="loginService">
+      <New class="org.eclipse.jetty.security.SpnegoLoginService">
+	    <Set name="name">Test Realm</Set>
+	    <Set name="config"><SystemProperty name="jetty.home" default="."/>/etc/spnego.properties</Set>
+      </New>
+    </Set>
+    <Set name="checkWelcomeFiles">true</Set>
+  </Get>
+  
+  
+Important Configuration Files:
+
+spengo.properties - configures the user realm with runtime properties
+krb5.ini - configures the underlying kerberos setup
+spnego.conf - configures the glue between gssapi and kerberos
+
+It is important to note that the keytab file referenced in the krb5.ini and the spengo.conf files needs to
+contain the keytab for the targetName for the http server.  To do this use a process similar to this:
+
+On the windows active domain controller run:
+
+> setspn -A HTTP/linux.mortbay.org ADUser
+
+To create the keytab file use the following process:
+
+> ktpass -out c:\dir\krb5.keytab -princ HTTP/linux.mortbay.org@MORTBAY.ORG -mapUser ADUser -mapOp set -pass ADUserPWD -crypto RC4-HMAC-NT -pType KRB5_NT_PRINCIPAL
+
+This step should give you the keytab file which should then be copied over to the machine running this 
+http server and referenced from the configuration files.  For our testing we put the keytab into the etc
+directory of jetty and referenced it from there.
+
+Setting up your Browser:
+
+Firefox:
+
+* browse to about:config and agree to the warnings
+* search through to find the 'network' settings
+** set network.negotiate-auth.delegation-uris to http://,https://
+** set network.negotiate-auth.trusted-uris to http://,https://
+
+IE:
+
+* Tools -> Options -> Security -> Local Intranet -> Sites
+** make sure everything is checked here
+* Tools -> Options -> Security -> Local Intranet -> Sites -> Advanced
+** add url to server (http:// and/or https://) making sure to use the hostname
+* Tools -> Options -> Security -> Local Intranet -> Sites -> Advanced -> Close
+* Tools -> Options -> Security -> Local Intranet -> Sites -> Ok
+* Tools -> Options -> Advanced -> Security (in the checkbox list)
+** locate and check 'Enable Integrated Windows Authentication'
+* Tools -> Options -> Advanced -> Security -> Ok
+* close IE then reopen and browse to your spengo protected resource
+
+NOTE: you must go to the hostname and not the IP, if you go to the IP it will default to NTLM authentication...the following conditions apply to having spnego work
+
+* Intranet Zone
+* Accessing the server using a Hostname rather then IP
+* Integrated Windows Authentication in IE is enabled, the host is trusted in Firefox
+* The Server is not local to the browser
+* The client's Kerberos system is authenticated to a domain controller
+
