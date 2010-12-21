@@ -135,7 +135,7 @@ public class ContextFactory implements ObjectFactory
                 
                 ctx = new NamingContext (env,
                                          name.get(0),
-                                         nameCtx,
+                                         (NamingContext)nameCtx,
                                          parser);
                 if(__log.isDebugEnabled())__log.debug("No entry for classloader: "+loader);
                 __contextMap.put (loader, ctx);

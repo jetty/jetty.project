@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -27,6 +28,8 @@ import javax.servlet.UnavailableException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 
 
@@ -34,7 +37,7 @@ import org.eclipse.jetty.util.log.Log;
 /** 
  * 
  */
-public class Holder<T> extends AbstractLifeCycle 
+public class Holder<T> extends AbstractLifeCycle implements Dumpable
 {
     protected transient Class<? extends T> _class;
     protected final Map<String,String> _initParams=new HashMap<String,String>(3);
@@ -250,6 +253,13 @@ public class Holder<T> extends AbstractLifeCycle
         }
     }
 
+    /* ------------------------------------------------------------ */
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(_name).append("==").append(_className).append("\n");
+        AggregateLifeCycle.dump(out,indent,_initParams.entrySet());
+    }
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

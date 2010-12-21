@@ -58,6 +58,7 @@ import org.eclipse.jetty.server.handler.ScopedHandler;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 
@@ -1472,56 +1473,17 @@ public class ServletHandler extends ScopedHandler
         _contextHandler.destroyFilter(filter);
     }
     
-   
-
     /* ------------------------------------------------------------ */
     @Override
-    protected void dump(Appendable out,String indent) throws IOException
+    public void dump(Appendable out,String indent) throws IOException
     {
-        super.dump(out,indent);
-
-        if (getFilterMappings()!=null)
-        {
-            for (FilterMapping f : getFilterMappings())
-            {
-                out.append(indent);
-                out.append(" +-");
-                out.append(String.valueOf(f.toString()));
-                if (Log.isDebugEnabled())
-                    out.append(String.valueOf(f.getFilterHolder().getInitParameters()));
-                out.append('\n');
-            }
-        }
-        HashSet<String> servlets = new HashSet<String>();
-        if (getServletMappings()!=null)
-        {
-            for (ServletMapping m : getServletMappings())
-            {
-                servlets.add(m.getServletName());
-                out.append(indent);
-                out.append(" +-");
-                out.append(String.valueOf(m));
-                ServletHolder h = getServlet(m.getServletName());
-                if (h!=null && Log.isDebugEnabled())
-                    out.append(String.valueOf(h.getInitParameters()));
-                out.append('\n');
-            }
-        }
-
-        if (getServlets()!=null)
-        {
-            for (ServletHolder h : getServlets())
-            {
-                if (servlets.contains(h.getName()))
-                    continue;
-                out.append(indent);
-                out.append(" +-[]==>");
-                out.append(h.getName());
-                if (Log.isDebugEnabled())
-                    out.append(String.valueOf(h.getInitParameters()));
-                out.append('\n');
-            }
-        }
-
+        super.dumpThis(out);
+        dump(out,indent,
+                TypeUtil.asList(getHandlers()),
+                getBeans(),
+                TypeUtil.asList(getFilterMappings()),
+                TypeUtil.asList(getFilters()),
+                TypeUtil.asList(getServletMappings()),
+                TypeUtil.asList(getServlets()));
     }
 }

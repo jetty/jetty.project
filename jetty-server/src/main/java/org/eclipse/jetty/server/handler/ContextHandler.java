@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -187,15 +188,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
     /* ------------------------------------------------------------ */
     @Override
-    protected void dump(Appendable out,String indent) throws IOException
+    public void dump(Appendable out,String indent) throws IOException
     {
-        out.append(toString()).append(isStarted()?" started":" STOPPED").append('\n');
-        if (Log.isDebugEnabled())
-        {
-            out.append(indent).append(" +-").append(String.valueOf(_attributes)).append('\n');
-            out.append(indent).append(" +-").append(String.valueOf(_contextAttributes)).append('\n');
-        }
-        dumpHandlers(out,indent);
+        dumpThis(out);
+        dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),_initParams.entrySet(), _attributes.getAttributeEntrySet(),_contextAttributes.getAttributeEntrySet());
     }
     
     /* ------------------------------------------------------------ */
@@ -645,6 +641,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
         }
 
+        Log.info("started {}",this);
     }
 
     /* ------------------------------------------------------------ */
@@ -695,6 +692,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
         finally
         {
+            Log.info("stopped {}",this);
             __context.set(old_context);
             // reset the classloader
             if (_classLoader!=null)

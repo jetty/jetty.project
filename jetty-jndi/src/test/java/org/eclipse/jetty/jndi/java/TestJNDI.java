@@ -17,6 +17,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Hashtable;
+
+import javax.naming.Binding;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.LinkRef;
@@ -72,6 +74,37 @@ public class TestJNDI
             ClassLoader childLoader1 = new URLClassLoader(new URL[0], currentLoader);
             ClassLoader childLoader2 = new URLClassLoader(new URL[0], currentLoader);
 
+            /*
+            javaRootURLContext.getRoot().addListener(new NamingContext.Listener()
+            {
+                public void unbind(NamingContext ctx, Binding binding)
+                {
+                    System.err.println("java unbind "+binding+" from "+ctx.getName());
+                }
+                
+                public Binding bind(NamingContext ctx, Binding binding)
+                {
+                    System.err.println("java bind "+binding+" to "+ctx.getName());
+                    return binding;
+                }
+            });
+            
+            localContextRoot.getRoot().addListener(new NamingContext.Listener()
+            {
+                public void unbind(NamingContext ctx, Binding binding)
+                {
+                    System.err.println("local unbind "+binding+" from "+ctx.getName());
+                }
+                
+                public Binding bind(NamingContext ctx, Binding binding)
+                {
+                    System.err.println("local bind "+binding+" to "+ctx.getName());
+                    return binding;
+                }
+            });
+            */
+            
+            
             //set the current thread's classloader
             currentThread.setContextClassLoader(childLoader1);
 

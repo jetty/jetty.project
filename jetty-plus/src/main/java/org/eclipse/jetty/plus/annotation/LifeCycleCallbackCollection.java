@@ -33,10 +33,6 @@ public class LifeCycleCallbackCollection
     private HashMap<String, List<LifeCycleCallback>> postConstructCallbacksMap = new HashMap<String, List<LifeCycleCallback>>();
     private HashMap<String, List<LifeCycleCallback>> preDestroyCallbacksMap = new HashMap<String, List<LifeCycleCallback>>();
     
-    
- 
-    
-    
     /**
      * Add a Callback to the list of callbacks.
      * 

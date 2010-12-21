@@ -14,9 +14,12 @@
 package org.eclipse.jetty.plus.webapp;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.naming.Binding;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
@@ -25,6 +28,7 @@ import javax.naming.NamingException;
 
 import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.jndi.java.javaRootURLContext;
 import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntry;
@@ -43,17 +47,13 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class EnvConfiguration extends AbstractConfiguration
 {
+    private static final String JETTY_ENV_BINDINGS = "org.eclipse.jetty.jndi.EnvConfiguration";
     private URL jettyEnvXmlUrl;
-
-  
- 
 
     public void setJettyEnvXml (URL url)
     {
         this.jettyEnvXmlUrl = url;
     }
-    
- 
 
     /** 
      * @see Configuration#configure(WebAppContext)
@@ -79,7 +79,6 @@ public class EnvConfiguration extends AbstractConfiguration
         //look in WEB-INF/jetty-env.xml
         if (jettyEnvXmlUrl == null)
         {
-            
             //look for a file called WEB-INF/jetty-env.xml
             //and process it if it exists
             org.eclipse.jetty.util.resource.Resource web_inf = context.getWebInf();
@@ -93,20 +92,46 @@ public class EnvConfiguration extends AbstractConfiguration
             }
         }
         
-        //apply the jetty-env.xml file
         if (jettyEnvXmlUrl != null)
         {
-            XmlConfiguration configuration = new XmlConfiguration(jettyEnvXmlUrl);
-            configuration.configure(context);
+            synchronized (localContextRoot.getRoot())
+            {
+                // create list and listener to remember the bindings we make.
+                final List<Bound> bindings = new ArrayList<Bound>();
+                NamingContext.Listener listener = new NamingContext.Listener()
+                {
+                    public void unbind(NamingContext ctx, Binding binding)
+                    {
+                    }
+
+                    public Binding bind(NamingContext ctx, Binding binding)
+                    {
+                        bindings.add(new Bound(ctx,binding.getName()));
+                        return binding;
+                    }
+                };
+
+                try
+                {
+                    localContextRoot.getRoot().addListener(listener);
+                    XmlConfiguration configuration = new XmlConfiguration(jettyEnvXmlUrl);
+                    configuration.configure(context);
+                }
+                finally
+                {
+                    localContextRoot.getRoot().removeListener(listener);
+                    context.setAttribute(JETTY_ENV_BINDINGS,bindings);
+                }
+            }
         }
-     
+
         //add java:comp/env entries for any EnvEntries that have been defined so far
         bindEnvEntries(context);
     }
 
     
     /** 
-     * Remove all jndi setup
+     * Remove jndi setup from start
      * @see Configuration#deconfigure(WebAppContext)
      * @throws Exception
      */
@@ -121,15 +146,39 @@ public class EnvConfiguration extends AbstractConfiguration
             Context ic = new InitialContext();
             Context compCtx =  (Context)ic.lookup ("java:comp");
             compCtx.destroySubcontext("env");
+
+            //unbind any NamingEntries that were configured in this webapp's name space
+            List<Bound> bindings = (List<Bound>)context.getAttribute(JETTY_ENV_BINDINGS);
+            context.setAttribute(JETTY_ENV_BINDINGS,null);
+            if (bindings!=null)
+            {
+                Collections.reverse(bindings);
+                for (Bound b:bindings)
+                    b._context.destroySubcontext(b._name);
+            }
         }
         catch (NameNotFoundException e)
         {
             Log.warn(e);
         }
-
-        //unbind any NamingEntries that were configured in this webapp's name space
-        try
+        finally
         {
+            Thread.currentThread().setContextClassLoader(oldLoader);
+        }
+    }
+
+    
+    /** 
+     * Remove all jndi setup
+     * @see Configuration#deconfigure(WebAppContext)
+     * @throws Exception
+     */
+    @Override
+    public void destroy (WebAppContext context) throws Exception
+    {
+        try
+        {            
+            //unbind any NamingEntries that were configured in this webapp's name space
             NamingContext scopeContext = (NamingContext)NamingEntryUtil.getContextForScope(context);
             scopeContext.getParent().destroySubcontext(scopeContext.getName());
         }
@@ -138,7 +187,6 @@ public class EnvConfiguration extends AbstractConfiguration
             Log.ignore(e);
             Log.debug("No naming entries configured in environment for webapp "+context);
         }
-        Thread.currentThread().setContextClassLoader(oldLoader);
     }
     
     /**
@@ -206,5 +254,16 @@ public class EnvConfiguration extends AbstractConfiguration
         {
            Thread.currentThread().setContextClassLoader(old_loader);
        }
+    }
+    
+    private static class Bound
+    {
+        final NamingContext _context;
+        final String _name;
+        Bound(NamingContext context, String name)
+        {
+            _context=context;
+            _name=name;
+        }
     }
 }

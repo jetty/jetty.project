@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /* ------------------------------------------------------------ */
@@ -39,7 +40,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * before passing it to the next stage of handling.
  * 
  */
-public interface Handler extends LifeCycle
+public interface Handler extends LifeCycle, Destroyable
 {
     /* ------------------------------------------------------------ */
     /** Handle a request.

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 
@@ -76,5 +77,11 @@ public class ServletMapping
     public String toString()
     {
         return (_pathSpecs==null?"[]":Arrays.asList(_pathSpecs).toString())+"=>"+_servletName; 
+    }
+
+    /* ------------------------------------------------------------ */
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(String.valueOf(this)).append("\n");
     }
 }

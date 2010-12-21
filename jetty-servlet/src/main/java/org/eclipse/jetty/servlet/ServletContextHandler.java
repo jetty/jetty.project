@@ -141,6 +141,7 @@ public class ServletContextHandler extends ContextHandler
     protected void doStop() throws Exception
     {
         super.doStop();
+        _decorators.clear();
     }
 
     /* ------------------------------------------------------------ */

@@ -19,7 +19,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.eclipse.jetty.util.log.Log;
 
@@ -156,6 +160,19 @@ public class TypeUtil
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /** Array to List.
+     * <p>
+     * Works like {@link Arrays#asList(Object...)}, but handles null arrays.
+     * @return a list backed by the array.
+     */
+    public static <T> List<T> asList(T[] a) 
+    {
+        if (a==null)
+            return Collections.emptyList();
+        return Arrays.asList(a);
+    }
+    
     /* ------------------------------------------------------------ */
     /** Class from a canonical name for a type.
      * @param name A class or type name.

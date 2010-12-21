@@ -35,32 +35,33 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Injection
 {
-    private Class _targetClass;
+    private Class<?> _targetClass;
     private String _jndiName;
     private String _mappingName;
     private Member _target;
-    private Class _paramClass;
-    private Class _resourceClass;
+    private Class<?> _paramClass;
+    private Class<?> _resourceClass;
 
     
     public Injection ()
-    {}
+    {
+    }
     
 
     /**
      * @return the _className
      */
-    public Class getTargetClass()
+    public Class<?> getTargetClass()
     {
         return _targetClass;
     }
 
-    public Class getParamClass ()
+    public Class<?> getParamClass ()
     {
         return _paramClass;
     }
    
-    public Class getResourceClass ()
+    public Class<?> getResourceClass ()
     {
         return _resourceClass;
     }
@@ -113,22 +114,22 @@ public class Injection
     }
     
 
-    public void setTarget(Class clazz, Field field, Class resourceType)
+    public void setTarget(Class<?> clazz, Field field, Class<?> resourceType)
     {
         _targetClass = clazz;
         _target = field;
         _resourceClass = resourceType;
     }
-    public void setTarget(Class clazz, Method method, Class arg, Class resourceType)
+    
+    public void setTarget(Class<?> clazz, Method method, Class<?> arg, Class<?> resourceType)
     {
         _targetClass = clazz;
         _target = method;
         _resourceClass = resourceType;
         _paramClass = arg;
     }
-    
    
-    public void setTarget (Class clazz, String target, Class resourceType)
+    public void setTarget (Class<?> clazz, String target, Class<?> resourceType)
     {
         _targetClass = clazz;
         _resourceClass = resourceType;

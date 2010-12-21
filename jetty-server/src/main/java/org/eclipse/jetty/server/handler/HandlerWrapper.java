@@ -57,6 +57,8 @@ public class HandlerWrapper extends AbstractHandlerContainer
      */
     public Handler[] getHandlers()
     {
+        if (_handler==null)
+            return new Handler[0];
         return new Handler[] {_handler};
     }
     

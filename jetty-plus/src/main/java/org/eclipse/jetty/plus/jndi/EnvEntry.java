@@ -26,11 +26,11 @@ public class EnvEntry extends NamingEntry
 {
     private boolean overrideWebXml;
   
-
     public EnvEntry (Object scope, String jndiName, Object objToBind, boolean overrideWebXml)
     throws NamingException
     {
-        super (scope, jndiName, objToBind);
+        super (scope, jndiName);
+        save(objToBind);
         this.overrideWebXml = overrideWebXml;
     }
     
@@ -38,7 +38,8 @@ public class EnvEntry extends NamingEntry
     public EnvEntry (String jndiName, Object objToBind, boolean overrideWebXml)
     throws NamingException
     {
-        super(jndiName, objToBind);
+        super(jndiName);
+        save(objToBind);
         this.overrideWebXml = overrideWebXml;
     }
     
@@ -47,7 +48,6 @@ public class EnvEntry extends NamingEntry
     {
         this(jndiName, objToBind, false);
     }
-    
     
     public boolean isOverrideWebXml ()
     {

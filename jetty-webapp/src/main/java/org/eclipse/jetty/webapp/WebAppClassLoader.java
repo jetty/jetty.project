@@ -431,6 +431,6 @@ public class WebAppClassLoader extends URLClassLoader
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return "WebAppClassLoader@" + _name;
+        return "WebAppClassLoader=" + _name+"@"+Long.toHexString(hashCode());
     }
 }

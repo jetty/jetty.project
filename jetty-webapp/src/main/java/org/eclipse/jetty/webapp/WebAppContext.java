@@ -43,6 +43,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -142,7 +143,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _allowDuplicateFragmentNames = false;
     
   
-    private MetaData _metadata;
+    private MetaData _metadata=new MetaData();
 
     public static WebAppContext getCurrentWebAppContext()
     {
@@ -161,20 +162,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         super(SESSIONS|SECURITY); 
         _scontext=new Context();
-        setErrorHandler(new ErrorPageErrorHandler());      
-        //Make a new MetaData to hold descriptor and annotation metadata
-        _metadata = new MetaData();
-    }
-
-    /* ------------------------------------------------------------ */
-    public WebAppContext(WebAppContext template) throws IOException
-    {
-        super(SESSIONS|SECURITY); 
-        if (template.isStarted())
-            throw new IllegalArgumentException("template is started");
-        _scontext=new Context();
-        setErrorHandler(new ErrorPageErrorHandler());      
-        setTemplate(template);
+        setErrorHandler(new ErrorPageErrorHandler());    
     }
     
     /* ------------------------------------------------------------ */
@@ -188,9 +176,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _scontext=new Context();
         setContextPath(contextPath);
         setWar(webApp);
-        setErrorHandler(new ErrorPageErrorHandler());      
-        //Make a new MetaData to hold descriptor and annotation metadata
-        _metadata = new MetaData();
+        setErrorHandler(new ErrorPageErrorHandler()); 
     }
     
     /* ------------------------------------------------------------ */
@@ -204,9 +190,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super(parent,contextPath,SESSIONS|SECURITY);
         _scontext=new Context();
         setWar(webApp);
-        setErrorHandler(new ErrorPageErrorHandler());      
-        //Make a new MetaData to hold descriptor and annotation metadata
-        _metadata = new MetaData();
+        setErrorHandler(new ErrorPageErrorHandler());   
     }
 
     /* ------------------------------------------------------------ */
@@ -223,48 +207,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super(null, sessionHandler, securityHandler, servletHandler, errorHandler);
         _scontext = new Context();
         setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
-        //Make a new MetaData to hold descriptor and annotation metadata
-        _metadata = new MetaData();
-
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Configure this WebAppContext from a shared WebAppContext as template.
-     * <p>The MetaData is reused from the template.
-     * @param template The template to base this webappcontext on
-     */
-    public void setTemplate(WebAppContext template)
-    {
-        if (template==null)
-            throw new IllegalStateException("null template");
-        if (isRunning() || template.isRunning())
-            throw new IllegalStateException("Running");
-        
-        //Make a new MetaData to hold descriptor and annotation metadata
-        _metadata = template.getMetaData();
-        
-        _configurations = new Configuration[]{new CloneConfiguration(template)};
-
-        // TODO we need some better way to work out what attributes should be copied at this stage.
-        setAllowDuplicateFragmentNames(template.isAllowDuplicateFragmentNames());
-        setAliases(template.isAliases());
-        setBaseResource(template.getBaseResource());
-        setClassLoader(template.getClassLoader()); 
-        setContextPath(template.getContextPath());
-        setCompactPath(template.isCompactPath());
-        setDisplayName(template.getDisplayName());
-        setLogger(template.getLogger()); // TODO maybe not shared ???
-        setMaxFormContentSize(template.getMaxFormContentSize());  
-        
-        Enumeration<?> names=template.getAttributeNames();
-        while(names.hasMoreElements())
-        {
-            String name = (String)names.nextElement();
-            Object val = template.getAttribute(name);
-            if (!name.startsWith("javax.servlet."))
-                setAttribute(name,val);
-        }
     }
     
     /* ------------------------------------------------------------ */
@@ -490,8 +432,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         try
         {
-            if (_metadata != null)
-                _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
+            _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
             preConfigure();
             super.doStart();
             postConfigure();
@@ -507,25 +448,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             setAvailable(false);
         }
     }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * Dumps the current web app name and URL to the log
-     */
-    public void dumpUrl()
-    {
-        Connector[] connectors = getServer().getConnectors();
-        for (int i=0;i<connectors.length;i++)
-        {
-            String connectorName = connectors[i].getName();
-            String displayName = getDisplayName();
-            if (displayName == null)
-                displayName = "WebApp@"+connectors.hashCode();
-           
-            Log.info(displayName + " at http://" + connectorName + getContextPath());
-        }
-    }
-
+    
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
@@ -540,9 +463,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             for (int i=_configurations.length;i-->0;)
                 _configurations[i].deconfigure(this);
             
-            _configurations=null;
             if (_metadata != null)
                 _metadata.clear();
+            _metadata=new MetaData();
             
         }
         finally
@@ -555,6 +478,50 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
     }
     
+    /* ------------------------------------------------------------ */
+    @Override
+    public void destroy()
+    {
+        // Prepare for configuration     
+        MultiException mx=new MultiException();
+        if (_configurations!=null)
+        {
+            for (int i=_configurations.length;i-->0;)
+            {
+                try
+                {   
+                    _configurations[i].destroy(this);
+                }
+                catch(Exception e)
+                {
+                    mx.add(e);
+                }
+            }
+        }
+        _configurations=null;
+        super.destroy();
+        mx.ifExceptionThrowRuntime();
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /*
+     * Dumps the current web app name and URL to the log
+     */
+    private void dumpUrl()
+    {
+        Connector[] connectors = getServer().getConnectors();
+        for (int i=0;i<connectors.length;i++)
+        {
+            String connectorName = connectors[i].getName();
+            String displayName = getDisplayName();
+            if (displayName == null)
+                displayName = "WebApp@"+connectors.hashCode();
+           
+            Log.info(displayName + " at http://" + connectorName + getContextPath());
+        }
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the configurations.
@@ -833,9 +800,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         return super.toString()+(_war==null?"":(","+_war));
     }
-    
-   
-       
 
     /* ------------------------------------------------------------ */
     /**
@@ -844,8 +808,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setConfigurationClasses(String[] configurations)
     {
+        if (isRunning())
+            throw new IllegalStateException();
         _configurationClasses = configurations==null?null:(String[])configurations.clone();
         _configurationClassesSet = true;
+        _configurations=null;
     }
     
     /* ------------------------------------------------------------ */
@@ -854,6 +821,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setConfigurations(Configuration[] configurations)
     {
+        if (isRunning())
+            throw new IllegalStateException();
         _configurations = configurations==null?null:(Configuration[])configurations.clone();
         _configurationsSet = true;
     }

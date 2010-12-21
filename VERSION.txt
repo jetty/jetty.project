@@ -5,6 +5,7 @@ jetty-7.3.0-SNAPSHOT
  + 332179 Fixed formatting of negative dates
  + 332703 Cleanup context scope JNDI at stop
  + 332796 Annotations inheritance does not work with jetty7 
+ + 332937 Added Destroyable interface and reworked dependent lifecycles, specially of JNDI
 
 jetty-7.2.2.v20101205 5 December 2010
  + JETTY-1308 327109 (re)fixed AJP handling of empty packets

@@ -16,6 +16,7 @@ package org.eclipse.jetty.security;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.StringMap;
+import org.eclipse.jetty.util.TypeUtil;
 
 /* ------------------------------------------------------------ */
 /**
@@ -419,19 +421,12 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
         return false;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
-    protected void dump(Appendable out,String indent) throws IOException
+    public void dump(Appendable out,String indent) throws IOException
     {
-        out.append(toString()).append(isStarted()?" started":" STOPPED").append('\n');
-        out.append(indent).append(" +-").append(String.valueOf(_roles)).append('\n');
-        
-        for (Object path : _constraintMap.keySet())
-        {
-            Object constraint = _constraintMap.get(path);
-            out.append(indent).append(" +-").append(String.valueOf(path)).append('=').append(String.valueOf(constraint)).append('\n');
-        }
-        dumpHandlers(out,indent);
+        dumpThis(out);
+        dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),Collections.singleton(_roles),_constraintMap.entrySet());
     }
 }

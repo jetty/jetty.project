@@ -18,7 +18,9 @@ import java.io.IOException;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 
 
@@ -27,7 +29,7 @@ import org.eclipse.jetty.util.log.Log;
  * 
  *
  */
-public abstract class AbstractHandler extends AbstractLifeCycle implements Handler
+public abstract class AbstractHandler extends AggregateLifeCycle implements Handler
 {
     private Server _server;
     
@@ -47,6 +49,7 @@ public abstract class AbstractHandler extends AbstractLifeCycle implements Handl
     protected void doStart() throws Exception
     {
         Log.debug("starting {}",this);
+        super.doStart();
     }
 
     /* ------------------------------------------------------------ */
@@ -57,6 +60,7 @@ public abstract class AbstractHandler extends AbstractLifeCycle implements Handl
     protected void doStop() throws Exception
     {
         Log.debug("stopping {}",this);
+        super.doStop();
     }
 
     /* ------------------------------------------------------------ */
@@ -76,42 +80,20 @@ public abstract class AbstractHandler extends AbstractLifeCycle implements Handl
         return _server;
     }
 
-
     /* ------------------------------------------------------------ */
     public void destroy()
     {
         if (!isStopped())
             throw new IllegalStateException("!STOPPED");
+        super.destroy();
         if (_server!=null)
             _server.getContainer().removeBean(this);
     }
 
-
     /* ------------------------------------------------------------ */
-    public String dump()
-    {
-        StringBuilder b = new StringBuilder();
-        try
-        {
-            dump(b,"");
-        }
-        catch (IOException e)
-        {
-            Log.warn(e);
-        }
-        return b.toString();
-    }    
-
-    /* ------------------------------------------------------------ */
-    public void dump(Appendable out) throws IOException
-    {
-        dump(out,"");
-    }
-    
-    /* ------------------------------------------------------------ */
-    protected void dump(Appendable out,String indent) throws IOException
+    public void dumpThis(Appendable out) throws IOException
     {
         out.append(toString()).append(isStarted()?" started":" STOPPED").append('\n');
     }
-
+    
 }
