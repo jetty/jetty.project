@@ -1,5 +1,5 @@
 
-jetty-7.2.3-SNAPSHOT
+jetty-7.3.0-SNAPSHOT
  + 320457 add SPNEGO support
  + 332432 Scanner.java now always scanning the canonical form of File
  + 332179 Fixed formatting of negative dates

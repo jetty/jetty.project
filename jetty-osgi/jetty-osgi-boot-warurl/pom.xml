@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>7.2.3-SNAPSHOT</version>
+    <version>7.3.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -33,7 +33,7 @@
             <phase>process-resources</phase>
             <configuration>
               <tasks>
-                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 7.2.1.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
+                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 7.3.0.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
               </tasks>
             </configuration>
             <goals>

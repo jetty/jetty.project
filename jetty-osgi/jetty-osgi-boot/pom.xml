@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>7.2.3-SNAPSHOT</version>
+    <version>7.3.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -41,7 +41,7 @@
             <phase>process-resources</phase>
             <configuration>
               <tasks>
-                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 7.2.0.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
+                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 7.3.0.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
                 <copy todir="target/classes/jettyhome">
                     <fileset dir="jettyhome">
                         <exclude name="**/*.log" />
@@ -179,7 +179,7 @@
  org.xml.sax.helpers,
  *
                         </Import-Package>
-                        <DynamicImport-Package>org.eclipse.jetty.*;version="[7.2,8)"</DynamicImport-Package>
+                        <DynamicImport-Package>org.eclipse.jetty.*;version="[7.3,8)"</DynamicImport-Package>
                         <!--Require-Bundle/-->
                         <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment> 
                     </instructions>
