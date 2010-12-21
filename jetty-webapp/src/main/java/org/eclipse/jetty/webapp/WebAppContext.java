@@ -20,7 +20,6 @@ import java.net.URL;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
@@ -808,7 +807,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setConfigurationClasses(String[] configurations)
     {
-        if (isRunning())
+        if (isStarted())
             throw new IllegalStateException();
         _configurationClasses = configurations==null?null:(String[])configurations.clone();
         _configurationClassesSet = true;
@@ -821,7 +820,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setConfigurations(Configuration[] configurations)
     {
-        if (isRunning())
+        if (isStarted())
             throw new IllegalStateException();
         _configurations = configurations==null?null:(Configuration[])configurations.clone();
         _configurationsSet = true;
