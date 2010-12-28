@@ -14,6 +14,7 @@
 package org.eclipse.jetty.security;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -110,6 +111,19 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     public void setConstraintMappings(List<ConstraintMapping> constraintMappings)
     {
         setConstraintMappings(constraintMappings,null);
+    }
+    
+    /**
+     * Process the constraints following the combining rules in Servlet 3.0 EA
+     * spec section 13.7.1 Note that much of the logic is in the RoleInfo class.
+     * 
+     * @param constraintMappings
+     *            The contraintMappings to set as array, from which the set of known roles
+     *            is determined.  Needed to retain API compatibility for 7.x
+     */
+    public void setConstraintMappings( ConstraintMapping[] contraintMappings )
+    {
+        setConstraintMappings( Arrays.asList(contraintMappings), null);
     }
     
     /* ------------------------------------------------------------ */
