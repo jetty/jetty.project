@@ -1,11 +1,12 @@
 
 jetty-7.3.0-SNAPSHOT
- + 320457 add SPNEGO support
+ + 333247 fix api compat issue in ConstraintSecurityHandler
  + 332432 Scanner.java now always scanning the canonical form of File
  + 332179 Fixed formatting of negative dates
  + 332703 Cleanup context scope JNDI at stop
  + 332796 Annotations inheritance does not work with jetty7 
  + 332937 Added Destroyable interface and reworked dependent lifecycles, specially of JNDI
+ + 320457 add SPNEGO support
 
 jetty-7.2.2.v20101205 5 December 2010
  + JETTY-1308 327109 (re)fixed AJP handling of empty packets
