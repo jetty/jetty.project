@@ -22,6 +22,7 @@ import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 
@@ -267,4 +268,9 @@ public class FilterMapping implements Dumpable
         out.append(String.valueOf(this)).append("\n");
     }
 
+    /* ------------------------------------------------------------ */
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }    
 }

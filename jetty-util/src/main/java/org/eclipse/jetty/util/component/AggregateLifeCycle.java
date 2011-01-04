@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import javax.naming.Binding;
-import javax.naming.Reference;
 
 import org.eclipse.jetty.util.log.Log;
 
@@ -183,10 +181,16 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     /* ------------------------------------------------------------ */
     public String dump()
     {
+        return dump(this);
+    }    
+    
+    /* ------------------------------------------------------------ */
+    public static String dump(Dumpable dumpable)
+    {
         StringBuilder b = new StringBuilder();
         try
         {
-            dump(b,"");
+            dumpable.dump(b,"");
         }
         catch (IOException e)
         {

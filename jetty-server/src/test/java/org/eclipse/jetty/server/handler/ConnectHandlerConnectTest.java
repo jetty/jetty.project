@@ -71,6 +71,7 @@ public class ConnectHandlerConnectTest extends AbstractProxyHandlerTest
                 "Host: " + hostPort + "\r\n" +
                 "\r\n";
         Socket socket = newSocket();
+        socket.setSoTimeout(30000);
         try
         {
             OutputStream output = socket.getOutputStream();
@@ -499,7 +500,7 @@ public class ConnectHandlerConnectTest extends AbstractProxyHandlerTest
                 while ((read = input.read()) >= 0)
                     baos.write(read);
                 baos.close();
-
+                
                 ServletOutputStream output = httpResponse.getOutputStream();
                 output.println(builder.toString());
                 output.write(baos.toByteArray());

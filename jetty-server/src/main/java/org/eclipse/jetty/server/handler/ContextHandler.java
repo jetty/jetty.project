@@ -21,6 +21,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
@@ -61,6 +62,8 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -191,8 +194,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     public void dump(Appendable out,String indent) throws IOException
     {
         dumpThis(out);
-        dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),_initParams.entrySet(), _attributes.getAttributeEntrySet(),_contextAttributes.getAttributeEntrySet());
+        dump(out,indent,Collections.singletonList(new CLDump(getClassLoader())),TypeUtil.asList(getHandlers()),getBeans(),_initParams.entrySet(), _attributes.getAttributeEntrySet(),_contextAttributes.getAttributeEntrySet());
     }
+    
+   
     
     /* ------------------------------------------------------------ */
     public Context getServletContext()
@@ -1913,4 +1918,39 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
     }
 
+    
+    private static class CLDump implements Dumpable
+    {
+        final ClassLoader _loader;
+        CLDump(ClassLoader loader)
+        {
+            _loader=loader;
+        }
+        
+        public String dump()
+        {
+            return AggregateLifeCycle.dump(this);
+        }
+
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            out.append(String.valueOf(_loader)).append("\n");
+
+            if (_loader!=null)
+            {
+                Object parent = _loader.getParent();
+                if (parent!=null)
+                {
+                    if (!(parent instanceof Dumpable))
+                        parent=new CLDump((ClassLoader)parent);
+
+                    if (_loader instanceof URLClassLoader)
+                        AggregateLifeCycle.dump(out,indent,TypeUtil.asList(((URLClassLoader)_loader).getURLs()),Collections.singleton(parent));
+                    else
+                        AggregateLifeCycle.dump(out,indent,Collections.singleton(parent));
+                }
+            }
+        }
+        
+    }
 }

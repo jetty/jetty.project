@@ -31,6 +31,9 @@ import java.util.StringTokenizer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -54,7 +57,7 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  * classloader that loaded this class is used as the parent.
  * 
  */
-public class WebAppClassLoader extends URLClassLoader 
+public class WebAppClassLoader extends URLClassLoader
 {
     private final Context _context;
     private final ClassLoader _parent;
@@ -433,4 +436,5 @@ public class WebAppClassLoader extends URLClassLoader
     {
         return "WebAppClassLoader=" + _name+"@"+Long.toHexString(hashCode());
     }
+
 }

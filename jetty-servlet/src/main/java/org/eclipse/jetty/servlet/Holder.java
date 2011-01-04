@@ -259,6 +259,12 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         out.append(_name).append("==").append(_className).append("\n");
         AggregateLifeCycle.dump(out,indent,_initParams.entrySet());
     }
+
+    /* ------------------------------------------------------------ */
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }    
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

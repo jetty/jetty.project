@@ -320,6 +320,11 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
     {
         out.append(toString()).append("\n");
         AggregateLifeCycle.dump(out,indent,_beans.entrySet());
-        
     }
+
+    /* ------------------------------------------------------------ */
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }    
 }
