@@ -127,15 +127,18 @@ public class HashSessionIdManager extends AbstractSessionIdManager
      */
     public void invalidateAll(String id)
     {
-	// Do not use interators as this method tends to be called recursively 
+	// Do not use iterators as this method tends to be called recursively 
 	// by the invalidate calls.
 	while (_sessions.containsKey(id))
 	{
 	    Session session=(Session)_sessions.getValue(id,0);
+	    
 	    if (session.isValid())
+	    {
 		session.invalidate();
-	    else
-		_sessions.removeValue(id,session);
+	    }
+	   
+	    _sessions.removeValue(id,session);	    
 	}
     }
 

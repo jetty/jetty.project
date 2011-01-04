@@ -1,6 +1,7 @@
 
 jetty-7.3.0-SNAPSHOT
  + 333247 fix api compat issue in ConstraintSecurityHandler
+ + 332799 100% CPU on redeploy session invalidation
  + 332432 Scanner.java now always scanning the canonical form of File
  + 332179 Fixed formatting of negative dates
  + 332703 Cleanup context scope JNDI at stop
