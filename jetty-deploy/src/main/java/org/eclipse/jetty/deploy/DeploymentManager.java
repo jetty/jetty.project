@@ -159,8 +159,11 @@ public class DeploymentManager extends AggregateLifeCycle
         if (isRunning())
             throw new IllegalStateException();
         
-        _providers.add(provider);
-        addBean(provider);
+        List<AppProvider> old = new ArrayList<AppProvider>(_providers);
+        if (_providers.add(provider) && getServer()!=null)
+            getServer().getContainer().update(this, null, provider, "provider");
+            
+        addBean(provider);        
     }
 
     public void setLifeCycleBindings(Collection<AppLifeCycle.Binding> bindings)
@@ -395,7 +398,11 @@ public class DeploymentManager extends AggregateLifeCycle
     public void removeAppProvider(AppProvider provider)
     {
         if(_providers.remove(provider))
+        {
             removeBean(provider);
+            if (getServer()!=null)
+                getServer().getContainer().update(this, provider,null, "provider");
+        }
         try
         {
             provider.stop();

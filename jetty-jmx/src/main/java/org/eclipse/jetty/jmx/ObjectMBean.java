@@ -18,6 +18,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -317,6 +318,15 @@ public class ObjectMBean implements DynamicMBean
                     ObjectName[] on = new ObjectName[Array.getLength(r)];
                     for (int i=0;i<on.length;i++)
                         on[i]=_mbeanContainer.findMBean(Array.get(r, i));
+                    r=on;
+                }
+                else if (r instanceof Collection<?>)
+                {
+                    Collection<Object> c = (Collection<Object>)r;
+                    ObjectName[] on = new ObjectName[c.size()];
+                    int i=0;
+                    for (Object obj :c)
+                        on[i++]=_mbeanContainer.findMBean(obj);
                     r=on;
                 }
                 else

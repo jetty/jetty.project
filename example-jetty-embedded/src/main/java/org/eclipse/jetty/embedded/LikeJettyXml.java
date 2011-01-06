@@ -107,21 +107,18 @@ public class LikeJettyXml
         server.addBean(deployer);   
         
         ContextProvider context_provider = new ContextProvider();
-        context_provider.setMonitoredDir(jetty_home + "/contexts");
+        context_provider.setMonitoredDirName(jetty_home + "/contexts");
         context_provider.setScanInterval(2);
-        server.addBean(context_provider);
         deployer.addAppProvider(context_provider);
 
-        /*
         WebAppProvider webapp_provider = new WebAppProvider();
-        webapp_provider.setMonitoredDir(jetty_home + "/webapps");
+        webapp_provider.setMonitoredDirName(jetty_home + "/webapps");
         webapp_provider.setParentLoaderPriority(false);
         webapp_provider.setExtractWars(true);
         webapp_provider.setScanInterval(2);
         webapp_provider.setDefaultsDescriptor(jetty_home + "/etc/webdefault.xml");
         webapp_provider.setContextXmlDir(jetty_home + "/contexts");
         deployer.addAppProvider(webapp_provider);
-*/
         
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");

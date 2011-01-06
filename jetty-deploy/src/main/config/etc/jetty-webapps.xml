@@ -11,7 +11,7 @@
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
     <Ref id="DeploymentManager">
-          <Call name="addAppProvider">
+          <Call id="webappprovider" name="addAppProvider">
             <Arg>
               <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
                 <Set name="monitoredDir"><Property name="jetty.home" default="." />/webapps</Set>
