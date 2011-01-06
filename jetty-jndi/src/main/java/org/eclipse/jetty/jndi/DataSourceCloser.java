@@ -1,6 +1,7 @@
 package org.eclipse.jetty.jndi;
 
 import java.lang.reflect.Method;
+import java.sql.Statement;
 
 import javax.sql.DataSource;
 
@@ -18,26 +19,50 @@ import org.eclipse.jetty.util.log.Log;
 public class DataSourceCloser implements Destroyable
 {
     final DataSource _datasource;
+    final String _shutdown;
     
     public DataSourceCloser(DataSource datasource)
     {
+        if (datasource==null)
+            throw new IllegalArgumentException();
         _datasource=datasource;
+        _shutdown=null;
+    }
+    
+    public DataSourceCloser(DataSource datasource,String shutdownSQL)
+    {
+        if (datasource==null)
+            throw new IllegalArgumentException();
+        _datasource=datasource;
+        _shutdown=shutdownSQL;
     }
     
     public void destroy()
     {
-        if (_datasource != null)
+        try
         {
-            try
+            if (_shutdown!=null)
             {
-                Method close = _datasource.getClass().getMethod("close", new Class[]{});
-                close.invoke(_datasource, new Object[]{});
-            }
-            catch (Exception e)
-            {
-                Log.warn(e);
+                Log.info("Shutdown datasource {}",_datasource);
+                Statement stmt = _datasource.getConnection().createStatement();
+                stmt.executeUpdate(_shutdown);
+                stmt.close();
             }
         }
+        catch (Exception e)
+        {
+            Log.warn(e);
+        }
+        
+        try
+        {
+            Method close = _datasource.getClass().getMethod("close", new Class[]{});
+            Log.info("Close datasource {}",_datasource);
+            close.invoke(_datasource, new Object[]{});
+        }
+        catch (Exception e)
+        {
+            Log.warn(e);
+        }
     }
-
 }
