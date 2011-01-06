@@ -24,8 +24,7 @@
     <module>jetty-osgi-boot-logback</module>
     <module>jetty-osgi-boot-warurl</module>
     <module>jetty-osgi-httpservice</module>
-    <module>test-jetty-osgi</module>
-    <!-- module>example-jetty-osgi</module -->
+    <!--module>test-jetty-osgi</module-->
   </modules>
   <build>
     <resources>
@@ -75,6 +74,11 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-jmx</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

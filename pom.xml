@@ -272,6 +272,7 @@
    -->
   <modules>
     <module>jetty-util</module>
+    <module>jetty-jmx</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
     <module>jetty-websocket</module>
@@ -287,7 +288,6 @@
     <module>jetty-jsp-2.1</module>
     <module>jetty-deploy</module>
     <module>jetty-ajp</module>
-    <module>jetty-jmx</module>
     <module>jetty-jndi</module>
     <module>jetty-annotations</module>
     <module>jetty-plus</module>

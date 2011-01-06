@@ -14,7 +14,6 @@
 package org.eclipse.jetty.jmx;
 
 import com.acme.Derived;
-import org.eclipse.jetty.server.Server;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
@@ -27,14 +26,5 @@ public class ObjectMBeanTest
         Derived derived = new Derived();
         ObjectMBean mbean = new ObjectMBean(derived);
         assertTrue(mbean.getMBeanInfo()!=null); // TODO do more than just run it
-    }
-
-    @Test
-    public void testMbeanFor()
-    {
-        Derived derived = new Derived();
-        assertTrue(ObjectMBean.mbeanFor(derived)!=null); // TODO do more than just run it
-        Server server = new Server();
-        assertTrue(ObjectMBean.mbeanFor(server)!=null); // TODO do more than just run it
     }
 }
