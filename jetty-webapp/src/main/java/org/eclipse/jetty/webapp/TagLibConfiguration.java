@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,6 +24,8 @@ import java.util.List;
 import java.util.Set;
 
 import javax.servlet.Servlet;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
@@ -45,16 +48,206 @@ import org.eclipse.jetty.xml.XmlParser;
  * &lt;/bile&gt;
  * 
  * 
- * TODO - this has been superceded by the new TldScanner in jasper which uses ServletContainerInitializer to
+ * Note- this has been superceded by the new TldScanner in jasper which uses ServletContainerInitializer to
  * find all the listeners in tag libs and register them.
  */
 public class TagLibConfiguration extends AbstractConfiguration
 {
     public static final String TLD_RESOURCES = "org.eclipse.jetty.tlds";
-    private TldProcessor _processor;
-    private List<TldDescriptor> _descriptors = new ArrayList<TldDescriptor>();
+    
+    /**
+     * TagLibListener
+     *
+     * A listener that does the job of finding .tld files that contain
+     * (other) listeners that need to be called by the servlet container.
+     * 
+     * This implementation is necessitated by the fact that it is only
+     * after all the Configuration classes have run that we will
+     * parse web.xml/fragments etc and thus find tlds mentioned therein.
+     * 
+     * Note: TagLibConfiguration is not used in jetty-8 as jasper (JSP engine)
+     * uses the new TldScanner class - a ServletContainerInitializer from
+     * Servlet Spec 3 - to find all listeners in taglibs and register them
+     * with the servlet container.
+     */
+    public  class TagLibListener implements ServletContextListener {
+        private List<EventListener> _tldListeners;
+        private WebAppContext _context;       
+        
+        public TagLibListener (WebAppContext context) {
+            _context = context;
+        }
+
+        public void contextDestroyed(ServletContextEvent sce)
+        {
+            if (_tldListeners == null)
+                return;
+            
+            for (int i=_tldListeners.size()-1; i>=0; i--) {
+                EventListener l = _tldListeners.get(i);
+                if (l instanceof ServletContextListener) {
+                    ((ServletContextListener)l).contextDestroyed(sce);
+                }
+            }
+        }
+
+        public void contextInitialized(ServletContextEvent sce)
+        {
+            try {
+                //find the tld files and parse them to get out their
+                //listeners
+                Set<Resource> tlds = findTldResources();
+                List<TldDescriptor> descriptors = parseTlds(tlds);
+                processTlds(descriptors);
+                
+                if (_tldListeners == null)
+                    return;
+                
+                //call the listeners that are ServletContextListeners, put the
+                //rest into the context's list of listeners to call at the appropriate
+                //moment
+                for (EventListener l:_tldListeners) {
+                    if (l instanceof ServletContextListener) {
+                        ((ServletContextListener)l).contextInitialized(sce);
+                    } else {
+                        _context.addEventListener(l);
+                    }
+                }
+                
+            } catch (Exception e) {
+                Log.warn(e);
+            }
+        }
+
+        
+        /**
+         * Find all the locations that can harbour tld files that may contain
+         * a listener which the web container is supposed to instantiate and
+         * call.
+         * 
+         * @return
+         * @throws IOException
+         */
+        private Set<Resource> findTldResources () throws IOException {
+            
+            Set<Resource> tlds = new HashSet<Resource>();
+            
+            // Find tld's from web.xml
+            // When web.xml was processed, it should have created aliases for all TLDs.  So search resources aliases
+            // for aliases ending in tld
+            if (_context.getResourceAliases()!=null && 
+                    _context.getBaseResource()!=null && 
+                    _context.getBaseResource().exists())
+            {
+                Iterator iter=_context.getResourceAliases().values().iterator();
+                while(iter.hasNext())
+                {
+                    String location = (String)iter.next();
+                    if (location!=null && location.toLowerCase().endsWith(".tld"))
+                    {
+                        if (!location.startsWith("/"))
+                            location="/WEB-INF/"+location;
+                        Resource l=_context.getBaseResource().addPath(location);
+                        tlds.add(l);
+                    }
+                }
+            }
+            
+            // Look for any tlds in WEB-INF directly.
+            Resource web_inf = _context.getWebInf();
+            if (web_inf!=null)
+            {
+                String[] contents = web_inf.list();
+                for (int i=0;contents!=null && i<contents.length;i++)
+                {
+                    if (contents[i]!=null && contents[i].toLowerCase().endsWith(".tld"))
+                    {
+                        Resource l=web_inf.addPath(contents[i]);
+                        tlds.add(l);
+                    }
+                }
+            }
+            
+            //Look for tlds in common location of WEB-INF/tlds
+            if (web_inf != null) {
+                Resource web_inf_tlds = _context.getWebInf().addPath("/tlds/");
+                if (web_inf_tlds.exists() && web_inf_tlds.isDirectory()) {
+                    String[] contents = web_inf_tlds.list();
+                    for (int i=0;contents!=null && i<contents.length;i++)
+                    {
+                        if (contents[i]!=null && contents[i].toLowerCase().endsWith(".tld"))
+                        {
+                            Resource l=web_inf_tlds.addPath(contents[i]);
+                            tlds.add(l);
+                        }
+                    }
+                } 
+            }
+
+            // Add in tlds found in META-INF of jars. The jars that will be scanned are controlled by
+            // the patterns defined in the context attributes: org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern,
+            // and org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern
+            Collection<Resource> tld_resources=(Collection<Resource>)_context.getAttribute(TLD_RESOURCES);
+            if (tld_resources!=null)
+                tlds.addAll(tld_resources);
+            
+            return tlds;
+        }
+        
+        
+        /**
+         * Parse xml into in-memory tree
+         * @param tlds
+         * @return
+         */
+        private List<TldDescriptor> parseTlds (Set<Resource> tlds) {         
+            List<TldDescriptor> descriptors = new ArrayList<TldDescriptor>();
+            
+            Resource tld = null;
+            Iterator iter = tlds.iterator();
+            while (iter.hasNext())
+            {
+                try
+                {
+                    tld = (Resource)iter.next();
+                    if (Log.isDebugEnabled()) Log.debug("TLD="+tld);
+                   
+                    TldDescriptor d = new TldDescriptor(tld);
+                    d.parse();
+                    descriptors.add(d);
+                }
+                catch(Exception e)
+                {
+                    Log.warn("Unable to parse TLD: " + tld,e);
+                }
+            }
+            return descriptors;
+        }
+        
+        
+        /**
+         * Create listeners from the parsed tld trees
+         * @param descriptors
+         * @throws Exception
+         */
+        private void processTlds (List<TldDescriptor> descriptors) throws Exception {
+
+            TldProcessor processor = new TldProcessor();
+            for (TldDescriptor d:descriptors)
+                processor.process(_context, d); 
+            
+            _tldListeners = new ArrayList<EventListener>(processor.getListeners());
+        }
+    }
     
     
+    
+    
+    /**
+     * TldDescriptor
+     *
+     *
+     */
     public static class TldDescriptor extends Descriptor
     {
         protected static XmlParser __parserSingleton;
@@ -168,11 +361,13 @@ public class TagLibConfiguration extends AbstractConfiguration
         public static final String TAGLIB_PROCESSOR = "org.eclipse.jetty.tagLibProcessor";
         XmlParser _parser;
         List<XmlParser.Node> _roots = new ArrayList<XmlParser.Node>();
+        List<EventListener> _listeners;
         
         
         public TldProcessor ()
         throws Exception
         {  
+            _listeners = new ArrayList<EventListener>();
             registerVisitor("listener", this.getClass().getDeclaredMethod("visitListener", __signature));
         }
       
@@ -186,7 +381,7 @@ public class TagLibConfiguration extends AbstractConfiguration
             {
                 Class listenerClass = context.loadClass(className);
                 EventListener l = (EventListener)listenerClass.newInstance();
-                context.addEventListener(l);
+                _listeners.add(l);
             }
             catch(Exception e)
             {
@@ -204,15 +399,15 @@ public class TagLibConfiguration extends AbstractConfiguration
         @Override
         public void end(WebAppContext context, Descriptor descriptor)
         {
-            // TODO Auto-generated method stub
-            
         }
 
         @Override
         public void start(WebAppContext context, Descriptor descriptor)
-        {
-            // TODO Auto-generated method stub
-            
+        {  
+        }
+        
+        public List<EventListener> getListeners() {
+            return _listeners;
         }
     }
 
@@ -230,120 +425,30 @@ public class TagLibConfiguration extends AbstractConfiguration
             return;
         }
 
-        Set tlds = new HashSet();
-
-        // Find tld's from web.xml
-        // When web.xml was processed, it should have created aliases for all TLDs.  So search resources aliases
-        // for aliases ending in tld
-        if (context.getResourceAliases()!=null && 
-                context.getBaseResource()!=null && 
-                context.getBaseResource().exists())
-        {
-            Iterator iter=context.getResourceAliases().values().iterator();
-            while(iter.hasNext())
-            {
-                String location = (String)iter.next();
-                if (location!=null && location.toLowerCase().endsWith(".tld"))
-                {
-                    if (!location.startsWith("/"))
-                        location="/WEB-INF/"+location;
-                    Resource l=context.getBaseResource().addPath(location);
-                    tlds.add(l);
-                }
-            }
-        }
-        
-        // Look for any tlds in WEB-INF directly.
-        Resource web_inf = context.getWebInf();
-        if (web_inf!=null)
-        {
-            String[] contents = web_inf.list();
-            for (int i=0;contents!=null && i<contents.length;i++)
-            {
-                if (contents[i]!=null && contents[i].toLowerCase().endsWith(".tld"))
-                {
-                    Resource l=web_inf.addPath(contents[i]);
-                    tlds.add(l);
-                }
-            }
-        }
-        
-    
-        // Add in tlds found in META-INF of jars. The jars that will be scanned are controlled by
-        // the patterns defined in the context attributes: org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern,
-        // and org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern
-        Collection<Resource> tld_resources=(Collection<Resource>)context.getAttribute(TLD_RESOURCES);
-        if (tld_resources!=null)
-            tlds.addAll(tld_resources);
-        
-       
-        // Parse the tlds into memory
-        _descriptors.clear();
-        Resource tld = null;
-        Iterator iter = tlds.iterator();
-        while (iter.hasNext())
-        {
-            try
-            {
-                tld = (Resource)iter.next();
-                if (Log.isDebugEnabled()) Log.debug("TLD="+tld);
-                TldDescriptor d = new TldDescriptor(tld);
-                d.parse();
-                _descriptors.add(d);
-            }
-            catch(Exception e)
-            {
-                Log.warn("Unable to parse TLD: " + tld,e);
-            }
-        }
-        
-        // Create a processor for the tlds and save it
-        _processor = new TldProcessor ();  
+        TagLibListener tagLibListener = new TagLibListener(context);
+        context.addEventListener(tagLibListener);
     }
     
 
     @Override
     public void configure (WebAppContext context) throws Exception
     {         
-        if (_processor == null)
-        {
-            if (Log.isDebugEnabled())
-                Log.debug("No TldProcessor configured, skipping tld processing");
-            return;
-        }
-
-        //Create listeners from the parsed tld trees
-        for (TldDescriptor d:_descriptors)
-            _processor.process(context, d);
     }
 
     @Override
     public void postConfigure(WebAppContext context) throws Exception
-    {
-        
+    {     
     }
 
 
     @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
-        if (_processor == null)
-        {
-            Log.warn("No TldProcessor for cloneConfigure");
-            return;
-        }
-        
-        for (TldDescriptor d:_descriptors)
-        {
-            _processor.process(context, d);
-        }
     }
 
 
     @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
-        _descriptors.clear();
-        _processor = null;
     } 
 }
