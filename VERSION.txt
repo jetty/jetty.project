@@ -8,6 +8,7 @@ jetty-7.3.0-SNAPSHOT
  + 332796 Annotations inheritance does not work with jetty7 
  + 332937 Added Destroyable interface and reworked dependent lifecycles, specially of JNDI
  + 320457 add SPNEGO support
+ + 333481 Handle UTF-32 codepoints
  + 333679 Refactored jetty-jmx. Moved mbeans to modules.
 
 jetty-7.2.2.v20101205 5 December 2010
