@@ -442,8 +442,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             }
 
             if (Log.isDebugEnabled())
-                Log.debug("resource="+resource+(content!=null?" content":""));
-
+                Log.debug("uri="+request.getRequestURI()+" resource="+resource+(content!=null?" content":""));
+            
             // Handle resource
             if (resource==null || !resource.exists())
             {
