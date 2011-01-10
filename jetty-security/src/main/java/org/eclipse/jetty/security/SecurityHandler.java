@@ -472,6 +472,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 {
                     DeferredAuthentication deferred= (DeferredAuthentication)authentication;
                     deferred.setIdentityService(_identityService);
+                    deferred.setLoginService(_loginService);
                     baseRequest.setAuthentication(authentication);
 
                     try
