@@ -1923,6 +1923,8 @@ public class Request implements HttpServletRequest
     {
         if (_authentication instanceof Authentication.Deferred) {
             _authentication=((Authentication.Deferred)_authentication).login(username,password);
+            if (_authentication == null)
+                throw new ServletException();
         } else {
             throw new ServletException();
         }

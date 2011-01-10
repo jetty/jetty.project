@@ -1,3 +1,7 @@
+jetty-8.0.0.M3-SNAPSHOT
+ + 324505 Implement API login
+
+
 jetty-8.0.0.M2 16 November 2010
  + 320073 Reconsile configuration mechanism
  + 321068 JSF2 fails to initialize
