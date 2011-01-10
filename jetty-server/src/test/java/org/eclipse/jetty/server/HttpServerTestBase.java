@@ -30,6 +30,8 @@ import java.net.Socket;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -498,9 +500,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             
             // read and check the times are < 999ms
             String[] times=in.readLine().split(",");
-            for (String t:times)
-                System.err.println(t);
-                // Assert.assertTrue(Integer.valueOf(t).intValue()<999);
+            
+            // Assert.assertTrue(Integer.valueOf(t).intValue()<999);
             
             
             // read the EOF chunk
@@ -530,9 +531,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             // read and check the times are < 999ms
             times=in.readLine().split(",");
-            for (String t:times)
-                System.err.println(t);
-                //Assert.assertTrue(t,Integer.valueOf(t).intValue()<999);
+            //Assert.assertTrue(t,Integer.valueOf(t).intValue()<999);
             
             // check close
             Assert.assertTrue(in.readLine()==null);
@@ -869,6 +868,117 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             client.close();
         }
     }
+    
+
+    protected static class AvailableHandler extends AbstractHandler
+    {
+        public Exchanger<Object> _ex = new Exchanger<Object>();
+        
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setStatus(200);
+            response.setContentType("text/plain");
+            InputStream in = request.getInputStream();
+            ServletOutputStream out=response.getOutputStream();
+            
+            // should always be some input available, because of deferred dispatch.
+            int avail=in.available();
+            out.println(avail);
+            
+            String buf="";
+            for (int i=0;i<avail;i++)
+                buf+=(char)in.read();
+            
+
+            avail=in.available();
+            out.println(avail);
+            
+            try
+            {
+                _ex.exchange(null);
+                _ex.exchange(null); 
+            }
+            catch(InterruptedException e)
+            {
+                e.printStackTrace();
+            }
+            
+            avail=in.available();
+            
+            if (avail==0)
+            {
+                // handle blocking connectors
+                buf+=(char)in.read();
+                avail=in.available();
+                out.println(avail+1);
+            }
+            else
+                out.println(avail);
+
+            for (int i=0;i<avail;i++)
+                buf+=(char)in.read();
+            
+            avail=in.available();
+            out.println(avail);
+            out.println(buf);
+            out.close();
+        }
+    }
+    
+    
+    @Test
+    public void testAvailable() throws Exception
+    {
+        AvailableHandler ah=new AvailableHandler();
+        configureServer(ah);
+
+        long start=System.currentTimeMillis();
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        try
+        {
+            OutputStream os=client.getOutputStream();
+            InputStream is=client.getInputStream();
+
+            os.write((
+                    "GET /data?writes=1024&block=256 HTTP/1.1\r\n"+
+                    "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                    "connection: close\r\n"+
+                    "content-type: unknown\r\n"+
+                    "content-length: 30\r\n"+
+                    "\r\n"
+            ).getBytes());
+            os.flush();
+            Thread.sleep(500);
+            os.write((
+                    "1234567890"
+            ).getBytes());
+            os.flush();
+            
+            ah._ex.exchange(null);
+
+            os.write((
+                    "abcdefghijklmnopqrst"
+            ).getBytes());
+            os.flush();
+            Thread.sleep(500);
+            ah._ex.exchange(null);
+            
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            // skip header
+            while(reader.readLine().length()>0);
+            assertEquals(10,Integer.parseInt(reader.readLine()));
+            assertEquals(0,Integer.parseInt(reader.readLine()));
+            assertEquals(20,Integer.parseInt(reader.readLine()));
+            assertEquals(0,Integer.parseInt(reader.readLine()));
+            assertEquals("1234567890abcdefghijklmnopqrst",reader.readLine());
+            
+        }
+        finally
+        {
+            client.close();
+        }
+    }
 
     
     /**
@@ -931,4 +1041,5 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
 
+    
 }

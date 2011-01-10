@@ -132,4 +132,10 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
         connector.setAcceptors(1);
         startServer(connector);
     }
+
+    @Override
+    public void testAvailable() throws Exception
+    {
+    }
+    
 }

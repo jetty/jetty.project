@@ -59,6 +59,15 @@ public class HttpInput extends ServletInputStream
             l= content.get(b, off, len);
         return l;
     }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public int available() throws IOException
+    {
+        return _parser.available();
+    }
+    
+    
     
 
 }
