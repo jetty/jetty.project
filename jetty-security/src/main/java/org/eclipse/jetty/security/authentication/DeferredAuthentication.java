@@ -27,18 +27,20 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
+import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 
 public class DeferredAuthentication implements Authentication.Deferred
 {
-    protected final Authenticator _authenticator;
+    protected final LoginAuthenticator _authenticator;
 
     private IdentityService _identityService;
     private Object _previousAssociation;
 
-    public DeferredAuthentication(Authenticator authenticator)
+    public DeferredAuthentication(LoginAuthenticator authenticator)
     {
         if (authenticator == null)
             throw new NullPointerException("No Authenticator");
@@ -113,7 +115,10 @@ public class DeferredAuthentication implements Authentication.Deferred
      */
     public Authentication login(String username, String password)
     {
-        return null; // TODO implement
+        UserIdentity user = _authenticator.getLoginService().login(username,password);
+        if (user!=null)
+            return new UserAuthentication("API",user);
+        return null;
     }
 
     /* ------------------------------------------------------------ */
