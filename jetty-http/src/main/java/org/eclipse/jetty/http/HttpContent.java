@@ -43,11 +43,20 @@ public interface HttpContent
     {
         final Resource _resource;
         final Buffer _mimeType;
+        final int _maxBuffer;
 
         public ResourceAsHttpContent(final Resource resource, final Buffer mimeType)
         {
             _resource=resource;
             _mimeType=mimeType;
+            _maxBuffer=-1;
+        }
+        
+        public ResourceAsHttpContent(final Resource resource, final Buffer mimeType, int maxBuffer)
+        {
+            _resource=resource;
+            _mimeType=mimeType;
+            _maxBuffer=maxBuffer;
         }
 
         /* ------------------------------------------------------------ */
@@ -73,6 +82,8 @@ public interface HttpContent
         {
             try
             {
+                if (_resource.length()<=0 || _maxBuffer<_resource.length())
+                    return null;
                 ByteArrayBuffer buffer = new ByteArrayBuffer((int)_resource.length());
                 buffer.readFrom(_resource.getInputStream(),(int)_resource.length());
                 return buffer;

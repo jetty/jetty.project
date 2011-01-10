@@ -72,6 +72,8 @@ public class PlusConfiguration extends AbstractConfiguration
     {
         unlockCompEnv(context);
         _key = null;
+        context.setAttribute(InjectionCollection.INJECTION_COLLECTION,null);
+        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION,null);
     }
     
     public void bindUserTransaction (WebAppContext context)

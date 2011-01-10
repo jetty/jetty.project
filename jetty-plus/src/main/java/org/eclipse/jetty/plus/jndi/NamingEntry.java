@@ -21,7 +21,7 @@ import javax.naming.NameParser;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.jndi.NamingUtil;
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -38,22 +38,25 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class NamingEntry
 {
+    private static Logger __log = NamingUtil.__log;
     public static final String __contextName = "__"; //all NamingEntries stored in context called "__"
-    protected String jndiName;  //the name representing the object associated with the NamingEntry
-    protected Object objectToBind; //the object associated with the NamingEntry
-    protected String namingEntryNameString; //the name of the NamingEntry relative to the context it is stored in
-    protected String objectNameString; //the name of the object relative to the context it is stored in
+    protected final Object _scope;
+    protected final String _jndiName;  //the name representing the object associated with the NamingEntry
+    protected String _namingEntryNameString; //the name of the NamingEntry relative to the context it is stored in
+    protected String _objectNameString; //the name of the object relative to the context it is stored in
    
    
-  
+    public String toString()
+    {
+        return _jndiName;
+    }
  
     
-    public NamingEntry (Object scope, String jndiName, Object object)
+    protected NamingEntry (Object scope, String jndiName)
     throws NamingException
     {
-        this.jndiName = jndiName;
-        this.objectToBind = object;
-        save(scope); 
+        this._scope=scope;
+        this._jndiName = jndiName;
     }
     
     /** 
@@ -68,10 +71,10 @@ public abstract class NamingEntry
      * @param object the object to be bound
      * @throws NamingException
      */
-    public NamingEntry (String jndiName, Object object)
+    protected NamingEntry (String jndiName)
     throws NamingException
     {
-        this (null, jndiName, object);
+        this (null, jndiName);
     }
 
     
@@ -88,8 +91,8 @@ public abstract class NamingEntry
         //TODO - check on the whole overriding/non-overriding thing
         InitialContext ic = new InitialContext();
         Context env = (Context)ic.lookup("java:comp/env");
-        Log.debug("Binding java:comp/env/"+localName+" to "+objectNameString);
-        NamingUtil.bind(env, localName, new LinkRef(objectNameString));
+        __log.debug("Binding java:comp/env/"+localName+" to "+_objectNameString);
+        NamingUtil.bind(env, localName, new LinkRef(_objectNameString));
     }
     
     /**
@@ -101,12 +104,12 @@ public abstract class NamingEntry
         {
             InitialContext ic = new InitialContext();
             Context env = (Context)ic.lookup("java:comp/env");
-            Log.debug("Unbinding java:comp/env/"+getJndiName());
+            __log.debug("Unbinding java:comp/env/"+getJndiName());
             env.unbind(getJndiName());
         }
         catch (NamingException e)
         {
-            Log.warn(e);
+            __log.warn(e);
         }
     }
     
@@ -118,16 +121,14 @@ public abstract class NamingEntry
         try
         {
             InitialContext ic = new InitialContext();
-            ic.unbind(objectNameString);
-            ic.unbind(namingEntryNameString);
-            this.jndiName=null;
-            this.namingEntryNameString=null;
-            this.objectNameString=null;
-            this.objectToBind=null;
+            ic.unbind(_objectNameString);
+            ic.unbind(_namingEntryNameString);
+            this._namingEntryNameString=null;
+            this._objectNameString=null;
         }
         catch (NamingException e)
         {
-            Log.warn(e);
+            __log.warn(e);
         }
     }
     
@@ -138,19 +139,8 @@ public abstract class NamingEntry
      */
     public String getJndiName ()
     {
-        return this.jndiName;
+        return _jndiName;
     }
-    
-    /**
-     * Get the object that is to be bound
-     * @return the object that is to be bound
-     */
-    public Object getObjectToBind()
-    throws NamingException
-    {   
-        return this.objectToBind;
-    }
-    
 
     /**
      * Get the name of the object, fully
@@ -159,7 +149,7 @@ public abstract class NamingEntry
      */
     public String getJndiNameInScope ()
     {
-        return objectNameString;
+        return _objectNameString;
     }
  
  
@@ -183,24 +173,25 @@ public abstract class NamingEntry
      * 
      * @throws NamingException
      */
-    protected void save (Object scope)
+    protected void save (Object object)
     throws NamingException
     {
+        __log.debug("SAVE {} in {}",this,_scope);
         InitialContext ic = new InitialContext();
         NameParser parser = ic.getNameParser("");
-        Name prefix = NamingEntryUtil.getNameForScope(scope);
+        Name prefix = NamingEntryUtil.getNameForScope(_scope);
       
         //bind the NamingEntry into the context
         Name namingEntryName = NamingEntryUtil.makeNamingEntryName(parser, getJndiName());
         namingEntryName.addAll(0, prefix);
-        namingEntryNameString = namingEntryName.toString();
-        NamingUtil.bind(ic, namingEntryNameString, this);
+        _namingEntryNameString = namingEntryName.toString();
+        NamingUtil.bind(ic, _namingEntryNameString, this);
                 
         //bind the object as well
         Name objectName = parser.parse(getJndiName());
         objectName.addAll(0, prefix);
-        objectNameString = objectName.toString();
-        NamingUtil.bind(ic, objectNameString, objectToBind);
+        _objectNameString = objectName.toString();
+        NamingUtil.bind(ic, _objectNameString, object);
     } 
     
 }

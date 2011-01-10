@@ -110,6 +110,29 @@ public class MetaData
     {
     }
     
+    /**
+     * Empty ready for reuse
+     */
+    public void clear ()
+    {
+        _webDefaultsRoot = null;
+        _origins.clear();
+        _webXmlRoot = null;
+        _webOverrideRoots.clear();
+        _metaDataComplete = false;
+        _annotations.clear();
+        _descriptorProcessors.clear();
+        _webFragmentRoots.clear();
+        _webFragmentNameMap.clear();
+        _webFragmentResourceMap.clear();
+        _webFragmentAnnotations.clear();
+        _webInfJars.clear();
+        _orderedWebInfJars.clear();
+        _orderedContainerJars.clear();
+        _ordering = null;
+        allowDuplicateFragmentNames = false;
+    }
+    
     public void setDefaults (Resource webDefaults)
     throws Exception
     {

@@ -19,25 +19,31 @@ import javax.naming.NamingException;
 
 public class Link extends NamingEntry
 {
-
-    public Link(Object scope, String jndiName, Object object) throws NamingException
+    private final String _link;
+    
+    public Link(Object scope, String jndiName, String link) throws NamingException
     {
         //jndiName is the name according to the web.xml
         //objectToBind is the name in the environment
-        super(scope, jndiName, object);
+        super(scope, jndiName);
+        save(link);
+        _link=link;
     }
 
-    public Link (String jndiName, Object object) throws NamingException
+    public Link (String jndiName, String link) throws NamingException
     {
-        super(null, jndiName, object);
+        super(jndiName);
+        save(link);
+        _link=link;
     }
-
 
     public void bindToENC(String localName) throws NamingException
     {
         throw new UnsupportedOperationException("Method not supported for Link objects");
     }
     
-
-
+    public String getLink()
+    {
+        return _link;
+    }
 }

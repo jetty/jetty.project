@@ -241,7 +241,7 @@ public class ResourceCache
             return content;
         }
         
-        return new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()));
+        return new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),getMaxCachedFileSize());
         
     }
     

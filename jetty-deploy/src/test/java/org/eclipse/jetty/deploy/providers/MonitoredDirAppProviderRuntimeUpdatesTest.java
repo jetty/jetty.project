@@ -89,7 +89,7 @@ public class MonitoredDirAppProviderRuntimeUpdatesTest
      * Simple webapp deployment after startup of server, and then removal of the webapp.
      */
     @Test
-    public void testAfterStartupThenUpdateContext() throws IOException
+    public void testAfterStartupThenUpdateContext() throws Exception
     {
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
         jetty.copyContext("foo.xml","foo.xml");
@@ -101,6 +101,7 @@ public class MonitoredDirAppProviderRuntimeUpdatesTest
         // Test that webapp response contains "-1"
         jetty.assertResponseContains("/foo/info","FooServlet-1");
 
+        Thread.sleep(1000);
         System.out.println("Updating war files");
         jetty.copyContext("foo.xml","foo.xml"); // essentially "touch" the context xml
         jetty.copyWebapp("foo-webapp-2.war","foo.war");

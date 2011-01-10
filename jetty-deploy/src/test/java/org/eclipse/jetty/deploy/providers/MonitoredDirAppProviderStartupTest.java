@@ -31,7 +31,6 @@ public class MonitoredDirAppProviderStartupTest
     @BeforeClass
     public static void setupEnvironment() throws Exception
     {
-        Log.getLog().setDebugEnabled(true);
         jetty = new XmlConfiguredJetty();
         jetty.addConfiguration("jetty.xml");
         jetty.addConfiguration("jetty-deploymgr-contexts.xml");

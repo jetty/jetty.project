@@ -15,6 +15,7 @@ package org.eclipse.jetty.embedded;
 
 import java.lang.management.ManagementFactory;
 
+import org.eclipse.jetty.ajp.Ajp13SocketConnector;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
@@ -85,6 +86,10 @@ public class LikeJettyXml
                 });
         server.addConnector(ssl_connector);
 
+        Ajp13SocketConnector ajp = new Ajp13SocketConnector();
+        ajp.setPort(8009);
+        server.addConnector(ajp);
+        
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         RequestLogHandler requestLogHandler = new RequestLogHandler();
@@ -102,22 +107,19 @@ public class LikeJettyXml
         server.addBean(deployer);   
         
         ContextProvider context_provider = new ContextProvider();
-        context_provider.setMonitoredDir(jetty_home + "/contexts");
+        context_provider.setMonitoredDirName(jetty_home + "/contexts");
         context_provider.setScanInterval(2);
-        server.addBean(context_provider);
         deployer.addAppProvider(context_provider);
 
-        /*
         WebAppProvider webapp_provider = new WebAppProvider();
-        webapp_provider.setMonitoredDir(jetty_home + "/webapps");
+        webapp_provider.setMonitoredDirName(jetty_home + "/webapps");
         webapp_provider.setParentLoaderPriority(false);
         webapp_provider.setExtractWars(true);
         webapp_provider.setScanInterval(2);
         webapp_provider.setDefaultsDescriptor(jetty_home + "/etc/webdefault.xml");
         webapp_provider.setContextXmlDir(jetty_home + "/contexts");
         deployer.addAppProvider(webapp_provider);
-*/
-        
+
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
         login.setConfig(jetty_home + "/etc/realm.properties");
@@ -131,6 +133,9 @@ public class LikeJettyXml
         server.setSendServerVersion(true);
 
         server.start();
+        
+        System.err.println(server.dump());
+        
         server.join();
     }
 

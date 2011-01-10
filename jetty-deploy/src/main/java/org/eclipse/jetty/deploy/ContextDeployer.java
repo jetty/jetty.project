@@ -443,12 +443,10 @@ public class ContextDeployer extends AbstractLifeCycle
             return null;
 
         XmlConfiguration xmlConfiguration=new XmlConfiguration(resource.getURL());
-        HashMap properties = new HashMap();
-        properties.put("Server", _contexts.getServer());
+        xmlConfiguration.getIdMap().put("Server", _contexts.getServer());
         if (_configMgr!=null)
-            properties.putAll(_configMgr.getProperties());
+            xmlConfiguration.getProperties().putAll(_configMgr.getProperties());
            
-        xmlConfiguration.setProperties(properties);
         ContextHandler context=(ContextHandler)xmlConfiguration.configure();
         
         // merge attributes

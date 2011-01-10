@@ -94,7 +94,13 @@ public class AttributesMap implements Attributes
     {
         return _map.keySet();
     }
-
+    
+    /* ------------------------------------------------------------ */
+    public Set<Map.Entry<String, Object>> getAttributeEntrySet()
+    {
+        return _map.entrySet();
+    }
+    
     /* ------------------------------------------------------------ */
     /* 
      * @see org.eclipse.jetty.util.Attributes#getAttributeNames()

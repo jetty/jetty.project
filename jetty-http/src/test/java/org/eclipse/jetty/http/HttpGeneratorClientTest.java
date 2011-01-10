@@ -256,6 +256,8 @@ public class HttpGeneratorClientTest
                 hb.completeHeader(fields, Generator.LAST);
             }
             hb.complete();
+            while(!hb.isComplete())
+                hb.flushBuffer();
         }
 
         @Override

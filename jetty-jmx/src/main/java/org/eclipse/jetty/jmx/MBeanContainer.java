@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.jmx;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,8 +27,10 @@ import javax.management.ObjectName;
 
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Container.Relationship;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 
@@ -36,7 +39,7 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
 /**
  * Container class for the MBean instances
  */
-public class MBeanContainer extends AbstractLifeCycle implements Container.Listener
+public class MBeanContainer extends AbstractLifeCycle implements Container.Listener, Dumpable
 {
     private final MBeanServer _server;
     private final WeakHashMap<Object, ObjectName> _beans = new WeakHashMap<Object, ObjectName>();
@@ -311,4 +314,17 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
             removeBean(removeObj);
         }
     }
+
+    /* ------------------------------------------------------------ */
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(toString()).append("\n");
+        AggregateLifeCycle.dump(out,indent,_beans.entrySet());
+    }
+
+    /* ------------------------------------------------------------ */
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }    
 }

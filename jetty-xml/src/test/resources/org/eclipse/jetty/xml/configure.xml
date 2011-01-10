@@ -4,7 +4,7 @@
 <Configure class="org.eclipse.jetty.xml.TestConfiguration">
 
   <Set name="Test">SetValue</Set>
-  <Set name="Test" type="int">2</Set>
+  <Set name="Test" type="int"><Property name="does.not.exist" default="2"/></Set>
   
   <Set name="PropertyTest"><Property name="anIntegerNoActualPropDefined" default="18080"/></Set>
 

@@ -33,12 +33,12 @@ import junit.framework.Assert;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Inject;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.container.def.PaxRunnerOptions;
@@ -67,7 +67,7 @@ public class TestJettyOSGiBootCore
     {
         return Arrays.asList(options(
                 //get the jetty home config from the osgi boot bundle.
-                PaxRunnerOptions.vmOptions("-D" + DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME_BUNDLE + "=org.eclipse.jetty.osgi.boot"),
+                PaxRunnerOptions.vmOptions("-Djetty.port=9876 -D" + DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME_BUNDLE + "=org.eclipse.jetty.osgi.boot"),
                 
                // CoreOptions.equinox(),
                 
@@ -169,11 +169,12 @@ public class TestJettyOSGiBootCore
             client.start();
             
             ContentExchange getExchange = new ContentExchange();
-            getExchange.setURL("http://localhost:8080/greetings");
+            getExchange.setURL("http://127.0.0.1:9876/greetings");
             getExchange.setMethod(HttpMethods.GET);
      
             client.send(getExchange);
             int state = getExchange.waitForDone();
+            Assert.assertEquals("state should be done", HttpExchange.STATUS_COMPLETED, state);
      
             String content = null;
             int responseStatus = getExchange.getResponseStatus();

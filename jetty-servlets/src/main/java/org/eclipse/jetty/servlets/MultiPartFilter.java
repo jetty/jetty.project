@@ -53,11 +53,11 @@ import org.eclipse.jetty.util.TypeUtil;
  * Multipart Form Data Filter.
  * <p>
  * This class decodes the multipart/form-data stream sent by a HTML form that uses a file input
- * item.  Any files sent are stored to a tempary file and a File object added to the request 
+ * item.  Any files sent are stored to a temporary file and a File object added to the request 
  * as an attribute.  All other values are made available via the normal getParameter API and
  * the setCharacterEncoding mechanism is respected when converting bytes to Strings.
- * 
- * If the init paramter "delete" is set to "true", any files created will be deleted when the
+ * <p>
+ * If the init parameter "delete" is set to "true", any files created will be deleted when the
  * current request returns.
  * 
  * Use init parameter "maxFileSize" to set the max size file that can be uploaded.

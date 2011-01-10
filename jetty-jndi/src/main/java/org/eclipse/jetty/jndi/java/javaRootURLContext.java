@@ -26,7 +26,8 @@ import javax.naming.StringRefAddr;
 
 import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.jndi.NamingContext;
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -50,24 +51,26 @@ import org.eclipse.jetty.util.log.Log;
 */
 public class javaRootURLContext implements Context
 {
+    private static Logger __log = NamingUtil.__log;
+    
     public static final String URL_PREFIX = "java:";
 
     protected Hashtable _env;
 
-    protected static NamingContext _nameRoot;
+    protected static NamingContext __nameRoot;
 
-    protected static NameParser _javaNameParser;
+    protected static NameParser __javaNameParser;
 
     
     static 
     {   
         try
         {
-            _javaNameParser = new javaNameParser();       
-            _nameRoot = new NamingContext();
-            _nameRoot.setNameParser(_javaNameParser);
+            __javaNameParser = new javaNameParser();       
+            __nameRoot = new NamingContext();
+            __nameRoot.setNameParser(__javaNameParser);
           
-            StringRefAddr parserAddr = new StringRefAddr("parser", _javaNameParser.getClass().getName());
+            StringRefAddr parserAddr = new StringRefAddr("parser", __javaNameParser.getClass().getName());
             
             Reference ref = new Reference ("javax.naming.Context",
                                            parserAddr,
@@ -75,11 +78,11 @@ public class javaRootURLContext implements Context
                                            (String)null);
 
             //bind special object factory at comp
-            _nameRoot.bind ("comp", ref);
+            __nameRoot.bind ("comp", ref);
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            __log.warn(e);
         }
     }
 
@@ -253,13 +256,13 @@ public class javaRootURLContext implements Context
     public NameParser getNameParser (Name name)
         throws NamingException
     {
-        return _javaNameParser;
+        return __javaNameParser;
     }
     
     public NameParser getNameParser (String name) 
         throws NamingException
     {
-        return _javaNameParser;
+        return __javaNameParser;
     }
 
 
@@ -281,10 +284,9 @@ public class javaRootURLContext implements Context
         return _env;
     }
 
-
-    protected NamingContext getRoot ()
+    public static NamingContext getRoot ()
     {
-        return _nameRoot;
+        return __nameRoot;
     }
 
 
@@ -295,7 +297,7 @@ public class javaRootURLContext implements Context
         {
             String head = name.get(0);
             
-            if(Log.isDebugEnabled())Log.debug("Head element of name is: "+head);
+            if(__log.isDebugEnabled())__log.debug("Head element of name is: "+head);
 
             if (head.startsWith(URL_PREFIX))
             {
@@ -304,7 +306,7 @@ public class javaRootURLContext implements Context
                 if (head.length() > 0)
                     name.add(0, head);
 
-                if(Log.isDebugEnabled())Log.debug("name modified to "+name.toString());
+                if(__log.isDebugEnabled())__log.debug("name modified to "+name.toString());
             }
         }
         

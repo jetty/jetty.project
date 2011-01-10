@@ -113,7 +113,6 @@ public class ResourceCollection extends Resource
         }
     }
     
-    
     /* ------------------------------------------------------------ */
     /**
      * 
@@ -122,6 +121,13 @@ public class ResourceCollection extends Resource
     public Resource[] getResources()
     {
         return _resources;
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void setResources(Resource[] resources)
+    {
+        throw new UnsupportedOperationException("ResourceCollection@setResources(Resource[])");
     }
     
     /* ------------------------------------------------------------ */

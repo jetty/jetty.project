@@ -34,7 +34,8 @@ public class TestNamingEntryUtil
         public MyNamingEntry(Object scope, String name, Object value)
         throws NamingException
         {
-            super(scope, name, value);
+            super(scope, name);
+            save(value);
         }
     }
 
@@ -42,7 +43,7 @@ public class TestNamingEntryUtil
     {
         public String toString()
         {
-            return this.getClass().getName()+"@"+super.hashCode();
+            return this.getClass().getName()+"@"+Long.toHexString(super.hashCode());
         }
     }
 

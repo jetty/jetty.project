@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>8.0.0.M2-SNAPSHOT</version>
+    <version>8.0.0.M3-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.jetty.osgi</groupId>
@@ -24,8 +24,7 @@
     <module>jetty-osgi-boot-logback</module>
     <module>jetty-osgi-boot-warurl</module>
     <module>jetty-osgi-httpservice</module>
-    <module>test-jetty-osgi</module>
-    <!-- module>example-jetty-osgi</module -->
+    <!--module>test-jetty-osgi</module-->
   </modules>
   <build>
     <resources>
@@ -58,6 +57,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-eclipse-plugin</artifactId>
+        <version>2.8</version>
         <configuration>
           <manifest>prevent/overwriting/by/pointing/to/nonexisting/MANIFEST.MF</manifest>
           <pde>true</pde>
@@ -74,6 +74,11 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-jmx</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

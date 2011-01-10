@@ -22,6 +22,7 @@ import java.net.URLClassLoader;
 import java.security.AccessController;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
@@ -68,7 +69,10 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -196,13 +200,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
     /* ------------------------------------------------------------ */
     @Override
-    protected void dump(Appendable out,String indent) throws IOException
+    public void dump(Appendable out,String indent) throws IOException
     {
-        out.append(toString()).append(isStarted()?" started":" STOPPED").append('\n');
-        out.append(indent).append(" +-").append(String.valueOf(_attributes)).append('\n');
-        out.append(indent).append(" +-").append(String.valueOf(_contextAttributes)).append('\n');
-        dumpHandlers(out,indent);
+        dumpThis(out);
+        dump(out,indent,Collections.singletonList(new CLDump(getClassLoader())),TypeUtil.asList(getHandlers()),getBeans(),_initParams.entrySet(), _attributes.getAttributeEntrySet(),_contextAttributes.getAttributeEntrySet());
     }
+    
+   
     
     /* ------------------------------------------------------------ */
     public Context getServletContext()
@@ -406,6 +410,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     public String getInitParameter(String name)
     {
         return _initParams.get(name);
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     */
+    public String setInitParameter(String name,String value)
+    {
+        return _initParams.put(name,value);
     }
 
     /* ------------------------------------------------------------ */
@@ -662,6 +674,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     public void callContextInitialized (ServletContextListener l, ServletContextEvent e)
     {
         l.contextInitialized(e);
+        Log.info("started {}",this);
     }
 
     public void callContextDestroyed (ServletContextListener l, ServletContextEvent e)
@@ -719,6 +732,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
         finally
         {
+            Log.info("stopped {}",this);
             __context.set(old_context);
             // reset the classloader
             if (_classLoader!=null)
@@ -1295,7 +1309,26 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     @Override
     public String toString()
     {
-        return super.toString()+"@"+Integer.toHexString(hashCode())+getContextPath()+","+getBaseResource();
+        String[] vhosts = getVirtualHosts();
+        
+        StringBuilder b= new StringBuilder();
+        
+        String p = getClass().getPackage().getName();
+        if (p!=null && p.length()>0)
+        {
+            String[] ss = p.split("\\.");
+            for (String s : ss)
+                b.append(s.charAt(0)).append('.');
+        }
+        
+        b.append(getClass().getSimpleName());
+        b.append('{').append(getContextPath()).append(',').append(getBaseResource());
+        
+        if (vhosts!=null && vhosts.length>0)
+            b.append(',').append(vhosts[0]);
+        b.append('}');
+        
+        return b.toString();
     }
 
     /* ------------------------------------------------------------ */
@@ -1491,11 +1524,59 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             Handler[] handlers = getServer().getChildHandlersByClass(ContextHandler.class);
             String matched_path=null;
             
-            for (int i=0;i<handlers.length;i++)
+            for (Handler handler : handlers)
             {
-                if (handlers[i]==null || !handlers[i].isStarted())
+                if (handler==null)
                     continue;
-                ContextHandler ch = (ContextHandler)handlers[i];
+                ContextHandler ch = (ContextHandler)handler;
+                String context_path=ch.getContextPath();
+                
+                if (uripath.equals(context_path) || (uripath.startsWith(context_path)&&uripath.charAt(context_path.length())=='/') || "/".equals(context_path))
+                {
+                    // look first for vhost matching context only
+                    if (getVirtualHosts()!=null && getVirtualHosts().length>0)
+                    {
+                        if (ch.getVirtualHosts()!=null && ch.getVirtualHosts().length>0)
+                        {
+                            for (String h1 : getVirtualHosts())
+                                for (String h2 : ch.getVirtualHosts())
+                                    if (h1.equals(h2))
+                                    {
+                                        if (matched_path==null || context_path.length()>matched_path.length())
+                                        {
+                                            contexts.clear();
+                                            matched_path=context_path;
+                                        }
+                                        
+                                        if (matched_path.equals(context_path))
+                                            contexts.add(ch);
+                                    }
+                        }
+                    }
+                    else
+                    {
+                        if (matched_path==null || context_path.length()>matched_path.length())
+                        {
+                            contexts.clear();
+                            matched_path=context_path;
+                        }
+
+                        if (matched_path.equals(context_path))
+                            contexts.add(ch);
+                    }
+                }
+            }
+
+            if (contexts.size()>0)
+                return contexts.get(0)._scontext;
+            
+            // try again ignoring virtual hosts
+            matched_path=null;
+            for (Handler handler : handlers)
+            {
+                if (handler==null)
+                    continue;
+                ContextHandler ch = (ContextHandler)handler;
                 String context_path=ch.getContextPath();
                 
                 if (uripath.equals(context_path) || (uripath.startsWith(context_path)&&uripath.charAt(context_path.length())=='/') || "/".equals(context_path))
@@ -1505,46 +1586,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                         contexts.clear();
                         matched_path=context_path;
                     }
-                    
+
                     if (matched_path.equals(context_path))
                         contexts.add(ch);
                 }
             }
 
-            switch (contexts.size())
-            {
-                case 0: return null;
-
-                case 1: 
-                    return contexts.get(0)._scontext;
-
-                default:
-                    // Multiple contexts
-                    // Does this context match?
-                    if (contexts.contains(ContextHandler.this))
-                    {
-                        return _scontext;
-                    }
-
-                    // Are there matching virtual hosts?
-                    if (getVirtualHosts()!=null && getVirtualHosts().length>0)
-                    {
-                        for (ContextHandler ch : contexts)
-                        {
-                            if (ch.getVirtualHosts()!=null && ch.getVirtualHosts().length>0)
-                            {
-                                for (String h1 : getVirtualHosts())
-                                    for (String h2 : ch.getVirtualHosts())
-                                        if (h1.equals(h2))
-                                        {
-                                            return ch._scontext;
-                                        }
-                            }
-                        }
-                    }
-            }
-
-            return null;
+            if (contexts.size()>0)
+                return contexts.get(0)._scontext;
+            return null;            
         }
 
         /* ------------------------------------------------------------ */
@@ -1926,7 +1976,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         @Override
         public String toString()
         {
-            return "ServletContext@"+Integer.toHexString(hashCode())+"{"+(getContextPath().equals("")?URIUtil.SLASH:getContextPath())+","+getBaseResource()+"}";
+            return "ServletContext@"+ContextHandler.this.toString();
         }
 
         /* ------------------------------------------------------------ */
@@ -2169,5 +2219,40 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         {
             return _enabled;
         }
+    }
+    
+    private static class CLDump implements Dumpable
+    {
+        final ClassLoader _loader;
+        CLDump(ClassLoader loader)
+        {
+            _loader=loader;
+        }
+        
+        public String dump()
+        {
+            return AggregateLifeCycle.dump(this);
+        }
+
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            out.append(String.valueOf(_loader)).append("\n");
+
+            if (_loader!=null)
+            {
+                Object parent = _loader.getParent();
+                if (parent!=null)
+                {
+                    if (!(parent instanceof Dumpable))
+                        parent=new CLDump((ClassLoader)parent);
+
+                    if (_loader instanceof URLClassLoader)
+                        AggregateLifeCycle.dump(out,indent,TypeUtil.asList(((URLClassLoader)_loader).getURLs()),Collections.singleton(parent));
+                    else
+                        AggregateLifeCycle.dump(out,indent,Collections.singleton(parent));
+                }
+            }
+        }
+        
     }
 }

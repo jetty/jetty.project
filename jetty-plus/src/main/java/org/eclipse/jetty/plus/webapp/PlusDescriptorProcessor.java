@@ -855,7 +855,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         if (ne!=null && (ne instanceof Link))
         {
             //if we found a mapping, get out name it is mapped to in the environment
-            nameInEnvironment = (String)((Link)ne).getObjectToBind();
+            nameInEnvironment = ((Link)ne).getLink();
             Link l = (Link)ne;
         }
 

@@ -18,6 +18,10 @@ public class AbstractConfiguration implements Configuration
     {
     }
 
+    public void destroy(WebAppContext context) throws Exception
+    {
+    }
+
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
     }

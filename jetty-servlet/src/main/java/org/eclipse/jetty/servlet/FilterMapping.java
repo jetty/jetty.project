@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
@@ -20,9 +21,13 @@ import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.log.Log;
 
 
-public class FilterMapping
+public class FilterMapping implements Dumpable
 {
     /** Dispatch types */
     public static final int DEFAULT=0;
@@ -249,10 +254,21 @@ public class FilterMapping
     public String toString()
     {
         return 
-        (_pathSpecs==null?"[]":Arrays.asList(_pathSpecs).toString())+"/"+
-        (_servletNames==null?"[]":Arrays.asList(_servletNames).toString())+"=="+
+        TypeUtil.asList(_pathSpecs)+"/"+
+        TypeUtil.asList(_servletNames)+"=="+
         _dispatches+"=>"+
         _filterName; 
     }
 
+    /* ------------------------------------------------------------ */
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(String.valueOf(this)).append("\n");
+    }
+
+    /* ------------------------------------------------------------ */
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }    
 }

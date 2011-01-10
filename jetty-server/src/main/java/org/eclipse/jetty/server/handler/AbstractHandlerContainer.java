@@ -15,10 +15,14 @@ package org.eclipse.jetty.server.handler;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.util.LazyList;
+import org.eclipse.jetty.util.TypeUtil;
 
 
 /* ------------------------------------------------------------ */
@@ -83,36 +87,11 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         
         return list;
     }
-    
+
     /* ------------------------------------------------------------ */
-    @Override
-    protected void dump(Appendable out,String indent) throws IOException
+    public void dump(Appendable out,String indent) throws IOException
     {
-        super.dump(out,indent);
-        dumpHandlers(out,indent);
-    }
-    
-    /* ------------------------------------------------------------ */
-    protected void dumpHandlers(Appendable out,String indent) throws IOException
-    {
-        Handler[] handlers = getHandlers();
-        if (handlers!=null)
-        {   
-            int last=handlers.length-1;
-            for (int h=0;h<=last;h++)
-            {
-                if (handlers[h]==null)
-                    continue;
-                out.append(indent);
-                out.append(" +-");
-                if (handlers[h] instanceof AbstractHandler)
-                    ((AbstractHandler)handlers[h]).dump(out,indent+((h==last)?"   ":" | "));
-                else
-                {
-                    out.append(String.valueOf(handlers[h]));
-                    out.append("\n");
-                }
-            }
-        }
+        dumpThis(out);
+        dump(out,indent,TypeUtil.asList(getHandlers()),getBeans());
     }
 }

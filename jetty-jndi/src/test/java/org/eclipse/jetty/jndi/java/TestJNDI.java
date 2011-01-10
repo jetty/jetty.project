@@ -17,6 +17,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Hashtable;
+
+import javax.naming.Binding;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.LinkRef;
@@ -31,6 +33,8 @@ import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 
 import org.eclipse.jetty.jndi.NamingContext;
+import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.util.log.Log;
 import org.junit.Test;
 
@@ -43,6 +47,11 @@ import static org.junit.Assert.fail;
  */
 public class TestJNDI
 {
+    static
+    {
+        // NamingUtil.__log.setDebugEnabled(true);    
+    }
+    
     public static class MyObjectFactory implements ObjectFactory
     {
         public static String myString = "xxx";
@@ -51,6 +60,7 @@ public class TestJNDI
         {
             return myString;
         }
+        
     }
 
     @Test
@@ -64,6 +74,37 @@ public class TestJNDI
             ClassLoader childLoader1 = new URLClassLoader(new URL[0], currentLoader);
             ClassLoader childLoader2 = new URLClassLoader(new URL[0], currentLoader);
 
+            /*
+            javaRootURLContext.getRoot().addListener(new NamingContext.Listener()
+            {
+                public void unbind(NamingContext ctx, Binding binding)
+                {
+                    System.err.println("java unbind "+binding+" from "+ctx.getName());
+                }
+                
+                public Binding bind(NamingContext ctx, Binding binding)
+                {
+                    System.err.println("java bind "+binding+" to "+ctx.getName());
+                    return binding;
+                }
+            });
+            
+            localContextRoot.getRoot().addListener(new NamingContext.Listener()
+            {
+                public void unbind(NamingContext ctx, Binding binding)
+                {
+                    System.err.println("local unbind "+binding+" from "+ctx.getName());
+                }
+                
+                public Binding bind(NamingContext ctx, Binding binding)
+                {
+                    System.err.println("local bind "+binding+" to "+ctx.getName());
+                    return binding;
+                }
+            });
+            */
+            
+            
             //set the current thread's classloader
             currentThread.setContextClassLoader(childLoader1);
 
@@ -239,6 +280,9 @@ public class TestJNDI
                 //expected failure to modify immutable context
             }
 
+            System.err.println("java:"+javaRootURLContext.getRoot().dump());
+            System.err.println("local:"+localContextRoot.getRoot().dump());
+            
             //test what happens when you close an initial context that was used
             initCtx.close();
         }

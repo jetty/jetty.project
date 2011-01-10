@@ -29,7 +29,8 @@ public class Resource extends NamingEntry
     public  Resource (Object scope, String jndiName, Object objToBind)
     throws NamingException
     {
-        super(scope, jndiName, objToBind);
+        super(scope, jndiName);
+        save(objToBind);
     }
     
     /**
@@ -39,7 +40,8 @@ public class Resource extends NamingEntry
     public Resource (String jndiName, Object objToBind)
     throws NamingException
     {
-        super(jndiName, objToBind);
+        super(jndiName);
+        save(objToBind);
     }
 
 }

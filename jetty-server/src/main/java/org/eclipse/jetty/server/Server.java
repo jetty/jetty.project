@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -34,8 +35,10 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -63,7 +66,6 @@ public class Server extends HandlerWrapper implements Attributes
     }
     private final Container _container=new Container();
     private final AttributesMap _attributes = new AttributesMap();
-    private final List<Object> _dependentBeans=new ArrayList<Object>();
     private ThreadPool _threadPool;
     private Connector[] _connectors;
     private SessionIdManager _sessionIdManager;
@@ -196,8 +198,12 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public void setThreadPool(ThreadPool threadPool)
     {
-        _container.update(this,_threadPool,threadPool, "threadpool",true);
+        if (_threadPool!=null)
+            removeBean(_threadPool);
+        _container.update(this, _threadPool, threadPool, "threadpool",false);
         _threadPool = threadPool;
+        if (_threadPool!=null)
+            addBean(_threadPool);
     }
 
     /* ------------------------------------------------------------ */
@@ -210,34 +216,9 @@ public class Server extends HandlerWrapper implements Attributes
         Log.info("jetty-"+_version);
         HttpGenerator.setServerVersion(_version);
         MultiException mex=new MultiException();
-
+        
         if (_threadPool==null)
-        {
-            QueuedThreadPool tp=new QueuedThreadPool();
-            setThreadPool(tp);
-        }
-        
-        Iterator<Object> itor = _dependentBeans.iterator();
-        while (itor.hasNext())
-        {   
-            try
-            {
-                Object o=itor.next();
-                if (o instanceof LifeCycle)
-                    ((LifeCycle)o).start(); 
-            }
-            catch (Throwable e) {mex.add(e);}
-        }
-        
-        if (_sessionIdManager!=null)
-            _sessionIdManager.start();
-        
-        try
-        {
-            if (_threadPool instanceof LifeCycle)
-                ((LifeCycle)_threadPool).start();
-        } 
-        catch(Throwable e) { mex.add(e);}
+            setThreadPool(new QueuedThreadPool());
         
         try 
         { 
@@ -299,31 +280,6 @@ public class Server extends HandlerWrapper implements Attributes
         }
 
         try {super.doStop(); } catch(Throwable e) { mex.add(e);}
-        
-        if (_sessionIdManager!=null)
-            _sessionIdManager.stop();
-        
-        try
-        {
-            if (_threadPool instanceof LifeCycle)
-                ((LifeCycle)_threadPool).stop();
-        }
-        catch(Throwable e){mex.add(e);}
-        
-        if (!_dependentBeans.isEmpty())
-        {
-            ListIterator<Object> itor = _dependentBeans.listIterator(_dependentBeans.size());
-            while (itor.hasPrevious())
-            {
-                try
-                {
-                    Object o =itor.previous();
-                    if (o instanceof LifeCycle)
-                        ((LifeCycle)o).stop(); 
-                }
-                catch (Throwable e) {mex.add(e);}
-            }
-        }
        
         mex.ifExceptionThrow();
 
@@ -400,7 +356,6 @@ public class Server extends HandlerWrapper implements Attributes
     }
     
     
-
     /* ------------------------------------------------------------ */
     public void join() throws InterruptedException 
     {
@@ -424,8 +379,12 @@ public class Server extends HandlerWrapper implements Attributes
      */
     public void setSessionIdManager(SessionIdManager sessionIdManager)
     {
-        _container.update(this,_sessionIdManager,sessionIdManager, "sessionIdManager",true);
+        if (_sessionIdManager!=null)
+            removeBean(_sessionIdManager);
+        _container.update(this, _sessionIdManager, sessionIdManager, "sessionIdManager",false);
         _sessionIdManager = sessionIdManager;
+        if (_sessionIdManager!=null)
+            addBean(_sessionIdManager);
     }
 
     /* ------------------------------------------------------------ */
@@ -491,78 +450,21 @@ public class Server extends HandlerWrapper implements Attributes
      * Add an associated bean.
      * The bean will be added to the servers {@link Container}
      * and if it is a {@link LifeCycle} instance, it will be 
-     * started/stopped along with the Server.
+     * started/stopped along with the Server. Any beans that are also 
+     * {@link Destroyable}, will be destroyed with the server.
      * @param o the bean object to add
      */
-    public void addBean(Object o)
+    @Override
+    public boolean addBean(Object o)
     {
-        if (o == null)
-            return;
-        
-        if (!_dependentBeans.contains(o)) 
+        if (super.addBean(o))
         {
-            _dependentBeans.add(o);
             _container.addBean(o);
+            return true;
         }
-        
-        try
-        {
-            if (isStarted() && o instanceof LifeCycle)
-                ((LifeCycle)o).start();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException (e);
-        }
+        return false;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get dependent beans of a specific class
-     * @see #addBean(Object)
-     * @param clazz
-     * @return List of beans.
-     */
-    public <T> List<T> getBeans(Class<T> clazz)
-    {
-        ArrayList<T> beans = new ArrayList<T>();
-        Iterator<?> iter = _dependentBeans.iterator();
-        while (iter.hasNext())
-        {
-            Object o = iter.next();
-            if (clazz.isInstance(o))
-                beans.add((T)o);
-        }
-        return beans;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Get dependent bean of a specific class.
-     * If more than one bean of the type exist, the first is returned.
-     * @see #addBean(Object)
-     * @param clazz
-     * @return bean or null
-     */
-    public <T> T getBean(Class<T> clazz)
-    {
-        Iterator<?> iter = _dependentBeans.iterator();
-        T t=null;
-        int count=0;
-        while (iter.hasNext())
-        {
-            Object o = iter.next();
-            if (clazz.isInstance(o))
-            {
-                count++;
-                if (t==null)
-                    t=(T)o;
-            }
-        }
-        if (count>1)
-            Log.debug("getBean({}) 1 of {}",clazz.getName(),count);
-        
-        return t;
-    }
-    
     /**
      * Remove a LifeCycle object to be started/stopped 
      * along with the Server
@@ -573,16 +475,20 @@ public class Server extends HandlerWrapper implements Attributes
     {
         removeBean(c);
     }
-
+    
+    /* ------------------------------------------------------------ */
     /**
      * Remove an associated bean.
      */
-    public void removeBean (Object o)
+    @Override
+    public boolean removeBean (Object o)
     {
-        if (o == null)
-            return;
-        _dependentBeans.remove(o);
-        _container.removeBean(o);
+        if (super.removeBean(o))
+        {
+            _container.removeBean(o);
+            return true;
+        }
+        return false;
     }
 
     /* ------------------------------------------------------------ */
@@ -653,7 +559,7 @@ public class Server extends HandlerWrapper implements Attributes
     {
         _graceful=timeoutMS;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
@@ -661,18 +567,12 @@ public class Server extends HandlerWrapper implements Attributes
         return this.getClass().getName()+"@"+Integer.toHexString(hashCode());
     }
 
-    
     /* ------------------------------------------------------------ */
     @Override
-    protected void dump(Appendable out,String indent) throws IOException
+    public void dump(Appendable out,String indent) throws IOException
     {
-        out.append(toString()).append(isStarted()?" started":" STOPPED").append('\n');
-        if (_connectors != null)
-            for (Connector c : _connectors)
-                out.append(" +-").append(String.valueOf(c)).append('\n');
-        if (_threadPool != null)
-            out.append(" +-").append(String.valueOf(_threadPool)).append('\n');
-        dumpHandlers(out,indent);
+        dumpThis(out);
+        dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),TypeUtil.asList(_connectors));    
     }
 
 
@@ -687,7 +587,7 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    public static void main(String[] args)
+    public static void main(String...args) throws Exception
     {
         System.err.println(getVersion());
     }

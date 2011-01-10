@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,9 +33,11 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
@@ -45,9 +48,10 @@ import org.eclipse.jetty.util.URIUtil;
  * A Filter that handles PUT, DELETE and MOVE methods.
  * Files are hidden during PUT operations, so that 404's result.
  * 
- * The following init paramters pay be used:<ul>
+ * The following init parameters pay be used:<ul>
  * <li><b>baseURI</b> - The file URI of the document root for put content.
  * <li><b>delAllowed</b> - boolean, if true DELETE and MOVE methods are supported.
+ * <li><b>putAtomic</b> - boolean, if true PUT files are written to a temp location and moved into place.
  * </ul>
  *
  */
@@ -59,17 +63,23 @@ public class PutFilter implements Filter
     public final static String __OPTIONS="OPTIONS";
 
     Set<String> _operations = new HashSet<String>();
-    protected ConcurrentMap<String,String> _hidden = new ConcurrentHashMap<String, String>();
-    protected String _options;
+    private ConcurrentMap<String,String> _hidden = new ConcurrentHashMap<String, String>();
+    private String _options=null;
 
-    protected ServletContext _context;
-    protected String _baseURI;
-    protected boolean _delAllowed;
+    private ServletContext _context;
+    private String _baseURI;
+    private boolean _delAllowed;
+    private boolean _putAtomic;
+    private File _tmpdir;
+    
     
     /* ------------------------------------------------------------ */
     public void init(FilterConfig config) throws ServletException
     {
         _context=config.getServletContext();
+        
+        _tmpdir=(File)_context.getAttribute("javax.servlet.context.tempdir");
+            
         if (_context.getRealPath("/")==null)
            throw new UnavailableException("Packed war");
         
@@ -83,17 +93,16 @@ public class PutFilter implements Filter
             File base=new File(_context.getRealPath("/"));
             _baseURI=base.toURI().toString();
         }
-
+        
         _delAllowed = getInitBoolean(config,"delAllowed");
+        _putAtomic = getInitBoolean(config,"putAtomic");
 
         _operations.add(__OPTIONS);
         _operations.add(__PUT);
-        _options="GET,HEAD,POST,OPTIONS,PUT";
         if (_delAllowed)
         {
             _operations.add(__DELETE);
             _operations.add(__MOVE);
-            _options+=",DELETE";
         }
     }
 
@@ -107,7 +116,6 @@ public class PutFilter implements Filter
     /* ------------------------------------------------------------ */
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException
     {
-       
         HttpServletRequest request=(HttpServletRequest)req;
         HttpServletResponse response=(HttpServletResponse)res;
 
@@ -126,7 +134,7 @@ public class PutFilter implements Filter
             try
             {
                 if (method.equals(__OPTIONS))
-                    handleOptions(request, response);
+                    handleOptions(chain,request, response);
                 else
                 {
                     file=new File(new URI(resource));
@@ -203,12 +211,30 @@ public class PutFilter implements Filter
                 parent.mkdirs();
                 int toRead = request.getContentLength();
                 InputStream in = request.getInputStream();
-                OutputStream out = new FileOutputStream(file,false);
-                if (toRead >= 0)
-                    IO.copy(in, out, toRead);
+                
+                    
+                if (_putAtomic)
+                {
+                    File tmp=File.createTempFile(file.getName(),null,_tmpdir);
+                    OutputStream out = new FileOutputStream(tmp,false);
+                    if (toRead >= 0)
+                        IO.copy(in, out, toRead);
+                    else
+                        IO.copy(in, out);
+                    out.close();
+                    
+                    if (!tmp.renameTo(file))
+                        throw new IOException("rename from "+tmp+" to "+file+" failed");
+                }
                 else
-                    IO.copy(in, out);
-                out.close();
+                {
+                    OutputStream out = new FileOutputStream(file,false);
+                    if (toRead >= 0)
+                        IO.copy(in, out, toRead);
+                    else
+                        IO.copy(in, out);
+                    out.close();
+                }
 
                 response.setStatus(exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_CREATED);
                 response.flushBuffer();
@@ -290,10 +316,27 @@ public class PutFilter implements Filter
     }
 
     /* ------------------------------------------------------------ */
-    public void handleOptions(HttpServletRequest request, HttpServletResponse response) throws IOException
+    public void handleOptions(FilterChain chain, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        // TODO filter real options and add PUT & DELETE
-        response.setHeader("Allow", _options);
+        chain.doFilter(request,new HttpServletResponseWrapper(response)
+        {
+            @Override
+            public void setHeader(String name, String value)
+            {
+                if ("Allow".equalsIgnoreCase(name))
+                {
+                    Set<String> options = new HashSet<String>();
+                    options.addAll(Arrays.asList(value.split(" *, *")));
+                    options.addAll(_operations);
+                    value=null;
+                    for (String o : options)
+                        value=value==null?o:(value+", "+o);
+                }
+                    
+                super.setHeader(name,value);
+            }
+        });
+        
     }
 
     /* ------------------------------------------------------------ */

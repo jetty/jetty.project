@@ -22,7 +22,7 @@ public class SocketTimeoutTest extends ConnectorTimeoutTest
     public static void init() throws Exception
     {
         SocketConnector connector = new SocketConnector();
-        connector.setMaxIdleTime(250); //250 msec max idle
+        connector.setMaxIdleTime(MAX_IDLE_TIME); //250 msec max idle
         startServer(connector);
     }
 

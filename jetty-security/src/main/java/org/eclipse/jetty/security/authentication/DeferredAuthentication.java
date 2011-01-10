@@ -28,8 +28,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
+import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 
@@ -37,10 +40,21 @@ public class DeferredAuthentication implements Authentication.Deferred
 {
     protected final Authenticator _authenticator;
 
+    private LoginService _loginService;
     private IdentityService _identityService;
     private Object _previousAssociation;
 
+
+    /* ------------------------------------------------------------ */
     public DeferredAuthentication(Authenticator authenticator)
+    {
+        if (authenticator == null)
+            throw new NullPointerException("No Authenticator");
+        this._authenticator = authenticator;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public DeferredAuthentication(LoginAuthenticator authenticator)
     {
         if (authenticator == null)
             throw new NullPointerException("No Authenticator");
@@ -63,6 +77,18 @@ public class DeferredAuthentication implements Authentication.Deferred
     public void setIdentityService(IdentityService identityService)
     {
         _identityService = identityService;
+    }
+
+    /* ------------------------------------------------------------ */
+    public LoginService getLoginService()
+    {
+        return _loginService;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setLoginService(LoginService loginService)
+    {
+        _loginService = loginService;
     }
 
     /* ------------------------------------------------------------ */
@@ -115,7 +141,18 @@ public class DeferredAuthentication implements Authentication.Deferred
      */
     public Authentication login(String username, String password)
     {
-        return null; // TODO implement
+        if (_loginService!=null)
+        {
+            UserIdentity user = _loginService.login(username,password);
+            if (user!=null)
+            {
+                UserAuthentication authentication = new UserAuthentication("API",user);
+                if (_identityService!=null)
+                    _previousAssociation=_identityService.associate(user);
+                return authentication;
+            }
+        }
+        return null;
     }
 
     /* ------------------------------------------------------------ */

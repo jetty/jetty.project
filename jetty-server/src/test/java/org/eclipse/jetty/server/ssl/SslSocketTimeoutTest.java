@@ -36,10 +36,8 @@ public class SslSocketTimeoutTest extends ConnectorTimeoutTest
     @BeforeClass
     public static void init() throws Exception
     {   
-        
-        
         SslSocketConnector connector = new SslSocketConnector();
-        connector.setMaxIdleTime(250); //250 msec max idle
+        connector.setMaxIdleTime(MAX_IDLE_TIME); //250 msec max idle
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
         connector.setKeystore(keystorePath);
         connector.setPassword("storepwd");
@@ -55,8 +53,7 @@ public class SslSocketTimeoutTest extends ConnectorTimeoutTest
         trustManagerFactory.init(keystore);
         _sslContext = SSLContext.getInstance("SSL");
         _sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
-        
-
+       
     }
 
 }

@@ -109,7 +109,7 @@ public class HttpGeneratorTest
                         catch(IOException e)
                         {
                             if (tr[r].body!=null)
-                                throw e;
+                                throw new Exception(t,e);
                             continue;
                         }
 
@@ -190,6 +190,9 @@ public class HttpGeneratorTest
                 hb.completeHeader(fields, Generator.LAST);
             }
             hb.complete();
+            
+            while(!hb.isComplete())
+                hb.flushBuffer();
         }
 
         @Override

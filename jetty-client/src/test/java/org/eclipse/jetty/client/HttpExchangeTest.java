@@ -277,7 +277,12 @@ public class HttpExchangeTest extends TestCase
             {
                 throwable.set(x);
             }
-            
+
+            @Override
+            protected void onConnectionFailed(Throwable x)
+            {
+                throwable.set(x);
+            }
         };
         httpExchange.setURL(_scheme+"localhost:"+_port+"/");
         httpExchange.setMethod("SLEEP");
@@ -288,7 +293,7 @@ public class HttpExchangeTest extends TestCase
             public void run()
             {
                 try { 
-                    Thread.sleep(250); 
+                    Thread.sleep(500); 
                     _httpClient.stop();
                 } catch(Exception e) {e.printStackTrace();}
             }
@@ -522,7 +527,7 @@ public class HttpExchangeTest extends TestCase
                     }
                     else if (request.getMethod().equalsIgnoreCase("SLEEP"))
                     {
-                        Thread.sleep(1000);
+                        Thread.sleep(10000);
                     }
                     else
                     {

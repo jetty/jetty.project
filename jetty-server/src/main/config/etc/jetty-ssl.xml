@@ -5,7 +5,9 @@
 <!-- Configure SSL for the Jetty Server                              -->
 <!-- this configuration file should be used in combination with      -->
 <!-- other configuration files.  e.g.                                -->
-<!--    java -jar start.jar etc/jetty.xml etc/jetty-ssl.xml          -->
+<!--    java -jar start.jar etc/jetty-ssl.xml                        -->
+<!--                                                                 -->
+<!--  alternately, add to the start.ini for easier usage             -->
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 

@@ -14,8 +14,16 @@
 package org.eclipse.jetty.jndi;
 
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import javax.naming.Binding;
@@ -36,7 +44,12 @@ import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.spi.NamingManager;
 
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.jndi.local.localContextRoot;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.log.Logger;
+
+import com.sun.naming.internal.FactoryEnumeration;
+import com.sun.naming.internal.ResourceManager;
 
 
 /*------------------------------------------------*/    
@@ -57,33 +70,46 @@ import org.eclipse.jetty.util.log.Log;
 * 
 * @version 1.0
 */
-public class NamingContext implements Context, Cloneable
+public class NamingContext implements Context, Cloneable, Dumpable
 {
-
+    private final static Logger __log=NamingUtil.__log;
+    private final static List<Binding> __empty = Collections.emptyList();
     public static final String LOCK_PROPERTY = "org.eclipse.jndi.lock";
     public static final String UNLOCK_PROPERTY = "org.eclipse.jndi.unlock";
     
-    public static final Enumeration EMPTY_ENUM = new Enumeration ()
-        {       
-            public boolean hasMoreElements()
-            {
-                return false;
-            }
-            
-            public Object nextElement ()
-            {
-                throw new NoSuchElementException();
-            }
-        };
+    protected final Hashtable<String,Object> _env = new Hashtable<String,Object>();
+    protected Map<String,Binding> _bindings = new HashMap<String,Binding>();
 
-    
-    protected Context _parent = null;
+    protected NamingContext _parent = null;
     protected String _name = null;
-    protected Hashtable _env = null;
-    protected Hashtable _bindings = new Hashtable();
     protected NameParser _parser = null;
+    private Collection<Listener> _listeners; 
 
-
+    /*------------------------------------------------*/    
+    /**
+     * Naming Context Listener.
+     * <p>
+     * If the env property {@link NamingContext#LISTENERS_PROPERTY} is set to 
+     * a collection of Listeners, then the listener will be called as Bindings 
+     * are added and removed from the context.
+     */
+    public interface Listener
+    {
+        /**
+         * Called by {@link NamingContext#addBinding(Name, Object)} when adding
+         * a binding.
+         * @param ctx The context to add to.
+         * @param binding The binding to add.
+         * @return The binding to bind, or null if the binding should be ignored.
+         */
+        Binding bind(NamingContext ctx, Binding binding);
+        
+        /**
+         * @param ctx The context to unbind from
+         * @param binding The binding that was unbound.
+         */
+        void unbind(NamingContext ctx, Binding binding);
+    }
 
     /*------------------------------------------------*/    
     /** NameEnumeration
@@ -101,11 +127,11 @@ public class NamingContext implements Context, Cloneable
      * @see
      *
      */
-    public class NameEnumeration implements NamingEnumeration
+    public class NameEnumeration implements NamingEnumeration<NameClassPair>
     {
-        Enumeration _delegate;
+        Iterator<Binding> _delegate;
 
-        public NameEnumeration (Enumeration e)
+        public NameEnumeration (Iterator<Binding> e)
         {
             _delegate = e;
         }
@@ -118,25 +144,25 @@ public class NamingContext implements Context, Cloneable
         public boolean hasMore ()
             throws NamingException
         {
-            return _delegate.hasMoreElements();
+            return _delegate.hasNext();
         }
 
-        public Object next()
+        public NameClassPair next()
             throws NamingException
         {
-            Binding b = (Binding)_delegate.nextElement();
-            return new NameClassPair (b.getName(), b.getClassName(), true);
+            Binding b = _delegate.next();
+            return new NameClassPair(b.getName(),b.getClassName(),true);
         }
 
         public boolean hasMoreElements()
         {
-            return _delegate.hasMoreElements();
+            return _delegate.hasNext();
         }
 
-        public Object nextElement()
+        public NameClassPair nextElement()
         {
-            Binding b = (Binding)_delegate.nextElement();
-            return new NameClassPair (b.getName(), b.getClassName(), true);
+            Binding b = _delegate.next();
+            return new NameClassPair(b.getName(),b.getClassName(),true);
         }
     }
 
@@ -161,11 +187,11 @@ public class NamingContext implements Context, Cloneable
      * @see
      *
      */
-    public class BindingEnumeration implements NamingEnumeration
+    public class BindingEnumeration implements NamingEnumeration<Binding>
     {       
-        Enumeration _delegate;
+        Iterator<Binding> _delegate;
 
-        public BindingEnumeration (Enumeration e)
+        public BindingEnumeration (Iterator<Binding> e)
         {
             _delegate = e;
         }
@@ -178,24 +204,24 @@ public class NamingContext implements Context, Cloneable
         public boolean hasMore ()
             throws NamingException
         {
-            return _delegate.hasMoreElements();
+            return _delegate.hasNext();
         }
 
-        public Object next()
+        public Binding next()
             throws NamingException
         {
-            Binding b = (Binding)_delegate.nextElement();
+            Binding b = (Binding)_delegate.next();
             return new Binding (b.getName(), b.getClassName(), b.getObject(), true);
         }
 
         public boolean hasMoreElements()
         {
-            return _delegate.hasMoreElements();
+            return _delegate.hasNext();
         }
 
-        public Object nextElement()
+        public Binding nextElement()
         {
-            Binding b = (Binding)_delegate.nextElement();
+            Binding b = (Binding)_delegate.next();
             return new Binding (b.getName(), b.getClassName(), b.getObject(),true);
         }
     }
@@ -211,20 +237,17 @@ public class NamingContext implements Context, Cloneable
      * @param parent immediate ancestor Context (can be null)
      * @param parser NameParser for this Context
      */
-    public NamingContext(Hashtable env, 
+    public NamingContext(Hashtable<String,Object> env, 
                          String name, 
-                         Context parent, 
+                         NamingContext parent, 
                          NameParser parser) 
     {
-        if (env == null)
-            _env = new Hashtable();
-        else
-            _env = new Hashtable(env);
+        if (env != null)
+            _env.putAll(env);
         _name = name;
         _parent = parent;
         _parser = parser;
     } 
-
 
 
     /*------------------------------------------------*/
@@ -233,16 +256,11 @@ public class NamingContext implements Context, Cloneable
      *
      * @param env a <code>Hashtable</code> value
      */
-    public NamingContext (Hashtable env)
+    public NamingContext (Hashtable<String,Object> env)
     {
-        if (env == null)
-            _env = new Hashtable();
-        else
-            _env = new Hashtable(env);
+        if (env != null)
+            _env.putAll(env);
     }
-
-
-
 
     /*------------------------------------------------*/
     /**
@@ -251,7 +269,6 @@ public class NamingContext implements Context, Cloneable
      */
     public NamingContext ()
     {
-        _env = new Hashtable();
     }
 
 
@@ -266,8 +283,8 @@ public class NamingContext implements Context, Cloneable
         throws CloneNotSupportedException
     {
         NamingContext ctx = (NamingContext)super.clone();
-        ctx._env = (Hashtable)_env.clone();
-        ctx._bindings = (Hashtable)_bindings.clone();
+        ctx._env.putAll(_env);
+        ctx._bindings.putAll(_bindings);
         return ctx;
     }
 
@@ -334,23 +351,19 @@ public class NamingContext implements Context, Cloneable
         if (cname.size() == 1)
         {
             //get the object to be bound
-            Object objToBind = NamingManager.getStateToBind(obj, name,this, null);
+            Object objToBind = NamingManager.getStateToBind(obj, name,this, _env);
             // Check for Referenceable
             if (objToBind instanceof Referenceable) 
             {
                 objToBind = ((Referenceable)objToBind).getReference();
             }
-            //anything else we should be able to bind directly
-                           
-            Binding binding = getBinding (cname);
-            if (binding == null)
-                addBinding (cname, objToBind);
-            else
-                throw new NameAlreadyBoundException (cname.toString());
+            
+            //anything else we should be able to bind directly    
+            addBinding (cname, objToBind);
         }
         else
         {
-            if(Log.isDebugEnabled())Log.debug("Checking for existing binding for name="+cname+" for first element of name="+cname.get(0));
+            if(__log.isDebugEnabled())__log.debug("Checking for existing binding for name="+cname+" for first element of name="+cname.get(0));
           
             //walk down the subcontext hierarchy       
             //need to ignore trailing empty "" name components
@@ -369,7 +382,6 @@ public class NamingContext implements Context, Cloneable
                 
                 ctx = binding.getObject();
                 
-                
                 if (ctx instanceof Reference)
                 {  
                     //deference the object
@@ -383,7 +395,7 @@ public class NamingContext implements Context, Cloneable
                     }
                     catch (Exception e)
                     {
-                        Log.warn("",e);
+                        __log.warn("",e);
                         throw new NamingException (e.getMessage());
                     }
                 }
@@ -475,7 +487,7 @@ public class NamingContext implements Context, Cloneable
             if (ctx instanceof Reference)
             {  
                 //deference the object
-                if(Log.isDebugEnabled())Log.debug("Object bound at "+firstComponent +" is a Reference");
+                if(__log.isDebugEnabled())__log.debug("Object bound at "+firstComponent +" is a Reference");
                 try
                 {
                     ctx = NamingManager.getObjectInstance(ctx, getNameParser("").parse(firstComponent), this, _env);
@@ -486,7 +498,7 @@ public class NamingContext implements Context, Cloneable
                 }
                 catch (Exception e)
                 {
-                    Log.warn("",e);
+                    __log.warn("",e);
                     throw new NamingException (e.getMessage());
                 }
             }
@@ -555,14 +567,14 @@ public class NamingContext implements Context, Cloneable
     public Object lookup(Name name)
         throws NamingException
     {
-        if(Log.isDebugEnabled())Log.debug("Looking up name=\""+name+"\"");
+        if(__log.isDebugEnabled())__log.debug("Looking up name=\""+name+"\"");
         Name cname = toCanonicalName(name);
 
         if ((cname == null) || (cname.size() == 0))
         {
-            Log.debug("Null or empty name, returning copy of this context");
+            __log.debug("Null or empty name, returning copy of this context");
             NamingContext ctx = new NamingContext (_env, _name, _parent, _parser);
-            ctx._bindings = _bindings;
+            ctx._bindings=_bindings;
             return ctx;
         }
 
@@ -608,7 +620,7 @@ public class NamingContext implements Context, Cloneable
                 }
                 catch (Exception e)
                 {
-                    Log.warn("",e);
+                    __log.warn("",e);
                     throw new NamingException (e.getMessage());
                 }
             }
@@ -652,7 +664,7 @@ public class NamingContext implements Context, Cloneable
                 }
                 catch (Exception e)
                 {
-                    Log.warn("",e);
+                    __log.warn("",e);
                     throw new NamingException (e.getMessage());
                 }
             }
@@ -696,7 +708,7 @@ public class NamingContext implements Context, Cloneable
         if (cname == null)
         {
             NamingContext ctx = new NamingContext (_env, _name, _parent, _parser);
-            ctx._bindings = _bindings;
+            ctx._bindings=_bindings;
             return ctx;
         }
         if (cname.size() == 0)
@@ -724,7 +736,7 @@ public class NamingContext implements Context, Cloneable
                 }
                 catch (Exception e)
                 {
-                    Log.warn("",e);
+                    __log.warn("",e);
                     throw new NamingException (e.getMessage());
                 }
             }
@@ -764,7 +776,7 @@ public class NamingContext implements Context, Cloneable
                 }
                 catch (Exception e)
                 {
-                    Log.warn("",e);
+                    __log.warn("",e);
                     throw new NamingException (e.getMessage());
                 }
             }
@@ -803,20 +815,20 @@ public class NamingContext implements Context, Cloneable
     public NamingEnumeration list(Name name)
         throws NamingException
     {
-        if(Log.isDebugEnabled())Log.debug("list() on Context="+getName()+" for name="+name);
+        if(__log.isDebugEnabled())__log.debug("list() on Context="+getName()+" for name="+name);
         Name cname = toCanonicalName(name);
 
      
 
         if (cname == null)
         {
-            return new NameEnumeration(EMPTY_ENUM);
+            return new NameEnumeration(__empty.iterator());
         }
 
         
         if (cname.size() == 0)
         {
-           return new NameEnumeration (_bindings.elements()); 
+           return new NameEnumeration (_bindings.values().iterator()); 
         }
 
       
@@ -838,7 +850,7 @@ public class NamingContext implements Context, Cloneable
             if (ctx instanceof Reference)
             {  
                 //deference the object
-                if(Log.isDebugEnabled())Log.debug("Dereferencing Reference for "+name.get(0));
+                if(__log.isDebugEnabled())__log.debug("Dereferencing Reference for "+name.get(0));
                 try
                 {
                     ctx = NamingManager.getObjectInstance(ctx, getNameParser("").parse(firstComponent), this, _env);
@@ -849,7 +861,7 @@ public class NamingContext implements Context, Cloneable
                 }
                 catch (Exception e)
                 {
-                    Log.warn("",e);
+                    __log.warn("",e);
                     throw new NamingException (e.getMessage());
                 }
             }
@@ -893,12 +905,12 @@ public class NamingContext implements Context, Cloneable
 
         if (cname == null)
         {
-            return new BindingEnumeration(EMPTY_ENUM);
+            return new BindingEnumeration(__empty.iterator());
         }
 
         if (cname.size() == 0)
         {
-           return new BindingEnumeration (_bindings.elements()); 
+           return new BindingEnumeration (_bindings.values().iterator()); 
         }
 
       
@@ -933,7 +945,7 @@ public class NamingContext implements Context, Cloneable
                 }
                 catch (Exception e)
                 {
-                    Log.warn("",e);
+                    __log.warn("",e);
                     throw new NamingException (e.getMessage());
                 }
             }
@@ -988,19 +1000,21 @@ public class NamingContext implements Context, Cloneable
 
         //if no subcontexts, just bind it
         if (cname.size() == 1)
-        {         
+        {      
             //check if it is a Referenceable
-            Object objToBind = NamingManager.getStateToBind(obj, name, this, null);
+            Object objToBind = NamingManager.getStateToBind(obj, name, this, _env);
+            
             if (objToBind instanceof Referenceable)
             {
                 objToBind = ((Referenceable)objToBind).getReference();
             }
+            removeBinding(cname);
             addBinding (cname, objToBind);
         }
         else
         { 
             //walk down the subcontext hierarchy
-            if(Log.isDebugEnabled())Log.debug("Checking for existing binding for name="+cname+" for first element of name="+cname.get(0));
+            if(__log.isDebugEnabled())__log.debug("Checking for existing binding for name="+cname+" for first element of name="+cname.get(0));
                     
             String firstComponent = cname.get(0);
             Object ctx = null;
@@ -1030,7 +1044,7 @@ public class NamingContext implements Context, Cloneable
                     }
                     catch (Exception e)
                     {
-                        Log.warn("",e);
+                        __log.warn("",e);
                         throw new NamingException (e.getMessage());
                     }
                 }
@@ -1108,7 +1122,7 @@ public class NamingContext implements Context, Cloneable
         else
         { 
             //walk down the subcontext hierarchy
-            if(Log.isDebugEnabled())Log.debug("Checking for existing binding for name="+cname+" for first element of name="+cname.get(0));
+            if(__log.isDebugEnabled())__log.debug("Checking for existing binding for name="+cname+" for first element of name="+cname.get(0));
                     
             String firstComponent = cname.get(0);
             Object ctx = null;
@@ -1138,7 +1152,7 @@ public class NamingContext implements Context, Cloneable
                     }
                     catch (Exception e)
                     {
-                        Log.warn("",e);
+                        __log.warn("",e);
                         throw new NamingException (e.getMessage());
                     }
                 }
@@ -1351,7 +1365,6 @@ public class NamingContext implements Context, Cloneable
         return (Hashtable)_env.clone();
     }
 
-
     /*------------------------------------------------*/    
     /**
      * Add a name to object binding to this Context.
@@ -1359,11 +1372,29 @@ public class NamingContext implements Context, Cloneable
      * @param name a <code>Name</code> value
      * @param obj an <code>Object</code> value
      */
-    protected void addBinding (Name name, Object obj)
+    protected void addBinding (Name name, Object obj) throws NameAlreadyBoundException
     {
         String key = name.toString();
-        if(Log.isDebugEnabled())Log.debug("Adding binding with key="+key+" obj="+obj+" for context="+_name);
-        _bindings.put (key, new Binding (key, obj));
+        Binding binding=new Binding (key, obj);
+        
+        Collection<Listener> list = findListeners();
+        
+        for (Listener listener : list)
+        {
+            binding=listener.bind(this,binding);
+            if (binding==null)
+                break;
+        }
+
+        if(__log.isDebugEnabled())
+            __log.debug("Adding binding with key="+key+" obj="+obj+" for context="+_name+" as "+binding);
+        
+        if (binding!=null)
+        {
+            if (_bindings.containsKey(key))
+                throw new NameAlreadyBoundException(name.toString());
+            _bindings.put(key,binding);  
+        }
     }
 
     /*------------------------------------------------*/    
@@ -1375,7 +1406,6 @@ public class NamingContext implements Context, Cloneable
      */
     protected Binding getBinding (Name name)
     {
-        if(Log.isDebugEnabled())Log.debug("Looking up binding for "+name.toString()+" for context="+_name);
         return (Binding) _bindings.get(name.toString());
     }
 
@@ -1389,16 +1419,22 @@ public class NamingContext implements Context, Cloneable
      */
     protected Binding getBinding (String name)
     {
-        if(Log.isDebugEnabled())Log.debug("Looking up binding for "+name+" for context="+_name);
         return (Binding) _bindings.get(name);
     }
 
-
+    /*------------------------------------------------*/    
     protected void removeBinding (Name name)
     {
         String key = name.toString();
-        if (Log.isDebugEnabled()) Log.debug("Removing binding with key="+key);
-        _bindings.remove(key);
+        if (__log.isDebugEnabled()) 
+            __log.debug("Removing binding with key="+key);
+        Binding binding = _bindings.remove(key);
+        if (binding!=null)
+        {
+            Collection<Listener> list = findListeners();
+            for (Listener listener : list)
+                listener.unbind(this,binding);
+        }
     }
 
     /*------------------------------------------------*/    
@@ -1420,16 +1456,15 @@ public class NamingContext implements Context, Cloneable
                 if (canonicalName.get(0).equals(""))
                     canonicalName = canonicalName.getSuffix(1);
  
-                
                 if (canonicalName.get(canonicalName.size()-1).equals(""))
-                    canonicalName = canonicalName.getPrefix(canonicalName.size()-1);
-                
+                    canonicalName = canonicalName.getPrefix(canonicalName.size()-1);               
             }
         }
 
         return canonicalName;
     }
-
+    
+    /* ------------------------------------------------------------ */
     private boolean isLocked()
     {
        if ((_env.get(LOCK_PROPERTY) == null) && (_env.get(UNLOCK_PROPERTY) == null))
@@ -1442,5 +1477,77 @@ public class NamingContext implements Context, Cloneable
            return false;
        return true;
     }
-   
+    
+    
+    /* ------------------------------------------------------------ */
+    public String dump()
+    {
+        StringBuilder buf = new StringBuilder();
+        try
+        {
+            dump(buf,"");
+        }
+        catch(Exception e)
+        {
+            __log.warn(e);
+        }
+        return buf.toString();
+    }
+    
+
+    /* ------------------------------------------------------------ */
+    public void dump(Appendable out,String indent) throws IOException
+    {
+        out.append(this.getClass().getSimpleName()).append("@").append(Long.toHexString(this.hashCode())).append("\n");
+        int size=_bindings.size();
+        int i=0;
+        for (Map.Entry<String,Binding> entry : ((Map<String,Binding>)_bindings).entrySet())
+        {
+            boolean last=++i==size;
+            out.append(indent).append(" +- ").append(entry.getKey()).append(": ");
+            
+            Binding binding = entry.getValue();
+            Object value = binding.getObject();
+            
+            if ("comp".equals(entry.getKey()) && value instanceof Reference && "org.eclipse.jetty.jndi.ContextFactory".equals(((Reference)value).getFactoryClassName()))
+            {
+                ContextFactory.dump(out,indent+(last?"    ":" |  "));
+            }
+            else if (value instanceof Dumpable)
+            {
+                ((Dumpable)value).dump(out,indent+(last?"    ":" |  "));
+            }
+            else
+            {
+                out.append(value.getClass().getSimpleName()).append("=");
+                out.append(String.valueOf(value).replace('\n','|').replace('\r','|'));
+                out.append("\n");
+            }
+        }
+    }
+  
+    private Collection<Listener> findListeners()
+    {
+        Collection<Listener> list = new ArrayList<Listener>();
+        NamingContext ctx=this;
+        while (ctx!=null)
+        {
+            if (ctx._listeners!=null)
+                list.addAll(ctx._listeners);
+            ctx=(NamingContext)ctx.getParent();
+        }
+        return list;
+    }
+    
+    public void addListener(Listener listener)
+    {
+        if (_listeners==null)
+            _listeners=new ArrayList<Listener>();
+        _listeners.add(listener);
+    }
+    
+    public boolean removeListener(Listener listener)
+    {   
+        return _listeners.remove(listener);
+    }
 } 

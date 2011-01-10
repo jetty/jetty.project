@@ -93,12 +93,10 @@ public class HttpFields
             int year = gc.get(Calendar.YEAR);
             int century = year / 100;
             year = year % 100;
-
-            int epoch = (int) ((date / 1000) % (60 * 60 * 24));
-            int seconds = epoch % 60;
-            epoch = epoch / 60;
-            int minutes = epoch % 60;
-            int hours = epoch / 60;
+            
+            int hours = gc.get(Calendar.HOUR_OF_DAY);
+            int minutes = gc.get(Calendar.MINUTE);
+            int seconds = gc.get(Calendar.SECOND);
 
             buf.append(DAYS[day_of_week]);
             buf.append(',');

@@ -21,7 +21,7 @@ import javax.naming.NamingException;
 import javax.transaction.UserTransaction;
 
 import org.eclipse.jetty.jndi.NamingUtil;
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Transaction
@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Transaction extends NamingEntry
 {
+    private static Logger __log = NamingUtil.__log;
     public static final String USER_TRANSACTION = "UserTransaction";
     
 
@@ -47,13 +48,12 @@ public class Transaction extends NamingEntry
             throw new NameNotFoundException( USER_TRANSACTION + " not found" );
         }
     }
- 
-    
     
     public Transaction (UserTransaction userTransaction)
     throws NamingException
     {
-        super (USER_TRANSACTION, userTransaction);           
+        super (USER_TRANSACTION);
+        save(userTransaction);
     }
     
     
@@ -68,8 +68,8 @@ public class Transaction extends NamingEntry
     {   
         InitialContext ic = new InitialContext();
         Context env = (Context)ic.lookup("java:comp/env");
-        Log.debug("Binding java:comp/env"+getJndiName()+" to "+objectNameString);
-        NamingUtil.bind(env, localName, new LinkRef(objectNameString));
+        __log.debug("Binding java:comp/env"+getJndiName()+" to "+_objectNameString);
+        NamingUtil.bind(env, localName, new LinkRef(_objectNameString));
     }
     
     /**
@@ -82,8 +82,8 @@ public class Transaction extends NamingEntry
         //ignore the name, it is always bound to java:comp
         InitialContext ic = new InitialContext();
         Context env = (Context)ic.lookup("java:comp");
-        Log.debug("Binding java:comp/"+getJndiName()+" to "+objectNameString);
-        NamingUtil.bind(env, getJndiName(), new LinkRef(objectNameString));
+        __log.debug("Binding java:comp/"+getJndiName()+" to "+_objectNameString);
+        NamingUtil.bind(env, getJndiName(), new LinkRef(_objectNameString));
     }
     
     /**
@@ -95,12 +95,12 @@ public class Transaction extends NamingEntry
         {
             InitialContext ic = new InitialContext();
             Context env = (Context)ic.lookup("java:comp");
-            Log.debug("Unbinding java:comp/"+getJndiName());
+            __log.debug("Unbinding java:comp/"+getJndiName());
             env.unbind(getJndiName());
         }
         catch (NamingException e)
         {
-            Log.warn(e);
+            __log.warn(e);
         }
     }
 }

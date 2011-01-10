@@ -78,7 +78,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                     if(Log.isDebugEnabled())
                         Log.debug("Configure: "+jetty);
                     XmlConfiguration jetty_config=new XmlConfiguration(jetty.getURL());
-                    setupXmlConfiguration(jetty_config, web_inf);
+                    setupXmlConfiguration(context,jetty_config, web_inf);
                     jetty_config.configure(context);
                 }
                 finally
@@ -88,6 +88,16 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                 }
             }
         }
+    }
+
+    /**
+     * Configures some well-known properties before the XmlConfiguration reads
+     * the configuration.
+     * @param jetty_config The configuration object.
+     */
+    private void setupXmlConfiguration(WebAppContext context, XmlConfiguration jetty_config, Resource web_inf)
+    {
+        setupXmlConfiguration(jetty_config,web_inf);
     }
     
     /**

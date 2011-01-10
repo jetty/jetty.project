@@ -237,10 +237,21 @@ public abstract class ContinuationBase extends TestCase
             request+="Content-Length: "+content.length()+"\r\n";
         request+="\r\n" + content;
         
-        Socket socket = new Socket("localhost",_port);
-        socket.getOutputStream().write(request.getBytes("UTF-8"));
-        
-        String response = toString(socket.getInputStream());
+        int port=_port;
+        String response=null;
+        try
+        {
+            Socket socket = new Socket("localhost",port);
+            socket.getOutputStream().write(request.getBytes("UTF-8"));
+
+            response = toString(socket.getInputStream());
+        }
+        catch(Exception e)
+        {
+            System.err.println("failed on port "+port);
+            e.printStackTrace();
+            throw e;
+        }
         return response;
     }
     

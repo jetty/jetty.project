@@ -24,7 +24,9 @@ import static org.junit.Assert.assertNotNull;
 
 public class TestResourceAnnotations
 {
- 
+    Object objA=new Integer(1000);
+    Object objB=new Integer(2000);
+    
     @Test
     public void testResourceAnnotations ()
     throws Exception
@@ -38,8 +40,8 @@ public class TestResourceAnnotations
         Context comp = (Context)ic.lookup("java:comp");
         Context env = comp.createSubcontext("env");
         
-        org.eclipse.jetty.plus.jndi.EnvEntry resourceA = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", new Integer(1000), false);
-        org.eclipse.jetty.plus.jndi.EnvEntry resourceB = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", new Integer(2000), false);
+        org.eclipse.jetty.plus.jndi.EnvEntry resourceA = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", objA, false);
+        org.eclipse.jetty.plus.jndi.EnvEntry resourceB = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", objB, false);
 
         AnnotationIntrospector parser = new AnnotationIntrospector();
         ResourceAnnotationHandler handler = new ResourceAnnotationHandler(wac);
@@ -56,13 +58,13 @@ public class TestResourceAnnotations
         // java:comp/env/org.eclipse.jetty.annotations.resources.ResourceB/f
         // java:comp/env/org.eclipse.jetty.annotations.resources.ResourceA/n
         //
-        assertEquals(resourceB.getObjectToBind(), env.lookup("myf"));
-        assertEquals(resourceA.getObjectToBind(), env.lookup("mye"));
-        assertEquals(resourceA.getObjectToBind(), env.lookup("resA"));
-        assertEquals(resourceA.getObjectToBind(), env.lookup("org.eclipse.jetty.annotations.resources.ResourceA/g"));
-        assertEquals(resourceA.getObjectToBind(), env.lookup("org.eclipse.jetty.annotations.resources.ResourceA/h"));
-        assertEquals(resourceB.getObjectToBind(), env.lookup("org.eclipse.jetty.annotations.resources.ResourceB/f"));
-        assertEquals(resourceB.getObjectToBind(), env.lookup("org.eclipse.jetty.annotations.resources.ResourceA/n"));
+        assertEquals(objB, env.lookup("myf"));
+        assertEquals(objA, env.lookup("mye"));
+        assertEquals(objA, env.lookup("resA"));
+        assertEquals(objA, env.lookup("org.eclipse.jetty.annotations.resources.ResourceA/g"));
+        assertEquals(objA, env.lookup("org.eclipse.jetty.annotations.resources.ResourceA/h"));
+        assertEquals(objB, env.lookup("org.eclipse.jetty.annotations.resources.ResourceB/f"));
+        assertEquals(objB, env.lookup("org.eclipse.jetty.annotations.resources.ResourceA/n"));
 
         //we should have Injections
         assertNotNull(injections);
@@ -98,22 +100,22 @@ public class TestResourceAnnotations
         //check injected values
         Field f = ResourceB.class.getDeclaredField ("f");
         f.setAccessible(true);
-        assertEquals(resourceB.getObjectToBind() , f.get(binst));
+        assertEquals(objB , f.get(binst));
 
         //@Resource(mappedName="resA") //test the default naming scheme but using a mapped name from the environment
         f = ResourceA.class.getDeclaredField("g");
         f.setAccessible(true);
-        assertEquals(resourceA.getObjectToBind(), f.get(binst));
+        assertEquals(objA, f.get(binst));
 
         //@Resource(name="resA") //test using the given name as the name from the environment
         f = ResourceA.class.getDeclaredField("j");
         f.setAccessible(true);
-        assertEquals(resourceA.getObjectToBind(), f.get(binst));
+        assertEquals(objA, f.get(binst));
 
         //@Resource(mappedName="resB") //test using the default name on an inherited field
         f = ResourceA.class.getDeclaredField("n");
         f.setAccessible(true);
-        assertEquals(resourceB.getObjectToBind(), f.get(binst));
+        assertEquals(objB, f.get(binst));
 
         comp.destroySubcontext("env");
     }
@@ -131,8 +133,8 @@ public class TestResourceAnnotations
         InitialContext ic = new InitialContext();
         Context comp = (Context)ic.lookup("java:comp");
         Context env = comp.createSubcontext("env");
-        org.eclipse.jetty.plus.jndi.EnvEntry resourceA = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", new Integer(1000), false);
-        org.eclipse.jetty.plus.jndi.EnvEntry resourceB = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", new Integer(2000), false);
+        org.eclipse.jetty.plus.jndi.EnvEntry resourceA = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", objA, false);
+        org.eclipse.jetty.plus.jndi.EnvEntry resourceB = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", objB, false);
              
         AnnotationIntrospector introspector = new AnnotationIntrospector();
         ResourcesAnnotationHandler handler = new ResourcesAnnotationHandler(wac);
@@ -140,7 +142,7 @@ public class TestResourceAnnotations
         introspector.introspect(ResourceA.class);
         introspector.introspect(ResourceB.class);
         
-        assertEquals(resourceA.getObjectToBind(), env.lookup("peach"));
-        assertEquals(resourceB.getObjectToBind(), env.lookup("pear"));
+        assertEquals(objA, env.lookup("peach"));
+        assertEquals(objB, env.lookup("pear"));
     }
 }

@@ -126,7 +126,7 @@ public class Utf8StringBuffer
                 // 10xxxxxx
                 _bits=(_bits<<6)|(b&0x3f);
                 if (--_more==0)
-                    _buffer.append((char)_bits);
+                    _buffer.append(Character.toChars(_bits));
             }
         }
     }

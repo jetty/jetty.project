@@ -35,15 +35,13 @@ import org.eclipse.jetty.jndi.NamingContext;
  */
 public class localContextRoot implements Context
 {
-    private static final NamingContext _root;
-
-    private final Hashtable _env;
+    private static final NamingContext __root = new NamingContext();
+    private final Hashtable<String,Object> _env;
 
     // make a root for the static namespace local:
     static
     {
-        _root = new NamingContext();
-        _root.setNameParser(new LocalNameParser());
+        __root.setNameParser(new LocalNameParser());
     }
 
     static class LocalNameParser implements NameParser
@@ -61,6 +59,11 @@ public class localContextRoot implements Context
         {
             return new CompoundName(name, syntax);
         }
+    }
+    
+    public static NamingContext getRoot()
+    {
+        return __root;
     }
 
     public localContextRoot(Hashtable env)
@@ -95,9 +98,9 @@ public class localContextRoot implements Context
      */
     public void destroySubcontext(String name) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            _root.destroySubcontext(getSuffix(name));
+            __root.destroySubcontext(getSuffix(name));
         }
     }
 
@@ -108,9 +111,9 @@ public class localContextRoot implements Context
      */
     public void unbind(String name) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            _root.unbind(getSuffix(name));
+            __root.unbind(getSuffix(name));
         }
     }
 
@@ -131,9 +134,9 @@ public class localContextRoot implements Context
      */
     public void destroySubcontext(Name name) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            _root.destroySubcontext(getSuffix(name));
+            __root.destroySubcontext(getSuffix(name));
         }
     }
 
@@ -144,9 +147,9 @@ public class localContextRoot implements Context
      */
     public void unbind(Name name) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            _root.unbind(getSuffix(name));
+            __root.unbind(getSuffix(name));
         }
     }
 
@@ -157,9 +160,9 @@ public class localContextRoot implements Context
      */
     public Object lookup(String name) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            return _root.lookup(getSuffix(name));
+            return __root.lookup(getSuffix(name));
         }
     }
 
@@ -170,9 +173,9 @@ public class localContextRoot implements Context
      */
     public Object lookupLink(String name) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            return _root.lookupLink(getSuffix(name));
+            return __root.lookupLink(getSuffix(name));
         }
     }
 
@@ -193,9 +196,9 @@ public class localContextRoot implements Context
      */
     public void bind(String name, Object obj) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            _root.bind(getSuffix(name), obj);
+            __root.bind(getSuffix(name), obj);
         }
     }
 
@@ -206,9 +209,9 @@ public class localContextRoot implements Context
      */
     public void rebind(String name, Object obj) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            _root.rebind(getSuffix(name), obj);
+            __root.rebind(getSuffix(name), obj);
         }
     }
 
@@ -219,9 +222,9 @@ public class localContextRoot implements Context
      */
     public Object lookup(Name name) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            return _root.lookup(getSuffix(name));
+            return __root.lookup(getSuffix(name));
         }
     }
 
@@ -232,9 +235,9 @@ public class localContextRoot implements Context
      */
     public Object lookupLink(Name name) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            return _root.lookupLink(getSuffix(name));
+            return __root.lookupLink(getSuffix(name));
         }
     }
 
@@ -245,9 +248,9 @@ public class localContextRoot implements Context
      */
     public void bind(Name name, Object obj) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            _root.bind(getSuffix(name), obj);
+            __root.bind(getSuffix(name), obj);
         }
     }
 
@@ -258,9 +261,9 @@ public class localContextRoot implements Context
      */
     public void rebind(Name name, Object obj) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            _root.rebind(getSuffix(name), obj);
+            __root.rebind(getSuffix(name), obj);
         }
     }
 
@@ -271,9 +274,9 @@ public class localContextRoot implements Context
      */
     public void rename(String oldName, String newName) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            _root.rename(getSuffix(oldName), getSuffix(newName));
+            __root.rename(getSuffix(oldName), getSuffix(newName));
         }
     }
 
@@ -284,9 +287,9 @@ public class localContextRoot implements Context
      */
     public Context createSubcontext(String name) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            return _root.createSubcontext(getSuffix(name));
+            return __root.createSubcontext(getSuffix(name));
         }
     }
 
@@ -297,9 +300,9 @@ public class localContextRoot implements Context
      */
     public Context createSubcontext(Name name) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            return _root.createSubcontext(getSuffix(name));
+            return __root.createSubcontext(getSuffix(name));
         }
     }
 
@@ -310,9 +313,9 @@ public class localContextRoot implements Context
      */
     public void rename(Name oldName, Name newName) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            _root.rename(getSuffix(oldName), getSuffix(newName));
+            __root.rename(getSuffix(oldName), getSuffix(newName));
         }
     }
 
@@ -323,7 +326,7 @@ public class localContextRoot implements Context
      */
     public NameParser getNameParser(String name) throws NamingException
     {
-        return _root.getNameParser(name);
+        return __root.getNameParser(name);
     }
 
     /**
@@ -333,7 +336,7 @@ public class localContextRoot implements Context
      */
     public NameParser getNameParser(Name name) throws NamingException
     {
-        return _root.getNameParser(name);
+        return __root.getNameParser(name);
     }
 
     /**
@@ -343,9 +346,9 @@ public class localContextRoot implements Context
      */
     public NamingEnumeration list(String name) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            return _root.list(getSuffix(name));
+            return __root.list(getSuffix(name));
         }
     }
 
@@ -356,9 +359,9 @@ public class localContextRoot implements Context
      */
     public NamingEnumeration listBindings(String name) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            return _root.listBindings(getSuffix(name));
+            return __root.listBindings(getSuffix(name));
         }
     }
 
@@ -369,9 +372,9 @@ public class localContextRoot implements Context
      */
     public NamingEnumeration list(Name name) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            return _root.list(getSuffix(name));
+            return __root.list(getSuffix(name));
         }
     }
 
@@ -382,9 +385,9 @@ public class localContextRoot implements Context
      */
     public NamingEnumeration listBindings(Name name) throws NamingException
     {
-        synchronized (_root)
+        synchronized (__root)
         {
-            return _root.listBindings(getSuffix(name));
+            return __root.listBindings(getSuffix(name));
         }
     }
 
@@ -408,7 +411,7 @@ public class localContextRoot implements Context
     public String composeName(String name, String prefix)
             throws NamingException
     {
-        return _root.composeName(name, prefix);
+        return __root.composeName(name, prefix);
     }
 
     /**
@@ -419,7 +422,7 @@ public class localContextRoot implements Context
      */
     public Name composeName(Name name, Name prefix) throws NamingException
     {
-        return _root.composeName(name, prefix);
+        return __root.composeName(name, prefix);
     }
 
     protected String getSuffix(String url) throws NamingException

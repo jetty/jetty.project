@@ -27,6 +27,7 @@ import junit.framework.Assert;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
@@ -67,7 +68,7 @@ public class TestJettyOSGiBootWithJsp
                 // this just adds all what you write here to java vm argumenents of the (new) osgi process.
 //            PaxRunnerOptions.vmOption( "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5006" ),
     			
-    		PaxRunnerOptions.vmOption("-D" + OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS + 
+    		PaxRunnerOptions.vmOption("-Djetty.port=9876 -D" + OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS + 
     				"=etc/jetty.xml;" + testrealm.getAbsolutePath()),
 
     	    mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject(),
@@ -118,12 +119,13 @@ public class TestJettyOSGiBootWithJsp
             client.start();
             
             ContentExchange getExchange = new ContentExchange();
-            getExchange.setURL("http://localhost:8080/jsp/dump.jsp");
+            getExchange.setURL("http://127.0.0.1:9876/jsp/dump.jsp");
             getExchange.setMethod(HttpMethods.GET);
      
             client.send(getExchange);
             int state = getExchange.waitForDone();
-     
+            Assert.assertEquals("state should be done", HttpExchange.STATUS_COMPLETED, state);
+            
             String content = null;
             int responseStatus = getExchange.getResponseStatus();
             Assert.assertEquals(HttpStatus.OK_200, responseStatus);

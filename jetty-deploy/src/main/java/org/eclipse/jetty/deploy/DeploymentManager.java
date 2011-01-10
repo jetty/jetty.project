@@ -20,9 +20,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -38,6 +36,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 
 /**
@@ -54,7 +53,7 @@ import org.eclipse.jetty.util.log.Log;
  * <p>
  * <img src="doc-files/DeploymentManager.png">
  */
-public class DeploymentManager extends AbstractLifeCycle
+public class DeploymentManager extends AggregateLifeCycle
 {
     /**
      * Represents a single tracked app within the deployment manager.
@@ -144,8 +143,10 @@ public class DeploymentManager extends AbstractLifeCycle
             throw new IllegalStateException();
         
         _providers.clear();
+        removeBeans();
         for (AppProvider provider:providers)
-            _providers.add(provider);
+            if (_providers.add(provider))
+                addBean(provider);
     }
 
     public Collection<AppProvider> getAppProviders()
@@ -158,7 +159,11 @@ public class DeploymentManager extends AbstractLifeCycle
         if (isRunning())
             throw new IllegalStateException();
         
-        _providers.add(provider);
+        List<AppProvider> old = new ArrayList<AppProvider>(_providers);
+        if (_providers.add(provider) && getServer()!=null)
+            getServer().getContainer().update(this, null, provider, "provider");
+            
+        addBean(provider);        
     }
 
     public void setLifeCycleBindings(Collection<AppLifeCycle.Binding> bindings)
@@ -250,18 +255,6 @@ public class DeploymentManager extends AbstractLifeCycle
         }
         return null;
     }
-
-    /*
-    public App getAppByContextId(String contextId)
-    {
-        AppEntry entry = findAppByContextId(contextId);
-        if (entry == null)
-        {
-            return null;
-        }
-        return entry.app;
-    }
-   */
     
     public App getAppByOriginId(String originId)
     {
@@ -404,7 +397,12 @@ public class DeploymentManager extends AbstractLifeCycle
 
     public void removeAppProvider(AppProvider provider)
     {
-        _providers.remove(provider);
+        if(_providers.remove(provider))
+        {
+            removeBean(provider);
+            if (getServer()!=null)
+                getServer().getContainer().update(this, provider,null, "provider");
+        }
         try
         {
             provider.stop();

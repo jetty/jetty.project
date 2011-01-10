@@ -68,7 +68,23 @@ public class Utf8StringBuilderTest
             buffer.append(bytes[i]);
         assertEquals("abc?",buffer.toString());
     }
+
     
+    @Test 
+    public void testUTF32codes()
+    throws Exception
+    {
+        String source="\uD842\uDF9F";
+        byte[] bytes=source.getBytes("UTF-8");
+        
+        String jvmcheck = new String(bytes,0,bytes.length,"UTF-8");
+        assertEquals(source,jvmcheck);
+        
+        Utf8StringBuilder buffer = new Utf8StringBuilder();
+        buffer.append(bytes,0,bytes.length);
+        String result=buffer.toString();
+        assertEquals(source,result);
+    }
     
 
 }

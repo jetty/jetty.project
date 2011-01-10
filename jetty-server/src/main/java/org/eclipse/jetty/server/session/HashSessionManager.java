@@ -38,7 +38,6 @@ import java.util.concurrent.ConcurrentMap;
 import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;

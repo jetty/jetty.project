@@ -197,7 +197,6 @@ public class BlockingChannelConnector extends AbstractNIOConnector
         {
             if (_idleTimestamp!=0 && _timeout>0 && now>(_idleTimestamp+_timeout))
             {
-                System.err.println("IDLE "+this);
                 idleExpired();
             }
         }

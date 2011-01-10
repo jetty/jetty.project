@@ -15,6 +15,7 @@ package org.eclipse.jetty.util.thread;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import org.junit.Before;
@@ -136,8 +137,8 @@ public class TimeoutTest
     		return;
     	
         final int LOOP=250;
-        final boolean[] running = {true};
-        final AtomicIntegerArray count = new AtomicIntegerArray( 3 );
+        final AtomicBoolean running=new AtomicBoolean(true);
+        final AtomicIntegerArray count = new AtomicIntegerArray( 4 );
 
 
         timeout.setNow(System.currentTimeMillis());
@@ -149,7 +150,7 @@ public class TimeoutTest
             @Override
             public void run()
             {
-                while (running[0])
+                while (running.get())
                 {
                     try
                     {
@@ -181,7 +182,7 @@ public class TimeoutTest
                 public void run()
                 {
                     // count how many threads were started (should == LOOP)
-                    count.incrementAndGet( 0 );
+                    int once = (int) 10 + count.incrementAndGet( 0 )%50;
                     
                     // create a task for this thread
                     Timeout.Task task = new Timeout.Task()
@@ -200,22 +201,19 @@ public class TimeoutTest
                     // But once it will wait and the task will expire
                     
                     
-                    int once = (int)( 10+(System.currentTimeMillis() % 50));
-                    
                     // do the looping until we are stopped
                     int loop=0;
-                    while (running[0])
+                    while (running.get())
                     {
                         try
                         {
                             long delay=1000;
                             long wait=100-once;
+                            
                             if (loop++==once)
                             { 
-                                // THIS loop is the one time we wait 1000ms
-                                
-                                count.incrementAndGet( 1 );
-                              
+                                // THIS loop is the one time we wait longer than the delay
+                                count.incrementAndGet( 1 );  
                                 delay=200;
                                 wait=1000;
                             }
@@ -233,25 +231,35 @@ public class TimeoutTest
                             e.printStackTrace();
                         }
                     }
+                    count.incrementAndGet(3);
                 }
             };
             th.start();
         }
         
-        // run test for 5s
-        Thread.sleep(8000);
-        synchronized (lock)
-        {
-            running[0]=false;
-        }
-        // give some time for test to stop
-        Thread.sleep(1000);
-        timeout.tick(System.currentTimeMillis());
-        Thread.sleep(500);
+        long start=System.currentTimeMillis();
+        
+        // run test until all threads are started
+        while (count.get(0)<LOOP && (System.currentTimeMillis()-start)<20000)
+            Thread.sleep(50);
+        // run test until all expires initiated
+        while (count.get(1)<LOOP && (System.currentTimeMillis()-start)<20000)
+            Thread.sleep(50);
+        
+        // run test until all expires initiated
+        while (count.get(2)<LOOP && (System.currentTimeMillis()-start)<20000)
+            Thread.sleep(50);
+        
+        running.set(false);
+
+        // run test until all threads complete
+        while (count.get(3)<LOOP && (System.currentTimeMillis()-start)<20000)
+            Thread.sleep(50);
         
         // check the counts
         assertEquals("count threads", LOOP,count.get( 0 ));
         assertEquals("count once waits",LOOP,count.get(1 ));
         assertEquals("count expires",LOOP,count.get(2));
+        assertEquals("done",LOOP,count.get(3));
     }
 }

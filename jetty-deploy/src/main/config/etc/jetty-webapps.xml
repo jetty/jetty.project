@@ -11,14 +11,14 @@
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
     <Ref id="DeploymentManager">
-          <Call name="addAppProvider">
+          <Call id="webappprovider" name="addAppProvider">
             <Arg>
               <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
                 <Set name="monitoredDir"><Property name="jetty.home" default="." />/webapps</Set>
                 <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
                 <Set name="scanInterval">1</Set>
                 <Set name="contextXmlDir"><Property name="jetty.home" default="." />/contexts</Set>
-		<Set name="extractWars">false</Set>
+		<Set name="extractWars">true</Set>
               </New>
             </Arg>
           </Call>

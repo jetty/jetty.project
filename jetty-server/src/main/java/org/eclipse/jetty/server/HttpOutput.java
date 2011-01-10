@@ -94,9 +94,7 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void write(byte[] b, int off, int len) throws IOException
     {
-        _buf.wrap(b, off, len);
-        write(_buf);
-        _buf.wrap(AbstractGenerator.NO_BYTES);
+        write(new ByteArrayBuffer(b,off,len));
     }
 
     /* ------------------------------------------------------------ */
@@ -106,9 +104,7 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void write(byte[] b) throws IOException
     {
-        _buf.wrap(b);
-        write(_buf);
-        _buf.wrap(AbstractGenerator.NO_BYTES);
+        write(new ByteArrayBuffer(b));
     }
 
     /* ------------------------------------------------------------ */
@@ -167,18 +163,20 @@ public class HttpOutput extends ServletOutputStream
         _generator.addContent(buffer, Generator.MORE);
 
         // Have to flush and complete headers?
-        if (_generator.isBufferFull())
-            flush();
         
         if (_generator.isAllContentWritten())
         {
             flush();
             close();
-        }
+        } 
+        else if (_generator.isBufferFull())
+            flush();
 
         // Block until our buffer is free
         while (buffer.length() > 0 && _generator.isOpen())
+        {
             _generator.blockForOutput(_maxIdleTime);
+        }
     }
 
     /* ------------------------------------------------------------ */

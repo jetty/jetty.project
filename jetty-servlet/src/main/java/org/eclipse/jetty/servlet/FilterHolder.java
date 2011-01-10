@@ -26,6 +26,7 @@ import javax.servlet.FilterRegistration;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.servlet.Holder.Source;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 
 /* --------------------------------------------------------------------- */
@@ -231,8 +232,7 @@ public class FilterHolder extends Holder<Filter>
                 if (mapping.getFilterHolder()!=FilterHolder.this)
                     continue;
                 String[] specs=mapping.getPathSpecs();
-                if (specs!=null && specs.length>0)
-                    patterns.addAll(Arrays.asList(specs));
+                patterns.addAll(TypeUtil.asList(specs));
             }
             return patterns;
         }

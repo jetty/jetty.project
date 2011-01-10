@@ -58,6 +58,15 @@ public interface Configuration
      * @throws Exception
      */
     public void deconfigure (WebAppContext context) throws Exception;
+
+    /* ------------------------------------------------------------------------------- */
+    /** Destroy WebApp.
+     * This method is called to destroy a webappcontext. It is typically called when a context 
+     * is removed from a server handler hierarchy by the deployer.
+     * @param context The context to configure
+     * @throws Exception
+     */
+    public void destroy (WebAppContext context) throws Exception;
     
 
     /* ------------------------------------------------------------------------------- */

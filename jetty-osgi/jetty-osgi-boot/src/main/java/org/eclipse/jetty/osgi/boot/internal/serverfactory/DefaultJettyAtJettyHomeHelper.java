@@ -17,6 +17,8 @@ package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.StringTokenizer;
@@ -133,7 +135,7 @@ public class DefaultJettyAtJettyHomeHelper {
 		try
 		{
 			Server server = new Server();
-			Properties properties = new Properties();
+			Dictionary properties = new Hashtable();
 			properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME);
 			
 			String configURLs = jettyHome != null ? getJettyConfigurationURLs(jettyHome) : getJettyConfigurationURLs(jettyHomeBundle);
@@ -246,7 +248,7 @@ public class DefaultJettyAtJettyHomeHelper {
 		buffer.append(value);
 	}
 	
-	private static void setProperty(Properties properties, String key, String value)
+	private static void setProperty(Dictionary properties, String key, String value)
 	{
 		if (value != null)
 		{

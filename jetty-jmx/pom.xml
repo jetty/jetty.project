@@ -78,7 +78,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-webapp</artifactId>
+      <artifactId>jetty-util</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>
