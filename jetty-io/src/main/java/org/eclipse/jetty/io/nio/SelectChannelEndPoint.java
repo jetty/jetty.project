@@ -168,10 +168,19 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 _writable = true; // Once writable is in ops, only removed with dispatch.
             }
 
-            if (_dispatched)
-                _key.interestOps(0);
+            if (_selectSet.getManager().isDeferringInterestedOps0())
+            {
+                if (_dispatched)
+                    _key.interestOps(0);
+                else
+                    dispatch();
+            }
             else
-                dispatch();
+            {
+                _key.interestOps(0);
+                if (!_dispatched)
+                    dispatch();
+            }
         }
     }
     

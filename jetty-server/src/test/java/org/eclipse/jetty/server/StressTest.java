@@ -81,14 +81,14 @@ public class StressTest
         _stress= Boolean.getBoolean("STRESS");
 
         _threads = new QueuedThreadPool(new BlockingArrayQueue<Runnable>(4,4));
-        _threads.setMaxThreads(500);
+        _threads.setMaxThreads(200);
 
         _server = new Server();
         _server.setThreadPool(_threads);
 
         _connector = new SelectChannelConnector();
-        _connector.setAcceptors(1);
-        _connector.setAcceptQueueSize(1000);
+        _connector.setAcceptors(Runtime.getRuntime().availableProcessors()/2);
+        _connector.setAcceptQueueSize(5000);
         _connector.setMaxIdleTime(30000);
         _server.addConnector(_connector);
 
@@ -116,25 +116,29 @@ public class StressTest
     @Test
     public void testNonPersistent() throws Throwable
     {
+        doThreads(10,100,false);
         if (_stress)
         {
             System.err.println("STRESS!");
-            doThreads(200,100,false);
+            Thread.sleep(1000);
+            doThreads(200,10,false);
+            Thread.sleep(1000);
+            doThreads(200,200,false);
         }
-        else
-            doThreads(10,20,false);
     }
 
     @Test
     public void testPersistent() throws Throwable
     {
+        doThreads(20,100,true);
         if (_stress)
         {
             System.err.println("STRESS!");
-            doThreads(200,100,true);
+            Thread.sleep(1000);
+            doThreads(200,10,true);
+            Thread.sleep(1000);
+            doThreads(200,200,true);
         }
-        else
-            doThreads(20,40,true);
     }
 
     private void doThreads(int threadCount, final int loops, final boolean persistent) throws Throwable
@@ -241,6 +245,8 @@ public class StressTest
             final int length[] = new int[_latencies.length];
             final int other[] = new int[_latencies.length];
 
+            long total=0;
+            
             for (int i=0;i<_latencies.length;i++)
             {
                 Queue<Long> latencies=_latencies[i];
@@ -249,6 +255,8 @@ public class StressTest
                 loop:
                 for (long latency : latencies)
                 {
+                    if (i==4)
+                        total+=latency;
                     for (int q=0;q<quantums;q++)
                     {
                         if (latency>=(q*100) && latency<((q+1)*100))
@@ -258,6 +266,7 @@ public class StressTest
                         }
                     }
                     other[i]++;
+                    
                 }
             }
 
@@ -283,6 +292,8 @@ public class StressTest
             for (int i=0;i<_latencies.length;i++)
                 System.out.print("\t"+length[i]);
             System.out.println();
+            long ave=total/_latencies[4].size();
+            System.out.println("ave="+ave);
         }
     }
 

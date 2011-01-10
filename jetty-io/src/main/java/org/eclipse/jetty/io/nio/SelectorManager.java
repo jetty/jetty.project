@@ -59,6 +59,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
     private SelectSet[] _selectSet;
     private int _selectSets=1;
     private volatile int _set;
+    private boolean _deferringInterestedOps0;
     
     /* ------------------------------------------------------------ */
     /**
@@ -450,7 +451,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 long now=System.currentTimeMillis();
                 
                 // if no immediate things to do
-                if (selected==0)
+                if (selected==0 && selector.selectedKeys().isEmpty())
                 {
                     // If we are in pausing mode
                     if (_pausing)
@@ -870,6 +871,18 @@ public abstract class SelectorManager extends AbstractLifeCycle
             _channel = channel;
             _attachment = attachment;
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isDeferringInterestedOps0()
+    {
+        return _deferringInterestedOps0;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setDeferringInterestedOps0(boolean defferringInterestedOps0)
+    {
+        _deferringInterestedOps0 = defferringInterestedOps0;
     }
     
 }
