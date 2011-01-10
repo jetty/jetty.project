@@ -38,7 +38,7 @@ public class Monitor extends Thread
 
     ServerSocket _socket;
     
-    Monitor(int port,String key)
+    public Monitor(int port,String key)
     {
         try
         {
