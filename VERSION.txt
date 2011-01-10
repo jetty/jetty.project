@@ -14,6 +14,7 @@ jetty-7.3.0-SNAPSHOT
  + 333481 Handle UTF-32 codepoints
  + 333608 tlds defined in web.xml are not picked up
  + 333679 Refactored jetty-jmx. Moved mbeans to modules.
+ + 333875 Monitor public constructor
 
 jetty-7.2.2.v20101205 5 December 2010
  + JETTY-1308 327109 (re)fixed AJP handling of empty packets
