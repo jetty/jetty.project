@@ -1,5 +1,6 @@
 
 jetty-7.3.0-SNAPSHOT
+ + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session (further update)
  + 320457 add SPNEGO support
  + 324505 Implement API login
  + 332179 Fixed formatting of negative dates
