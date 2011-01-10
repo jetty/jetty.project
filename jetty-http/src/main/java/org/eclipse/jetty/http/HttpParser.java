@@ -23,6 +23,8 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
+import org.eclipse.jetty.io.bio.StreamEndPoint;
+import org.eclipse.jetty.io.nio.ChannelEndPoint;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 
@@ -1158,9 +1160,16 @@ public class HttpParser implements Parser
     {
         if (_contentView!=null && _contentView.length()>0)
             return _contentView.length();
-        if (!_endp.isBlocking())
-            parseNext();
+
+        if (_endp.isBlocking())
+        {
+            if (_state>0 && _endp instanceof StreamEndPoint)
+                return ((StreamEndPoint)_endp).getInputStream().available()>0?1:0;
+
+            return 0;
+        }
         
+        parseNext();
         return _contentView==null?0:_contentView.length();
     }
     

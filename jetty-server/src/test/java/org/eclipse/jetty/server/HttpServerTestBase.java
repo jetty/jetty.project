@@ -908,7 +908,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             
             if (avail==0)
             {
-                // handle blocking connectors
+                // handle blocking channel connectors
+                buf+=(char)in.read();
+                avail=in.available();
+                out.println(avail+1);
+            }
+            else if (avail==1)
+            {
+                // handle blocking socket connectors
                 buf+=(char)in.read();
                 avail=in.available();
                 out.println(avail+1);
