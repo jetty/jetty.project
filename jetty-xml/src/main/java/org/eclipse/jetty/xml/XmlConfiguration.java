@@ -28,13 +28,12 @@ import java.net.UnknownHostException;
 import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -174,7 +173,7 @@ public class XmlConfiguration
 
     /* ------------------------------------------------------------ */
     /**
-     * @deprecated use {@link #getProperties()}.put(...)
+     * @deprecated use {@link #getProperties()}.putAll(...)
      */
     public void setProperties (Map<String,String> map)
     {
@@ -1021,8 +1020,15 @@ public class XmlConfiguration
                     }
                     
                     // If no start.config properties, use clean slate
-                    if (properties==null)
+                    if (properties==null) {
                         properties = new Properties();
+                        // Add System Properties
+                        Enumeration<?> ensysprop = System.getProperties().propertyNames();
+                        while(ensysprop.hasMoreElements()) {
+                            String name = (String)ensysprop.nextElement();
+                            properties.put(name, System.getProperty(name));
+                        }
+                    }
                     
                     // For all arguments, load properties or parse XMLs 
                     XmlConfiguration last = null;
@@ -1042,8 +1048,9 @@ public class XmlConfiguration
                             if ( properties.size() > 0 )
                             {
                                 Map<String,String> props = new HashMap<String,String>();
-                                for (Object key:properties.keySet())
+                                for (Object key:properties.keySet()) {
                                     props.put(key.toString(),String.valueOf(properties.get(key)));
+                                }
                                 configuration.setProperties( props );
                             }
                             obj[i] = configuration.configure();

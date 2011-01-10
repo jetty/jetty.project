@@ -50,7 +50,7 @@
 #   and /opt/jetty. The java system property "jetty.home" will be
 #   set to this value for use by configure.xml files, f.e.:
 #
-#    <Arg><SystemProperty name="jetty.home" default="."/>/webapps/jetty.war</Arg>
+#    <Arg><Property name="jetty.home" default="."/>/webapps/jetty.war</Arg>
 #
 # JETTY_PORT
 #   Override the default port for Jetty servers. If not set then the
@@ -60,7 +60,7 @@
 #   used in the demo config files to respect this property in Listener
 #   configuration elements:
 #
-#    <Set name="Port"><SystemProperty name="jetty.port" default="8080"/></Set>
+#    <Set name="Port"><Property name="jetty.port" default="8080"/></Set>
 #
 #   Note: that the config file could ignore this property simply by saying:
 #

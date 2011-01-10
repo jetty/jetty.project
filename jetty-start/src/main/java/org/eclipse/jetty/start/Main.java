@@ -131,8 +131,8 @@ public class Main
 
                 if ("--stop".equals(arg))
                 {
-                    int port = Integer.parseInt(_config.getProperty("STOP.PORT",System.getProperty("STOP.PORT","-1")));
-                    String key = _config.getProperty("STOP.KEY",System.getProperty("STOP.KEY",null));
+                    int port = Integer.parseInt(Config.getProperty("STOP.PORT","-1"));
+                    String key = Config.getProperty("STOP.KEY",null);
                     stop(port,key);
                     return;
                 }
@@ -498,8 +498,8 @@ public class Main
     public void start(List<String> xmls) throws FileNotFoundException, IOException, InterruptedException
     {
         // Setup Start / Stop Monitoring
-        int port = Integer.parseInt(_config.getProperty("STOP.PORT",System.getProperty("STOP.PORT","-1")));
-        String key = _config.getProperty("STOP.KEY",System.getProperty("STOP.KEY",null));
+        int port = Integer.parseInt(Config.getProperty("STOP.PORT","-1"));
+        String key = Config.getProperty("STOP.KEY",null);
         Monitor monitor=new Monitor(port,key);
         
 
@@ -536,7 +536,7 @@ public class Main
             System.err.println("java.class.path=" + classpath);
             System.err.println("classloader=" + cl);
             System.err.println("classloader.parent=" + cl.getParent());
-            System.err.println("properties="+_config.getProperties());
+            System.err.println("properties=" + Config.getProperties());
         }
         
         // Show the usage information and return
@@ -1017,7 +1017,7 @@ public class Main
             // parse the config
             _config.parse(cfgstream);
             
-            _jettyHome = _config.getProperty("jetty.home");
+            _jettyHome = Config.getProperty("jetty.home");
             if (_jettyHome != null)
             {
                 _jettyHome = new File(_jettyHome).getCanonicalPath();

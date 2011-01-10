@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -334,7 +335,7 @@ public class Config
             if (i2 < 0)
                 break;
             String name = s.substring(i1 + 2,i2);
-            String property = getSystemProperty(name);
+            String property = getProperty(name);
             s = s.substring(0,i1) + property + s.substring(i2 + 1);
         }
 
@@ -418,24 +419,39 @@ public class Config
     public static Properties getProperties()
     {
         Properties properties = new Properties();
-        for (String key : __properties.keySet())
+        // Add System Properties First
+        Enumeration<?> ensysprop = System.getProperties().propertyNames();
+        while(ensysprop.hasMoreElements()) {
+            String name = (String)ensysprop.nextElement();
+            properties.put(name, System.getProperty(name));
+        }
+        // Add Config Properties Next (overwriting any System Properties that exist)
+        for (String key : __properties.keySet()) {
             properties.put(key,__properties.get(key));
+        }
         return properties;
     }
     
     public static String getProperty(String name)
     {
-        if ("version".equalsIgnoreCase(name))
+        if ("version".equalsIgnoreCase(name)) {
             return _version;
-
-        return __properties.get(name);
+        }
+        // Search Config Properties First
+        if (__properties.containsKey(name)) {
+            return __properties.get(name);
+        }
+        // Return what exists in System.Properties otherwise.
+        return System.getProperty(name);
     }
 
-    public static String getProperty(String name, String dftValue)
+    public static String getProperty(String name, String defaultValue)
     {
+        // Search Config Properties First
         if (__properties.containsKey(name))
             return __properties.get(name);
-        return dftValue;
+        // Return what exists in System.Properties otherwise.
+        return System.getProperty(name, defaultValue);
     }
 
     /**
@@ -459,15 +475,6 @@ public class Config
         Set<String> ids = new TreeSet<String>(keySorter);
         ids.addAll(_classpaths.keySet());
         return ids;
-    }
-
-    private String getSystemProperty(String name)
-    {
-        if ("version".equalsIgnoreCase(name))
-            return _version;
-        if (__properties.containsKey(name))
-            return __properties.get(name);
-        return System.getProperty(name);
     }
 
     public List<String> getXmlConfigs()

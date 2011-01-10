@@ -6,14 +6,15 @@ jetty-7.3.0-SNAPSHOT
  + 332432 Scanner.java now always scanning the canonical form of File
  + 332517 Improved DefaultServlet debug
  + 332703 Cleanup context scope JNDI at stop
- + 332796 Annotations inheritance does not work with jetty7 
+ + 332796 Annotations inheritance does not work with jetty7
  + 332799 100% CPU on redeploy session invalidation
  + 332937 Added Destroyable interface and reworked dependent lifecycles, specially of JNDI
  + 333247 fix api compat issue in ConstraintSecurityHandler
  + 333415 wired up HttpInput.available and added test harnesses
  + 333481 Handle UTF-32 codepoints
  + 333608 tlds defined in web.xml are not picked up
- + 333679 Refactored jetty-jmx. Moved mbeans to modules.
+ + 333679 Refactored jetty-jmx. Moved mbeans to modules
+ + 333771 System properties are not available inside XML configuration file by using the 'property' tag
  + 333875 Monitor public constructor
 
 jetty-7.2.2.v20101205 5 December 2010
