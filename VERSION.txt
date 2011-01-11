@@ -16,6 +16,7 @@ jetty-7.3.0-SNAPSHOT
  + 333481 Handle UTF-32 codepoints
  + 333608 tlds defined in web.xml are not picked up
  + 333679 Refactored jetty-jmx. Moved mbeans to modules
+ + 333717 HttpExchange able to return local address used
  + 333771 System properties are not available inside XML configuration file by using the 'property' tag
  + 333875 Monitor public constructor
  + 333892 Improved JVM bug detection
