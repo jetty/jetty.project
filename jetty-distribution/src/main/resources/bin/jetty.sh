@@ -286,13 +286,13 @@ then
       # assume it's a directory with configure.xml files
       # for example: /etc/jetty.d/
       # sort the files before adding them to the list of CONFIGS
-      for file in "$CONF/"*.xml
+      for XMLFILE in "$CONF/"*.xml
       do
-        if [ -r "$FILE" ] && [ -f "$FILE" ] 
+        if [ -r "$XMLFILE" ] && [ -f "$XMLFILE" ] 
         then
-          CONFIGS+=("$FILE")
+          CONFIGS+=("$XMLFILE")
         else
-          echo "** WARNING: Cannot read '$FILE' specified in '$JETTY_CONF'" 
+          echo "** WARNING: Cannot read '$XMLFILE' specified in '$JETTY_CONF'" 
         fi
       done
     else
