@@ -97,6 +97,8 @@ public class HttpExchange
     private HttpEventListener _listener = new Listener();
     private volatile HttpConnection _connection;
     
+    private Address _localAddress = null;
+    
     // a timeout for this exchange
     private long _timeout = -1;
 
@@ -409,6 +411,19 @@ public class HttpExchange
     }
 
     /**
+     * the local address used by the connection
+     * 
+     * Note: this method will not be populated unless the exchange 
+     * has been executed by the HttpClient 
+     * 
+     * @return the local address used for the running of the exchange if available, null otherwise.
+     */
+    public Address getLocalAddress()
+    {
+        return _localAddress;
+    }
+    
+    /**
      * @param scheme the scheme of the URL (for example 'http')
      */
     public void setScheme(Buffer scheme)
@@ -660,6 +675,11 @@ public class HttpExchange
 
     void associate(HttpConnection connection)
     {
+       if ( connection.getEndPoint().getLocalHost() != null )
+       {
+           _localAddress = new Address( connection.getEndPoint().getLocalHost(), connection.getEndPoint().getLocalPort() );
+       }
+        
         _connection = connection;
         if (getStatus() == STATUS_CANCELLING)
             abort();
@@ -699,6 +719,8 @@ public class HttpExchange
      */
     protected void onRequestCommitted() throws IOException
     {
+        _connection.getEndPoint();
+        
     }
 
     /**

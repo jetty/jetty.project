@@ -261,6 +261,29 @@ public class HttpExchangeTest extends TestCase
         }
     }
     
+    public void testLocalAddressAvailabilityWithContentExchange() throws Exception
+    {
+        for (int i=0;i<10;i++)
+        {
+            ContentExchange httpExchange=new ContentExchange();
+            httpExchange.setURL(_scheme+"localhost:"+_port+"/?i="+i);
+            httpExchange.setMethod(HttpMethods.GET);
+            _httpClient.send(httpExchange);
+            int status = httpExchange.waitForDone();
+            
+            assertNotNull(httpExchange.getLocalAddress());
+            
+            //System.out.println("Local Address: " + httpExchange.getLocalAddress());
+            
+            //httpExchange.waitForStatus(HttpExchange.STATUS_COMPLETED);
+            String result=httpExchange.getResponseContent();
+            assertEquals("i="+i,0,result.indexOf("<hello>"));
+            assertEquals("i="+i,result.length()-10,result.indexOf("</hello>"));
+            assertEquals(HttpExchange.STATUS_COMPLETED, status);
+            Thread.sleep(5);
+        }
+    }
+    
     public void testShutdownWithExchange() throws Exception
     {
         final AtomicReference<Throwable> throwable=new AtomicReference<Throwable>();
