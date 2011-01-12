@@ -4,6 +4,7 @@ jetty-7.3.0-SNAPSHOT
  + 320457 add SPNEGO support
  + 324505 Implement API login
  + 328872 Multi Jetty xml files not loading if directory is referenced in jetty.conf
+ + 329746 client option to set just truststore and use strict ssl context
  + 332179 Fixed formatting of negative dates
  + 332432 Scanner.java now always scanning the canonical form of File
  + 332517 Improved DefaultServlet debug

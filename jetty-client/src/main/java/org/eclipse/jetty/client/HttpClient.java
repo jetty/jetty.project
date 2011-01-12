@@ -534,7 +534,8 @@ public class HttpClient extends HttpBuffers implements Attributes
     {
         if (_sslContext == null)
         {
-            if (_keyStoreInputStream == null && _keyStoreLocation == null)
+            if (_keyStoreInputStream == null && _keyStoreLocation == null &&
+                _trustStoreInputStream == null && _trustStoreLocation == null )
             {
                 _sslContext = getLooseSSLContext();
             }
@@ -550,13 +551,20 @@ public class HttpClient extends HttpBuffers implements Attributes
     {
         try
         {
-            if (_trustStoreInputStream == null && _trustStoreLocation == null)
+            /*
+             * if the keystore exists but the trust store doesn't use the keystore as the trust store
+             */
+            if (_keyStoreInputStream != null || _keyStoreLocation != null)
             {
-                _trustStoreLocation = _keyStoreLocation;
-                _trustStoreInputStream = _keyStoreInputStream;
-                _trustStoreType = _keyStoreType;
+                if (_trustStoreInputStream == null && _trustStoreLocation == null)
+                {
+                    _trustStoreLocation = _keyStoreLocation;
+                    _trustStoreInputStream = _keyStoreInputStream;
+                    _trustStoreType = _keyStoreType;
+                }
             }
-
+            
+            
             InputStream keyStoreInputStream = null;
             InputStream trustStoreInputStream = null;
 
@@ -567,25 +575,51 @@ public class HttpClient extends HttpBuffers implements Attributes
                 byte[] buffer = new byte[1024];
                 int read;
                 while ((read = _keyStoreInputStream.read(buffer)) >= 0)
+                {
                     baos.write(buffer, 0, read);
+                }
+                
                 _keyStoreInputStream.close();
 
                 keyStoreInputStream = new ByteArrayInputStream(baos.toByteArray());
                 trustStoreInputStream = new ByteArrayInputStream(baos.toByteArray());
             }
 
-            if (keyStoreInputStream == null)
+            /*
+             * set the keystore input stream if it isn't set
+             */
+            if (keyStoreInputStream == null && _keyStoreLocation != null )
+            {
                 keyStoreInputStream = _keyStoreInputStream == null ? Resource.newResource(_keyStoreLocation).getInputStream() : _keyStoreInputStream;
-            KeyStore keyStore = KeyStore.getInstance(_keyStoreType);
-            keyStore.load(keyStoreInputStream, _keyStorePassword == null ? null : _keyStorePassword.toCharArray());
-            keyStoreInputStream.close();
+            }
+           
+            /*
+             * work out the key managers for the keystore, null if its not configured
+             */
+            KeyManager[] keyManagers = null;
 
-            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(_keyManagerAlgorithm);
-            keyManagerFactory.init(keyStore, _keyManagerPassword == null ? null : _keyManagerPassword.toCharArray());
-            KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
+            if (keyStoreInputStream != null)
+            {
+                KeyStore keyStore = KeyStore.getInstance(_keyStoreType);
+                keyStore.load(keyStoreInputStream,_keyStorePassword == null?null:_keyStorePassword.toCharArray());
+                keyStoreInputStream.close();
 
+                KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(_keyManagerAlgorithm);
+                keyManagerFactory.init(keyStore,_keyManagerPassword == null?null:_keyManagerPassword.toCharArray());
+                keyManagers = keyManagerFactory.getKeyManagers();
+            }
+            
+            /*
+             * trust store will always exist if this method has been called, either by being the only store specified or by being
+             * a duplicate of the keystore..
+             * 
+             * this is behavior consistent with other aspects of jetty I believe so maintaining that consistency
+             */
             if (trustStoreInputStream == null)
+            {
                 trustStoreInputStream = _trustStoreInputStream == null ? Resource.newResource(_trustStoreLocation).getInputStream() : _trustStoreInputStream;
+            }
+            
             KeyStore trustStore = KeyStore.getInstance(_trustStoreType);
             trustStore.load(trustStoreInputStream, _trustStorePassword == null ? null : _trustStorePassword.toCharArray());
             trustStoreInputStream.close();
@@ -597,6 +631,7 @@ public class HttpClient extends HttpBuffers implements Attributes
             SecureRandom secureRandom = _secureRandomAlgorithm == null ? null : SecureRandom.getInstance(_secureRandomAlgorithm);
             SSLContext context = _provider == null ? SSLContext.getInstance(_protocol) : SSLContext.getInstance(_protocol, _provider);
             context.init(keyManagers, trustManagers, secureRandom);
+            
             return context;
         }
         catch (Exception x)
