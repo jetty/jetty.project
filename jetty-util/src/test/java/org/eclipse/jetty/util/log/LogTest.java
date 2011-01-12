@@ -62,6 +62,9 @@ public class LogTest
         String err = _out.toString();
         _out.reset();
         
+        err = err.replaceAll("\r\n","\n");
+        text = text.replaceAll("\r\n","\n");
+        
         if (err.indexOf(text)>=0)
             return;
         

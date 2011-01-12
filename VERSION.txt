@@ -1,6 +1,7 @@
 
 jetty-7.3.0-SNAPSHOT
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session (further update)
+ + 319178 test failure fix in jetty-util on windows
  + 320457 add SPNEGO support
  + 324505 Implement API login
  + 328872 Multi Jetty xml files not loading if directory is referenced in jetty.conf
