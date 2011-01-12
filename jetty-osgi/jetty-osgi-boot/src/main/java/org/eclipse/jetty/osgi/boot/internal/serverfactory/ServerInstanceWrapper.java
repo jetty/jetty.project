@@ -51,8 +51,14 @@ import org.xml.sax.SAXParseException;
  * Can also be used from the ManagedServiceFactory
  */
 public class ServerInstanceWrapper {
-	
-	private static Logger __logger = Log.getLogger(ServerInstanceWrapper.class.getName());
+
+    /** The value of this property points to the parent director of
+     * the jetty.xml configuration file currently executed.
+     * Everything is passed as a URL to support the
+     * case where the bundle is zipped. */
+    public static final String PROPERTY_THIS_JETTY_XML_FOLDER_URL = "this.jetty.xml.parent.folder.url";
+
+    private static Logger __logger = Log.getLogger(ServerInstanceWrapper.class.getName());
     
     private final String _managedServerName;
     
@@ -265,10 +271,25 @@ public class ServerInstanceWrapper {
             try
             {
                 // Execute a Jetty configuration file
-            	is = jettyConfiguration.openStream();
+                is = jettyConfiguration.openStream();
                 XmlConfiguration config = new XmlConfiguration(is);
                 config.getIdMap().putAll(id_map);
-                config.getProperties().putAll(properties);
+                
+                //#334062 compute the URL of the folder that contains the jetty.xml conf file
+                //and set it as a property so we can compute relative paths from it.
+                String urlPath = jettyConfiguration.toString();
+                int lastSlash = urlPath.lastIndexOf('/');
+                if (lastSlash > 4)
+                {
+                    urlPath = urlPath.substring(0, lastSlash);
+                    Map<String,String> properties2 = new HashMap<String,String>(properties);
+                    properties2.put(PROPERTY_THIS_JETTY_XML_FOLDER_URL, urlPath);
+                    config.getProperties().putAll(properties2);
+                }
+                else
+                {
+                    config.getProperties().putAll(properties);
+                }
                 config.configure();
                 id_map=config.getIdMap();
             }
