@@ -23,6 +23,11 @@
             <goals>
               <goal>manifest</goal>
             </goals>
+            <configuration>
+              <instructions>
+                <Import-Package>org.eclipse.jetty.jmx.*;version="[7.3,8)";resolution:=optional,*</Import-Package>
+              </instructions>
+            </configuration>
            </execution>
         </executions>
       </plugin>
