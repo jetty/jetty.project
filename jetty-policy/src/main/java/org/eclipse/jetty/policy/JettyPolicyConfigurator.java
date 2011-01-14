@@ -47,9 +47,7 @@ public class JettyPolicyConfigurator
     }
     
     public void initialize()
-    {
-        System.out.println("Initializing Jetty Policy");
-        
+    {        
         JettyPolicy jpolicy = new JettyPolicy( _policies, _properties );
         jpolicy.refresh();
         Policy.setPolicy(jpolicy);

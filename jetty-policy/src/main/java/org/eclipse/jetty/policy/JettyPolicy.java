@@ -39,6 +39,7 @@ import java.util.Set;
 
 import org.eclipse.jetty.policy.loader.DefaultPolicyLoader;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.log.Log;
 
 
 /**
@@ -123,16 +124,23 @@ public class JettyPolicy extends Policy
 
                 if (__DEBUG)
                 {
-                    System.out.println("----START----");
-                    System.out.println("PDCS: " + policyBlock.getCodeSource());
-                    System.out.println("CS: " + domain.getCodeSource());
+                    debug("----START----");
+                    debug("PDCS: " + policyBlock.getCodeSource());
+                    debug("CS: " + domain.getCodeSource());
                 }
 
                 // 1) if protection domain codesource is null, it is the global permissions (grant {})
                 // 2) if protection domain codesource implies target codesource and there are no prinicpals
                 // 2) if protection domain codesource implies target codesource and principals align
-                if (grantPD.getCodeSource() == null || grantPD.getCodeSource().implies(domain.getCodeSource()) && grantPD.getPrincipals() == null || grantPD.getCodeSource().implies(domain.getCodeSource())
-                        && validate(grantPD.getPrincipals(),domain.getPrincipals()))
+                if (grantPD.getCodeSource() == null 
+                        || 
+                        grantPD.getCodeSource().implies(domain.getCodeSource()) 
+                        && 
+                        grantPD.getPrincipals() == null 
+                        || 
+                        grantPD.getCodeSource().implies(domain.getCodeSource()) 
+                        && 
+                        validate(grantPD.getPrincipals(),domain.getPrincipals()))
                 {
 
                     for (Enumeration<Permission> e = policyBlock.getPermissions().elements(); e.hasMoreElements();)
@@ -140,14 +148,14 @@ public class JettyPolicy extends Policy
                         Permission perm = e.nextElement();
                         if (__DEBUG)
                         {
-                            System.out.println("D: " + perm);
+                            debug("D: " + perm);
                         }
                         perms.add(perm);
                     }
                 }
                 if (__DEBUG)
                 {
-                    System.out.println("----STOP----");
+                    debug("----STOP----");
                 }
             }
 
@@ -182,13 +190,15 @@ public class JettyPolicy extends Policy
                 PolicyBlock policyBlock = i.next();
                 ProtectionDomain grantPD = policyBlock.toProtectionDomain();
 
-                if (grantPD.getCodeSource() == null || grantPD.getCodeSource().implies(codesource))
+                if (grantPD.getCodeSource() == null 
+                        || 
+                        grantPD.getCodeSource().implies(codesource))
                 {
                     if (__DEBUG)
                     {
-                        System.out.println("----START----");
-                        System.out.println("PDCS: " + grantPD.getCodeSource());
-                        System.out.println("CS: " + codesource);
+                        debug("----START----");
+                        debug("PDCS: " + grantPD.getCodeSource());
+                        debug("CS: " + codesource);
                     }
 
                     for (Enumeration<Permission> e = policyBlock.getPermissions().elements(); e.hasMoreElements();)
@@ -196,14 +206,14 @@ public class JettyPolicy extends Policy
                         Permission perm = e.nextElement();
                         if (__DEBUG)
                         {
-                            System.out.println("D: " + perm);
+                            debug("D: " + perm);
                         }
                         perms.add(perm);
                     }
 
                     if (__DEBUG)
                     {
-                        System.out.println("----STOP----");
+                        debug("----STOP----");
                     }
                 }
             }
@@ -251,6 +261,11 @@ public class JettyPolicy extends Policy
         return true;
     }
 
+    /**
+     * This call performs a refresh of the policy system, first processing the associated 
+     * files and then replacing the policy cache.
+     * 
+     */
     @Override
     public synchronized void refresh()
     {
@@ -269,7 +284,7 @@ public class JettyPolicy extends Policy
                 {
                     for (Iterator<Object> i = _cache.keySet().iterator(); i.hasNext();)
                     {
-                        System.out.println(i.next().toString());
+                        log(i.next().toString());
                     }
                 }
             }
@@ -297,6 +312,11 @@ public class JettyPolicy extends Policy
         }
     }
 
+    /**
+     * the scanning mechanism used to detect changes to the policy system and reload
+     * 
+     * @throws Exception
+     */
     private void initializeReloading() throws Exception
     {
         _scanner = new Scanner();
@@ -322,9 +342,9 @@ public class JettyPolicy extends Policy
             {
                 if (filename.endsWith("policy")) // TODO match up to existing policies to avoid unnecessary reloads
                 {
-                    System.out.println("JettyPolicy: refreshing policy files");
+                    log("JettyPolicy: refreshing policy files");
                     refresh();
-                    System.out.println("JettyPolicy: finished refreshing policies");
+                    log("JettyPolicy: finished refreshing policies");
                 }
             }
 
@@ -342,7 +362,7 @@ public class JettyPolicy extends Policy
     public void dump(PrintStream out)
     {
         PrintWriter write = new PrintWriter(out);
-        write.println("dumping policy settings");
+        write.println("JettyPolicy: policy settings dump");
 
         synchronized (_cache)
         {
@@ -367,4 +387,52 @@ public class JettyPolicy extends Policy
         }
         return out;
     }
+    
+    /**
+     * Try and log to normal logging channels and should that not be allowed
+     * debug to system.out
+     * 
+     * @param message
+     */
+    private void debug( String message )
+    {
+        try
+        {
+            Log.debug(message);
+        }
+        catch ( AccessControlException ace )
+        {
+            System.out.println( "[DEBUG] " +  message );
+        }
+    }
+    /**
+     * Try and log to normal logging channels and should that not be allowed
+     * log to system.out
+     * 
+     * @param message
+     */
+    private void log( String message )
+    {
+        log( message, null );
+    }
+    
+    /**
+     * Try and log to normal logging channels and should that not be allowed
+     * log to system.out
+     * 
+     * @param message
+     */
+    private void log( String message, Throwable t )
+    {
+        try
+        {
+            Log.info(message, t);
+        }
+        catch ( AccessControlException ace )
+        {
+            System.out.println( message );
+            t.printStackTrace();
+        }
+    }
+    
 }
