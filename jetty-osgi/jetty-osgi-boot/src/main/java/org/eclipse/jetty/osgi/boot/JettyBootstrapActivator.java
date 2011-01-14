@@ -16,7 +16,6 @@ package org.eclipse.jetty.osgi.boot;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
-import java.util.Properties;
 
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.JettyServerServiceTracker;
@@ -212,6 +211,10 @@ public class JettyBootstrapActivator implements BundleActivator
         Dictionary dic = new Hashtable();
         dic.put(OSGiWebappConstants.SERVICE_PROP_WAR,webappFolderPath);
         dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH,contextPath);
+        String requireTldBundle = (String)contributor.getHeaders().get(OSGiWebappConstants.REQUIRE_TLD_BUNDLE);
+        if (requireTldBundle != null) {
+        	dic.put(OSGiWebappConstants.SERVICE_PROP_REQUIRE_TLD_BUNDLE, requireTldBundle);
+        }
         contributor.getBundleContext().registerService(ContextHandler.class.getName(),contextHandler,dic);
     }
 

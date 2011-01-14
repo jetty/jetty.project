@@ -208,9 +208,10 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                     	else
                     	{
                     		WebAppContext handler = deployerHelper
-                        		.registerWebapplication(contributor,war,contextPath,(String)sr
-                                .getProperty(OSGiWebappConstants.SERVICE_PROP_EXTRA_CLASSPATH),(String)sr
-                                .getProperty(OSGiWebappConstants.SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE),
+                        		.registerWebapplication(contributor,war,contextPath,
+                        		(String)sr.getProperty(OSGiWebappConstants.SERVICE_PROP_EXTRA_CLASSPATH),
+                        		(String)sr.getProperty(OSGiWebappConstants.SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE),
+                        		(String)sr.getProperty(OSGiWebappConstants.SERVICE_PROP_REQUIRE_TLD_BUNDLE),
                                 webXmlPath,defaultWebXmlPath,webapp);
                             if (handler != null)
                             {
@@ -247,6 +248,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
 	                        ContextHandler handler = deployerHelper.registerContext(contributor,contextFilePath,
 	                        		(String)sr.getProperty(OSGiWebappConstants.SERVICE_PROP_EXTRA_CLASSPATH),
 	                        		(String)sr.getProperty(OSGiWebappConstants.SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE),
+	                        		(String)sr.getProperty(OSGiWebappConstants.SERVICE_PROP_REQUIRE_TLD_BUNDLE),
 	                                contextHandler);
 	                        if (handler != null)
 	                        {

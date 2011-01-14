@@ -36,6 +36,10 @@ public class OSGiWebappConstants
     /** Name of the servlet context attribute that points to the bundle context. */
     public static final String RFC66_OSGI_BUNDLE_CONTEXT = "osgi-bundlecontext";
 
+    /** Name of the servlet context attribute that points to the bundle object.
+     * We can't always rely on the bundle-context as there might be no such thing. */
+    public static final String JETTY_OSGI_BUNDLE = "osgi-bundle";
+
     /** List of relative pathes within the bundle to the jetty context files. */
     public static final String JETTY_CONTEXT_FILE_PATH = "Jetty-ContextFilePath";
 
@@ -66,5 +70,15 @@ public class OSGiWebappConstants
      * location if not null useful to install webapps or jetty context files
      * that are in fact not embedded in a bundle
      */
-    public static final String SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE = "thisBundleInstall";    
+    public static final String SERVICE_PROP_BUNDLE_INSTALL_LOCATION_OVERRIDE = "thisBundleInstall";
+    
+    /**
+     * Comma separated list of bundles that contain tld file used by the webapp.
+     */
+    public static final String REQUIRE_TLD_BUNDLE = "Require-TldBundle";
+    /**
+     * Comma separated list of bundles that contain tld file used by the webapp.
+     * Both the name of the manifest header and the name of the service property.
+     */
+    public static final String SERVICE_PROP_REQUIRE_TLD_BUNDLE = REQUIRE_TLD_BUNDLE;
 }
