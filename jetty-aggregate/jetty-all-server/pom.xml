@@ -90,6 +90,7 @@
                             org.slf4j.helpers;resolution:=optional,
                             org.xml.sax,
                             org.xml.sax.helpers,
+                            javax.security.cert,
                             javax.xml.parsers,
                             javax.net.ssl,
                             !org.mortbay.*,
