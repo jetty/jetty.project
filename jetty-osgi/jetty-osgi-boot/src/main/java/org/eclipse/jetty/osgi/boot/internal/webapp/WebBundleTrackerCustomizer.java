@@ -197,7 +197,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
             // (draft) of the spec: just a couple of posts on the
             // world-wide-web.
             URL rfc66Webxml = bundle.getEntry("/WEB-INF/web.xml");
-            if (rfc66Webxml == null)
+            if (rfc66Webxml == null && dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH) == null)
             {
                 return false;// no webapp in here
             }
