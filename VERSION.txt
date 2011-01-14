@@ -25,6 +25,7 @@ jetty-7.3.0-SNAPSHOT
  + 333679 refactor jetty-jmx to support the OSGi PAX tests.
  + 334062 It should be possible to embed in the jetty.home.bundle the ssl keystore files
  + 334229 javax-security needs to import the package javax.security.cert in its OSGi manifest
+ + 334311 fix buffer reuse issue in CachedExchange
 
 jetty-7.2.2.v20101205 5 December 2010
  + JETTY-1308 327109 (re)fixed AJP handling of empty packets

@@ -60,7 +60,10 @@ public class CachedExchange extends HttpExchange
     protected synchronized void onResponseHeader(Buffer name, Buffer value) throws IOException
     {
         if (_responseFields != null)
-            _responseFields.add(name, value);
+        {
+            _responseFields.add(name, value.asImmutableBuffer());
+        }
+        
         super.onResponseHeader(name, value);
     }
 }
