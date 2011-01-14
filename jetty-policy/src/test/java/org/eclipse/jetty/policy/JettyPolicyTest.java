@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.PropertyPermission;
 import java.util.Set;
 
 import org.junit.Before;
@@ -47,6 +48,11 @@ public class JettyPolicyTest
         evaluator.put("basedir",MavenTestingUtils.getBaseURI().toASCIIString());
     }
 
+
+    /**
+     * Simple test for loading a policy file and validating that the AllPermission
+     * was granted successfully.
+     */
     @Test
     public void testGlobalAllPermissionLoader() throws Exception
     {
@@ -62,12 +68,16 @@ public class JettyPolicyTest
 
         assertTrue( pc.implies( testPerm ) );
 
-        for ( Enumeration<Permission> e = pc.elements(); e.hasMoreElements(); )
-        {
-            System.out.println( "Permission: " + e.nextElement().getClass().getName() );
-        }
+//        for ( Enumeration<Permission> e = pc.elements(); e.hasMoreElements(); )
+//        {
+//            System.out.println( "Permission: " + e.nextElement().getClass().getName() );
+//        }
     }
 
+    /** 
+     * Simple test of loading a policy file with a single codebase defined that grants specific 
+     * FilePermission.  Then test that read and write were granted but delete was not.
+     */
     @Test
     public void testSingleCodebaseFilePermissionLoader() throws Exception
     {
@@ -83,11 +93,21 @@ public class JettyPolicyTest
 
         assertNotNull( pc );
 
-        Permission testPerm = new FilePermission( "/tmp/*", "read" );
+        Permission testReadPerm = new FilePermission( "/tmp/*", "read" );
+        Permission testWritePerm = new FilePermission( "/tmp/*", "write" );
+        Permission testDeletePerm = new FilePermission( "/tmp/*", "delete" );
 
-        assertTrue( pc.implies( testPerm ) );
+        assertTrue( pc.implies( testReadPerm ) );
+        assertTrue( pc.implies( testWritePerm ) );  
+        assertFalse(pc.implies( testDeletePerm ) );
     }
 
+    /**
+     * Tests multiple codebases in a single policy file are loaded correctly and that the various 
+     * grants do indeed work accordingly
+     * 
+     * @throws Exception
+     */
     @Test
     public void testMultipleCodebaseFilePermissionLoader() throws Exception
     {
@@ -96,21 +116,51 @@ public class JettyPolicyTest
                 + "/src/test/resources/multiple-codebase-file-permission.policy" ), evaluator );
 
         ap.refresh();
-
-        // ap.dump(System.out);
-
+        
+        // test the bar.jar codebase grant
         URL url = new URL( "file:///bar.jar" );
         CodeSource cs = new CodeSource( url, new Certificate[0]);
 
-        PermissionCollection pc = ap.getPermissions( cs );
+        PermissionCollection barPermissionCollection = ap.getPermissions( cs );
 
-        assertNotNull( pc );
+        assertNotNull( barPermissionCollection );
 
-        Permission testPerm = new FilePermission( "/tmp/*", "read,write" );
-        Permission testPerm2 = new FilePermission( "/usr/*", "write" ); // only read was granted
+        Permission testBarPerm = new FilePermission( "/tmp/*", "read,write" );
+        Permission testBarPerm2 = new FilePermission( "/usr/*", "read" ); // only read was granted
+        Permission testBarPerm3 = new FilePermission( "/usr/*", "write" ); // only read was granted
 
-        assertTrue( pc.implies( testPerm ) );
-        assertFalse( pc.implies( testPerm2 ) );
+        assertTrue( barPermissionCollection.implies( testBarPerm ) );
+        assertTrue( barPermissionCollection.implies( testBarPerm2 ) );
+        assertFalse( barPermissionCollection.implies( testBarPerm3 ) );
+        
+        // test the global permission grant
+        PermissionCollection globalPermissionCollection = ap.getPermissions( new ProtectionDomain( null, null ) );
+        
+        assertNotNull( globalPermissionCollection );
+        
+        Permission testPropertyPermission = new PropertyPermission("main.class","read");
+        assertTrue( globalPermissionCollection.implies(testPropertyPermission));
+        // its global so it ought to be global, double check that
+        assertTrue( barPermissionCollection.implies(testPropertyPermission));
+        
+        // test the foo.jar codebase grant
+        URL fooUrl = new URL( "file:///foo.jar" );
+        CodeSource fooCodeSource = new CodeSource( fooUrl, new Certificate[0]);
+
+        PermissionCollection fooPermissionCollection = ap.getPermissions( fooCodeSource );
+
+        assertNotNull( fooPermissionCollection );
+        
+        Permission testFooPerm = new FilePermission( "/tmp/*", "read,write" );
+        Permission testFooPerm2 = new FilePermission( "/tmp/*", "read,write,delete" );
+
+        assertTrue( fooPermissionCollection.implies(testFooPerm) );
+        assertFalse( fooPermissionCollection.implies(testFooPerm2) );
+
+        // make sure that the foo codebase isn't getting bar permissions
+        assertFalse( fooPermissionCollection.implies(testBarPerm2) );
+        // but make sure that foo codebase is getting global
+        assertTrue( fooPermissionCollection.implies(testPropertyPermission));        
     }
 
     @Test
@@ -122,18 +172,69 @@ public class JettyPolicyTest
 
         ap.refresh();
 
-        // ap.dump(System.out);
+        // test the bar.jar codebase grant
+        URL url = new URL( "file:///bar.jar" );
+        CodeSource cs = new CodeSource( url, new Certificate[0]);
+
+        PermissionCollection barPermissionCollection = ap.getPermissions( cs );
+
+        assertNotNull( barPermissionCollection );
+
+        Permission testBarPerm = new FilePermission( "/tmp/*", "read,write" );
+        Permission testBarPerm2 = new FilePermission( "/usr/*", "read" );
+
+        assertTrue( barPermissionCollection.implies( testBarPerm ) );
+        assertTrue( barPermissionCollection.implies( testBarPerm2 ) );
+        
+        // test the global permission grant
+        PermissionCollection globalPermissionCollection = ap.getPermissions( new ProtectionDomain( null, null ) );
+        
+        assertNotNull( globalPermissionCollection );
+        
+        Permission testPropertyPermission = new PropertyPermission("main.class","read");
+        assertTrue( globalPermissionCollection.implies(testPropertyPermission));
+        // its global so it ought to be global, double check that
+        assertTrue( barPermissionCollection.implies(testPropertyPermission));
+        
+        // test the foo.jar codebase grant
+        URL fooUrl = new URL( "file:///foo.jar" );
+        CodeSource fooCodeSource = new CodeSource( fooUrl, new Certificate[0]);
+
+        PermissionCollection fooPermissionCollection = ap.getPermissions( fooCodeSource );
+
+        assertNotNull( fooPermissionCollection );
+        
+        Permission testFooPerm = new FilePermission( "/tmp/*", "read,write" );
+        Permission testFooPerm2 = new FilePermission( "/tmp/*", "read,write,delete" );
+
+        assertTrue( fooPermissionCollection.implies(testFooPerm) );
+        assertFalse( fooPermissionCollection.implies(testFooPerm2) );
+
+        // make sure that the foo codebase isn't getting bar permissions
+        assertFalse( fooPermissionCollection.implies(testBarPerm2) );
+        // but make sure that foo codebase is getting global
+        assertTrue( fooPermissionCollection.implies(testPropertyPermission));    
     }
 
+    /**
+     * Sanity check that jetty policy file parses
+     * 
+     * TODO insert typical jetty requirements in here to test
+     * 
+     * @throws Exception
+     */
     @Test
     public void testSCLoader() throws Exception
     {
         JettyPolicy ap = new JettyPolicy(Collections.singleton(MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/main/config/lib/policy/jetty.policy"),evaluator);
 
         ap.refresh();
-        ap.dump(System.out);
     }
 
+    /**
+     * Test the simple loading of multiple files with no overlapping of security permission code sources
+     * @throws Exception
+     */
     @Test
     public void testMultipleFilePermissionLoader() throws Exception
     {

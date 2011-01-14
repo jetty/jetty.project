@@ -53,7 +53,8 @@ public class PrincipalEntry extends AbstractEntry
             return principal;
         }
         
-        // if there is no keystore, there is no way to obtain a principal object // TODO validate we need this check
+        // if there is no keystore, there is no way to obtain a principal object 
+        // TODO validate we need this check
         if ( context.getKeystore() == null )
         {
             return null;

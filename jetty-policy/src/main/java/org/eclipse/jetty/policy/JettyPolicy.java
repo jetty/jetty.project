@@ -46,13 +46,19 @@ import org.eclipse.jetty.util.Scanner;
  * 
  * The reason I created this class and added this mechanism are:
  * 
- * 1) I wanted a way to be able to follow the startup mechanic that jetty uses with jetty-start using OPTIONS=policy,default to be able to startup a security manager and policy implementation without have to rely on the existing JVM cli options 2)
- * establish a starting point to add on further functionality to permissions based security with jetty like jmx enabled permission tweaking or runtime creation and specification of policies for specific webapps 3) I wanted to have support for specifying
- * multiple policy files to source permissions from
+ * 1) I wanted a way to be able to follow the startup mechanic that jetty uses with jetty-start using OPTIONS=policy,default to be able to startup a security manager and policy implementation without have to rely on the existing JVM cli options 
+ * 2) establish a starting point to add on further functionality to permissions based security with jetty like jmx enabled permission tweaking or runtime creation and specification of policies for specific webapps 
+ * 3) I wanted to have support for specifying multiple policy files to source permissions from
  * 
- * Possible additions are: - directories of policy file support - jmx enabled a la #2 above - proxying of system security policy where we can proxy access to the system policy should the jvm have been started with one, I had support for this but ripped it
- * out to add in again later - merging of protection domains if process multiple policy files that declare permissions for the same codebase - an xml policy file parser, had originally added this using modello but tore it out since it would have been a
- * nightmare to get its dependencies through IP validation, could do this with jvm xml parser instead sometime - check performance of the synch'd map I am using for the protection domain mapping
+ * Possible additions are: 
+ * - directories of policy file support 
+ * - jmx enabled a la #2 above 
+ * - proxying of system security policy where we can proxy access to the system policy should the jvm have been started with one, I had support for this but ripped it
+ * out to add in again later 
+ * - merging of protection domains if process multiple policy files that declare permissions for the same codebase 
+ * - an xml policy file parser, had originally added this using modello but tore it out since it would have been a
+ * nightmare to get its dependencies through IP validation, could do this with jvm xml parser instead sometime 
+ * - check performance of the synch'd map I am using for the protection domain mapping
  */
 public class JettyPolicy extends Policy
 {
@@ -76,7 +82,6 @@ public class JettyPolicy extends Policy
     {
         try
         {
-
             __RELOAD = Boolean.getBoolean("org.eclipse.jetty.policy.RELOAD");
             __DEBUG = Boolean.getBoolean("org.eclipse.jetty.policy.DEBUG");
         }
@@ -355,7 +360,7 @@ public class JettyPolicy extends Policy
         PermissionCollection out  = new Permissions();
         synchronized (in)
         {
-            for (Enumeration el = in.elements() ; el.hasMoreElements() ;)
+            for (Enumeration<Permission> el = in.elements() ; el.hasMoreElements() ;)
             {
                 out.add((Permission)el.nextElement());
             }

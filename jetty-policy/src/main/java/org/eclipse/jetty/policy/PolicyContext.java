@@ -75,17 +75,13 @@ public class PolicyContext
 
         while (s!=null)
         {
-            //System.out.println("Reviewing: " + s );
-            //i1=s.indexOf("${",i2);
             i1=s.indexOf("${");
-            //System.out.println("i1:" + i1);
             if (i1<0)
             {
                 break;
             }
             
             i2=s.indexOf("}",i1+2);
-            //System.out.println("i2:" + i2);
             if (i2<0)
             {
                 break;
@@ -93,9 +89,7 @@ public class PolicyContext
      
             String property=getProperty(s.substring(i1+2,i2));
        
-            s=s.substring(0,i1)+property+s.substring(i2+1);
-            
-            //System.out.println("expanded to: " + s);
+            s=s.substring(0,i1)+property+s.substring(i2+1);         
         }
         
         return s;
@@ -152,7 +146,8 @@ public class PolicyContext
     private String resolve( String protocol, String data ) throws PolicyException
     {
 
-        if ( "self".equals( protocol ) ) { //$NON-NLS-1$
+        if ( "self".equals( protocol ) ) 
+        { 
             // need expanding to list of principals in grant clause
             if ( principals != null && principals.length != 0 )
             {
