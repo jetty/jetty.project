@@ -30,6 +30,8 @@ import java.util.HashSet;
 import java.util.PropertyPermission;
 import java.util.Set;
 
+import junit.framework.Assert;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -294,6 +296,26 @@ public class JettyPolicyTest
         // together their permissions, /tmp/* should be read, write after loading policy 2 and 3
         assertTrue( pc.implies( testPerm ) );
         assertFalse( pc.implies( testPerm2 ) );
+               
+    }
+    
+    
+    /**
+     * test the resolution of the loading of the policy files
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testPolicyDirectories() throws Exception
+    {
+        Set<String> files = new HashSet<String>();
+
+        files.add( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/single-codebase-file-permission.policy" );
+        files.add( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/context" );
+
+        JettyPolicy ap = new JettyPolicy( files, evaluator );
+
+        Assert.assertEquals(3, ap.getKnownPolicyFiles().size());      
                
     }
     

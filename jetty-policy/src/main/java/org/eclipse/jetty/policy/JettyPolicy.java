@@ -17,7 +17,9 @@ package org.eclipse.jetty.policy;
 //========================================================================
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.security.AccessControlException;
@@ -45,18 +47,17 @@ import org.eclipse.jetty.util.log.Log;
 /**
  * Policy implementation that will load a set of policy files and manage the mapping of permissions and protection domains
  * 
- * The reason I created this class and added this mechanism are:
+ * Features of JettyPolicy are:
  * 
- * 1) I wanted a way to be able to follow the startup mechanic that jetty uses with jetty-start using OPTIONS=policy,default to be able to startup a security manager and policy implementation without have to rely on the existing JVM cli options 
- * 2) establish a starting point to add on further functionality to permissions based security with jetty like jmx enabled permission tweaking or runtime creation and specification of policies for specific webapps 
- * 3) I wanted to have support for specifying multiple policy files to source permissions from
+ * - we are able to follow the startup mechanic that jetty uses with jetty-start using OPTIONS=policy,default to be able to startup a security manager and policy implementation without have to rely on the existing JVM cli options 
+ * - support for specifying multiple policy files to source permissions from
+ * - support for merging protection domains across multiple policy files for the same codesource
+ * - support for directories of policy files, just specify directory and all *.policy files will be loaded.
  * 
  * Possible additions are: 
- * - directories of policy file support 
- * - jmx enabled a la #2 above 
+ * - jmx reporting
  * - proxying of system security policy where we can proxy access to the system policy should the jvm have been started with one, I had support for this but ripped it
  * out to add in again later 
- * - merging of protection domains if process multiple policy files that declare permissions for the same codebase 
  * - an xml policy file parser, had originally added this using modello but tore it out since it would have been a
  * nightmare to get its dependencies through IP validation, could do this with jvm xml parser instead sometime 
  * - check performance of the synch'd map I am using for the protection domain mapping
@@ -91,8 +92,8 @@ public class JettyPolicy extends Policy
             __RELOAD = false;
             __DEBUG = false;
         }
-
-        _policies = policies;
+        
+        _policies = resolvePolicyFiles(policies);
         _context.setProperties(properties);
     }
 
@@ -386,6 +387,66 @@ public class JettyPolicy extends Policy
             }
         }
         return out;
+    }
+    
+    /**
+     * returns the known policy files that are being tracked by this instance of JettyPolicy
+     * @return
+     */
+    public Set<String> getKnownPolicyFiles()
+    {
+        return _policies;
+    }
+    
+    /**
+     * resolves the initial set of policy files into the actual set of policies, 
+     * scanning directories for .policy files as well.
+     * @param policyInputs
+     * @return
+     */
+    private Set<String> resolvePolicyFiles( Set<String> policyInputs )
+    {
+        Set<String> policyFiles = new HashSet<String>();
+        
+        try
+        {
+        for ( String policyInput : policyInputs )
+        {
+            File check = new File(policyInput);
+            
+            if ( check.isDirectory() )
+            {
+                File[] foundFiles = check.listFiles(new FileFilter()
+                {             
+                    public boolean accept(File pathname)
+                    {
+                        if ( pathname.getName().toLowerCase().endsWith("policy") )
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                });
+                
+                for( File policyFile : foundFiles )
+                {
+                    policyFiles.add(policyFile.getCanonicalPath());
+                }
+            }
+            else
+            {
+                policyFiles.add(check.getCanonicalPath());
+            }
+        }
+        }
+        catch ( IOException ioe )
+        {
+            throw new IllegalArgumentException( "JettyPolicy: unable to resolve policy files.", ioe );
+        }
+        return policyFiles;
     }
     
     /**
