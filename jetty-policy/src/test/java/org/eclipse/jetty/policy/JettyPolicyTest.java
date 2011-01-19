@@ -260,4 +260,41 @@ public class JettyPolicyTest
         assertTrue( pc.implies( testPerm ) );
         assertFalse( pc.implies( testPerm2 ) );
     }
+    
+    /**
+     * Tests the aggregation of multiple policy files into the same protection 
+     * domain of a granted codesource
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testAggregateMultipleFilePermissionLoader() throws Exception
+    {
+        Set<String> files = new HashSet<String>();
+
+        files.add( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/single-codebase-file-permission.policy" );
+        files.add( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/single-codebase-file-permission-2.policy" );
+        files.add( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/single-codebase-file-permission-3.policy" );
+
+        JettyPolicy ap = new JettyPolicy( files, evaluator );
+
+        ap.refresh();
+
+        URL url = new URL( "file:///bar.jar" );
+        CodeSource cs = new CodeSource( url, new Certificate[0]);
+
+        PermissionCollection pc = ap.getPermissions( cs );
+
+        assertNotNull( pc );
+
+        Permission testPerm = new FilePermission( "/tmp/*", "read, write" );
+        Permission testPerm2 = new FilePermission( "/usr/*", "write" );
+
+        // this tests that two policy files granting to the same codebase aggregate
+        // together their permissions, /tmp/* should be read, write after loading policy 2 and 3
+        assertTrue( pc.implies( testPerm ) );
+        assertFalse( pc.implies( testPerm2 ) );
+               
+    }
+    
 }
