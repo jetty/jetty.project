@@ -136,7 +136,6 @@ public abstract class SelectorManager extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /** Register a channel
      * @param channel
-     * @param att Attached Object
      */
     public void register(SocketChannel channel)
     {

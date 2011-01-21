@@ -674,7 +674,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
      * @set {@link #setForwardedForHeader(String)}
      * @set {@link #setForwardedHostHeader(String)}
      * @set {@link #setForwardedProtoHeader(String)}
-     * @set {@link #setForwardedServerHeader(String))}
+     * @set {@link #setForwardedServerHeader(String)}
      */
     public void setForwarded(boolean check)
     {

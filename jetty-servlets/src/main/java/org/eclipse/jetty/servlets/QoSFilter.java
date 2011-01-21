@@ -331,7 +331,7 @@ public class QoSFilter implements Filter
      * Set the maximum number of requests allowed to be processed
      * at the same time.
      * 
-     * @param passes the _passes to set
+     * @param value the number of requests
      */
     public void setMaxRequests(int value)
     {

@@ -146,7 +146,7 @@ public class Scanner
     /* ------------------------------------------------------------ */
     /**
      * @param recursive True if scanning is recursive
-     * @see  #setScanDepth()
+     * @see  #setScanDepth(int)
      */
     public void setRecursive (boolean recursive)
     {

@@ -16,13 +16,12 @@
 package org.eclipse.jetty.deploy.providers;
 
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests {@link MonitoredDirAppProvider} as it starts up for the first time.
+ * Tests {@link ScanningAppProvider} as it starts up for the first time.
  */
 public class MonitoredDirAppProviderStartupTest
 {

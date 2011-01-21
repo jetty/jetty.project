@@ -346,7 +346,7 @@ public interface Ordering
         * @param list
         * @param fragNameA
         * @param fragNameB
-        * @return
+        * @return true if frament name A is before fragment name B 
         */
        protected boolean isBefore (List<Resource> list, String fragNameA, String fragNameB)
        {
@@ -393,7 +393,7 @@ public interface Ordering
         * @param list
         * @param fragNameA
         * @param fragNameB
-        * @return
+        * @return true if fragment name A is after fragment name B
         */
        protected boolean isAfter(List<Resource> list, String fragNameA, String fragNameB)
        {

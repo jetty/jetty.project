@@ -362,7 +362,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * specifically:<ul>
      * <li>Instantiate the {@link Configuration} instances with a call to {@link #loadConfigurations()}.
      * <li>Setup the default System classes by calling {@link #loadSystemClasses()}
-     * <li>Setup the default Server classes by calling {@link #loadServerClasses()}
+     * <li>Setup the default Server classes by calling <code>loadServerClasses()</code>
      * <li>Instantiates a classload (if one is not already set)
      * <li>Calls the {@link Configuration#preConfigure(WebAppContext)} method of all 
      * Configuration instances.
@@ -851,7 +851,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     /**
      * The override descriptor is a web.xml format file that is applied to the context after the standard WEB-INF/web.xml
-     * @param overrideDescriptor The overrideDescriptors (file or URL) to set.
+     * @param overrideDescriptors The overrideDescriptors (file or URL) to set.
      */
     public void setOverrideDescriptors(List<String> overrideDescriptors)
     {

@@ -464,7 +464,7 @@ public class ServletContextHandler extends ContextHandler
         
         /* ------------------------------------------------------------ */
         /**
-         * @see javax.servlet.ServletContext#addFilter(java.lang.String, java.lang.Class)
+         * @since servlet-api-3.0
          */
         public FilterRegistration.Dynamic addFilter(String filterName, Class<? extends Filter> filterClass)
         {
@@ -481,7 +481,7 @@ public class ServletContextHandler extends ContextHandler
 
         /* ------------------------------------------------------------ */
         /**
-         * @see javax.servlet.ServletContext#addFilter(java.lang.String, java.lang.String)
+         * @since servlet-api-3.0
          */
         public FilterRegistration.Dynamic addFilter(String filterName, String className)
         {
@@ -499,7 +499,7 @@ public class ServletContextHandler extends ContextHandler
 
         /* ------------------------------------------------------------ */
         /**
-         * @see javax.servlet.ServletContext#addFilter(java.lang.String, javax.servlet.Filter)
+         * @since servlet-api-3.0
          */
         public FilterRegistration.Dynamic addFilter(String filterName, Filter filter)
         {
@@ -516,7 +516,7 @@ public class ServletContextHandler extends ContextHandler
         
         /* ------------------------------------------------------------ */
         /**
-         * @see javax.servlet.ServletContext#addServlet(java.lang.String, java.lang.Class)
+         * @since servlet-api-3.0
          */
         public ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
         {
@@ -533,7 +533,7 @@ public class ServletContextHandler extends ContextHandler
 
         /* ------------------------------------------------------------ */
         /**
-         * @see javax.servlet.ServletContext#addServlet(java.lang.String, java.lang.String)
+         * @since servlet-api-3.0
          */
         public ServletRegistration.Dynamic addServlet(String servletName, String className)
         {
@@ -549,6 +549,9 @@ public class ServletContextHandler extends ContextHandler
         }
 
         /* ------------------------------------------------------------ */
+        /**
+         * @since servlet-api-3.0
+         */
         public ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
         {
             if (!isStarting())

@@ -88,10 +88,6 @@ public class NamingContext implements Context, Cloneable, Dumpable
     /*------------------------------------------------*/    
     /**
      * Naming Context Listener.
-     * <p>
-     * If the env property {@link NamingContext#LISTENERS_PROPERTY} is set to 
-     * a collection of Listeners, then the listener will be called as Bindings 
-     * are added and removed from the context.
      */
     public interface Listener
     {

@@ -90,7 +90,6 @@ public class WebSocketFactory
      * @param websocket The websocket handler implementation to use
      * @param origin The origin of the websocket connection
      * @param subprotocol The protocol
-     * @throws UpgradeConnectionException Thrown to upgrade the connection
      * @throws IOException
      */
     public void upgrade(HttpServletRequest request,HttpServletResponse response, WebSocket websocket, String origin, String subprotocol)

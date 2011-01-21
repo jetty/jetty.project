@@ -77,7 +77,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * 
      * @param strict the strict to set
      * @see #setRoles(Set)
-     * @see #setConstraintMappings(ConstraintMapping[], Set)
+     * @see #setConstraintMappings(List, Set)
      */
     public void setStrict(boolean strict)
     {
@@ -121,9 +121,9 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      *            The contraintMappings to set as array, from which the set of known roles
      *            is determined.  Needed to retain API compatibility for 7.x
      */
-    public void setConstraintMappings( ConstraintMapping[] contraintMappings )
+    public void setConstraintMappings( ConstraintMapping[] constraintMappings )
     {
-        setConstraintMappings( Arrays.asList(contraintMappings), null);
+        setConstraintMappings( Arrays.asList(constraintMappings), null);
     }
     
     /* ------------------------------------------------------------ */
@@ -163,7 +163,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     /**
      * Set the known roles.
      * This may be overridden by a subsequent call to {@link #setConstraintMappings(ConstraintMapping[])} or
-     * {@link #setConstraintMappings(ConstraintMapping[], Set)}.
+     * {@link #setConstraintMappings(List, Set)}.
      * @see #setStrict(boolean)
      * @param roles The known roles (or null to determine them from the mappings)
      */

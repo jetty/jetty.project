@@ -37,8 +37,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * <p>Implementation of a tunneling proxy that supports HTTP CONNECT.</p>
  * <p>To work as CONNECT proxy, objects of this class must be instantiated using the no-arguments
  * constructor, since the remote server information will be present in the CONNECT URI.</p>
- *
- * @see org.eclipse.jetty.servlets.ProxyServlet
  */
 public class ConnectHandler extends HandlerWrapper
 {
@@ -786,7 +784,7 @@ public class ConnectHandler extends HandlerWrapper
      * the content of the specified host map
      * 
      * @param entries new entries
-     * @param patternMap target host map
+     * @param hostMap target host map
      */
     protected void set(String[] entries,  HostMap<String> hostMap)
     {

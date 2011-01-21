@@ -391,7 +391,7 @@ public class JettyPolicy extends Policy
     
     /**
      * returns the known policy files that are being tracked by this instance of JettyPolicy
-     * @return
+     * @return set of known policy files
      */
     public Set<String> getKnownPolicyFiles()
     {

@@ -88,8 +88,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
     
     
-    /** 
-     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#start()
+    /**
+     * {@inheritDoc}
      */
     public void start(WebAppContext context, Descriptor descriptor)
     { 
@@ -98,7 +98,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     
     
     /** 
-     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#end()
+     * {@inheritDoc}
      */
     public void end(WebAppContext context, Descriptor descriptor)
     {
@@ -1395,7 +1395,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     /**
      * @param context
      * @param clazz
-     * @return
+     * @return the new event listener
      * @throws ServletException
      * @throws InstantiationException
      * @throws IllegalAccessException
@@ -1419,7 +1419,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     
     /**
      * @param p
-     * @return
+     * @return the normalized pattern
      */
     protected String normalizePattern(String p)
     {
@@ -1432,7 +1432,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
      * above the webapp's classloader.
      * 
      * This is primarily used for jasper.
-     * @return
+     * @return the system class path
      */
     protected String getSystemClassPath(WebAppContext context)
     {

@@ -72,7 +72,7 @@ public class WebSocketParserD00 implements WebSocketParser
 
     /* ------------------------------------------------------------ */
     /** Parse to next event.
-     * Parse to the next {@link FrameHandler} event or until no more data is
+     * Parse to the next {@link WebSocketParser.FrameHandler} event or until no more data is
      * available. Fill data from the {@link EndPoint} only as necessary.
      * @return An indication of progress or otherwise. -1 indicates EOF, 0 indicates
      * that no bytes were read and no messages parsed. A positive number indicates either
