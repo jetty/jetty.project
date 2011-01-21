@@ -17,7 +17,9 @@ package org.eclipse.jetty.policy;
 //========================================================================
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.security.AccessControlException;
@@ -39,29 +41,49 @@ import java.util.Set;
 
 import org.eclipse.jetty.policy.loader.DefaultPolicyLoader;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.log.Log;
 
 
 /**
  * Policy implementation that will load a set of policy files and manage the mapping of permissions and protection domains
  * 
- * The reason I created this class and added this mechanism are:
+ * Features of JettyPolicy are:
  * 
- * 1) I wanted a way to be able to follow the startup mechanic that jetty uses with jetty-start using OPTIONS=policy,default to be able to startup a security manager and policy implementation without have to rely on the existing JVM cli options 2)
- * establish a starting point to add on further functionality to permissions based security with jetty like jmx enabled permission tweaking or runtime creation and specification of policies for specific webapps 3) I wanted to have support for specifying
- * multiple policy files to source permissions from
+ * - we are able to follow the startup mechanic that jetty uses with jetty-start using OPTIONS=policy,default to be able to startup a security manager and policy implementation without have to rely on the existing JVM cli options 
+ * - support for specifying multiple policy files to source permissions from
+ * - support for merging protection domains across multiple policy files for the same codesource
+ * - support for directories of policy files, just specify directory and all *.policy files will be loaded.
  * 
- * Possible additions are: - directories of policy file support - jmx enabled a la #2 above - proxying of system security policy where we can proxy access to the system policy should the jvm have been started with one, I had support for this but ripped it
- * out to add in again later - merging of protection domains if process multiple policy files that declare permissions for the same codebase - an xml policy file parser, had originally added this using modello but tore it out since it would have been a
- * nightmare to get its dependencies through IP validation, could do this with jvm xml parser instead sometime - check performance of the synch'd map I am using for the protection domain mapping
+ * Possible additions are: 
+ * - scan policy directory for new policy files being added
+ * - jmx reporting
+ * - proxying of system security policy where we can proxy access to the system policy should the jvm have been started with one, I had support for this but ripped it
+ * out to add in again later 
+ * - an xml policy file parser, had originally added this using modello but tore it out since it would have been a
+ * nightmare to get its dependencies through IP validation, could do this with jvm xml parser instead sometime 
+ * - check performance of the synch'd map I am using for the protection domain mapping
  */
 public class JettyPolicy extends Policy
 {
     private static boolean __DEBUG = false;
     private static boolean __RELOAD = false;
 
-    // Policy files that are actively managed by the aggregate policy mechanism
+    /**
+     *  policy files that are actively managed by the aggregate policy mechanism
+     */
     private final Set<String> _policies;
 
+    /**
+     * templates that can have codesources applied to them for 
+     * dynamic policy allocation
+     */
+    private final Set<String> _templates;
+    
+    /**
+     * mapping of codebases to policy templates
+     */
+    private final Map<String, String[]> _codebaseTemplateMappings = new HashMap<String,String[]>();
+    
     private final Set<PolicyBlock> _grants = new HashSet<PolicyBlock>();
 
     private final Map<Object, PermissionCollection> _cache = new HashMap<Object, PermissionCollection>();
@@ -76,7 +98,6 @@ public class JettyPolicy extends Policy
     {
         try
         {
-
             __RELOAD = Boolean.getBoolean("org.eclipse.jetty.policy.RELOAD");
             __DEBUG = Boolean.getBoolean("org.eclipse.jetty.policy.DEBUG");
         }
@@ -85,8 +106,28 @@ public class JettyPolicy extends Policy
             __RELOAD = false;
             __DEBUG = false;
         }
-
-        _policies = policies;
+        
+        _policies = resolveFiles("policy", policies);
+        _templates = null;
+        _context.setProperties(properties);
+    }
+    
+    
+    public JettyPolicy(Set<String> policies, Set<String> templates, Map<String, String> properties)
+    {
+        try
+        {
+            __RELOAD = Boolean.getBoolean("org.eclipse.jetty.policy.RELOAD");
+            __DEBUG = Boolean.getBoolean("org.eclipse.jetty.policy.DEBUG");
+        }
+        catch (AccessControlException ace)
+        {
+            __RELOAD = false;
+            __DEBUG = false;
+        }
+        
+        _policies = resolveFiles("policy", policies);
+        _templates = resolveFiles("template", templates);
         _context.setProperties(properties);
     }
 
@@ -118,16 +159,23 @@ public class JettyPolicy extends Policy
 
                 if (__DEBUG)
                 {
-                    System.out.println("----START----");
-                    System.out.println("PDCS: " + policyBlock.getCodeSource());
-                    System.out.println("CS: " + domain.getCodeSource());
+                    debug("----START----");
+                    debug("PDCS: " + policyBlock.getCodeSource());
+                    debug("CS: " + domain.getCodeSource());
                 }
 
                 // 1) if protection domain codesource is null, it is the global permissions (grant {})
                 // 2) if protection domain codesource implies target codesource and there are no prinicpals
                 // 2) if protection domain codesource implies target codesource and principals align
-                if (grantPD.getCodeSource() == null || grantPD.getCodeSource().implies(domain.getCodeSource()) && grantPD.getPrincipals() == null || grantPD.getCodeSource().implies(domain.getCodeSource())
-                        && validate(grantPD.getPrincipals(),domain.getPrincipals()))
+                if (grantPD.getCodeSource() == null 
+                        || 
+                        grantPD.getCodeSource().implies(domain.getCodeSource()) 
+                        && 
+                        grantPD.getPrincipals() == null 
+                        || 
+                        grantPD.getCodeSource().implies(domain.getCodeSource()) 
+                        && 
+                        validate(grantPD.getPrincipals(),domain.getPrincipals()))
                 {
 
                     for (Enumeration<Permission> e = policyBlock.getPermissions().elements(); e.hasMoreElements();)
@@ -135,14 +183,14 @@ public class JettyPolicy extends Policy
                         Permission perm = e.nextElement();
                         if (__DEBUG)
                         {
-                            System.out.println("D: " + perm);
+                            debug("D: " + perm);
                         }
                         perms.add(perm);
                     }
                 }
                 if (__DEBUG)
                 {
-                    System.out.println("----STOP----");
+                    debug("----STOP----");
                 }
             }
 
@@ -177,13 +225,15 @@ public class JettyPolicy extends Policy
                 PolicyBlock policyBlock = i.next();
                 ProtectionDomain grantPD = policyBlock.toProtectionDomain();
 
-                if (grantPD.getCodeSource() == null || grantPD.getCodeSource().implies(codesource))
+                if (grantPD.getCodeSource() == null 
+                        || 
+                        grantPD.getCodeSource().implies(codesource))
                 {
                     if (__DEBUG)
                     {
-                        System.out.println("----START----");
-                        System.out.println("PDCS: " + grantPD.getCodeSource());
-                        System.out.println("CS: " + codesource);
+                        debug("----START----");
+                        debug("PDCS: " + grantPD.getCodeSource());
+                        debug("CS: " + codesource);
                     }
 
                     for (Enumeration<Permission> e = policyBlock.getPermissions().elements(); e.hasMoreElements();)
@@ -191,14 +241,14 @@ public class JettyPolicy extends Policy
                         Permission perm = e.nextElement();
                         if (__DEBUG)
                         {
-                            System.out.println("D: " + perm);
+                            debug("D: " + perm);
                         }
                         perms.add(perm);
                     }
 
                     if (__DEBUG)
                     {
-                        System.out.println("----STOP----");
+                        debug("----STOP----");
                     }
                 }
             }
@@ -246,6 +296,11 @@ public class JettyPolicy extends Policy
         return true;
     }
 
+    /**
+     * This call performs a refresh of the policy system, first processing the associated 
+     * files and then replacing the policy cache.
+     * 
+     */
     @Override
     public synchronized void refresh()
     {
@@ -264,7 +319,7 @@ public class JettyPolicy extends Policy
                 {
                     for (Iterator<Object> i = _cache.keySet().iterator(); i.hasNext();)
                     {
-                        System.out.println(i.next().toString());
+                        log(i.next().toString());
                     }
                 }
             }
@@ -278,6 +333,8 @@ public class JettyPolicy extends Policy
                 clean.addAll(DefaultPolicyLoader.load(new FileInputStream(policyFile),_context));
             }
 
+            
+            
             synchronized (_cache)
             {
                 _grants.clear();
@@ -292,6 +349,11 @@ public class JettyPolicy extends Policy
         }
     }
 
+    /**
+     * the scanning mechanism used to detect changes to the policy system and reload
+     * 
+     * @throws Exception
+     */
     private void initializeReloading() throws Exception
     {
         _scanner = new Scanner();
@@ -317,9 +379,9 @@ public class JettyPolicy extends Policy
             {
                 if (filename.endsWith("policy")) // TODO match up to existing policies to avoid unnecessary reloads
                 {
-                    System.out.println("JettyPolicy: refreshing policy files");
+                    log("JettyPolicy: refreshing policy files");
                     refresh();
-                    System.out.println("JettyPolicy: finished refreshing policies");
+                    log("JettyPolicy: finished refreshing policies");
                 }
             }
 
@@ -337,7 +399,7 @@ public class JettyPolicy extends Policy
     public void dump(PrintStream out)
     {
         PrintWriter write = new PrintWriter(out);
-        write.println("dumping policy settings");
+        write.println("JettyPolicy: policy settings dump");
 
         synchronized (_cache)
         {
@@ -355,11 +417,153 @@ public class JettyPolicy extends Policy
         PermissionCollection out  = new Permissions();
         synchronized (in)
         {
-            for (Enumeration el = in.elements() ; el.hasMoreElements() ;)
+            for (Enumeration<Permission> el = in.elements() ; el.hasMoreElements() ;)
             {
                 out.add((Permission)el.nextElement());
             }
         }
         return out;
     }
+    
+    public void assignTemplate(String codesource, String[] templates )
+    {
+        synchronized (_codebaseTemplateMappings)
+        {
+            _codebaseTemplateMappings.put(codesource,templates);
+            refresh();
+        }
+    }
+    
+    public String[] getAssignedTemplates( String codesource )
+    {
+        synchronized (_codebaseTemplateMappings)
+        {
+            return _codebaseTemplateMappings.get(codesource);
+        }
+    }
+    
+    public void removeTemplate(String codesource, String[] templates )
+    {
+        synchronized (_codebaseTemplateMappings)
+        {
+            if ( _codebaseTemplateMappings.containsKey(codesource))
+            {
+                _codebaseTemplateMappings.remove(codesource);
+                refresh();
+            }
+        }
+    }
+    
+    /**
+     * returns the known policy files that are being tracked by this instance of JettyPolicy
+     * @return
+     */
+    public Set<String> getKnownPolicyFiles()
+    {
+        return _policies;
+    }
+    
+    public Set<String> getKnownTemplateFiles()
+    {
+        return _templates;
+    }
+    
+    /**
+     * resolves the initial set of policy files into the actual set of policies, 
+     * scanning directories for .policy files as well.
+     * @param policyInputs
+     * @return
+     */
+    private Set<String> resolveFiles( final String extension, Set<String> policyInputs )
+    {
+        Set<String> policyFiles = new HashSet<String>();
+        
+        try
+        {
+        for ( String policyInput : policyInputs )
+        {
+            File check = new File(policyInput);
+            
+            if ( check.isDirectory() )
+            {
+                File[] foundFiles = check.listFiles(new FileFilter()
+                {             
+                    public boolean accept(File pathname)
+                    {
+                        if ( pathname.getName().toLowerCase().endsWith(extension) )
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                });
+                
+                for( File policyFile : foundFiles )
+                {
+                    policyFiles.add(policyFile.getCanonicalPath());
+                }
+            }
+            else
+            {
+                policyFiles.add(check.getCanonicalPath());
+            }
+        }
+        }
+        catch ( IOException ioe )
+        {
+            throw new IllegalArgumentException( "JettyPolicy: unable to resolve policy files.", ioe );
+        }
+        return policyFiles;
+    }
+    
+    /**
+     * Try and log to normal logging channels and should that not be allowed
+     * debug to system.out
+     * 
+     * @param message
+     */
+    private void debug( String message )
+    {
+        try
+        {
+            Log.debug(message);
+        }
+        catch ( AccessControlException ace )
+        {
+            System.out.println( "[DEBUG] " +  message );
+        }
+    }
+    /**
+     * Try and log to normal logging channels and should that not be allowed
+     * log to system.out
+     * 
+     * @param message
+     */
+    private void log( String message )
+    {
+        log( message, null );
+    }
+    
+    /**
+     * Try and log to normal logging channels and should that not be allowed
+     * log to system.out
+     * 
+     * @param message
+     */
+    private void log( String message, Throwable t )
+    {
+        try
+        {
+            Log.info(message, t);
+        }
+        catch ( AccessControlException ace )
+        {
+            System.out.println( message );
+            t.printStackTrace();
+        }
+    }
+    
 }
