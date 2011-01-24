@@ -18,8 +18,10 @@ package org.eclipse.jetty.deploy.providers;
 import java.io.IOException;
 
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -28,12 +30,14 @@ import org.junit.Test;
  */
 public class MonitoredDirAppProviderRuntimeUpdatesTest
 {
+	@Rule
+	public TestingDir testdir = new TestingDir();
     private static XmlConfiguredJetty jetty;
 
     @Before
     public void setupEnvironment() throws Exception
     {
-        jetty = new XmlConfiguredJetty();
+        jetty = new XmlConfiguredJetty(testdir);
         jetty.addConfiguration("jetty.xml");
         jetty.addConfiguration("jetty-deploymgr-contexts.xml");
 

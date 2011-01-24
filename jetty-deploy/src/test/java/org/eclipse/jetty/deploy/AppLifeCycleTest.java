@@ -23,8 +23,9 @@ import java.util.List;
 import org.eclipse.jetty.deploy.graph.GraphOutputDot;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.deploy.graph.Path;
-import org.eclipse.jetty.deploy.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -32,7 +33,10 @@ import org.junit.Test;
  */
 public class AppLifeCycleTest
 {
-    private void assertNoPath(String from, String to)
+	@Rule
+	public TestingDir testdir = new TestingDir();
+
+	private void assertNoPath(String from, String to)
     {
         assertPath(from,to,new ArrayList<String>());
     }
@@ -169,8 +173,7 @@ public class AppLifeCycleTest
         AppLifeCycle lifecycle = new AppLifeCycle();
         List<String> expected = new ArrayList<String>();
 
-        File outputDir = MavenTestingUtils.getTargetTestingDir(this.getClass().getName() + ".testFindPathMultiple");
-        outputDir.mkdirs();
+        File outputDir = testdir.getEmptyDir();
 
         // Modify graph to add new 'staging' -> 'staged' between 'deployed' and 'started'
         GraphOutputDot.write(lifecycle,new File(outputDir,"multiple-1.dot")); // before change

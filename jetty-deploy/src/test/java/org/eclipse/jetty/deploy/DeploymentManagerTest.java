@@ -4,12 +4,17 @@ import java.util.Collection;
 import java.util.Set;
 
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class DeploymentManagerTest
 {
-    @Test
+	@Rule
+	public TestingDir testdir = new TestingDir();
+
+	@Test
     public void testReceiveApp() throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
@@ -59,7 +64,7 @@ public class DeploymentManagerTest
         XmlConfiguredJetty jetty = null;
         try
         {
-            jetty = new XmlConfiguredJetty();
+            jetty = new XmlConfiguredJetty(testdir);
             jetty.addConfiguration("jetty.xml");
             jetty.addConfiguration("jetty-deploymgr-contexts.xml");
 

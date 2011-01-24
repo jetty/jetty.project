@@ -16,8 +16,10 @@
 package org.eclipse.jetty.deploy.providers;
 
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -25,12 +27,14 @@ import org.junit.Test;
  */
 public class MonitoredDirAppProviderStartupTest
 {
+	@Rule
+	public TestingDir testdir = new TestingDir();
     private static XmlConfiguredJetty jetty;
 
-    @BeforeClass
-    public static void setupEnvironment() throws Exception
+    @Before
+    public void setupEnvironment() throws Exception
     {
-        jetty = new XmlConfiguredJetty();
+        jetty = new XmlConfiguredJetty(testdir);
         jetty.addConfiguration("jetty.xml");
         jetty.addConfiguration("jetty-deploymgr-contexts.xml");
 
@@ -45,8 +49,8 @@ public class MonitoredDirAppProviderStartupTest
         jetty.start();
     }
 
-    @AfterClass
-    public static void teardownEnvironment() throws Exception
+    @After
+    public void teardownEnvironment() throws Exception
     {
         // Stop jetty.
         jetty.stop();

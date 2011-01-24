@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -38,8 +37,10 @@ import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.PathAssert;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -57,17 +58,12 @@ public class XmlConfiguredJetty
     private String _scheme = HttpSchemes.HTTP;
     private File _jettyHome;
 
-    public XmlConfiguredJetty() throws IOException
-    {
-        this(MavenTestingUtils.getTestID());
-    }
-
-    public XmlConfiguredJetty(String testname) throws IOException
+    public XmlConfiguredJetty(TestingDir testdir) throws IOException
     {
         _xmlConfigurations = new ArrayList<URL>();
         Properties properties = new Properties();
 
-        String jettyHomeBase = MavenTestingUtils.getTargetTestingDir(testname).getAbsolutePath();
+        String jettyHomeBase = testdir.getDir().getAbsolutePath();
         // Ensure we have a new (pristene) directory to work with. 
         int idx = 0;
         _jettyHome = new File(jettyHomeBase + "#" + idx);
@@ -336,7 +332,6 @@ public class XmlConfiguredJetty
         return contexts;
     }
 
-    @SuppressWarnings("unchecked")
     public void load() throws Exception
     {
         XmlConfiguration last = null;
@@ -351,7 +346,7 @@ public class XmlConfiguredJetty
             {
                 configuration.getIdMap().putAll(last.getIdMap());
             }
-            configuration.setProperties(_properties);
+            configuration.getProperties().putAll(_properties);
             obj[i] = configuration.configure();
             last = configuration;
         }
