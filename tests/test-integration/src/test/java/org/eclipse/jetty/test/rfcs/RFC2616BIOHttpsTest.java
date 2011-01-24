@@ -37,7 +37,7 @@ public class RFC2616BIOHttpsTest extends RFC2616BaseTest
         server.addConfiguration("RFC2616_Redirects.xml");
         server.addConfiguration("RFC2616_Filters.xml");
         server.addConfiguration("BIOHttps.xml");
-        setUpServer(server);
+        setUpServer(server, RFC2616BIOHttpsTest.class);
     }
 
     @Override
