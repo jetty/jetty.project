@@ -24,7 +24,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Set;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,15 +38,12 @@ import static org.junit.Assert.fail;
 public class JettyPolicyRuntimeTest
 {
     private HashMap<String, String> evaluator = new HashMap<String, String>();
-    private boolean _runningOnWindows;
 
     @Before
     public void init() throws Exception
     {
         System.setSecurityManager(null);
         Policy.setPolicy(null);
-
-        _runningOnWindows = System.getProperty( "os.name" ).startsWith( "Windows" );
 
         evaluator.put("jetty.home",MavenTestingUtils.getBaseURI().toASCIIString());
         evaluator.put("basedir",MavenTestingUtils.getBaseURI().toASCIIString());
@@ -115,11 +115,7 @@ public class JettyPolicyRuntimeTest
     public void testPolicyRestrictive() throws Exception
     {
         // TODO - temporary, create alternate file to load for windows
-        if (_runningOnWindows)
-        {
-            // skip run
-            return;
-        }
+    	Assume.assumeTrue(!OS.IS_WINDOWS); // Ignore test if running under windows.
 
         JettyPolicy ap = new JettyPolicy(getSinglePolicy("global-file-read-only-tmp-permission.policy"),evaluator);
         ap.refresh();
@@ -151,11 +147,7 @@ public class JettyPolicyRuntimeTest
     public void testCertificateLoader() throws Exception
     {
         // TODO - temporary, create alternate file to load for windows
-        if (_runningOnWindows)
-        {
-            // skip run
-            return;
-        }
+    	Assume.assumeTrue(!OS.IS_WINDOWS); // Ignore test if running under windows.
 
         JettyPolicy ap = new JettyPolicy(getSinglePolicy("jetty-certificate.policy"),evaluator);
         ap.refresh();
@@ -163,7 +155,7 @@ public class JettyPolicyRuntimeTest
         Policy.setPolicy( ap );
         System.setSecurityManager( new SecurityManager() );
 
-        URL url = MavenTestingUtils.toTargetURL("test-policy/jetty-test-policy.jar");
+        URL url = MavenTestingUtils.getTargetURL("test-policy/jetty-test-policy.jar");
 
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )
@@ -203,11 +195,7 @@ public class JettyPolicyRuntimeTest
     throws Exception
     {
         // TODO - temporary, create alternate file to load for windows
-        if (_runningOnWindows)
-        {
-            // skip run
-            return;
-        }
+    	Assume.assumeTrue(!OS.IS_WINDOWS); // Ignore test if running under windows.
 
         JettyPolicy ap = new JettyPolicy(getSinglePolicy("jetty-bad-certificate.policy"),evaluator);
         ap.refresh();
@@ -215,7 +203,7 @@ public class JettyPolicyRuntimeTest
         Policy.setPolicy( ap );
         System.setSecurityManager( new SecurityManager() );
 
-        URL url = MavenTestingUtils.toTargetURL("test-policy/jetty-test-policy.jar");
+        URL url = MavenTestingUtils.getTargetURL("test-policy/jetty-test-policy.jar");
 
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )

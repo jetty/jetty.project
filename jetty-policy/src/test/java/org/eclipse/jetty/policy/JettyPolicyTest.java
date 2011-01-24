@@ -16,6 +16,7 @@
 
 package org.eclipse.jetty.policy;
 
+import java.io.File;
 import java.io.FilePermission;
 import java.net.URL;
 import java.security.CodeSource;
@@ -24,7 +25,6 @@ import java.security.PermissionCollection;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.PropertyPermission;
@@ -32,6 +32,7 @@ import java.util.Set;
 
 import junit.framework.Assert;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -58,8 +59,8 @@ public class JettyPolicyTest
     @Test
     public void testGlobalAllPermissionLoader() throws Exception
     {
-
-        JettyPolicy ap = new JettyPolicy(  Collections.singleton( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/global-all-permission.policy" ), evaluator );
+    	File policyFile = MavenTestingUtils.getTestResourceFile("global-all-permission.policy");
+        JettyPolicy ap = new JettyPolicy(  Collections.singleton( policyFile.getAbsolutePath() ), evaluator );
         ap.refresh();
 
         PermissionCollection pc = ap.getPermissions( new ProtectionDomain( null, null ) );
@@ -83,9 +84,8 @@ public class JettyPolicyTest
     @Test
     public void testSingleCodebaseFilePermissionLoader() throws Exception
     {
-        JettyPolicy ap =
-            new JettyPolicy( Collections.singleton( MavenTestingUtils.getBasedir().getAbsolutePath()
-                + "/src/test/resources/single-codebase-file-permission.policy" ), evaluator );
+    	File policyFile = MavenTestingUtils.getTestResourceFile("single-codebase-file-permission.policy");
+        JettyPolicy ap = new JettyPolicy( Collections.singleton( policyFile.getAbsolutePath() ), evaluator );
         ap.refresh();
 
         URL url = new URL( "file:///foo.jar" );
@@ -113,9 +113,8 @@ public class JettyPolicyTest
     @Test
     public void testMultipleCodebaseFilePermissionLoader() throws Exception
     {
-        JettyPolicy ap =
-            new JettyPolicy( Collections.singleton( MavenTestingUtils.getBasedir().getAbsolutePath()
-                + "/src/test/resources/multiple-codebase-file-permission.policy" ), evaluator );
+    	File policyFile = MavenTestingUtils.getTestResourceFile("multiple-codebase-file-permission.policy");
+        JettyPolicy ap = new JettyPolicy( Collections.singleton( policyFile.getAbsolutePath() ), evaluator );
 
         ap.refresh();
         
@@ -168,9 +167,8 @@ public class JettyPolicyTest
     @Test
     public void testMultipleCodebaseMixedPermissionLoader() throws Exception
     {
-        JettyPolicy ap =
-            new JettyPolicy( Collections.singleton( MavenTestingUtils.getBasedir().getAbsolutePath()
-                + "/src/test/resources/multiple-codebase-mixed-permission.policy" ), evaluator );
+    	File policyFile = MavenTestingUtils.getTestResourceFile("multiple-codebase-mixed-permission.policy");
+        JettyPolicy ap = new JettyPolicy( Collections.singleton( policyFile.getAbsolutePath() ), evaluator );
 
         ap.refresh();
 
@@ -228,7 +226,8 @@ public class JettyPolicyTest
     @Test
     public void testSCLoader() throws Exception
     {
-        JettyPolicy ap = new JettyPolicy(Collections.singleton(MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/main/config/lib/policy/jetty.policy"),evaluator);
+    	File policyFile = MavenTestingUtils.getProjectFile("src/main/config/lib/policy/jetty.policy");
+        JettyPolicy ap = new JettyPolicy(Collections.singleton(policyFile.getAbsolutePath()),evaluator);
 
         ap.refresh();
     }
@@ -242,8 +241,8 @@ public class JettyPolicyTest
     {
         Set<String> files = new HashSet<String>();
 
-        files.add( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/single-codebase-file-permission.policy" );
-        files.add( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/single-codebase-file-permission-2.policy" );
+        files.add( MavenTestingUtils.getTestResourceFile("single-codebase-file-permission.policy").getAbsolutePath() );
+        files.add( MavenTestingUtils.getTestResourceFile("single-codebase-file-permission-2.policy").getAbsolutePath() );
 
         JettyPolicy ap = new JettyPolicy( files, evaluator );
 
@@ -274,9 +273,9 @@ public class JettyPolicyTest
     {
         Set<String> files = new HashSet<String>();
 
-        files.add( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/single-codebase-file-permission.policy" );
-        files.add( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/single-codebase-file-permission-2.policy" );
-        files.add( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/single-codebase-file-permission-3.policy" );
+        files.add( MavenTestingUtils.getTestResourceFile("single-codebase-file-permission.policy").getAbsolutePath() );
+        files.add( MavenTestingUtils.getTestResourceFile("single-codebase-file-permission-2.policy").getAbsolutePath() );
+        files.add( MavenTestingUtils.getTestResourceFile("single-codebase-file-permission-3.policy").getAbsolutePath() );
 
         JettyPolicy ap = new JettyPolicy( files, evaluator );
 
@@ -310,8 +309,8 @@ public class JettyPolicyTest
     {
         Set<String> files = new HashSet<String>();
 
-        files.add( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/single-codebase-file-permission.policy" );
-        files.add( MavenTestingUtils.getBasedir().getAbsolutePath() + "/src/test/resources/context" );
+        files.add( MavenTestingUtils.getTestResourceFile("single-codebase-file-permission.policy").getAbsolutePath() );
+        files.add( MavenTestingUtils.getTestResourceDir("context").getAbsolutePath() );
 
         JettyPolicy ap = new JettyPolicy( files, evaluator );
 
