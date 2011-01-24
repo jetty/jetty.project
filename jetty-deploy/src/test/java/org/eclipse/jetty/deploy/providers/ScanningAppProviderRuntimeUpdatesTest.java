@@ -25,10 +25,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 /**
- * Similar in scope to {@link MonitoredDirAppProviderStartupTest}, except is concerned with the modification of existing
+ * Similar in scope to {@link ScanningAppProviderStartupTest}, except is concerned with the modification of existing
  * deployed webapps due to incoming changes identified by the {@link ScanningAppProvider}.
  */
-public class MonitoredDirAppProviderRuntimeUpdatesTest
+public class ScanningAppProviderRuntimeUpdatesTest
 {
 	@Rule
 	public TestingDir testdir = new TestingDir();

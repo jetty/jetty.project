@@ -25,7 +25,7 @@ import org.junit.Test;
 /**
  * Tests {@link ScanningAppProvider} as it starts up for the first time.
  */
-public class MonitoredDirAppProviderStartupTest
+public class ScanningAppProviderStartupTest
 {
 	@Rule
 	public TestingDir testdir = new TestingDir();
