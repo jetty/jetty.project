@@ -23,6 +23,7 @@
         <configuration>
           <excludes>
             <exclude>**/WebAppTest.java</exclude>
+            <exclude>**/Test*.java</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -40,9 +41,9 @@
                 <descriptor>config.xml</descriptor>
                 <descriptor>src/main/assembly/web-bundle.xml</descriptor>
               </descriptors>
-	      <archive>
-		<manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-	      </archive>
+		      <archive>
+				<manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+		      </archive>
             </configuration>
           </execution>
         </executions>
