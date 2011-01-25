@@ -1,3 +1,5 @@
+jetty-7.3.1-SNAPSHOT
+ + 335361 Fixed 'jetty.sh check' to show current PID when JETTY_PID env. variable is set
 
 jetty-7.3.0.v20112401 24 January 2011
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session (further update)
