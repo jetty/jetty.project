@@ -18,7 +18,6 @@
     <javax-servlet-jsp-version>2.1.v20100127</javax-servlet-jsp-version>
     <javax-transaction-version>1.1.1</javax-transaction-version>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
-    <junit-version>3.8.2</junit-version>
     <junit4-version>4.8.1</junit4-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>1.5.11</slf4j-version>
@@ -245,6 +244,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-pmd-plugin</artifactId>
+        <version>2.5</version>
         <configuration>
           <targetJdk>1.5</targetJdk>
           <rulesets>
@@ -255,6 +255,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>
+        <version>2.3.1</version>
       </plugin>
     </plugins>
   </reporting>
@@ -320,11 +321,6 @@
         <version>1.0-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>${junit-version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>jcl104-over-slf4j</artifactId>
         <version>${slf4j-version}</version>
@@ -353,6 +349,12 @@
         <groupId>javax.activation</groupId>
         <artifactId>activation</artifactId>
         <version>${javax-activation-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${junit4-version}</version>
+        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
