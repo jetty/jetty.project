@@ -18,11 +18,13 @@ import junit.framework.AssertionFailedError;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -349,8 +351,7 @@ public class DefaultServletTest
         FS.ensureDirExists(resBase);
         File inde = new File(resBase, "index.htm");
         File index = new File(resBase, "index.html");
-
-
+        
         String resBasePath = resBase.getAbsolutePath();
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class,"/");
@@ -376,11 +377,11 @@ public class DefaultServletTest
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>",response);
 
-        assertTrue(index.delete());
+        deleteFile(index);
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Inde</h1>",response);
 
-        assertTrue(inde.delete());
+        deleteFile(inde);
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("JSP support not configured",response);
     }
@@ -666,5 +667,17 @@ public class DefaultServletTest
             throw new AssertionFailedError(err.toString());
         }
         return idx;
+    }
+    
+    private void deleteFile(File file) throws IOException {
+    	if(OS.IS_WINDOWS) {
+    		// Since Windows doesn't seem to like to delete content that was recently created.
+    		File deleted = MavenTestingUtils.getTargetFile(".deleted");
+    		FS.ensureDirExists(deleted);
+    		File dest = File.createTempFile(file.getName(), "deleted", deleted);
+    		Assert.assertTrue("Unable to move file out of the way: " + file.getName(), file.renameTo(dest));
+    	} else {
+    		Assert.assertTrue("Deleting: " + file.getName(), file.delete());
+    	}
     }
 }
