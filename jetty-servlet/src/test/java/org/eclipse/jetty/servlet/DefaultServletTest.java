@@ -593,51 +593,6 @@ public class DefaultServletTest
         }
     }
 
-    /*
-    private void prepareEmptyTestDir(File testdir)
-    {
-        if (testdir.exists())
-        {
-            emptyDir(testdir);
-        }
-        else
-        {
-            assertTrue(testdir.mkdirs());
-        }
-
-        assertTrue("test dir should exists",testdir.exists());
-        assertTrue("test dir should be a dir",testdir.isDirectory());
-        assertTrue("test dir should be empty",isEmpty(testdir));
-    }
-
-    private boolean isEmpty(File dir)
-    {
-        if (!dir.isDirectory())
-            return true;
-
-        return dir.list().length == 0;
-    }
-
-    private void emptyDir(File dir)
-    {
-        File entries[] = dir.listFiles();
-        for (File entry : entries)
-            deletePath(entry);
-    }
-
-    private void deletePath(File path)
-    {
-        if (path.isDirectory())
-        {
-            File entries[] = path.listFiles();
-            for (File entry : entries)
-                deletePath(entry);
-        }
-
-        assertTrue("Deleting: " + path.getAbsolutePath(),path.delete());
-    }
-    */
-
     private void assertResponseNotContains(String forbidden, String response)
     {
         int idx = response.indexOf(forbidden);
