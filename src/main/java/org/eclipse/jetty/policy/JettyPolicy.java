@@ -79,6 +79,7 @@ public class JettyPolicy extends Policy
      */
     private final Set<String> _templates;
     
+    private final Map<String, String> _nameTemplateMappings = new HashMap<String, String>();
     /**
      * mapping of codebases to policy templates
      */
@@ -128,6 +129,7 @@ public class JettyPolicy extends Policy
         
         _policies = resolveFiles("policy", policies);
         _templates = resolveFiles("template", templates);
+        initializeNameTemplateMapping(_templates);
         _context.setProperties(properties);
     }
 
@@ -333,7 +335,15 @@ public class JettyPolicy extends Policy
                 clean.addAll(DefaultPolicyLoader.load(new FileInputStream(policyFile),_context));
             }
 
-            
+            for ( Iterator<String> i = _codebaseTemplateMappings.keySet().iterator(); i.hasNext();)
+            {
+                String codebase = i.next();
+                
+                for ( String template : _codebaseTemplateMappings.get(codebase) )
+                {
+                    clean.addAll(DefaultPolicyLoader.load(new FileInputStream(_nameTemplateMappings.get(template)), codebase,_context));
+                }                
+            }
             
             synchronized (_cache)
             {
@@ -363,9 +373,21 @@ public class JettyPolicy extends Policy
         for (Iterator<String> i = _policies.iterator(); i.hasNext();)
         {
             File policyFile = new File(i.next());
-            scanDirs.add(policyFile.getParentFile());
+            if ( !scanDirs.contains(policyFile.getParentFile()))
+            {
+                scanDirs.add(policyFile.getParentFile());
+            }
         }
-
+        
+        for (Iterator<String> i = _templates.iterator(); i.hasNext();)
+        {
+            File templateFile = new File(i.next());
+            if ( !scanDirs.contains(templateFile.getParentFile()))
+            {
+                scanDirs.add(templateFile.getParentFile());
+            }
+        }
+        
         _scanner.addListener(new Scanner.DiscreteListener()
         {
 
@@ -377,7 +399,7 @@ public class JettyPolicy extends Policy
             /* will trigger when files are changed, not on load time, just when changed */
             public void fileChanged(String filename) throws Exception
             {
-                if (filename.endsWith("policy")) // TODO match up to existing policies to avoid unnecessary reloads
+                if (_policies.contains(filename) || _templates.contains(filename))
                 {
                     log("JettyPolicy: refreshing policy files");
                     refresh();
@@ -390,7 +412,7 @@ public class JettyPolicy extends Policy
 
             }
         });
-
+        
         _scanner.setScanDirs(scanDirs);
         _scanner.start();
         _scanner.setScanInterval(10);
@@ -438,11 +460,20 @@ public class JettyPolicy extends Policy
     {
         synchronized (_codebaseTemplateMappings)
         {
-            return _codebaseTemplateMappings.get(codesource);
+            String[] results = _codebaseTemplateMappings.get(codesource);
+            
+            if ( results != null )
+            {
+                return results;
+            }
+            else
+            {
+                return new String[] {};
+            }
         }
     }
     
-    public void removeTemplate(String codesource, String[] templates )
+    public void unassignTemplates(String codesource)
     {
         synchronized (_codebaseTemplateMappings)
         {
@@ -518,6 +549,17 @@ public class JettyPolicy extends Policy
         }
         return policyFiles;
     }
+    
+    private void initializeNameTemplateMapping(Set<String> templates)
+    {
+        for ( String filename : templates )
+        {
+            File file = new File(filename);
+            String name = file.getName();
+            _nameTemplateMappings.put(name.substring(0, name.indexOf(".")), filename);
+        }
+    }
+    
     
     /**
      * Try and log to normal logging channels and should that not be allowed

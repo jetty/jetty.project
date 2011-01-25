@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Set;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -163,7 +164,7 @@ public class JettyPolicyRuntimeTest
         Policy.setPolicy( ap );
         System.setSecurityManager( new SecurityManager() );
 
-        URL url = MavenTestingUtils.toTargetURL("test-policy/jetty-test-policy.jar");
+        URL url = MavenTestingUtils.getTargetURL("test-policy/jetty-test-policy.jar");
 
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )
@@ -215,7 +216,7 @@ public class JettyPolicyRuntimeTest
         Policy.setPolicy( ap );
         System.setSecurityManager( new SecurityManager() );
 
-        URL url = MavenTestingUtils.toTargetURL("test-policy/jetty-test-policy.jar");
+        URL url = MavenTestingUtils.getTargetURL("test-policy/jetty-test-policy.jar");
 
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )

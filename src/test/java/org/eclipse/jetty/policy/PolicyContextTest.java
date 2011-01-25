@@ -26,6 +26,7 @@ import java.util.List;
 import org.eclipse.jetty.policy.entry.GrantEntry;
 import org.eclipse.jetty.policy.entry.KeystoreEntry;
 import org.eclipse.jetty.policy.loader.PolicyFileScanner;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Before;
 import org.junit.Test;
 

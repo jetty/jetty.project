@@ -44,6 +44,12 @@ public class DefaultPolicyLoader
     
     public static Set<PolicyBlock> load( InputStream policyStream, PolicyContext context ) throws PolicyException
     {
+        return load(policyStream, null, context);
+    }
+    
+    
+    public static Set<PolicyBlock> load( InputStream policyStream, String codebase, PolicyContext context ) throws PolicyException
+    {
         Set<PolicyBlock> policies = new HashSet<PolicyBlock>();
         KeyStore keystore = null;
         
@@ -74,6 +80,10 @@ public class DefaultPolicyLoader
             for ( Iterator<GrantEntry> i = grantEntries.iterator(); i.hasNext(); )
             {            
                 GrantEntry grant = i.next();
+                if ( codebase != null )
+                {
+                    grant.setCodebase(codebase);
+                }
                 grant.expand( context );
                 
                 PolicyBlock policy = new PolicyBlock();             
