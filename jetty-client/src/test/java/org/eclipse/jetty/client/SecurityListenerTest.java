@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -43,6 +44,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 
 /**
  * Functional testing for HttpExchange.
@@ -285,7 +287,8 @@ public class SecurityListenerTest extends TestCase
          cm.setConstraint(constraint);
          cm.setPathSpec("/*");
 
-         LoginService loginService = new HashLoginService("MyRealm","src/test/resources/realm.properties");
+         File realmPropFile = MavenTestingUtils.getTestResourceFile("realm.properties");
+         LoginService loginService = new HashLoginService("MyRealm",realmPropFile.getAbsolutePath());
          ConstraintSecurityHandler sh = new ConstraintSecurityHandler();
          sh.setLoginService(loginService);
          sh.setAuthenticator(new BasicAuthenticator());

@@ -22,6 +22,7 @@ import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 
 public class SslContentExchangeTest
 	extends ContentExchangeTest
@@ -33,8 +34,8 @@ public class SslContentExchangeTest
         setProtocol("https");
         
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
-        String keystore = new File("src/test/resources/keystore").getAbsolutePath();   
-        connector.setKeystore(keystore);
+        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
+        connector.setKeystore(keystore.getAbsolutePath());
         connector.setPassword("storepwd");
         connector.setKeyPassword("keypwd");
         server.addConnector(connector);

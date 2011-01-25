@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 
 public class SslSecuredErrorStatusTest
     extends ErrorStatusTest
@@ -126,7 +128,8 @@ public class SslSecuredErrorStatusTest
         SelectChannelConnector connector = new SelectChannelConnector();
         server.addConnector(connector);
         
-        LoginService loginService = new HashLoginService("MyRealm","src/test/resources/realm.properties");
+        File realmPropFile = MavenTestingUtils.getTestResourceFile("realm.properties");
+        LoginService loginService = new HashLoginService("MyRealm",realmPropFile.getAbsolutePath());
         server.addBean(loginService); 
 
         ConstraintSecurityHandler security = new ConstraintSecurityHandler();

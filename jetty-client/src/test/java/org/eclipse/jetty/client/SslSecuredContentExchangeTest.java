@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 
 public class SslSecuredContentExchangeTest
 extends ContentExchangeTest
@@ -59,13 +60,14 @@ extends ContentExchangeTest
                  });
                         
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
-        String keystore = new File("src/test/resources/keystore").getAbsolutePath();   
-        connector.setKeystore(keystore);
+        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
+        connector.setKeystore(keystore.getAbsolutePath());
         connector.setPassword("storepwd");
         connector.setKeyPassword("keypwd");
         server.addConnector(connector);
 
-        LoginService loginService = new HashLoginService("MyRealm","src/test/resources/realm.properties");
+        File realmPropFile = MavenTestingUtils.getTestResourceFile("realm.properties");
+        LoginService loginService = new HashLoginService("MyRealm",realmPropFile.getAbsolutePath());
         server.addBean(loginService); 
 
         ConstraintSecurityHandler security = new ConstraintSecurityHandler();
