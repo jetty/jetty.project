@@ -52,19 +52,19 @@
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
     <!-- To add a HTTPS SSL connector                                    -->
     <!-- mixin jetty-ssl.xml:                                            -->
-    <!--   java -jar start.jar etc/jetty.xml etc/jetty-ssl.xml           -->
+    <!--   java -jar start.jar etc/jetty-ssl.xml                         -->
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
     
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
     <!-- To add a HTTP blocking connector                                -->
     <!-- mixin jetty-bio.xml:                                            -->
-    <!--   java -jar start.jar etc/jetty.xml etc/jetty-bio.xml           -->
+    <!--   java -jar start.jar etc/jetty-bio.xml                         -->
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
     
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
     <!-- To allow Jetty to be started from xinetd                        -->
     <!-- mixin jetty-xinetd.xml:                                         -->
-    <!--   java -jar start.jar etc/jetty.xml etc/jetty-xinetd.xml        -->
+    <!--   java -jar start.jar etc/jetty-xinetd.xml                      -->
     <!--                                                                 -->
     <!-- See jetty-xinetd.xml for further instructions.                  -->
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->

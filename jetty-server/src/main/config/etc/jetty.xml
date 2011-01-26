@@ -9,7 +9,7 @@
 <!--                                                                 -->
 <!-- Additional configuration files are available in $JETTY_HOME/etc -->
 <!-- and can be mixed in.  For example:                              -->
-<!--   java -jar start.jar etc/jetty.xml etc/jetty-ssl.xml           -->
+<!--   java -jar start.jar etc/jetty-ssl.xml                         -->
 <!--                                                                 -->
 <!-- See start.ini file for the default configuraton files           -->
 <!-- =============================================================== -->
