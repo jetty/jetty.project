@@ -1,5 +1,6 @@
 jetty-8.0.0.M3-SNAPSHOT
  + 324505 Implement API login
+ + 335500 request.getParts() throws a NullPointerException
 
 
 jetty-8.0.0.M2 16 November 2010

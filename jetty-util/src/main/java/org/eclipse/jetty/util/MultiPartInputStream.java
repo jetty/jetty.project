@@ -294,7 +294,7 @@ public class MultiPartInputStream
        _config = config;
        _contextTmpDir = contextTmpDir;
        if (_contextTmpDir == null)
-           _contextTmpDir = new File (System.getProperty(System.getProperty("java.io.tmpdir")));
+           _contextTmpDir = new File (System.getProperty("java.io.tmpdir"));
        if (_config == null)
            _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
     }
