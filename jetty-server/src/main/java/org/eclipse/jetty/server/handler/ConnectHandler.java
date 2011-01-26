@@ -9,7 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -220,7 +219,7 @@ public class ConnectHandler extends HandlerWrapper
             host = serverAddress.substring(0, colon);
             port = Integer.parseInt(serverAddress.substring(colon + 1));
         }
-        
+
         if (!validateDestination(host))
         {
             Log.info("ProxyHandler: Forbidden destination "+host);
@@ -464,15 +463,24 @@ public class ConnectHandler extends HandlerWrapper
             _data = data;
         }
 
+        @Override
+        public String toString()
+        {
+            StringBuilder builder = new StringBuilder("ProxyToServer");
+            builder.append("(:").append(_endPoint.getLocalPort());
+            builder.append("<=>:").append(_endPoint.getRemotePort());
+            return builder.append(")").toString();
+        }
+
         public Connection handle() throws IOException
         {
-            _logger.debug("ProxyToServer: begin reading from server");
+            _logger.debug("{}: begin reading from server", this);
             try
             {
                 if (_data != null)
                 {
                     int written = write(_endPoint, _data, _context);
-                    _logger.debug("ProxyToServer: written to server {} bytes", written);
+                    _logger.debug("{}: written to server {} bytes", this, written);
                     _data = null;
                 }
 
@@ -482,7 +490,7 @@ public class ConnectHandler extends HandlerWrapper
 
                     if (read == -1)
                     {
-                        _logger.debug("ProxyToServer: server closed connection {}", _endPoint);
+                        _logger.debug("{}: server closed connection {}", this, _endPoint);
                         close();
                         break;
                     }
@@ -490,9 +498,9 @@ public class ConnectHandler extends HandlerWrapper
                     if (read == 0)
                         break;
 
-                    _logger.debug("ProxyToServer: read from server {} bytes {}", read, _endPoint);
+                    _logger.debug("{}: read from server {} bytes {}", this, read, _endPoint);
                     int written = write(_toClient._endPoint, _buffer, _context);
-                    _logger.debug("ProxyToServer: written to client {} bytes", written);
+                    _logger.debug("{}: written to {} {} bytes", this, _toClient, written);
                 }
                 return this;
             }
@@ -503,19 +511,19 @@ public class ConnectHandler extends HandlerWrapper
             }
             catch (IOException x)
             {
-                _logger.warn("ProxyToServer: Unexpected exception", x);
+                _logger.warn(this + ": unexpected exception", x);
                 close();
                 throw x;
             }
             catch (RuntimeException x)
             {
-                _logger.warn("ProxyToServer: Unexpected exception", x);
+                _logger.warn(this + ": unexpected exception", x);
                 close();
                 throw x;
             }
             finally
             {
-                _logger.debug("ProxyToServer: end reading from server");
+                _logger.debug("{}: end reading from server", this);
             }
         }
 
@@ -537,7 +545,6 @@ public class ConnectHandler extends HandlerWrapper
         public void setEndPoint(SelectChannelEndPoint endpoint)
         {
             _endPoint = endpoint;
-            _logger.debug("ProxyToServer: {}", _endPoint);
         }
 
         public boolean isIdle()
@@ -549,7 +556,7 @@ public class ConnectHandler extends HandlerWrapper
         {
             return false;
         }
-        
+
         public void closed()
         {
         }
@@ -589,7 +596,7 @@ public class ConnectHandler extends HandlerWrapper
             }
             catch (IOException x)
             {
-                _logger.debug("ProxyToServer: Unexpected exception closing the client", x);
+                _logger.debug(this + ": unexpected exception closing the client", x);
             }
 
             try
@@ -598,7 +605,7 @@ public class ConnectHandler extends HandlerWrapper
             }
             catch (IOException x)
             {
-                _logger.debug("ProxyToServer: Unexpected exception closing the server", x);
+                _logger.debug(this + ": unexpected exception closing the server", x);
             }
         }
     }
@@ -619,19 +626,27 @@ public class ConnectHandler extends HandlerWrapper
             _channel = channel;
             _endPoint = endPoint;
             _timestamp = timestamp;
-            _logger.debug("ClientToProxy: {}", _endPoint);
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder builder = new StringBuilder("ClientToProxy");
+            builder.append("(:").append(_endPoint.getLocalPort());
+            builder.append("<=>:").append(_endPoint.getRemotePort());
+            return builder.append(")").toString();
         }
 
         public Connection handle() throws IOException
         {
-            _logger.debug("ClientToProxy: begin reading from client");
+            _logger.debug("{}: begin reading from client", this);
             try
             {
                 if (_firstTime)
                 {
                     _firstTime = false;
                     register(_channel, _toServer);
-                    _logger.debug("ClientToProxy: registered channel {} with connection {}", _channel, _toServer);
+                    _logger.debug("{}: registered channel {} with connection {}", this, _channel, _toServer);
                 }
 
                 while (true)
@@ -640,7 +655,7 @@ public class ConnectHandler extends HandlerWrapper
 
                     if (read == -1)
                     {
-                        _logger.debug("ClientToProxy: client closed connection {}", _endPoint);
+                        _logger.debug("{}: client closed connection {}", this, _endPoint);
                         close();
                         break;
                     }
@@ -648,33 +663,33 @@ public class ConnectHandler extends HandlerWrapper
                     if (read == 0)
                         break;
 
-                    _logger.debug("ClientToProxy: read from client {} bytes {}", read, _endPoint);
+                    _logger.debug("{}: read from client {} bytes {}", this, read, _endPoint);
                     int written = write(_toServer._endPoint, _buffer, _context);
-                    _logger.debug("ClientToProxy: written to server {} bytes", written);
+                    _logger.debug("{}: written to {} {} bytes", this, _toServer, written);
                 }
                 return this;
             }
             catch (ClosedChannelException x)
             {
-                _logger.debug("ClientToProxy",x);
+                _logger.debug(x);
                 closeServer();
                 throw x;
             }
             catch (IOException x)
             {
-                _logger.warn("ClientToProxy", x);
+                _logger.warn(this + ": unexpected exception", x);
                 close();
                 throw x;
             }
             catch (RuntimeException x)
             {
-                _logger.warn("ClientToProxy", x);
+                _logger.warn(this + ": unexpected exception", x);
                 close();
                 throw x;
             }
             finally
             {
-                _logger.debug("ClientToProxy: end reading from client");
+                _logger.debug("{}: end reading from client", this);
             }
         }
 
@@ -692,7 +707,7 @@ public class ConnectHandler extends HandlerWrapper
         {
             return false;
         }
-        
+
         public void closed()
         {
         }
@@ -720,7 +735,7 @@ public class ConnectHandler extends HandlerWrapper
             }
             catch (IOException x)
             {
-                _logger.debug("ClientToProxy: Unexpected exception closing the client", x);
+                _logger.debug(this + ": unexpected exception closing the client", x);
             }
 
             try
@@ -729,67 +744,67 @@ public class ConnectHandler extends HandlerWrapper
             }
             catch (IOException x)
             {
-                _logger.debug("ClientToProxy: Unexpected exception closing the server", x);
+                _logger.debug(this + ": unexpected exception closing the server", x);
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Add a whitelist entry to an existing handler configuration
-     * 
+     *
      * @param entry new whitelist entry
      */
     public void addWhite(String entry)
     {
         add(entry, _white);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Add a blacklist entry to an existing handler configuration
-     * 
+     *
      * @param entry new blacklist entry
      */
     public void addBlack(String entry)
     {
         add(entry, _black);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Re-initialize the whitelist of existing handler object
-     * 
+     *
      * @param entries array of whitelist entries
      */
     public void setWhite(String[] entries)
     {
         set(entries, _white);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Re-initialize the blacklist of existing handler object
-     * 
+     *
      * @param entries array of blacklist entries
      */
     public void setBlack(String[] entries)
     {
         set(entries, _black);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * Helper method to process a list of new entries and replace 
+     * Helper method to process a list of new entries and replace
      * the content of the specified host map
-     * 
+     *
      * @param entries new entries
      * @param hostMap target host map
      */
     protected void set(String[] entries,  HostMap<String> hostMap)
     {
         hostMap.clear();
-        
+
         if (entries != null && entries.length > 0)
         {
             for (String addrPath:entries)
@@ -798,12 +813,12 @@ public class ConnectHandler extends HandlerWrapper
             }
         }
     }
-  
+
     /* ------------------------------------------------------------ */
     /**
-     * Helper method to process the new entry and add it to 
+     * Helper method to process the new entry and add it to
      * the specified host map.
-     * 
+     *
      * @param entry new entry
      * @param patternMap target host map
      */
@@ -818,11 +833,11 @@ public class ConnectHandler extends HandlerWrapper
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Check the request hostname against white- and blacklist.
-     * 
+     *
      * @param host hostname to check
      * @return true if hostname is allowed to be proxied
      */
@@ -831,7 +846,7 @@ public class ConnectHandler extends HandlerWrapper
         if (_white.size()>0)
         {
             Object whiteObj = _white.getLazyMatches(host);
-            if (whiteObj == null) 
+            if (whiteObj == null)
             {
                 return false;
             }
@@ -840,12 +855,12 @@ public class ConnectHandler extends HandlerWrapper
         if (_black.size() > 0)
         {
             Object blackObj = _black.getLazyMatches(host);
-            if (blackObj != null) 
+            if (blackObj != null)
             {
                 return false;
             }
         }
-        
+
         return true;
     }
 }
