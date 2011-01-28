@@ -1,6 +1,7 @@
 package org.eclipse.jetty.continuation;
 
 import org.eclipse.jetty.servlets.ProxyServlet;
+import org.junit.Ignore;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.nio.SelectChannelConnector;
@@ -9,6 +10,7 @@ import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.ServletHandler;
 import org.mortbay.jetty.servlet.ServletHolder;
 
+@Ignore("Not a test case")
 public class TestProxyServer
 {
     public static void main(String[] args) throws Exception

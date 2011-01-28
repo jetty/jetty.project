@@ -18,22 +18,26 @@ package org.eclipse.jetty.deploy.providers;
 import java.io.IOException;
 
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
- * Similar in scope to {@link MonitoredDirAppProviderStartupTest}, except is concerned with the modification of existing
+ * Similar in scope to {@link ScanningAppProviderStartupTest}, except is concerned with the modification of existing
  * deployed webapps due to incoming changes identified by the {@link ScanningAppProvider}.
  */
-public class MonitoredDirAppProviderRuntimeUpdatesTest
+public class ScanningAppProviderRuntimeUpdatesTest
 {
+	@Rule
+	public TestingDir testdir = new TestingDir();
     private static XmlConfiguredJetty jetty;
 
     @Before
     public void setupEnvironment() throws Exception
     {
-        jetty = new XmlConfiguredJetty();
+        jetty = new XmlConfiguredJetty(testdir);
         jetty.addConfiguration("jetty.xml");
         jetty.addConfiguration("jetty-deploymgr-contexts.xml");
 

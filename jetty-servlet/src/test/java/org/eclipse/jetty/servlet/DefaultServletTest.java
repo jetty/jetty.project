@@ -1,5 +1,7 @@
 package org.eclipse.jetty.servlet;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -12,19 +14,26 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import junit.framework.AssertionFailedError;
+
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 public class DefaultServletTest
 {
-    private boolean _runningOnWindows;
+	@Rule
+	public TestingDir testdir = new TestingDir();
+	
     private Server server;
     private LocalConnector connector;
     private ServletContextHandler context;
@@ -32,8 +41,6 @@ public class DefaultServletTest
     @Before
     public void init() throws Exception
     {
-        _runningOnWindows = System.getProperty( "os.name" ).startsWith( "Windows" );
-
         server = new Server();
         server.setSendServerVersion(false);
 
@@ -63,12 +70,11 @@ public class DefaultServletTest
         defholder.setInitParameter("dirAllowed","true");
         defholder.setInitParameter("redirectWelcome","false");
         defholder.setInitParameter("gzip","false");
-
-        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
-        prepareEmptyTestDir(testDir);
+        
+        testdir.ensureEmpty();
 
         /* create some content in the docroot */
-        File resBase = new File(testDir, "docroot");
+        File resBase = testdir.getFile("docroot");
         assertTrue(resBase.mkdirs());
         assertTrue(new File(resBase, "one").mkdir());
         assertTrue(new File(resBase, "two").mkdir());
@@ -99,17 +105,17 @@ public class DefaultServletTest
         defholder.setInitParameter("redirectWelcome","false");
         defholder.setInitParameter("gzip","false");
 
-        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
-        prepareEmptyTestDir(testDir);
+        testdir.ensureEmpty();
 
         /* create some content in the docroot */
-        File resBase = new File(testDir, "docroot");
-        assertTrue(resBase.mkdirs());
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
         assertTrue(new File(resBase, "one").mkdir());
         assertTrue(new File(resBase, "two").mkdir());
         assertTrue(new File(resBase, "three").mkdir());
-        if ( !_runningOnWindows )
+        if ( !OS.IS_WINDOWS ) {
             assertTrue("Creating dir 'f??r' (Might not work in Windows)", new File(resBase, "f??r").mkdir());
+        }
 
         String resBasePath = resBase.getAbsolutePath();
         defholder.setInitParameter( "resourceBase", resBasePath );
@@ -128,8 +134,9 @@ public class DefaultServletTest
         assertResponseContains( "/one/", response );
         assertResponseContains( "/two/", response );
         assertResponseContains( "/three/", response );
-        if ( !_runningOnWindows )
+        if ( !OS.IS_WINDOWS ) {
             assertResponseContains( "/f%3F%3Fr", response );
+        }
 
         assertResponseNotContains( "<script>", response );
     }
@@ -142,11 +149,10 @@ public class DefaultServletTest
         defholder.setInitParameter("redirectWelcome","false");
         defholder.setInitParameter("gzip","false");
 
-        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
-        prepareEmptyTestDir(testDir);
+        testdir.ensureEmpty();
 
         /* create some content in the docroot */
-        File resBase = new File(testDir, "docroot");
+        File resBase = testdir.getFile("docroot");
         assertTrue(resBase.mkdirs());
         File wackyDir = new File(resBase, "dir;"); // this should not be double-encoded.
         assertTrue(wackyDir.mkdirs());
@@ -195,27 +201,25 @@ public class DefaultServletTest
         defholder.setInitParameter("gzip","false");
         defholder.setInitParameter("aliases","true");
 
-        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
-        prepareEmptyTestDir(testDir);
+        testdir.ensureEmpty();
 
         /* create some content in the docroot */
-        File resBase = new File(testDir, "docroot");
+        File resBase = testdir.getFile("docroot");
         assertTrue(resBase.mkdirs());
 
         File index = new File(resBase, "index.html");
         createFile(index, "<h1>Hello Index</h1>");
 
         File wackyDir = new File(resBase, "dir?");
-        if ( !_runningOnWindows )
-        {
-            assertTrue(wackyDir.mkdirs());
+        if ( !OS.IS_WINDOWS ) {
+        	FS.ensureDirExists(wackyDir);
         }
 
         wackyDir = new File(resBase, "dir;");
         assertTrue(wackyDir.mkdirs());
 
         /* create some content outside of the docroot */
-        File sekret = new File(testDir, "sekret");
+        File sekret = testdir.getFile("sekret");
         assertTrue(sekret.mkdirs());
         File pass = new File(sekret, "pass");
         createFile(pass, "Sssh, you shouldn't be seeing this");
@@ -241,7 +245,7 @@ public class DefaultServletTest
         response= connector.getResponses("GET /context/dir?/ HTTP/1.0\r\n\r\n");
         assertResponseContains("404",response);
 
-        if ( !_runningOnWindows )
+        if ( !OS.IS_WINDOWS )
         {
             response= connector.getResponses("GET /context/dir%3F/ HTTP/1.0\r\n\r\n");
             assertResponseContains("Directory: /context/dir?/<",response);
@@ -298,10 +302,9 @@ public class DefaultServletTest
     @Test
     public void testWelcome() throws Exception
     {
-        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
-        prepareEmptyTestDir(testDir);
-        File resBase = new File(testDir, "docroot");
-        assertTrue(resBase.mkdirs());
+        testdir.ensureEmpty();
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
         File inde = new File(resBase, "index.htm");
         File index = new File(resBase, "index.html");
 
@@ -317,6 +320,7 @@ public class DefaultServletTest
         defholder.setInitParameter("maxCachedFileSize","512000");
         defholder.setInitParameter("maxCachedFiles","100");
 
+        @SuppressWarnings("unused")
         ServletHolder jspholder = context.addServlet(NoJspServlet.class,"*.jsp");
 
         String response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
@@ -342,14 +346,12 @@ public class DefaultServletTest
     @Test
     public void testWelcomeServlet() throws Exception
     {
-        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
-        prepareEmptyTestDir(testDir);
-        File resBase = new File(testDir, "docroot");
-        assertTrue(resBase.mkdirs());
+        testdir.ensureEmpty();
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
         File inde = new File(resBase, "index.htm");
         File index = new File(resBase, "index.html");
-
-
+        
         String resBasePath = resBase.getAbsolutePath();
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class,"/");
@@ -359,7 +361,8 @@ public class DefaultServletTest
         defholder.setInitParameter("gzip","false");
         defholder.setInitParameter("resourceBase",resBasePath);
 
-        ServletHolder jspholder = context.addServlet(NoJspServlet.class,"*.jsp");
+        @SuppressWarnings("unused")
+		ServletHolder jspholder = context.addServlet(NoJspServlet.class,"*.jsp");
 
         String response;
 
@@ -374,11 +377,11 @@ public class DefaultServletTest
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>",response);
 
-        assertTrue(index.delete());
+        deleteFile(index);
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Inde</h1>",response);
 
-        assertTrue(inde.delete());
+        deleteFile(inde);
         response= connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("JSP support not configured",response);
     }
@@ -386,10 +389,9 @@ public class DefaultServletTest
     @Test
     public void testWelcomeExactServlet() throws Exception
     {
-        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
-        prepareEmptyTestDir(testDir);
-        File resBase = new File(testDir, "docroot");
-        assertTrue(resBase.mkdirs());
+        testdir.ensureEmpty();
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
         File inde = new File(resBase, "index.htm");
         File index = new File(resBase, "index.html");
 
@@ -430,10 +432,9 @@ public class DefaultServletTest
     @Test
     public void testRangeRequests() throws Exception
     {
-        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
-        prepareEmptyTestDir(testDir);
-        File resBase = new File(testDir, "docroot");
-        assertTrue(resBase.mkdirs());
+        testdir.ensureEmpty();
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
         File data = new File(resBase, "data.txt");
         createFile(data,"01234567890123456789012345678901234567890123456789012345678901234567890123456789");
         String resBasePath = resBase.getAbsolutePath();
@@ -511,10 +512,9 @@ public class DefaultServletTest
     @Test
     public void testFiltered() throws Exception
     {
-        File testDir = new File("target/tests/" + DefaultServletTest.class.getSimpleName());
-        prepareEmptyTestDir(testDir);
-        File resBase = new File(testDir, "docroot");
-        assertTrue(resBase.mkdirs());
+        testdir.ensureEmpty();
+        File resBase = testdir.getFile("docroot");
+        FS.ensureDirExists(resBase);
         File file0 = new File(resBase, "data0.txt");
         createFile(file0, "Hello Text 0");
 
@@ -593,49 +593,6 @@ public class DefaultServletTest
         }
     }
 
-    private void prepareEmptyTestDir(File testdir)
-    {
-        if (testdir.exists())
-        {
-            emptyDir(testdir);
-        }
-        else
-        {
-            assertTrue(testdir.mkdirs());
-        }
-
-        assertTrue("test dir should exists",testdir.exists());
-        assertTrue("test dir should be a dir",testdir.isDirectory());
-        assertTrue("test dir should be empty",isEmpty(testdir));
-    }
-
-    private boolean isEmpty(File dir)
-    {
-        if (!dir.isDirectory())
-            return true;
-
-        return dir.list().length == 0;
-    }
-
-    private void emptyDir(File dir)
-    {
-        File entries[] = dir.listFiles();
-        for (File entry : entries)
-            deletePath(entry);
-    }
-
-    private void deletePath(File path)
-    {
-        if (path.isDirectory())
-        {
-            File entries[] = path.listFiles();
-            for (File entry : entries)
-                deletePath(entry);
-        }
-
-        assertTrue("Deleting: " + path.getAbsolutePath(),path.delete());
-    }
-
     private void assertResponseNotContains(String forbidden, String response)
     {
         int idx = response.indexOf(forbidden);
@@ -665,5 +622,17 @@ public class DefaultServletTest
             throw new AssertionFailedError(err.toString());
         }
         return idx;
+    }
+    
+    private void deleteFile(File file) throws IOException {
+    	if(OS.IS_WINDOWS) {
+    		// Since Windows doesn't seem to like to delete content that was recently created.
+    		File deleted = MavenTestingUtils.getTargetFile(".deleted");
+    		FS.ensureDirExists(deleted);
+    		File dest = File.createTempFile(file.getName(), "deleted", deleted);
+    		Assert.assertTrue("Unable to move file out of the way: " + file.getName(), file.renameTo(dest));
+    	} else {
+    		Assert.assertTrue("Deleting: " + file.getName(), file.delete());
+    	}
     }
 }

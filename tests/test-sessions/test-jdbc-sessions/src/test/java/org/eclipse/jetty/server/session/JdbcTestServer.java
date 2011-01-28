@@ -14,7 +14,7 @@ package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
-import org.eclipse.jetty.server.session.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 
 /**
  * JdbcTestServer
@@ -25,10 +25,9 @@ public class JdbcTestServer extends AbstractTestServer
     public static final String CONNECTION_URL = "jdbc:derby:sessions;create=true";
     public static final int SAVE_INTERVAL = 1;
     
-    
     static 
     {
-        System.setProperty("derby.system.home", MavenTestingUtils.getTargetTestingDir().getAbsolutePath());
+        System.setProperty("derby.system.home", MavenTestingUtils.getTargetFile("test-derby").getAbsolutePath());
     }
     
     public JdbcTestServer(int port)

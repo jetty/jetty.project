@@ -20,7 +20,6 @@ import java.lang.management.ManagementFactory;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.swing.text.WrappedPlainView;
 
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
@@ -42,7 +41,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.junit.Ignore;
 
+@Ignore("Not a test case")
 public class TestServer
 {
     public static void main(String[] args) throws Exception

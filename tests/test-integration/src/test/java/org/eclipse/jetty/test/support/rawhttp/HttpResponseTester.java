@@ -32,8 +32,8 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.View;
-import org.eclipse.jetty.test.StringAssert;
 import org.eclipse.jetty.test.support.StringUtil;
+import org.eclipse.jetty.toolchain.test.StringAssert;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 
 /**

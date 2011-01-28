@@ -31,13 +31,14 @@ import java.util.TimeZone;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.test.MavenTestingUtils;
-import org.eclipse.jetty.test.StringAssert;
 import org.eclipse.jetty.test.support.StringUtil;
 import org.eclipse.jetty.test.support.TestableJettyServer;
 import org.eclipse.jetty.test.support.rawhttp.HttpResponseTester;
 import org.eclipse.jetty.test.support.rawhttp.HttpSocket;
 import org.eclipse.jetty.test.support.rawhttp.HttpTesting;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.StringAssert;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -79,16 +80,10 @@ public abstract class RFC2616BaseTest
         }
     }
 
-    public static void setUpServer(TestableJettyServer testableserver) throws Exception
+    public static void setUpServer(TestableJettyServer testableserver, Class<?> testclazz) throws Exception
     {
-        File targetDir = MavenTestingUtils.getTargetDir();
-        String testId = MavenTestingUtils.getTestID();
-        
-        File testWorkDir = new File(targetDir,"work" + File.separator + testId);
-        if (!testWorkDir.exists())
-        {
-            testWorkDir.mkdirs();
-        }
+    	File testWorkDir = MavenTestingUtils.getTargetTestingDir(testclazz.getName());
+        FS.ensureDirExists(testWorkDir);
 
         System.setProperty("java.io.tmpdir",testWorkDir.getAbsolutePath());
 

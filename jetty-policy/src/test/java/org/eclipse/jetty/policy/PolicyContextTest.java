@@ -26,6 +26,8 @@ import java.util.List;
 import org.eclipse.jetty.policy.entry.GrantEntry;
 import org.eclipse.jetty.policy.entry.KeystoreEntry;
 import org.eclipse.jetty.policy.loader.PolicyFileScanner;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,12 +36,10 @@ import static org.junit.Assert.assertEquals;
 public class PolicyContextTest
 {
     public static final String __PRINCIPAL = "javax.security.auth.x500.X500Principal \"CN=Jetty Policy,OU=Artifact,O=Jetty Project,L=Earth,ST=Internet,C=US\"";
-    private boolean _runningOnWindows;
 
     @Before
     public void init() throws Exception
     {
-        _runningOnWindows = System.getProperty( "os.name" ).startsWith( "Windows" );
         System.setProperty( "basedir", MavenTestingUtils.getBaseURI().toASCIIString() );
     }
 
@@ -51,11 +51,11 @@ public class PolicyContextTest
         List<GrantEntry> grantEntries = new ArrayList<GrantEntry>();
         List<KeystoreEntry> keystoreEntries = new ArrayList<KeystoreEntry>();
 
-        File policyFile = new File( getWorkingDirectory() + "/src/test/resources/context/jetty-certificate.policy" );
+        File policyFile = MavenTestingUtils.getTestResourceFile("context/jetty-certificate.policy");
 
         loader.scanStream( new InputStreamReader( new FileInputStream( policyFile ) ), grantEntries, keystoreEntries );
 
-        if ( !_runningOnWindows ) //temporary, create alternate file to load for windows
+        if ( !OS.IS_WINDOWS ) //temporary, create alternate file to load for windows
         {
             for (KeystoreEntry node : keystoreEntries)
             {
@@ -81,11 +81,11 @@ public class PolicyContextTest
         List<GrantEntry> grantEntries = new ArrayList<GrantEntry>();
         List<KeystoreEntry> keystoreEntries = new ArrayList<KeystoreEntry>();
 
-        File policyFile = new File( getWorkingDirectory() + "/src/test/resources/context/jetty-certificate-alias.policy" );
+        File policyFile = MavenTestingUtils.getTestResourceFile("context/jetty-certificate-alias.policy");
 
         loader.scanStream( new InputStreamReader( new FileInputStream( policyFile ) ), grantEntries, keystoreEntries );
 
-        if ( !_runningOnWindows ) //temporary, create alternate file to load for windows
+        if ( !OS.IS_WINDOWS ) //temporary, create alternate file to load for windows
         {
             for (KeystoreEntry node : keystoreEntries)
             {
@@ -114,10 +114,5 @@ public class PolicyContextTest
         assertEquals(File.separator + "bar" + File.separator, context.evaluate( "${/}${foo}${/}" ) );
 
         assertEquals(File.separator + File.separator, context.evaluate( "${/}${/}" ) );
-    }
-
-    private String getWorkingDirectory()
-    {
-        return MavenTestingUtils.getBasedir().getAbsolutePath();
     }
 }

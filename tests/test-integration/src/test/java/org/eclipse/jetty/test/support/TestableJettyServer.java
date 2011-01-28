@@ -108,7 +108,6 @@ public class TestableJettyServer
         _properties.put(key,value);
     }
 
-    @SuppressWarnings("unchecked")
     public void load() throws Exception
     {
         XmlConfiguration last = null;
@@ -123,7 +122,7 @@ public class TestableJettyServer
             {
                 configuration.getIdMap().putAll(last.getIdMap());
             }
-            configuration.setProperties(_properties);
+            configuration.getProperties().putAll(_properties);
             obj[i] = configuration.configure();
             last = configuration;
         }

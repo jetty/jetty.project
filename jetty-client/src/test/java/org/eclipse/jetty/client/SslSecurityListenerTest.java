@@ -38,6 +38,7 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -45,6 +46,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 
 /**
@@ -162,7 +164,8 @@ public class SslSecurityListenerTest extends TestCase
         cm.setConstraint(constraint);
         cm.setPathSpec("/*");
 
-        HashLoginService loginService = new HashLoginService("MyRealm","src/test/resources/realm.properties");
+        File realmPropFile = MavenTestingUtils.getTestResourceFile("realm.properties");
+        LoginService loginService = new HashLoginService("MyRealm",realmPropFile.getAbsolutePath());
         _server.addBean(loginService);
         
         BasicAuthenticator authenticator = new BasicAuthenticator();

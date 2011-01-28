@@ -17,9 +17,9 @@ package org.eclipse.jetty.deploy;
 
 import java.io.File;
 
-import org.eclipse.jetty.deploy.test.MavenTestingUtils;
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
@@ -52,7 +52,7 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
         WebAppContext context = new WebAppContext();
 
         File war = new File(webappsDir,app.getOriginId().substring(5));
-        context.setWar(Resource.newResource(war.toURL()).toString());
+        context.setWar(Resource.newResource(war.toURI().toURL()).toString());
 
         String path = war.getName();
         
