@@ -1,15 +1,12 @@
-jetty-7.3.1-SNAPSHOT
- + 331803 Update XML configuration files to use proper arguments for startup command in examples
- + 335361 Fixed 'jetty.sh check' to show current PID when JETTY_PID env. variable is set
- + 335641 Sweep for Windows selectKey.interestOps!=endp.interestOps for undispatched end points
 
-jetty-7.3.0.v20112401 24 January 2011
+jetty-7.3.0-SNAPSHOT
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session (further update)
  + 319178 test failure fix in jetty-util on windows
  + 320457 add SPNEGO support
  + 324505 Implement API login
  + 328872 Multi Jetty xml files not loading if directory is referenced in jetty.conf
  + 329746 client option to set just truststore and use strict ssl context
+ + 331803 Update XML configuration files to use proper arguments for startup command in examples
  + 332179 Fixed formatting of negative dates
  + 332432 Scanner.java now always scanning the canonical form of File
  + 332517 Improved DefaultServlet debug
@@ -22,14 +19,16 @@ jetty-7.3.0.v20112401 24 January 2011
  + 333481 Handle UTF-32 codepoints
  + 333608 tlds defined in web.xml are not picked up
  + 333679 Refactored jetty-jmx. Moved mbeans to modules
+ + 333679 refactor jetty-jmx to support the OSGi PAX tests.
  + 333717 HttpExchange able to return local address used
  + 333771 System properties are not available inside XML configuration file by using the 'property' tag
  + 333875 Monitor public constructor
  + 333892 Improved JVM bug detection
- + 333679 refactor jetty-jmx to support the OSGi PAX tests.
  + 334062 It should be possible to embed in the jetty.home.bundle the ssl keystore files
  + 334229 javax-security needs to import the package javax.security.cert in its OSGi manifest
  + 334311 fix buffer reuse issue in CachedExchange
+ + 335361 Fixed 'jetty.sh check' to show current PID when JETTY_PID env. variable is set
+ + 335641 Sweep for Windows selectKey.interestOps!=endp.interestOps for undispatched end points
 
 jetty-7.2.2.v20101205 5 December 2010
  + JETTY-1308 327109 (re)fixed AJP handling of empty packets
