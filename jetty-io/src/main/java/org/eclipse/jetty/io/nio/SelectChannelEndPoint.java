@@ -146,7 +146,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 this.notifyAll();
                 
                 // we are not interested in further selecting
-                _key.interestOps(0);
+                if (_dispatched)
+                    _key.interestOps(0);
                 return;
             }
 
@@ -158,7 +159,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 return;
             }
 
-
             // Remove writeable op
             if ((_key.readyOps() & SelectionKey.OP_WRITE) == SelectionKey.OP_WRITE && (_key.interestOps() & SelectionKey.OP_WRITE) == SelectionKey.OP_WRITE)
             {
@@ -168,18 +168,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 _writable = true; // Once writable is in ops, only removed with dispatch.
             }
 
-            if (_selectSet.getManager().isDeferringInterestedOps0())
+            // Dispatch if we are not already
+            if (!_dispatched)
             {
-                if (_dispatched)
+                dispatch();
+                if (_dispatched && !_selectSet.getManager().isDeferringInterestedOps0())
                     _key.interestOps(0);
-                else
-                    dispatch();
-            }
-            else
-            {
-                _key.interestOps(0);
-                if (!_dispatched)
-                    dispatch();
             }
         }
     }
@@ -298,6 +292,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         synchronized (this)
         {
+            // Ready if not dispatched and not suspended
             return !(_dispatched || getConnection().isSuspended());
         }
     }
@@ -612,6 +607,20 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         _maxIdleTime=timeMs;
     }
 
-    
-    
+    /* ------------------------------------------------------------ */
+    /**
+     * This looks for undispatched endpoints that have key.interestOps!=endp.interestOps
+     * @TODO find out the root cause of this and delete this method.
+     */
+    public void checkWindowsBug(SelectionKey key)
+    {                  
+        synchronized (this)
+        {
+            if (!_dispatched && key.interestOps()!=_interestOps)
+            {
+                Log.warn("Windows NIO bug? "+key.interestOps()+"!="+_interestOps+" for "+this);
+                doUpdateKey();
+            }
+        } 
+    }
 }

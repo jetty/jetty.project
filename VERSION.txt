@@ -1,6 +1,7 @@
 jetty-7.3.1-SNAPSHOT
  + 331803 Update XML configuration files to use proper arguments for startup command in examples
  + 335361 Fixed 'jetty.sh check' to show current PID when JETTY_PID env. variable is set
+ + 335641 Sweep for Windows selectKey.interestOps!=endp.interestOps for undispatched end points
 
 jetty-7.3.0.v20112401 24 January 2011
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session (further update)

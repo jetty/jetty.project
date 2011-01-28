@@ -23,8 +23,6 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
@@ -45,6 +43,9 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  */
 public abstract class SelectorManager extends AbstractLifeCycle
 {
+    // TODO remove this
+    private final static boolean __onWindows = System.getProperty("os.name").toLowerCase().indexOf("windows")>=0;
+    
     // TODO Tune these by approx system speed.
     private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD",0).intValue();
     private static final int __MONITOR_PERIOD=Integer.getInteger("org.eclipse.jetty.io.nio.MONITOR_PERIOD",1000).intValue();
@@ -59,7 +60,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
     private SelectSet[] _selectSet;
     private int _selectSets=1;
     private volatile int _set;
-    private boolean _deferringInterestedOps0;
+    private boolean _deferringInterestedOps0=true;
     
     /* ------------------------------------------------------------ */
     /**
@@ -570,6 +571,20 @@ public abstract class SelectorManager extends AbstractLifeCycle
                             }
                         }
                     });
+
+                    // TODO find root cause and remove this
+                    // Check for windows bug
+                    // This looks for undispatched endpoints that have key.interestOps!=endp.interestOps
+                    if (__onWindows)
+                    {
+                        for (SelectionKey key: selector.keys())
+                        {
+                            if (key.isValid() && key.attachment() instanceof SelectChannelEndPoint)
+                            {
+                                ((SelectChannelEndPoint)key.attachment()).checkWindowsBug(key);
+                            }
+                        }
+                    }
                 }
             }
             catch (CancelledKeyException e)
@@ -855,7 +870,6 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 }
             }
         }
-
     }
 
     /* ------------------------------------------------------------ */
@@ -879,9 +893,9 @@ public abstract class SelectorManager extends AbstractLifeCycle
     }
 
     /* ------------------------------------------------------------ */
-    public void setDeferringInterestedOps0(boolean defferringInterestedOps0)
+    public void setDeferringInterestedOps0(boolean deferringInterestedOps0)
     {
-        _deferringInterestedOps0 = defferringInterestedOps0;
+        _deferringInterestedOps0 = deferringInterestedOps0;
     }
     
 }
