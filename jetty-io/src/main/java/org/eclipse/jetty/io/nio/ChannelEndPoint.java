@@ -27,7 +27,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 
-
 /**
  * Channel End Point.
  * <p>Holds the channel and socket for an NIO endpoint.
@@ -80,7 +79,7 @@ public class ChannelEndPoint implements EndPoint
         {
             _local=_remote=null;
         }
-        
+
     }
 
     public boolean isBlocking()
@@ -118,14 +117,23 @@ public class ChannelEndPoint implements EndPoint
                 socket.shutdownOutput();
         }
     }
-    
+
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
     public void close() throws IOException
     {
         if (_socket!=null && !_socket.isOutputShutdown())
-            _socket.shutdownOutput();
+        {
+            try
+            {
+                _socket.shutdownOutput();
+            }
+            catch (IOException x)
+            {
+                Log.ignore(x);
+            }
+        }
         _channel.close();
     }
 
@@ -439,7 +447,7 @@ public class ChannelEndPoint implements EndPoint
     {
         return false;
     }
-    
+
     /* ------------------------------------------------------------ */
     public int getMaxIdleTime()
     {
