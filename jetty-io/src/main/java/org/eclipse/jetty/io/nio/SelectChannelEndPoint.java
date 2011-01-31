@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.io.nio;
@@ -43,8 +43,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     private volatile Connection _connection;
     private boolean _dispatched = false;
     private boolean _redispatched = false;
-    private volatile boolean _writable = true; 
-    
+    private volatile boolean _writable = true;
+
     private  SelectionKey _key;
     private int _interestOps;
     private boolean _readBlocked;
@@ -62,11 +62,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         _selectSet = selectSet;
         _dispatched = false;
         _redispatched = false;
-        _open=true;       
+        _open=true;
         _key = key;
 
         _connection = _manager.newConnection(channel,this);
-        
+
         scheduleIdle();
     }
 
@@ -75,16 +75,16 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         throws IOException
     {
         super(channel);
-        
+
         _manager = selectSet.getManager();
         _selectSet = selectSet;
         _dispatched = false;
         _redispatched = false;
-        _open=true;       
+        _open=true;
         _key = key;
 
         _connection = _manager.newConnection(channel,this);
-        
+
         scheduleIdle();
     }
     /* ------------------------------------------------------------ */
@@ -95,19 +95,19 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             return _key;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public SelectorManager getSelectManager()
     {
         return _manager;
     }
-    
+
     /* ------------------------------------------------------------ */
     public Connection getConnection()
     {
         return _connection;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setConnection(Connection connection)
     {
@@ -118,9 +118,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
     /* ------------------------------------------------------------ */
     /** Called by selectSet to schedule handling
-     * 
+     *
      */
-    public void schedule() 
+    public void schedule()
     {
         synchronized (this)
         {
@@ -132,7 +132,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 this.notifyAll();
                 return;
             }
-            
+
             // If there are threads dispatched reading and writing
             if (_readBlocked || _writeBlocked)
             {
@@ -144,7 +144,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
                 // wake them up is as good as a dispatched.
                 this.notifyAll();
-                
+
                 // we are not interested in further selecting
                 if (_dispatched)
                     _key.interestOps(0);
@@ -179,9 +179,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
-    public void dispatch() 
+    public void dispatch()
     {
         synchronized(this)
         {
@@ -191,9 +191,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             }
             else
             {
-                _dispatched = _manager.dispatch(_handler);
-                if(!_dispatched)
+                _dispatched = true;
+                boolean dispatched = _manager.dispatch(_handler);
+                if(!dispatched)
                 {
+                    _dispatched = false;
                     Log.warn("Dispatched Failed!");
                     updateKey();
                 }
@@ -203,12 +205,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
     /* ------------------------------------------------------------ */
     /**
-     * Called when a dispatched thread is no longer handling the endpoint. 
+     * Called when a dispatched thread is no longer handling the endpoint.
      * The selection key operations are updated.
-     * @return If false is returned, the endpoint has been redispatched and 
+     * @return If false is returned, the endpoint has been redispatched and
      * thread must keep handling the endpoint.
      */
-    private boolean undispatch()
+    protected boolean undispatch()
     {
         synchronized (this)
         {
@@ -234,7 +236,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         _idleTimestamp=0;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void checkIdleTimestamp(long now)
     {
@@ -300,7 +302,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             return !(_dispatched || getConnection().isSuspended());
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * Allows thread to block waiting for further events.
@@ -312,7 +314,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         {
             long start=_selectSet.getNow();
             try
-            {   
+            {
                 _readBlocked=true;
                 while (isOpen() && _readBlocked)
                 {
@@ -350,7 +352,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         {
             long start=_selectSet.getNow();
             try
-            {   
+            {
                 _writeBlocked=true;
                 while (isOpen() && _writeBlocked)
                 {
@@ -384,14 +386,14 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         _writable=writable;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void scheduleWrite()
     {
         _writable=false;
         updateKey();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Updates selection key. Adds operations types to the selection key as needed. No operations
@@ -405,8 +407,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             int ops=-1;
             if (getChannel().isOpen())
             {
-                _interestOps = 
-                    ((!_dispatched || _readBlocked)  ? SelectionKey.OP_READ  : 0) 
+                _interestOps =
+                    ((!_dispatched || _readBlocked)  ? SelectionKey.OP_READ  : 0)
                 |   ((!_writable   || _writeBlocked) ? SelectionKey.OP_WRITE : 0);
                 try
                 {
@@ -425,7 +427,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         _selectSet.addChange(this);
         _selectSet.wakeup();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Synchronize the interestOps with the actual key. Call is scheduled by a call to updateKey
@@ -443,7 +445,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                         SelectableChannel sc = (SelectableChannel)getChannel();
                         if (sc.isRegistered())
                         {
-                            updateKey();   
+                            updateKey();
                         }
                         else
                         {
@@ -482,11 +484,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                         _key=null;
                 }
             }
-            else    
+            else
             {
                 if (_key!=null && _key.isValid())
-                    _key.cancel(); 
-                
+                    _key.cancel();
+
                 cancelIdle();
                 if (_open)
                 {
@@ -499,9 +501,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      */
-    private void handle()
+    protected void handle()
     {
         boolean dispatched=true;
         try
@@ -514,7 +516,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     {
                         final Connection next = _connection.handle();
                         if (next!=_connection)
-                        {  
+                        {
                             _connection=next;
                             continue;
                         }
@@ -575,20 +577,20 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         catch (IOException e)
         {
             Log.ignore(e);
-        }   
+        }
         finally
         {
             updateKey();
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
         synchronized(this)
         {
-            return "SCEP@" + hashCode() + "\t[d=" + _dispatched + ",io=" + _interestOps+
+            return "SCEP@" + hashCode() + " [d=" + _dispatched + ",io=" + _interestOps+
             ",w=" + _writable + ",rb=" + _readBlocked + ",wb=" + _writeBlocked + "]";
         }
     }

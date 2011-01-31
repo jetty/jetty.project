@@ -31,6 +31,7 @@ jetty-7.3.0-SNAPSHOT
  + 335361 Fixed 'jetty.sh check' to show current PID when JETTY_PID env. variable is set
  + 335641 Cleaned up dispatch handling to avoid key.interestOps==0 when undispatched
  + 335681 Improve ChannelEndPoint.close() to avoid spinning
+ + 335836 Race when updating SelectChannelEndPoint._dispatched 
 
 jetty-7.2.2.v20101205 5 December 2010
  + JETTY-1308 327109 (re)fixed AJP handling of empty packets
