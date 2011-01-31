@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server.ssl;
@@ -22,7 +22,6 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -44,8 +43,8 @@ import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
+import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -55,11 +54,11 @@ import org.eclipse.jetty.util.resource.Resource;
 /* ------------------------------------------------------------ */
 /**
  * SslSelectChannelConnector.
- * 
+ *
  * @org.apache.xbean.XBean element="sslConnector" description="Creates an NIO ssl connector"
  *
- * 
- * 
+ *
+ *
  */
 public class SslSelectChannelConnector extends SelectChannelConnector implements SslConnector
 {
@@ -83,19 +82,19 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     private String _protocol="TLS";
     private String _provider;
     private String _secureRandomAlgorithm; // cert algorithm
-    private String _sslKeyManagerFactoryAlgorithm=DEFAULT_KEYSTORE_ALGORITHM; 
-    private String _sslTrustManagerFactoryAlgorithm=DEFAULT_TRUSTSTORE_ALGORITHM; 
+    private String _sslKeyManagerFactoryAlgorithm=DEFAULT_KEYSTORE_ALGORITHM;
+    private String _sslTrustManagerFactoryAlgorithm=DEFAULT_TRUSTSTORE_ALGORITHM;
     private String _truststorePath;
     private String _truststoreType="JKS"; // type of the key store
     private SSLContext _context;
-    Buffers _sslBuffers;
+    private Buffers _sslBuffers;
 
     /* ------------------------------------------------------------ */
     public SslSelectChannelConnector()
     {
         setUseDirectBuffers(false);
     }
-  
+
     /* ------------------------------------------------------------ */
     /**
      * Allow the Listener a chance to customise the request. before the server
@@ -115,7 +114,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      * client, the next is the one used to authenticate the first, and so on.
      * </li>
      * </ul>
-     * 
+     *
      * @param endpoint
      *                The Socket the request arrived on. This should be a
      *                {@link SocketEndPoint} wrapping a {@link SSLSocket}.
@@ -131,7 +130,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         SslSelectChannelEndPoint sslHttpChannelEndpoint=(SslSelectChannelEndPoint)endpoint;
         SSLEngine sslEngine=sslHttpChannelEndpoint.getSSLEngine();
         SSLSession sslSession=sslEngine.getSession();
-        
+
         SslCertificates.customize(sslSession,endpoint,request);
     }
 
@@ -148,7 +147,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     /**
      * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
      * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
-     * does not have CVE-2009-3555 fixed, then re-negotiation should 
+     * does not have CVE-2009-3555 fixed, then re-negotiation should
      * not be allowed.
      * @param allowRenegotiate true if re-negotiation is allowed (default false)
      */
@@ -174,7 +173,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     {
         this._excludeCipherSuites=cipherSuites;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.ssl.SslConnector#getExcludeCipherSuites()
@@ -222,7 +221,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
     /* ------------------------------------------------------------ */
     /**
-     * @deprecated use {@link #getSslKeyManagerFactoryAlgorithm()} or 
+     * @deprecated use {@link #getSslKeyManagerFactoryAlgorithm()} or
      * {@link #getSslTrustManagerFactoryAlgorithm()}
      */
     @Deprecated
@@ -233,7 +232,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
     /* ------------------------------------------------------------ */
     /**
-     * @deprecated use {@link #setSslKeyManagerFactoryAlgorithm(String)} or 
+     * @deprecated use {@link #setSslKeyManagerFactoryAlgorithm(String)} or
      * {@link #setSslTrustManagerFactoryAlgorithm(String)}
      */
     @Deprecated
@@ -445,7 +444,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     /**
      * @see org.eclipse.jetty.server.ssl.SslConnector#setSslContext(javax.net.ssl.SSLContext)
      */
-    public void setSslContext(SSLContext sslContext) 
+    public void setSslContext(SSLContext sslContext)
     {
         _context = sslContext;
     }
@@ -465,7 +464,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         {
             throw new RuntimeException(e);
         }
-         
+
         return _context;
     }
 
@@ -587,16 +586,16 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         }
         return engine;
     }
-   
+
     @Override
     protected void doStart() throws Exception
     {
     	if (_context == null)
            _context=createSSLContext();
-        
+
         SSLEngine engine=createSSLEngine();
         SSLSession ssl_session=engine.getSession();
-        
+
         ThreadLocalBuffers buffers = new ThreadLocalBuffers()
         {
             @Override
@@ -622,22 +621,25 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         buffers.setBufferSize(ssl_session.getApplicationBufferSize());
         buffers.setHeaderSize(ssl_session.getApplicationBufferSize());
         _sslBuffers=buffers;
-        
+
         if (getRequestHeaderSize()<ssl_session.getApplicationBufferSize())
             setRequestHeaderSize(ssl_session.getApplicationBufferSize());
         if (getRequestBufferSize()<ssl_session.getApplicationBufferSize())
             setRequestBufferSize(ssl_session.getApplicationBufferSize());
-        
+
         super.doStart();
+    }
+
+    public Buffers getSslBuffers()
+    {
+        return _sslBuffers;
     }
 
     /* ------------------------------------------------------------ */
     protected SSLContext createSSLContext() throws Exception
     {
         KeyManager[] keyManagers=getKeyManagers();
-
         TrustManager[] trustManagers=getTrustManagers();
-
         SecureRandom secureRandom=_secureRandomAlgorithm==null?null:SecureRandom.getInstance(_secureRandomAlgorithm);
         SSLContext context=_provider==null?SSLContext.getInstance(_protocol):SSLContext.getInstance(_protocol,_provider);
         context.init(keyManagers,trustManagers,secureRandom);
@@ -648,7 +650,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     protected KeyManager[] getKeyManagers() throws Exception
     {
         KeyStore keyStore = getKeyStore(_keystorePath, _keystoreType, _password==null?null:_password.toString());
-        
         KeyManagerFactory keyManagerFactory=KeyManagerFactory.getInstance(_sslKeyManagerFactoryAlgorithm);
         keyManagerFactory.init(keyStore,_keyPassword==null?(_password==null?null:_password.toString().toCharArray()):_keyPassword.toString().toCharArray());
         return keyManagerFactory.getKeyManagers();
@@ -656,18 +657,17 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
     /* ------------------------------------------------------------ */
     protected TrustManager[] getTrustManagers() throws Exception
-    {        
-        if (_truststorePath==null)
+    {
+        if (_truststorePath == null)
         {
-            _truststorePath=_keystorePath;
-            _truststoreType=_keystoreType;
+            _truststorePath = _keystorePath;
+            _truststoreType = _keystoreType;
             _trustPassword = _password;
             _sslTrustManagerFactoryAlgorithm = _sslKeyManagerFactoryAlgorithm;
         }
-        
-        KeyStore trustStore = getKeyStore(_truststorePath, _truststoreType, _trustPassword==null?null:_trustPassword.toString());
 
-        TrustManagerFactory trustManagerFactory=TrustManagerFactory.getInstance(_sslTrustManagerFactoryAlgorithm);
+        KeyStore trustStore = getKeyStore(_truststorePath, _truststoreType, _trustPassword == null ? null : _trustPassword.toString());
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(_sslTrustManagerFactoryAlgorithm);
         trustManagerFactory.init(trustStore);
         return trustManagerFactory.getTrustManagers();
     }
@@ -675,21 +675,19 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     /* ------------------------------------------------------------ */
     protected KeyStore getKeyStore(String keystorePath, String keystoreType, String keystorePassword) throws Exception
     {
-    	KeyStore keystore;
-    	InputStream keystoreInputStream = null;
-    	try
+        if (keystorePath == null)
+            return null;
+
+        InputStream keystoreInputStream = Resource.newResource(keystorePath).getInputStream();
+        try
         {
-            if (keystorePath!=null)
-                keystoreInputStream = Resource.newResource(keystorePath).getInputStream();
-            keystore=KeyStore.getInstance(keystoreType);
-            keystore.load(keystoreInputStream,keystorePassword==null?null:keystorePassword.toString().toCharArray());
+            KeyStore keystore = KeyStore.getInstance(keystoreType);
+            keystore.load(keystoreInputStream, keystorePassword == null ? null : keystorePassword.toCharArray());
             return keystore;
         }
         finally
         {
-            if (keystoreInputStream != null)
-            	keystoreInputStream.close();
+            keystoreInputStream.close();
         }
     }
-
 }
