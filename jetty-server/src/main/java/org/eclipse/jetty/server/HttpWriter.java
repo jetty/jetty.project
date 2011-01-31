@@ -47,7 +47,7 @@ public class HttpWriter extends Writer
     {
         _out=out;
         _generator=_out._generator;
-         
+        _surrogate=0; // AS lastUTF16CodePoint
     }
 
     /* ------------------------------------------------------------ */
@@ -159,6 +159,30 @@ public class HttpWriter extends Writer
                     {
                         int code = s[offset+i];
 
+                        // Do we already have a surrogate?
+                        if(_surrogate==0)
+                        {
+                            // No - is this char code a surrogate?
+                            if(Character.isHighSurrogate((char)code))
+                            {
+                                _surrogate=code; // UCS-?
+                                continue;
+                            }                            
+                        }
+                        // else handle a low surrogate
+                        else if(Character.isLowSurrogate((char)code))
+                        {
+                            code = Character.toCodePoint((char)_surrogate, (char)code); // UCS-4
+                            _surrogate=0; // USED
+                        }
+                        // else UCS-2
+                        else
+                        {
+                            code=_surrogate; // UCS-2
+                            _surrogate=0; // USED
+                            i--;
+                        }
+
                         if ((code & 0xffffff80) == 0) 
                         {
                             // 1b
@@ -239,7 +263,8 @@ public class HttpWriter extends Writer
                             else
                             {
                                 buffer[bytes++]=(byte)('?');
-                            }
+                            } 
+                            
 
                             if (bytes==buffer.length)
                             {
@@ -260,7 +285,8 @@ public class HttpWriter extends Writer
             offset+=chars;
         }
     }
-
+    
+    
     /* ------------------------------------------------------------ */
     private Writer getConverter() throws IOException
     {

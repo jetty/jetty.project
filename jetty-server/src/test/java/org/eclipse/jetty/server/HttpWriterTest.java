@@ -156,6 +156,85 @@ public class HttpWriterTest
         assertTrue(response.startsWith("HTTP/1.1 200 OK\r\nContent-Length: 1025\r\n\r\n\u05531234567890"));
     }
 
+    @Test
+    public void testUTF16x2() throws Exception
+    {
+        _writer.setCharacterEncoding(StringUtil.__UTF8);
+
+        String source = "\uD842\uDF9F";
+        // int codePoint = 134047;
+        // char[] codeUnits = new char[Character.charCount(codePoint)];
+        // int count = Character.toChars(codePoint, codeUnits, 0);
+        // String source = new String(codeUnits, 0, count);
+
+        byte[] bytes = source.getBytes("UTF-8"/* StringUtil.__UTF81 */);
+        _writer.write(source.toCharArray(),0,source.toCharArray().length);
+
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos/* ,StringUtil.__UTF8 */);
+        osw.write(source.toCharArray(),0,source.toCharArray().length);
+        osw.flush();
+
+        myReportBytes(bytes);
+        myReportBytes(baos.toByteArray());
+        myReportBytes(_bytes.asArray());
+
+        assertArrayEquals(bytes,_bytes.asArray());
+        assertArrayEquals(baos.toByteArray(),_bytes.asArray());
+    }
+
+    @Test
+    public void testMultiByteOverflowUTF16x2() throws Exception
+    {
+        _writer.setCharacterEncoding(StringUtil.__UTF8);
+
+        final String singleByteStr = "a";
+        int remainSize = 1;
+        final String multiByteDuplicateStr = "\uD842\uDF9F"; // valid(High + Low)
+        // final String multiByteDuplicateStr = "\uD842\uD842"; // invalid(High + High)
+        // final String multiByteDuplicateStr = "\uDF9F\uDF9F"; // invalid(Low + Low)
+        // final String multiByteDuplicateStr = "\uDF9F\uD842"; // invalid(Low + High)
+        // int adjustSize = 0;
+        int adjustSize = -1;
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < HttpWriter.MAX_OUTPUT_CHARS + adjustSize; i++)
+        {
+            sb.append(singleByteStr);
+        }
+        sb.append(multiByteDuplicateStr);
+        for (int i = 0; i < remainSize; i++)
+        {
+            sb.append(singleByteStr);
+        }
+        String source = sb.toString();
+
+        byte[] bytes = source.getBytes("UTF-8"/* StringUtil.__UTF81 */);
+        _writer.write(source.toCharArray(),0,source.toCharArray().length);
+
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos/* ,StringUtil.__UTF8 */);
+        osw.write(source.toCharArray(),0,source.toCharArray().length);
+        osw.flush();
+
+        myReportBytes(bytes);
+        myReportBytes(baos.toByteArray());
+        myReportBytes(_bytes.asArray());
+
+        assertArrayEquals(bytes,_bytes.asArray());
+        assertArrayEquals(baos.toByteArray(),_bytes.asArray());
+    }
+
+    private void myReportBytes(byte[] bytes) throws Exception
+    {
+        for (int i = 0; i < bytes.length; i++)
+        {
+            // System.err.format("%s%x",(i == 0)?"[":(i % (HttpWriter.MAX_OUTPUT_CHARS) == 0)?"][":",",bytes[i]);
+        }
+        // System.err.format("]->%s\n",new String(bytes,StringUtil.__UTF8));
+    }
+
+
     private void assertArrayEquals(byte[] b1, byte[] b2)
     {
         assertEquals(b1.length,b2.length);

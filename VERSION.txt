@@ -17,7 +17,7 @@ jetty-7.3.0-SNAPSHOT
  + 332937 Added Destroyable interface and reworked dependent lifecycles, specially of JNDI
  + 333247 fix api compat issue in ConstraintSecurityHandler
  + 333415 wired up HttpInput.available and added test harnesses
- + 333481 Handle UTF-32 codepoints
+ + 333481 Handle UTF-32 codepoints in decode and encode
  + 333608 tlds defined in web.xml are not picked up
  + 333679 Refactored jetty-jmx. Moved mbeans to modules
  + 333679 refactor jetty-jmx to support the OSGi PAX tests.
