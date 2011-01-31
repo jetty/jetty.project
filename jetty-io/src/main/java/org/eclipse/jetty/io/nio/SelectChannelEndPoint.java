@@ -173,7 +173,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             {
                 dispatch();
                 if (_dispatched && !_selectSet.getManager().isDeferringInterestedOps0())
+                {
                     _key.interestOps(0);
+                }
             }
         }
     }
@@ -184,7 +186,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         synchronized(this)
         {
             if (_dispatched)
+            {
                 _redispatched=true;
+            }
             else
             {
                 _dispatched = _manager.dispatch(_handler);
@@ -417,7 +421,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
             if(_interestOps == ops && getChannel().isOpen())
                 return;
-            
         }
         _selectSet.addChange(this);
         _selectSet.wakeup();
@@ -605,22 +608,5 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     public void setMaxIdleTime(int timeMs) throws IOException
     {
         _maxIdleTime=timeMs;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * This looks for undispatched endpoints that have key.interestOps!=endp.interestOps
-     * @TODO find out the root cause of this and delete this method.
-     */
-    public void checkWindowsBug(SelectionKey key)
-    {                  
-        synchronized (this)
-        {
-            if (!_dispatched && key.interestOps()!=_interestOps)
-            {
-                Log.warn("Windows NIO bug? "+key.interestOps()+"!="+_interestOps+" for "+this);
-                doUpdateKey();
-            }
-        } 
     }
 }

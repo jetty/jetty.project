@@ -28,7 +28,7 @@ jetty-7.3.0-SNAPSHOT
  + 334229 javax-security needs to import the package javax.security.cert in its OSGi manifest
  + 334311 fix buffer reuse issue in CachedExchange
  + 335361 Fixed 'jetty.sh check' to show current PID when JETTY_PID env. variable is set
- + 335641 Sweep for Windows selectKey.interestOps!=endp.interestOps for undispatched end points
+ + 335641 Cleaned up dispatch handling to avoid key.interestOps==0 when undispatched
  + 335681 Improve ChannelEndPoint.close() to avoid spinning
 
 jetty-7.2.2.v20101205 5 December 2010
