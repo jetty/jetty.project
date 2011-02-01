@@ -265,7 +265,7 @@ public class HttpConnection implements Connection
 
                     if (io > 0)
                         no_progress = 0;
-                    else if (no_progress++ >= 2 && !_endp.isBlocking())
+                    else if (no_progress++ >= 1 && !_endp.isBlocking())
                     {
                         // SSL may need an extra flush as it may have made "no progress" while actually doing a handshake.
                         if (_endp instanceof SslSelectChannelEndPoint && !_generator.isComplete() && !_generator.isEmpty())
@@ -406,8 +406,10 @@ public class HttpConnection implements Connection
                 _exchange.disassociate();
             }
 
+            // Do we have more stuff to write?
             if (!_generator.isComplete() && _generator.getBytesBuffered()>0 && _endp instanceof AsyncEndPoint)
             {
+                // Assume we are write blocked!
                 ((AsyncEndPoint)_endp).setWritable(false);
             }
         }

@@ -937,7 +937,25 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         return _engine;
     }
-    
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void setWritable(boolean writable)
+    {
+        // only set !writable if we are not waiting for input
+        if (writable || !HandshakeStatus.NEED_UNWRAP.equals(_engine.getHandshakeStatus()) || super.isBufferingOutput())
+            super.setWritable(writable);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void scheduleWrite()
+    {
+        // only set !writable if we are not waiting for input
+        if (!HandshakeStatus.NEED_UNWRAP.equals(_engine.getHandshakeStatus()) || super.isBufferingOutput())
+        super.scheduleWrite();
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
