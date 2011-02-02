@@ -43,6 +43,8 @@ public class LikeJettyXml
         System.setProperty("jetty.home",jetty_home);
 
         Server server = new Server();
+        server.setDumpAfterStart(true);
+        server.setDumpBeforeStop(true);
         
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
@@ -133,8 +135,6 @@ public class LikeJettyXml
         server.setSendServerVersion(true);
 
         server.start();
-        
-        System.err.println(server.dump());
         
         server.join();
     }

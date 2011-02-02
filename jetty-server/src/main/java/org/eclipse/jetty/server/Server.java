@@ -73,6 +73,8 @@ public class Server extends HandlerWrapper implements Attributes
     private int _graceful=0;
     private boolean _stopAtShutdown;
     private int _maxCookieVersion=1;
+    private boolean _dumpAfterStart=false;
+    private boolean _dumpBeforeStop=false;
     
 
     /* ------------------------------------------------------------ */
@@ -205,6 +207,38 @@ public class Server extends HandlerWrapper implements Attributes
             addBean(_threadPool);
     }
 
+    /**
+     * @return true if {@link #dumpStdErr()} is called after starting
+     */
+    public boolean isDumpAfterStart()
+    {
+        return _dumpAfterStart;
+    }
+
+    /**
+     * @param dumpAfterStart true if {@link #dumpStdErr()} is called after starting
+     */
+    public void setDumpAfterStart(boolean dumpAfterStart)
+    {
+        _dumpAfterStart = dumpAfterStart;
+    }
+
+    /**
+     * @return true if {@link #dumpStdErr()} is called before stopping
+     */
+    public boolean isDumpBeforeStop()
+    {
+        return _dumpBeforeStop;
+    }
+
+    /**
+     * @param dumpBeforeStop true if {@link #dumpStdErr()} is called before stopping
+     */
+    public void setDumpBeforeStop(boolean dumpBeforeStop)
+    {
+        _dumpBeforeStop = dumpBeforeStop;
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
@@ -239,8 +273,9 @@ public class Server extends HandlerWrapper implements Attributes
                 }
             }
         }
-        if (Log.isDebugEnabled())
-            System.err.println(dump());
+        
+        if (isDumpAfterStart())
+            dumpStdErr();
         
         mex.ifExceptionThrow();
     }
@@ -249,6 +284,9 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     protected void doStop() throws Exception
     {
+        if (isDumpBeforeStop())
+            dumpStdErr();
+        
         MultiException mex=new MultiException();
         
         if (_graceful>0)
@@ -573,8 +611,7 @@ public class Server extends HandlerWrapper implements Attributes
         dumpThis(out);
         dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),TypeUtil.asList(_connectors));    
     }
-
-
+    
     /* ------------------------------------------------------------ */
     /* A handler that can be gracefully shutdown.
      * Called by doStop if a {@link #setGracefulShutdown} period is set.

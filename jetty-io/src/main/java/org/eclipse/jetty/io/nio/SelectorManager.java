@@ -20,14 +20,22 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.util.thread.Timeout.Task;
@@ -41,7 +49,7 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  * This class works around a number of know JVM bugs. For details
  * see http://wiki.eclipse.org/Jetty/Feature/JVM_NIO_Bug
  */
-public abstract class SelectorManager extends AbstractLifeCycle
+public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
     // TODO Tune these by approx system speed.
     private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD",0).intValue();
@@ -281,39 +289,25 @@ public abstract class SelectorManager extends AbstractLifeCycle
      */
     protected abstract SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey sKey) throws IOException;
 
-    /* ------------------------------------------------------------------------------- */
-    public void dump()
+
+    /* ------------------------------------------------------------ */
+    public String dump()
     {
-        for (final SelectSet set :_selectSet)
-        {
-            Thread selecting = set._selecting;
-            Log.info("SelectSet "+set._setID+" : "+selecting);
-            if (selecting!=null)
-            {
-                StackTraceElement[] trace =selecting.getStackTrace();
-                if (trace!=null)
-                {
-                    for (StackTraceElement e : trace)
-                    {
-                        Log.info("\tat "+e.toString());
-                    }
-                }
-            }
-                
-            set.addChange(new Runnable(){
-                public void run()
-                {
-                    set.dump();
-                }
-            });
-        }
+        return AggregateLifeCycle.dump(this);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(String.valueOf(this)).append("\n");
+        AggregateLifeCycle.dump(out,indent,Arrays.asList(_selectSet));
     }
     
     
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
-    public class SelectSet 
+    public class SelectSet implements Dumpable
     {
         private final int _setID;
         private final Timeout _timeout;
@@ -837,20 +831,67 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 _selector=null;
             }
         }
-        
-        public void dump()
+
+        /* ------------------------------------------------------------ */
+        public String dump()
         {
-            synchronized (System.err)
+            return AggregateLifeCycle.dump(this);
+        }
+
+        /* ------------------------------------------------------------ */
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            out.append(String.valueOf(this)).append(" id=").append(String.valueOf(_setID)).append("\n");
+            
+            Thread selecting = _selecting;
+            
+            Object where = "not selecting";
+            StackTraceElement[] trace =selecting==null?null:selecting.getStackTrace();
+            if (trace!=null)
             {
-                Selector selector=_selector;
-                Log.info("SelectSet "+_setID+" "+selector.keys().size());
-                for (SelectionKey key: selector.keys())
+                for (StackTraceElement t:trace)
+                    if (t.getClassName().startsWith("org.eclipse.jetty."))
+                    {
+                        where=t;
+                        break;
+                    }
+            }
+
+            Selector selector=_selector;
+            final ArrayList<Object> dump = new ArrayList<Object>(selector.keys().size()*2);
+            dump.add(where);
+            
+            final CountDownLatch latch = new CountDownLatch(1);
+            
+            addChange(new Runnable(){
+                public void run()
                 {
-                    if (key.isValid())
-                        Log.info(key.channel()+" "+key.interestOps()+" "+key.readyOps()+" "+key.attachment());
-                    else
-                        Log.info(key.channel()+" - - "+key.attachment());
+                    dumpKeyState(dump);
+                    latch.countDown();
                 }
+            });
+            
+            try
+            {
+                latch.await(5,TimeUnit.SECONDS);
+            }
+            catch(InterruptedException e)
+            {
+                Log.ignore(e);
+            }
+            AggregateLifeCycle.dump(out,indent,dump);
+        }
+        
+        public void dumpKeyState(List<Object> dumpto)
+        {
+            Selector selector=_selector;
+            dumpto.add(selector+" keys="+selector.keys().size());
+            for (SelectionKey key: selector.keys())
+            {
+                if (key.isValid())
+                    dumpto.add(key.attachment()+" "+key.interestOps()+" "+key.readyOps());
+                else
+                    dumpto.add(key.attachment()+" - - ");
             }
         }
     }

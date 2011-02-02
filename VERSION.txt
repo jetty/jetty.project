@@ -14,7 +14,7 @@ jetty-7.3.0-SNAPSHOT
  + 332703 Cleanup context scope JNDI at stop
  + 332796 Annotations inheritance does not work with jetty7
  + 332799 100% CPU on redeploy session invalidation
- + 332937 Added Destroyable interface and reworked dependent lifecycles, specially of JNDI
+ + 332937 Added Destroyable Dumpable interfaces and reworked dependent lifecycles, specially of JNDI
  + 333247 fix api compat issue in ConstraintSecurityHandler
  + 333415 wired up HttpInput.available and added test harnesses
  + 333481 Handle UTF-32 codepoints in decode and encode

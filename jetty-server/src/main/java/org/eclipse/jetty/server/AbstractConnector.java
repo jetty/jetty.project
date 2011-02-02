@@ -24,13 +24,14 @@ import javax.servlet.ServletRequest;
 import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
@@ -51,7 +52,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * 
  * 
  */
-public abstract class AbstractConnector extends HttpBuffers implements Connector
+public abstract class AbstractConnector extends HttpBuffers implements Connector, Dumpable
 {
     private String _name;
 
@@ -96,13 +97,6 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
      */
     public AbstractConnector()
     {
-    }
-
-    /* ------------------------------------------------------------ */
-    public final Buffer newBuffer(int size)
-    {
-        // TODO remove once no overrides established
-        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -1137,4 +1131,18 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
             oldValue = valueHolder.get();
         }
     }
+
+    /* ------------------------------------------------------------ */
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(String.valueOf(this)).append("\n");
+    }
+    
+    
 }

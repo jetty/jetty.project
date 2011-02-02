@@ -14,6 +14,10 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -25,10 +29,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 
-public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, Executor
+public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, Executor, Dumpable
 {
     private final AtomicInteger _threadsStarted = new AtomicInteger();
     private final AtomicInteger _threadsIdle = new AtomicInteger();
@@ -44,6 +50,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
     private int _priority=Thread.NORM_PRIORITY;
     private boolean _daemon=false;
     private int _maxStopTime=100;
+    private boolean _detailedDump=false;
 
     /* ------------------------------------------------------------------- */
     /** Construct
@@ -321,7 +328,18 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
         return _daemon;
     }
 
-    
+    /* ------------------------------------------------------------ */
+    public boolean isDetailedDump()
+    {
+        return _detailedDump;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setDetailedDump(boolean detailedDump)
+    {
+        _detailedDump = detailedDump;
+    }
+
     /* ------------------------------------------------------------ */
     public boolean dispatch(Runnable job)
     {
@@ -427,11 +445,70 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
         return new Thread(runnable);
     }
 
+
+    /* ------------------------------------------------------------ */
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void dump(Appendable out, String indent) throws IOException
+    {  
+        List<Object> dump = new ArrayList<Object>(getMaxThreads());        
+        for (final Thread thread: _threads)
+        {
+            final StackTraceElement[] trace=thread.getStackTrace();
+            boolean inIdleJobPoll=false;
+            for (StackTraceElement t : trace)
+            {
+                if ("idleJobPoll".equals(t.getMethodName()))
+                {
+                    inIdleJobPoll=true;
+                    break;
+                }
+            }
+            final boolean idle=inIdleJobPoll;
+                
+            if (_detailedDump)
+            {
+                dump.add(new Dumpable()
+                {
+                    public void dump(Appendable out, String indent) throws IOException
+                    {
+                        out.append(String.valueOf(thread.getId())).append(' ').append(thread.getName()).append(' ').append(thread.getState().toString()).append(idle?" IDLE":"").append('\n');
+                        if (!idle)
+                            AggregateLifeCycle.dump(out,indent,Arrays.asList(trace));
+                    }
+                    
+                    public String dump()
+                    {
+                        return null;
+                    }
+                });
+            }
+            else
+            {
+                dump.add(thread.getId()+" "+thread.getName()+" "+thread.getState()+" @ "+trace[0]+(idle?" IDLE":""));
+            }
+        }
+
+        out.append(String.valueOf(this)).append("\n");
+        AggregateLifeCycle.dump(out,indent,dump);
+        
+    }
+    
+    
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
         return _name+"{"+getMinThreads()+"<="+getIdleThreads()+"<="+getThreads()+"/"+getMaxThreads()+","+(_jobs==null?-1:_jobs.size())+"}";
+    }
+   
+    private Runnable idleJobPoll() throws InterruptedException
+    {
+        return _jobs.poll(_maxIdleTimeMs,TimeUnit.MILLISECONDS);
     }
     
     /* ------------------------------------------------------------ */
@@ -477,7 +554,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
                                             return;
                                     }
                                 }
-                                job=_jobs.poll(_maxIdleTimeMs,TimeUnit.MILLISECONDS);
+                                job=idleJobPoll();
                             }
                         }
                     }
@@ -503,20 +580,6 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
             }
         }
     };
-    
-    public String dump()
-    {
-        StringBuilder buf = new StringBuilder();
-        
-        for (Thread thread: _threads)
-        {
-            buf.append(thread.getId()).append(" ").append(thread.getName()).append(" ").append(thread.getState()).append(":\n");
-            for (StackTraceElement element : thread.getStackTrace())
-                buf.append("  at ").append(element.toString()).append('\n');
-        }
-        
-        return buf.toString();
-    }
     
     /* ------------------------------------------------------------ */
     /**

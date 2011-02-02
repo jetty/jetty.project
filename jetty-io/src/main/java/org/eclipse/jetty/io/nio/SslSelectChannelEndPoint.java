@@ -962,7 +962,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         final NIOBuffer i=_inNIOBuffer;
         final NIOBuffer o=_outNIOBuffer;
-        return super.toString()+","+_engine.getHandshakeStatus()+", in/out="+
+        return "SSL"+super.toString()+","+_engine.getHandshakeStatus()+", in/out="+
         (i==null?0:_inNIOBuffer.length())+"/"+(o==null?0:o.length())+" "+_result;
     }
 }
