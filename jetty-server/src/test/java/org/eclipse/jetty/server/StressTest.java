@@ -152,6 +152,7 @@ public class StressTest
             {
                 final int id=i;
                 final String name = "T"+i;
+                Thread.sleep(_random.nextInt(100));
                 threads[i]=new Thread()
                 {
                     @Override
@@ -305,8 +306,8 @@ public class StressTest
             {
                 _loops[thread].set(i);
                 doPaths(thread,name+"-"+i,persistent);
-                Thread.sleep(1+_random.nextInt(10)*_random.nextInt(10));
-                Thread.sleep(10);
+                Thread.sleep(1+_random.nextInt(20)*_random.nextInt(20));
+                Thread.sleep(20);
             }
             _loops[thread].set(loops);
         }

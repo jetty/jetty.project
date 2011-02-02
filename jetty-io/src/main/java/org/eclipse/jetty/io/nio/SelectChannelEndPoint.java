@@ -51,6 +51,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     private boolean _writeBlocked;
     private boolean _open;
     private volatile long _idleTimestamp;
+    private boolean _changing=false;
 
     /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime)
@@ -423,6 +424,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
             if(_interestOps == ops && getChannel().isOpen())
                 return;
+            _changing=true;
         }
         _selectSet.addChange(this);
         _selectSet.wakeup();
@@ -436,6 +438,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         synchronized (this)
         {
+            _changing=false;
             if (getChannel().isOpen())
             {
                 if (_interestOps>0)
@@ -612,4 +615,22 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         _maxIdleTime=timeMs;
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * This looks for undispatched endpoints that have key.interestOps!=endp.interestOps
+     * @TODO find out the root cause of this and delete this method.
+     */
+    public void checkKey(SelectionKey key)
+    {                  
+        synchronized (this)
+        {
+            if (!_changing && !_dispatched && key.interestOps()!=_interestOps)
+            {
+                Log.warn("NIO InterestOps mismatch "+key.interestOps()+"!="+_interestOps+" for "+this);
+                updateKey();
+            }
+        } 
+    }
+
 }

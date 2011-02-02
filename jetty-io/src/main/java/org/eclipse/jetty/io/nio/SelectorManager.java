@@ -22,7 +22,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -562,6 +561,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             }
                         }
                     });
+
+                    // TODO find root cause and remove this
+                    // This looks for undispatched endpoints that have key.interestOps!=endp.interestOps
+                    for (SelectionKey key: selector.keys())
+                    {
+                        if (key.isValid() && key.attachment() instanceof SelectChannelEndPoint)
+                        {
+                            ((SelectChannelEndPoint)key.attachment()).checkKey(key);
+                        }
+                    }
                 }
             }
             catch (CancelledKeyException e)
@@ -881,7 +890,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
             AggregateLifeCycle.dump(out,indent,dump);
         }
-        
+
+        /* ------------------------------------------------------------ */
         public void dumpKeyState(List<Object> dumpto)
         {
             Selector selector=_selector;
