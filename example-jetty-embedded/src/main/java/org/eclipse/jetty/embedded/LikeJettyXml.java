@@ -133,7 +133,7 @@ public class LikeJettyXml
 
         server.setStopAtShutdown(true);
         server.setSendServerVersion(true);
-
+        
         server.start();
         
         server.join();
