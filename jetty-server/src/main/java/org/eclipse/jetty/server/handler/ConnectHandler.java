@@ -5,6 +5,8 @@ import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -27,6 +29,7 @@ import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.HostMap;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -863,4 +866,16 @@ public class ConnectHandler extends HandlerWrapper
 
         return true;
     }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpThis(out);
+        if (_privateThreadPool)
+            dump(out,indent,Arrays.asList(new Object[]{_threadPool,_selectorManager}),TypeUtil.asList(getHandlers()),getBeans());
+        else
+            dump(out,indent,Collections.singletonList(_selectorManager),TypeUtil.asList(getHandlers()),getBeans());
+    }
+    
+    
 }
