@@ -625,7 +625,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {                  
         synchronized (this)
         {
-            if (!_changing && !_dispatched && key.interestOps()!=_interestOps)
+            if (!_changing && key.interestOps()!=_interestOps && isReadyForDispatch())
             {
                 Log.warn("NIO InterestOps mismatch "+key.interestOps()+"!="+_interestOps+" for "+this);
                 updateKey();
