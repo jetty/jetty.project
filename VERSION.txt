@@ -1,5 +1,7 @@
+jetty-7.3.1-SNAPSHOT 
 
-jetty-7.3.0.v20110202 2 February 2011
+
+jetty-7.3.0.v20110203 3 February 2011
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session (further update)
  + 296978 standardizing various Testing Util Classes to jetty-test-helper
  + 319178 test failure fix in jetty-util on windows
