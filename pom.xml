@@ -293,7 +293,9 @@
     <module>jetty-rewrite</module>
     <module>jetty-policy</module>
     <module>jetty-start</module>
+    <!-- Moved to profile 'osgi' below (default active)
     <module>jetty-osgi</module>
+      -->
     <module>test-continuation</module>
     <module>test-continuation-jetty6</module>
     <module>test-jetty-servlet</module>
@@ -367,6 +369,20 @@
     > mvn -N site:sshdeploy     (for ssh users w/passphrase and ssh-agent)
    -->
   <profiles>
+    <profile>
+      <!--
+        Moves the jetty-osgi build tree to a profile called 'osgi'.
+        It is active by default, but being in a profile allows it to be
+        disabled via the "-P-osgi" command line on maven (if need be).
+        -->
+      <id>osgi</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <modules>
+        <module>jetty-osgi</module>
+      </modules>
+    </profile>
     <profile>
       <id>cobertura</id>
       <reporting>
