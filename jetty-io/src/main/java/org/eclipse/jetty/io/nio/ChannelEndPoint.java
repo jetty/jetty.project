@@ -41,9 +41,6 @@ public class ChannelEndPoint implements EndPoint
     protected final InetSocketAddress _remote;
     protected int _maxIdleTime;
 
-    /**
-     *
-     */
     public ChannelEndPoint(ByteChannel channel) throws IOException
     {
         super();
@@ -61,9 +58,6 @@ public class ChannelEndPoint implements EndPoint
         }
     }
 
-    /**
-     *
-     */
     protected ChannelEndPoint(ByteChannel channel, int maxIdleTime) throws IOException
     {
         this._channel = channel;
@@ -79,7 +73,6 @@ public class ChannelEndPoint implements EndPoint
         {
             _local=_remote=null;
         }
-
     }
 
     public boolean isBlocking()
@@ -156,7 +149,7 @@ public class ChannelEndPoint implements EndPoint
                     bbuf.position(buffer.putIndex());
                     len=_channel.read(bbuf);
                     if (len<0)
-                        _channel.close();
+                        close();
                 }
                 finally
                 {
@@ -205,8 +198,7 @@ public class ChannelEndPoint implements EndPoint
         }
         else if (buf instanceof RandomAccessFileBuffer)
         {
-            len = buffer.length();
-            ((RandomAccessFileBuffer)buf).writeTo(_channel,buffer.getIndex(),buffer.length());
+            len = ((RandomAccessFileBuffer)buf).writeTo(_channel,buffer.getIndex(),buffer.length());
             if (len>0)
                 buffer.skip(len);
         }
@@ -276,7 +268,6 @@ public class ChannelEndPoint implements EndPoint
                             {
                                 header.skip(length);
                             }
-
                         }
                         finally
                         {

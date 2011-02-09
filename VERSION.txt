@@ -1,5 +1,5 @@
-jetty-7.3.1-SNAPSHOT 
-
+jetty-7.3.1-SNAPSHOT
+ + 336691 Possible wrong length returned by ChannelEndPoint.flush() in case of RandomAccessFileBuffer
 
 jetty-7.3.0.v20110203 3 February 2011
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session (further update)
@@ -34,7 +34,7 @@ jetty-7.3.0.v20110203 3 February 2011
  + 335361 Fixed 'jetty.sh check' to show current PID when JETTY_PID env. variable is set
  + 335641 Cleaned up dispatch handling to avoid key.interestOps==0 when undispatched
  + 335681 Improve ChannelEndPoint.close() to avoid spinning
- + 335836 Race when updating SelectChannelEndPoint._dispatched 
+ + 335836 Race when updating SelectChannelEndPoint._dispatched
 
 jetty-7.2.2.v20101205 5 December 2010
  + JETTY-1308 327109 (re)fixed AJP handling of empty packets
