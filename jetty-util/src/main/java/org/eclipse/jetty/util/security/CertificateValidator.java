@@ -93,7 +93,7 @@ public class CertificateValidator
      * 
      * @param keyStore
      * @param keyAlias
-     * @return
+     * @return the keyAlias if valid
      * @throws CertificateException
      */
     public String validate(KeyStore keyStore, String keyAlias) throws CertificateException
