@@ -39,6 +39,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 
@@ -47,7 +48,6 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class HttpExchangeTest extends TestCase
 {
-    private boolean _stress=Boolean.getBoolean("STRESS");
     protected int _maxConnectionsPerAddress = 2;
     protected String _scheme = "http://";
     protected Server _server;
@@ -85,7 +85,7 @@ public class HttpExchangeTest extends TestCase
 
     public void testPerf() throws Exception
     {
-        if (_stress)
+        if (Stress.isEnabled())
         {
             sender(1,false);
             sender(1,true);

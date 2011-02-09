@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
@@ -39,7 +40,6 @@ import static org.junit.Assert.assertTrue;
 
 public class StressTest
 {
-    private static boolean _stress;
     private static QueuedThreadPool _threads;
     private static Server _server;
     private static SelectChannelConnector _connector;
@@ -78,8 +78,6 @@ public class StressTest
     @BeforeClass
     public static void init() throws Exception
     {
-        _stress= Boolean.getBoolean("STRESS");
-
         _threads = new QueuedThreadPool(new BlockingArrayQueue<Runnable>(4,4));
         _threads.setMaxThreads(200);
 
@@ -117,9 +115,8 @@ public class StressTest
     public void testNonPersistent() throws Throwable
     {
         doThreads(10,100,false);
-        if (_stress)
+        if (Stress.isEnabled())
         {
-            System.err.println("STRESS!");
             Thread.sleep(1000);
             doThreads(200,10,false);
             Thread.sleep(1000);
@@ -131,9 +128,8 @@ public class StressTest
     public void testPersistent() throws Throwable
     {
         doThreads(20,100,true);
-        if (_stress)
+        if (Stress.isEnabled())
         {
-            System.err.println("STRESS!");
             Thread.sleep(1000);
             doThreads(200,10,true);
             Thread.sleep(1000);

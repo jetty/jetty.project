@@ -14,15 +14,15 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.IO;
 import org.junit.AfterClass;
 
 
 public class HttpServerTestFixture
 {    // Useful constants
-    protected static final boolean stress = Boolean.getBoolean("STRESS");
     protected static final long PAUSE=10L;
-    protected static final int LOOPS=stress?250:25;
+    protected static final int LOOPS=Stress.isEnabled()?250:25;
     protected static final String HOST="localhost";
     
     protected static Server _server;

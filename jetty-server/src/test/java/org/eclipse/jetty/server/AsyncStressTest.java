@@ -28,6 +28,7 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -46,7 +47,6 @@ public class AsyncStressTest
     protected int _port;
     protected Random _random = new Random();
     protected QueuedThreadPool _threads=new QueuedThreadPool();
-    protected boolean _stress;
     private final static String[][] __paths =
     {
         {"/path","NORMAL"},
@@ -60,7 +60,6 @@ public class AsyncStressTest
     @Before
     public void init() throws Exception
     {
-        _stress= Boolean.getBoolean("STRESS");
         _threads.setMaxThreads(50);
         _server.setThreadPool(_threads);
         _connector = new SelectChannelConnector();
@@ -82,9 +81,8 @@ public class AsyncStressTest
     @Test
     public void testAsync() throws Throwable
     {
-        if (_stress)
+        if (Stress.isEnabled())
         {
-            System.err.println("STRESS!");
             doConnections(1600,240);
         }
         else

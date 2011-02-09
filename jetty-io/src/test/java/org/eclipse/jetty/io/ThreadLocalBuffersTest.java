@@ -17,17 +17,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.toolchain.test.Stress;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
 public class ThreadLocalBuffersTest
 {
-    public boolean _stress = Boolean.getBoolean("STRESS");
     private InnerBuffers httpBuffers;
     private List<Thread> threadList = new ArrayList<Thread>();
-    private int numThreads = _stress?100:10;
-    private int runTestLength = _stress?5000:1000;
+    private int numThreads = Stress.isEnabled()?100:10;
+    private int runTestLength = Stress.isEnabled()?5000:1000;
     private boolean runTest = false;
     private AtomicLong buffersRetrieved;
 
