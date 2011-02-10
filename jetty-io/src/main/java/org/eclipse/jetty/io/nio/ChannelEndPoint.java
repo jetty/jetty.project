@@ -149,7 +149,7 @@ public class ChannelEndPoint implements EndPoint
                     bbuf.position(buffer.putIndex());
                     len=_channel.read(bbuf);
                     if (len<0)
-                        close();
+                        _channel.close();  // Don't call this.close() as that may recurse in SSL land and call fill again
                 }
                 finally
                 {

@@ -40,6 +40,8 @@ public class ConnectHandlerConnectSSLTest extends AbstractProxyHandlerTest
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
 
         String keyStorePath = System.getProperty("basedir");
+        if (keyStorePath==null)
+            keyStorePath=".";
         keyStorePath += File.separator + "src" + File.separator + "test" + File.separator + "resources" + File.separator + "keystore";
         connector.setKeystore(keyStorePath);
         connector.setPassword("storepwd");
