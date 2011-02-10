@@ -1,5 +1,6 @@
 jetty-7.3.1-SNAPSHOT
  + 336691 Possible wrong length returned by ChannelEndPoint.flush() in case of RandomAccessFileBuffer
+ + 336781 If xml parser is not validating, turn off external dtd resolution
 
 jetty-7.3.0.v20110203 3 February 2011
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session (further update)
