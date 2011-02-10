@@ -302,10 +302,10 @@
     <module>test-jetty-webapp</module>
     <!-- Moved to profile 'aggregates' below (default active)
     <module>jetty-aggregate</module>
+    <module>jetty-distribution</module>
       -->
     <module>example-jetty-embedded</module>
     <module>tests</module>
-    <module>jetty-distribution</module>
   </modules>
   <dependencyManagement>
     <dependencies>
@@ -384,6 +384,7 @@
       </activation>
       <modules>
         <module>jetty-aggregate</module>
+        <module>jetty-distribution</module>
       </modules>
     </profile>
     <profile>
