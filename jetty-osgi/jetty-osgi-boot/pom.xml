@@ -156,7 +156,6 @@
                         <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot;singleton:=true</Bundle-SymbolicName>
                         <Export-Package>org.eclipse.jetty.osgi.boot,org.eclipse.jetty.osgi.boot.utils</Export-Package> 
                         <Bundle-Activator>org.eclipse.jetty.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
-                        <Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy> 
                         <!-- disable the uses directive: jetty will accomodate pretty much any versions
                         of the packages it uses; no need to reflect some tight dependency determined at
                         compilation time. --> 
@@ -173,7 +172,7 @@
  org.osgi.framework,
  org.osgi.service.cm;version="1.2.0",
  org.osgi.service.packageadmin,
- org.osgi.service.startlevel;version="1.0",
+ org.osgi.service.startlevel;version="1.0.o",
  org.osgi.service.url;version="1.0.0",
  org.osgi.util.tracker;version="1.3.0",
  org.slf4j;resolution:=optional,
