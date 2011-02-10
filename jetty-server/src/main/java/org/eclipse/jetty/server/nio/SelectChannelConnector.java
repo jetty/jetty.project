@@ -20,7 +20,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
-import java.util.Collections;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.io.ConnectedEndPoint;
@@ -236,9 +235,9 @@ public class SelectChannelConnector extends AbstractNIOConnector
         _manager.setLowResourcesConnections(getLowResourcesConnections());
         _manager.setLowResourcesMaxIdleTime(getLowResourcesMaxIdleTime());
         _manager.start();
-        
+
         super.doStart();
-        
+
         // start a thread to accept new connections
         _manager.dispatch(new Runnable()
         {
@@ -262,7 +261,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
                 }
             }
         });
-        
+
     }
 
     /* ------------------------------------------------------------ */
@@ -279,6 +278,11 @@ public class SelectChannelConnector extends AbstractNIOConnector
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
         return new SelectChannelEndPoint(channel,selectSet,key, SelectChannelConnector.this._maxIdleTime);
+    }
+
+    protected void endPointClosed(SelectChannelEndPoint endpoint)
+    {
+        connectionClosed(endpoint.getConnection());
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -327,7 +331,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
         @Override
         protected void endPointClosed(final SelectChannelEndPoint endpoint)
         {
-            connectionClosed(endpoint.getConnection());
+            SelectChannelConnector.this.endPointClosed(endpoint);
         }
 
         @Override
