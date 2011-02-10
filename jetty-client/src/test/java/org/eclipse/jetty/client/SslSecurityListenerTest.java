@@ -143,8 +143,7 @@ public class SslSecurityListenerTest extends TestCase
         //SslSelectChannelConnector connector = new SslSelectChannelConnector();
         SslSocketConnector connector = new SslSocketConnector();
 
-        String keystore = System.getProperty("user.dir") + File.separator + "src" + File.separator + "test" + File.separator + "resources" + File.separator
-                + "keystore";
+        String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
 
         connector.setPort(0);
         connector.setKeystore(keystore);

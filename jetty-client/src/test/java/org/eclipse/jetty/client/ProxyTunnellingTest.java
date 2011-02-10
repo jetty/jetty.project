@@ -22,6 +22,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.After;
 import org.junit.Test;
 
@@ -39,9 +40,7 @@ public class ProxyTunnellingTest
     private void startSSLServer(Handler handler) throws Exception
     {
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
-        String keyStorePath = System.getProperty("basedir");
-        assertNotNull(keyStorePath);
-        keyStorePath += File.separator + "src" + File.separator + "test" + File.separator + "resources" + File.separator + "keystore";
+        String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
         connector.setKeystore(keyStorePath);
         connector.setPassword("storepwd");
         connector.setKeyPassword("keypwd");
