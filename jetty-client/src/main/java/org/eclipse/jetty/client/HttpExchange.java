@@ -25,10 +25,10 @@ import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
 
 
@@ -96,9 +96,9 @@ public class HttpExchange
     private boolean _configureListeners = true;
     private HttpEventListener _listener = new Listener();
     private volatile HttpConnection _connection;
-    
+
     private Address _localAddress = null;
-    
+
     // a timeout for this exchange
     private long _timeout = -1;
 
@@ -358,12 +358,12 @@ public class HttpExchange
     {
         _timeout = timeout;
     }
-    
+
     public long getTimeout()
     {
         return _timeout;
     }
-    
+
     /**
      * @param url Including protocol, host and port
      */
@@ -412,17 +412,17 @@ public class HttpExchange
 
     /**
      * the local address used by the connection
-     * 
-     * Note: this method will not be populated unless the exchange 
-     * has been executed by the HttpClient 
-     * 
+     *
+     * Note: this method will not be populated unless the exchange
+     * has been executed by the HttpClient
+     *
      * @return the local address used for the running of the exchange if available, null otherwise.
      */
     public Address getLocalAddress()
     {
         return _localAddress;
     }
-    
+
     /**
      * @param scheme the scheme of the URL (for example 'http')
      */
@@ -679,7 +679,7 @@ public class HttpExchange
        {
            _localAddress = new Address( connection.getEndPoint().getLocalHost(), connection.getEndPoint().getLocalPort() );
        }
-        
+
         _connection = connection;
         if (getStatus() == STATUS_CANCELLING)
             abort();
@@ -711,7 +711,7 @@ public class HttpExchange
     {
         return null;
     }
-    
+
     /**
      * Callback called when the request headers have been sent to the server.
      * This implementation does nothing.
@@ -719,8 +719,6 @@ public class HttpExchange
      */
     protected void onRequestCommitted() throws IOException
     {
-        _connection.getEndPoint();
-        
     }
 
     /**
