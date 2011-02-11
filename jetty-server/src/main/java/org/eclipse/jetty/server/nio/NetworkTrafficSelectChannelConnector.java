@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.nio;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -24,15 +25,26 @@ import org.eclipse.jetty.io.nio.NetworkTrafficSelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 
+/**
+ * <p>A specialized version of {@link SelectChannelConnector} that supports {@link NetworkTrafficListener}s.</p>
+ * <p>{@link NetworkTrafficListener}s can be added and removed dynamically before and after this connector has
+ * been started without causing {@link ConcurrentModificationException}s.</p>
+ */
 public class NetworkTrafficSelectChannelConnector extends SelectChannelConnector
 {
     private final List<NetworkTrafficListener> listeners = new CopyOnWriteArrayList<NetworkTrafficListener>();
 
+    /**
+     * @param listener the listener to add
+     */
     public void addNetworkTrafficListener(NetworkTrafficListener listener)
     {
         listeners.add(listener);
     }
 
+    /**
+     * @param listener the listener to remove
+     */
     public void removeNetworkTrafficListener(NetworkTrafficListener listener)
     {
         listeners.remove(listener);
