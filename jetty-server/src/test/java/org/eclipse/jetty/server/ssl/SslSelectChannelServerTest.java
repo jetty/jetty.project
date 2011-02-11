@@ -15,9 +15,16 @@ package org.eclipse.jetty.server.ssl;
 import java.io.FileInputStream;
 import java.net.Socket;
 import java.security.KeyStore;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 import org.eclipse.jetty.server.HttpServerTestBase;
 import org.junit.BeforeClass;
@@ -29,6 +36,9 @@ import org.junit.Test;
 public class SslSelectChannelServerTest extends HttpServerTestBase
 {
     static SSLContext __sslContext;
+    {
+        _scheme="https";
+    }
     
     @Override
     protected Socket newSocket(String host, int port) throws Exception
@@ -59,19 +69,20 @@ public class SslSelectChannelServerTest extends HttpServerTestBase
         __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
         
 
+        try
+        {
+            HttpsURLConnection.setDefaultHostnameVerifier(__hostnameverifier);
+            SSLContext sc = SSLContext.getInstance("SSL"); 
+            sc.init(null, __trustAllCerts, new java.security.SecureRandom()); 
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+        
     }
 
-    @Override
-    @Test
-    public void testFlush() throws Exception
-    {
-        // TODO this test uses URL, so noop for now
-    }
-
-    @Test
-    @Override
-    public void testBlockedClient() throws Exception
-    {
-    }
-   
+    
 }

@@ -29,6 +29,9 @@ import org.junit.Test;
 public class SslSocketServerTest extends HttpServerTestBase
 {
     static SSLContext __sslContext;
+    {
+        _scheme="https";
+    }
     
     @Override
     protected Socket newSocket(String host, int port) throws Exception

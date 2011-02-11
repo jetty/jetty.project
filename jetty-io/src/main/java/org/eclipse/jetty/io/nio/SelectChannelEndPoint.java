@@ -323,15 +323,15 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     {
                         updateKey();
                         this.wait(timeoutMs);
-
-                        timeoutMs -= _selectSet.getNow()-start;
-                        if (_readBlocked && timeoutMs<=0)
-                            return false;
                     }
                     catch (InterruptedException e)
                     {
                         Log.warn(e);
                     }
+
+                    timeoutMs -= _selectSet.getNow()-start;
+                    if (_readBlocked && timeoutMs<=0)
+                        return false;
                 }
             }
             finally
@@ -361,15 +361,15 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     {
                         updateKey();
                         this.wait(timeoutMs);
-
-                        timeoutMs -= _selectSet.getNow()-start;
-                        if (_writeBlocked && timeoutMs<=0)
-                            return false;
                     }
                     catch (InterruptedException e)
                     {
                         Log.warn(e);
                     }
+
+                    timeoutMs -= _selectSet.getNow()-start;
+                    if (_writeBlocked && timeoutMs<=0)
+                        return false;
                 }
             }
             finally

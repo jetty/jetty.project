@@ -1,4 +1,5 @@
 jetty-7.3.1-SNAPSHOT
+ + 335329 Moved blocking timeout handling to outside try catch
  + 336691 Possible wrong length returned by ChannelEndPoint.flush() in case of RandomAccessFileBuffer
  + 336781 If xml parser is not validating, turn off external dtd resolution
 
