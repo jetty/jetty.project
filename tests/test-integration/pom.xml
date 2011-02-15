@@ -39,6 +39,7 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
+              <includeGroupId>org.eclipse.jetty.tests</includeGroupId>
               <includeScope>test</includeScope>
               <includeTypes>war</includeTypes>
               <overwriteSnapshots>true</overwriteSnapshots>

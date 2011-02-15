@@ -9,7 +9,7 @@
   <artifactId>jetty-project</artifactId>
   <version>7.3.1-SNAPSHOT</version>
   <name>Jetty :: Project</name>
-  <url>${jetty.url}</url>  
+  <url>${jetty.url}</url>
   <packaging>pom</packaging>
   <properties>
     <felix.bundle.version>2.0.0</felix.bundle.version>
@@ -223,6 +223,11 @@
             <onlyAnalyze>org.eclipse.jetty.*</onlyAnalyze>
           </configuration>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>2.1</version>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -238,7 +243,10 @@
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>2.6.1</version>
         <configuration>
-          <additionalJOption>-J-Xmx256m</additionalJOption>
+          <maxmemory>512m</maxmemory>
+          <docfilessubdirs>true</docfilessubdirs>
+          <detectLinks>true</detectLinks>
+          <detectJavaApiLink>true</detectJavaApiLink>
         </configuration>
       </plugin>
       <plugin>
@@ -409,9 +417,55 @@
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>cobertura-maven-plugin</artifactId>
             <version>2.4</version>
+            <configuration>
+              <maxmem>512m</maxmem>
+            </configuration>
           </plugin>
-        </plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <reportSets>
+              <reportSet>
+                <id>just-javadoc-no-aggregate</id>
+                <reports>
+                  <report>javadoc</report>
+                </reports>
+                <inherited>true</inherited>
+                <configuration>
+                  <minmemory>256m</minmemory>
+                  <maxmemory>1g</maxmemory>
+                  <excludePackageNames>com.acme</excludePackageNames>
+                  <links>
+                    <link>http://java.sun.com/j2se/1.5.0/docs/api</link>
+                    <link>http://java.sun.com/javaee/5/docs/api</link>
+                    <link>http://junit.sourceforge.net/javadoc/</link>
+                  </links>
+                  <tags>
+                    <tag>
+                      <name>org.apache.xbean.XBean</name>
+                      <placement>X</placement>
+                      <head />
+                    </tag>
+                  </tags>
+                </configuration>
+              </reportSet>
+            </reportSets>
+          </plugin>
+         </plugins>
       </reporting>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <configuration>
+                <testFailureIgnore>true</testFailureIgnore>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
     </profile>
     <profile>
       <id>maven-3</id>
