@@ -389,6 +389,9 @@
       <id>aggregates</id>
       <activation>
         <activeByDefault>true</activeByDefault>
+        <file>
+          <exists>${basedir}/pom.xml</exists>
+        </file>
       </activation>
       <modules>
         <module>jetty-aggregate</module>
@@ -404,6 +407,9 @@
       <id>osgi</id>
       <activation>
         <activeByDefault>true</activeByDefault>
+        <file>
+          <exists>${basedir}/pom.xml</exists>
+        </file>
       </activation>
       <modules>
         <module>jetty-osgi</module>
