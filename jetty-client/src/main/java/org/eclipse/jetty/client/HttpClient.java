@@ -673,61 +673,61 @@ public class HttpClient extends HttpBuffers implements Attributes
     @Deprecated
     public String getTrustStoreLocation()
     {
-        return _sslContextFactory.getTruststore();
+        return _sslContextFactory.getTrustStore();
     }
 
     /* ------------------------------------------------------------ */
     @Deprecated
     public void setTrustStoreLocation(String trustStoreLocation)
     {
-        _sslContextFactory.setTruststore(trustStoreLocation);
+        _sslContextFactory.setTrustStore(trustStoreLocation);
     }
 
     /* ------------------------------------------------------------ */
     @Deprecated
     public InputStream getTrustStoreInputStream()
     {
-        return _sslContextFactory.getTruststoreInputStream();
+        return _sslContextFactory.getTrustStoreInputStream();
     }
 
     /* ------------------------------------------------------------ */
     @Deprecated
     public void setTrustStoreInputStream(InputStream trustStoreInputStream)
     {
-        _sslContextFactory.setTruststoreInputStream(trustStoreInputStream);
+        _sslContextFactory.setTrustStoreInputStream(trustStoreInputStream);
     }
 
     /* ------------------------------------------------------------ */
     @Deprecated
     public String getKeyStoreLocation()
     {
-        return _sslContextFactory.getKeystore();
+        return _sslContextFactory.getKeyStore();
     }
 
     /* ------------------------------------------------------------ */
     @Deprecated
     public void setKeyStoreLocation(String keyStoreLocation)
     {
-        _sslContextFactory.setKeystore(keyStoreLocation);
+        _sslContextFactory.setKeyStore(keyStoreLocation);
     }
 
     @Deprecated
     public InputStream getKeyStoreInputStream()
     {
-        return _sslContextFactory.getKeystoreInputStream();
+        return _sslContextFactory.getKeyStoreInputStream();
     }
 
     @Deprecated
     public void setKeyStoreInputStream(InputStream keyStoreInputStream)
     {
-        _sslContextFactory.setKeystoreInputStream(keyStoreInputStream);
+        _sslContextFactory.setKeyStoreInputStream(keyStoreInputStream);
     }
 
     /* ------------------------------------------------------------ */
     @Deprecated
     public void setKeyStorePassword(String keyStorePassword)
     {
-        _sslContextFactory.setKeystorePassword(keyStorePassword);
+        _sslContextFactory.setKeyStorePassword(keyStorePassword);
     }
 
     /* ------------------------------------------------------------ */
@@ -741,35 +741,35 @@ public class HttpClient extends HttpBuffers implements Attributes
     @Deprecated
     public void setTrustStorePassword(String trustStorePassword)
     {
-        _sslContextFactory.setTruststorePassword(trustStorePassword);
+        _sslContextFactory.setTrustStorePassword(trustStorePassword);
     }
 
     /* ------------------------------------------------------------ */
     @Deprecated
     public String getKeyStoreType()
     {
-        return _sslContextFactory.getKeystoreType();
+        return _sslContextFactory.getKeyStoreType();
     }
 
     /* ------------------------------------------------------------ */
     @Deprecated
     public void setKeyStoreType(String keyStoreType)
     {
-        _sslContextFactory.setKeystoreType(keyStoreType);
+        _sslContextFactory.setKeyStoreType(keyStoreType);
     }
 
     /* ------------------------------------------------------------ */
     @Deprecated
     public String getTrustStoreType()
     {
-        return _sslContextFactory.getTruststoreType();
+        return _sslContextFactory.getTrustStoreType();
     }
 
     /* ------------------------------------------------------------ */
     @Deprecated
     public void setTrustStoreType(String trustStoreType)
     {
-        _sslContextFactory.setTruststoreType(trustStoreType);
+        _sslContextFactory.setTrustStoreType(trustStoreType);
     }
 
     /* ------------------------------------------------------------ */

@@ -12,7 +12,7 @@
 
     <properties>
         <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
-        <jetty.test.keystore>1.1</jetty.test.keystore>
+        <jetty.test.keystore>1.2-SNAPSHOT</jetty.test.keystore>
         <jetty.test.keystore.loc>target/test-policy</jetty.test.keystore.loc>
     </properties>
 

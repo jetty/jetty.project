@@ -86,25 +86,25 @@ public class SslContextFactory extends AbstractLifeCycle
     private Set<String> _includeCipherSuites = null;
 
     /** Keystore path. */
-    private String _keystorePath;
+    private String _keyStorePath;
     /** Keystore provider name */
-    private String _keystoreProvider;
+    private String _keyStoreProvider;
     /** Keystore type */
-    private String _keystoreType = "JKS";
+    private String _keyStoreType = "JKS";
     /** Keystore input stream */
-    private InputStream _keystoreInputStream;
+    private InputStream _keyStoreInputStream;
     
     /** SSL certificate alias */
     private String _certAlias;
 
     /** Truststore path */
-    private String _truststorePath;
+    private String _trustStorePath;
     /** Truststore provider name */
-    private String _truststoreProvider;
+    private String _trustStoreProvider;
     /** Truststore type */
-    private String _truststoreType = "JKS";
+    private String _trustStoreType = "JKS";
     /** Truststore input stream */
-    private InputStream _truststoreInputStream;
+    private InputStream _trustStoreInputStream;
 
     /** Set to true if client certificate authentication is required */
     private boolean _needClientAuth = false;
@@ -116,11 +116,11 @@ public class SslContextFactory extends AbstractLifeCycle
     private boolean _allowRenegotiate = false;
 
     /** Keystore password */
-    private transient Password _keystorePassword;
+    private transient Password _keyStorePassword;
     /** Key manager password */
     private transient Password _keymanagerPassword;
     /** Truststore password */
-    private transient Password _truststorePassword;
+    private transient Password _trustStorePassword;
 
     /** SSL provider name */
     private String _sslProvider;
@@ -158,7 +158,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SslContextFactory(String keystorePath)
     {
-        _keystorePath = keystorePath;
+        _keyStorePath = keystorePath;
     }
     
     /* ------------------------------------------------------------ */
@@ -169,8 +169,8 @@ public class SslContextFactory extends AbstractLifeCycle
     @Override
     protected void doStart() throws Exception
     {
-        if (_keystoreInputStream == null && _keystorePath == null &&
-                _truststoreInputStream == null && _truststorePath == null )
+        if (_keyStoreInputStream == null && _keyStorePath == null &&
+                _trustStoreInputStream == null && _trustStorePath == null )
         {
             // Create a trust manager that does not validate certificate chains
             TrustManager trustAllCerts = new X509TrustManager()
@@ -248,9 +248,9 @@ public class SslContextFactory extends AbstractLifeCycle
     /**
      * @return The file or URL of the SSL Key store.
      */
-    public String getKeystore()
+    public String getKeyStore()
     {
-        return _keystorePath;
+        return _keyStorePath;
     }
 
     /* ------------------------------------------------------------ */
@@ -258,20 +258,20 @@ public class SslContextFactory extends AbstractLifeCycle
      * @param keystore
      *            The file or URL of the SSL Key store.
      */
-    public void setKeystore(String keystore)
+    public void setKeyStore(String keystore)
     {
         checkStarted();
         
-        _keystorePath = keystore;
+        _keyStorePath = keystore;
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @return The provider of the key store
      */
-    public String getKeystoreProvider()
+    public String getKeyStoreProvider()
     {
-        return _keystoreProvider;
+        return _keyStoreProvider;
     }
 
     /* ------------------------------------------------------------ */
@@ -279,20 +279,20 @@ public class SslContextFactory extends AbstractLifeCycle
      * @param keystoreProvider
      *            The provider of the key store
      */
-    public void setKeystoreProvider(String keystoreProvider)
+    public void setKeyStoreProvider(String keystoreProvider)
     {
         checkStarted();
         
-        _keystoreProvider = keystoreProvider;
+        _keyStoreProvider = keystoreProvider;
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @return The type of the key store (default "JKS")
      */
-    public String getKeystoreType()
+    public String getKeyStoreType()
     {
-        return (_keystoreType);
+        return (_keyStoreType);
     }
 
     /* ------------------------------------------------------------ */
@@ -300,33 +300,33 @@ public class SslContextFactory extends AbstractLifeCycle
      * @param keystoreType
      *            The type of the key store (default "JKS")
      */
-    public void setKeystoreType(String keystoreType)
+    public void setKeyStoreType(String keystoreType)
     {
         checkStarted();
         
-        _keystoreType = keystoreType;
+        _keyStoreType = keystoreType;
     }
 
     /* ------------------------------------------------------------ */
-    /** Get the _keystoreInputStream.
-     * @return the _keystoreInputStream
+    /** Get the _keyStoreInputStream.
+     * @return the _keyStoreInputStream
      */
-    public InputStream getKeystoreInputStream()
+    public InputStream getKeyStoreInputStream()
     {
         checkConfig();
         
-        return _keystoreInputStream;
+        return _keyStoreInputStream;
     }
 
     /* ------------------------------------------------------------ */
-    /** Set the _keystoreInputStream.
-     * @param _keystoreInputStream the _keystoreInputStream to set
+    /** Set the _keyStoreInputStream.
+     * @param _keyStoreInputStream the _keyStoreInputStream to set
      */
-    public void setKeystoreInputStream(InputStream keystoreInputStream)
+    public void setKeyStoreInputStream(InputStream keystoreInputStream)
     {
         checkStarted();
         
-        _keystoreInputStream = keystoreInputStream;
+        _keyStoreInputStream = keystoreInputStream;
     }
 
     /* ------------------------------------------------------------ */
@@ -354,9 +354,9 @@ public class SslContextFactory extends AbstractLifeCycle
     /**
      * @return The file name or URL of the trust store location
      */
-    public String getTruststore()
+    public String getTrustStore()
     {
-        return _truststorePath;
+        return _trustStorePath;
     }
 
     /* ------------------------------------------------------------ */
@@ -364,20 +364,20 @@ public class SslContextFactory extends AbstractLifeCycle
      * @param truststore
      *            The file name or URL of the trust store location
      */
-    public void setTruststore(String truststore)
+    public void setTrustStore(String truststore)
     {
         checkStarted();
         
-        _truststorePath = truststore;
+        _trustStorePath = truststore;
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @return The provider of the trust store
      */
-    public String getTruststoreProvider()
+    public String getTrustStoreProvider()
     {
-        return _truststoreProvider;
+        return _trustStoreProvider;
     }
 
     /* ------------------------------------------------------------ */
@@ -385,20 +385,20 @@ public class SslContextFactory extends AbstractLifeCycle
      * @param truststoreProvider
      *            The provider of the trust store
      */
-    public void setTruststoreProvider(String truststoreProvider)
+    public void setTrustStoreProvider(String truststoreProvider)
     {
         checkStarted();
         
-        _truststoreProvider = truststoreProvider;
+        _trustStoreProvider = truststoreProvider;
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @return The type of the trust store (default "JKS")
      */
-    public String getTruststoreType()
+    public String getTrustStoreType()
     {
-        return _truststoreType;
+        return _trustStoreType;
     }
 
     /* ------------------------------------------------------------ */
@@ -406,33 +406,33 @@ public class SslContextFactory extends AbstractLifeCycle
      * @param truststoreType
      *            The type of the trust store (default "JKS")
      */
-    public void setTruststoreType(String truststoreType)
+    public void setTrustStoreType(String truststoreType)
     {
         checkStarted();
         
-        _truststoreType = truststoreType;
+        _trustStoreType = truststoreType;
     }
 
     /* ------------------------------------------------------------ */
-    /** Get the _truststoreInputStream.
-     * @return the _truststoreInputStream
+    /** Get the _trustStoreInputStream.
+     * @return the _trustStoreInputStream
      */
-    public InputStream getTruststoreInputStream()
+    public InputStream getTrustStoreInputStream()
     {
         checkConfig();
         
-        return _truststoreInputStream;
+        return _trustStoreInputStream;
     }
 
     /* ------------------------------------------------------------ */
-    /** Set the _truststoreInputStream.
-     * @param _truststoreInputStream the _truststoreInputStream to set
+    /** Set the _trustStoreInputStream.
+     * @param _trustStoreInputStream the _trustStoreInputStream to set
      */
-    public void setTruststoreInputStream(InputStream truststoreInputStream)
+    public void setTrustStoreInputStream(InputStream truststoreInputStream)
     {
         checkStarted();
         
-        _truststoreInputStream = truststoreInputStream;
+        _trustStoreInputStream = truststoreInputStream;
     }
 
     /* ------------------------------------------------------------ */
@@ -532,11 +532,11 @@ public class SslContextFactory extends AbstractLifeCycle
      * @param password
      *            The password for the key store
      */
-    public void setKeystorePassword(String password)
+    public void setKeyStorePassword(String password)
     {
         checkStarted();
         
-        _keystorePassword = Password.getPassword(PASSWORD_PROPERTY,password,null);
+        _keyStorePassword = Password.getPassword(PASSWORD_PROPERTY,password,null);
     }
 
     /* ------------------------------------------------------------ */
@@ -556,11 +556,11 @@ public class SslContextFactory extends AbstractLifeCycle
      * @param password
      *            The password for the trust store
      */
-    public void setTruststorePassword(String password)
+    public void setTrustStorePassword(String password)
     {
         checkStarted();
         
-        _truststorePassword = Password.getPassword(PASSWORD_PROPERTY,password,null);
+        _trustStorePassword = Password.getPassword(PASSWORD_PROPERTY,password,null);
     }
 
     /* ------------------------------------------------------------ */
@@ -751,10 +751,10 @@ public class SslContextFactory extends AbstractLifeCycle
         // parameters are set up correctly  
         checkConfig();
         
-        KeyStore keyStore = getKeyStore(_keystoreInputStream, _keystorePath, _keystoreType, 
-                _keystoreProvider, _keystorePassword==null? null: _keystorePassword.toString());
-        KeyStore trustStore = getKeyStore(_truststoreInputStream, _truststorePath, _truststoreType, 
-                _truststoreProvider, _truststorePassword==null? null: _truststorePassword.toString());
+        KeyStore keyStore = getKeyStore(_keyStoreInputStream, _keyStorePath, _keyStoreType, 
+                _keyStoreProvider, _keyStorePassword==null? null: _keyStorePassword.toString());
+        KeyStore trustStore = getKeyStore(_trustStoreInputStream, _trustStorePath, _trustStoreType, 
+                _trustStoreProvider, _trustStorePassword==null? null: _trustStorePassword.toString());
         Collection<? extends CRL> crls = loadCRL(_crlPath);
 
         if (_validateCerts && keyStore != null)
@@ -791,7 +791,7 @@ public class SslContextFactory extends AbstractLifeCycle
         if (keyStore != null)
         {
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(_keyManagerFactoryAlgorithm);
-            keyManagerFactory.init(keyStore,_keymanagerPassword == null?(_keystorePassword == null?null:_keystorePassword.toString().toCharArray()):_keymanagerPassword.toString().toCharArray());
+            keyManagerFactory.init(keyStore,_keymanagerPassword == null?(_keyStorePassword == null?null:_keyStorePassword.toString().toCharArray()):_keymanagerPassword.toString().toCharArray());
             managers = keyManagerFactory.getKeyManagers();
     
             if (_certAlias != null)
@@ -927,7 +927,7 @@ public class SslContextFactory extends AbstractLifeCycle
     public boolean checkConfig()
     {
         boolean check = true;
-        if (_keystoreInputStream == null && _keystorePath == null)
+        if (_keyStoreInputStream == null && _keyStorePath == null)
         {
             // configuration doesn't have a valid keystore
             check = false;
@@ -936,28 +936,28 @@ public class SslContextFactory extends AbstractLifeCycle
         {
              // if the keystore has been configured but there is no 
              // truststore configured, use the keystore as the truststore
-            if (_truststoreInputStream == null && _truststorePath == null)
+            if (_trustStoreInputStream == null && _trustStorePath == null)
             {
-                _truststorePath = _keystorePath;
-                _truststoreInputStream = _keystoreInputStream;
-                _truststoreType = _keystoreType;
-                _truststoreProvider = _keystoreProvider;
-                _truststorePassword = _keystorePassword;
+                _trustStorePath = _keyStorePath;
+                _trustStoreInputStream = _keyStoreInputStream;
+                _trustStoreType = _keyStoreType;
+                _trustStoreProvider = _keyStoreProvider;
+                _trustStorePassword = _keyStorePassword;
                 _trustManagerFactoryAlgorithm = _keyManagerFactoryAlgorithm;
             }
         }
         
         // It's the same stream we cannot read it twice, so read it once in memory
-        if (_keystoreInputStream != null && _keystoreInputStream == _truststoreInputStream)
+        if (_keyStoreInputStream != null && _keyStoreInputStream == _trustStoreInputStream)
         {
             try
             {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                IO.copy(_keystoreInputStream, baos);
-                _keystoreInputStream.close();
+                IO.copy(_keyStoreInputStream, baos);
+                _keyStoreInputStream.close();
     
-                _keystoreInputStream = new ByteArrayInputStream(baos.toByteArray());
-                _truststoreInputStream = new ByteArrayInputStream(baos.toByteArray());
+                _keyStoreInputStream = new ByteArrayInputStream(baos.toByteArray());
+                _trustStoreInputStream = new ByteArrayInputStream(baos.toByteArray());
             }
             catch (Exception ex)
             {

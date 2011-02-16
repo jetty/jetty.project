@@ -182,7 +182,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Deprecated
     public void setPassword(String password)
     {
-        _sslContextFactory.setKeystorePassword(password);
+        _sslContextFactory.setKeyStorePassword(password);
     }
 
     /* ------------------------------------------------------------ */
@@ -193,7 +193,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Deprecated
     public void setTrustPassword(String password)
     {
-        _sslContextFactory.setTruststorePassword(password);
+        _sslContextFactory.setTrustStorePassword(password);
     }
 
     /* ------------------------------------------------------------ */
@@ -263,7 +263,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Deprecated
     public void setKeystore(String keystore)
     {
-        _sslContextFactory.setKeystore(keystore);
+        _sslContextFactory.setKeyStore(keystore);
     }
 
     /* ------------------------------------------------------------ */
@@ -274,7 +274,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Deprecated
     public String getKeystore()
     {
-        return _sslContextFactory.getKeystore();
+        return _sslContextFactory.getKeyStore();
     }
 
     /* ------------------------------------------------------------ */
@@ -285,7 +285,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Deprecated
     public String getKeystoreType()
     {
-        return _sslContextFactory.getKeystoreType();
+        return _sslContextFactory.getKeyStoreType();
     }
 
     /* ------------------------------------------------------------ */
@@ -340,7 +340,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Deprecated
     public void setKeystoreType(String keystoreType)
     {
-        _sslContextFactory.setKeystoreType(keystoreType);
+        _sslContextFactory.setKeyStoreType(keystoreType);
     }
 
     /* ------------------------------------------------------------ */
@@ -395,7 +395,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Deprecated
     public String getTruststore()
     {
-        return _sslContextFactory.getTruststore();
+        return _sslContextFactory.getTrustStore();
     }
 
     /* ------------------------------------------------------------ */
@@ -406,7 +406,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Deprecated
     public String getTruststoreType()
     {
-        return _sslContextFactory.getTruststoreType();
+        return _sslContextFactory.getTrustStoreType();
     }
 
     /* ------------------------------------------------------------ */
@@ -461,7 +461,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Deprecated
     public void setTruststore(String truststore)
     {
-        _sslContextFactory.setTruststore(truststore);
+        _sslContextFactory.setTrustStore(truststore);
     }
 
     /* ------------------------------------------------------------ */
@@ -472,7 +472,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Deprecated
     public void setTruststoreType(String truststoreType)
     {
-        _sslContextFactory.setTruststoreType(truststoreType);
+        _sslContextFactory.setTrustStoreType(truststoreType);
     }
 
     /* ------------------------------------------------------------ */
