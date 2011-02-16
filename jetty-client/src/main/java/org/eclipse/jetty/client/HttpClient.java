@@ -13,33 +13,24 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
-import java.security.KeyStore;
-import java.security.SecureRandom;
-import java.security.Security;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
+
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 
 import org.eclipse.jetty.client.security.Authentication;
 import org.eclipse.jetty.client.security.RealmResolver;
 import org.eclipse.jetty.client.security.SecurityListener;
 import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpSchemes;
-import org.eclipse.jetty.http.security.Password;
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
@@ -48,7 +39,6 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -101,26 +91,21 @@ public class HttpClient extends HttpBuffers implements Attributes
     private int _maxRedirects = 20;
     private LinkedList<String> _registeredListeners;
 
-    private String _keyStoreLocation;
-    private InputStream _keyStoreInputStream;
-    private String _keyStoreType = "JKS";
-    private String _keyStorePassword;
-    private String _keyManagerAlgorithm = (Security.getProperty("ssl.KeyManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.KeyManagerFactory.algorithm"));
-    private String _keyManagerPassword;
-    private String _trustStoreLocation;
-    private InputStream _trustStoreInputStream;
-    private String _trustStoreType = "JKS";
-    private String _trustStorePassword;
-    private String _trustManagerAlgorithm = (Security.getProperty("ssl.TrustManagerFactory.algorithm")==null?"SunX509":Security.getProperty("ssl.TrustManagerFactory.algorithm"));
-    private String _protocol = "TLS";
-    private String _provider;
-    private String _secureRandomAlgorithm;
-
-    private SSLContext _sslContext;
+    private SslContextFactory _sslContextFactory;
 
     private RealmResolver _realmResolver;
 
     private AttributesMap _attributes=new AttributesMap();
+    
+    public HttpClient()
+    {
+        this(new SslContextFactory());
+    }
+    
+    public HttpClient(SslContextFactory sslContextFactory)
+    {
+        _sslContextFactory = sslContextFactory;
+    }
 
     /* ------------------------------------------------------------------------------- */
     public void dump()
@@ -458,7 +443,8 @@ public class HttpClient extends HttpBuffers implements Attributes
             ((LifeCycle)_threadPool).start();
         }
 
-
+        _sslContextFactory.start();
+        
         if (_connectorType == CONNECTOR_SELECT_CHANNEL)
         {
 
@@ -503,6 +489,8 @@ public class HttpClient extends HttpBuffers implements Attributes
     {
         _connector.stop();
         _connector = null;
+        _sslContextFactory.stop();
+        
         if (_threadPool instanceof LifeCycle)
         {
             ((LifeCycle)_threadPool).stop();
@@ -528,150 +516,21 @@ public class HttpClient extends HttpBuffers implements Attributes
      * otherwise we simply ignore certificates and run with a loose ssl context.
      *
      * @return the SSL context
-     * @throws IOException
      */
-    protected SSLContext getSSLContext() throws IOException
+    protected SSLContext getSSLContext()
     {
-        if (_sslContext == null)
-        {
-            if (_keyStoreInputStream == null && _keyStoreLocation == null &&
-                _trustStoreInputStream == null && _trustStoreLocation == null )
-            {
-                _sslContext = getLooseSSLContext();
-            }
-            else
-            {
-                _sslContext = getStrictSSLContext();
-            }
-        }
-        return _sslContext;
+        return _sslContextFactory.getSslContext();
     }
 
-    protected SSLContext getStrictSSLContext() throws IOException
+    /* ------------------------------------------------------------ */
+    /**
+     * @return the instance of SslContextFactory associated with the client
+     */
+    public SslContextFactory getSslContextFactory()
     {
-        try
-        {
-            /*
-             * if the keystore exists but the trust store doesn't use the keystore as the trust store
-             */
-            if (_keyStoreInputStream != null || _keyStoreLocation != null)
-            {
-                if (_trustStoreInputStream == null && _trustStoreLocation == null)
-                {
-                    _trustStoreLocation = _keyStoreLocation;
-                    _trustStoreInputStream = _keyStoreInputStream;
-                    _trustStoreType = _keyStoreType;
-                }
-            }
-            
-            
-            InputStream keyStoreInputStream = null;
-            InputStream trustStoreInputStream = null;
-
-            // It's the same stream and we cannot read it twice, so we read it once in memory
-            if (_keyStoreInputStream != null && _keyStoreInputStream == _trustStoreInputStream)
-            {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                byte[] buffer = new byte[1024];
-                int read;
-                while ((read = _keyStoreInputStream.read(buffer)) >= 0)
-                {
-                    baos.write(buffer, 0, read);
-                }
-                
-                _keyStoreInputStream.close();
-
-                keyStoreInputStream = new ByteArrayInputStream(baos.toByteArray());
-                trustStoreInputStream = new ByteArrayInputStream(baos.toByteArray());
-            }
-
-            /*
-             * set the keystore input stream if it isn't set
-             */
-            if (keyStoreInputStream == null && _keyStoreLocation != null )
-            {
-                keyStoreInputStream = _keyStoreInputStream == null ? Resource.newResource(_keyStoreLocation).getInputStream() : _keyStoreInputStream;
-            }
-           
-            /*
-             * work out the key managers for the keystore, null if its not configured
-             */
-            KeyManager[] keyManagers = null;
-
-            if (keyStoreInputStream != null)
-            {
-                KeyStore keyStore = KeyStore.getInstance(_keyStoreType);
-                keyStore.load(keyStoreInputStream,_keyStorePassword == null?null:_keyStorePassword.toCharArray());
-                keyStoreInputStream.close();
-
-                KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(_keyManagerAlgorithm);
-                keyManagerFactory.init(keyStore,_keyManagerPassword == null?null:_keyManagerPassword.toCharArray());
-                keyManagers = keyManagerFactory.getKeyManagers();
-            }
-            
-            /*
-             * trust store will always exist if this method has been called, either by being the only store specified or by being
-             * a duplicate of the keystore..
-             * 
-             * this is behavior consistent with other aspects of jetty I believe so maintaining that consistency
-             */
-            if (trustStoreInputStream == null)
-            {
-                trustStoreInputStream = _trustStoreInputStream == null ? Resource.newResource(_trustStoreLocation).getInputStream() : _trustStoreInputStream;
-            }
-            
-            KeyStore trustStore = KeyStore.getInstance(_trustStoreType);
-            trustStore.load(trustStoreInputStream, _trustStorePassword == null ? null : _trustStorePassword.toCharArray());
-            trustStoreInputStream.close();
-
-            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(_trustManagerAlgorithm);
-            trustManagerFactory.init(trustStore);
-            TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
-
-            SecureRandom secureRandom = _secureRandomAlgorithm == null ? null : SecureRandom.getInstance(_secureRandomAlgorithm);
-            SSLContext context = _provider == null ? SSLContext.getInstance(_protocol) : SSLContext.getInstance(_protocol, _provider);
-            context.init(keyManagers, trustManagers, secureRandom);
-            
-            return context;
-        }
-        catch (Exception x)
-        {
-            throw (IOException)new IOException("Error generating SSLContext for keystore " + _keyStoreLocation).initCause(x);
-        }
+        return _sslContextFactory;
     }
-
-    protected SSLContext getLooseSSLContext() throws IOException
-    {
-        // Create a trust manager that does not validate certificate chains
-        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager()
-        {
-            public java.security.cert.X509Certificate[] getAcceptedIssuers()
-            {
-                return null;
-            }
-
-            public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType)
-            {
-            }
-
-            public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
-            {
-            }
-        }};
-
-        // Install the all-trusting trust manager
-        try
-        {
-            SSLContext sslContext = SSLContext.getInstance(_protocol);
-            sslContext.init(null, trustAllCerts, null);
-            return sslContext;
-        }
-        catch (Exception x)
-        {
-            throw (IOException)new IOException("Error generating loose SSLContext").initCause(x);
-        }
-    }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @return the period in milliseconds a {@link HttpConnection} can be idle for before it is closed.
@@ -811,148 +670,175 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public String getTrustStoreLocation()
     {
-        return _trustStoreLocation;
+        return _sslContextFactory.getTruststore();
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setTrustStoreLocation(String trustStoreLocation)
     {
-        this._trustStoreLocation = trustStoreLocation;
+        _sslContextFactory.setTruststore(trustStoreLocation);
     }
 
+    /* ------------------------------------------------------------ */
+    @Deprecated
     public InputStream getTrustStoreInputStream()
     {
-        return _trustStoreInputStream;
+        return _sslContextFactory.getTruststoreInputStream();
     }
 
+    /* ------------------------------------------------------------ */
+    @Deprecated
     public void setTrustStoreInputStream(InputStream trustStoreInputStream)
     {
-        this._trustStoreInputStream = trustStoreInputStream;
+        _sslContextFactory.setTruststoreInputStream(trustStoreInputStream);
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public String getKeyStoreLocation()
     {
-        return _keyStoreLocation;
+        return _sslContextFactory.getKeystore();
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setKeyStoreLocation(String keyStoreLocation)
     {
-        this._keyStoreLocation = keyStoreLocation;
+        _sslContextFactory.setKeystore(keyStoreLocation);
     }
 
+    @Deprecated
     public InputStream getKeyStoreInputStream()
     {
-        return _keyStoreInputStream;
+        return _sslContextFactory.getKeystoreInputStream();
     }
 
+    @Deprecated
     public void setKeyStoreInputStream(InputStream keyStoreInputStream)
     {
-        this._keyStoreInputStream = keyStoreInputStream;
+        _sslContextFactory.setKeystoreInputStream(keyStoreInputStream);
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setKeyStorePassword(String keyStorePassword)
     {
-        this._keyStorePassword = new Password(keyStorePassword).toString();
+        _sslContextFactory.setKeystorePassword(keyStorePassword);
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setKeyManagerPassword(String keyManagerPassword)
     {
-        this._keyManagerPassword = new Password(keyManagerPassword).toString();
+        _sslContextFactory.setKeyManagerPassword(keyManagerPassword);
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setTrustStorePassword(String trustStorePassword)
     {
-        this._trustStorePassword = new Password(trustStorePassword).toString();
+        _sslContextFactory.setTruststorePassword(trustStorePassword);
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public String getKeyStoreType()
     {
-        return this._keyStoreType;
+        return _sslContextFactory.getKeystoreType();
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setKeyStoreType(String keyStoreType)
     {
-        this._keyStoreType = keyStoreType;
+        _sslContextFactory.setKeystoreType(keyStoreType);
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public String getTrustStoreType()
     {
-        return this._trustStoreType;
+        return _sslContextFactory.getTruststoreType();
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setTrustStoreType(String trustStoreType)
     {
-        this._trustStoreType = trustStoreType;
+        _sslContextFactory.setTruststoreType(trustStoreType);
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public String getKeyManagerAlgorithm()
     {
-        return _keyManagerAlgorithm;
+        return _sslContextFactory.getSslKeyManagerFactoryAlgorithm();
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setKeyManagerAlgorithm(String keyManagerAlgorithm)
     {
-        this._keyManagerAlgorithm = keyManagerAlgorithm;
+        _sslContextFactory.setSslKeyManagerFactoryAlgorithm(keyManagerAlgorithm);
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public String getTrustManagerAlgorithm()
     {
-        return _trustManagerAlgorithm;
+        return _sslContextFactory.getTrustManagerFactoryAlgorithm();
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setTrustManagerAlgorithm(String trustManagerAlgorithm)
     {
-        this._trustManagerAlgorithm = trustManagerAlgorithm;
+        _sslContextFactory.setTrustManagerFactoryAlgorithm(trustManagerAlgorithm);
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public String getProtocol()
     {
-        return _protocol;
+        return _sslContextFactory.getProtocol();
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setProtocol(String protocol)
     {
-        this._protocol = protocol;
+        _sslContextFactory.setProtocol(protocol);
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public String getProvider()
     {
-        return _provider;
+        return _sslContextFactory.getProvider();
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setProvider(String provider)
     {
-        this._provider = provider;
+        setProvider(provider);
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public String getSecureRandomAlgorithm()
     {
-        return _secureRandomAlgorithm;
+        return _sslContextFactory.getSecureRandomAlgorithm();
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
     public void setSecureRandomAlgorithm(String secureRandomAlgorithm)
     {
-        this._secureRandomAlgorithm = secureRandomAlgorithm;
+        _sslContextFactory.setSecureRandomAlgorithm(secureRandomAlgorithm);
     }
 }

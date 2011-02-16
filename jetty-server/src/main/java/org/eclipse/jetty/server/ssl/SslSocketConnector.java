@@ -14,37 +14,26 @@
 package org.eclipse.jetty.server.ssl;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.KeyStore;
-import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import javax.net.ssl.HandshakeCompletedEvent;
 import javax.net.ssl.HandshakeCompletedListener;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.http.HttpSchemes;
-import org.eclipse.jetty.http.security.Password;
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
 /**
@@ -63,35 +52,8 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class SslSocketConnector extends SocketConnector  implements SslConnector
 {
-    /** Default value for the cipher Suites. */
-    private String _excludeCipherSuites[] = null;
-    /** Default value for the included cipher Suites. */
-    private String _includeCipherSuites[]=null;
-    
-    /** Default value for the keystore location path. */
-    private String _keystorePath=DEFAULT_KEYSTORE ;
-    private String _keystoreType = "JKS"; // type of the key store
-    
-    /** Set to true if we require client certificate authentication. */
-    private boolean _needClientAuth = false;
-    private transient Password _password;
-    private transient Password _keyPassword;
-    private transient Password _trustPassword;
-    private String _protocol= "TLS";
-    private String _provider;
-    private String _secureRandomAlgorithm; // cert algorithm
-    private String _sslKeyManagerFactoryAlgorithm = DEFAULT_KEYSTORE_ALGORITHM;
-    private String _sslTrustManagerFactoryAlgorithm = DEFAULT_TRUSTSTORE_ALGORITHM;
-    private String _truststorePath;
-    private String _truststoreType = "JKS"; // type of the key store
-
-    /** Set to true if we would like client certificate authentication. */
-    private boolean _wantClientAuth = false;
+    private final SslContextFactory _sslContextFactory;
     private int _handshakeTimeout = 0; //0 means use maxIdleTime
-    
-    private SSLContext _context;
-    private boolean _allowRenegotiate =false;
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -99,7 +61,12 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      */
     public SslSocketConnector()
     {
-        super();
+        this(new SslContextFactory(SslContextFactory.DEFAULT_KEYSTORE_PATH));
+    }
+
+    public SslSocketConnector(SslContextFactory sslContextFactory)
+    {
+        _sslContextFactory = sslContextFactory;
     }
 
     /* ------------------------------------------------------------ */
@@ -108,7 +75,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      */
     public boolean isAllowRenegotiate()
     {
-        return _allowRenegotiate;
+        return _sslContextFactory.isAllowRenegotiate();
     }
 
     /* ------------------------------------------------------------ */
@@ -121,7 +88,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      */
     public void setAllowRenegotiate(boolean allowRenegotiate)
     {
-        _allowRenegotiate = allowRenegotiate;
+        _sslContextFactory.setAllowRenegotiate(allowRenegotiate);
     }
 
     /* ------------------------------------------------------------ */
@@ -142,74 +109,6 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         throws IOException
     {   
         super.configure(socket);
-    }
-
-    /* ------------------------------------------------------------ */
-    protected SSLContext createSSLContext() throws Exception
-    {
-        KeyManager[] keyManagers = getKeyManagers();
-        TrustManager[] trustManagers = getTrustManagers();
-        SecureRandom secureRandom = _secureRandomAlgorithm==null?null:SecureRandom.getInstance(_secureRandomAlgorithm);
-        SSLContext context = _provider==null?SSLContext.getInstance(_protocol):SSLContext.getInstance(_protocol, _provider);
-        context.init(keyManagers, trustManagers, secureRandom);
-        return context;
-    }
-    
-    /* ------------------------------------------------------------ */
-    protected SSLServerSocketFactory createFactory() 
-        throws Exception
-    {
-        if (_context==null)
-            _context=createSSLContext();
-    	
-        return _context.getServerSocketFactory();
-    }
-    
-
-    /* ------------------------------------------------------------ */
-    protected KeyManager[] getKeyManagers() throws Exception
-    {
-        KeyStore keyStore = getKeyStore(_keystorePath, _keystoreType, _password==null?null:_password.toString());
-        
-        KeyManagerFactory keyManagerFactory=KeyManagerFactory.getInstance(_sslKeyManagerFactoryAlgorithm);
-        keyManagerFactory.init(keyStore,_keyPassword==null?(_password==null?null:_password.toString().toCharArray()):_keyPassword.toString().toCharArray());
-        return keyManagerFactory.getKeyManagers();
-    }
-    
-    protected TrustManager[] getTrustManagers() throws Exception
-    {        
-        if (_truststorePath==null)
-        {
-            _truststorePath=_keystorePath;
-            _truststoreType=_keystoreType;
-            //TODO is this right? it wasn't in the code before refactoring
-            _trustPassword = _password;
-            _sslTrustManagerFactoryAlgorithm = _sslKeyManagerFactoryAlgorithm;
-        }
-        KeyStore trustStore = getKeyStore(_truststorePath, _truststoreType, _trustPassword==null?null:_trustPassword.toString());
-
-        TrustManagerFactory trustManagerFactory=TrustManagerFactory.getInstance(_sslTrustManagerFactoryAlgorithm);
-        trustManagerFactory.init(trustStore);
-        return trustManagerFactory.getTrustManagers();
-    }
-    
-    protected KeyStore getKeyStore(String keystorePath, String keystoreType, String keystorePassword) throws Exception
-    {
-    	KeyStore keystore;
-    	InputStream keystoreInputStream = null;
-    	try
-        {
-            if (keystorePath!=null)
-                keystoreInputStream = Resource.newResource(keystorePath).getInputStream();
-            keystore=KeyStore.getInstance(keystoreType);
-            keystore.load(keystoreInputStream,keystorePassword==null?null:keystorePassword.toString().toCharArray());
-            return keystore;
-        }
-        finally
-        {
-            if (keystoreInputStream != null)
-            	keystoreInputStream.close();
-        }
     }
 
     /* ------------------------------------------------------------ */
@@ -247,79 +146,154 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     }
 
     /* ------------------------------------------------------------ */    
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getExcludeCipherSuites()
+     * @deprecated
+     */
+    @Deprecated
     public String[] getExcludeCipherSuites() {
-        return _excludeCipherSuites;
+        return _sslContextFactory.getExcludeCipherSuites();
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getIncludeCipherSuites()
+     * @deprecated
+     */
+    @Deprecated
     public String[] getIncludeCipherSuites()
     {
-        return _includeCipherSuites;
+        return _sslContextFactory.getIncludeCipherSuites();
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getKeystore()
+     * @deprecated
+     */
+    @Deprecated
     public String getKeystore()
     {
-        return _keystorePath;
+        return _sslContextFactory.getKeystore();
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getKeystoreType()
+     * @deprecated
+     */
+    @Deprecated
     public String getKeystoreType() 
     {
-        return (_keystoreType);
+        return _sslContextFactory.getKeystoreType();
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getNeedClientAuth()
+     * @deprecated
+     */
+    @Deprecated
     public boolean getNeedClientAuth()
     {
-        return _needClientAuth;
+        return _sslContextFactory.getNeedClientAuth();
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getProtocol()
+     * @deprecated
+     */
+    @Deprecated
     public String getProtocol() 
     {
-        return _protocol;
+        return _sslContextFactory.getProtocol();
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getProvider()
+     * @deprecated
+     */
+    @Deprecated
     public String getProvider() {
-	return _provider;
+	return _sslContextFactory.getProvider();
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getSecureRandomAlgorithm()
+     * @deprecated
+     */
+    @Deprecated
     public String getSecureRandomAlgorithm() 
     {
-        return (this._secureRandomAlgorithm);
+        return _sslContextFactory.getSecureRandomAlgorithm();
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getSslKeyManagerFactoryAlgorithm()
+     * @deprecated
+     */
+    @Deprecated
     public String getSslKeyManagerFactoryAlgorithm() 
     {
-        return (this._sslKeyManagerFactoryAlgorithm);
+        return _sslContextFactory.getSslKeyManagerFactoryAlgorithm();
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getSslTrustManagerFactoryAlgorithm()
+     * @deprecated
+     */
+    @Deprecated
     public String getSslTrustManagerFactoryAlgorithm() 
     {
-        return (this._sslTrustManagerFactoryAlgorithm);
+        return _sslContextFactory.getTrustManagerFactoryAlgorithm();
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getTruststore()
+     * @deprecated
+     */
+    @Deprecated
     public String getTruststore()
     {
-        return _truststorePath;
+        return _sslContextFactory.getTruststore();
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getSslContextFactory()
+     */
+//    @Override
+    public SslContextFactory getSslContextFactory()
+    {
+        return _sslContextFactory;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getTruststoreType()
+     * @deprecated
+     */
+    @Deprecated
     public String getTruststoreType()
     {
-        return _truststoreType;
+        return _sslContextFactory.getTruststoreType();
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#getWantClientAuth()
+     * @deprecated
+     */
+    @Deprecated
     public boolean getWantClientAuth()
     {
-        return _wantClientAuth;
+        return _sslContextFactory.getWantClientAuth();
     }
 
     /* ------------------------------------------------------------ */
@@ -351,6 +325,35 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         final int integralPort = getIntegralPort();
         return integralPort == 0 || integralPort == request.getServerPort();
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.nio.SelectChannelConnector#doStart()
+     */
+    @Override
+    protected void doStart() throws Exception
+    {
+        if (!_sslContextFactory.checkConfig())
+        {
+            throw new IllegalStateException("SSL context is not configured correctly.");
+        }
+
+        _sslContextFactory.start();
+        
+        super.doStart();
+    }
+        
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.bio.SocketConnector#doStop()
+     */
+    @Override
+    protected void doStop() throws Exception
+    {
+        _sslContextFactory.stop();
+
+        super.doStop();
+    }
     
     /* ------------------------------------------------------------ */
     /**
@@ -363,118 +366,80 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * @see #setNeedClientAuth(boolean)
      * @exception IOException
      */
-
-    /* ------------------------------------------------------------ */
     @Override
     protected ServerSocket newServerSocket(String host, int port,int backlog) throws IOException
     {
-        SSLServerSocketFactory factory = null;
-        SSLServerSocket socket = null;
+        SSLServerSocketFactory factory = _sslContextFactory.getSslContext().getServerSocketFactory();
 
-        try
-        {
-            factory = createFactory();
+        SSLServerSocket socket = 
+            (SSLServerSocket) (host==null ?
+                        factory.createServerSocket(port,backlog):
+                        factory.createServerSocket(port,backlog,InetAddress.getByName(host)));
 
-            socket = (SSLServerSocket) (host==null?
-                            factory.createServerSocket(port,backlog):
-                            factory.createServerSocket(port,backlog,InetAddress.getByName(host)));
+        if (_sslContextFactory.getWantClientAuth())
+            socket.setWantClientAuth(_sslContextFactory.getWantClientAuth());
+        if (_sslContextFactory.getNeedClientAuth())
+            socket.setNeedClientAuth(_sslContextFactory.getNeedClientAuth());
 
-            if (_wantClientAuth)
-                socket.setWantClientAuth(_wantClientAuth);
-            if (_needClientAuth)
-                socket.setNeedClientAuth(_needClientAuth);
-
-            if ((_excludeCipherSuites!=null&&_excludeCipherSuites.length>0)
-                	|| (_includeCipherSuites!=null&&_includeCipherSuites.length>0))
-            {
-            	List<String> includedCSList;
-                if (_includeCipherSuites!=null)
-                {
-                	includedCSList = Arrays.asList(_includeCipherSuites);
-                } else {
-                	includedCSList = new ArrayList<String>();
-                }
-                List<String> excludedCSList;
-                if (_excludeCipherSuites!=null)
-                {
-                	excludedCSList = Arrays.asList(_excludeCipherSuites);
-                } else {
-                	excludedCSList = new ArrayList<String>();
-                }
-                String[] enabledCipherSuites = socket.getEnabledCipherSuites();
-                List<String> enabledCSList = new ArrayList<String>(Arrays.asList(enabledCipherSuites));
-                
-                String[] supportedCipherSuites = socket.getSupportedCipherSuites();
-                List<String> supportedCSList = Arrays.asList(supportedCipherSuites);
-                
-            	for (String cipherName : includedCSList)
-                {
-                    if ((!enabledCSList.contains(cipherName))
-                    		&& supportedCSList.contains(cipherName))
-                    {
-                        enabledCSList.add(cipherName);
-                    }
-                }
-
-                for (String cipherName : excludedCSList)
-                {
-                    if (enabledCSList.contains(cipherName))
-                    {
-                        enabledCSList.remove(cipherName);
-                    }
-                }
-                enabledCipherSuites = enabledCSList.toArray(new String[enabledCSList.size()]);
-
-                socket.setEnabledCipherSuites(enabledCipherSuites);
-            }
-            
-        }
-        catch (IOException e)
-        {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            Log.warn(e.toString());
-            Log.debug(e);
-            throw new IOException("!JsseListener: " + e);
-        }
+        socket.setEnabledCipherSuites(_sslContextFactory.selectCipherSuites(
+                                            socket.getEnabledCipherSuites(),
+                                            socket.getSupportedCipherSuites()));
         return socket;
     }
 
     /* ------------------------------------------------------------ */
-    /** 
-     * 
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setExcludeCipherSuites(java.lang.String[])
+     * @deprecated
      */
-    public void setExcludeCipherSuites(String[] cipherSuites) {
-        this._excludeCipherSuites = cipherSuites;
+    @Deprecated
+    public void setExcludeCipherSuites(String[] cipherSuites)
+    {
+        _sslContextFactory.setExcludeCipherSuites(cipherSuites);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setIncludeCipherSuites(java.lang.String[])
+     * @deprecated
+     */
+    @Deprecated
     public void setIncludeCipherSuites(String[] cipherSuites)
     {
-        this._includeCipherSuites=cipherSuites;
+        _sslContextFactory.setIncludeCipherSuites(cipherSuites);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setKeyPassword(java.lang.String)
+     * @deprecated
+     */
+    @Deprecated
     public void setKeyPassword(String password)
     {
-        _keyPassword = Password.getPassword(KEYPASSWORD_PROPERTY,password,null);
+        _sslContextFactory.setKeyManagerPassword(password);
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @param keystore The resource path to the keystore, or null for built in keystores.
+     * @deprecated
      */
+    @Deprecated
     public void setKeystore(String keystore)
     {
-        _keystorePath = keystore;
+        _sslContextFactory.setKeystore(keystore);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setKeystoreType(java.lang.String)
+     * @deprecated
+     */
+    @Deprecated
     public void setKeystoreType(String keystoreType) 
     {
-        _keystoreType = keystoreType;
+        _sslContextFactory.setKeystoreType(keystoreType);
     }
 
     /* ------------------------------------------------------------ */
@@ -482,87 +447,132 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * Set the value of the needClientAuth property
      * 
      * @param needClientAuth true iff we require client certificate authentication.
+     * @deprecated
      */
+    @Deprecated
     public void setNeedClientAuth(boolean needClientAuth)
     {
-        _needClientAuth = needClientAuth;
+        _sslContextFactory.setNeedClientAuth(needClientAuth);
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setPassword(java.lang.String)
+     * @deprecated
+     */
+    @Deprecated
     public void setPassword(String password)
     {
-        _password = Password.getPassword(PASSWORD_PROPERTY,password,null);
+        _sslContextFactory.setKeystorePassword(password);
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setTrustPassword(java.lang.String)
+     * @deprecated
+     */
+    @Deprecated
     public void setTrustPassword(String password)
     {
-        _trustPassword = Password.getPassword(PASSWORD_PROPERTY,password,null);
+        _sslContextFactory.setTruststorePassword(password);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setProtocol(java.lang.String)
+     * @deprecated
+     */
+    @Deprecated
     public void setProtocol(String protocol) 
     {
-        _protocol = protocol;
+        _sslContextFactory.setProtocol(protocol);
     }
 
     /* ------------------------------------------------------------ */
-    public void setProvider(String _provider) {
-	this._provider = _provider;
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setProvider(java.lang.String)
+     * @deprecated
+     */
+    @Deprecated
+    public void setProvider(String provider) {
+        _sslContextFactory.setProvider(provider);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setSecureRandomAlgorithm(java.lang.String)
+     * @deprecated
+     */
+    @Deprecated
     public void setSecureRandomAlgorithm(String algorithm) 
     {
-        this._secureRandomAlgorithm = algorithm;
+        _sslContextFactory.setSecureRandomAlgorithm(algorithm);
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setSslKeyManagerFactoryAlgorithm(java.lang.String)
+     * @deprecated
+     */
+    @Deprecated
     public void setSslKeyManagerFactoryAlgorithm(String algorithm) 
     {
-        this._sslKeyManagerFactoryAlgorithm = algorithm;
+        _sslContextFactory.setSslKeyManagerFactoryAlgorithm(algorithm);
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setSslTrustManagerFactoryAlgorithm(java.lang.String)
+     * @deprecated
+     */
+    @Deprecated
     public void setSslTrustManagerFactoryAlgorithm(String algorithm) 
     {
-        this._sslTrustManagerFactoryAlgorithm = algorithm;
+        _sslContextFactory.setTrustManagerFactoryAlgorithm(algorithm);
     }
 
-
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setTruststore(java.lang.String)
+     * @deprecated
+     */
+    @Deprecated
     public void setTruststore(String truststore)
     {
-        _truststorePath = truststore;
+        _sslContextFactory.setTruststore(truststore);
     }
     
-
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setTruststoreType(java.lang.String)
+     * @deprecated
+     */
+    @Deprecated
     public void setTruststoreType(String truststoreType)
     {
-        _truststoreType = truststoreType;
+        _sslContextFactory.setTruststoreType(truststoreType);
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.ssl.SslConnector#setSslContext(javax.net.ssl.SSLContext)
+     * @deprecated
+     */
+    @Deprecated
     public void setSslContext(SSLContext sslContext)
     {
-    	_context = sslContext;
+        _sslContextFactory.setSslContext(sslContext);
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.ssl.SslConnector#setSslContext(javax.net.ssl.SSLContext)
+     * @deprecated
      */
+    @Deprecated
     public SSLContext getSslContext()
     {
-        try
-        {
-            if (_context == null)
-                _context=createSSLContext();
-        }
-        catch(Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-         
-        return _context;
+        return _sslContextFactory.getSslContext();
     }
 
     /* ------------------------------------------------------------ */
@@ -572,10 +582,12 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * 
      * @param wantClientAuth true if we want client certificate authentication.
      * @see SSLServerSocket#setWantClientAuth
+     * @deprecated
      */
+    @Deprecated
     public void setWantClientAuth(boolean wantClientAuth)
     {
-        _wantClientAuth = wantClientAuth;
+        _sslContextFactory.setWantClientAuth(wantClientAuth);
     }
 
     /* ------------------------------------------------------------ */
@@ -628,7 +640,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
                     {
                         if (handshook)
                         {
-                            if (!_allowRenegotiate)
+                            if (!_sslContextFactory.isAllowRenegotiate())
                             {
                                 Log.warn("SSL renegotiate denied: "+ssl);
                                 try{ssl.close();}catch(IOException e){Log.warn(e);}
@@ -665,7 +677,9 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * Unsupported.
      * 
      * TODO: we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
+     * @deprecated
      */
+    @Deprecated
     public String getAlgorithm()
     {
         throw new UnsupportedOperationException();
@@ -676,7 +690,9 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * Unsupported.
      * 
      * TODO: we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
+     * @deprecated
      */
+    @Deprecated
     public void setAlgorithm(String algorithm)
     {
         throw new UnsupportedOperationException();

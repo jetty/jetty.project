@@ -12,6 +12,8 @@
 
     <properties>
         <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
+        <jetty.test.keystore>1.1</jetty.test.keystore>
+        <jetty.test.keystore.loc>target/test-policy</jetty.test.keystore.loc>
     </properties>
 
     <build>
@@ -53,6 +55,32 @@
                     <onlyAnalyze>org.eclipse.jetty.client.*</onlyAnalyze>
                 </configuration>
             </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-dependency-plugin</artifactId>
+              <executions>
+                <execution>
+                  <id>unpack</id>
+                  <phase>generate-test-resources</phase>
+                  <goals>
+                    <goal>unpack</goal>
+                  </goals>
+                  <configuration>
+                    <artifactItems>
+                      <artifactItem>
+                        <groupId>org.eclipse.jetty.toolchain</groupId>
+                        <artifactId>jetty-test-policy</artifactId>
+                        <version>${jetty.test.keystore}</version>
+                        <type>jar</type>
+                        <overWrite>true</overWrite>
+                        <includes>**/*.keystore,**/*.pem</includes>
+                        <outputDirectory>${jetty.test.keystore.loc}</outputDirectory>
+                      </artifactItem>
+                    </artifactItems>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>   
         </plugins>
     </build>
 
