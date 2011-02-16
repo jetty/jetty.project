@@ -6,6 +6,8 @@ jetty-7.3.1-SNAPSHOT
  + 336793 Tee data filled and flushed from endpoint
  + 337258 Scanner start and end cycle notification
  + 337268 Allow specifying alias of a certificate to be used by SSL connector
+ + 337270 Shared Timer for session management
+ + 337271 Flush SSL endpoint when dispatch thread held forever
 
 jetty-7.3.0.v20110203 3 February 2011
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session (further update)

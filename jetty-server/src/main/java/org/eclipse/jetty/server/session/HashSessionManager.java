@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
@@ -46,12 +47,16 @@ import org.eclipse.jetty.util.log.Log;
  * <p>
  * This manager supports saving sessions to disk, either periodically or at shutdown.
  * Sessions can also have their content idle saved to disk to reduce the memory overheads of large idle sessions.
+ * <p>
+ * This manager will create it's own Timer instance to scavenge threads, unless it discovers a shared Timer instance
+ * set as the "org.eclipse.jetty.server.session.timer" attribute of the Server.
  * 
  */
 public class HashSessionManager extends AbstractSessionManager
 {
     private static int __id;
     private Timer _timer;
+    private boolean _timerStop=false;
     private TimerTask _task;
     private int _scavengePeriodMs=30000;
     private int _savePeriodMs=0; //don't do period saves by default
@@ -78,7 +83,13 @@ public class HashSessionManager extends AbstractSessionManager
         _sessions=new ConcurrentHashMap<String,HashedSession>(); 
         super.doStart();
 
-        _timer=new Timer("HashSessionScavenger-"+__id++, true);
+        _timerStop=false;
+        _timer=(Timer)getSessionHandler().getServer().getAttribute("org.eclipse.jetty.server.session.timer");
+        if (_timer==null)
+        {
+            _timerStop=true;
+            _timer=new Timer("HashSessionScavenger-"+__id++, true);
+        }
         
         setScavengePeriod(getScavengePeriod());
 
@@ -118,7 +129,7 @@ public class HashSessionManager extends AbstractSessionManager
             if (_task!=null)
                 _task.cancel();
             _task=null;
-            if (_timer!=null)
+            if (_timer!=null && _timerStop)
                 _timer.cancel();
             _timer=null;
         }
