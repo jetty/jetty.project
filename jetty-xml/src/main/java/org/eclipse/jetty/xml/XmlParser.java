@@ -51,10 +51,10 @@ import org.xml.sax.helpers.DefaultHandler;
  */
 public class XmlParser
 {
-    private Map _redirectMap = new HashMap();
+    private Map<String,URL> _redirectMap = new HashMap<String,URL>();
     private SAXParser _parser;
-    private Map _observerMap;
-    private Stack _observers = new Stack();
+    private Map<String,ContentHandler> _observerMap;
+    private Stack<ContentHandler> _observers = new Stack<ContentHandler>();
     private String _xpath;
     private Object _xpaths;
     private String _dtd;
@@ -394,7 +394,7 @@ public class XmlParser
         {
             if (Log.isDebugEnabled())
                 Log.debug("resolveEntity(" + pid + ", " + sid + ")");
-
+            
             if (sid!=null && sid.endsWith(".dtd"))
                 _dtd=sid;
             

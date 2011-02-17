@@ -19,7 +19,7 @@ import java.util.HashMap;
 import org.junit.Ignore;
 
 @Ignore
-public class TestConfiguration extends HashMap
+public class TestConfiguration extends HashMap<String,Object>
 {
     public static int VALUE=77;
 
