@@ -16,7 +16,10 @@
 
 package org.eclipse.jetty.policy;
 
-import java.io.File;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.FilePermission;
 import java.net.URL;
 import java.security.CodeSource;
@@ -24,21 +27,12 @@ import java.security.Permission;
 import java.security.PermissionCollection;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.PropertyPermission;
-import java.util.Set;
-
-import junit.framework.Assert;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class JettyPolicyTest
 {
@@ -59,22 +53,18 @@ public class JettyPolicyTest
     @Test
     public void testGlobalAllPermissionLoader() throws Exception
     {
-    	File policyFile = MavenTestingUtils.getTestResourceFile("global-all-permission.policy");
-        JettyPolicy ap = new JettyPolicy(  Collections.singleton( policyFile.getAbsolutePath() ), evaluator );
+        JettyPolicy ap = new JettyPolicy(  MavenTestingUtils.getTestResourceDir("policy-test-1").getAbsolutePath(), evaluator );
+
         ap.refresh();
 
-        PermissionCollection pc = ap.getPermissions( new ProtectionDomain( null, null ) );
+        PermissionCollection pc = ap.getPermissions(new ProtectionDomain(null,null));
 
-        assertNotNull( pc );
+        assertNotNull(pc);
 
-        Permission testPerm = new FilePermission( "/tmp", "read" );
+        Permission testPerm = new FilePermission("/tmp","read");
 
-        assertTrue( pc.implies( testPerm ) );
+        assertTrue(pc.implies(testPerm));
 
-//        for ( Enumeration<Permission> e = pc.elements(); e.hasMoreElements(); )
-//        {
-//            System.out.println( "Permission: " + e.nextElement().getClass().getName() );
-//        }
     }
 
     /** 
@@ -84,16 +74,16 @@ public class JettyPolicyTest
     @Test
     public void testSingleCodebaseFilePermissionLoader() throws Exception
     {
-    	File policyFile = MavenTestingUtils.getTestResourceFile("single-codebase-file-permission.policy");
-        JettyPolicy ap = new JettyPolicy( Collections.singleton( policyFile.getAbsolutePath() ), evaluator );
+        JettyPolicy ap = new JettyPolicy(  MavenTestingUtils.getTestResourceDir("policy-test-2").getAbsolutePath(), evaluator );
+        
         ap.refresh();
 
-        URL url = new URL( "file:///foo.jar" );
-        CodeSource cs = new CodeSource( url, new Certificate[0]);
+        URL url = new URL("file:///foo.jar");
+        CodeSource cs = new CodeSource(url,new Certificate[0]);
 
-        PermissionCollection pc = ap.getPermissions( cs );
+        PermissionCollection pc = ap.getPermissions(cs);
 
-        assertNotNull( pc );
+        assertNotNull(pc);
 
         Permission testReadPerm = new FilePermission( "/tmp/*", "read" );
         Permission testWritePerm = new FilePermission( "/tmp/*", "write" );
@@ -102,6 +92,7 @@ public class JettyPolicyTest
         assertTrue( pc.implies( testReadPerm ) );
         assertTrue( pc.implies( testWritePerm ) );  
         assertFalse(pc.implies( testDeletePerm ) );
+
     }
 
     /**
@@ -113,22 +104,21 @@ public class JettyPolicyTest
     @Test
     public void testMultipleCodebaseFilePermissionLoader() throws Exception
     {
-    	File policyFile = MavenTestingUtils.getTestResourceFile("multiple-codebase-file-permission.policy");
-        JettyPolicy ap = new JettyPolicy( Collections.singleton( policyFile.getAbsolutePath() ), evaluator );
+        JettyPolicy ap = new JettyPolicy(  MavenTestingUtils.getTestResourceDir("policy-test-3").getAbsolutePath(), evaluator );
 
         ap.refresh();
         
         // test the bar.jar codebase grant
-        URL url = new URL( "file:///bar.jar" );
-        CodeSource cs = new CodeSource( url, new Certificate[0]);
+        URL url = new URL("file:///bar.jar");
+        CodeSource cs = new CodeSource(url,new Certificate[0]);
 
-        PermissionCollection barPermissionCollection = ap.getPermissions( cs );
+        PermissionCollection barPermissionCollection = ap.getPermissions(cs);
 
         assertNotNull( barPermissionCollection );
 
-        Permission testBarPerm = new FilePermission( "/tmp/*", "read,write" );
-        Permission testBarPerm2 = new FilePermission( "/usr/*", "read" ); // only read was granted
-        Permission testBarPerm3 = new FilePermission( "/usr/*", "write" ); // only read was granted
+        Permission testBarPerm = new FilePermission("/tmp/*","read,write");
+        Permission testBarPerm2 = new FilePermission("/usr/*","read"); // only read was granted
+        Permission testBarPerm3 = new FilePermission("/usr/*","write"); // only read was granted
 
         assertTrue( barPermissionCollection.implies( testBarPerm ) );
         assertTrue( barPermissionCollection.implies( testBarPerm2 ) );
@@ -167,8 +157,7 @@ public class JettyPolicyTest
     @Test
     public void testMultipleCodebaseMixedPermissionLoader() throws Exception
     {
-    	File policyFile = MavenTestingUtils.getTestResourceFile("multiple-codebase-mixed-permission.policy");
-        JettyPolicy ap = new JettyPolicy( Collections.singleton( policyFile.getAbsolutePath() ), evaluator );
+        JettyPolicy ap = new JettyPolicy(  MavenTestingUtils.getTestResourceDir("policy-test-4").getAbsolutePath(), evaluator );
 
         ap.refresh();
 
@@ -214,6 +203,7 @@ public class JettyPolicyTest
         assertFalse( fooPermissionCollection.implies(testBarPerm2) );
         // but make sure that foo codebase is getting global
         assertTrue( fooPermissionCollection.implies(testPropertyPermission));    
+
     }
 
     /**
@@ -226,8 +216,7 @@ public class JettyPolicyTest
     @Test
     public void testSCLoader() throws Exception
     {
-    	File policyFile = MavenTestingUtils.getProjectFile("src/main/config/lib/policy/jetty.policy");
-        JettyPolicy ap = new JettyPolicy(Collections.singleton(policyFile.getAbsolutePath()),evaluator);
+        JettyPolicy ap = new JettyPolicy(MavenTestingUtils.getProjectDir("src/main/config/lib/policy").getAbsolutePath(),evaluator);
 
         ap.refresh();
     }
@@ -239,27 +228,22 @@ public class JettyPolicyTest
     @Test
     public void testMultipleFilePermissionLoader() throws Exception
     {
-        Set<String> files = new HashSet<String>();
-
-        files.add( MavenTestingUtils.getTestResourceFile("single-codebase-file-permission.policy").getAbsolutePath() );
-        files.add( MavenTestingUtils.getTestResourceFile("single-codebase-file-permission-2.policy").getAbsolutePath() );
-
-        JettyPolicy ap = new JettyPolicy( files, evaluator );
+        JettyPolicy ap = new JettyPolicy(  MavenTestingUtils.getTestResourceDir("policy-test-5").getAbsolutePath(), evaluator );
 
         ap.refresh();
 
-        URL url = new URL( "file:///bar.jar" );
-        CodeSource cs = new CodeSource( url, new Certificate[0]);
+        URL url = new URL("file:///bar.jar");
+        CodeSource cs = new CodeSource(url,new Certificate[0]);
 
-        PermissionCollection pc = ap.getPermissions( cs );
+        PermissionCollection pc = ap.getPermissions(cs);
 
-        assertNotNull( pc );
+        assertNotNull(pc);
 
-        Permission testPerm = new FilePermission( "/tmp/*", "read" );
-        Permission testPerm2 = new FilePermission( "/usr/*", "write" ); //
+        Permission testPerm = new FilePermission("/tmp/*","read");
+        Permission testPerm2 = new FilePermission("/usr/*","write"); //
 
-        assertTrue( pc.implies( testPerm ) );
-        assertFalse( pc.implies( testPerm2 ) );
+        assertTrue(pc.implies(testPerm));
+        assertFalse(pc.implies(testPerm2));
     }
     
     /**
@@ -271,13 +255,7 @@ public class JettyPolicyTest
     @Test
     public void testAggregateMultipleFilePermissionLoader() throws Exception
     {
-        Set<String> files = new HashSet<String>();
-
-        files.add( MavenTestingUtils.getTestResourceFile("single-codebase-file-permission.policy").getAbsolutePath() );
-        files.add( MavenTestingUtils.getTestResourceFile("single-codebase-file-permission-2.policy").getAbsolutePath() );
-        files.add( MavenTestingUtils.getTestResourceFile("single-codebase-file-permission-3.policy").getAbsolutePath() );
-
-        JettyPolicy ap = new JettyPolicy( files, evaluator );
+        JettyPolicy ap = new JettyPolicy(  MavenTestingUtils.getTestResourceDir("policy-test-6").getAbsolutePath(), evaluator );
 
         ap.refresh();
 
@@ -304,18 +282,141 @@ public class JettyPolicyTest
      * 
      * @throws Exception
      */
-    @Test
-    public void testPolicyDirectories() throws Exception
-    {
-        Set<String> files = new HashSet<String>();
-
-        files.add( MavenTestingUtils.getTestResourceFile("single-codebase-file-permission.policy").getAbsolutePath() );
-        files.add( MavenTestingUtils.getTestResourceDir("context").getAbsolutePath() );
-
-        JettyPolicy ap = new JettyPolicy( files, evaluator );
-
-        Assert.assertEquals(3, ap.getKnownPolicyFiles().size());      
-               
-    }
+//    @Test
+//    public void testPolicyDirectories() throws Exception
+//    {
+//        Set<String> files = new HashSet<String>();
+//
+//        files.add( MavenTestingUtils.getTestResourceFile("single-codebase-file-permission.policy").getAbsolutePath() );
+//        files.add( MavenTestingUtils.getTestResourceDir("context").getAbsolutePath() );
+//
+//        JettyPolicy ap = new JettyPolicy( files, evaluator );
+//
+//        Assert.assertEquals(3, ap.getKnownPolicyFiles().size());      
+//               
+//    }
     
+//    /**
+//     * test the discovery and loading of template files
+//     * 
+//     * @throws Exception
+//     */
+//    @Test
+//    public void testTemplateDirectories() throws Exception
+//    {
+//        Set<String> policyFiles = new HashSet<String>();
+//        Set<String> templateFiles = new HashSet<String>();
+//
+//        policyFiles.add(MavenTestingUtils.getTestResourceFile("single-codebase-file-permission.policy").getAbsolutePath());
+//        policyFiles.add(MavenTestingUtils.getTestResourceDir("context").getAbsolutePath());
+//
+//        templateFiles.add(MavenTestingUtils.getTestResourceDir("template").getAbsolutePath());
+//
+//        JettyPolicy ap = new JettyPolicy(policyFiles,templateFiles,evaluator);
+//
+//        Assert.assertEquals(3,ap.getKnownPolicyFiles().size());
+//
+//        Assert.assertEquals(2,ap.getKnownTemplateFiles().size());
+//
+//    }
+//
+//    /**
+//     * tests the assigning of a template to a codesource
+//     * 
+//     * @throws Exception
+//     */
+//    @Test
+//    public void testTemplateAssign() throws Exception
+//    {
+//        Set<String> policyFiles = new HashSet<String>();
+//        Set<String> templateFiles = new HashSet<String>();
+//
+//        policyFiles.add(MavenTestingUtils.getTestResourceFile("single-codebase-file-permission.policy").getAbsolutePath());
+//        policyFiles.add(MavenTestingUtils.getTestResourceDir("context").getAbsolutePath());
+//
+//        templateFiles.add(MavenTestingUtils.getTestResourceDir("template").getAbsolutePath());
+//
+//        JettyPolicy ap = new JettyPolicy(policyFiles,templateFiles,evaluator);
+//
+//        ap.assignTemplate("file:///template.jar",new String[]
+//        { "template1", "template2" });
+//
+//        Assert.assertEquals(2,ap.getAssignedTemplates("file:///template.jar").length);
+//
+//    }
+//
+//    /**
+//     * tests the assigning of a template to a codesource
+//     * 
+//     * @throws Exception
+//     */
+//    @Test
+//    public void testTemplateRemove() throws Exception
+//    {
+//        Set<String> policyFiles = new HashSet<String>();
+//        Set<String> templateFiles = new HashSet<String>();
+//
+//        policyFiles.add(MavenTestingUtils.getTestResourceFile("single-codebase-file-permission.policy").getAbsolutePath());
+//        policyFiles.add(MavenTestingUtils.getTestResourceDir("context").getAbsolutePath());
+//
+//        templateFiles.add(MavenTestingUtils.getTestResourceDir("template").getAbsolutePath());
+//
+//        JettyPolicy ap = new JettyPolicy(policyFiles,templateFiles,evaluator);
+//
+//        ap.assignTemplate("file:///template.jar",new String[]
+//        { "template1", "template2" });
+//
+//        Assert.assertEquals(2,ap.getAssignedTemplates("file:///template.jar").length);
+//
+//        ap.unassignTemplates("file:///template.jar");
+//
+//        Assert.assertEquals(0,ap.getAssignedTemplates("file:///template.jar").length);
+//
+//    }
+//
+//    @Test
+//    public void testTemplatePermissions() throws Exception
+//    {
+//        Set<String> policyFiles = new HashSet<String>();
+//        Set<String> templateFiles = new HashSet<String>();
+//
+//        policyFiles.add(MavenTestingUtils.getTestResourceFile("single-codebase-file-permission.policy").getAbsolutePath());
+//        policyFiles.add(MavenTestingUtils.getTestResourceDir("context").getAbsolutePath());
+//
+//        templateFiles.add(MavenTestingUtils.getTestResourceDir("template").getAbsolutePath());
+//
+//        JettyPolicy ap = new JettyPolicy(policyFiles,templateFiles,evaluator);
+//        
+//        URL url = new URL("file:///template.jar");
+//        CodeSource cs = new CodeSource(url,new Certificate[0]);
+//
+//        PermissionCollection pc = ap.getPermissions(cs);
+//
+//        assertNotNull(pc);
+//
+//        Permission testPerm = new FilePermission("/tmp/*","read");
+//        Permission testPerm2 = new FilePermission("/tmp/*","write");
+//
+//        // no templates have been assigned
+//        assertFalse(pc.implies(testPerm));
+//
+//        ap.assignTemplate("file:///template.jar",new String[] {"template1"});
+//        
+//        PermissionCollection pc2 = ap.getPermissions(cs);
+//
+//        assertNotNull(pc2);
+//        
+//        assertTrue(pc2.implies(testPerm));
+//        assertFalse(pc2.implies(testPerm2));
+//        
+//        
+//        ap.assignTemplate("file:///template.jar",new String[] {"template1", "template2"});
+//        
+//        PermissionCollection pc3 = ap.getPermissions(cs);
+//
+//        assertNotNull(pc3);
+//        
+//        assertTrue(pc3.implies(testPerm));
+//        assertTrue(pc3.implies(testPerm2));
+//    }
 }

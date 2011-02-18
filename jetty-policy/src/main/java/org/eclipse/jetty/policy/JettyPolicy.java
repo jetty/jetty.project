@@ -16,10 +16,6 @@ package org.eclipse.jetty.policy;
 //You may elect to redistribute this code under either of these licenses. 
 //========================================================================
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.security.AccessControlException;
@@ -30,18 +26,17 @@ import java.security.Permissions;
 import java.security.Policy;
 import java.security.Principal;
 import java.security.ProtectionDomain;
-import java.util.ArrayList;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.policy.loader.DefaultPolicyLoader;
-import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.security.CertificateValidator;
 
 
 /**
@@ -53,8 +48,9 @@ import org.eclipse.jetty.util.log.Log;
  * - support for specifying multiple policy files to source permissions from
  * - support for merging protection domains across multiple policy files for the same codesource
  * - support for directories of policy files, just specify directory and all *.policy files will be loaded.
- * 
+
  * Possible additions are: 
+ * - scan policy directory for new policy files being added
  * - jmx reporting
  * - proxying of system security policy where we can proxy access to the system policy should the jvm have been started with one, I had support for this but ripped it
  * out to add in again later 
@@ -63,24 +59,59 @@ import org.eclipse.jetty.util.log.Log;
  * - check performance of the synch'd map I am using for the protection domain mapping
  */
 public class JettyPolicy extends Policy
-{
+{    
     private static boolean __DEBUG = false;
     private static boolean __RELOAD = false;
 
-    // Policy files that are actively managed by the aggregate policy mechanism
-    private final Set<String> _policies;
-
+    private boolean _STARTED = false;
+    
+    private String _policyDirectory;
+    
     private final Set<PolicyBlock> _grants = new HashSet<PolicyBlock>();
 
-    private final Map<Object, PermissionCollection> _cache = new HashMap<Object, PermissionCollection>();
+    /*
+     * TODO: make into a proper cache
+     */
+    private final Map<Object, PermissionCollection> _cache = new ConcurrentHashMap<Object, PermissionCollection>();
 
-    private final PolicyContext _context = new PolicyContext();
+    private final static PolicyContext _context = new PolicyContext();
 
-    private Boolean _initialized = false;
-
-    private Scanner _scanner;
-
-    public JettyPolicy(Set<String> policies, Map<String, String> properties)
+    private CertificateValidator _validator = null;
+        
+    private PolicyMonitor _policyMonitor = new PolicyMonitor()
+    {        
+        @Override
+        public void onPolicyChange(PolicyBlock grant)
+        {
+            boolean setGrant = true;     
+            
+            if ( _validator != null )
+            {
+                if (grant.getCertificates() != null)
+                {
+                    for ( Certificate cert : grant.getCertificates() )
+                    {
+                        try
+                        {
+                            _validator.validate(_context.getKeystore(), cert);
+                        }
+                        catch ( CertificateException ce )
+                        {
+                            setGrant = false;
+                        }
+                    }                
+                }
+            }
+                  
+            if ( setGrant )
+            {
+                _grants.add( grant );
+                _cache.clear();
+            }
+        }
+    };
+    
+    public JettyPolicy(String policyDirectory, Map<String, String> properties)
     {
         try
         {
@@ -93,20 +124,65 @@ public class JettyPolicy extends Policy
             __DEBUG = false;
         }
         
-        _policies = resolvePolicyFiles(policies);
+        _policyDirectory = policyDirectory;
         _context.setProperties(properties);
+        
+        try
+        {
+            _policyMonitor.setPolicyDirectory(_policyDirectory);
+            //_policyMonitor.setReload( __RELOAD );
+        }
+        catch ( Exception e)
+        {
+            throw new PolicyException(e);
+        }
+    }
+    
+    
+    
+    @Override
+    public void refresh()
+    {
+        super.refresh();
+        
+        if ( !_STARTED )
+        {
+            initialize();
+        }
     }
 
+    /**
+     * required for the jetty policy to start function, initializes the 
+     * policy monitor and blocks for a full cycle of policy grant updates
+     */
+    public void initialize()
+    {
+        if ( _STARTED )
+        {
+            return;         
+        }
+        
+        try
+        {
+            _policyMonitor.start();
+            _policyMonitor.waitForScan();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            throw new PolicyException(e);
+        }
+        
+        _STARTED = true;
+    }
+    
     @Override
     public PermissionCollection getPermissions(ProtectionDomain domain)
     {
 
-        synchronized (_initialized)
+        if (!_STARTED)
         {
-            if (!_initialized)
-            {
-                refresh();
-            }
+            throw new PolicyException("JettyPolicy must be started.");
         }
 
         synchronized (_cache)
@@ -128,11 +204,11 @@ public class JettyPolicy extends Policy
                     debug("----START----");
                     debug("PDCS: " + policyBlock.getCodeSource());
                     debug("CS: " + domain.getCodeSource());
+
                 }
 
                 // 1) if protection domain codesource is null, it is the global permissions (grant {})
                 // 2) if protection domain codesource implies target codesource and there are no prinicpals
-                // 2) if protection domain codesource implies target codesource and principals align
                 if (grantPD.getCodeSource() == null 
                         || 
                         grantPD.getCodeSource().implies(domain.getCodeSource()) 
@@ -142,6 +218,7 @@ public class JettyPolicy extends Policy
                         grantPD.getCodeSource().implies(domain.getCodeSource()) 
                         && 
                         validate(grantPD.getPrincipals(),domain.getPrincipals()))
+
                 {
 
                     for (Enumeration<Permission> e = policyBlock.getPermissions().elements(); e.hasMoreElements();)
@@ -169,12 +246,9 @@ public class JettyPolicy extends Policy
     @Override
     public PermissionCollection getPermissions(CodeSource codesource)
     {
-        synchronized (_initialized)
+        if (!_STARTED)
         {
-            if (!_initialized)
-            {
-                refresh();
-            }
+            throw new PolicyException("JettyPolicy must be started.");
         }
 
         synchronized (_cache)
@@ -228,6 +302,11 @@ public class JettyPolicy extends Policy
     @Override
     public boolean implies(ProtectionDomain domain, Permission permission)
     {
+        if (!_STARTED)
+        {
+            throw new PolicyException("JettyPolicy must be started.");
+        }
+        
         PermissionCollection pc = getPermissions(domain);
         
         return (pc == null ? false : pc.implies(permission));
@@ -262,192 +341,19 @@ public class JettyPolicy extends Policy
         return true;
     }
 
+
     /**
-     * This call performs a refresh of the policy system, first processing the associated 
-     * files and then replacing the policy cache.
+     * returns the policy context which contains the map of properties that
+     * can be referenced in policy files and the keystore for validation
      * 
-     */
-    @Override
-    public synchronized void refresh()
-    {
-
-        try
-        {
-            // initialize the reloading mechanism if enabled
-            if (__RELOAD && _scanner == null)
-            {
-                initializeReloading();
-            }
-            
-            if (__DEBUG)
-            {
-                synchronized (_cache)
-                {
-                    for (Iterator<Object> i = _cache.keySet().iterator(); i.hasNext();)
-                    {
-                        log(i.next().toString());
-                    }
-                }
-            }
-
-            Set<PolicyBlock> clean = new HashSet<PolicyBlock>();
-
-            for (Iterator<String> i = _policies.iterator(); i.hasNext();)
-            {
-                File policyFile = new File(i.next());
-
-                clean.addAll(DefaultPolicyLoader.load(new FileInputStream(policyFile),_context));
-            }
-
-            synchronized (_cache)
-            {
-                _grants.clear();
-                _grants.addAll(clean);
-                _cache.clear();
-            }
-            _initialized = true;
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * the scanning mechanism used to detect changes to the policy system and reload
-     * 
-     * @throws Exception
-     */
-    private void initializeReloading() throws Exception
-    {
-        _scanner = new Scanner();
-
-        List<File> scanDirs = new ArrayList<File>();
-
-        for (Iterator<String> i = _policies.iterator(); i.hasNext();)
-        {
-            File policyFile = new File(i.next());
-            scanDirs.add(policyFile.getParentFile());
-        }
-
-        _scanner.addListener(new Scanner.DiscreteListener()
-        {
-
-            public void fileRemoved(String filename) throws Exception
-            {
-
-            }
-
-            /* will trigger when files are changed, not on load time, just when changed */
-            public void fileChanged(String filename) throws Exception
-            {
-                if (filename.endsWith("policy")) // TODO match up to existing policies to avoid unnecessary reloads
-                {
-                    log("JettyPolicy: refreshing policy files");
-                    refresh();
-                    log("JettyPolicy: finished refreshing policies");
-                }
-            }
-
-            public void fileAdded(String filename) throws Exception
-            {
-
-            }
-        });
-
-        _scanner.setScanDirs(scanDirs);
-        _scanner.start();
-        _scanner.setScanInterval(10);
-    }
-
-    public void dump(PrintStream out)
-    {
-        PrintWriter write = new PrintWriter(out);
-        write.println("JettyPolicy: policy settings dump");
-
-        synchronized (_cache)
-        {
-            for (Iterator<Object> i = _cache.keySet().iterator(); i.hasNext();)
-            {
-                Object o = i.next();
-                write.println(o.toString());
-            }
-        }
-        write.flush();
-    }
-    
-    public PermissionCollection copyOf(final PermissionCollection in)
-    {
-        PermissionCollection out  = new Permissions();
-        synchronized (in)
-        {
-            for (Enumeration<Permission> el = in.elements() ; el.hasMoreElements() ;)
-            {
-                out.add((Permission)el.nextElement());
-            }
-        }
-        return out;
-    }
-    
-    /**
-     * returns the known policy files that are being tracked by this instance of JettyPolicy
-     * @return set of known policy files
-     */
-    public Set<String> getKnownPolicyFiles()
-    {
-        return _policies;
-    }
-    
-    /**
-     * resolves the initial set of policy files into the actual set of policies, 
-     * scanning directories for .policy files as well.
-     * @param policyInputs
      * @return
      */
-    private Set<String> resolvePolicyFiles( Set<String> policyInputs )
+    public static PolicyContext getContext()
     {
-        Set<String> policyFiles = new HashSet<String>();
-        
-        try
-        {
-        for ( String policyInput : policyInputs )
-        {
-            File check = new File(policyInput);
-            
-            if ( check.isDirectory() )
-            {
-                File[] foundFiles = check.listFiles(new FileFilter()
-                {             
-                    public boolean accept(File pathname)
-                    {
-                        if ( pathname.getName().toLowerCase().endsWith("policy") )
-                        {
-                            return true;
-                        }
-                        else
-                        {
-                            return false;
-                        }
-                    }
-                });
-                
-                for( File policyFile : foundFiles )
-                {
-                    policyFiles.add(policyFile.getCanonicalPath());
-                }
-            }
-            else
-            {
-                policyFiles.add(check.getCanonicalPath());
-            }
-        }
-        }
-        catch ( IOException ioe )
-        {
-            throw new IllegalArgumentException( "JettyPolicy: unable to resolve policy files.", ioe );
-        }
-        return policyFiles;
+        return _context;
     }
+    
+   
     
     /**
      * Try and log to normal logging channels and should that not be allowed
@@ -459,11 +365,16 @@ public class JettyPolicy extends Policy
     {
         try
         {
-            Log.debug(message);
+            Log.info(message);
         }
         catch ( AccessControlException ace )
         {
             System.out.println( "[DEBUG] " +  message );
+        }
+        catch ( NoClassDefFoundError ace )
+        {
+            System.out.println( "[DEBUG] " + message );
+            //ace.printStackTrace();
         }
     }
     /**
@@ -494,6 +405,55 @@ public class JettyPolicy extends Policy
             System.out.println( message );
             t.printStackTrace();
         }
+        catch ( NoClassDefFoundError ace )
+        {
+            System.out.println( message );
+            t.printStackTrace();
+        }
     }
     
+
+    public void dump(PrintStream out)
+    {
+        PrintWriter write = new PrintWriter(out);
+        write.println("JettyPolicy: policy settings dump");
+
+        synchronized (_cache)
+        {
+            for (Iterator<Object> i = _cache.keySet().iterator(); i.hasNext();)
+            {
+                Object o = i.next();
+                write.println(o.toString());
+            }
+        }
+        write.flush();
+    }
+    
+    private PermissionCollection copyOf(final PermissionCollection in)
+    {
+        PermissionCollection out  = new Permissions();
+        synchronized (in)
+        {
+            for (Enumeration<Permission> el = in.elements() ; el.hasMoreElements() ;)
+            {
+                out.add((Permission)el.nextElement());
+            }
+        }
+        return out;
+    }
+
+    public CertificateValidator getCertificateValidator()
+    {
+        return _validator;
+    }
+
+    public void setCertificateValidator(CertificateValidator validator)
+    {
+        if (_STARTED)
+        {
+            throw new PolicyException("JettyPolicy already started, unable to set validator on running policy");
+        }
+        
+        _validator = validator;
+    }
 }

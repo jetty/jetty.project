@@ -133,7 +133,7 @@ public class PolicyContext
     }
     
     
-    private String getProperty(String name)
+    public String getProperty(String name)
     {       
         if (properties.containsKey(name))
         {

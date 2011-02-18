@@ -176,7 +176,7 @@ public class Config
     private static final Map<String, String> __properties = new HashMap<String, String>();
     private final Map<String, Classpath> _classpaths = new HashMap<String, Classpath>();
     private final List<String> _xml = new ArrayList<String>();
-    private final Set<String> _policies = new HashSet<String>();
+    private String _policyDirectory = null;
     private String _classname = null;
 
     private int argCount = 0;
@@ -831,7 +831,7 @@ public class Config
                         if (cn != null && cn.length() > 0)
                         {
                             debug("  POLICY=" + cn);
-                            _policies.add(fixPath(cn));
+                            _policyDirectory = new File(fixPath(cn)).getParentFile().toURI().getPath();
                         }
                         continue;
                     }
@@ -975,7 +975,7 @@ public class Config
         Class<?> jettyPolicy = cl.loadClass("org.eclipse.jetty.policy.JettyPolicy");
         Constructor<?> c = jettyPolicy.getConstructor(new Class[]
                                                                 { Set.class, Map.class });
-        Object policyClass = c.newInstance(_policies,__properties);
+        Object policyClass = c.newInstance(_policyDirectory, __properties);
 
         if (policyClass instanceof Policy)
         {

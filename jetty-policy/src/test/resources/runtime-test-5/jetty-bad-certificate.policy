@@ -1,9 +1,9 @@
 
 keystore "${basedir}target/test-policy/jetty-policy-nobody.keystore", "jks";
 
-grant signedBy "jetty-policy", codeBase "${basedir}target/test-policy/jetty-test-policy.jar"
+grant signedBy "jetty-policy-bad", codeBase "${basedir}target/test-policy/jetty-test-policy.jar"
 {
-permission java.util.PropertyPermission "foo", "read";
+	permission java.util.PropertyPermission "foo", "read";
 }
 
 

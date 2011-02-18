@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.policy;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -30,11 +34,6 @@ import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.Ignore;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class JettyPolicyRuntimeTest
 {
@@ -60,7 +59,7 @@ public class JettyPolicyRuntimeTest
     @Test
     public void testSimplePolicyReplacement() throws Exception
     {
-        JettyPolicy ap = new JettyPolicy(getSinglePolicy("global-all-permission.policy"), evaluator);
+        JettyPolicy ap = new JettyPolicy(MavenTestingUtils.getTestResourceDir("runtime-test-1").getAbsolutePath(), evaluator);
         ap.refresh();
 
         Policy.setPolicy( ap );
@@ -74,7 +73,7 @@ public class JettyPolicyRuntimeTest
     @Test
     public void testRepeatedPolicyReplacement() throws Exception
     {
-        JettyPolicy ap = new JettyPolicy(getSinglePolicy("global-all-permission.policy"),evaluator);
+        JettyPolicy ap = new JettyPolicy(MavenTestingUtils.getTestResourceDir("runtime-test-2/a").getAbsolutePath(),evaluator);
         ap.refresh();
 
         Policy.setPolicy( ap );
@@ -93,7 +92,7 @@ public class JettyPolicyRuntimeTest
             fail("Should NOT have thrown an AccessControlException");
         }
 
-        JettyPolicy ap2 = new JettyPolicy(getSinglePolicy("global-file-read-only-tmp-permission.policy"),evaluator);
+        JettyPolicy ap2 = new JettyPolicy(MavenTestingUtils.getTestResourceDir("runtime-test-2/b").getAbsolutePath(),evaluator);
         ap2.refresh();
 
         Policy.setPolicy( ap2 );
@@ -118,7 +117,7 @@ public class JettyPolicyRuntimeTest
         // TODO - temporary, create alternate file to load for windows
     	Assume.assumeTrue(!OS.IS_WINDOWS); // Ignore test if running under windows.
 
-        JettyPolicy ap = new JettyPolicy(getSinglePolicy("global-file-read-only-tmp-permission.policy"),evaluator);
+        JettyPolicy ap = new JettyPolicy(MavenTestingUtils.getTestResourceDir("runtime-test-3").getAbsolutePath(),evaluator);
         ap.refresh();
 
         Policy.setPolicy( ap );
@@ -145,19 +144,19 @@ public class JettyPolicyRuntimeTest
     }
 
     @Test
-    @Ignore("Jesse will work on this")
     public void testCertificateLoader() throws Exception
     {
         // TODO - temporary, create alternate file to load for windows
     	Assume.assumeTrue(!OS.IS_WINDOWS); // Ignore test if running under windows.
 
-        JettyPolicy ap = new JettyPolicy(getSinglePolicy("jetty-certificate.policy"),evaluator);
+        JettyPolicy ap = new JettyPolicy(MavenTestingUtils.getTestResourceDir("runtime-test-4").getAbsolutePath(),evaluator);
         ap.refresh();
 
-        Policy.setPolicy( ap );
-        System.setSecurityManager( new SecurityManager() );
-
+    
         URL url = MavenTestingUtils.getTargetURL("test-policy/jetty-test-policy.jar");
+
+        //System.out.println(url.toURI().toASCIIString());
+        //System.out.println(MavenTestingUtils.getBaseURI().toASCIIString());
 
         URLClassLoader loader ;
         if (Thread.currentThread().getContextClassLoader() != null )
@@ -171,8 +170,15 @@ public class JettyPolicyRuntimeTest
 
         Thread.currentThread().setContextClassLoader(loader);
 
+        Policy.setPolicy( ap );
+        System.setSecurityManager( new SecurityManager() );
+
+        
         ap.refresh();
 
+        ap.dump(System.out);
+
+        
         Class<?> clazz = loader.loadClass("org.eclipse.jetty.toolchain.test.policy.Tester");
 
         Method m = clazz.getMethod("testEcho",new Class[]
@@ -193,13 +199,12 @@ public class JettyPolicyRuntimeTest
     }
 
     @Test
-    public void testBadCertificateLoader()
-    throws Exception
+    public void testBadCertificateLoader() throws Exception
     {
         // TODO - temporary, create alternate file to load for windows
     	Assume.assumeTrue(!OS.IS_WINDOWS); // Ignore test if running under windows.
 
-        JettyPolicy ap = new JettyPolicy(getSinglePolicy("jetty-bad-certificate.policy"),evaluator);
+        JettyPolicy ap = new JettyPolicy(MavenTestingUtils.getTestResourceDir("runtime-test-5").getAbsolutePath(),evaluator);
         ap.refresh();
 
         Policy.setPolicy( ap );

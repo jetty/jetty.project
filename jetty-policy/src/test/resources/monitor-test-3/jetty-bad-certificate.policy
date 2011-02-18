@@ -1,9 +1,10 @@
-keystore "${basedir}target/test-policy/jetty-policy.keystore", "jks";
+
+keystore "${basedir}target/test-policy/jetty-policy-nobody.keystore", "jks";
 
 grant signedBy "jetty-policy-bad", codeBase "${basedir}target/test-policy/jetty-test-policy.jar"
 {
-  permission java.util.PropertyPermission "foo", "read";
-};
+	permission java.util.PropertyPermission "foo", "read";
+}
 
 
 grant {
@@ -19,4 +20,6 @@ grant {
   permission java.util.PropertyPermission "java.class.path", "read,write";
   
   permission java.util.PropertyPermission "basedir", "read";
-};
+  
+
+}
