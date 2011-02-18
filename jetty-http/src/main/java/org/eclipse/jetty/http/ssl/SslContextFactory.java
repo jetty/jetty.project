@@ -118,7 +118,7 @@ public class SslContextFactory extends AbstractLifeCycle
     /** Keystore password */
     private transient Password _keyStorePassword;
     /** Key manager password */
-    private transient Password _keymanagerPassword;
+    private transient Password _keyManagerPassword;
     /** Truststore password */
     private transient Password _trustStorePassword;
 
@@ -169,32 +169,35 @@ public class SslContextFactory extends AbstractLifeCycle
     @Override
     protected void doStart() throws Exception
     {
-        if (_keyStoreInputStream == null && _keyStorePath == null &&
-                _trustStoreInputStream == null && _trustStorePath == null )
+        if (_context == null)
         {
-            // Create a trust manager that does not validate certificate chains
-            TrustManager trustAllCerts = new X509TrustManager()
+            if (_keyStoreInputStream == null && _keyStorePath == null &&
+                    _trustStoreInputStream == null && _trustStorePath == null )
             {
-                public java.security.cert.X509Certificate[] getAcceptedIssuers()
+                // Create a trust manager that does not validate certificate chains
+                TrustManager trustAllCerts = new X509TrustManager()
                 {
-                    return null;
-                }
-
-                public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType)
-                {
-                }
-
-                public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
-                {
-                }
-            };
-
-            _context = SSLContext.getInstance(_sslProtocol);
-            _context.init(null, new TrustManager[]{trustAllCerts}, null);
-        }
-        else
-        {
-            createSSLContext();
+                    public java.security.cert.X509Certificate[] getAcceptedIssuers()
+                    {
+                        return null;
+                    }
+    
+                    public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType)
+                    {
+                    }
+    
+                    public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
+                    {
+                    }
+                };
+    
+                _context = SSLContext.getInstance(_sslProtocol);
+                _context.init(null, new TrustManager[]{trustAllCerts}, null);
+            }
+            else
+            {
+                createSSLContext();
+            }
         }
     }
 
@@ -548,7 +551,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         checkStarted();
         
-        _keymanagerPassword = Password.getPassword(KEYPASSWORD_PROPERTY,password,null);
+        _keyManagerPassword = Password.getPassword(KEYPASSWORD_PROPERTY,password,null);
     }
 
     /* ------------------------------------------------------------ */
@@ -791,7 +794,7 @@ public class SslContextFactory extends AbstractLifeCycle
         if (keyStore != null)
         {
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(_keyManagerFactoryAlgorithm);
-            keyManagerFactory.init(keyStore,_keymanagerPassword == null?(_keyStorePassword == null?null:_keyStorePassword.toString().toCharArray()):_keymanagerPassword.toString().toCharArray());
+            keyManagerFactory.init(keyStore,_keyManagerPassword == null?(_keyStorePassword == null?null:_keyStorePassword.toString().toCharArray()):_keyManagerPassword.toString().toCharArray());
             managers = keyManagerFactory.getKeyManagers();
     
             if (_certAlias != null)
