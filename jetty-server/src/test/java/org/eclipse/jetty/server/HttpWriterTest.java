@@ -162,16 +162,12 @@ public class HttpWriterTest
         _writer.setCharacterEncoding(StringUtil.__UTF8);
 
         String source = "\uD842\uDF9F";
-        // int codePoint = 134047;
-        // char[] codeUnits = new char[Character.charCount(codePoint)];
-        // int count = Character.toChars(codePoint, codeUnits, 0);
-        // String source = new String(codeUnits, 0, count);
 
-        byte[] bytes = source.getBytes("UTF-8"/* StringUtil.__UTF81 */);
+        byte[] bytes = source.getBytes(StringUtil.__UTF8);
         _writer.write(source.toCharArray(),0,source.toCharArray().length);
 
         java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-        java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos/* ,StringUtil.__UTF8 */);
+        java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos ,StringUtil.__UTF8 );
         osw.write(source.toCharArray(),0,source.toCharArray().length);
         osw.flush();
 
@@ -190,11 +186,7 @@ public class HttpWriterTest
 
         final String singleByteStr = "a";
         int remainSize = 1;
-        final String multiByteDuplicateStr = "\uD842\uDF9F"; // valid(High + Low)
-        // final String multiByteDuplicateStr = "\uD842\uD842"; // invalid(High + High)
-        // final String multiByteDuplicateStr = "\uDF9F\uDF9F"; // invalid(Low + Low)
-        // final String multiByteDuplicateStr = "\uDF9F\uD842"; // invalid(Low + High)
-        // int adjustSize = 0;
+        final String multiByteDuplicateStr = "\uD842\uDF9F"; 
         int adjustSize = -1;
 
         StringBuilder sb = new StringBuilder();
@@ -209,11 +201,11 @@ public class HttpWriterTest
         }
         String source = sb.toString();
 
-        byte[] bytes = source.getBytes("UTF-8"/* StringUtil.__UTF81 */);
+        byte[] bytes = source.getBytes(StringUtil.__UTF8);
         _writer.write(source.toCharArray(),0,source.toCharArray().length);
 
         java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-        java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos/* ,StringUtil.__UTF8 */);
+        java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos ,StringUtil.__UTF8);
         osw.write(source.toCharArray(),0,source.toCharArray().length);
         osw.flush();
 
