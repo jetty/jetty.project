@@ -237,8 +237,9 @@ public class HttpWriterTest
 
     private void assertArrayEquals(byte[] b1, byte[] b2)
     {
-        assertEquals(b1.length,b2.length);
+        String test=new String(b1)+"=="+new String(b2);
+        assertEquals(test,b1.length,b2.length);
         for (int i=0;i<b1.length;i++)
-            assertEquals(""+i,b1[i],b2[i]);
+            assertEquals(test,b1[i],b2[i]);
     }
 }
