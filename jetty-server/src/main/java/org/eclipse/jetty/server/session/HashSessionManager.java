@@ -376,7 +376,9 @@ public class HashSessionManager extends AbstractSessionManager
             return null;
         
         HashedSession session = sessions.get(idInCluster);
-        
+
+        if (session == null && _lazyLoad)
+            session=restoreSession(idInCluster);
         if (session == null)
             return null;
 
@@ -461,24 +463,38 @@ public class HashSessionManager extends AbstractSessionManager
             return;
         }
 
-        File[] files = _storeDir.listFiles();
+        String[] files = _storeDir.list();
         for (int i=0;files!=null&&i<files.length;i++)
         {
-            try
+            restoreSession(files[i]);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    protected synchronized HashedSession restoreSession(String idInCuster)
+    {
+        try
+        {
+            File file = new File(_storeDir,idInCuster);
+            if (file.exists())
             {
-                FileInputStream in = new FileInputStream(files[i]);           
+                FileInputStream in = new FileInputStream(file);           
                 HashedSession session = restoreSession(in, null);
                 in.close();          
                 addSession(session, false);
                 session.didActivate();
-                files[i].delete();
-            }
-            catch (Exception e)
-            {
-                Log.warn("Problem restoring session "+files[i].getName(), e);
+                file.delete();
+                return session;
             }
         }
+        catch (Exception e)
+        {
+            Log.warn("Problem restoring session "+idInCuster, e);
+        }
+        return null;
     }
+    
+    
 
     /* ------------------------------------------------------------ */
     public void saveSessions() throws Exception
