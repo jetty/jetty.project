@@ -1,5 +1,6 @@
 jetty-7.3.1-SNAPSHOT
  + 316382 Support a more strict SSL option with certificates 
+ + 333481 Handle UCS-4 codepoints in decode and encode
  + 335329 Moved blocking timeout handling to outside try catch
  + 336668 policy supports cert validation
  + 336691 Possible wrong length returned by ChannelEndPoint.flush() in case of RandomAccessFileBuffer
@@ -10,6 +11,7 @@ jetty-7.3.1-SNAPSHOT
  + 337270 Shared Timer for session management
  + 337271 Flush SSL endpoint when dispatch thread held forever
  + 337678 Readded optional async connection mode for HttpClient
+ + 337685 Work in progress on draft 5 websockets
  + JETTY-1331 Allow alternate XML configuration processors (eg spring)
 
 jetty-7.3.0.v20110203 3 February 2011
