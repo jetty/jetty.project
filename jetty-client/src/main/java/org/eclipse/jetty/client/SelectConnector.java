@@ -44,7 +44,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
 {
     private final HttpClient _httpClient;
     private final Manager _selectorManager=new Manager();
-    private final Timeout _connectTimer = new Timeout();
     private final Map<SocketChannel, Timeout.Task> _connectingChannels = new ConcurrentHashMap<SocketChannel, Timeout.Task>();
     private SSLContext _sslContext;
     private Buffers _sslBuffers;
@@ -62,31 +61,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     protected void doStart() throws Exception
     {
         super.doStart();
-        _connectTimer.setDuration(_httpClient.getConnectTimeout());
-        _connectTimer.setNow();
-
-        if (!_httpClient.isConnectBlocking())
-        {
-            _httpClient._threadPool.dispatch(new Runnable()
-            {
-                public void run()
-                {
-                    while (isRunning())
-                    {
-                        _connectTimer.tick(System.currentTimeMillis());
-                        try
-                        {
-                            Thread.sleep(200);
-                        }
-                        catch (InterruptedException x)
-                        {
-                            Thread.currentThread().interrupt();
-                            break;
-                        }
-                    }
-                }
-            });
-        }
 
         _selectorManager.start();
 
@@ -136,7 +110,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     @Override
     protected void doStop() throws Exception
     {
-        _connectTimer.cancelAll();
         _selectorManager.stop();
     }
 
@@ -156,7 +129,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
                 channel.connect(address.toSocketAddress());
                 _selectorManager.register( channel, destination );
                 ConnectTimeout connectTimeout = new ConnectTimeout(channel, destination);
-                _connectTimer.schedule(connectTimeout);
+                _httpClient.schedule(connectTimeout,_httpClient.getConnectTimeout());
                 _connectingChannels.put(channel, connectTimeout);
             }
             else

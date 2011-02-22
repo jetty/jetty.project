@@ -246,6 +246,7 @@ public class HttpClient extends HttpBuffers implements Attributes
         _timeoutQ.schedule(task);
     }
 
+    /* ------------------------------------------------------------ */
     public void schedule(Timeout.Task task, long timeout)
     {
         _timeoutQ.schedule(task, timeout - _timeoutQ.getDuration());
@@ -529,6 +530,7 @@ public class HttpClient extends HttpBuffers implements Attributes
         public void startConnection(HttpDestination destination) throws IOException;
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * if a keystore location has been provided then client will attempt to use it as the keystore,
      * otherwise we simply ignore certificates and run with a loose ssl context.
@@ -567,6 +569,7 @@ public class HttpClient extends HttpBuffers implements Attributes
         _idleTimeout = ms;
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @return the period in ms that an exchange will wait for a response from the server.
      * @deprecated use {@link #getTimeout()} instead.
@@ -577,6 +580,7 @@ public class HttpClient extends HttpBuffers implements Attributes
         return Long.valueOf(getTimeout()).intValue();
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @deprecated use {@link #setTimeout(long)} instead.
      * @param timeout the period in ms that an exchange will wait for a response from the server.
@@ -605,6 +609,7 @@ public class HttpClient extends HttpBuffers implements Attributes
         _timeout = timeout;
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @return the period in ms before timing out an attempt to connect
      */
@@ -613,6 +618,7 @@ public class HttpClient extends HttpBuffers implements Attributes
         return _connectTimeout;
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @param connectTimeout the period in ms before timing out an attempt to connect
      */
