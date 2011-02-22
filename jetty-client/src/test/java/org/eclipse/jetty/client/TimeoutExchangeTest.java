@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2011 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -145,7 +145,7 @@ public class TimeoutExchangeTest
     @Test
     public void testExchangeTimeoutNotExpiring() throws Exception
     {
-        startClient(500);
+        startClient(2000);
         long serverSleep = 1000;
         long exchangeTimeout = 1500;
 

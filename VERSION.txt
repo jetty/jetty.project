@@ -14,9 +14,10 @@ jetty-7.3.1-SNAPSHOT
  + 337685 Work in progress on draft 5 websockets
  + 337746 Fixed Session deIdle recursion
  + 337784 Improve HashSessionManager for session migrations
+ + 337896 HttpExchange.timeout does not override HttpClient.timeout
+ + 337898 increase client test timeout
  + JETTY-1331 Allow alternate XML configuration processors (eg spring)
  + JETTY-1335 HttpClient's SelectConnector clean-up
- + 337896 HttpExchange.timeout does not override HttpClient.timeout
 
 jetty-7.3.0.v20110203 3 February 2011
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session (further update)
