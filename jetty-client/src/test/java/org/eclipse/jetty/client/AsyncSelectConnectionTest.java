@@ -19,7 +19,7 @@ public class AsyncSelectConnectionTest extends AbstractConnectionTest
     {
         HttpClient httpClient = new HttpClient();
         httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-        httpClient.setAsyncConnects(true);
+        httpClient.setConnectBlocking(false);
         return httpClient;
     }
 }

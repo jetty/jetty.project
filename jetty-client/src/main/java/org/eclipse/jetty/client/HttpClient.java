@@ -118,11 +118,11 @@ public class HttpClient extends HttpBuffers implements Attributes
 
     /* ------------------------------------------------------------------------------- */
     /**
-     * @param blockingConnects True if connects will be in blocking mode.
+     * @param connectBlocking True if connects will be in blocking mode.
      */
-    public void setAsyncConnects(boolean blockingConnects)
+    public void setConnectBlocking(boolean connectBlocking)
     {
-        _connectBlocking = blockingConnects;
+        _connectBlocking = connectBlocking;
     }
 
     /* ------------------------------------------------------------------------------- */
