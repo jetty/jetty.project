@@ -19,7 +19,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -46,10 +45,9 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     private final HttpClient _httpClient;
     private final Manager _selectorManager=new Manager();
     private final Timeout _connectTimer = new Timeout();
-    private final Map<SocketChannel, Timeout.Task> _connectingChannels = new ConcurrentHashMap<SocketChannel, Timeout.Task>(); 
+    private final Map<SocketChannel, Timeout.Task> _connectingChannels = new ConcurrentHashMap<SocketChannel, Timeout.Task>();
     private SSLContext _sslContext;
     private Buffers _sslBuffers;
-    private boolean _blockingConnect;
 
     /**
      * @param httpClient
@@ -60,32 +58,14 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     }
 
     /* ------------------------------------------------------------ */
-    /** Get the blockingConnect.
-     * @return the blockingConnect
-     */
-    public boolean isBlockingConnect()
-    {
-        return _blockingConnect;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set the blockingConnect.
-     * @param blockingConnect If true, connections are made in blocking mode.
-     */
-    public void setBlockingConnect(boolean blockingConnect)
-    {
-        _blockingConnect = blockingConnect;
-    }
-
-    /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
         super.doStart();
         _connectTimer.setDuration(_httpClient.getConnectTimeout());
         _connectTimer.setNow();
-        
-        if (_httpClient.isAsyncConnects())
+
+        if (!_httpClient.isConnectBlocking())
         {
             _httpClient._threadPool.dispatch(new Runnable()
             {
@@ -107,7 +87,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
                 }
             });
         }
-                  
+
         _selectorManager.start();
 
         final boolean direct=_httpClient.getUseDirectBuffers();
@@ -170,7 +150,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             Address address = destination.isProxied() ? destination.getProxy() : destination.getAddress();
             channel.socket().setTcpNoDelay(true);
 
-            if (_httpClient.isAsyncConnects())
+            if (!_httpClient.isConnectBlocking())
             {
                 channel.configureBlocking( false );
                 channel.connect(address.toSocketAddress());
@@ -189,7 +169,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
 
                 _selectorManager.register( channel, destination );
             }
-            
+
         }
         catch(IOException ex)
         {

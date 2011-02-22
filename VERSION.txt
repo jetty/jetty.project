@@ -1,5 +1,5 @@
 jetty-7.3.1-SNAPSHOT
- + 316382 Support a more strict SSL option with certificates 
+ + 316382 Support a more strict SSL option with certificates
  + 333481 Handle UCS-4 codepoints in decode and encode
  + 335329 Moved blocking timeout handling to outside try catch
  + 336668 policy supports cert validation
@@ -15,6 +15,7 @@ jetty-7.3.1-SNAPSHOT
  + 337746 Fixed Session deIdle recursion
  + 337784 Improve HashSessionManager for session migrations
  + JETTY-1331 Allow alternate XML configuration processors (eg spring)
+ + JETTY-1335 HttpClient's SelectConnector clean-up
 
 jetty-7.3.0.v20110203 3 February 2011
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session (further update)

@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.client.security.Authentication;
@@ -75,7 +74,7 @@ public class HttpClient extends HttpBuffers implements Attributes
 
     private int _connectorType = CONNECTOR_SELECT_CHANNEL;
     private boolean _useDirectBuffers = true;
-    private boolean _asyncConnects = false;
+    private boolean _connectBlocking = true;
     private int _maxConnectionsPerAddress = Integer.MAX_VALUE;
     private ConcurrentMap<Address, HttpDestination> _destinations = new ConcurrentHashMap<Address, HttpDestination>();
     ThreadPool _threadPool;
@@ -97,12 +96,12 @@ public class HttpClient extends HttpBuffers implements Attributes
     private RealmResolver _realmResolver;
 
     private AttributesMap _attributes=new AttributesMap();
-    
+
     public HttpClient()
     {
         this(new SslContextFactory());
     }
-    
+
     public HttpClient(SslContextFactory sslContextFactory)
     {
         _sslContextFactory = sslContextFactory;
@@ -112,9 +111,9 @@ public class HttpClient extends HttpBuffers implements Attributes
     /**
      * @return True if connects will be in blocking mode.
      */
-    public boolean isAsyncConnects()
+    public boolean isConnectBlocking()
     {
-        return _asyncConnects;
+        return _connectBlocking;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -123,7 +122,7 @@ public class HttpClient extends HttpBuffers implements Attributes
      */
     public void setAsyncConnects(boolean blockingConnects)
     {
-        _asyncConnects = blockingConnects;
+        _connectBlocking = blockingConnects;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -463,7 +462,7 @@ public class HttpClient extends HttpBuffers implements Attributes
         }
 
         _sslContextFactory.start();
-        
+
         if (_connectorType == CONNECTOR_SELECT_CHANNEL)
         {
 
@@ -509,7 +508,7 @@ public class HttpClient extends HttpBuffers implements Attributes
         _connector.stop();
         _connector = null;
         _sslContextFactory.stop();
-        
+
         if (_threadPool instanceof LifeCycle)
         {
             ((LifeCycle)_threadPool).stop();
@@ -549,7 +548,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     {
         return _sslContextFactory;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return the period in milliseconds a {@link HttpConnection} can be idle for before it is closed.
