@@ -156,7 +156,7 @@ public class WebSocketUpgradeTest extends TestCase
         int status = httpExchange.waitForDone();
         assertEquals(HttpExchange.STATUS_COMPLETED, status);
 
-        System.err.println("results="+_results);
+        // System.err.println("results="+_results);
 
         assertEquals("serverWS.onConnect", _results.poll(1,TimeUnit.SECONDS));
         TestWebSocket serverWS = (TestWebSocket)_results.poll(1,TimeUnit.SECONDS);

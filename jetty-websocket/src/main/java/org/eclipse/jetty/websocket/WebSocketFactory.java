@@ -107,6 +107,9 @@ public class WebSocketFactory
         final WebSocketConnection connection;
         switch(draft)
         {
+            case 5:
+                connection=new WebSocketConnectionD05(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,draft);
+                break;
             default:
                 connection=new WebSocketConnectionD00(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,draft);
         }
