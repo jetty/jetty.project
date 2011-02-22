@@ -173,7 +173,6 @@ public class HttpWriter extends Writer
                         else if(Character.isLowSurrogate((char)code))
                         {
                             code = Character.toCodePoint((char)_surrogate, (char)code); // UCS-4
-                            _surrogate=0; // USED
                         }
                         // else UCS-2
                         else
@@ -264,7 +263,8 @@ public class HttpWriter extends Writer
                             {
                                 buffer[bytes++]=(byte)('?');
                             } 
-                            
+
+                            _surrogate=0; // USED
 
                             if (bytes==buffer.length)
                             {
