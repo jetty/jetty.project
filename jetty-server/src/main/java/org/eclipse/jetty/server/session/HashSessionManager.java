@@ -726,6 +726,7 @@ public class HashSessionManager extends AbstractSessionManager
             {
                 // Access now to prevent race with idling period
                 access(System.currentTimeMillis());
+
                 
                 if (Log.isDebugEnabled())
                 {
@@ -741,9 +742,9 @@ public class HashSessionManager extends AbstractSessionManager
                         throw new FileNotFoundException(file.getName());
 
                     fis = new FileInputStream(file);
+                    _idled = false;
                     restoreSession(fis, this);
 
-                    _idled = false;
                     didActivate();
                     
                     // If we are doing period saves, then there is no point deleting at this point 
