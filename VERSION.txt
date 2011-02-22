@@ -9,6 +9,7 @@ jetty-7.3.1-SNAPSHOT
  + 337268 Allow specifying alias of a certificate to be used by SSL connector
  + 337270 Shared Timer for session management
  + 337271 Flush SSL endpoint when dispatch thread held forever
+ + 337678 Readded optional async connection mode for HttpClient
  + JETTY-1331 Allow alternate XML configuration processors (eg spring)
 
 jetty-7.3.0.v20110203 3 February 2011

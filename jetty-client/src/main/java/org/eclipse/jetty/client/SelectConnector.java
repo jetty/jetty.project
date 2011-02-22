@@ -17,6 +17,9 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -42,6 +45,8 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
 {
     private final HttpClient _httpClient;
     private final Manager _selectorManager=new Manager();
+    private final Timeout _connectTimer = new Timeout();
+    private final Map<SocketChannel, Timeout.Task> _connectingChannels = new ConcurrentHashMap<SocketChannel, Timeout.Task>(); 
     private SSLContext _sslContext;
     private Buffers _sslBuffers;
     private boolean _blockingConnect;
@@ -77,7 +82,32 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     protected void doStart() throws Exception
     {
         super.doStart();
-
+        _connectTimer.setDuration(_httpClient.getConnectTimeout());
+        _connectTimer.setNow();
+        
+        if (_httpClient.isAsyncConnects())
+        {
+            _httpClient._threadPool.dispatch(new Runnable()
+            {
+                public void run()
+                {
+                    while (isRunning())
+                    {
+                        _connectTimer.tick(System.currentTimeMillis());
+                        try
+                        {
+                            Thread.sleep(200);
+                        }
+                        catch (InterruptedException x)
+                        {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+                  
         _selectorManager.start();
 
         final boolean direct=_httpClient.getUseDirectBuffers();
@@ -126,6 +156,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     @Override
     protected void doStop() throws Exception
     {
+        _connectTimer.cancelAll();
         _selectorManager.stop();
     }
 
@@ -137,14 +168,28 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         {
             SocketChannel channel = SocketChannel.open();
             Address address = destination.isProxied() ? destination.getProxy() : destination.getAddress();
-            channel.configureBlocking( true );
             channel.socket().setTcpNoDelay(true);
-            channel.socket().setSoTimeout(_httpClient.getConnectTimeout());
-            channel.connect(address.toSocketAddress());
-            channel.configureBlocking(false);
-            channel.socket().setSoTimeout((int)_httpClient.getTimeout());
 
-            _selectorManager.register( channel, destination );
+            if (_httpClient.isAsyncConnects())
+            {
+                channel.configureBlocking( false );
+                channel.connect(address.toSocketAddress());
+                _selectorManager.register( channel, destination );
+                ConnectTimeout connectTimeout = new ConnectTimeout(channel, destination);
+                _connectTimer.schedule(connectTimeout);
+                _connectingChannels.put(channel, connectTimeout);
+            }
+            else
+            {
+                channel.configureBlocking( true );
+                channel.socket().setSoTimeout(_httpClient.getConnectTimeout());
+                channel.socket().connect(address.toSocketAddress(),_httpClient.getConnectTimeout());
+                channel.configureBlocking(false);
+                channel.socket().setSoTimeout((int)_httpClient.getTimeout());
+
+                _selectorManager.register( channel, destination );
+            }
+            
         }
         catch(IOException ex)
         {
@@ -207,6 +252,12 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
         {
+            // We're connected, cancel the connect timeout
+            Timeout.Task connectTimeout = _connectingChannels.remove(channel);
+            if (connectTimeout != null)
+                connectTimeout.cancel();
+            Log.debug("Channels with connection pending: {}", _connectingChannels.size());
+
             // key should have destination at this point (will be replaced by endpoint after this call)
             HttpDestination dest=(HttpDestination)key.attachment();
 
@@ -248,6 +299,19 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             sslEngine.beginHandshake();
 
             return sslEngine;
+        }
+
+        /* ------------------------------------------------------------ */
+        /* (non-Javadoc)
+         * @see org.eclipse.io.nio.SelectorManager#connectionFailed(java.nio.channels.SocketChannel, java.lang.Throwable, java.lang.Object)
+         */
+        @Override
+        protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
+        {
+            if (attachment instanceof HttpDestination)
+                ((HttpDestination)attachment).onConnectionFailed(ex);
+            else
+                super.connectionFailed(channel,ex,attachment);
         }
     }
 

@@ -75,6 +75,7 @@ public class HttpClient extends HttpBuffers implements Attributes
 
     private int _connectorType = CONNECTOR_SELECT_CHANNEL;
     private boolean _useDirectBuffers = true;
+    private boolean _asyncConnects = false;
     private int _maxConnectionsPerAddress = Integer.MAX_VALUE;
     private ConcurrentMap<Address, HttpDestination> _destinations = new ConcurrentHashMap<Address, HttpDestination>();
     ThreadPool _threadPool;
@@ -105,6 +106,24 @@ public class HttpClient extends HttpBuffers implements Attributes
     public HttpClient(SslContextFactory sslContextFactory)
     {
         _sslContextFactory = sslContextFactory;
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    /**
+     * @return True if connects will be in blocking mode.
+     */
+    public boolean isAsyncConnects()
+    {
+        return _asyncConnects;
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    /**
+     * @param blockingConnects True if connects will be in blocking mode.
+     */
+    public void setAsyncConnects(boolean blockingConnects)
+    {
+        _asyncConnects = blockingConnects;
     }
 
     /* ------------------------------------------------------------------------------- */

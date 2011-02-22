@@ -28,8 +28,16 @@ import static org.junit.Assert.assertTrue;
 /**
  * @version $Revision$ $Date$
  */
-public class ConnectionTest
+public abstract class AbstractConnectionTest
 {
+    protected HttpClient newHttpClient()
+    {
+        HttpClient httpClient = new HttpClient();
+
+        // httpClient.setConnectorType(HttpClient.CONNECTOR_SOCKET);
+        return httpClient;
+    }
+    
     @Test
     public void testServerClosedConnection() throws Exception
     {
@@ -37,7 +45,7 @@ public class ConnectionTest
         serverSocket.bind(null);
         int port=serverSocket.getLocalPort();
 
-        HttpClient httpClient = new HttpClient();
+        HttpClient httpClient = newHttpClient();
         httpClient.setMaxConnectionsPerAddress(1);
         httpClient.start();
         try
@@ -94,7 +102,7 @@ public class ConnectionTest
         int port=serverSocket.getLocalPort();
         serverSocket.close();
 
-        HttpClient httpClient = new HttpClient();
+        HttpClient httpClient = newHttpClient();
         httpClient.start();
         try
         {
@@ -132,7 +140,7 @@ public class ConnectionTest
         int port=serverSocket.getLocalPort();
         serverSocket.close();
 
-        HttpClient httpClient = new HttpClient();
+        HttpClient httpClient = newHttpClient();
         httpClient.setMaxConnectionsPerAddress(1);
         httpClient.start();
         try
@@ -169,39 +177,9 @@ public class ConnectionTest
     }
 
     @Test
-    public void testConnectionTimeoutWithSocketConnector() throws Exception
+    public void testConnectionTimeout() throws Exception
     {
-        HttpClient httpClient = new HttpClient();
-        httpClient.setConnectorType(HttpClient.CONNECTOR_SOCKET);
-        int connectTimeout = 5000;
-        httpClient.setConnectTimeout(connectTimeout);
-        httpClient.start();
-        try
-        {
-            CountDownLatch latch = new CountDownLatch(1);
-            HttpExchange exchange = new ConnectionExchange(latch);
-            // Using a IP address has a different behavior than using a host name
-            exchange.setAddress(new Address("127.0.0.1", 1));
-            exchange.setURI("/");
-            httpClient.send(exchange);
-
-            boolean passed = latch.await(connectTimeout * 2L, TimeUnit.MILLISECONDS);
-            assertTrue(passed);
-
-            int status = exchange.waitForDone();
-            assertEquals(HttpExchange.STATUS_EXCEPTED, status);
-        }
-        finally
-        {
-            httpClient.stop();
-        }
-    }
-
-    @Test
-    public void testConnectionTimeoutWithSelectConnector() throws Exception
-    {
-        HttpClient httpClient = new HttpClient();
-        httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        HttpClient httpClient = newHttpClient();
         int connectTimeout = 5000;
         httpClient.setConnectTimeout(connectTimeout);
         httpClient.start();
@@ -233,7 +211,7 @@ public class ConnectionTest
         serverSocket.bind(null);
         int port=serverSocket.getLocalPort();
 
-        HttpClient httpClient = new HttpClient();
+        HttpClient httpClient = newHttpClient();
         httpClient.setIdleTimeout(700);
         httpClient.start();
         try

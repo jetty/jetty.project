@@ -289,7 +289,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     protected abstract SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey sKey) throws IOException;
 
-
+    /* ------------------------------------------------------------------------------- */
+    protected void connectionFailed(SocketChannel channel,Throwable ex,Object attachment)
+    {
+        Log.warn(ex+","+channel+","+attachment);
+        Log.debug(ex);
+    }
+    
     /* ------------------------------------------------------------ */
     public String dump()
     {
@@ -397,10 +403,18 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             final ChannelAndAttachment asc = (ChannelAndAttachment)change;
                             final SelectableChannel channel=asc._channel;
                             final Object att = asc._attachment;
-                            SelectionKey key = channel.register(selector,SelectionKey.OP_READ,att);
-                            SelectChannelEndPoint endpoint = createEndPoint((SocketChannel)channel,key);
-                            key.attach(endpoint);
-                            endpoint.schedule();
+                            
+                            if ((channel instanceof SocketChannel) && ((SocketChannel)channel).isConnected())
+                            {
+                                SelectionKey key = channel.register(selector,SelectionKey.OP_READ,att);
+                                SelectChannelEndPoint endpoint = createEndPoint((SocketChannel)channel,key);
+                                key.attach(endpoint);
+                                endpoint.schedule();
+                            }
+                            else if (channel.isOpen())
+                            {
+                                channel.register(selector,SelectionKey.OP_CONNECT,att);
+                            }
                         }
                         else if (change instanceof SocketChannel)
                         {
@@ -502,6 +516,34 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         if (att instanceof SelectChannelEndPoint)
                         {
                             ((SelectChannelEndPoint)att).schedule();
+                        }
+                        else if (key.isConnectable())
+                        {
+                            // Complete a connection of a registered channel
+                            SocketChannel channel = (SocketChannel)key.channel();
+                            boolean connected=false;
+                            try
+                            {
+                                connected=channel.finishConnect();
+                            }
+                            catch(Exception e)
+                            {
+                                connectionFailed(channel,e,att);
+                            }
+                            finally
+                            {
+                                if (connected)
+                                {
+                                    key.interestOps(SelectionKey.OP_READ);
+                                    SelectChannelEndPoint endpoint = createEndPoint(channel,key);
+                                    key.attach(endpoint);
+                                    endpoint.schedule();
+                                }
+                                else
+                                {
+                                    key.cancel();
+                                }
+                            }
                         }
                         else
                         {
