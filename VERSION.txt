@@ -14,6 +14,7 @@ jetty-7.3.1-SNAPSHOT
  + 337685 Work in progress on draft 5 websockets
  + 337746 Fixed Session deIdle recursion
  + 337784 Improve HashSessionManager for session migrations
+ + 337878 Extra tests of security constraints
  + 337896 HttpExchange.timeout does not override HttpClient.timeout
  + 337898 increase client test timeout
  + JETTY-1331 Allow alternate XML configuration processors (eg spring)
