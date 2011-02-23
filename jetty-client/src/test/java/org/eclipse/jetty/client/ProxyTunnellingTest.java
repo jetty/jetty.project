@@ -1,6 +1,5 @@
 package org.eclipse.jetty.client;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.concurrent.CountDownLatch;
@@ -27,7 +26,6 @@ import org.junit.After;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class ProxyTunnellingTest
@@ -41,9 +39,9 @@ public class ProxyTunnellingTest
     {
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
         String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-        connector.setKeystore(keyStorePath);
-        connector.setPassword("storepwd");
-        connector.setKeyPassword("keypwd");
+        connector.getSslContextFactory().setKeyStore(keyStorePath);
+        connector.getSslContextFactory().setKeyStorePassword("storepwd");
+        connector.getSslContextFactory().setKeyManagerPassword("keypwd");
         startServer(connector, handler);
     }
 
