@@ -21,6 +21,7 @@ jetty-7.3.1-SNAPSHOT
  + JETTY-1317 More elegent handling of bad URIs in requests
  + JETTY-1331 Allow alternate XML configuration processors (eg spring)
  + JETTY-1335 HttpClient's SelectConnector clean-up
+ + JETTY-1333 HttpClient _timeout and _soTimeout is messed up
 
 jetty-7.3.0.v20110203 3 February 2011
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session (further update)
