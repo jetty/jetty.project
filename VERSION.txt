@@ -1,6 +1,5 @@
 jetty-7.3.1-SNAPSHOT
  + 316382 Support a more strict SSL option with certificates
- + 318105 Consistent return of null from continuation.getServletResponse
  + 333481 Handle UCS-4 codepoints in decode and encode
  + 335329 Moved blocking timeout handling to outside try catch
  + 336668 policy supports cert validation

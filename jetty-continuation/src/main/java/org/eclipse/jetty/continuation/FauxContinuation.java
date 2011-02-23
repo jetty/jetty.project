@@ -259,6 +259,7 @@ class FauxContinuation implements FilteredContinuation
      */
     public boolean enter(ServletResponse response)
     {
+        _response=response;
         return true;
     }
 

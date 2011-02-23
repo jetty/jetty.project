@@ -791,14 +791,13 @@ public class AsyncContinuation implements AsyncContext, Continuation
 
     /* ------------------------------------------------------------ */
     /**
-     * Unlike {@link #getResponse()}, this will return null if {@link #suspend(ServletResponse)} was not called.
      * @see org.eclipse.jetty.continuation.Continuation#getServletResponse()
      */
     public ServletResponse getServletResponse()
     {
         if (_responseWrapped && _event!=null && _event.getResponse()!=null)
             return _event.getResponse();
-        return null;
+        return _connection.getResponse();
     }
 
     /* ------------------------------------------------------------ */
