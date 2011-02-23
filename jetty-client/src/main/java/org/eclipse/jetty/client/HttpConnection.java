@@ -135,6 +135,8 @@ public class HttpConnection implements Connection
             long exchTimeout = _exchange.getTimeout();
             if (exchTimeout > 0)
             {
+                if (exchTimeout!=_destination.getHttpClient().getTimeout())
+                    _endp.setMaxIdleTime((int)exchTimeout);
                 _destination.getHttpClient().schedule(_timeout, exchTimeout);
             }
             else
@@ -352,7 +354,10 @@ public class HttpConnection implements Connection
                             {
                                 HttpExchange exchange=_exchange;
                                 _exchange.disassociate();
+                                if (_exchange.getTimeout()>0 && _exchange.getTimeout()!=getDestination().getHttpClient().getTimeout())
+                                    _endp.setMaxIdleTime((int)getDestination().getHttpClient().getTimeout());
                                 _exchange = null;
+                                
 
                                 if (_status==HttpStatus.SWITCHING_PROTOCOLS_101)
                                 {

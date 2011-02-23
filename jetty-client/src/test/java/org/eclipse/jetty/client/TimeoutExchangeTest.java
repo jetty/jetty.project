@@ -145,7 +145,7 @@ public class TimeoutExchangeTest
     @Test
     public void testExchangeTimeoutNotExpiring() throws Exception
     {
-        startClient(2000);
+        startClient(500);
         long serverSleep = 1000;
         long exchangeTimeout = 1500;
 
@@ -165,7 +165,7 @@ public class TimeoutExchangeTest
     @Test
     public void testExchangeTimeoutExpiring() throws Exception
     {
-        startClient(2000);
+        startClient(5000);
         long serverSleep = 1000;
         long exchangeTimeout = 500;
 
