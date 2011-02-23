@@ -877,6 +877,8 @@ public class HttpConnection implements Connection
                 else
                 {
                     version= HttpVersions.CACHE.get(version);
+                    if (version==null)
+                        throw new HttpException(HttpStatus.BAD_REQUEST_400,null);
                     _version = HttpVersions.CACHE.getOrdinal(version);
                     if (_version <= 0) _version = HttpVersions.HTTP_1_0_ORDINAL;
                     _request.setProtocol(version.toString());
@@ -885,6 +887,8 @@ public class HttpConnection implements Connection
             catch (Exception e)
             {
                 Log.debug(e);
+                if (e instanceof HttpException)
+                    throw (HttpException)e;
                 throw new HttpException(HttpStatus.BAD_REQUEST_400,null,e);
             }
         }

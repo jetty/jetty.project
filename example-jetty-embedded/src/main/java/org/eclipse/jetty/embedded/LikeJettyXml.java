@@ -39,6 +39,7 @@ public class LikeJettyXml
 {
     public static void main(String[] args) throws Exception
     {
+        Log.getLog().setDebugEnabled(true);
         String jetty_home = System.getProperty("jetty.home","../jetty-distribution/target/distribution");
         System.setProperty("jetty.home",jetty_home);
 
