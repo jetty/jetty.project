@@ -77,13 +77,22 @@ public class SelectChannelConnector extends AbstractNIOConnector
     public SelectChannelConnector()
     {
         _manager.setMaxIdleTime(getMaxIdleTime());
+        setAcceptors(Math.max(1,(Runtime.getRuntime().availableProcessors()+3)/4));
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void accept(int acceptorID) throws IOException
     {
-        _manager.doSelect(acceptorID);
+        ServerSocketChannel server = _acceptChannel;
+        if (server!=null && server.isOpen())
+        {
+            SocketChannel channel = _acceptChannel.accept();
+            channel.configureBlocking(false);
+            Socket socket = channel.socket();
+            configure(socket);
+            _manager.register(channel);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -238,30 +247,45 @@ public class SelectChannelConnector extends AbstractNIOConnector
 
         super.doStart();
 
-        // start a thread to accept new connections
-        _manager.dispatch(new Runnable()
+        // start a thread to Select
+        for (int i=0;i<getAcceptors();i++)
         {
-            public void run()
+            final int id=i;
+            _manager.dispatch(new Runnable()
             {
-                final ServerSocketChannel server=_acceptChannel;
-                while (isRunning() && _acceptChannel==server && server.isOpen())
+                public void run()
                 {
+                    String name=Thread.currentThread().getName();
                     try
                     {
-                        SocketChannel channel = server.accept();
-                        channel.configureBlocking(false);
-                        Socket socket = channel.socket();
-                        configure(socket);
-                        _manager.register(channel);
+                        Thread.currentThread().setName(name+" Selector"+id+" "+SelectChannelConnector.this);
+                        while (isRunning())
+                        {
+                            try
+                            {
+                                _manager.doSelect(id);
+                            }
+                            catch(ThreadDeath e)
+                            {
+                                throw e;
+                            }
+                            catch(IOException e)
+                            {
+                                Log.ignore(e);
+                            }
+                            catch(Exception e)
+                            {
+                                Log.warn(e);
+                            }
+                        }
                     }
-                    catch(IOException e)
+                    finally
                     {
-                        Log.ignore(e);
+                        Thread.currentThread().setName(name);
                     }
                 }
-            }
-        });
-
+            });
+        }
     }
 
     /* ------------------------------------------------------------ */

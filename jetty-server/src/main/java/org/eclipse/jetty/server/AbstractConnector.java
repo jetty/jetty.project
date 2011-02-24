@@ -793,6 +793,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         return name + "@" + (getHost() == null?"0.0.0.0":getHost()) + ":" + (getLocalPort() <= 0?getPort():getLocalPort());
     }
 
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -817,7 +818,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
                 _acceptorThread[_acceptor] = current;
                 name = _acceptorThread[_acceptor].getName();
-                current.setName(name + " - Acceptor" + _acceptor + " " + AbstractConnector.this);
+                current.setName(name + " Acceptor" + _acceptor + " " + AbstractConnector.this);
             }
             int old_priority = current.getPriority();
 
