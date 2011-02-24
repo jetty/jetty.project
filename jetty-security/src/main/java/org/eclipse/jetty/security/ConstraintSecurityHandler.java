@@ -4,17 +4,16 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.security;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,10 +30,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.TypeUtil;
 
@@ -43,7 +39,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * Handler to enforce SecurityConstraints. This implementation is servlet spec
  * 2.4 compliant and precomputes the constraint combinations for runtime
  * efficiency.
- * 
+ *
  */
 public class ConstraintSecurityHandler extends SecurityHandler implements ConstraintAware
 {
@@ -51,9 +47,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     private final Set<String> _roles = new CopyOnWriteArraySet<String>();
     private final PathMap _constraintMap = new PathMap();
     private boolean _strict = true;
-    private SessionHandler _sessionHandler;
 
-    
     /* ------------------------------------------------------------ */
     /** Get the strict mode.
      * @return true if the security handler is running in strict mode.
@@ -74,7 +68,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * <li>The * role in a constraint applies to ANY role rather than all roles defined in
      * the deployment descriptor.
      * </ul>
-     * 
+     *
      * @param strict the strict to set
      * @see #setRoles(Set)
      * @see #setConstraintMappings(List, Set)
@@ -86,7 +80,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the contraintMappings.
+     * @return Returns the constraintMappings.
      */
     public List<ConstraintMapping> getConstraintMappings()
     {
@@ -98,41 +92,41 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     {
         return _roles;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Process the constraints following the combining rules in Servlet 3.0 EA
      * spec section 13.7.1 Note that much of the logic is in the RoleInfo class.
-     * 
+     *
      * @param constraintMappings
-     *            The contraintMappings to set, from which the set of known roles
+     *            The constraintMappings to set, from which the set of known roles
      *            is determined.
      */
     public void setConstraintMappings(List<ConstraintMapping> constraintMappings)
     {
         setConstraintMappings(constraintMappings,null);
     }
-    
+
     /**
      * Process the constraints following the combining rules in Servlet 3.0 EA
      * spec section 13.7.1 Note that much of the logic is in the RoleInfo class.
-     * 
+     *
      * @param constraintMappings
-     *            The contraintMappings to set as array, from which the set of known roles
+     *            The constraintMappings to set as array, from which the set of known roles
      *            is determined.  Needed to retain API compatibility for 7.x
      */
     public void setConstraintMappings( ConstraintMapping[] constraintMappings )
     {
         setConstraintMappings( Arrays.asList(constraintMappings), null);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Process the constraints following the combining rules in Servlet 3.0 EA
      * spec section 13.7.1 Note that much of the logic is in the RoleInfo class.
-     * 
+     *
      * @param constraintMappings
-     *            The contraintMappings to set.
+     *            The constraintMappings to set.
      * @param roles The known roles (or null to determine them from the mappings)
      */
     public void setConstraintMappings(List<ConstraintMapping> constraintMappings, Set<String> roles)
@@ -141,7 +135,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             throw new IllegalStateException("Started");
         _constraintMappings.clear();
         _constraintMappings.addAll(constraintMappings);
-        
+
         if (roles==null)
         {
             roles = new HashSet<String>();
@@ -158,7 +152,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
         setRoles(roles);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Set the known roles.
@@ -171,12 +165,12 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     {
         if (isStarted())
             throw new IllegalStateException("Started");
-        
+
         _roles.clear();
         _roles.addAll(roles);
     }
-    
-    
+
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -188,10 +182,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (mapping.getConstraint()!=null && mapping.getConstraint().getRoles()!=null)
             for (String role :  mapping.getConstraint().getRoles())
                 addRole(role);
-                
+
         if (isStarted())
         {
-            processContraintMapping(mapping);
+            processConstraintMapping(mapping);
         }
     }
 
@@ -228,17 +222,22 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         {
             for (ConstraintMapping mapping : _constraintMappings)
             {
-                processContraintMapping(mapping);
+                processConstraintMapping(mapping);
             }
         }
-        
-        if (ContextHandler.getCurrentContext()!=null)
-            _sessionHandler = ContextHandler.getCurrentContext().getContextHandler().getNestedHandlerByClass(SessionHandler.class);
-        
         super.doStart();
     }
 
-    protected void processContraintMapping(ConstraintMapping mapping)
+    @Override
+    protected void doStop() throws Exception
+    {
+        _constraintMap.clear();
+        _constraintMappings.clear();
+        _roles.clear();
+        super.doStop();
+    }
+
+    protected void processConstraintMapping(ConstraintMapping mapping)
     {
         Map<String, RoleInfo> mappings = (Map<String, RoleInfo>)_constraintMap.get(mapping.getPathSpec());
         if (mappings == null)
@@ -249,7 +248,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         RoleInfo allMethodsRoleInfo = mappings.get(null);
         if (allMethodsRoleInfo != null && allMethodsRoleInfo.isForbidden())
             return;
-        
+
         String httpMethod = mapping.getMethod();
         RoleInfo roleInfo = mappings.get(httpMethod);
         if (roleInfo == null)
@@ -263,7 +262,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
         if (roleInfo.isForbidden())
             return;
-        
+
         Constraint constraint = mapping.getConstraint();
         boolean forbidden = constraint.isForbidden();
         roleInfo.setForbidden(forbidden);
@@ -320,7 +319,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             }
         }
     }
-    
+
     protected Object prepareConstraintInfo(String pathInContext, Request request)
     {
         Map<String, RoleInfo> mappings = (Map<String, RoleInfo>)_constraintMap.match(pathInContext);
@@ -333,7 +332,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 roleInfo = mappings.get(null);
             return roleInfo;
         }
-       
+
         return null;
     }
 
@@ -341,12 +340,12 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     {
         if (constraintInfo == null)
             return true;
-        
+
         RoleInfo roleInfo = (RoleInfo)constraintInfo;
         if (roleInfo.isForbidden())
             return false;
-        
-        
+
+
         UserDataConstraint dataConstraint = roleInfo.getUserDataConstraint();
         if (dataConstraint == null || dataConstraint == UserDataConstraint.None)
         {
@@ -390,7 +389,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             }
             else
                 response.sendError(Response.SC_FORBIDDEN,"!Confidential");
-            
+
             request.setHandled(true);
             return false;
         }
@@ -424,10 +423,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         {
             return true;
         }
-        
+
         if (roleInfo.isAnyRole() && request.getAuthType()!=null)
             return true;
-        
+
         for (String role : roleInfo.getRoles())
         {
             if (userIdentity.isUserInRole(role, null))
