@@ -93,23 +93,30 @@ public class WebSocketFactory
      * @throws IOException
      */
     public void upgrade(HttpServletRequest request,HttpServletResponse response, WebSocket websocket, String origin, String subprotocol)
-     throws IOException
+    throws IOException
      {
-        if (!"WebSocket".equals(request.getHeader("Upgrade")))
+        if (!"websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
             throw new IllegalStateException("!Upgrade:websocket");
         if (!"HTTP/1.1".equals(request.getProtocol()))
             throw new IllegalStateException("!HTTP/1.1");
                 
-        int draft=request.getIntHeader("Sec-WebSocket-Draft");
+        int draft=request.getIntHeader("Sec-WebSocket-Version");
+        if (draft<0)
+            draft=request.getIntHeader("Sec-WebSocket-Draft");
         HttpConnection http = HttpConnection.getCurrentConnection();
         ConnectedEndPoint endp = (ConnectedEndPoint)http.getEndPoint();
         
         final WebSocketConnection connection;
         switch(draft)
         {
-            case 5:
-                connection=new WebSocketConnectionD05(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,draft);
+            case 6:
+                connection=new WebSocketConnectionD06(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,draft);
                 break;
+            case 5:
+            case 4:
+            case 3:
+            case 2:
+                throw new UnsupportedOperationException("Unsupported draft specification: "+draft);
             default:
                 connection=new WebSocketConnectionD00(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,draft);
         }

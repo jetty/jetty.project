@@ -636,6 +636,7 @@ public abstract class AbstractBuffer implements Buffer
             if (bytes!=null)
                 return new String(bytes,getIndex(),length(),charset);
             return new String(asArray(), 0, length(),charset);
+            
         }
         catch(Exception e)
         {

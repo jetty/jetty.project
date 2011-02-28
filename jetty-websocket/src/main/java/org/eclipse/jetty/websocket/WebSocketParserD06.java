@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.log.Log;
  * Parser the WebSocket protocol.
  *
  */
-public class WebSocketParserD05 implements WebSocketParser
+public class WebSocketParserD06 implements WebSocketParser
 {    
     public enum State { 
         MASK(0), OPCODE(1), LENGTH_7(2), LENGTH_16(4), LENGTH_63(10), DATA(10);
@@ -53,7 +53,7 @@ public class WebSocketParserD05 implements WebSocketParser
     private final boolean _masked;
     private State _state;
     private Buffer _buffer;
-    private boolean _more;
+    private boolean _fin;
     private byte _flags;
     private byte _opcode;
     private int _count;
@@ -70,7 +70,7 @@ public class WebSocketParserD05 implements WebSocketParser
      * @param endp
      * @param handler
      */
-    public WebSocketParserD05(WebSocketBuffers buffers, EndPoint endp, FrameHandler handler, boolean masked)
+    public WebSocketParserD06(WebSocketBuffers buffers, EndPoint endp, FrameHandler handler, boolean masked)
     {
         _buffers=buffers;
         _endp=endp;
@@ -157,7 +157,7 @@ public class WebSocketParserD05 implements WebSocketParser
                             b^=_mask[_m++%4];
                         _opcode=(byte)(b&0xf);
                         _flags=(byte)(b>>4);
-                        _more=(_flags&8)!=0;
+                        _fin=(_flags&8)!=0;
                         _state=State.LENGTH_7;
                         continue;
 
@@ -226,7 +226,7 @@ public class WebSocketParserD05 implements WebSocketParser
                         array[data.getIndex()+i]^=_mask[_m++%4];
                 }
                 
-                _handler.onFrame(_more,_flags, _opcode, data);
+                _handler.onFrame(!_fin,_flags, _opcode, data);
                 _count=0;
                 _state=State.OPCODE;
 

@@ -30,6 +30,7 @@ import junit.framework.TestCase;
 import org.eclipse.jetty.client.security.ProxyAuthorization;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EofException;
@@ -473,7 +474,7 @@ public class HttpExchangeTest extends TestCase
 
        //try to get a connection, and only wait 500ms, as we have
        //already reserved the max, should return null
-       org.eclipse.jetty.client.HttpConnection c = destination.reserveConnection(500);
+       AbstractConnection c = destination.reserveConnection(500);
        assertNull(c);
 
        //unreserve first connection

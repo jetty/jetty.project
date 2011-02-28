@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersions;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
@@ -44,10 +45,9 @@ import org.eclipse.jetty.util.thread.Timeout;
  *
  * @version $Revision: 879 $ $Date: 2009-09-11 16:13:28 +0200 (Fri, 11 Sep 2009) $
  */
-public class HttpConnection implements Connection
+public class HttpConnection extends AbstractConnection implements Connection
 {
     private HttpDestination _destination;
-    private EndPoint _endp;
     private HttpGenerator _generator;
     private HttpParser _parser;
     private boolean _http11 = true;
@@ -56,6 +56,7 @@ public class HttpConnection implements Connection
     private Buffer _requestContentChunk;
     private boolean _requestComplete;
     private boolean _reserved;
+
     // The current exchange waiting for a response
     private volatile HttpExchange _exchange;
     private HttpExchange _pipeline;
@@ -64,6 +65,7 @@ public class HttpConnection implements Connection
 
     public void dump() throws IOException
     {
+        // TODO update to dumpable
         Log.info("endp=" + _endp + " " + _endp.isBufferingInput() + " " + _endp.isBufferingOutput());
         Log.info("generator=" + _generator);
         Log.info("parser=" + _parser.getState() + " " + _parser.isMoreInBuffer());
@@ -74,14 +76,9 @@ public class HttpConnection implements Connection
 
     HttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
     {
-        _endp = endp;
+        super(endp);
         _generator = new HttpGenerator(requestBuffers,endp);
         _parser = new HttpParser(responseBuffers,endp,new Handler());
-    }
-
-    public long getTimeStamp()
-    {
-        return -1;
     }
 
     public void setReserved (boolean reserved)
@@ -440,11 +437,6 @@ public class HttpConnection implements Connection
 
     public void closed()
     {
-    }
-
-    public EndPoint getEndPoint()
-    {
-        return _endp;
     }
 
     private void commitRequest() throws IOException

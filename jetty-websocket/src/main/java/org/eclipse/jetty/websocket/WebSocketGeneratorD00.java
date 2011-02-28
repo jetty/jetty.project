@@ -171,9 +171,9 @@ public class WebSocketGeneratorD00 implements WebSocketGenerator
         return _buffer==null || _buffer.length()==0;
     }
 
-    public void addFragment(boolean more, byte opcode, byte[] content, int offset, int length, int maxIdleTime) throws IOException
+    public void addFragment(boolean last,byte opcode, byte[] content, int offset, int length, int maxIdleTime) throws IOException
     {
-        if (more)
+        if (!last)
             throw new UnsupportedOperationException("fragmented");
         addFrame(opcode,content,offset,length,maxIdleTime);
     }

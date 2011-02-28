@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 
 import org.eclipse.jetty.util.log.Log;
 
@@ -39,6 +40,14 @@ public class StringUtil
     public final static String __UTF8Alt="UTF8";
     public final static String __UTF16="UTF-16";
     
+    public final static Charset __UTF8_CHARSET;
+    public final static Charset __ISO_8859_1_CHARSET;
+    
+    static
+    {
+        __UTF8_CHARSET=Charset.forName(__UTF8);
+        __ISO_8859_1_CHARSET=Charset.forName(__ISO_8859_1);
+    }
     
     private static char[] lowercases = {
           '\000','\001','\002','\003','\004','\005','\006','\007',

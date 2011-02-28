@@ -20,7 +20,7 @@ import org.junit.Test;
 /**
  * @version $Revision$ $Date$
  */
-public class WebSocketParserD05Test
+public class WebSocketParserD06Test
 {
     private ByteArrayBuffer _in;
     private Handler _handler;
@@ -33,7 +33,7 @@ public class WebSocketParserD05Test
         WebSocketBuffers buffers = new WebSocketBuffers(1024);
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         _handler = new Handler();
-        _parser=new WebSocketParserD05(buffers, endPoint,_handler,true);
+        _parser=new WebSocketParserD06(buffers, endPoint,_handler,true);
         _in = new ByteArrayBuffer(2048)
         {
             {
@@ -104,7 +104,7 @@ public class WebSocketParserD05Test
     @Test
     public void testShortText() throws Exception
     {
-        _in.put((byte)0x00);
+        _in.put((byte)0x84);
         _in.put((byte)11);
         _in.put("Hello World".getBytes(StringUtil.__UTF8));
 
@@ -122,7 +122,7 @@ public class WebSocketParserD05Test
         String string = "Hell\uFF4f W\uFF4Frld";
         byte[] bytes = string.getBytes("UTF-8");
         
-        _in.put((byte)0x00);
+        _in.put((byte)0x84);
         _in.put((byte)bytes.length);
         _in.put(bytes);
 
@@ -144,7 +144,7 @@ public class WebSocketParserD05Test
         
         byte[] bytes = string.getBytes("UTF-8");
         
-        _in.put((byte)0x00);
+        _in.put((byte)0x84);
         _in.put((byte)0x7E);
         _in.put((byte)(bytes.length>>8));
         _in.put((byte)(bytes.length&0xff));
@@ -164,7 +164,7 @@ public class WebSocketParserD05Test
 
         WebSocketBuffers buffers = new WebSocketBuffers(0x20000);
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        WebSocketParser parser=new WebSocketParserD01(buffers, endPoint,_handler);
+        WebSocketParser parser=new WebSocketParserD06(buffers, endPoint,_handler,false);
         ByteArrayBuffer in = new ByteArrayBuffer(0x20000);
         endPoint.setIn(in);
         
@@ -176,7 +176,7 @@ public class WebSocketParserD05Test
         
         byte[] bytes = string.getBytes("UTF-8");
         
-        in.put((byte)0x00);
+        in.put((byte)0x84);
         in.put((byte)0x7F);
         in.put((byte)0x00);
         in.put((byte)0x00);
@@ -199,10 +199,10 @@ public class WebSocketParserD05Test
     @Test
     public void testShortFragmentTest() throws Exception
     {
-        _in.put((byte)0x80);
+        _in.put((byte)0x04);
         _in.put((byte)0x06);
         _in.put("Hello ".getBytes(StringUtil.__UTF8));
-        _in.put((byte)0x00);
+        _in.put((byte)0x80);
         _in.put((byte)0x05);
         _in.put("World".getBytes(StringUtil.__UTF8));
 
@@ -232,11 +232,11 @@ public class WebSocketParserD05Test
             if (more)
                 _utf8.append(buffer.array(),buffer.getIndex(),buffer.length());
             else if (_utf8.length()==0)
-                _data.add(opcode,buffer.toString("utf-8"));
+                _data.add(buffer.toString("utf-8"));
             else
             {
                 _utf8.append(buffer.array(),buffer.getIndex(),buffer.length());
-                _data.add(opcode,_utf8.toString());
+                _data.add(_utf8.toString());
                 _utf8.reset();
             }
         }

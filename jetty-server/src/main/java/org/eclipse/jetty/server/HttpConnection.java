@@ -38,6 +38,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Parser;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
@@ -86,17 +87,15 @@ import org.eclipse.jetty.util.thread.Timeout;
  * </p>
  *
  */
-public class HttpConnection implements Connection
+public class HttpConnection extends AbstractConnection implements Connection
 {
     private static final int UNKNOWN = -2;
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
 
-    private final long _timeStamp=System.currentTimeMillis();
     private int _requests;
     private volatile boolean _handling;
 
     protected final Connector _connector;
-    protected final EndPoint _endp;
     protected final Server _server;
     protected final HttpURI _uri;
 
@@ -143,9 +142,9 @@ public class HttpConnection implements Connection
      */
     public HttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
+        super(endpoint);
         _uri = StringUtil.__UTF8.equals(URIUtil.__CHARSET)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
         _connector = connector;
-        _endp = endpoint;
         HttpBuffers ab = (HttpBuffers)_connector;
         _parser = new HttpParser(ab.getRequestBuffers(), endpoint, new RequestHandler());
         _requestFields = new HttpFields();
@@ -161,9 +160,9 @@ public class HttpConnection implements Connection
     protected HttpConnection(Connector connector, EndPoint endpoint, Server server,
             Parser parser, Generator generator, Request request)
     {
+        super(endpoint);
         _uri = URIUtil.__CHARSET.equals(StringUtil.__UTF8)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
         _connector = connector;
-        _endp = endpoint;
         _parser = parser;
         _requestFields = new HttpFields();
         _responseFields = new HttpFields(server.getMaxCookieVersion());
@@ -198,15 +197,6 @@ public class HttpConnection implements Connection
         return _server;
     }
     
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The time this connection was established.
-     */
-    public long getTimeStamp()
-    {
-        return _timeStamp;
-    }
-
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the associatedObject.
@@ -276,15 +266,6 @@ public class HttpConnection implements Connection
         if (_connector!=null)
             return _connector.isIntegral(request);
         return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The {@link EndPoint} for this connection.
-     */
-    public EndPoint getEndPoint()
-    {
-        return _endp;
     }
 
     /* ------------------------------------------------------------ */

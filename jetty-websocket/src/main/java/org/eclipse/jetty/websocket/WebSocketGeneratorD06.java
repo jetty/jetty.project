@@ -14,6 +14,8 @@
 package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
+import java.security.SecureRandom;
+import java.util.Random;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
@@ -27,82 +29,112 @@ import org.eclipse.jetty.io.EofException;
  * threads will call the addMessage methods while other
  * threads are flushing the generator.
  */
-public class WebSocketGeneratorD05 implements WebSocketGenerator
+public class WebSocketGeneratorD06 implements WebSocketGenerator
 {
     final private WebSocketBuffers _buffers;
     final private EndPoint _endp;
     private Buffer _buffer;
+    private final boolean _masked;
+    private final byte[] _mask=new byte[4];
+    private final Random _random;
+    private int _m;
+    private boolean _opsent;
 
-    public WebSocketGeneratorD05(WebSocketBuffers buffers, EndPoint endp)
+    public WebSocketGeneratorD06(WebSocketBuffers buffers, EndPoint endp, boolean masked)
     {
         _buffers=buffers;
         _endp=endp;
+        _masked=masked;
+        _random=_masked?new SecureRandom():null;  // TODO share the Random
     }
 
     public synchronized void addFrame(byte opcode,byte[] content, int blockFor) throws IOException
     {
+        _opsent=false;
         addFrame(opcode,content,0,content.length,blockFor);
     }
     
 
     public synchronized void addFrame(byte opcode,byte[] content, int offset, int length, int blockFor) throws IOException
     {
-        addFragment(false,opcode,content,offset,length,blockFor);
+        _opsent=false;
+        addFragment(true,opcode,content,offset,length,blockFor);
     }
 
-    public synchronized void addFragment(boolean more, byte opcode, byte[] content, int offset, int length, int blockFor) throws IOException
+    public synchronized void addFragment(boolean last, byte opcode, byte[] content, int offset, int length, int blockFor) throws IOException
     {
         if (_buffer==null)
-            _buffer=_buffers.getDirectBuffer();
-
-        if (_buffer.space() == 0)
-            expelBuffer(blockFor);
+            _buffer=_masked?_buffers.getBuffer():_buffers.getDirectBuffer();
+            
+        int space=_masked?14:10;
         
-        opcode = (byte)(opcode & 0x0f);
-        
-        while (length>0)
+        do
         {
-            // slice a fragment off
-            int fragment=length;
-            if (fragment+10>_buffer.capacity())
-            {
-                fragment=_buffer.capacity()-10;
-                bufferPut((byte)(0x80|opcode), blockFor);
-            }
-            else if (more)
-                bufferPut((byte)(0x80|opcode), blockFor);
-            else
-                bufferPut(opcode, blockFor);
+            opcode = _opsent?WebSocket.OP_CONTINUATION:(byte)(opcode & 0x0f);
+            _opsent=true;
+            
+            int payload=length;
+            if (payload+space>_buffer.capacity())
+                payload=_buffer.capacity()-space;
+            else if (last)
+                opcode|=(byte)0x80; // Set the FIN bit
 
-            if (fragment>0xffff)
+            // ensure there is space for header
+            if (_buffer.space() <= space)
+                expelBuffer(blockFor);
+            
+            // write mask
+            if (_masked)
             {
-                bufferPut((byte)0x7f, blockFor);
-                bufferPut((byte)((fragment>>56)&0x7f), blockFor);
-                bufferPut((byte)((fragment>>48)&0xff), blockFor);
-                bufferPut((byte)((fragment>>40)&0xff), blockFor);
-                bufferPut((byte)((fragment>>32)&0xff), blockFor);
-                bufferPut((byte)((fragment>>24)&0xff), blockFor);
-                bufferPut((byte)((fragment>>16)&0xff), blockFor);
-                bufferPut((byte)((fragment>>8)&0xff), blockFor);
-                bufferPut((byte)(fragment&0xff), blockFor);
+                _random.nextBytes(_mask);
+                _m=0;
+                _buffer.put(_mask);
             }
-            else if (fragment >=0x7e)
+            
+            // write the opcode and length
+            if (payload>0xffff)
             {
-                bufferPut((byte)126, blockFor);
-                bufferPut((byte)(fragment>>8), blockFor);
-                bufferPut((byte)(fragment&0xff), blockFor);
+                bufferPut(new byte[]{
+                        opcode,
+                        (byte)0x7f,
+                        (byte)((payload>>56)&0x7f),
+                        (byte)((payload>>48)&0xff), 
+                        (byte)((payload>>40)&0xff), 
+                        (byte)((payload>>32)&0xff),
+                        (byte)((payload>>24)&0xff),
+                        (byte)((payload>>16)&0xff),
+                        (byte)((payload>>8)&0xff),
+                        (byte)(payload&0xff)});
+            }
+            else if (payload >=0x7e)
+            {
+                bufferPut(new byte[]{
+                        opcode,
+                        (byte)0x7e,
+                        (byte)(payload>>8),
+                        (byte)(payload&0xff)});
             }
             else
             {
-                bufferPut((byte)fragment, blockFor);
+                bufferPut(opcode);
+                bufferPut((byte)payload);
             }
 
-            int remaining = fragment;
+            // write payload
+            int remaining = payload;
             while (remaining > 0)
             {
                 _buffer.compact();
                 int chunk = remaining < _buffer.space() ? remaining : _buffer.space();
-                _buffer.put(content, offset + (fragment - remaining), chunk);
+                
+                if (_masked)
+                {
+                    for (int i=0;i<chunk;i++)
+                        bufferPut(content[offset+ (payload-remaining)+i]);
+                }
+                else
+                    _buffer.put(content, offset + (payload - remaining), chunk);
+                
                 remaining -= chunk;
                 if (_buffer.space() > 0)
                 {
@@ -120,18 +152,24 @@ public class WebSocketGeneratorD05 implements WebSocketGenerator
                     }
                 }
             }
-            offset+=fragment;
-            length-=fragment;
+            offset+=payload;
+            length-=payload;
         }
+        while (length>0);
+        _opsent=!last;
     }
 
-    private synchronized void bufferPut(byte datum, long blockFor) throws IOException
+    private synchronized void bufferPut(byte[] data) throws IOException
     {
-        if (_buffer==null)
-            _buffer=_buffers.getDirectBuffer();
-        _buffer.put(datum);
-        if (_buffer.space() == 0)
-            expelBuffer(blockFor);
+        if (_masked)
+            for (int i=0;i<data.length;i++)
+                data[i]^=_mask[+_m++%4];
+        _buffer.put(data);
+    }
+    
+    private synchronized void bufferPut(byte data) throws IOException
+    {
+        _buffer.put((byte)(data^_mask[+_m++%4]));
     }
 
     public synchronized void addFrame(byte frame, String content, int blockFor) throws IOException

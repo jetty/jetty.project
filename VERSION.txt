@@ -11,7 +11,7 @@ jetty-7.3.1-SNAPSHOT
  + 337270 Shared Timer for session management
  + 337271 Flush SSL endpoint when dispatch thread held forever
  + 337678 Readded optional async connection mode for HttpClient
- + 337685 Work in progress on draft 5 websockets
+ + 337685 Work in progress on draft 6 websockets
  + 337746 Fixed Session deIdle recursion
  + 337784 Improve HashSessionManager for session migrations
  + 337878 Extra tests of security constraints

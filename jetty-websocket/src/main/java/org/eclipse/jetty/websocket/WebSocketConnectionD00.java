@@ -20,6 +20,7 @@ import java.security.NoSuchAlgorithmException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -29,13 +30,11 @@ import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.log.Log;
 
-public class WebSocketConnectionD00 implements WebSocketConnection
+public class WebSocketConnectionD00 extends AbstractConnection implements WebSocketConnection, WebSocket.Outbound
 {
     final IdleCheck _idle;
-    final EndPoint _endp;
     final WebSocketParser _parser;
     final WebSocketGenerator _generator;
-    final long _timestamp;
     final WebSocket _websocket;
     String _key1;
     String _key2;
@@ -50,14 +49,13 @@ public class WebSocketConnectionD00 implements WebSocketConnection
     public WebSocketConnectionD00(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, int draft)
         throws IOException
     {
+        super(endpoint,timestamp);
         // TODO - can we use the endpoint idle mechanism?
         if (endpoint instanceof AsyncEndPoint)
             ((AsyncEndPoint)endpoint).cancelIdle();
         
-        _endp = endpoint;
         _endp.setMaxIdleTime(maxIdleTime);
         
-        _timestamp = timestamp;
         _websocket = websocket;
 
         // Select the parser/generators to use
@@ -220,11 +218,6 @@ public class WebSocketConnectionD00 implements WebSocketConnection
         _websocket.onDisconnect();
     }
 
-    public long getTimeStamp()
-    {
-        return _timestamp;
-    }
-
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.websocket.WebSocketConnection#sendMessage(java.lang.String)
@@ -264,12 +257,17 @@ public class WebSocketConnectionD00 implements WebSocketConnection
      */
     public void sendFragment(boolean more,byte opcode, byte[] content, int offset, int length) throws IOException
     {
-        _generator.addFragment(more,opcode,content,offset,length,_endp.getMaxIdleTime());
+        _generator.addFragment(!more,opcode,content,offset,length,_endp.getMaxIdleTime());
         _generator.flush();
         checkWriteable();
         _idle.access(_endp);
     }
 
+    public void disconnect(int code, String message)
+    {
+        throw new UnsupportedOperationException();
+    }
+    
     public void disconnect()
     {
         try
@@ -380,4 +378,5 @@ public class WebSocketConnectionD00 implements WebSocketConnection
             _websocket.onConnect(this);
         }
     }
+
 }

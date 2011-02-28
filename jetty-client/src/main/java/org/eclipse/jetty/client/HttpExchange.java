@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -690,9 +691,9 @@ public class HttpExchange
         return this._connection != null;
     }
 
-    HttpConnection disassociate()
+    AbstractConnection disassociate()
     {
-        HttpConnection result = _connection;
+        AbstractConnection result = _connection;
         this._connection = null;
         if (getStatus() == STATUS_CANCELLING)
             setStatus(STATUS_CANCELLED);
