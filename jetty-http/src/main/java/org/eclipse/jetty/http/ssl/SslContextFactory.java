@@ -322,8 +322,8 @@ public class SslContextFactory extends AbstractLifeCycle
     }
 
     /* ------------------------------------------------------------ */
-    /** Set the _keyStoreInputStream.
-     * @param _keyStoreInputStream the _keyStoreInputStream to set
+    /** Set the keyStoreInputStream.
+     * @param keystoreInputStream the InputStream to the KeyStore 
      */
     public void setKeyStoreInputStream(InputStream keystoreInputStream)
     {
@@ -429,7 +429,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /** Set the _trustStoreInputStream.
-     * @param _trustStoreInputStream the _trustStoreInputStream to set
+     * @param truststoreInputStream the InputStream to the TrustStore
      */
     public void setTrustStoreInputStream(InputStream truststoreInputStream)
     {
@@ -495,8 +495,8 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @param validateServerCert
-     *            true if SSL certificate has to be validated
+     * @param validateCerts
+     *            true if SSL certificates have to be validated
      */
     public void setValidateCerts(boolean validateCerts)
     {

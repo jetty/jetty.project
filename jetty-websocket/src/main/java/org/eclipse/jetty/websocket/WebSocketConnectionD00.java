@@ -220,7 +220,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.websocket.WebSocketConnection#sendMessage(java.lang.String)
+     * {@inheritDoc}
      */
     public void sendMessage(String content) throws IOException
     {
@@ -229,7 +229,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.websocket.WebSocketConnection#sendMessage(byte, java.lang.String)
+     * {@inheritDoc}
      */
     public void sendMessage(byte frame, String content) throws IOException
     {
@@ -241,7 +241,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.websocket.WebSocketConnection#sendMessage(byte, byte[], int, int)
+     * {@inheritDoc}
      */
     public void sendMessage(byte opcode, byte[] content, int offset, int length) throws IOException
     {
@@ -253,7 +253,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.websocket.WebSocketConnection#sendFragment(boolean, byte, byte[], int, int)
+     * {@inheritDoc}
      */
     public void sendFragment(boolean more,byte opcode, byte[] content, int offset, int length) throws IOException
     {

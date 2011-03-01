@@ -93,7 +93,7 @@ public abstract class PolicyMonitor extends AbstractLifeCycle
     /**
      * gets the scanner interval
      * 
-     * @return
+     * @return the scan interval
      */
     public int getScanInterval()
     {
@@ -103,7 +103,8 @@ public abstract class PolicyMonitor extends AbstractLifeCycle
     /**
      * sets the scanner interval on a non-running instance of the monitor
      * 
-     * @param scanInterval
+     * @param scanInterval in seconds
+     * @see Scanner#setScanInterval(int)
      */
     public void setScanInterval( int scanInterval )
     {
@@ -119,7 +120,7 @@ public abstract class PolicyMonitor extends AbstractLifeCycle
      * true of the monitor is initialized, meaning that at least one
      * scan cycle has completed and any policy grants found have been chirped
      * 
-     * @return
+     * @return true if initialized
      */
     public boolean isInitialized()
     {
@@ -129,7 +130,7 @@ public abstract class PolicyMonitor extends AbstractLifeCycle
     /**
      * gets the number of times the scan has been run
      * 
-     * @return
+     * @return scan count
      */
     public int getScanCount()
     {
@@ -153,7 +154,7 @@ public abstract class PolicyMonitor extends AbstractLifeCycle
     /**
      * true of reload is enabled, false otherwise
      * 
-     * @return
+     * @return true if reload is enabled
      */
     public boolean isReloadEnabled()
     {

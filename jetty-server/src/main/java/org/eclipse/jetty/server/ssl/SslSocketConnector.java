@@ -328,7 +328,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.server.nio.SelectChannelConnector#doStart()
+     * {@inheritDoc}
      */
     @Override
     protected void doStart() throws Exception
