@@ -18,6 +18,7 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.server.HttpConnection;
@@ -116,7 +117,7 @@ public class WebSocketFactory
             case 4:
             case 3:
             case 2:
-                throw new UnsupportedOperationException("Unsupported draft specification: "+draft);
+                throw new HttpException(400,"Unsupported draft specification: "+draft);
             default:
                 connection=new WebSocketConnectionD00(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,draft);
         }
