@@ -261,7 +261,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         _endp.setMaxIdleTime(maxIdleTime);
         
         _websocket = websocket;
-        _generator = new WebSocketGeneratorD06(buffers, _endp,false);
+        _generator = new WebSocketGeneratorD06(buffers, _endp,null);
         _parser = new WebSocketParserD06(buffers, endpoint, _frameHandler,true);
 
         // TODO should these be AsyncEndPoint checks/calls?

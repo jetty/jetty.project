@@ -18,6 +18,7 @@ import java.io.IOException;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 
@@ -222,13 +223,14 @@ public class WebSocketParserD06 implements WebSocketParser
                     if (data.array()==null)
                         data=_buffer.asMutableBuffer();
                     byte[] array = data.array();
-                    for (int i=data.length();i-->0;)
-                        array[data.getIndex()+i]^=_mask[_m++%4];
+                    final int end=data.putIndex();
+                    for (int i=data.getIndex();i<end;i++)
+                        array[i]^=_mask[_m++%4];
                 }
                 
                 _handler.onFrame(!_fin,_flags, _opcode, data);
                 _count=0;
-                _state=State.OPCODE;
+                _state=_masked?State.MASK:State.OPCODE;
 
                 if (_buffer.length()==0)
                 {

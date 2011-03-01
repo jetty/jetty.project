@@ -11,16 +11,19 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -347,10 +350,62 @@ public class WebSocketMessageD06Test
         catch(IOException e)
         {
             assertTrue(true);
-        }
-        
-        
+        }    
     }
+    
+    @Test
+    public void testParserAndGenerator() throws Exception
+    {
+        String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
+        final AtomicReference<String> received = new AtomicReference<String>();
+        ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
+        
+        WebSocketGeneratorD06 gen = new WebSocketGeneratorD06(new WebSocketBuffers(8096),endp,null);
+        gen.addFrame((byte)0x4,message,1000);
+        
+        endp = new ByteArrayEndPoint(endp.getOut().asArray(),4096);
+                
+        WebSocketParserD06 parser = new WebSocketParserD06(new WebSocketBuffers(8096),endp,new WebSocketParser.FrameHandler()
+        {
+            public void onFrame(boolean more, byte flags, byte opcode, Buffer buffer)
+            {
+                received.set(buffer.toString());
+            }
+        },false);
+        
+        parser.parseNext();
+        
+        assertEquals(message,received.get());
+    }
+    
+    @Test
+    public void testParserAndGeneratorMasked() throws Exception
+    {
+        String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
+        final AtomicReference<String> received = new AtomicReference<String>();
+        ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
+
+        WebSocketGeneratorD06.MaskGen maskGen = new WebSocketGeneratorD06.RandomMaskGen();
+        
+        WebSocketGeneratorD06 gen = new WebSocketGeneratorD06(new WebSocketBuffers(8096),endp,maskGen);
+        gen.addFrame((byte)0x4,message,1000);
+        
+        endp = new ByteArrayEndPoint(endp.getOut().asArray(),4096);
+                
+        WebSocketParserD06 parser = new WebSocketParserD06(new WebSocketBuffers(8096),endp,new WebSocketParser.FrameHandler()
+        {
+            public void onFrame(boolean more, byte flags, byte opcode, Buffer buffer)
+            {
+                received.set(buffer.toString());
+            }
+        },true);
+        
+        parser.parseNext();
+        
+        assertEquals(message,received.get());
+    }
+    
+    
     private void lookFor(String string,InputStream in)
         throws IOException
     {

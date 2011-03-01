@@ -13,6 +13,7 @@ import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,11 +23,59 @@ import org.junit.Test;
  */
 public class WebSocketParserD06Test
 {
-    private ByteArrayBuffer _in;
+    private MaskedByteArrayBuffer _in;
     private Handler _handler;
     private WebSocketParser _parser;
-    private byte[] _mask = new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff};
+    private byte[] _mask = new byte[] {(byte)0x00,(byte)0xF0,(byte)0x0F,(byte)0xFF};
+    private int _m;
 
+    class MaskedByteArrayBuffer extends ByteArrayBuffer
+    {
+        MaskedByteArrayBuffer()
+        {
+            super(4096);
+        }
+        
+        public void sendMask()
+        {
+            super.poke(putIndex(),_mask,0,4);
+            super.setPutIndex(putIndex()+4);
+            _m=0;
+        }
+
+        @Override
+        public int put(Buffer src)
+        {
+            return put(src.asArray(),0,src.length());
+        }
+
+        @Override
+        public void put(byte b)
+        {
+            super.put((byte)(b^_mask[_m++%4]));
+        }
+
+        @Override
+        public int put(byte[] b, int offset, int length)
+        {
+            byte[] mb = new byte[b.length];
+            final int end=offset+length;
+            for (int i=offset;i<end;i++)
+            {
+                mb[i]=(byte)(b[i]^_mask[_m++%4]);
+            }
+            return super.put(mb,offset,length);
+        }
+
+        @Override
+        public int put(byte[] b)
+        {
+            return put(b,0,b.length);
+        }
+        
+    };
+    
+    
     @Before
     public void setUp() throws Exception
     {
@@ -34,63 +83,7 @@ public class WebSocketParserD06Test
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         _handler = new Handler();
         _parser=new WebSocketParserD06(buffers, endPoint,_handler,true);
-        _in = new ByteArrayBuffer(2048)
-        {
-            {
-                // add the mask
-                super.put(_mask,0,4);
-            }
-
-            @Override
-            public void poke(int index, byte b)
-            {
-                super.poke(index,(byte)(b^_mask[index%4]));
-            }
-
-            @Override
-            public int poke(int index, Buffer src)
-            {
-                return poke(index,src.asArray(),0,src.length());
-            }
-
-            @Override
-            public int poke(int index, byte[] b, int offset, int length)
-            {
-                byte[] mb = new byte[b.length];
-                for (int i=length;i-->0;)
-                    mb[offset+i]=(byte)(b[offset+i]^_mask[(index+i)%4]);
-                return super.poke(index,mb,offset,length);
-            }
-
-            @Override
-            public int put(Buffer src)
-            {
-                return put(src.asArray(),0,src.length());
-            }
-
-            @Override
-            public void put(byte b)
-            {
-                super.put((byte)(b^_mask[getIndex()%4]));
-            }
-
-            @Override
-            public int put(byte[] b, int offset, int length)
-            {
-                byte[] mb = new byte[b.length];
-                for (int i=length;i-->0;)
-                    mb[offset+i]=(byte)(b[offset+i]^_mask[(getIndex()+i)%4]);
-                return super.put(mb,offset,length);
-            }
-
-            @Override
-            public int put(byte[] b)
-            {
-                return put(b,0,b.length);
-            }
-            
-        };
-        
+        _in = new MaskedByteArrayBuffer();
         
         endPoint.setIn(_in);
     }
@@ -104,9 +97,11 @@ public class WebSocketParserD06Test
     @Test
     public void testShortText() throws Exception
     {
+        _in.sendMask();
         _in.put((byte)0x84);
         _in.put((byte)11);
         _in.put("Hello World".getBytes(StringUtil.__UTF8));
+        System.err.println("tosend="+TypeUtil.toHexString(_in.asArray()));
 
         int filled =_parser.parseNext();
 
@@ -121,7 +116,8 @@ public class WebSocketParserD06Test
     {
         String string = "Hell\uFF4f W\uFF4Frld";
         byte[] bytes = string.getBytes("UTF-8");
-        
+
+        _in.sendMask();
         _in.put((byte)0x84);
         _in.put((byte)bytes.length);
         _in.put(bytes);
@@ -143,7 +139,8 @@ public class WebSocketParserD06Test
         string += ". The end.";
         
         byte[] bytes = string.getBytes("UTF-8");
-        
+
+        _in.sendMask();
         _in.put((byte)0x84);
         _in.put((byte)0x7E);
         _in.put((byte)(bytes.length>>8));
@@ -175,7 +172,8 @@ public class WebSocketParserD06Test
         string += ". The end.";
         
         byte[] bytes = string.getBytes("UTF-8");
-        
+
+        _in.sendMask();
         in.put((byte)0x84);
         in.put((byte)0x7F);
         in.put((byte)0x00);
@@ -199,16 +197,18 @@ public class WebSocketParserD06Test
     @Test
     public void testShortFragmentTest() throws Exception
     {
+        _in.sendMask();
         _in.put((byte)0x04);
         _in.put((byte)0x06);
         _in.put("Hello ".getBytes(StringUtil.__UTF8));
+        _in.sendMask();
         _in.put((byte)0x80);
         _in.put((byte)0x05);
         _in.put("World".getBytes(StringUtil.__UTF8));
 
         int filled =_parser.parseNext();
 
-        assertEquals(19,filled);
+        assertEquals(23,filled);
         assertEquals(0,_handler._data.size());
         assertFalse(_parser.isBufferEmpty());
         assertFalse(_parser.getBuffer()==null);

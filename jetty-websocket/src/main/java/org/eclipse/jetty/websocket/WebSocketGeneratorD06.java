@@ -34,18 +34,78 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
     final private WebSocketBuffers _buffers;
     final private EndPoint _endp;
     private Buffer _buffer;
-    private final boolean _masked;
     private final byte[] _mask=new byte[4];
-    private final Random _random;
     private int _m;
     private boolean _opsent;
+    private final MaskGen _maskGen;
 
-    public WebSocketGeneratorD06(WebSocketBuffers buffers, EndPoint endp, boolean masked)
+    public interface MaskGen
+    {
+        void genMask(byte[] mask);
+    }
+    
+    public static class NullMaskGen implements MaskGen
+    {
+        public void genMask(byte[] mask)
+        {
+            mask[0]=mask[1]=mask[2]=mask[3]=0;
+        }
+    }
+    
+    public static class FixedMaskGen implements MaskGen
+    {
+        final byte[] _mask;
+        public FixedMaskGen()
+        {
+            _mask=new byte[]{(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff};
+        }
+        
+        public FixedMaskGen(byte[] mask)
+        {
+            _mask=mask;
+        }
+        
+        public void genMask(byte[] mask)
+        {
+            mask[0]=_mask[0];
+            mask[1]=_mask[1];
+            mask[2]=_mask[2];
+            mask[3]=_mask[3];
+        }
+    }
+
+    public static class RandomMaskGen implements MaskGen
+    {
+        final Random _random;
+        public RandomMaskGen()
+        {
+            _random=new SecureRandom(); 
+        }
+        
+        public RandomMaskGen(Random random)
+        {
+            _random=random;
+        }
+        
+        public void genMask(byte[] mask)
+        {
+            _random.nextBytes(mask);
+        }
+    }
+
+    
+    public WebSocketGeneratorD06(WebSocketBuffers buffers, EndPoint endp)
     {
         _buffers=buffers;
         _endp=endp;
-        _masked=masked;
-        _random=_masked?new SecureRandom():null;  // TODO share the Random
+        _maskGen=null;
+    }
+    
+    public WebSocketGeneratorD06(WebSocketBuffers buffers, EndPoint endp, MaskGen maskGen)
+    {
+        _buffers=buffers;
+        _endp=endp;
+        _maskGen=maskGen;
     }
 
     public synchronized void addFrame(byte opcode,byte[] content, int blockFor) throws IOException
@@ -64,9 +124,9 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
     public synchronized void addFragment(boolean last, byte opcode, byte[] content, int offset, int length, int blockFor) throws IOException
     {
         if (_buffer==null)
-            _buffer=_masked?_buffers.getBuffer():_buffers.getDirectBuffer();
+            _buffer=(_maskGen!=null)?_buffers.getBuffer():_buffers.getDirectBuffer();
             
-        int space=_masked?14:10;
+        int space=(_maskGen!=null)?14:10;
         
         do
         {
@@ -84,9 +144,9 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
                 expelBuffer(blockFor);
             
             // write mask
-            if (_masked)
+            if ((_maskGen!=null))
             {
-                _random.nextBytes(_mask);
+                _maskGen.genMask(_mask);
                 _m=0;
                 _buffer.put(_mask);
             }
@@ -127,7 +187,7 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
                 _buffer.compact();
                 int chunk = remaining < _buffer.space() ? remaining : _buffer.space();
                 
-                if (_masked)
+                if ((_maskGen!=null))
                 {
                     for (int i=0;i<chunk;i++)
                         bufferPut(content[offset+ (payload-remaining)+i]);
@@ -161,7 +221,7 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
 
     private synchronized void bufferPut(byte[] data) throws IOException
     {
-        if (_masked)
+        if (_maskGen!=null)
             for (int i=0;i<data.length;i++)
                 data[i]^=_mask[+_m++%4];
         _buffer.put(data);

@@ -20,6 +20,8 @@ public class WebSocketGeneratorD06Test
     byte[] _mask = new byte[4];
     int _m;
     
+    public WebSocketGeneratorD06.MaskGen _maskGen = new WebSocketGeneratorD06.FixedMaskGen(
+            new byte[]{(byte)0x00,(byte)0x00,(byte)0x0f,(byte)0xff});
 
     @Before
     public void setUp() throws Exception
@@ -40,7 +42,7 @@ public class WebSocketGeneratorD06Test
     @Test
     public void testOneString() throws Exception
     {
-        _generator = new WebSocketGeneratorD06(_buffers, _endPoint,false);
+        _generator = new WebSocketGeneratorD06(_buffers, _endPoint,null);
         
         
         _generator.addFrame((byte)0x04,"Hell\uFF4F W\uFF4Frld",0);
@@ -67,7 +69,7 @@ public class WebSocketGeneratorD06Test
     @Test
     public void testOneBuffer() throws Exception
     {
-        _generator = new WebSocketGeneratorD06(_buffers, _endPoint,false);
+        _generator = new WebSocketGeneratorD06(_buffers, _endPoint,null);
         
         String string = "Hell\uFF4F W\uFF4Frld";
         byte[] bytes=string.getBytes(StringUtil.__UTF8);
@@ -95,7 +97,7 @@ public class WebSocketGeneratorD06Test
     @Test
     public void testOneLongBuffer() throws Exception
     {
-        _generator = new WebSocketGeneratorD06(_buffers, _endPoint,false);
+        _generator = new WebSocketGeneratorD06(_buffers, _endPoint,null);
         
         byte[] b=new byte[150];
         for (int i=0;i<b.length;i++)
@@ -116,7 +118,7 @@ public class WebSocketGeneratorD06Test
     @Test
     public void testOneStringMasked() throws Exception
     {
-        _generator = new WebSocketGeneratorD06(_buffers, _endPoint,true);
+        _generator = new WebSocketGeneratorD06(_buffers, _endPoint,_maskGen);
         
         _generator.addFrame((byte)0x04,"Hell\uFF4F W\uFF4Frld",0);
         _generator.flush();
@@ -145,7 +147,7 @@ public class WebSocketGeneratorD06Test
     @Test
     public void testOneBufferMasked() throws Exception
     {
-        _generator = new WebSocketGeneratorD06(_buffers, _endPoint,true);
+        _generator = new WebSocketGeneratorD06(_buffers, _endPoint,_maskGen);
         
         String string = "Hell\uFF4F W\uFF4Frld";
         byte[] bytes=string.getBytes(StringUtil.__UTF8);
@@ -176,7 +178,7 @@ public class WebSocketGeneratorD06Test
     @Test
     public void testOneLongBufferMasked() throws Exception
     {
-        _generator = new WebSocketGeneratorD06(_buffers, _endPoint,true);
+        _generator = new WebSocketGeneratorD06(_buffers, _endPoint,_maskGen);
         
         byte[] b=new byte[150];
         for (int i=0;i<b.length;i++)

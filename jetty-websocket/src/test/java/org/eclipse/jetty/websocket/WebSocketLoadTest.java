@@ -1,11 +1,9 @@
 package org.eclipse.jetty.websocket;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -18,6 +16,10 @@ import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 
+import junit.framework.Assert;
+
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -72,7 +74,7 @@ public class WebSocketLoadTest
     public void testLoad() throws Exception
     {
         int count = 50;
-        int iterations = 10;
+        int iterations = 100;
 
         ExecutorService threadPool = Executors.newCachedThreadPool();
         try
@@ -93,7 +95,7 @@ public class WebSocketLoadTest
             long maxTimePerIteration = 5;
             assertTrue(latch.await(iterations * (count / parallelism + 1) * maxTimePerIteration, TimeUnit.MILLISECONDS));
             long end = System.nanoTime();
-            System.err.println("Elapsed: " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms");
+            // System.err.println("Elapsed: " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms");
 
             for (WebSocketClient client : clients)
                 client.close();
@@ -118,6 +120,7 @@ public class WebSocketLoadTest
         {
             try
             {
+                // System.err.println(">> "+data);
                 outbound.sendMessage(data);
             }
             catch (IOException x)
@@ -146,7 +149,18 @@ public class WebSocketLoadTest
         private final BufferedReader input;
         private final int iterations;
         private final CountDownLatch latch;
-
+        private final SocketEndPoint _endp;
+        private final WebSocketGeneratorD06 _generator;
+        private final WebSocketParserD06 _parser;
+        private final WebSocketParser.FrameHandler _handler = new WebSocketParser.FrameHandler()
+        {
+            public void onFrame(boolean more, byte flags, byte opcode, Buffer buffer)
+            {
+                _response=buffer;
+            }
+        };
+        private volatile Buffer _response;
+        
         public WebSocketClient(String host, int port, int readTimeout, CountDownLatch latch, int iterations) throws IOException
         {
             this.latch = latch;
@@ -155,19 +169,28 @@ public class WebSocketLoadTest
             output = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), "ISO-8859-1"));
             input = new BufferedReader(new InputStreamReader(socket.getInputStream(), "ISO-8859-1"));
             this.iterations = iterations;
+            
+            _endp=new SocketEndPoint(socket);
+            _generator = new WebSocketGeneratorD06(new WebSocketBuffers(32*1024),_endp,new WebSocketGeneratorD06.FixedMaskGen());
+            _parser = new WebSocketParserD06(new WebSocketBuffers(32*1024),_endp,_handler,false);
+            
         }
 
         private void open() throws IOException
         {
-            output.write("GET /test HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "Upgrade: WebSocket\r\n" +
-                    "Connection: Upgrade\r\n" +
+            output.write("GET /chat HTTP/1.1\r\n"+
+                    "Host: server.example.com\r\n"+
+                    "Upgrade: websocket\r\n"+
+                    "Connection: Upgrade\r\n"+
+                    "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                    "Sec-WebSocket-Origin: http://example.com\r\n"+
+                    "Sec-WebSocket-Protocol: onConnect\r\n" +
+                    "Sec-WebSocket-Version: 6\r\n"+
                     "\r\n");
             output.flush();
 
             String responseLine = input.readLine();
-            assertTrue(responseLine.startsWith("HTTP/1.1 101 Web Socket Protocol Handshake"));
+            assertTrue(responseLine.startsWith("HTTP/1.1 101 Switching Protocols"));
             // Read until we find an empty line, which signals the end of the http response
             String line;
             while ((line = input.readLine()) != null)
@@ -182,9 +205,16 @@ public class WebSocketLoadTest
                 String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
                 for (int i = 0; i < iterations; ++i)
                 {
-                    writeString(message);
-                    String result = readString();
-                    assertEquals(message, result);
+                    _generator.addFrame(WebSocket.OP_TEXT,message,10000);
+                    _generator.flush(10000);
+                    
+                    //System.err.println("-> "+message);
+                    
+                    _response=null;
+                    while(_response==null)
+                        _parser.parseNext();
+                    //System.err.println("<- "+_response);
+                    Assert.assertEquals(message,_response.toString());
                     latch.countDown();
                 }
             }
@@ -194,31 +224,6 @@ public class WebSocketLoadTest
             }
         }
 
-        private void writeString(String message) throws IOException
-        {
-            output.write(0x00);
-            output.write(message);
-            output.write(0xFF);
-            output.flush();
-        }
-
-        private String readString() throws IOException
-        {
-            StringBuilder result = new StringBuilder();
-            int frameStart = input.read();
-            assertEquals(0x00, frameStart);
-            while (true)
-            {
-                int read = input.read();
-                if (read == -1)
-                    throw new EOFException();
-                char c = (char)read;
-                if (c == 0xFF)
-                    break;
-                result.append(c);
-            }
-            return result.toString();
-        }
 
         public void close() throws IOException
         {
