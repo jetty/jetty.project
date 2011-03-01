@@ -344,7 +344,7 @@ public class JettyPolicy extends Policy
      * returns the policy context which contains the map of properties that
      * can be referenced in policy files and the keystore for validation
      * 
-     * @return
+     * @return the policy context
      */
     public static PolicyContext getContext()
     {
