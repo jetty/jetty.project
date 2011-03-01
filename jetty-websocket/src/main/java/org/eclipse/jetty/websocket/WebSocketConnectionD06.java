@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 
 import javax.servlet.http.HttpServletRequest;
@@ -32,7 +33,7 @@ import org.eclipse.jetty.util.log.Log;
 
 public class WebSocketConnectionD06 extends AbstractConnection implements WebSocketConnection
 {
-    private final static byte[] MAGIC="258EAFA5-E914-47DA-95CA-C5AB0DC85B11".getBytes(StringUtil.__ISO_8859_1_CHARSET);
+    private final static byte[] MAGIC;
     private final static byte[] NORMAL_CLOSE=new byte[] { 1000/0xff, (byte)(1000%0xff) }; 
     private final IdleCheck _idle;
     private final WebSocketParser _parser;
@@ -41,6 +42,18 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     private boolean _closedIn;
     private boolean _closedOut;
 
+    static
+    {
+        try
+        {
+            MAGIC="258EAFA5-E914-47DA-95CA-C5AB0DC85B11".getBytes(StringUtil.__ISO_8859_1);
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+    
     private final WebSocketParser.FrameHandler _frameHandler= new WebSocketParser.FrameHandler()
     {
         private final Utf8StringBuilder _utf8 = new Utf8StringBuilder();
@@ -124,7 +137,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                             {
                                 code=buffer.array()[buffer.getIndex()]*0xff+buffer.array()[buffer.getIndex()+1];
                                 if (buffer.length()>2)
-                                    message=new String(buffer.array(),buffer.getIndex()+2,buffer.length()-2,StringUtil.__UTF8_CHARSET);
+                                    message=new String(buffer.array(),buffer.getIndex()+2,buffer.length()-2,StringUtil.__UTF8);
                             }
                             closeIn(code,message);
                             break;
@@ -403,7 +416,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             }
             else
             {
-                byte[] bytes = ("xx"+(message==null?"":message)).getBytes(StringUtil.__ISO_8859_1_CHARSET);
+                byte[] bytes = ("xx"+(message==null?"":message)).getBytes(StringUtil.__ISO_8859_1);
                 bytes[0]=(byte)(code/0xff);
                 bytes[1]=(byte)(code%0xff);
                 _generator.addFrame(WebSocket.OP_CLOSE,bytes,0,bytes.length,_endp.getMaxIdleTime());

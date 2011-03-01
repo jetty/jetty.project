@@ -179,7 +179,7 @@ public class WebSocketMessageD06Test
         output.write(0xff);
         output.write(0x84^0xff);
         output.write(0x0f^0xff);
-        byte[] bytes="this is an echo".getBytes(StringUtil.__ISO_8859_1_CHARSET);
+        byte[] bytes="this is an echo".getBytes(StringUtil.__ISO_8859_1);
         for (int i=0;i<bytes.length;i++)
             output.write(bytes[i]^0xff);
         output.flush();
