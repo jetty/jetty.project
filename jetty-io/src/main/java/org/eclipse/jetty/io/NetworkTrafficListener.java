@@ -18,7 +18,7 @@ import java.net.Socket;
 /**
  * <p>A listener for raw network traffic within Jetty.</p>
  * <p>{@link NetworkTrafficListener}s can be installed in a
- * {@link org.eclipse.jetty.server.nio.NetworkTrafficSelectChannelConnector},
+ * <code>org.eclipse.jetty.server.nio.NetworkTrafficSelectChannelConnector</code>,
  * and are notified of the following network traffic events:</p>
  * <ul>
  * <li>Connection opened, when the server has accepted the connection from a remote client</li>
