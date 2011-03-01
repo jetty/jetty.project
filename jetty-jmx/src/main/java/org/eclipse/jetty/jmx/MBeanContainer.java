@@ -34,8 +34,6 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 
-
-/* ------------------------------------------------------------ */
 /**
  * Container class for the MBean instances
  */
@@ -47,7 +45,6 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
     private final MultiMap<ObjectName> _relations = new MultiMap<ObjectName>();
     private String _domain = null;
 
-    /* ------------------------------------------------------------ */
     /**
      * Lookup an object name by instance
      *
@@ -56,11 +53,10 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      */
     public synchronized ObjectName findMBean(Object object)
     {
-        ObjectName bean = (ObjectName)_beans.get(object);
-        return bean==null?null:bean;
+        ObjectName bean = _beans.get(object);
+        return bean == null ? null : bean;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Lookup an instance by object name
      *
@@ -71,14 +67,13 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
     {
         for (Map.Entry<Object, ObjectName> entry : _beans.entrySet())
         {
-            ObjectName bean = (ObjectName)entry.getValue();
+            ObjectName bean = entry.getValue();
             if (bean.equals(oname))
                 return entry.getKey();
         }
         return null;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Constructs MBeanContainer
      *
@@ -98,7 +93,6 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Retrieve instance of MBeanServer used by container
      *
@@ -109,18 +103,16 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         return _server;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Set domain to be used to add MBeans
      *
      * @param domain domain name
      */
-    public void setDomain (String domain)
+    public void setDomain(String domain)
     {
         _domain = domain;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Retrieve domain name used to add MBeans
      *
@@ -131,7 +123,6 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         return _domain;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Implementation of Container.Listener interface
      *
@@ -139,25 +130,24 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      */
     public synchronized void add(Relationship relationship)
     {
-        ObjectName parent=(ObjectName)_beans.get(relationship.getParent());
-        if (parent==null)
+        ObjectName parent = _beans.get(relationship.getParent());
+        if (parent == null)
         {
             addBean(relationship.getParent());
-            parent=(ObjectName)_beans.get(relationship.getParent());
+            parent = _beans.get(relationship.getParent());
         }
 
-        ObjectName child=(ObjectName)_beans.get(relationship.getChild());
-        if (child==null)
+        ObjectName child = _beans.get(relationship.getChild());
+        if (child == null)
         {
             addBean(relationship.getChild());
-            child=(ObjectName)_beans.get(relationship.getChild());
+            child = _beans.get(relationship.getChild());
         }
 
-        if (parent!=null && child!=null)
-            _relations.add(parent,relationship);
+        if (parent != null && child != null)
+            _relations.add(parent, relationship);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Implementation of Container.Listener interface
      *
@@ -165,13 +155,13 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      */
     public synchronized void remove(Relationship relationship)
     {
-        ObjectName parent=(ObjectName)_beans.get(relationship.getParent());
-        ObjectName child=(ObjectName)_beans.get(relationship.getChild());
-        if (parent!=null && child!=null)
-            _relations.removeValue(parent,relationship);
+        ObjectName parent = _beans.get(relationship.getParent());
+        ObjectName child = _beans.get(relationship.getChild());
+
+        if (parent != null && child != null)
+            _relations.removeValue(parent, relationship);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Implementation of Container.Listener interface
      *
@@ -179,19 +169,19 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      */
     public synchronized void removeBean(Object obj)
     {
-        ObjectName bean=(ObjectName)_beans.remove(obj);
+        ObjectName bean = _beans.remove(obj);
 
-        if (bean!=null)
+        if (bean != null)
         {
             List<?> beanRelations = _relations.getValues(bean);
-            if (beanRelations!=null && beanRelations.size()>0)
+            if (beanRelations != null && beanRelations.size() > 0)
             {
                 Log.debug("Unregister {}", beanRelations);
                 List<?> removeList = new ArrayList<Object>(beanRelations);
                 for (Object r : removeList)
                 {
-                    Container.Relationship  relation = (Relationship)r;
-                    relation.getContainer().update(relation.getParent(),relation.getChild(),null,relation.getRelationship(),true);
+                    Container.Relationship relation = (Relationship)r;
+                    relation.getContainer().update(relation.getParent(), relation.getChild(), null, relation.getRelationship(), true);
                 }
             }
 
@@ -211,7 +201,6 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Implementation of Container.Listener interface
      *
@@ -231,65 +220,64 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
             ObjectName oname = null;
             if (mbean instanceof ObjectMBean)
             {
-                ((ObjectMBean) mbean).setMBeanContainer(this);
+                ((ObjectMBean)mbean).setMBeanContainer(this);
                 oname = ((ObjectMBean)mbean).getObjectName();
             }
 
             //no override mbean object name, so make a generic one
             if (oname == null)
             {
-                String type=obj.getClass().getName().toLowerCase();
+                String type = obj.getClass().getName().toLowerCase();
                 int dot = type.lastIndexOf('.');
                 if (dot >= 0)
                     type = type.substring(dot + 1);
 
-                String name=null;
+                String name = null;
                 if (mbean instanceof ObjectMBean)
                 {
                     name = ((ObjectMBean)mbean).getObjectNameBasis();
-                    if (name!=null)
+                    if (name != null)
                     {
-                        name=name.replace('\\','/');
+                        name = name.replace('\\', '/');
                         if (name.endsWith("/"))
-                            name=name.substring(0,name.length()-1);
+                            name = name.substring(0, name.length() - 1);
 
-                        int slash=name.lastIndexOf('/',name.length()-1);
-                        if (slash>0)
-                            name=name.substring(slash+1);
-                        dot=name.lastIndexOf('.');
-                        if (dot>0)
-                            name=name.substring(0,dot);
+                        int slash = name.lastIndexOf('/', name.length() - 1);
+                        if (slash > 0)
+                            name = name.substring(slash + 1);
+                        dot = name.lastIndexOf('.');
+                        if (dot > 0)
+                            name = name.substring(0, dot);
 
-                        name=name.replace(':','_').replace('*','_').replace('?','_').replace('=','_').replace(',','_').replace(' ','_');
+                        name = name.replace(':', '_').replace('*', '_').replace('?', '_').replace('=', '_').replace(',', '_').replace(' ', '_');
                     }
                 }
 
-                String basis=(name!=null&&name.length()>1)?("type="+type+",name="+name):("type="+type);
+                String basis = (name != null && name.length() > 1) ? ("type=" + type + ",name=" + name) : ("type=" + type);
 
-                Integer count = (Integer) _unique.get(basis);
+                Integer count = _unique.get(basis);
                 count = count == null ? 0 : 1 + count;
                 _unique.put(basis, count);
 
                 //if no explicit domain, create one
                 String domain = _domain;
-                if (domain==null)
+                if (domain == null)
                     domain = obj.getClass().getPackage().getName();
 
-                oname = ObjectName.getInstance(domain+":"+basis+",id="+count);
+                oname = ObjectName.getInstance(domain + ":" + basis + ",id=" + count);
             }
 
             ObjectInstance oinstance = _server.registerMBean(mbean, oname);
-            Log.debug("Registered {}" , oinstance.getObjectName());
+            Log.debug("Registered {}", oinstance.getObjectName());
             _beans.put(obj, oinstance.getObjectName());
 
         }
         catch (Exception e)
         {
-            Log.warn("bean: "+obj,e);
+            Log.warn("bean: " + obj, e);
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Perform actions needed to start lifecycle
      *
@@ -300,7 +288,6 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         ShutdownThread.register(this);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Perform actions needed to stop lifecycle
      *
@@ -315,16 +302,14 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         }
     }
 
-    /* ------------------------------------------------------------ */
     public void dump(Appendable out, String indent) throws IOException
     {
         out.append(toString()).append("\n");
-        AggregateLifeCycle.dump(out,indent,_beans.entrySet());
+        AggregateLifeCycle.dump(out, indent, _beans.entrySet());
     }
 
-    /* ------------------------------------------------------------ */
     public String dump()
     {
         return AggregateLifeCycle.dump(this);
-    }    
+    }
 }
