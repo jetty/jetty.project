@@ -61,8 +61,10 @@ public abstract class SslValidationTestBase extends SslContentExchangeTest
     protected void configureClient(HttpClient client)
         throws Exception
     {
-        client.setTrustStoreLocation(_trustpath);
-        client.setTrustStorePassword(_password);
         client.setConnectorType(__konnector);
+
+        SslContextFactory cf = client.getSslContextFactory();
+        cf.setTrustStore(_trustpath);
+        cf.setTrustStorePassword(_password);
     }
 }

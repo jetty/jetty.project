@@ -19,6 +19,7 @@ import java.security.KeyStore;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.HttpServerTestBase;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,11 +46,12 @@ public class SslSocketServerTest extends HttpServerTestBase
     {   
         SslSocketConnector connector = new SslSocketConnector();
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
-        connector.setKeystore(keystorePath);
-        connector.setPassword("storepwd");
-        connector.setKeyPassword("keypwd");
-        connector.setTruststore(keystorePath);
-        connector.setTrustPassword("storepwd");
+        SslContextFactory cf = connector.getSslContextFactory();
+        cf.setKeyStore(keystorePath);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
+        cf.setTrustStore(keystorePath);
+        cf.setTrustStorePassword("storepwd");
         startServer(connector);
         
 

@@ -34,6 +34,7 @@ import org.eclipse.jetty.client.security.HashRealmResolver;
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.security.Constraint;
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -146,9 +147,10 @@ public class SslSecurityListenerTest extends TestCase
         String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
 
         connector.setPort(0);
-        connector.setKeystore(keystore);
-        connector.setPassword("storepwd");
-        connector.setKeyPassword("keypwd");
+        SslContextFactory cf = connector.getSslContextFactory();
+        cf.setKeyStore(keystore);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
 
         _server.setConnectors(new Connector[]
         { connector });

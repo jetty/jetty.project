@@ -15,6 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.io.File;
 
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -35,9 +36,10 @@ public class SslContentExchangeTest
         
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
-        connector.setKeystore(keystore.getAbsolutePath());
-        connector.setPassword("storepwd");
-        connector.setKeyPassword("keypwd");
+        SslContextFactory cf = connector.getSslContextFactory();
+        cf.setKeyStore(keystore.getAbsolutePath());
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
         server.addConnector(connector);
                 
         Handler handler = new TestHandler(getBasePath());

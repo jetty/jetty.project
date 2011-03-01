@@ -15,6 +15,7 @@ package org.eclipse.jetty.client;
 
 import static org.hamcrest.Matchers.*;
 
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
@@ -54,9 +55,10 @@ public class SslHttpExchangeTest extends HttpExchangeTest
         String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
 
         connector.setPort(0);
-        connector.setKeystore(keystore);
-        connector.setPassword("storepwd");
-        connector.setKeyPassword("keypwd");
+        SslContextFactory cf = connector.getSslContextFactory();
+        cf.setKeyStore(keystore);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
 	connector.setAllowRenegotiate(true);
 
         _server.setConnectors(new Connector[]

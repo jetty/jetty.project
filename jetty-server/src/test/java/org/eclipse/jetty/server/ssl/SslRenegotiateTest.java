@@ -12,15 +12,16 @@ import java.nio.channels.SocketChannel;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLProtocolException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
@@ -90,10 +91,11 @@ public class SslRenegotiateTest
         {
             String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
             connector.setPort(0);
-            connector.setKeystore(keystore);
-            connector.setPassword("storepwd");
-            connector.setKeyPassword("keypwd");
-            connector.setAllowRenegotiate(reneg);
+            SslContextFactory cf = connector.getSslContextFactory();
+            cf.setKeyStore(keystore);
+            cf.setKeyStorePassword("storepwd");
+            cf.setKeyManagerPassword("keypwd");
+            cf.setAllowRenegotiate(reneg);
 
             server.setConnectors(new Connector[] { connector });
             server.setHandler(new HelloWorldHandler());

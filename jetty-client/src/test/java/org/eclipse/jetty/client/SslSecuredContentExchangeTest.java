@@ -20,6 +20,7 @@ import java.util.Set;
 
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.http.security.Constraint;
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
@@ -61,9 +62,10 @@ extends ContentExchangeTest
                         
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
-        connector.setKeystore(keystore.getAbsolutePath());
-        connector.setPassword("storepwd");
-        connector.setKeyPassword("keypwd");
+        SslContextFactory cf = connector.getSslContextFactory();
+        cf.setKeyStore(keystore.getAbsolutePath());
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
         server.addConnector(connector);
 
         File realmPropFile = MavenTestingUtils.getTestResourceFile("realm.properties");

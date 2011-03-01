@@ -15,20 +15,14 @@ package org.eclipse.jetty.server.ssl;
 import java.io.FileInputStream;
 import java.net.Socket;
 import java.security.KeyStore;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.HttpServerTestBase;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  * HttpServer Tester.
@@ -52,11 +46,12 @@ public class SslSelectChannelServerTest extends HttpServerTestBase
     {   
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
-        connector.setKeystore(keystorePath);
-        connector.setPassword("storepwd");
-        connector.setKeyPassword("keypwd");
-        connector.setTruststore(keystorePath);
-        connector.setTrustPassword("storepwd");
+        SslContextFactory cf = connector.getSslContextFactory();
+        cf.setKeyStore(keystorePath);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
+        cf.setTrustStore(keystorePath);
+        cf.setTrustStorePassword("storepwd");
         connector.setUseDirectBuffers(true);
         startServer(connector);
         
