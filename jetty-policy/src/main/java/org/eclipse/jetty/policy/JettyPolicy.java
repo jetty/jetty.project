@@ -142,9 +142,7 @@ public class JettyPolicy extends Policy
     
     @Override
     public void refresh()
-    {
-        super.refresh();
-        
+    {        
         if ( !_STARTED )
         {
             initialize();
