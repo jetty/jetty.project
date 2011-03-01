@@ -15,7 +15,6 @@ package org.eclipse.jetty.xml;
 
 import java.net.URL;
 import java.util.Map;
-import java.util.ServiceLoader;
 
 /**
  * A ConfigurationProcessor for non XmlConfiguration format files.

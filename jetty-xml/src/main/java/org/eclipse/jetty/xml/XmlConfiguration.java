@@ -36,7 +36,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -61,14 +60,35 @@ import org.xml.sax.SAXException;
  */
 public class XmlConfiguration
 {
-    private static Class<?>[] __primitives =
+    private static final Class<?>[] __primitives =
     { Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE };
 
-    private static Class<?>[] __primitiveHolders =
+    private static final Class<?>[] __primitiveHolders =
     { Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class, Void.class };
     private static final Integer ZERO = new Integer(0);
     
-    private static ServiceLoader<ConfigurationProcessorFactory> __factoryLoader = ServiceLoader.load(ConfigurationProcessorFactory.class);   
+    private static final Iterable<?> __factoryLoader;
+    static
+    {
+        Iterable<?> loader=null;
+        try
+        {
+            // Use reflection to look up 1.6 service loader
+            // loader=ServiceLoader.load(ConfigurationProcessorFactory.class); 
+            Class<?> slc = ClassLoader.getSystemClassLoader().loadClass("java.util.ServiceLoader");
+            Method load = slc.getMethod("load",Class.class);
+            loader=(Iterable<?>)load.invoke(null,ConfigurationProcessorFactory.class);
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            Log.ignore(e);
+        }
+        finally
+        {
+            __factoryLoader=loader;
+        }
+    }  
 
     /* ------------------------------------------------------------ */
     private static XmlParser __parser;
@@ -177,17 +197,32 @@ public class XmlConfiguration
         {
             _processor=new JettyXmlConfiguration();
         }
-        else
+        else if (__factoryLoader!=null)
         {
-            for ( ConfigurationProcessorFactory factory : __factoryLoader)
+            for ( Object factory : __factoryLoader)
             {
-                _processor = factory.getConfigurationProcessor(_dtd,config.getTag());
+                // use reflection to get 1.6 methods
+                Method gcp;
+                try
+                {
+                    gcp = factory.getClass().getMethod("getConfigurationProcessor",String.class,String.class);
+                    _processor = (ConfigurationProcessor) gcp.invoke(factory,_dtd,config.getTag());
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                    Log.ignore(e);
+                }
                 if (_processor!=null)
                     break;
             }
             
             if (_processor==null)
                 throw new IllegalStateException("Unknown configuration type: "+config.getTag()+" in "+this);
+        }
+        else
+        {
+            throw new IllegalArgumentException("Unknown XML tag:"+config.getTag());
         }
         _processor.init(_url,_config,_idMap, _propertyMap);
     }
