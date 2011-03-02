@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.server.Connector;
@@ -474,7 +475,7 @@ public class HttpExchangeTest extends TestCase
 
        //try to get a connection, and only wait 500ms, as we have
        //already reserved the max, should return null
-       AbstractConnection c = destination.reserveConnection(500);
+       Connection c = destination.reserveConnection(500);
        assertNull(c);
 
        //unreserve first connection

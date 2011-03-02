@@ -87,7 +87,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  * </p>
  *
  */
-public class HttpConnection extends AbstractConnection implements Connection
+public class HttpConnection /* TODO extends AbstractConnection*/ implements Connection
 {
     private static final int UNKNOWN = -2;
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
@@ -142,7 +142,9 @@ public class HttpConnection extends AbstractConnection implements Connection
      */
     public HttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
-        super(endpoint);
+        _endp=endpoint;
+        _timeStamp = System.currentTimeMillis();
+   
         _uri = StringUtil.__UTF8.equals(URIUtil.__CHARSET)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
         _connector = connector;
         HttpBuffers ab = (HttpBuffers)_connector;
@@ -160,7 +162,9 @@ public class HttpConnection extends AbstractConnection implements Connection
     protected HttpConnection(Connector connector, EndPoint endpoint, Server server,
             Parser parser, Generator generator, Request request)
     {
-        super(endpoint);
+        _endp=endpoint;
+        _timeStamp = System.currentTimeMillis();
+        
         _uri = URIUtil.__CHARSET.equals(StringUtil.__UTF8)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
         _connector = connector;
         _parser = parser;
@@ -1267,4 +1271,17 @@ public class HttpConnection extends AbstractConnection implements Connection
         }
     }
 
+    
+
+    // TODO remove and use AbstractConnection for 7.4
+    private final long _timeStamp;
+    protected final EndPoint _endp;
+    public long getTimeStamp()
+    {
+        return _timeStamp;
+    }
+    public EndPoint getEndPoint()
+    {
+        return _endp;
+    }
 }

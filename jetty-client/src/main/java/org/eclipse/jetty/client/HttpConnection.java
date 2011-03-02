@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  *
  * @version $Revision: 879 $ $Date: 2009-09-11 16:13:28 +0200 (Fri, 11 Sep 2009) $
  */
-public class HttpConnection extends AbstractConnection implements Connection
+public class HttpConnection /* extends AbstractConnection */ implements Connection
 {
     private HttpDestination _destination;
     private HttpGenerator _generator;
@@ -76,7 +76,9 @@ public class HttpConnection extends AbstractConnection implements Connection
 
     HttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
     {
-        super(endp);
+        _endp=endp;
+        _timeStamp = System.currentTimeMillis();
+   
         _generator = new HttpGenerator(requestBuffers,endp);
         _parser = new HttpParser(responseBuffers,endp,new Handler());
     }
@@ -708,5 +710,19 @@ public class HttpConnection extends AbstractConnection implements Connection
                 }
             }
         }
+    }
+    
+
+
+    // TODO remove and use AbstractConnection for 7.4
+    private final long _timeStamp;
+    protected final EndPoint _endp;
+    public long getTimeStamp()
+    {
+        return _timeStamp;
+    }
+    public EndPoint getEndPoint()
+    {
+        return _endp;
     }
 }

@@ -44,12 +44,8 @@ public interface Connection
     long getTimeStamp();
 
     boolean isIdle();
+    
     boolean isSuspended();
-
-    /**
-     * Called when the connection idle timeout expires
-     */
-    void idleExpired();
     
     /**
      * Called when the connection is closed

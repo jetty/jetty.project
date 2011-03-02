@@ -691,9 +691,9 @@ public class HttpExchange
         return this._connection != null;
     }
 
-    AbstractConnection disassociate()
+    Connection disassociate()
     {
-        AbstractConnection result = _connection;
+        Connection result = _connection;
         this._connection = null;
         if (getStatus() == STATUS_CANCELLING)
             setStatus(STATUS_CANCELLED);

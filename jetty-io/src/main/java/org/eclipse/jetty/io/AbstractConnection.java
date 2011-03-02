@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.eclipse.jetty.util.log.Log;
 
 
-public abstract class AbstractConnection implements Connection
+public abstract class AbstractConnection implements Connection, Idleable
 {
     private final long _timeStamp;
     protected final EndPoint _endp;

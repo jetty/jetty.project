@@ -24,6 +24,7 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.Idleable;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.util.log.Log;
 
@@ -248,7 +249,19 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /* ------------------------------------------------------------ */
     protected void idleExpired()
     {
-        _connection.idleExpired();
+        if (_connection instanceof Idleable)
+            ((Idleable)_connection).idleExpired();
+        else
+        {
+            try
+            {
+                close();
+            }
+            catch(IOException e)
+            {
+                Log.ignore(e);
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */

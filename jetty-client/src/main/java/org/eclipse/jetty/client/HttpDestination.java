@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
 
@@ -313,7 +314,7 @@ public class HttpDestination
 
     public void onNewConnection(final HttpConnection connection) throws IOException
     {
-        AbstractConnection q_connection = null;
+        Connection q_connection = null;
 
         synchronized (this)
         {
