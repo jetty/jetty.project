@@ -1073,7 +1073,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     public void setManagedAttribute(String name, Object value)
     {
         Object old =_managedAttributes.put(name,value);
-        getServer().getContainer().update(this,old,value,name);
+        getServer().getContainer().update(this,old,value,name,true);
     }
 
     /* ------------------------------------------------------------ */

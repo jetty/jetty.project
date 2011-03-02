@@ -18,12 +18,13 @@ jetty-7.3.1-SNAPSHOT
  + 337896 HttpExchange.timeout does not override HttpClient.timeout
  + 337898 set client HttpConnection max idle time from exchange timeout
  + 338035 Default acceptors 0.25*CPUs and improved selector/acceptor thread names.
+ + 338068 Leaking ConstraintMappings on redeploy
+ + 338092 ProxyServlet leaks memory
+ + 338607 Removed managed attributes when context is stopped
  + JETTY-1317 More elegent handling of bad URIs in requests
  + JETTY-1331 Allow alternate XML configuration processors (eg spring)
  + JETTY-1335 HttpClient's SelectConnector clean-up
  + JETTY-1333 HttpClient _timeout and _soTimeout is messed up
- + 338068 Leaking ConstraintMappings on redeploy
- + 338092 ProxyServlet leaks memory
 
 jetty-7.3.0.v20110203 3 February 2011
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session (further update)
