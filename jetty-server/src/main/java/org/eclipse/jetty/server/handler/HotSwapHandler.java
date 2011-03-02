@@ -155,7 +155,6 @@ public class HotSwapHandler extends AbstractHandlerContainer
             server.getContainer().update(this, null,_handler, "handler");
     }
     
-
     /* ------------------------------------------------------------ */
     @Override
     protected Object expandChildren(Object list, Class byClass)
@@ -163,5 +162,18 @@ public class HotSwapHandler extends AbstractHandlerContainer
         return expandHandler(_handler,list,byClass);
     }
 
-   
+    /* ------------------------------------------------------------ */
+    @Override
+    public void destroy()
+    {
+        if (!isStopped())
+            throw new IllegalStateException("!STOPPED");
+        Handler child=getHandler();
+        if (child!=null)
+        {
+            setHandler(null);
+            child.destroy();
+        }
+        super.destroy();
+    }
 }
