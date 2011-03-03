@@ -108,7 +108,7 @@ public class MultipartFilterTest
         request.setURI("/context/dump");
         
         String boundary="XyXyXy";
-        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        request.setHeader("Content-Type","multipart/form-data; boundary=\""+boundary+"\"");
         
         
         String content = "--" + boundary + "\r\n"+

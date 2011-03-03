@@ -102,8 +102,8 @@ public class MultiPartFilter implements Filter
         String content_type=srequest.getContentType();
         
         // TODO - handle encodings
+        String boundary="--"+QuotedStringTokenizer.unquote(value(content_type.substring(content_type.indexOf("boundary="))).trim());
         
-        String boundary="--"+value(content_type.substring(content_type.indexOf("boundary=")));
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
         
         MultiMap params = new MultiMap();

@@ -21,6 +21,7 @@ jetty-7.3.1-SNAPSHOT
  + 338068 Leaking ConstraintMappings on redeploy
  + 338092 ProxyServlet leaks memory
  + 338607 Removed managed attributes when context is stopped
+ + JETTY-1304 Allow quoted boundaries in Multipart filter
  + JETTY-1317 More elegent handling of bad URIs in requests
  + JETTY-1331 Allow alternate XML configuration processors (eg spring)
  + JETTY-1335 HttpClient's SelectConnector clean-up
