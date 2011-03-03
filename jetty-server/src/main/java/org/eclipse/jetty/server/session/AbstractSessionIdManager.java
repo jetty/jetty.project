@@ -63,6 +63,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
      */
     public void setWorkerName(String workerName)
     {
+        if (workerName.contains("."))
+            throw new IllegalArgumentException("Name cannot contain '.'");
         _workerName=workerName;
     }
 
