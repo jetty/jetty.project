@@ -1,4 +1,4 @@
-jetty-7.3.1-SNAPSHOT
+jetty-7.3.1.v20110304 4 March 2011
  + 316382 Support a more strict SSL option with certificates
  + 333481 Handle UCS-4 codepoints in decode and encode
  + 335329 Moved blocking timeout handling to outside try catch
