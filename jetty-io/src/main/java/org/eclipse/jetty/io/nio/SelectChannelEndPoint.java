@@ -622,21 +622,4 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         _maxIdleTime=timeMs;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * This looks for undispatched endpoints that have key.interestOps!=endp.interestOps
-     * @TODO find out the root cause of this and delete this method.
-     */
-    public void checkKey(SelectionKey key)
-    {                  
-        synchronized (this)
-        {
-            if (!_changing && key.interestOps()!=_interestOps && isReadyForDispatch())
-            {
-                Log.warn("NIO InterestOps mismatch "+key.interestOps()+"!="+_interestOps+" for "+this);
-                updateKey();
-            }
-        } 
-    }
-
 }

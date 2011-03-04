@@ -604,16 +604,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             }
                         }
                     });
-
-                    // TODO find root cause and remove this
-                    // This looks for undispatched endpoints that have key.interestOps!=endp.interestOps
-                    for (SelectionKey key: selector.keys())
-                    {
-                        if (key.isValid() && key.attachment() instanceof SelectChannelEndPoint)
-                        {
-                            ((SelectChannelEndPoint)key.attachment()).checkKey(key);
-                        }
-                    }
                 }
             }
             catch (CancelledKeyException e)
