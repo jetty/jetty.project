@@ -35,7 +35,6 @@ import org.eclipse.jetty.deploy.graph.Path;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 
@@ -435,10 +434,10 @@ public class DeploymentManager extends AggregateLifeCycle
     public void requestAppGoal(App app, String nodeName)
     {
         AppEntry appentry = findAppByOriginId(app.getOriginId());
-            if (appentry == null)
-            {
-                throw new IllegalStateException("App not being tracked by Deployment Manager: " + app);
-            }
+        if (appentry == null)
+        {
+            throw new IllegalStateException("App not being tracked by Deployment Manager: " + app);
+        }
         
         requestAppGoal(appentry,nodeName);
     }
@@ -455,6 +454,10 @@ public class DeploymentManager extends AggregateLifeCycle
     private void requestAppGoal(AppEntry appentry, String nodeName)
     {
         Node destinationNode = _lifecycle.getNodeByName(nodeName);
+        if (destinationNode == null)
+        {
+            throw new IllegalStateException("Node not present in Deployment Manager: " + nodeName);
+        }
         // Compute lifecycle steps
         Path path = _lifecycle.getPath(appentry.lifecyleNode,destinationNode);
         if (path.isEmpty())
@@ -562,5 +565,15 @@ public class DeploymentManager extends AggregateLifeCycle
     public void setUseStandardBindings(boolean useStandardBindings)
     {
         this._useStandardBindings = useStandardBindings;
+    }
+
+    public Collection<Node> getNodes()
+    {
+        return _lifecycle.getNodes();
+    }
+    
+    public Collection<App> getApps(String nodeName)
+    {
+        return getApps(_lifecycle.getNodeByName(nodeName));
     }
 }
