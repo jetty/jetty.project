@@ -121,7 +121,8 @@ public class StreamEndPoint implements EndPoint
         int length=buffer.length();
         if (length>0)
             buffer.writeTo(_out);
-        buffer.clear();
+        if (!buffer.isImmutable())
+            buffer.clear();
         return length;
     }
 
