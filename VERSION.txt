@@ -22,7 +22,6 @@ jetty-7.3.1.v20110307 7 March 2011
  + 338068 Leaking ConstraintMappings on redeploy
  + 338092 ProxyServlet leaks memory
  + 338607 Removed managed attributes when context is stopped
- + 338819 Externally control Deployment Manager application lifecycle
  + 338880 Fixed failing buffer range checks
  + 338920 Handle non existent real path directories
  + JETTY-1304 Allow quoted boundaries in Multipart filter
