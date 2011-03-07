@@ -49,7 +49,7 @@ public class HttpGeneratorClientTest
 
         generator.completeHeader(fields,false);
 
-        generator.addContent(new ByteArrayBuffer(content),true);
+        generator.addContent(new ByteArrayBuffer(content).asMutableBuffer(),true);
         generator.flushBuffer();
         generator.complete();
         generator.flushBuffer();
@@ -74,7 +74,7 @@ public class HttpGeneratorClientTest
 
         String content = "The quick brown fox jumped over the lazy dog";
 
-        generator.addContent(new ByteArrayBuffer(content),true);
+        generator.addContent(new ByteArrayBuffer(content).asMutableBuffer(),true);
         generator.completeHeader(fields,true);
 
         generator.flushBuffer();
@@ -103,7 +103,7 @@ public class HttpGeneratorClientTest
 
         generator.completeHeader(fields,false);
 
-        generator.addContent(new ByteArrayBuffer(content),false);
+        generator.addContent(new ByteArrayBuffer(content).asMutableBuffer(),false);
         generator.flushBuffer();
         generator.complete();
         generator.flushBuffer();
