@@ -1364,6 +1364,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             {
                 if (resource.exists())
                     Log.warn("Aliased resource: "+resource+"~="+resource.getAlias());
+                else if (path.endsWith("/") && resource.getAlias().toString().endsWith(path))
+                    return resource;
                 else if (Log.isDebugEnabled())
                     Log.debug("Aliased resource: "+resource+"~="+resource.getAlias());
                 return null;
