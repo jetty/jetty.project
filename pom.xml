@@ -390,13 +390,10 @@
          duplicate hits on aggregated classes) -->
       <id>aggregates</id>
       <activation>
-        <activeByDefault>false</activeByDefault>
-      <!--
         <activeByDefault>true</activeByDefault>
         <file>
           <exists>${basedir}/pom.xml</exists>
         </file>
-	-->
       </activation>
       <modules>
         <module>jetty-aggregate</module>
