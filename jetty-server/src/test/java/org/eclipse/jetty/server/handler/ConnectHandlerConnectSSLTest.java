@@ -1,8 +1,10 @@
 package org.eclipse.jetty.server.handler;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -11,6 +13,7 @@ import java.net.Socket;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -21,13 +24,12 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 /**
  * @version $Revision$ $Date$
@@ -39,11 +41,11 @@ public class ConnectHandlerConnectSSLTest extends AbstractProxyHandlerTest
     {
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
 
-        String keyStorePath = System.getProperty("basedir");
-        keyStorePath += File.separator + "src" + File.separator + "test" + File.separator + "resources" + File.separator + "keystore";
-        connector.setKeystore(keyStorePath);
-        connector.setPassword("storepwd");
-        connector.setKeyPassword("keypwd");
+        String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
+        SslContextFactory cf = connector.getSslContextFactory();
+        cf.setKeyStore(keyStorePath);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
 
         startServer(connector, new ServerHandler());
         startProxy();

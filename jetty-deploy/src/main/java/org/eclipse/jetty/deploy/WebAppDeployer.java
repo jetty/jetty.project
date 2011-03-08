@@ -15,6 +15,7 @@ package org.eclipse.jetty.deploy;
 
 import java.util.ArrayList;
 
+import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -45,7 +46,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * 
  * @deprecated
  * @see DeploymentManager
- * @see MonitoredDirAppProvider
+ * @see ScanningAppProvider
  * @see ContextDeployer
  */
 @SuppressWarnings("unchecked")

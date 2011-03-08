@@ -376,8 +376,11 @@ public class HttpConnectionTest
         }
     }
 
+    /**
+     * Creates a request header over 1k in size, by creating a single header entry with an huge value.
+     */
     @Test
-    public void testOversizedBuffer()
+    public void testOversizedBuffer() throws Exception
     {
         String response = null;
         try
@@ -395,12 +398,32 @@ public class HttpConnectionTest
         }
         catch(Exception e)
         {
-            e.printStackTrace();
-            assertTrue(false);
             if(response != null)
                 System.err.println(response);
-
+            throw e;
         }
+    }
+
+    /**
+     * Creates a request header with over 1000 entries.
+     */
+    @Test
+    public void testExcessiveHeader() throws Exception
+    {
+        String response = null;
+        int offset = 0;
+        
+        StringBuilder request = new StringBuilder();
+        request.append("GET / HTTP/1.1\n");
+        request.append("Host: localhost\n");
+        request.append("Cookie: thisisastring\n");
+        for(int i=0; i<1000; i++) {
+            request.append(String.format("X-Header-%04d: %08x\n", i, i));
+        }
+        request.append("\015\012");
+        
+        response = connector.getResponses(request.toString());
+        offset = checkContains(response, offset, "HTTP/1.1 413");
     }
 
     @Test
@@ -410,7 +433,8 @@ public class HttpConnectionTest
         for (int i=0;i<400;i++)
             str+="xxxxxxxxxxxx";
         final String longstr = str;
-        String response = null;
+        
+        String response = null;        
         server.stop();
         server.setHandler(new DumpHandler()
         {

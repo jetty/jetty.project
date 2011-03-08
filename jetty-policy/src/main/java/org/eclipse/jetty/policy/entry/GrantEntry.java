@@ -15,6 +15,7 @@ package org.eclipse.jetty.policy.entry;
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
+import java.net.URI;
 import java.net.URL;
 import java.security.CodeSource;
 import java.security.KeyStore;
@@ -128,7 +129,7 @@ public class GrantEntry extends AbstractEntry
         {
             if ( codesource == null && codebase != null )
             {
-                URL url = new URL( codebase );
+                URL url = new URI( codebase ).toURL();
                 codesource = new CodeSource( url, signerArray );
             }
 

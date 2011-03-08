@@ -63,6 +63,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
      */
     public void setWorkerName(String workerName)
     {
+        if (workerName.contains("."))
+            throw new IllegalArgumentException("Name cannot contain '.'");
         _workerName=workerName;
     }
 
@@ -167,7 +169,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
                 _weakRandom=true;
             }
         }
-        _random.setSeed(_random.nextLong()^System.currentTimeMillis()^hashCode()^Runtime.getRuntime().freeMemory()); 
+        else
+            _random.setSeed(_random.nextLong()^System.currentTimeMillis()^hashCode()^Runtime.getRuntime().freeMemory()); 
     }
     
     

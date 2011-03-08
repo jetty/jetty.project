@@ -213,12 +213,20 @@ public class ContentExchangeTest
         throws Exception
     {
         _client = new HttpClient();
-        _client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        configureClient(_client);
+        
         if (realm != null)
             _client.setRealmResolver(new SimpleRealmResolver(realm));
+        
         _client.start();
     }
     
+    protected void configureClient(HttpClient client)
+        throws Exception
+    {
+        client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+    }
+
     protected void stopClient()
         throws Exception
     {

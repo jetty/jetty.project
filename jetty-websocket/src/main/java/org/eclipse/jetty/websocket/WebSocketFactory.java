@@ -18,6 +18,7 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.server.HttpConnection;
@@ -90,24 +91,33 @@ public class WebSocketFactory
      * @param websocket The websocket handler implementation to use
      * @param origin The origin of the websocket connection
      * @param subprotocol The protocol
-     * @throws UpgradeConnectionException Thrown to upgrade the connection
      * @throws IOException
      */
     public void upgrade(HttpServletRequest request,HttpServletResponse response, WebSocket websocket, String origin, String subprotocol)
-     throws IOException
+    throws IOException
      {
-        if (!"WebSocket".equals(request.getHeader("Upgrade")))
+        if (!"websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
             throw new IllegalStateException("!Upgrade:websocket");
         if (!"HTTP/1.1".equals(request.getProtocol()))
             throw new IllegalStateException("!HTTP/1.1");
                 
-        int draft=request.getIntHeader("Sec-WebSocket-Draft");
+        int draft=request.getIntHeader("Sec-WebSocket-Version");
+        if (draft<0)
+            draft=request.getIntHeader("Sec-WebSocket-Draft");
         HttpConnection http = HttpConnection.getCurrentConnection();
         ConnectedEndPoint endp = (ConnectedEndPoint)http.getEndPoint();
         
         final WebSocketConnection connection;
         switch(draft)
         {
+            case 6:
+                connection=new WebSocketConnectionD06(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,draft);
+                break;
+            case 5:
+            case 4:
+            case 3:
+            case 2:
+                throw new HttpException(400,"Unsupported draft specification: "+draft);
             default:
                 connection=new WebSocketConnectionD00(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,draft);
         }

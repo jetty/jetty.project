@@ -9,7 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Connection;
 
-public interface WebSocketConnection extends Connection, WebSocket.Outbound
+public interface WebSocketConnection extends Connection
 {
     void fillBuffersFrom(Buffer buffer);
     

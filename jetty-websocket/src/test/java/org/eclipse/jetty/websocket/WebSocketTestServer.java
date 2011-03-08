@@ -7,6 +7,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 
 public class WebSocketTestServer extends Server
@@ -51,6 +52,7 @@ public class WebSocketTestServer extends Server
 
         public void onMessage(byte frame, byte[] data, int offset, int length)
         {
+            System.err.println("onMessage " + TypeUtil.toHexString(data,offset,length));
         }
 
         public void onMessage(final byte frame, final String data)

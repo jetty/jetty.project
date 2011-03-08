@@ -22,7 +22,6 @@ import java.net.URLClassLoader;
 import java.security.AccessController;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
@@ -1108,7 +1107,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     public void setManagedAttribute(String name, Object value)
     {
         Object old =_managedAttributes.put(name,value);
-        getServer().getContainer().update(this,old,value,name);
+        getServer().getContainer().update(this,old,value,name,true);
     }
 
     /* ------------------------------------------------------------ */
@@ -1402,6 +1401,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             {
                 if (resource.exists())
                     Log.warn("Aliased resource: "+resource+"~="+resource.getAlias());
+                else if (path.endsWith("/") && resource.getAlias().toString().endsWith(path))
+                    return resource;
                 else if (Log.isDebugEnabled())
                     Log.debug("Aliased resource: "+resource+"~="+resource.getAlias());
                 return null;

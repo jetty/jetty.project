@@ -19,6 +19,7 @@ import org.eclipse.jetty.ajp.Ajp13SocketConnector;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Connector;
@@ -43,6 +44,8 @@ public class LikeJettyXml
         System.setProperty("jetty.home",jetty_home);
 
         Server server = new Server();
+        server.setDumpAfterStart(true);
+        server.setDumpBeforeStop(true);
         
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
@@ -68,13 +71,13 @@ public class LikeJettyXml
 
         SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
         ssl_connector.setPort(8443);
-        ssl_connector.setKeystore(jetty_home + "/etc/keystore");
-        ssl_connector.setPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        ssl_connector.setKeyPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        ssl_connector.setTruststore(jetty_home + "/etc/keystore");
-        ssl_connector.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        ssl_connector.setStatsOn(true);
-        ssl_connector.setExcludeCipherSuites(
+        SslContextFactory cf = ssl_connector.getSslContextFactory();
+        cf.setKeyStore(jetty_home + "/etc/keystore");
+        cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        cf.setTrustStore(jetty_home + "/etc/keystore");
+        cf.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        cf.setExcludeCipherSuites(
                 new String[] {
                     "SSL_RSA_WITH_DES_CBC_SHA",
                     "SSL_DHE_RSA_WITH_DES_CBC_SHA",
@@ -84,6 +87,7 @@ public class LikeJettyXml
                     "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                     "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"
                 });
+        ssl_connector.setStatsOn(true);
         server.addConnector(ssl_connector);
 
         Ajp13SocketConnector ajp = new Ajp13SocketConnector();
@@ -131,10 +135,8 @@ public class LikeJettyXml
 
         server.setStopAtShutdown(true);
         server.setSendServerVersion(true);
-
-        server.start();
         
-        System.err.println(server.dump());
+        server.start();
         
         server.join();
     }

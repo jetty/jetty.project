@@ -127,13 +127,22 @@ public class ConstraintTest
         mapping4.setPathSpec("/testLoginPage");
         mapping4.setConstraint(constraint4);
 
+        Constraint constraint5 = new Constraint();
+        constraint5.setAuthenticate(false);
+        constraint5.setName("allow forbidden POST");
+        ConstraintMapping mapping5 = new ConstraintMapping();
+        mapping5.setPathSpec("/forbid/post");
+        mapping5.setConstraint(constraint5);
+        mapping5.setMethod("POST");
+        
+        
         Set<String> knownRoles=new HashSet<String>();
         knownRoles.add("user");
         knownRoles.add("administrator");
 
         _security.setConstraintMappings(Arrays.asList(new ConstraintMapping[]
                 {
-                        mapping0, mapping1, mapping2, mapping3, mapping4
+                        mapping0, mapping1, mapping2, mapping3, mapping4, mapping5
                 }), knownRoles);
     }
 
@@ -812,6 +821,27 @@ public class ConstraintTest
         assertTrue(response.indexOf("user=admin") > 0);
     }
 
+    @Test
+    public void testRelaxedMethod() throws Exception
+    {
+        _security.setAuthenticator(new BasicAuthenticator());
+        _security.setStrict(false);
+        _server.start();
+
+        String response;
+        response = _connector.getResponses("GET /ctx/forbid/somethig HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 403 "));
+        
+        response = _connector.getResponses("POST /ctx/forbid/post HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 "));
+        
+        response = _connector.getResponses("GET /ctx/forbid/post HTTP/1.0\r\n\r\n");
+        System.err.println(response);
+        assertTrue(response.startsWith("HTTP/1.1 200 "));  // This is so stupid, but it is the S P E C
+        
+        
+
+    }
     private class RequestHandler extends AbstractHandler
     {
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response ) throws IOException, ServletException

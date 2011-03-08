@@ -18,9 +18,7 @@ package org.eclipse.jetty.policy;
 
 import java.security.Policy;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * 
@@ -28,7 +26,7 @@ import java.util.Set;
  */
 public class JettyPolicyConfigurator
 {
-    Set<String> _policies= new HashSet<String>();
+    String _policyDirectory;
     Map<String, String> _properties = new HashMap<String,String>();
     
     public JettyPolicyConfigurator()
@@ -36,9 +34,9 @@ public class JettyPolicyConfigurator
         
     }
     
-    public void addPolicy( String policy )
+    public void setPolicyDirectory( String policyDirectory )
     {
-        _policies.add(policy);
+        _policyDirectory = policyDirectory;
     }
     
     public void addProperty( String name, String value )
@@ -48,12 +46,11 @@ public class JettyPolicyConfigurator
     
     public void initialize()
     {
-        System.out.println("Initializing Jetty Policy");
-        
-        JettyPolicy jpolicy = new JettyPolicy( _policies, _properties );
+        JettyPolicy jpolicy = new JettyPolicy(_policyDirectory,_properties);
+
         jpolicy.refresh();
         Policy.setPolicy(jpolicy);
         System.setSecurityManager(new SecurityManager());
     }
-    
+
 }

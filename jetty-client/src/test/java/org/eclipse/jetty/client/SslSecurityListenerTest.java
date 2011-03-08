@@ -34,10 +34,12 @@ import org.eclipse.jetty.client.security.HashRealmResolver;
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.security.Constraint;
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -45,6 +47,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 
 /**
@@ -141,13 +144,13 @@ public class SslSecurityListenerTest extends TestCase
         //SslSelectChannelConnector connector = new SslSelectChannelConnector();
         SslSocketConnector connector = new SslSocketConnector();
 
-        String keystore = System.getProperty("user.dir") + File.separator + "src" + File.separator + "test" + File.separator + "resources" + File.separator
-                + "keystore";
+        String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
 
         connector.setPort(0);
-        connector.setKeystore(keystore);
-        connector.setPassword("storepwd");
-        connector.setKeyPassword("keypwd");
+        SslContextFactory cf = connector.getSslContextFactory();
+        cf.setKeyStore(keystore);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
 
         _server.setConnectors(new Connector[]
         { connector });
@@ -162,7 +165,8 @@ public class SslSecurityListenerTest extends TestCase
         cm.setConstraint(constraint);
         cm.setPathSpec("/*");
 
-        HashLoginService loginService = new HashLoginService("MyRealm","src/test/resources/realm.properties");
+        File realmPropFile = MavenTestingUtils.getTestResourceFile("realm.properties");
+        LoginService loginService = new HashLoginService("MyRealm",realmPropFile.getAbsolutePath());
         _server.addBean(loginService);
         
         BasicAuthenticator authenticator = new BasicAuthenticator();

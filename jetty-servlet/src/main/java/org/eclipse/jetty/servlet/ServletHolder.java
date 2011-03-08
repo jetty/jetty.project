@@ -769,7 +769,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     
     /* ------------------------------------------------------------ */
     /**
-     * @return
+     * @return the newly created Servlet instance
      * @throws ServletException
      * @throws IllegalAccessException
      * @throws InstantiationException

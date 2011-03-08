@@ -17,13 +17,29 @@ import java.io.IOException;
 
 public interface WebSocket
 {
+    @Deprecated
     public final byte LENGTH_FRAME=(byte)0x80;
+    @Deprecated
     public final byte SENTINEL_FRAME=(byte)0x00;
+
+    public final static byte   OP_CONTINUATION = 0x00;
+    public final static byte   OP_CLOSE = 0x01;
+    public final static byte   OP_PING = 0x02;
+    public final static byte   OP_PONG = 0x03;
+    public final static byte   OP_TEXT = 0x04;
+    public final static byte   OP_BINARY = 0x05;
+    
+    public final static int CLOSE_NORMAL=1000;
+    public final static int CLOSE_SHUTDOWN=1001;
+    public final static int CLOSE_PROTOCOL=1002;
+    public final static int CLOSE_DATA=1003;
+    public final static int CLOSE_LARGE=1004;
+    
     void onConnect(Outbound outbound);
     void onMessage(byte opcode,String data);
     void onFragment(boolean more,byte opcode,byte[] data, int offset, int length);
     void onMessage(byte opcode,byte[] data, int offset, int length);
-    void onDisconnect();
+    void onDisconnect(); // TODO add code 
     
     public interface Outbound
     {
@@ -32,6 +48,7 @@ public interface WebSocket
         void sendMessage(byte opcode,byte[] data, int offset, int length) throws IOException;
         void sendFragment(boolean more,byte opcode,byte[] data, int offset, int length) throws IOException;
         void disconnect();
+        void disconnect(int code,String message);
         boolean isOpen();
     }
 }

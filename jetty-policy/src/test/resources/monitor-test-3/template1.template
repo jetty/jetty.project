@@ -1,0 +1,3 @@
+grant codeBase "TEMPLATE" {
+  permission java.io.FilePermission "/tmp/*", "read";
+}

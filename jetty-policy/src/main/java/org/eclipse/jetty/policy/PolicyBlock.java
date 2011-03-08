@@ -17,6 +17,7 @@ package org.eclipse.jetty.policy;
 //========================================================================
 
 import java.security.CodeSource;
+import java.security.KeyStore;
 import java.security.PermissionCollection;
 import java.security.Principal;
 import java.security.ProtectionDomain;
@@ -26,6 +27,8 @@ import java.util.Set;
 public class PolicyBlock
 {
     public CodeSource codesource;
+    
+    public KeyStore keyStore;
     
     public Set<Certificate> certificates;
 
@@ -39,19 +42,20 @@ public class PolicyBlock
     {
         if ( protectionDomain == null )
         {
-            // if ( codesource == null )
-            // {
-            // protectionDomain = new ProtectionDomain( null, permissions );
-            // }
-            // else
-            // {
             protectionDomain = new ProtectionDomain(codesource,null,Thread.currentThread().getContextClassLoader(),principals);
-
-            // protectionDomain = new ProtectionDomain( codesource, permissions, Thread.currentThread().getContextClassLoader(), principals );
-            // }
         }
-        
+                
         return protectionDomain;
+    }
+   
+    public KeyStore getKeyStore()
+    {
+        return keyStore;
+    }
+
+    public void setKeyStore(KeyStore keyStore)
+    {
+        this.keyStore = keyStore;
     }
 
     public CodeSource getCodeSource()
@@ -93,6 +97,4 @@ public class PolicyBlock
     {
         this.permissions = permissions;
     }
-    
-    
 }

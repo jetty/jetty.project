@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
@@ -39,7 +40,6 @@ import static org.junit.Assert.assertTrue;
 
 public class StressTest
 {
-    private static boolean _stress;
     private static QueuedThreadPool _threads;
     private static Server _server;
     private static SelectChannelConnector _connector;
@@ -78,17 +78,15 @@ public class StressTest
     @BeforeClass
     public static void init() throws Exception
     {
-        _stress= Boolean.getBoolean("STRESS");
-
         _threads = new QueuedThreadPool(new BlockingArrayQueue<Runnable>(4,4));
-        _threads.setMaxThreads(500);
+        _threads.setMaxThreads(200);
 
         _server = new Server();
         _server.setThreadPool(_threads);
 
         _connector = new SelectChannelConnector();
-        _connector.setAcceptors(1);
-        _connector.setAcceptQueueSize(1000);
+        _connector.setAcceptors(Runtime.getRuntime().availableProcessors()/2);
+        _connector.setAcceptQueueSize(5000);
         _connector.setMaxIdleTime(30000);
         _server.addConnector(_connector);
 
@@ -116,25 +114,27 @@ public class StressTest
     @Test
     public void testNonPersistent() throws Throwable
     {
-        if (_stress)
+        doThreads(10,100,false);
+        if (Stress.isEnabled())
         {
-            System.err.println("STRESS!");
-            doThreads(200,100,false);
+            Thread.sleep(1000);
+            doThreads(200,10,false);
+            Thread.sleep(1000);
+            doThreads(200,200,false);
         }
-        else
-            doThreads(10,20,false);
     }
 
     @Test
     public void testPersistent() throws Throwable
     {
-        if (_stress)
+        doThreads(20,100,true);
+        if (Stress.isEnabled())
         {
-            System.err.println("STRESS!");
-            doThreads(200,100,true);
+            Thread.sleep(1000);
+            doThreads(200,10,true);
+            Thread.sleep(1000);
+            doThreads(200,200,true);
         }
-        else
-            doThreads(20,40,true);
     }
 
     private void doThreads(int threadCount, final int loops, final boolean persistent) throws Throwable
@@ -148,6 +148,7 @@ public class StressTest
             {
                 final int id=i;
                 final String name = "T"+i;
+                Thread.sleep(_random.nextInt(100));
                 threads[i]=new Thread()
                 {
                     @Override
@@ -241,6 +242,8 @@ public class StressTest
             final int length[] = new int[_latencies.length];
             final int other[] = new int[_latencies.length];
 
+            long total=0;
+            
             for (int i=0;i<_latencies.length;i++)
             {
                 Queue<Long> latencies=_latencies[i];
@@ -249,6 +252,8 @@ public class StressTest
                 loop:
                 for (long latency : latencies)
                 {
+                    if (i==4)
+                        total+=latency;
                     for (int q=0;q<quantums;q++)
                     {
                         if (latency>=(q*100) && latency<((q+1)*100))
@@ -258,6 +263,7 @@ public class StressTest
                         }
                     }
                     other[i]++;
+                    
                 }
             }
 
@@ -283,6 +289,8 @@ public class StressTest
             for (int i=0;i<_latencies.length;i++)
                 System.out.print("\t"+length[i]);
             System.out.println();
+            long ave=total/_latencies[4].size();
+            System.out.println("ave="+ave);
         }
     }
 
@@ -294,8 +302,8 @@ public class StressTest
             {
                 _loops[thread].set(i);
                 doPaths(thread,name+"-"+i,persistent);
-                Thread.sleep(1+_random.nextInt(10)*_random.nextInt(10));
-                Thread.sleep(10);
+                Thread.sleep(1+_random.nextInt(20)*_random.nextInt(20));
+                Thread.sleep(20);
             }
             _loops[thread].set(loops);
         }

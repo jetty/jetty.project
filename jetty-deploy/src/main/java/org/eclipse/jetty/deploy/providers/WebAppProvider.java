@@ -6,25 +6,21 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.WebAppDeployer;
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
-
 
 /* ------------------------------------------------------------ */
 /** Context directory App Provider.
- * <p>This specialization of {@link MonitoredDirAppProvider} is the
- * replacement for {@link WebAppDeployer} and it will scan a directory
+ * <p>This specialization of {@link ScanningAppProvider} is the
+ * replacement for old (and deprecated) <code>org.eclipse.jetty.deploy.WebAppDeployer</code> and it will scan a directory
  * only for war files or directories files.</p>
  * <p>
  * Webapps with names root or starting with root- are deployed at /.
  * If the name is in the format root-hostname, then the webapp is deployed
  * at / in the virtual host hostname.
- * @see WebAppDeployer
  */
 public class WebAppProvider extends ScanningAppProvider
 {

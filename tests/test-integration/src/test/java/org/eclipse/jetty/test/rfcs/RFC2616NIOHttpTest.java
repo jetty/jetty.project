@@ -36,7 +36,7 @@ public class RFC2616NIOHttpTest extends RFC2616BaseTest
         server.addConfiguration("RFC2616_Redirects.xml");
         server.addConfiguration("RFC2616_Filters.xml");
         server.addConfiguration("NIOHttp.xml");
-        setUpServer(server);
+        setUpServer(server, RFC2616NIOHttpTest.class);
     }
 
     @Override

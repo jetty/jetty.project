@@ -19,6 +19,7 @@ import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.io.ConnectedEndPoint;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout.Task;
 
@@ -65,45 +67,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     private int _lowResourcesMaxIdleTime;
     private int _localPort=-1;
 
-    private final SelectorManager _manager = new SelectorManager()
-    {
-        @Override
-        public boolean dispatch(Runnable task)
-        {
-            return getThreadPool().dispatch(task);
-        }
-
-        @Override
-        protected void endPointClosed(final SelectChannelEndPoint endpoint)
-        {
-            connectionClosed(endpoint.getConnection());
-        }
-
-        @Override
-        protected void endPointOpened(SelectChannelEndPoint endpoint)
-        {
-            // TODO handle max connections and low resources
-            connectionOpened(endpoint.getConnection());
-        }
-
-        @Override
-        protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
-        {
-            connectionUpgraded(oldConnection,endpoint.getConnection());
-        }
-
-        @Override
-        protected Connection newConnection(SocketChannel channel,SelectChannelEndPoint endpoint)
-        {
-            return SelectChannelConnector.this.newConnection(channel,endpoint);
-        }
-
-        @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey sKey) throws IOException
-        {
-            return SelectChannelConnector.this.newEndPoint(channel,selectSet,sKey);
-        }
-    };
+    private final SelectorManager _manager = new ConnectorSelectorManager();
 
     /* ------------------------------------------------------------------------------- */
     /**
@@ -113,13 +77,22 @@ public class SelectChannelConnector extends AbstractNIOConnector
     public SelectChannelConnector()
     {
         _manager.setMaxIdleTime(getMaxIdleTime());
+        setAcceptors(Math.max(1,(Runtime.getRuntime().availableProcessors()+3)/4));
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void accept(int acceptorID) throws IOException
     {
-        _manager.doSelect(acceptorID);
+        ServerSocketChannel server = _acceptChannel;
+        if (server!=null && server.isOpen())
+        {
+            SocketChannel channel = _acceptChannel.accept();
+            channel.configureBlocking(false);
+            Socket socket = channel.socket();
+            configure(socket);
+            _manager.register(channel);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -271,33 +244,48 @@ public class SelectChannelConnector extends AbstractNIOConnector
         _manager.setLowResourcesConnections(getLowResourcesConnections());
         _manager.setLowResourcesMaxIdleTime(getLowResourcesMaxIdleTime());
         _manager.start();
-        
+
         super.doStart();
-        
-        // start a thread to accept new connections
-        _manager.dispatch(new Runnable()
+
+        // start a thread to Select
+        for (int i=0;i<getAcceptors();i++)
         {
-            public void run()
+            final int id=i;
+            _manager.dispatch(new Runnable()
             {
-                final ServerSocketChannel server=_acceptChannel;
-                while (isRunning() && _acceptChannel==server && server.isOpen())
+                public void run()
                 {
+                    String name=Thread.currentThread().getName();
                     try
                     {
-                        SocketChannel channel = server.accept();
-                        channel.configureBlocking(false);
-                        Socket socket = channel.socket();
-                        configure(socket);
-                        _manager.register(channel);
+                        Thread.currentThread().setName(name+" Selector"+id+" "+SelectChannelConnector.this);
+                        while (isRunning())
+                        {
+                            try
+                            {
+                                _manager.doSelect(id);
+                            }
+                            catch(ThreadDeath e)
+                            {
+                                throw e;
+                            }
+                            catch(IOException e)
+                            {
+                                Log.ignore(e);
+                            }
+                            catch(Exception e)
+                            {
+                                Log.warn(e);
+                            }
+                        }
                     }
-                    catch(IOException e)
+                    finally
                     {
-                        Log.ignore(e);
+                        Thread.currentThread().setName(name);
                     }
                 }
-            }
-        });
-        
+            });
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -314,6 +302,11 @@ public class SelectChannelConnector extends AbstractNIOConnector
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
         return new SelectChannelEndPoint(channel,selectSet,key, SelectChannelConnector.this._maxIdleTime);
+    }
+
+    protected void endPointClosed(SelectChannelEndPoint endpoint)
+    {
+        connectionClosed(endpoint.getConnection());
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -337,10 +330,58 @@ public class SelectChannelConnector extends AbstractNIOConnector
         };
     }
 
-    /* ------------------------------------------------------------------------------- */
-    public void dump()
+    /* ------------------------------------------------------------ */
+    public void dump(Appendable out, String indent) throws IOException
     {
-        Log.info("channel "+_acceptChannel+(_acceptChannel.isOpen()?" is open":" is closed"));
-        _manager.dump();
+        out.append(String.valueOf(this)).append("\n");
+        ServerSocketChannel channel=_acceptChannel;
+        if (channel==null)
+            AggregateLifeCycle.dump(out,indent,Arrays.asList(new Object[]{null,"CLOSED",_manager}));
+        else
+            AggregateLifeCycle.dump(out,indent,Arrays.asList(new Object[]{_acceptChannel,_acceptChannel.isOpen()?"OPEN":"CLOSED",_manager}));
     }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private final class ConnectorSelectorManager extends SelectorManager
+    {
+        @Override
+        public boolean dispatch(Runnable task)
+        {
+            return getThreadPool().dispatch(task);
+        }
+
+        @Override
+        protected void endPointClosed(final SelectChannelEndPoint endpoint)
+        {
+            SelectChannelConnector.this.endPointClosed(endpoint);
+        }
+
+        @Override
+        protected void endPointOpened(SelectChannelEndPoint endpoint)
+        {
+            // TODO handle max connections and low resources
+            connectionOpened(endpoint.getConnection());
+        }
+
+        @Override
+        protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
+        {
+            connectionUpgraded(oldConnection,endpoint.getConnection());
+        }
+
+        @Override
+        protected Connection newConnection(SocketChannel channel,SelectChannelEndPoint endpoint)
+        {
+            return SelectChannelConnector.this.newConnection(channel,endpoint);
+        }
+
+        @Override
+        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey sKey) throws IOException
+        {
+            return SelectChannelConnector.this.newEndPoint(channel,selectSet,sKey);
+        }
+    }
+
 }

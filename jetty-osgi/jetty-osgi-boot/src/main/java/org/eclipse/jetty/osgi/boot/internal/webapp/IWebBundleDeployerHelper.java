@@ -42,6 +42,8 @@ public interface IWebBundleDeployerHelper {
 	 *            The context path. Must start with "/"
 	 * @param extraClasspath
 	 * @param overrideBundleInstallLocation
+	 * @param requireTldBundle The list of bundles's symbolic names that contain
+	 * tld files that are required by this WAB.
 	 * @param webXmlPath
 	 * @param defaultWebXmlPath
 	 *            TODO: parameter description
@@ -50,7 +52,8 @@ public interface IWebBundleDeployerHelper {
 	 */
 	public abstract WebAppContext registerWebapplication(Bundle bundle,
 			String webappFolderPath, String contextPath, String extraClasspath,
-			String overrideBundleInstallLocation, String webXmlPath,
+			String overrideBundleInstallLocation,
+			String requireTldBundle, String webXmlPath,
 			String defaultWebXmlPath, WebAppContext webAppContext) throws Exception;
 
 	/**
@@ -72,6 +75,7 @@ public interface IWebBundleDeployerHelper {
 	 * @param contextFileRelativePath
 	 * @param extraClasspath
 	 * @param overrideBundleInstallLocation
+	 * @param requireTldBundle The list of bundles'symbolic name that contain tld files for this webapp.
 	 * @param handler the context handler passed in the server
 	 * reference that will be configured, deployed and started.
 	 * @return The contexthandler created and started
@@ -79,6 +83,7 @@ public interface IWebBundleDeployerHelper {
 	 */
 	public abstract ContextHandler registerContext(Bundle contributor,
 			String contextFileRelativePath, String extraClasspath,
-			String overrideBundleInstallLocation, ContextHandler handler) throws Exception;
+			String overrideBundleInstallLocation, String requireTldBundle,
+			ContextHandler handler) throws Exception;
 
 }

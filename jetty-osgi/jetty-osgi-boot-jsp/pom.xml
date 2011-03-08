@@ -62,13 +62,7 @@
             <phase>process-resources</phase>
             <configuration>
               <tasks>
-<<<<<<< .working
-                <replace file="target/classes/META-INF/MANIFEST.MF"
-                    token="Bundle-Version: 8.0.0.qualifier"
-                    value="Bundle-Version: ${parsedVersion.osgiVersion}"/>
-=======
-                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 7.3.0.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
->>>>>>> .merge-right.r2637
+                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 8.0.0.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}"/>
               </tasks>
             </configuration>
             <goals>

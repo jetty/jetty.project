@@ -68,7 +68,6 @@ public abstract class NamingEntry
      * be linked to the webapp's env-entry, resource-ref etc entries.
      * 
      * @param jndiName the name of the object which will eventually be in java:comp/env
-     * @param object the object to be bound
      * @throws NamingException
      */
     protected NamingEntry (String jndiName)

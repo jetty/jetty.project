@@ -3,7 +3,6 @@ package org.eclipse.jetty.server.ssl;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -22,11 +21,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.junit.Test;
@@ -88,12 +89,13 @@ public class SslRenegotiateTest
         Server server=new Server();
         try
         {
-            String keystore = System.getProperty("user.dir")+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator+"keystore";
+            String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
             connector.setPort(0);
-            connector.setKeystore(keystore);
-            connector.setPassword("storepwd");
-            connector.setKeyPassword("keypwd");
-            connector.setAllowRenegotiate(reneg);
+            SslContextFactory cf = connector.getSslContextFactory();
+            cf.setKeyStore(keystore);
+            cf.setKeyStorePassword("storepwd");
+            cf.setKeyManagerPassword("keypwd");
+            cf.setAllowRenegotiate(reneg);
 
             server.setConnectors(new Connector[] { connector });
             server.setHandler(new HelloWorldHandler());

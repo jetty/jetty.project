@@ -367,7 +367,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                         String test=encoding[e]+"x"+b+"x"+w+"x"+c;
                         try
                         {
-                            URL url=new URL("http://"+HOST+":"+_connector.getLocalPort()+"/?writes="+w+"&block="+b+ (e==0?"":("&encoding="+encoding[e]))+(c==0?"&chars=true":""));
+                            URL url=new URL(_scheme+"://"+HOST+":"+_connector.getLocalPort()+"/?writes="+w+"&block="+b+ (e==0?"":("&encoding="+encoding[e]))+(c==0?"&chars=true":""));
+                            
                             InputStream in = (InputStream)url.getContent();
                             String response=IO.toString(in,e==0?null:encoding[e]);
 
@@ -376,6 +377,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                         catch(Exception x)
                         {
                             System.err.println(test);
+                            x.printStackTrace();
                             throw x;
                         }
                     }
@@ -385,7 +387,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
-    public void testReadWriteBlocking() throws Exception
+    public void testBlockingWhileReadingRequestContent() throws Exception
     {
         configureServer(new DataHandler());
 
@@ -442,6 +444,49 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
     
+    @Test
+    public void testBlockingWhileWritingResponseContent() throws Exception
+    {
+        configureServer(new DataHandler());
+
+        long start=System.currentTimeMillis();
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        try
+        {
+            OutputStream os=client.getOutputStream();
+            InputStream is=client.getInputStream();
+
+            os.write((
+                    "GET /data?writes=512&block=1024 HTTP/1.1\r\n"+
+                    "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                    "connection: close\r\n"+
+                    "content-type: unknown\r\n"+
+                    "\r\n"
+            ).getBytes());
+            os.flush();
+
+            int total=0;
+            int len=0;
+            byte[] buf=new byte[1024*32];
+
+            int i=0;
+            while(len>=0)
+            {
+                if (i++%10==0)
+                    Thread.sleep(1000);
+                len=is.read(buf);
+                if (len>0)
+                    total+=len;
+            }
+
+            assertTrue(total>(512*1024));
+            assertTrue(30000L>(System.currentTimeMillis()-start));
+        }
+        finally
+        {
+            client.close();
+        }
+    }
 
     @Test
     public void testBigBlocks() throws Exception

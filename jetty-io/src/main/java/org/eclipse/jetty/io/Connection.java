@@ -38,10 +38,17 @@ public interface Connection
      */
     Connection handle() throws IOException;
     
+    /**
+     * @return the timestamp at which the connection was created
+     */
     long getTimeStamp();
 
     boolean isIdle();
+    
     boolean isSuspended();
-
+    
+    /**
+     * Called when the connection is closed
+     */
     void closed();
 }

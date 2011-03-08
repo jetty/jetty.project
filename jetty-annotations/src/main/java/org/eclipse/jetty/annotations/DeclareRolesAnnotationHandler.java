@@ -13,10 +13,6 @@
 
 package org.eclipse.jetty.annotations;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 import javax.servlet.Servlet;
 
 import javax.annotation.security.DeclareRoles;
@@ -35,7 +31,7 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
     protected WebAppContext _context;
     
     /**
-     * @param introspectAncestors
+     * @param context
      */
     public DeclareRolesAnnotationHandler(WebAppContext context)
     {

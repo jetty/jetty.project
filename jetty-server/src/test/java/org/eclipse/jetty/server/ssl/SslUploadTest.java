@@ -31,6 +31,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -56,11 +57,12 @@ public class SslUploadTest
         server.addConnector(connector);
 
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
-        connector.setKeystore(keystorePath);
-        connector.setPassword("storepwd");
-        connector.setKeyPassword("keypwd");
-        connector.setTruststore(keystorePath);
-        connector.setTrustPassword("storepwd");
+        SslContextFactory cf = connector.getSslContextFactory();
+        cf.setKeyStore(keystorePath);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
+        cf.setTrustStore(keystorePath);
+        cf.setTrustStorePassword("storepwd");
 
         server.setHandler(new EmptyHandler());
 

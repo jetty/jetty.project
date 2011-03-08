@@ -52,6 +52,8 @@ public class KeystoreEntry extends AbstractEntry
             InputStream istream = keyStoreLocation.openStream();
             
             keystore.load( istream, null );
+            
+            
         }
         catch ( Exception e )
         {

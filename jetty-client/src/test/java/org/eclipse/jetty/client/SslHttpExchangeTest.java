@@ -13,12 +13,14 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.File;
+import static org.hamcrest.Matchers.*;
 
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.Assume;
 
 /**
  * Functional testing for HttpExchange.
@@ -50,18 +52,24 @@ public class SslHttpExchangeTest extends HttpExchangeTest
         //SslSelectChannelConnector connector = new SslSelectChannelConnector();
         SslSocketConnector connector = new SslSocketConnector();
 
-        String keystore = System.getProperty("user.dir") + File.separator + "src" + File.separator + "test" + File.separator + "resources" + File.separator
-                + "keystore";
+        String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
 
         connector.setPort(0);
-        connector.setKeystore(keystore);
-        connector.setPassword("storepwd");
-        connector.setKeyPassword("keypwd");
+        SslContextFactory cf = connector.getSslContextFactory();
+        cf.setKeyStore(keystore);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
 	connector.setAllowRenegotiate(true);
 
         _server.setConnectors(new Connector[]
         { connector });
         _connector=connector;
+    }
+    
+    private void IgnoreTestOnBuggyIBM() {
+        // Use Junit 4.x to flag test as ignored if encountering IBM JVM
+        // Will show up in various junit reports as an ignored test as well.
+        Assume.assumeThat(System.getProperty("java.vendor").toLowerCase(),not(containsString("ibm")));
     }
 
     /* ------------------------------------------------------------ */
@@ -72,10 +80,8 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     public void testGetWithContentExchange() throws Exception
     {
         // TODO Resolve problems on IBM JVM https://bugs.eclipse.org/bugs/show_bug.cgi?id=304532
-        if (System.getProperty("java.vendor").toLowerCase().indexOf("ibm")<0)
-            super.testGetWithContentExchange();
-        else
-            Log.warn("Skipped SSL testGetWithContentExchange on IBM JVM");
+        IgnoreTestOnBuggyIBM();
+        super.testGetWithContentExchange();
     }
 
     /* ------------------------------------------------------------ */
@@ -86,10 +92,8 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     public void testPerf() throws Exception
     {
         // TODO Resolve problems on IBM JVM https://bugs.eclipse.org/bugs/show_bug.cgi?id=304532
-        if (System.getProperty("java.vendor").toLowerCase().indexOf("ibm")<0)
-            super.testPerf();
-        else
-            Log.warn("Skipped SSL testPerf on IBM JVM");
+        IgnoreTestOnBuggyIBM();
+        super.testPerf();
     }
 
     /* ------------------------------------------------------------ */
@@ -100,10 +104,8 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     public void testPostWithContentExchange() throws Exception
     {
         // TODO Resolve problems on IBM JVM https://bugs.eclipse.org/bugs/show_bug.cgi?id=304532
-        if (System.getProperty("java.vendor").toLowerCase().indexOf("ibm")<0)
-            super.testPostWithContentExchange();
-        else
-            Log.warn("Skipped SSL testPostWithContentExchange on IBM JVM");
+        IgnoreTestOnBuggyIBM();
+        super.testPostWithContentExchange();
     }
 
     /* ------------------------------------------------------------ */
@@ -114,9 +116,7 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     public void testReserveConnections() throws Exception
     {
         // TODO Resolve problems on IBM JVM https://bugs.eclipse.org/bugs/show_bug.cgi?id=304532
-        if (System.getProperty("java.vendor").toLowerCase().indexOf("ibm")<0)
-            super.testReserveConnections();
-        else
-            Log.warn("Skipped SSL testReserveConnections on IBM JVM");
+        IgnoreTestOnBuggyIBM();
+        super.testReserveConnections();
     }
 }

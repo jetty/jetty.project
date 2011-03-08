@@ -20,6 +20,9 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -29,7 +32,10 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.util.thread.Timeout.Task;
@@ -43,7 +49,7 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  * This class works around a number of know JVM bugs. For details
  * see http://wiki.eclipse.org/Jetty/Feature/JVM_NIO_Bug
  */
-public abstract class SelectorManager extends AbstractLifeCycle
+public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
     // TODO Tune these by approx system speed.
     private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD",0).intValue();
@@ -59,6 +65,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
     private SelectSet[] _selectSet;
     private int _selectSets=1;
     private volatile int _set;
+    private boolean _deferringInterestedOps0=true;
     
     /* ------------------------------------------------------------ */
     /**
@@ -135,7 +142,6 @@ public abstract class SelectorManager extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /** Register a channel
      * @param channel
-     * @param att Attached Object
      */
     public void register(SocketChannel channel)
     {
@@ -284,38 +290,30 @@ public abstract class SelectorManager extends AbstractLifeCycle
     protected abstract SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey sKey) throws IOException;
 
     /* ------------------------------------------------------------------------------- */
-    public void dump()
+    protected void connectionFailed(SocketChannel channel,Throwable ex,Object attachment)
     {
-        for (final SelectSet set :_selectSet)
-        {
-            Thread selecting = set._selecting;
-            Log.info("SelectSet "+set._setID+" : "+selecting);
-            if (selecting!=null)
-            {
-                StackTraceElement[] trace =selecting.getStackTrace();
-                if (trace!=null)
-                {
-                    for (StackTraceElement e : trace)
-                    {
-                        Log.info("\tat "+e.toString());
-                    }
-                }
-            }
-                
-            set.addChange(new Runnable(){
-                public void run()
-                {
-                    set.dump();
-                }
-            });
-        }
+        Log.warn(ex+","+channel+","+attachment);
+        Log.debug(ex);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(String.valueOf(this)).append("\n");
+        AggregateLifeCycle.dump(out,indent,TypeUtil.asList(_selectSet));
     }
     
     
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
-    public class SelectSet 
+    public class SelectSet implements Dumpable
     {
         private final int _setID;
         private final Timeout _timeout;
@@ -405,10 +403,18 @@ public abstract class SelectorManager extends AbstractLifeCycle
                             final ChannelAndAttachment asc = (ChannelAndAttachment)change;
                             final SelectableChannel channel=asc._channel;
                             final Object att = asc._attachment;
-                            SelectionKey key = channel.register(selector,SelectionKey.OP_READ,att);
-                            SelectChannelEndPoint endpoint = createEndPoint((SocketChannel)channel,key);
-                            key.attach(endpoint);
-                            endpoint.schedule();
+                            
+                            if ((channel instanceof SocketChannel) && ((SocketChannel)channel).isConnected())
+                            {
+                                SelectionKey key = channel.register(selector,SelectionKey.OP_READ,att);
+                                SelectChannelEndPoint endpoint = createEndPoint((SocketChannel)channel,key);
+                                key.attach(endpoint);
+                                endpoint.schedule();
+                            }
+                            else if (channel.isOpen())
+                            {
+                                channel.register(selector,SelectionKey.OP_CONNECT,att);
+                            }
                         }
                         else if (change instanceof SocketChannel)
                         {
@@ -450,7 +456,7 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 long now=System.currentTimeMillis();
                 
                 // if no immediate things to do
-                if (selected==0)
+                if (selected==0 && selector.selectedKeys().isEmpty())
                 {
                     // If we are in pausing mode
                     if (_pausing)
@@ -510,6 +516,34 @@ public abstract class SelectorManager extends AbstractLifeCycle
                         if (att instanceof SelectChannelEndPoint)
                         {
                             ((SelectChannelEndPoint)att).schedule();
+                        }
+                        else if (key.isConnectable())
+                        {
+                            // Complete a connection of a registered channel
+                            SocketChannel channel = (SocketChannel)key.channel();
+                            boolean connected=false;
+                            try
+                            {
+                                connected=channel.finishConnect();
+                            }
+                            catch(Exception e)
+                            {
+                                connectionFailed(channel,e,att);
+                            }
+                            finally
+                            {
+                                if (connected)
+                                {
+                                    key.interestOps(SelectionKey.OP_READ);
+                                    SelectChannelEndPoint endpoint = createEndPoint(channel,key);
+                                    key.attach(endpoint);
+                                    endpoint.schedule();
+                                }
+                                else
+                                {
+                                    key.cancel();
+                                }
+                            }
                         }
                         else
                         {
@@ -839,23 +873,70 @@ public abstract class SelectorManager extends AbstractLifeCycle
                 _selector=null;
             }
         }
-        
-        public void dump()
+
+        /* ------------------------------------------------------------ */
+        public String dump()
         {
-            synchronized (System.err)
-            {
-                Selector selector=_selector;
-                Log.info("SelectSet "+_setID+" "+selector.keys().size());
-                for (SelectionKey key: selector.keys())
-                {
-                    if (key.isValid())
-                        Log.info(key.channel()+" "+key.interestOps()+" "+key.readyOps()+" "+key.attachment());
-                    else
-                        Log.info(key.channel()+" - - "+key.attachment());
-                }
-            }
+            return AggregateLifeCycle.dump(this);
         }
 
+        /* ------------------------------------------------------------ */
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            out.append(String.valueOf(this)).append(" id=").append(String.valueOf(_setID)).append("\n");
+            
+            Thread selecting = _selecting;
+            
+            Object where = "not selecting";
+            StackTraceElement[] trace =selecting==null?null:selecting.getStackTrace();
+            if (trace!=null)
+            {
+                for (StackTraceElement t:trace)
+                    if (t.getClassName().startsWith("org.eclipse.jetty."))
+                    {
+                        where=t;
+                        break;
+                    }
+            }
+
+            Selector selector=_selector;
+            final ArrayList<Object> dump = new ArrayList<Object>(selector.keys().size()*2);
+            dump.add(where);
+            
+            final CountDownLatch latch = new CountDownLatch(1);
+            
+            addChange(new Runnable(){
+                public void run()
+                {
+                    dumpKeyState(dump);
+                    latch.countDown();
+                }
+            });
+            
+            try
+            {
+                latch.await(5,TimeUnit.SECONDS);
+            }
+            catch(InterruptedException e)
+            {
+                Log.ignore(e);
+            }
+            AggregateLifeCycle.dump(out,indent,dump);
+        }
+
+        /* ------------------------------------------------------------ */
+        public void dumpKeyState(List<Object> dumpto)
+        {
+            Selector selector=_selector;
+            dumpto.add(selector+" keys="+selector.keys().size());
+            for (SelectionKey key: selector.keys())
+            {
+                if (key.isValid())
+                    dumpto.add(key.attachment()+" "+key.interestOps()+" "+key.readyOps());
+                else
+                    dumpto.add(key.attachment()+" - - ");
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -870,6 +951,18 @@ public abstract class SelectorManager extends AbstractLifeCycle
             _channel = channel;
             _attachment = attachment;
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isDeferringInterestedOps0()
+    {
+        return _deferringInterestedOps0;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setDeferringInterestedOps0(boolean deferringInterestedOps0)
+    {
+        _deferringInterestedOps0 = deferringInterestedOps0;
     }
     
 }

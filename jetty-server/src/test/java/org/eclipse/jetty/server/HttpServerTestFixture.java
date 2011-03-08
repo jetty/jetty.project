@@ -8,29 +8,38 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.net.Socket;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.IO;
 import org.junit.AfterClass;
 
 
 public class HttpServerTestFixture
 {    // Useful constants
-    protected static final boolean stress = Boolean.getBoolean("STRESS");
     protected static final long PAUSE=10L;
-    protected static final int LOOPS=stress?250:25;
+    protected static final int LOOPS=Stress.isEnabled()?250:25;
     protected static final String HOST="localhost";
     
     protected static Server _server;
     protected static Connector _connector;
+    protected String _scheme="http";
 
     protected Socket newSocket(String host,int port) throws Exception
     {
-        return new Socket(host,port);
+        Socket socket = new Socket(host,port);
+        socket.setSoTimeout(30000);
+        socket.setTcpNoDelay(true);
+        socket.setSoLinger(false,0);
+        return socket;
     }
     
     protected static void startServer(Connector connector) throws Exception
@@ -141,15 +150,20 @@ public class HttpServerTestFixture
             String encoding=request.getParameter("encoding");
             String chars=request.getParameter("chars");
 
-            String chunk = (input+"\u0a870123456789A\u0a87CDEFGHIJKLMNOPQRSTUVWXYZ\u0250bcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
-                .substring(0,block);
+            String data = "\u0a870123456789A\u0a87CDEFGHIJKLMNOPQRSTUVWXYZ\u0250bcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            while (data.length()<block)
+                data+=data;
+            
+            String chunk = (input+data).substring(0,block);
             response.setContentType("text/plain");
             if (encoding==null)
             {
                 byte[] bytes=chunk.getBytes("ISO-8859-1");
                 OutputStream out=response.getOutputStream();
                 for (int i=0;i<writes;i++)
+                {
                     out.write(bytes);
+                }
             }
             else if ("true".equals(chars))
             {
@@ -157,16 +171,43 @@ public class HttpServerTestFixture
                 Writer out=response.getWriter();
                 char[] c=chunk.toCharArray();
                 for (int i=0;i<writes;i++)
+                {
                     out.write(c);
+                }
             }
             else
             {
                 response.setCharacterEncoding(encoding);
                 Writer out=response.getWriter();
                 for (int i=0;i<writes;i++)
+                {
                     out.write(chunk);
+                }
             }
 
         }
     }
+
+    // Create a trust manager that does not validate certificate chains
+    public static TrustManager[] __trustAllCerts = new TrustManager[] { 
+        new X509TrustManager(){     
+            public java.security.cert.X509Certificate[] getAcceptedIssuers() { 
+                return null;
+            } 
+            public void checkClientTrusted( 
+                java.security.cert.X509Certificate[] certs, String authType) {
+                } 
+            public void checkServerTrusted( 
+                java.security.cert.X509Certificate[] certs, String authType) {
+            }
+        } 
+    };
+    
+    public static HostnameVerifier __hostnameverifier = new HostnameVerifier()
+    {
+        public boolean verify(String hostname, SSLSession session)
+        {
+            return true;
+        }
+    };
 }

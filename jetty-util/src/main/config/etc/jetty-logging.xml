@@ -6,7 +6,7 @@
 <!-- Configure stderr and stdout to a Jetty rollover log file        -->
 <!-- this configuration file should be used in combination with      -->
 <!-- other configuration files.  e.g.                                -->
-<!--    java -jar start.jar etc/jetty-logging.xml etc/jetty.xml      -->
+<!--    java -jar start.jar etc/jetty-logging.xml                    -->
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 

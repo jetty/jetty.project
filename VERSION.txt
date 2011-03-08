@@ -1,7 +1,7 @@
 jetty-8.0.0.M3-SNAPSHOT
  + 324505 Implement API login
  + 335500 request.getParts() throws a NullPointerException
-
+ + Updated to jetty-7.3.1.v20110307
 
 jetty-8.0.0.M2 16 November 2010
  + 320073 Reconsile configuration mechanism
@@ -17,22 +17,74 @@ jetty-8.0.0.M2 16 November 2010
  + 330292 request.getParts() returns only one part when the name is the same
  + Update to jetty-7.2.1.v20101111
 
-jetty-7.3.0-SNAPSHOT
+jetty-7.3.1.v20110307 7 March 2011
+ + 316382 Support a more strict SSL option with certificates
+ + 333481 Handle UCS-4 codepoints in decode and encode
+ + 335329 Moved blocking timeout handling to outside try catch
+ + 336668 policy supports cert validation
+ + 336691 Possible wrong length returned by ChannelEndPoint.flush() in case of RandomAccessFileBuffer
+ + 336781 If xml parser is not validating, turn off external dtd resolution
+ + 336793 Tee data filled and flushed from endpoint
+ + 337258 Scanner start and end cycle notification
+ + 337268 Allow specifying alias of a certificate to be used by SSL connector
+ + 337270 Shared Timer for session management
+ + 337271 Flush SSL endpoint when dispatch thread held forever
+ + 337678 Readded optional async connection mode for HttpClient
+ + 337685 Work in progress on draft 6 websockets
+ + 337746 Fixed Session deIdle recursion
+ + 337784 Improve HashSessionManager for session migrations
+ + 337878 Extra tests of security constraints
+ + 337896 HttpExchange.timeout does not override HttpClient.timeout
+ + 337898 set client HttpConnection max idle time from exchange timeout
+ + 338035 Default acceptors 0.25*CPUs and improved selector/acceptor thread names.
+ + 338068 Leaking ConstraintMappings on redeploy
+ + 338092 ProxyServlet leaks memory
+ + 338607 Removed managed attributes when context is stopped
+ + 338880 Fixed failing buffer range checks
+ + 338920 Handle non existent real path directories
+ + 338961 AJP packet size
+ + JETTY-1304 Allow quoted boundaries in Multipart filter
+ + JETTY-1317 More elegent handling of bad URIs in requests
+ + JETTY-1331 Allow alternate XML configuration processors (eg spring)
+ + JETTY-1335 HttpClient's SelectConnector clean-up
+ + JETTY-1333 HttpClient _timeout and _soTimeout is messed up
+ + JETTY-1337 Workname cannot contain '.'
+ + JETTY-1338 Trust default SecureRandom seed
+
+jetty-7.3.0.v20110203 3 February 2011
+ + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session (further update)
+ + 296978 standardizing various Testing Util Classes to jetty-test-helper
+ + 319178 test failure fix in jetty-util on windows
  + 320457 add SPNEGO support
  + 324505 Implement API login
+ + 328872 Multi Jetty xml files not loading if directory is referenced in jetty.conf
+ + 329746 client option to set just truststore and use strict ssl context
+ + 331803 Update XML configuration files to use proper arguments for startup command in examples
  + 332179 Fixed formatting of negative dates
  + 332432 Scanner.java now always scanning the canonical form of File
  + 332517 Improved DefaultServlet debug
  + 332703 Cleanup context scope JNDI at stop
- + 332796 Annotations inheritance does not work with jetty7 
+ + 332796 Annotations inheritance does not work with jetty7
  + 332799 100% CPU on redeploy session invalidation
- + 332937 Added Destroyable interface and reworked dependent lifecycles, specially of JNDI
+ + 332937 Added Destroyable Dumpable interfaces and reworked dependent lifecycles, specially of JNDI
  + 333247 fix api compat issue in ConstraintSecurityHandler
  + 333415 wired up HttpInput.available and added test harnesses
- + 333481 Handle UTF-32 codepoints
+ + 333481 Handle UTF-32 codepoints in decode and encode
  + 333608 tlds defined in web.xml are not picked up
- + 333679 Refactored jetty-jmx. Moved mbeans to modules.
+ + 333679 Refactored jetty-jmx. Moved mbeans to modules
+ + 333679 refactor jetty-jmx to support the OSGi PAX tests.
+ + 333717 HttpExchange able to return local address used
+ + 333771 System properties are not available inside XML configuration file by using the 'property' tag
  + 333875 Monitor public constructor
+ + 333892 Improved JVM bug detection
+ + 334062 It should be possible to embed in the jetty.home.bundle the ssl keystore files
+ + 334229 javax-security needs to import the package javax.security.cert in its OSGi manifest
+ + 334311 fix buffer reuse issue in CachedExchange
+ + 335329 Stop SSL spin during handshake and renogotiate
+ + 335361 Fixed 'jetty.sh check' to show current PID when JETTY_PID env. variable is set
+ + 335641 Cleaned up dispatch handling to avoid key.interestOps==0 when undispatched
+ + 335681 Improve ChannelEndPoint.close() to avoid spinning
+ + 335836 Race when updating SelectChannelEndPoint._dispatched
 
 jetty-7.2.2.v20101205 5 December 2010
  + JETTY-1308 327109 (re)fixed AJP handling of empty packets
@@ -48,7 +100,7 @@ jetty-7.2.2.v20101205 5 December 2010
  + 330229 Jetty tries to parse META-INF/*.tld when jsp-api is not on classpath, causing DTD entity resoluton to fail
  + 330265 start.jar --stop kills --exec subprocess
  + 330417 Atomic PUT in PutFilter
- + 330419 Reloading webapp duplicates StandardDescriptorProcessor 
+ + 330419 Reloading webapp duplicates StandardDescriptorProcessor
  + 330686 OSGi: Make org.eclipse.jetty.jsp-2.1 a fragment of org.apache.jasper.glassfish
  + 330732 Removed System.err debugging
  + 330764 Command line properties passed to start.jar --exec

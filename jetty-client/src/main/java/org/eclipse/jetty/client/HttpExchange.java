@@ -25,10 +25,11 @@ import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.BufferCache.CachedBuffer;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.log.Log;
 
 
@@ -96,7 +97,9 @@ public class HttpExchange
     private boolean _configureListeners = true;
     private HttpEventListener _listener = new Listener();
     private volatile HttpConnection _connection;
-    
+
+    private Address _localAddress = null;
+
     // a timeout for this exchange
     private long _timeout = -1;
 
@@ -356,12 +359,12 @@ public class HttpExchange
     {
         _timeout = timeout;
     }
-    
+
     public long getTimeout()
     {
         return _timeout;
     }
-    
+
     /**
      * @param url Including protocol, host and port
      */
@@ -406,6 +409,19 @@ public class HttpExchange
     public Address getAddress()
     {
         return _address;
+    }
+
+    /**
+     * the local address used by the connection
+     *
+     * Note: this method will not be populated unless the exchange
+     * has been executed by the HttpClient
+     *
+     * @return the local address used for the running of the exchange if available, null otherwise.
+     */
+    public Address getLocalAddress()
+    {
+        return _localAddress;
     }
 
     /**
@@ -660,6 +676,11 @@ public class HttpExchange
 
     void associate(HttpConnection connection)
     {
+       if ( connection.getEndPoint().getLocalHost() != null )
+       {
+           _localAddress = new Address( connection.getEndPoint().getLocalHost(), connection.getEndPoint().getLocalPort() );
+       }
+
         _connection = connection;
         if (getStatus() == STATUS_CANCELLING)
             abort();
@@ -670,9 +691,9 @@ public class HttpExchange
         return this._connection != null;
     }
 
-    HttpConnection disassociate()
+    Connection disassociate()
     {
-        HttpConnection result = _connection;
+        Connection result = _connection;
         this._connection = null;
         if (getStatus() == STATUS_CANCELLING)
             setStatus(STATUS_CANCELLED);
@@ -691,7 +712,7 @@ public class HttpExchange
     {
         return null;
     }
-    
+
     /**
      * Callback called when the request headers have been sent to the server.
      * This implementation does nothing.

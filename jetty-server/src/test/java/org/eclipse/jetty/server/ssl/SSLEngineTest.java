@@ -23,7 +23,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -45,10 +44,12 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -107,16 +108,13 @@ public class SSLEngineTest
     {
         server=new Server();
         connector=new SslSelectChannelConnector();
-        String keystore = System.getProperty("user.dir") + File.separator +
-                "src" + File.separator +
-                "test" + File.separator +
-                "resources" + File.separator +
-                "keystore";
+        String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
 
         connector.setPort(0);
-        connector.setKeystore(keystore);
-        connector.setPassword("storepwd");
-        connector.setKeyPassword("keypwd");
+        SslContextFactory cf = connector.getSslContextFactory();
+        cf.setKeyStore(keystore);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
         connector.setRequestBufferSize(512);
         connector.setRequestHeaderSize(512);
 

@@ -97,7 +97,7 @@ public class PutFilterTest
         File file=new File(_dir,"file.txt");
         assertTrue(file.exists());
         assertEquals(data0,IO.toString(new FileInputStream(file)));
-
+        
         // test GET1
         request.setMethod("GET");
         request.setVersion("HTTP/1.0");
@@ -135,16 +135,25 @@ public class PutFilterTest
         int l = to_send.length();
         out.write(to_send.substring(0,l-10).getBytes());
         out.flush();
+        Thread.sleep(100);
         out.write(to_send.substring(l-10,l-5).getBytes());
         out.flush();
-        Thread.sleep(100);
+        
+        
+        // loop until the resource is hidden (ie the PUT is starting to 
+        // read the file
+        do
+        {
+            Thread.sleep(100);
 
-        // test GET
-        request.setMethod("GET");
-        request.setVersion("HTTP/1.0");
-        request.setHeader("Host","tester");
-        request.setURI("/context/file.txt");
-        response.parse(tester.getResponses(request.generate()));
+            // test GET
+            request.setMethod("GET");
+            request.setVersion("HTTP/1.0");
+            request.setHeader("Host","tester");
+            request.setURI("/context/file.txt");
+            response.parse(tester.getResponses(request.generate()));
+        }
+        while(response.getStatus()==200);
         assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_NOT_FOUND,response.getStatus());
 

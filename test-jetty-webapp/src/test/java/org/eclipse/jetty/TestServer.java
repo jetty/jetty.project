@@ -20,8 +20,8 @@ import java.lang.management.ManagementFactory;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.swing.text.WrappedPlainView;
 
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Handler;
@@ -42,7 +42,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.junit.Ignore;
 
+@Ignore("Not a test case")
 public class TestServer
 {
     public static void main(String[] args) throws Exception
@@ -98,11 +100,12 @@ public class TestServer
 
         SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
         ssl_connector.setPort(8443);
-        ssl_connector.setKeystore(jetty_root + "/jetty-server/src/main/config/etc/keystore");
-        ssl_connector.setPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        ssl_connector.setKeyPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        ssl_connector.setTruststore(jetty_root + "/jetty-server/src/main/config/etc/keystore");
-        ssl_connector.setTrustPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        SslContextFactory cf = ssl_connector.getSslContextFactory();
+        cf.setKeyStore(jetty_root + "/jetty-server/src/main/config/etc/keystore");
+        cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        cf.setTrustStore(jetty_root + "/jetty-server/src/main/config/etc/keystore");
+        cf.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         server.addConnector(ssl_connector);
 
         HandlerCollection handlers = new HandlerCollection();

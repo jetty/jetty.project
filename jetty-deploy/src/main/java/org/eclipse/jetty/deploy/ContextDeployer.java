@@ -18,6 +18,8 @@ import java.io.FilenameFilter;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.deploy.providers.ContextProvider;
+import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -63,10 +65,11 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * configurations to it simply by dropping different xml configuration files into the configuration directory.
  * 
  * @see DeploymentManager
- * @see MonitoredDirAppProvider
+ * @see ScanningAppProvider
  * 
  * @org.apache.xbean.XBean element="hotDeployer" description="Creates a hot deployer to watch a directory for changes at
  *                         a configurable interval."
+ * @deprecated replaced with {@link ContextProvider} from the {@link DeploymentManager}
  */
 @SuppressWarnings("unchecked")
 @Deprecated

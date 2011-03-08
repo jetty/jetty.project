@@ -35,9 +35,11 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.servlet.SessionTrackingMode;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
@@ -48,12 +50,16 @@ import org.eclipse.jetty.util.log.Log;
  * <p>
  * This manager supports saving sessions to disk, either periodically or at shutdown.
  * Sessions can also have their content idle saved to disk to reduce the memory overheads of large idle sessions.
+ * <p>
+ * This manager will create it's own Timer instance to scavenge threads, unless it discovers a shared Timer instance
+ * set as the "org.eclipse.jetty.server.session.timer" attribute of the ContextHandler.
  * 
  */
 public class HashSessionManager extends AbstractSessionManager
 {
     private static int __id;
     private Timer _timer;
+    private boolean _timerStop=false;
     private TimerTask _task;
     private int _scavengePeriodMs=30000;
     private int _savePeriodMs=0; //don't do period saves by default
@@ -80,7 +86,15 @@ public class HashSessionManager extends AbstractSessionManager
         _sessions=new ConcurrentHashMap<String,HashedSession>(); 
         super.doStart();
 
-        _timer=new Timer("HashSessionScavenger-"+__id++, true);
+        _timerStop=false;
+        ServletContext context = ContextHandler.getCurrentContext();
+        if (context!=null)
+            _timer=(Timer)context.getAttribute("org.eclipse.jetty.server.session.timer");
+        if (_timer==null)
+        {
+            _timerStop=true;
+            _timer=new Timer("HashSessionScavenger-"+__id++, true);
+        }
         
         setScavengePeriod(getScavengePeriod());
 
@@ -120,7 +134,7 @@ public class HashSessionManager extends AbstractSessionManager
             if (_task!=null)
                 _task.cancel();
             _task=null;
-            if (_timer!=null)
+            if (_timer!=null && _timerStop)
                 _timer.cancel();
             _timer=null;
         }
@@ -367,7 +381,9 @@ public class HashSessionManager extends AbstractSessionManager
             return null;
         
         HashedSession session = sessions.get(idInCluster);
-        
+
+        if (session == null && _lazyLoad)
+            session=restoreSession(idInCluster);
         if (session == null)
             return null;
 
@@ -452,24 +468,38 @@ public class HashSessionManager extends AbstractSessionManager
             return;
         }
 
-        File[] files = _storeDir.listFiles();
+        String[] files = _storeDir.list();
         for (int i=0;files!=null&&i<files.length;i++)
         {
-            try
+            restoreSession(files[i]);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    protected synchronized HashedSession restoreSession(String idInCuster)
+    {
+        try
+        {
+            File file = new File(_storeDir,idInCuster);
+            if (file.exists())
             {
-                FileInputStream in = new FileInputStream(files[i]);           
+                FileInputStream in = new FileInputStream(file);           
                 HashedSession session = restoreSession(in, null);
                 in.close();          
                 addSession(session, false);
                 session.didActivate();
-                files[i].delete();
-            }
-            catch (Exception e)
-            {
-                Log.warn("Problem restoring session "+files[i].getName(), e);
+                file.delete();
+                return session;
             }
         }
+        catch (Exception e)
+        {
+            Log.warn("Problem restoring session "+idInCuster, e);
+        }
+        return null;
     }
+    
+    
 
     /* ------------------------------------------------------------ */
     public void saveSessions() throws Exception
@@ -701,6 +731,7 @@ public class HashSessionManager extends AbstractSessionManager
             {
                 // Access now to prevent race with idling period
                 access(System.currentTimeMillis());
+
                 
                 if (Log.isDebugEnabled())
                 {
@@ -716,9 +747,9 @@ public class HashSessionManager extends AbstractSessionManager
                         throw new FileNotFoundException(file.getName());
 
                     fis = new FileInputStream(file);
+                    _idled = false;
                     restoreSession(fis, this);
 
-                    _idled = false;
                     didActivate();
                     
                     // If we are doing period saves, then there is no point deleting at this point 

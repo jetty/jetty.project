@@ -27,7 +27,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 
-
 /**
  * Channel End Point.
  * <p>Holds the channel and socket for an NIO endpoint.
@@ -42,9 +41,6 @@ public class ChannelEndPoint implements EndPoint
     protected final InetSocketAddress _remote;
     protected int _maxIdleTime;
 
-    /**
-     *
-     */
     public ChannelEndPoint(ByteChannel channel) throws IOException
     {
         super();
@@ -62,9 +58,6 @@ public class ChannelEndPoint implements EndPoint
         }
     }
 
-    /**
-     *
-     */
     protected ChannelEndPoint(ByteChannel channel, int maxIdleTime) throws IOException
     {
         this._channel = channel;
@@ -80,7 +73,6 @@ public class ChannelEndPoint implements EndPoint
         {
             _local=_remote=null;
         }
-        
     }
 
     public boolean isBlocking()
@@ -118,14 +110,23 @@ public class ChannelEndPoint implements EndPoint
                 socket.shutdownOutput();
         }
     }
-    
+
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
     public void close() throws IOException
     {
         if (_socket!=null && !_socket.isOutputShutdown())
-            _socket.shutdownOutput();
+        {
+            try
+            {
+                _socket.shutdownOutput();
+            }
+            catch (IOException x)
+            {
+                Log.ignore(x);
+            }
+        }
         _channel.close();
     }
 
@@ -148,7 +149,7 @@ public class ChannelEndPoint implements EndPoint
                     bbuf.position(buffer.putIndex());
                     len=_channel.read(bbuf);
                     if (len<0)
-                        _channel.close();
+                        _channel.close();  // Don't call this.close() as that may recurse in SSL land and call fill again
                 }
                 finally
                 {
@@ -197,8 +198,7 @@ public class ChannelEndPoint implements EndPoint
         }
         else if (buf instanceof RandomAccessFileBuffer)
         {
-            len = buffer.length();
-            ((RandomAccessFileBuffer)buf).writeTo(_channel,buffer.getIndex(),buffer.length());
+            len = ((RandomAccessFileBuffer)buf).writeTo(_channel,buffer.getIndex(),buffer.length());
             if (len>0)
                 buffer.skip(len);
         }
@@ -230,62 +230,7 @@ public class ChannelEndPoint implements EndPoint
             header!=null && header.length()!=0 && buf0 instanceof NIOBuffer &&
             buffer!=null && buffer.length()!=0 && buf1 instanceof NIOBuffer)
         {
-            final NIOBuffer nbuf0 = (NIOBuffer)buf0;
-            final ByteBuffer bbuf0=nbuf0.getByteBuffer();
-            final NIOBuffer nbuf1 = (NIOBuffer)buf1;
-            final ByteBuffer bbuf1=nbuf1.getByteBuffer();
-
-            synchronized(this)
-            {
-                // We must sync because buffers may be shared (eg nbuf1 is likely to be cached content).
-                //noinspection SynchronizationOnLocalVariableOrMethodParameter
-                synchronized(bbuf0)
-                {
-                    //noinspection SynchronizationOnLocalVariableOrMethodParameter
-                    synchronized(bbuf1)
-                    {
-                        try
-                        {
-                            // Adjust position indexs of buf0 and buf1
-                            bbuf0.position(header.getIndex());
-                            bbuf0.limit(header.putIndex());
-                            bbuf1.position(buffer.getIndex());
-                            bbuf1.limit(buffer.putIndex());
-
-                            _gather2[0]=bbuf0;
-                            _gather2[1]=bbuf1;
-
-                            // do the gathering write.
-                            length=(int)((GatheringByteChannel)_channel).write(_gather2);
-
-                            int hl=header.length();
-                            if (length>hl)
-                            {
-                                header.clear();
-                                buffer.skip(length-hl);
-                            }
-                            else if (length>0)
-                            {
-                                header.skip(length);
-                            }
-
-                        }
-                        finally
-                        {
-                            // adjust buffer 0 and 1
-                            if (!header.isImmutable())
-                                header.setGetIndex(bbuf0.position());
-                            if (!buffer.isImmutable())
-                                buffer.setGetIndex(bbuf1.position());
-
-                            bbuf0.position(0);
-                            bbuf1.position(0);
-                            bbuf0.limit(bbuf0.capacity());
-                            bbuf1.limit(bbuf1.capacity());
-                        }
-                    }
-                }
-            }
+            length = gatheringFlush(header,((NIOBuffer)buf0).getByteBuffer(),buffer,((NIOBuffer)buf1).getByteBuffer());
         }
         else
         {
@@ -319,6 +264,57 @@ public class ChannelEndPoint implements EndPoint
                 length+=flush(trailer);
         }
 
+        return length;
+    }
+
+    protected int gatheringFlush(Buffer header, ByteBuffer bbuf0, Buffer buffer, ByteBuffer bbuf1) throws IOException
+    {
+        int length;
+
+        synchronized(this)
+        {
+            // We must sync because buffers may be shared (eg nbuf1 is likely to be cached content).
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized(bbuf0)
+            {
+                //noinspection SynchronizationOnLocalVariableOrMethodParameter
+                synchronized(bbuf1)
+                {
+                    try
+                    {
+                        // Adjust position indexs of buf0 and buf1
+                        bbuf0.position(header.getIndex());
+                        bbuf0.limit(header.putIndex());
+                        bbuf1.position(buffer.getIndex());
+                        bbuf1.limit(buffer.putIndex());
+
+                        _gather2[0]=bbuf0;
+                        _gather2[1]=bbuf1;
+
+                        // do the gathering write.
+                        length=(int)((GatheringByteChannel)_channel).write(_gather2);
+
+                        int hl=header.length();
+                        if (length>hl)
+                        {
+                            header.clear();
+                            buffer.skip(length-hl);
+                        }
+                        else if (length>0)
+                        {
+                            header.skip(length);
+                        }
+                    }
+                    finally
+                    {
+                        bbuf0.position(0);
+                        bbuf1.position(0);
+                        bbuf0.limit(bbuf0.capacity());
+                        bbuf1.limit(bbuf1.capacity());
+                    }
+                }
+            }
+        }
         return length;
     }
 
@@ -439,7 +435,7 @@ public class ChannelEndPoint implements EndPoint
     {
         return false;
     }
-    
+
     /* ------------------------------------------------------------ */
     public int getMaxIdleTime()
     {

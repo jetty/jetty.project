@@ -39,7 +39,9 @@ import org.xml.sax.SAXException;
 /**
  * Fix various shortcomings with the way jasper parses the tld files.
  * Plugs the JSTL tlds assuming that they are packaged with the bundle that contains the JSTL classes.
- * 
+ * <p>
+ * Pluggable tlds at the server level are handled by {@link PluggableWebAppRegistrationCustomizerImpl}.
+ * </p>
  */
 public class WebappRegistrationCustomizerImpl implements WebappRegistrationCustomizer
 {
@@ -107,8 +109,6 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
     }
     
     /**
-     * TODO: right now only the jetty-jsp bundle is scanned for common taglibs. Should support a way to plug more bundles that contain taglibs.
-     * 
      * The jasper TldScanner expects a URLClassloader to parse a jar for the /META-INF/*.tld it may contain. We place the bundles that we know contain such
      * tag-libraries. Please note that it will work if and only if the bundle is a jar (!) Currently we just hardcode the bundle that contains the jstl
      * implemenation.
@@ -133,16 +133,6 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
     	
     	classesToAddToTheTldBundles.add(jstlClass);
     	
-//    	//should we also take care of the JSF?
-//    	try
-//    	{
-//    		jstlClass = WebappRegistrationCustomizerImpl.class.getClassLoader().loadClass(DEFAUT_JSF_IMPL_CLASS);
-//    		classesToAddToTheTldBundles.add(jstlClass);
-//    	}
-//    	catch (Throwable t)
-//    	{
-//    		//never mind we can live without JSF it is optional.
-//    	}
         ArrayList<URL> urls = new ArrayList<URL>();
     	for (Class<?> cl : classesToAddToTheTldBundles)
     	{

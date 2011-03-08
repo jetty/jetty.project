@@ -51,10 +51,10 @@ import org.xml.sax.helpers.DefaultHandler;
  */
 public class XmlParser
 {
-    private Map _redirectMap = new HashMap();
+    private Map<String,URL> _redirectMap = new HashMap<String,URL>();
     private SAXParser _parser;
-    private Map _observerMap;
-    private Stack _observers = new Stack();
+    private Map<String,ContentHandler> _observerMap;
+    private Stack<ContentHandler> _observers = new Stack<ContentHandler>();
     private String _xpath;
     private Object _xpaths;
     private String _dtd;
@@ -107,6 +107,7 @@ public class XmlParser
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/validation", validating);
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/namespaces", true);
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/namespace-prefixes", false);  
+            _parser.getXMLReader().setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", validating);
         }
         catch (Exception e)
         {
@@ -393,7 +394,7 @@ public class XmlParser
         {
             if (Log.isDebugEnabled())
                 Log.debug("resolveEntity(" + pid + ", " + sid + ")");
-
+            
             if (sid!=null && sid.endsWith(".dtd"))
                 _dtd=sid;
             

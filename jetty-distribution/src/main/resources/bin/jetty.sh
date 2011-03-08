@@ -50,7 +50,7 @@
 #   and /opt/jetty. The java system property "jetty.home" will be
 #   set to this value for use by configure.xml files, f.e.:
 #
-#    <Arg><SystemProperty name="jetty.home" default="."/>/webapps/jetty.war</Arg>
+#    <Arg><Property name="jetty.home" default="."/>/webapps/jetty.war</Arg>
 #
 # JETTY_PORT
 #   Override the default port for Jetty servers. If not set then the
@@ -60,7 +60,7 @@
 #   used in the demo config files to respect this property in Listener
 #   configuration elements:
 #
-#    <Set name="Port"><SystemProperty name="jetty.port" default="8080"/></Set>
+#    <Set name="Port"><Property name="jetty.port" default="8080"/></Set>
 #
 #   Note: that the config file could ignore this property simply by saying:
 #
@@ -286,13 +286,13 @@ then
       # assume it's a directory with configure.xml files
       # for example: /etc/jetty.d/
       # sort the files before adding them to the list of CONFIGS
-      for file in "$CONF/"*.xml
+      for XMLFILE in "$CONF/"*.xml
       do
-        if [ -r "$FILE" ] && [ -f "$FILE" ] 
+        if [ -r "$XMLFILE" ] && [ -f "$XMLFILE" ] 
         then
-          CONFIGS+=("$FILE")
+          CONFIGS+=("$XMLFILE")
         else
-          echo "** WARNING: Cannot read '$FILE' specified in '$JETTY_CONF'" 
+          echo "** WARNING: Cannot read '$XMLFILE' specified in '$JETTY_CONF'" 
         fi
       done
     else
@@ -552,9 +552,9 @@ case "$ACTION" in
     echo "RUN_CMD        =  ${RUN_CMD[*]}"
     echo
     
-    if [ -f "$JETTY_RUN/jetty.pid" ]
+    if [ -f "$JETTY_PID" ]
     then
-      echo "Jetty running pid=$(< "$JETTY_RUN/jetty.pid")"
+      echo "Jetty running pid=$(< "$JETTY_PID")"
       exit 0
     fi
     exit 1

@@ -62,7 +62,7 @@ public class AnnotationDecorator implements Decorator
     /**
      * @param <T>
      * @param filter
-     * @return
+     * @return the decorated filter
      * @throws ServletException
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateFilterInstance(javax.servlet.Filter)
      */
@@ -76,7 +76,7 @@ public class AnnotationDecorator implements Decorator
     /**
      * @param <T>
      * @param listener
-     * @return
+     * @return the decorated event listener instance
      * @throws ServletException
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateListenerInstance(java.util.EventListener)
      */
@@ -100,7 +100,7 @@ public class AnnotationDecorator implements Decorator
     /**
      * @param <T>
      * @param servlet
-     * @return
+     * @return the decorated servlet instance
      * @throws ServletException
      * @see org.eclipse.jetty.servlet.ServletContextHandler.Decorator#decorateServletInstance(javax.servlet.Servlet)
      */

@@ -357,7 +357,7 @@ public class MultiPartInputStream
         if (!_tmpDir.exists())
             _tmpDir.mkdirs();
 
-        String boundary="--"+value(_contentType.substring(_contentType.indexOf("boundary=")));
+        String boundary="--"+QuotedStringTokenizer.unquote(value(_contentType.substring(_contentType.indexOf("boundary="))).trim());
         byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
 
         // Get first boundary

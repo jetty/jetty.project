@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.embedded;
 
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -45,9 +46,10 @@ public class ManyConnectors
         String jetty_home = System.getProperty("jetty.home","../jetty-distribution/target/distribution");
         System.setProperty("jetty.home",jetty_home);
         ssl_connector.setPort(8443);
-        ssl_connector.setKeystore(jetty_home + "/etc/keystore");
-        ssl_connector.setPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        ssl_connector.setKeyPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        SslContextFactory cf = ssl_connector.getSslContextFactory();
+        cf.setKeyStore(jetty_home + "/etc/keystore");
+        cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
         server.addConnector(ssl_connector);
 
         server.setConnectors(new Connector[]

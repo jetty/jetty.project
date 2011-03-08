@@ -17,7 +17,7 @@
    viewBox="0 0 327 590"
    id="svg2"
    sodipodi:version="0.32"
-   inkscape:version="0.47pre4 r22446"
+   inkscape:version="0.47 r22583"
    sodipodi:docname="DeploymentManager.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
    version="1.0"
@@ -200,9 +200,16 @@
          style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;marker-start:none"
          transform="matrix(-0.8,0,0,-0.8,-10,0)" />
     </marker>
+    <inkscape:perspective
+       id="perspective2903"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
   </defs>
   <sodipodi:namedview
-     inkscape:window-height="1150"
+     inkscape:window-height="1144"
      inkscape:window-width="1914"
      inkscape:pageshadow="2"
      inkscape:pageopacity="1"
@@ -215,8 +222,8 @@
      id="base"
      showgrid="false"
      inkscape:zoom="1.4142136"
-     inkscape:cx="491.99319"
-     inkscape:cy="522.61453"
+     inkscape:cx="403.9584"
+     inkscape:cy="579.18307"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:current-layer="svg2"
@@ -287,20 +294,15 @@
      id="polygon3312"
      transform="matrix(1.8650712,0,0,1.4508985,-123.28021,719.97907)" />
   <text
-     x="219.019"
-     y="117.38"
+     x="219.83141"
+     y="128.62213"
      style="font-size:17.98741913px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;writing-mode:lr-tb;text-anchor:middle;font-family:Sans;-inkscape-font-specification:Sans"
      id="text3314"
      sodipodi:linespacing="125%">
     <tspan
-       y="117.38"
-       x="219.019"
-       id="tspan3316"
-       sodipodi:role="line">MonitoredDir</tspan>
-    <tspan
        id="tspan3318"
-       y="139.86427"
-       x="219.019"
+       y="128.62213"
+       x="219.83141"
        sodipodi:role="line">AppProvider</tspan>
   </text>
   <path
@@ -392,33 +394,33 @@
   <text
      transform="matrix(0.99999999,1.6038357e-4,-1.6038357e-4,0.99999999,0,0)"
      id="text3912"
-     y="195.42377"
-     x="192.83795"
+     y="194.93675"
+     x="178.15657"
      style="font-size:13.11166191px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
      xml:space="preserve"
      inkscape:transform-center-x="-17.522216"
      inkscape:transform-center-y="1.6854193"><tspan
-       y="195.42377"
-       x="192.83795"
+       y="194.93675"
+       x="178.15657"
        sodipodi:role="line"
        id="tspan3916">Start</tspan><tspan
-       y="211.81334"
-       x="192.83795"
+       y="211.32632"
+       x="178.15657"
        sodipodi:role="line"
        id="tspan3920">Stop</tspan></text>
   <text
      transform="matrix(0.99999999,1.6038357e-4,-1.6038357e-4,0.99999999,0,0)"
      id="text3926"
-     y="195.40883"
-     x="285.98944"
+     y="205.57097"
+     x="287.04779"
      style="font-size:13.11166191px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;font-family:Bitstream Vera Sans"
      xml:space="preserve"
      inkscape:transform-center-x="-17.522216"
      inkscape:transform-center-y="1.6854193"><tspan
-       y="195.40883"
-       x="285.98944"
+       y="205.57097"
+       x="287.04779"
        sodipodi:role="line"
-       id="tspan3928">App</tspan></text>
+       id="tspan3928">WebApp</tspan></text>
   <path
      style="fill:none;stroke:#000000;stroke-width:0.99881887;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Lend)"
      d="m 168.06957,249.88292 3e-5,-95.75427"
@@ -538,7 +540,7 @@
          id="tspan3909-4"
          sodipodi:role="line"
          x="440.00369"
-         y="325.52832">App</tspan>
+         y="325.52832">WebApp</tspan>
     </text>
   </g>
   <path

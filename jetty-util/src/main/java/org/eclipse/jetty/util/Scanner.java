@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.log.Log;
 
@@ -46,6 +47,7 @@ public class Scanner
 {
     private static int __scannerId=0;
     private int _scanInterval;
+    private int _scanCount = 0;
     private final List<Listener> _listeners = new ArrayList<Listener>();
     private final Map<String,Long> _prevScan = new HashMap<String,Long> ();
     private final Map<String,Long> _currentScan = new HashMap<String,Long> ();
@@ -82,6 +84,14 @@ public class Scanner
         public void filesChanged (List<String> filenames) throws Exception;
     }
 
+    /**
+     * Listener that notifies when a scan has started and when it has ended.
+     */
+    public interface ScanCycleListener extends Listener
+    {
+        public void scanStarted(int cycle) throws Exception;
+        public void scanEnded(int cycle) throws Exception;
+    }
 
     /**
      * 
@@ -138,6 +148,11 @@ public class Scanner
         _scanDirs.addAll(dirs);
     }
     
+    public synchronized void addScanDir( File dir )
+    {
+        _scanDirs.add( dir );
+    }
+    
     public List<File> getScanDirs ()
     {
         return Collections.unmodifiableList(_scanDirs);
@@ -146,7 +161,7 @@ public class Scanner
     /* ------------------------------------------------------------ */
     /**
      * @param recursive True if scanning is recursive
-     * @see  #setScanDepth()
+     * @see  #setScanDepth(int)
      */
     public void setRecursive (boolean recursive)
     {
@@ -335,10 +350,12 @@ public class Scanner
      */
     public synchronized void scan ()
     {
+        reportScanStart(++_scanCount);
         scanFiles();
         reportDifferences(_currentScan, _prevScan);
         _prevScan.clear();
         _prevScan.putAll(_currentScan);
+        reportScanEnd(_scanCount);
     }
 
     /**
@@ -559,6 +576,50 @@ public class Scanner
             catch (Error e)
             {
                 warn(l,filenames.toString(),e);
+            }
+        }
+    }
+    
+    /**
+     * signal any scan cycle listeners that a scan has started
+     */
+    private void reportScanStart(int cycle)
+    {
+        for (Listener listener : _listeners)
+        {
+            try
+            {
+                if (listener instanceof ScanCycleListener)
+                {
+                    ((ScanCycleListener)listener).scanStarted(cycle);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.warn(e);
+                Log.warn(listener + " failed on scan start for cycle " + cycle);
+            }
+        }
+    }
+
+    /**
+     * sign
+     */
+    private void reportScanEnd(int cycle)
+    {
+        for (Listener listener : _listeners)
+        {
+            try
+            {
+                if (listener instanceof ScanCycleListener)
+                {
+                    ((ScanCycleListener)listener).scanEnded(cycle);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.warn(e);
+                Log.warn(listener + " failed on scan end for cycle " + cycle);
             }
         }
     }

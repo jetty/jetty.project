@@ -18,13 +18,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import javax.naming.Binding;
 import javax.naming.CompoundName;
@@ -44,12 +42,8 @@ import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.spi.NamingManager;
 
-import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Logger;
-
-import com.sun.naming.internal.FactoryEnumeration;
-import com.sun.naming.internal.ResourceManager;
 
 
 /*------------------------------------------------*/    
@@ -88,10 +82,6 @@ public class NamingContext implements Context, Cloneable, Dumpable
     /*------------------------------------------------*/    
     /**
      * Naming Context Listener.
-     * <p>
-     * If the env property {@link NamingContext#LISTENERS_PROPERTY} is set to 
-     * a collection of Listeners, then the listener will be called as Bindings 
-     * are added and removed from the context.
      */
     public interface Listener
     {

@@ -14,6 +14,8 @@ package org.eclipse.jetty.webapp;
 
 import java.util.Arrays;
 
+import javax.servlet.ServletContext;
+
 import org.eclipse.jetty.server.Server;
 import org.junit.Test;
 
@@ -75,5 +77,23 @@ public class WebAppContextTest
         server.setAttribute(WebAppContext.SERVER_CONFIG, classNames);
         wac.setServer(server);
         assertTrue(Arrays.equals(configs,wac.getConfigurations()));
+    }
+    
+    @Test
+    public void testRealPathDoesNotExist() throws Exception
+    {
+        Server server = new Server(0);
+        WebAppContext context = new WebAppContext(".", "/");
+        server.setHandler(context);
+        server.start();
+
+        // When
+        ServletContext ctx = context.getServletContext();
+
+        // Then
+        // This passes:
+        assertNotNull(ctx.getRealPath("/doesnotexist"));
+        // This fails:
+        assertNotNull(ctx.getRealPath("/doesnotexist/"));
     }
 }

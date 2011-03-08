@@ -2,24 +2,18 @@ package org.eclipse.jetty.deploy.providers;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.ConfigurationManager;
-import org.eclipse.jetty.deploy.ContextDeployer;
 import org.eclipse.jetty.deploy.util.FileID;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
-
-/* ------------------------------------------------------------ */
 /** Context directory App Provider.
- * <p>This specialization of {@link MonitoredDirAppProvider} is the
- * replacement for {@link ContextDeployer} and it will scan a directory
+ * <p>This specialization of {@link ScanningAppProvider} is the
+ * replacement for the old (and deprecated) <code>org.eclipse.jetty.deploy.ContextDeployer</code> and it will scan a directory
  * only for context.xml files.
- * @see ContextDeployer
  */
 public class ContextProvider extends ScanningAppProvider
 {

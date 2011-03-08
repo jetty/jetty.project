@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersions;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
@@ -44,10 +45,9 @@ import org.eclipse.jetty.util.thread.Timeout;
  *
  * @version $Revision: 879 $ $Date: 2009-09-11 16:13:28 +0200 (Fri, 11 Sep 2009) $
  */
-public class HttpConnection implements Connection
+public class HttpConnection /* extends AbstractConnection */ implements Connection
 {
     private HttpDestination _destination;
-    private EndPoint _endp;
     private HttpGenerator _generator;
     private HttpParser _parser;
     private boolean _http11 = true;
@@ -56,6 +56,7 @@ public class HttpConnection implements Connection
     private Buffer _requestContentChunk;
     private boolean _requestComplete;
     private boolean _reserved;
+
     // The current exchange waiting for a response
     private volatile HttpExchange _exchange;
     private HttpExchange _pipeline;
@@ -64,6 +65,7 @@ public class HttpConnection implements Connection
 
     public void dump() throws IOException
     {
+        // TODO update to dumpable
         Log.info("endp=" + _endp + " " + _endp.isBufferingInput() + " " + _endp.isBufferingOutput());
         Log.info("generator=" + _generator);
         Log.info("parser=" + _parser.getState() + " " + _parser.isMoreInBuffer());
@@ -74,14 +76,11 @@ public class HttpConnection implements Connection
 
     HttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
     {
-        _endp = endp;
+        _endp=endp;
+        _timeStamp = System.currentTimeMillis();
+   
         _generator = new HttpGenerator(requestBuffers,endp);
         _parser = new HttpParser(responseBuffers,endp,new Handler());
-    }
-
-    public long getTimeStamp()
-    {
-        return -1;
     }
 
     public void setReserved (boolean reserved)
@@ -135,6 +134,8 @@ public class HttpConnection implements Connection
             long exchTimeout = _exchange.getTimeout();
             if (exchTimeout > 0)
             {
+                if (exchTimeout!=_destination.getHttpClient().getTimeout())
+                    _endp.setMaxIdleTime((int)exchTimeout);
                 _destination.getHttpClient().schedule(_timeout, exchTimeout);
             }
             else
@@ -265,7 +266,7 @@ public class HttpConnection implements Connection
 
                     if (io > 0)
                         no_progress = 0;
-                    else if (no_progress++ >= 2 && !_endp.isBlocking())
+                    else if (no_progress++ >= 1 && !_endp.isBlocking())
                     {
                         // SSL may need an extra flush as it may have made "no progress" while actually doing a handshake.
                         if (_endp instanceof SslSelectChannelEndPoint && !_generator.isComplete() && !_generator.isEmpty())
@@ -352,7 +353,10 @@ public class HttpConnection implements Connection
                             {
                                 HttpExchange exchange=_exchange;
                                 _exchange.disassociate();
+                                if (_exchange.getTimeout()>0 && _exchange.getTimeout()!=getDestination().getHttpClient().getTimeout())
+                                    _endp.setMaxIdleTime((int)getDestination().getHttpClient().getTimeout());
                                 _exchange = null;
+                                
 
                                 if (_status==HttpStatus.SWITCHING_PROTOCOLS_101)
                                 {
@@ -406,8 +410,10 @@ public class HttpConnection implements Connection
                 _exchange.disassociate();
             }
 
+            // Do we have more stuff to write?
             if (!_generator.isComplete() && _generator.getBytesBuffered()>0 && _endp instanceof AsyncEndPoint)
             {
+                // Assume we are write blocked!
                 ((AsyncEndPoint)_endp).setWritable(false);
             }
         }
@@ -433,11 +439,6 @@ public class HttpConnection implements Connection
 
     public void closed()
     {
-    }
-
-    public EndPoint getEndPoint()
-    {
-        return _endp;
     }
 
     private void commitRequest() throws IOException
@@ -709,5 +710,19 @@ public class HttpConnection implements Connection
                 }
             }
         }
+    }
+    
+
+
+    // TODO remove and use AbstractConnection for 7.4
+    private final long _timeStamp;
+    protected final EndPoint _endp;
+    public long getTimeStamp()
+    {
+        return _timeStamp;
+    }
+    public EndPoint getEndPoint()
+    {
+        return _endp;
     }
 }

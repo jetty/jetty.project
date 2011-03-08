@@ -95,9 +95,11 @@ public abstract class WebSocketHandler extends HandlerWrapper
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if ("WebSocket".equals(request.getHeader("Upgrade")))
+        if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
         {
-            String subprotocol=request.getHeader(request.getHeader("Sec-WebSocket-Key1")!=null?"Sec-WebSocket-Protocol":"WebSocket-Protocol");
+            String subprotocol=request.getHeader("Sec-WebSocket-Protocol");
+            if (subprotocol==null) // TODO remove once draft period is over
+                subprotocol=request.getHeader("WebSocket-Protocol");
             WebSocket websocket=doWebSocketConnect(request,subprotocol);
 
             String host=request.getHeader("Host");

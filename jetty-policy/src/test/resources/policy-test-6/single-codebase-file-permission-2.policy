@@ -1,0 +1,3 @@
+grant codeBase "file:///bar.jar" {
+  permission java.io.FilePermission "/tmp/*", "read";
+}

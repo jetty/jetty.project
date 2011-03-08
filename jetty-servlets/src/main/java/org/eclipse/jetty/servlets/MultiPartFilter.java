@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -45,6 +46,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStream;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
@@ -111,21 +113,24 @@ public class MultiPartFilter implements Filter
             return;
         }
         
+        InputStream in = new BufferedInputStream(request.getInputStream());
+        String content_type=srequest.getContentType();
+        
+        // TODO - handle encodings
+        String boundary="--"+QuotedStringTokenizer.unquote(value(content_type.substring(content_type.indexOf("boundary="))).trim());
+        byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
+        
         //Get current parameters so we can merge into them
-        MultiMap params = new MultiMap();
-        for (Iterator i = request.getParameterMap().entrySet().iterator();i.hasNext();)
+        MultiMap<String> params = new MultiMap<String>();
+        for (Iterator<Map.Entry<String,String[]>> i = request.getParameterMap().entrySet().iterator();i.hasNext();)
         {
-            Map.Entry entry=(Map.Entry)i.next();
+            Map.Entry<String,String[]> entry=i.next();
             Object value=entry.getValue();
             if (value instanceof String[])
                 params.addValues(entry.getKey(),(String[])value);
             else
                 params.add(entry.getKey(),value);
         }
-        // TODO - handle encodings
-        
-        BufferedInputStream in = new BufferedInputStream(request.getInputStream());
-        String content_type=srequest.getContentType();
         
         MultipartConfigElement config = new MultipartConfigElement(tempdir.getCanonicalPath(), _maxFileSize, _maxRequestSize, _fileOutputBuffer);
         MultiPartInputStream mpis = new MultiPartInputStream(in, content_type, config, tempdir);

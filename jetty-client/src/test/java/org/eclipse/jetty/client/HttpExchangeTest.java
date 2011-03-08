@@ -30,8 +30,10 @@ import junit.framework.TestCase;
 import org.eclipse.jetty.client.security.ProxyAuthorization;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.server.Connector;
@@ -39,6 +41,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 
@@ -47,7 +50,6 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class HttpExchangeTest extends TestCase
 {
-    private boolean _stress=Boolean.getBoolean("STRESS");
     protected int _maxConnectionsPerAddress = 2;
     protected String _scheme = "http://";
     protected Server _server;
@@ -85,7 +87,7 @@ public class HttpExchangeTest extends TestCase
 
     public void testPerf() throws Exception
     {
-        if (_stress)
+        if (Stress.isEnabled())
         {
             sender(1,false);
             sender(1,true);
@@ -252,6 +254,29 @@ public class HttpExchangeTest extends TestCase
             httpExchange.setMethod(HttpMethods.GET);
             _httpClient.send(httpExchange);
             int status = httpExchange.waitForDone();
+            //httpExchange.waitForStatus(HttpExchange.STATUS_COMPLETED);
+            String result=httpExchange.getResponseContent();
+            assertEquals("i="+i,0,result.indexOf("<hello>"));
+            assertEquals("i="+i,result.length()-10,result.indexOf("</hello>"));
+            assertEquals(HttpExchange.STATUS_COMPLETED, status);
+            Thread.sleep(5);
+        }
+    }
+    
+    public void testLocalAddressAvailabilityWithContentExchange() throws Exception
+    {
+        for (int i=0;i<10;i++)
+        {
+            ContentExchange httpExchange=new ContentExchange();
+            httpExchange.setURL(_scheme+"localhost:"+_port+"/?i="+i);
+            httpExchange.setMethod(HttpMethods.GET);
+            _httpClient.send(httpExchange);
+            int status = httpExchange.waitForDone();
+            
+            assertNotNull(httpExchange.getLocalAddress());
+            
+            //System.out.println("Local Address: " + httpExchange.getLocalAddress());
+            
             //httpExchange.waitForStatus(HttpExchange.STATUS_COMPLETED);
             String result=httpExchange.getResponseContent();
             assertEquals("i="+i,0,result.indexOf("<hello>"));
@@ -450,7 +475,7 @@ public class HttpExchangeTest extends TestCase
 
        //try to get a connection, and only wait 500ms, as we have
        //already reserved the max, should return null
-       org.eclipse.jetty.client.HttpConnection c = destination.reserveConnection(500);
+       Connection c = destination.reserveConnection(500);
        assertNull(c);
 
        //unreserve first connection

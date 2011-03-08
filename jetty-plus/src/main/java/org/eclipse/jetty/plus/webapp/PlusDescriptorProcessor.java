@@ -95,7 +95,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 
     
     /** 
-     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#end(org.eclipse.jetty.webapp.Descriptor, WebAppContext)
+     * {@inheritDoc}
      */
     public void end(WebAppContext context,Descriptor descriptor)
     {
@@ -703,7 +703,6 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param node
      * @param jndiName
      * @param valueClass
-     * @return 
      */
     public void addInjections (WebAppContext context, Descriptor descriptor, XmlParser.Node node, String jndiName, Class<?> valueClass)
     {
@@ -756,7 +755,6 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 
     
     /** 
-     * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#bindEnvEntry(java.lang.String, java.lang.String)
      * @param name
      * @param value
      * @throws Exception
@@ -797,7 +795,6 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * If a resource reference with the same name is in a jetty-env.xml
      * file, it will already have been bound.
      * 
-     * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#bindResourceRef(java.lang.String)
      * @param name
      * @throws Exception
      */
@@ -808,7 +805,6 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
     }
 
     /** 
-     * @see org.eclipse.jetty.plus.webapp.AbstractConfiguration#bindResourceEnvRef(java.lang.String)
      * @param name
      * @throws Exception
      */

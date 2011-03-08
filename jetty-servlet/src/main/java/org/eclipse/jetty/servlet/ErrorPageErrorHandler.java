@@ -180,7 +180,7 @@ public class ErrorPageErrorHandler extends ErrorHandler
     /** Add Error Page mapping for an exception class
      * This method is called as a result of an exception-type element in a web.xml file
      * or may be called directly
-     * @param exception The exception
+     * @param exceptionClassName The exception
      * @param uri The URI of the error page.
      */
     public void addErrorPage(String exceptionClassName,String uri)

@@ -16,6 +16,8 @@ package org.eclipse.jetty.client;
 import java.io.File;
 import java.io.FileInputStream;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+
 public class ExternalKeyStoreAsyncSslHttpExchangeTest extends SslHttpExchangeTest
 {
     @Override
@@ -27,11 +29,7 @@ public class ExternalKeyStoreAsyncSslHttpExchangeTest extends SslHttpExchangeTes
         _httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
         _httpClient.setMaxConnectionsPerAddress(2);
 
-        String keystore = System.getProperty("user.dir") + File.separator +
-                "src" + File.separator +
-                "test" + File.separator +
-                "resources" + File.separator
-                + "keystore";
+        String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
 
         _httpClient.setKeyStoreInputStream(new FileInputStream(keystore));
         _httpClient.setKeyStorePassword("storepwd");

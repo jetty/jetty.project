@@ -46,7 +46,7 @@ public abstract class IterativeDescriptorProcessor implements DescriptorProcesso
 
     
     /** 
-     * @see org.eclipse.jetty.webapp.DescriptorProcessor#process(org.eclipse.jetty.webapp.Descriptor)
+     * {@inheritDoc}
      */
     public void process(WebAppContext context, Descriptor descriptor)
     throws Exception

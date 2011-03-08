@@ -33,7 +33,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.ServletResponseWrapper;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -64,7 +63,6 @@ public class PutFilter implements Filter
 
     Set<String> _operations = new HashSet<String>();
     private ConcurrentMap<String,String> _hidden = new ConcurrentHashMap<String, String>();
-    private String _options=null;
 
     private ServletContext _context;
     private String _baseURI;

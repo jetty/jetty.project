@@ -499,7 +499,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      * A secure cookie will only be sent by a browser on a secure (https) connection to 
      * avoid the concern of cookies being intercepted on non secure channels.
      * For the cookie to be issued as secure, the {@link ServletRequest#isSecure()} method must return true.
-     * If SSL offload is used, then the {@link AbstractConnector#customize(org.eclipse.jetty.io.EndPoint, Request)
+     * If SSL offload is used, then the {@link AbstractConnector#customize(org.eclipse.jetty.io.EndPoint, Request)}
      * method can be used to force the request to be https, or the {@link AbstractConnector#setForwarded(boolean)}
      * can be set to true, so that the X-Forwarded-Proto header is respected.
      * <p>

@@ -65,7 +65,6 @@ public class ResourceCache
     /* ------------------------------------------------------------ */
     /** Constructor.
      * @param mimeTypes Mimetype to use for meta data
-     * @param fileMappedBuffers True if file mapped buffers can be used for DirectBuffers
      */
     public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes)
     {
