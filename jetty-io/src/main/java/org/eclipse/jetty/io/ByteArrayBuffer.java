@@ -370,8 +370,7 @@ public class ByteArrayBuffer extends AbstractBuffer
         throws IOException
     {
         out.write(_bytes,getIndex(),length());
-        if (!isImmutable())
-            clear();
+        clear();
     }
     
     /* ------------------------------------------------------------ */

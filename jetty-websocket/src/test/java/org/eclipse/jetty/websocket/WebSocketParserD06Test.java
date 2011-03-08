@@ -101,7 +101,7 @@ public class WebSocketParserD06Test
         _in.put((byte)0x84);
         _in.put((byte)11);
         _in.put("Hello World".getBytes(StringUtil.__UTF8));
-        // System.err.println("tosend="+TypeUtil.toHexString(_in.asArray()));
+        System.err.println("tosend="+TypeUtil.toHexString(_in.asArray()));
 
         int filled =_parser.parseNext();
 

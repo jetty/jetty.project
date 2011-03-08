@@ -211,8 +211,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
             }
         }
         int len = _out.put(buffer);
-        if (!buffer.isImmutable())
-            buffer.skip(len);
+        buffer.skip(len);
         return len;
     }
 

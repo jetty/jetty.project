@@ -81,7 +81,6 @@ public class XmlConfiguration
         }
         catch(Exception e)
         {
-            e.printStackTrace();
             Log.ignore(e);
         }
         finally

@@ -116,10 +116,6 @@ public class MultiPartFilter implements Filter
         InputStream in = new BufferedInputStream(request.getInputStream());
         String content_type=srequest.getContentType();
         
-        // TODO - handle encodings
-        String boundary="--"+QuotedStringTokenizer.unquote(value(content_type.substring(content_type.indexOf("boundary="))).trim());
-        byte[] byteBoundary=(boundary+"--").getBytes(StringUtil.__ISO_8859_1);
-        
         //Get current parameters so we can merge into them
         MultiMap<String> params = new MultiMap<String>();
         for (Iterator<Map.Entry<String,String[]>> i = request.getParameterMap().entrySet().iterator();i.hasNext();)
