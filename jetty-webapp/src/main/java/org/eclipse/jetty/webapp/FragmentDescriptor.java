@@ -30,9 +30,9 @@ import org.eclipse.jetty.xml.XmlParser;
 public class FragmentDescriptor extends WebDescriptor
 {
     public static final String NAMELESS = "@@-NAMELESS-@@"; //prefix for nameless Fragments
+    protected static int _counter = 0;
+
     public enum OtherType {None, Before, After};
-    
-    protected int _counter = 0;
     protected OtherType _otherType = OtherType.None;
    
     
